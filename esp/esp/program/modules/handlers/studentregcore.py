@@ -113,7 +113,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         if not self.program.isFull():
-            raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
+            raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
 
         waitlist = Record.objects.filter(event="waitlist",
                                          user=request.user,
@@ -168,7 +168,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
         if prog.isFull() and not user.canRegToFullProgram(prog) and not self.program.isConfirmed(user):
-            raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
+            raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
 
         modules = prog.getModules(request.user, tl)
         completedAll = True
@@ -184,7 +184,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                 rec = Record.objects.create(user=user, event="reg_confirmed",
                                             program=prog)
         else:
-            raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
+            raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
 
         cfe = ConfirmationEmailController()
         cfe.send_confirmation_email(request.user, self.program)
@@ -212,7 +212,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         from esp.program.modules.module_ext import DBReceipt
         
         if self.have_paid(request.user):
-            raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
+            raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
         
         recs = Record.objects.filter(user=request.user,
                                      event="reg_confirmed",

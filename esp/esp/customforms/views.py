@@ -4,7 +4,7 @@ from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
 from django.utils import simplejson as json
-from customforms.models import *
+from esp.customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
@@ -152,7 +152,7 @@ def onModify(request):
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:
-                raise ESPError(False), 'Form %s not found' % metadata['form_id']
+                raise ESPError('Form %s not found' % metadata['form_id'], log=False)
             dmh = DMH(form=form)
             link_models_list = []     # Stores a cache of link models that should not be removed
             

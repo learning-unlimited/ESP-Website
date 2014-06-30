@@ -492,3 +492,5 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
+
+from esp.application.models import FormstackAppSettings

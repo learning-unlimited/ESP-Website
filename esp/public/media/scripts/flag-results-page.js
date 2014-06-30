@@ -14,6 +14,7 @@ function review (id, stat, text, color) {
                 "csrfmiddlewaretoken": csrf_token(),
             }, function () {
                 $j("#fqr-class-"+id+" .class-status").html(text).css("color",color);
+                $j("#fqr-class-"+id+" .fqr-class-header").removeClass("accepted rejected unreviewed").addClass(text.toLowerCase())
             });
 }
 
@@ -37,6 +38,16 @@ function deleteClass (id, name) {
                     $j("#fqr-class-"+id).remove();
         });
     }
+}
+
+function showAll () {
+    $j(".fqr-class-detail").show();
+    $j(".flag-detail:not(#flag-extra)").show();
+}
+
+function hideAll () {
+    $j(".fqr-class-detail").hide();
+    $j(".flag-detail").hide();
 }
 
 $j(document).ready(function () {

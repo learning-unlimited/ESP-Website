@@ -1,0 +1,36 @@
+<select class="fqb-type">
+    <option selected="selected" value=""></option>
+    <option value="all">all of...</option>
+    <option value="any">any of...</option>
+    <option value="not all">not all of...</option>
+    <option value="none">none of...</option>
+    <option value="flag">the flag</option>
+    <option value="not flag">not the flag</option>
+    <option value="status">the status</option>
+    <option value="not status">not the status</option>
+    <option value="category">the category</option>
+    <option value="not category">not the category</option>
+</select>
+<select class="fqb-flag-list" style="display: none;">
+    <option selected="selected" value=""></option>
+    {% for flag in flag_types %}
+    <option value="{{flag.id}}">{{flag.name}}</option>
+    {% endfor %}
+</select>
+<select class="fqb-status-list" style="display: none;">
+    <option selected="selected" value=""></option>
+    <option value="10">Accepted</option>
+    <option value="5">Accepted but hidden</option>
+    <option value="0">Unreviewed</option>
+    <option value="-10">Rejected</option>
+    <option value="-20">Cancelled</option>
+</select>
+<select class="fqb-category-list" style="display: none;">
+    <option selected="selected" value=""></option>
+    {% for category in categories %}
+    <option value="{{category.id}}">{{category}}</option>
+    {% endfor %}
+    {% if program.open_class_registration %}
+    <option value="{{program.open_class_category.id}}">{{program.open_class_category}}</option>
+    {% endif %}
+</select>

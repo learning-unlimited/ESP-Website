@@ -158,25 +158,22 @@ function initialize()
     //  Handle changes in the recipient type
     recipient_type_change = function () {
         var rb_selected = $j("select[name=recipient_type]").val();
-        set_step("basic_step_container", "recipient_list_select");
         $j("#recipient_type_name").html("Which set of " + rb_selected + " would you like to contact?");
         $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
         $j("#recipient_list_select").children("div.step_header").removeClass("commpanel_hidden");
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
+        $j(".sendto_fn_select").addClass("commpanel_hidden");
+        $j("." + rb_selected + ".sendto_fn_select").removeClass("commpanel_hidden");
         //  console.log("Selected " + rb_selected);
         
         prepare_accordion("filter_accordion", rb_selected);
     }
     $j("select[name=recipient_type]").change(recipient_type_change);
-    $j("#recipient_type_next").click(recipient_type_change);
-    
-    //  Handle changes in the recipient list radio buttons
-    $j("input[name=base_list]").change(function () {
-        set_step("basic_step_container", "recipient_filter_select");
-        clear_filters("form_basic_list");
-        $j("#filter_accordion").accordion("activate", false);
-        $j("#filter_current_list").html($j("#label_" + $j("input[name=base_list]:checked").val()).html());
+    $j("#recipient_type_next").click(function () {
+        recipient_type_change();
+        set_step("basic_step_container", "recipient_list_select");
     });
+    recipient_type_change();
     
     //  Handle clicks on show/hide e-mail list links
     $j("li.commpanel_show_all").click(function () {
@@ -247,14 +244,18 @@ function initialize()
     
     //  Handle step transitions
     combo_base_list_change = function () {
-        set_step("combo_step_container", "combo_list_select");
         clear_filters("form_combo_list");
         $j("#combo_filter_accordion").accordion("activate", false);
         var list_selected = $j("select[name=combo_base_list]").val();
         $j("#combo_starting_list").html($j("#list_description_" + list_selected.substr(list_selected.indexOf(":") + 1)).html());
+        $j("#form_combo_list .sendto_fn_select").hide();
+        try {
+            $j("#form_combo_list .sendto_fn_select." + list_selected.split(":")[0]).show();
+        } catch(e){}
         //  TODO: Prepare filtering options based on choice of starting list (students/teachers/other)
         //  prepare_accordion("combo_filter_accordion", rb_selected);
     }
+    combo_base_list_change();
     $j("select[name=combo_base_list]").change(combo_base_list_change);
     
     $j("#combo_base_done").change(function () {
@@ -269,7 +270,10 @@ function initialize()
     $j("#combo_filter_back").click(function () {set_step("combo_step_container", "combo_list_select");});
     
     //  Prepare "next" buttons
-    $j("#combo_base_next").click(combo_base_list_change);
+    $j("#combo_base_next").click(function(){
+        combo_base_list_change();
+        set_step("combo_step_container", "combo_list_select");
+    });
     $j("#combo_options_next").click(function () {set_step("combo_step_container", "combo_filter_select");});
     
     //  Prepare "done" buttons

@@ -4,14 +4,25 @@ from django.core.cache import cache
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.models import qsd_cache_key, qsd_edit_id
+from esp.tagdict.models import Tag
 from urllib import quote
 
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
-    return {'qsdrec': qsd}
+    # check whether we should display the date and author footer (only affects non-administrator users)
+    display_date_author_tag = Tag.getTag('qsd_display_date_author', default='True')
+    display_date_author = 2 # display date and author
+
+    if display_date_author_tag == 'Date':
+        display_date_author = 1 # display date only
+    elif display_date_author_tag == 'False':
+        display_date_author = 0 # hide footer
+
+    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+render_qsd.cached_function.depend_on_model(Tag)
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
 def render_inline_qsd(url):

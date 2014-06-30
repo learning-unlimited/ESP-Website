@@ -24,41 +24,13 @@ If you don't see the flag you're looking for, <a href="/admin/program/classflagt
 <div class="flag-query-builder">
     <div class="fqb-initial-line">
         List all classes with...<br/>
-        <select class="fqb-type">
-            <option selected="selected" value=""></option>
-            <option value="all">all of...</option>
-            <option value="any">any of...</option>
-            <option value="not all">not all of...</option>
-            <option value="none">none of...</option>
-            <option value="flag">the flag</option>
-            <option value="not flag">not the flag</option>
-        </select>
-        <select class="fqb-flags" style="display: none;">
-            <option selected="selected" value=""></option>
-            {% for flag in flag_types %}
-            <option value="{{flag.id}}">{{flag.name}}</option>
-            {% endfor %}
-        </select>
+        {% include "program/modules/classflagmodule/flag_line_choices.html" %}
     </div>
 
     <div class="fqb-extra" style="display: none;">
         <ul>
             <li class="fqb-line">
-                <select class="fqb-type">
-                    <option selected="selected" value=""></option>
-                    <option value="all">all of...</option>
-                    <option value="any">any of...</option>
-                    <option value="not all">not all of...</option>
-                    <option value="none">none of...</option>
-                    <option value="flag">the flag</option>
-                    <option value="not flag">not the flag</option>
-                </select>
-                <select class="fqb-flags" style="display: none;">
-                        <option selected="selected" value=""></option>
-                    {% for flag in flag_types %}
-                        <option value="{{flag.id}}">{{flag.name}}</option>
-                    {% endfor %}
-                </select>
+                {% include "program/modules/classflagmodule/flag_line_choices.html" %}
                 <button class="fqb-delete" type="submit">-</button>
             </li>
             <li class="fqb-add-line">

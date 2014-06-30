@@ -65,7 +65,7 @@ def survey_view(request, tl, program, instance):
     user = ESPUser(request.user)
     
     if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
-        raise ESPError(False), 'You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.'
+        raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if request.GET.has_key('done'):
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
@@ -76,7 +76,7 @@ def survey_view(request, tl, program, instance):
         event = "teacher_survey"
 
     if Record.user_completed(user, event ,prog):
-        raise ESPError(False), "You've already filled out the survey.  Thanks for responding!"
+        raise ESPError("You've already filled out the survey.  Thanks for responding!", log=False)
 
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
@@ -89,7 +89,7 @@ def survey_view(request, tl, program, instance):
             pass
 
     if len(surveys) < 1:
-        raise ESPError(False), "Sorry, no such survey exists for this program!"
+        raise ESPError("Sorry, no such survey exists for this program!", log=False)
 
     if len(surveys) > 1:
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
@@ -160,7 +160,7 @@ def get_survey_info(request, tl, program, instance):
                 else:
                     user = ESPUser(request.user)
     else:
-        raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
+        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
     if request.REQUEST.has_key('survey_id'):
         try:
@@ -170,7 +170,7 @@ def get_survey_info(request, tl, program, instance):
             pass
     
     if len(surveys) < 1:
-        raise ESPError(False), "Sorry, no such survey exists for this program!"
+        raise ESPError("Sorry, no such survey exists for this program!", log=False)
 
     return (user, prog, surveys)
     
@@ -277,9 +277,9 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             src_dict_perclass={}
             for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
                 sr=a.survey_response
-                cs=a.anchor.classsection_set.all()
-                if cs:
-                    key=(sr,cs[0])
+                cs=a.target
+                if isinstance(cs, ClassSection):
+                    key=(sr,cs)
                 else:
                     key=sr
                 if key in src_dict_perclass:
@@ -290,8 +290,8 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                     ws_perclass.write(i,0,sr.id)
                     ws_perclass.write(i,1,sr.time_filled,datetime_style)
                     if cs:
-                        ws_perclass.write(i,2,cs[0].emailcode())
-                        ws_perclass.write(i,3,cs[0].title())
+                        ws_perclass.write(i,2,cs.emailcode())
+                        ws_perclass.write(i,3,cs.title())
                     i+=1
                 ws_perclass.write(row,q_dict_perclass[a.question_id],delist(a.answer))
         out=StringIO()
@@ -300,7 +300,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         response['Content-Disposition']='attachment; filename=dump.xls'
         return response
     else:
-        raise ESPError(False), "You need to be an administrator to dump survey results."
+        raise ESPError("You need to be an administrator to dump survey results.", log=False)
 
 @admin_required
 def survey_dump(request, tl, program, instance):
@@ -330,7 +330,7 @@ def survey_review_single(request, tl, program, instance):
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
         #raise Http404
-        raise ESPError(), "Can't find the program %s/%s" % (program, instance)
+        raise ESPError("Can't find the program %s/%s" % (program, instance))
 
     user = ESPUser(request.user)
     
@@ -341,7 +341,7 @@ def survey_review_single(request, tl, program, instance):
         if len(srs) == 1:
             survey_response = srs[0]
     if survey_response is None:
-        raise ESPError(False), 'Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.'
+        raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
     
     if tl == 'manage' and user.isAdmin(prog):
         answers = survey_response.answers.order_by('content_type','object_id', 'question')
@@ -356,7 +356,7 @@ def survey_review_single(request, tl, program, instance):
         classes_only = True
         other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
     else:
-        raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
+        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
     context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
     
@@ -375,7 +375,7 @@ def top_classes(request, tl, program, instance):
     if (tl == 'manage' and user.isAdmin(prog)):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     else:
-        raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
+        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
     if request.REQUEST.has_key('survey_id'):
         try:
@@ -385,7 +385,7 @@ def top_classes(request, tl, program, instance):
             pass
     
     if len(surveys) < 1:
-        raise ESPError(False), 'Sorry, no such survey exists for this program!'
+        raise ESPError('Sorry, no such survey exists for this program!', log=False)
 
     if len(surveys) > 1:
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
@@ -397,7 +397,7 @@ def top_classes(request, tl, program, instance):
         classes = prog.classes()
         rating_questions = survey.questions.filter(name__contains='overall rating')
         if len(rating_questions) < 1:
-            raise ESPError(False), 'Couldn\'t find an "overall rating" question in this survey.'
+            raise ESPError('Couldn\'t find an "overall rating" question in this survey.', log=False)
         rating_question = rating_questions[0]
         
         rating_cut = 0.0

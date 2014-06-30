@@ -88,7 +88,7 @@ def lottery_student_reg(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -105,7 +105,7 @@ def lottery_student_reg_simple(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -374,13 +374,13 @@ def usersearch(request):
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
     if not request.GET.has_key('userstr'):
-        raise ESPError(False), "You didn't specify a user to search for!"
+        raise ESPError("You didn't specify a user to search for!", log=False)
                                
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
 
     if not found_users:
-        raise ESPError(False), "No user found by that name!"
+        raise ESPError("No user found by that name!", log=False)
 
     if isiterable(found_users):
         return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
@@ -394,7 +394,7 @@ def userview(request):
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
     except:
-        raise ESPError(False), "Sorry, can't find anyone with that username."
+        raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -422,6 +422,29 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
+
+
+def deactivate_user(request):
+    return activate_or_deactivate_user(request, activate=False)
+
+def activate_user(request):
+    return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def activate_or_deactivate_user(request, activate):
+    """Linked from the userview page."""
+    if request.method != 'POST' or 'user_id' not in request.POST:
+        return HttpResponseBadRequest('')
+    else:
+        users = ESPUser.objects.filter(id=request.POST['user_id'])
+        if users.count() != 1:
+            return HttpResponseBadRequest('')
+        else:
+            user = users[0]
+            user.is_active = activate
+            user.save()
+            return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
+
 
 @admin_required
 def manage_programs(request):
@@ -517,7 +540,7 @@ def newprogram(request):
 
             return HttpResponseRedirect(manage_url)
         else:
-            raise ESPError(False), "Improper form data submitted."
+            raise ESPError("Improper form data submitted.", log=False)
           
 
     #   If the form has been submitted, process it.

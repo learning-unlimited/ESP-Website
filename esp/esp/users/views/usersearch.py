@@ -58,7 +58,7 @@ def get_user_list(request, listDict2, extra=''):
         """
 
     if type(listDict2) != dict or len(listDict2) == 0:
-        raise ESPError(), 'User lists were not specified correctly!'
+        raise ESPError('User lists were not specified correctly!')
 
     listDict = {}
 
@@ -129,7 +129,7 @@ def get_user_list(request, listDict2, extra=''):
         if listDict.has_key(request.POST['base_list']):
             curList = listDict[request.POST['base_list']]['list']
         else:
-            raise ESPError(), 'I do not know of list "%s".' % request.POST['base_list']
+            raise ESPError('I do not know of list "%s".' % request.POST['base_list'])
         
         # we start with all the sparated lists, and apply the and'd lists onto the or'd lists before
         # we or. This closely represents the sentence (it's not as powerful, but makes "sense")
@@ -272,7 +272,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
     elif isinstance(user_type, QuerySet):
         QSUsers = usc.filter_from_criteria(user_type, request.GET)
     else:
-        raise ESPError(True), 'Invalid user_type: %s' % type(user_type)
+        raise ESPError('Invalid user_type: %s' % type(user_type), log=True)
     
     #   We need to ask for more user input if no filtering options were selected
     if not usc.updated:

@@ -165,7 +165,7 @@ class CaptchaWidget(forms.widgets.TextInput):
         if self.request:
             return captcha.displayhtml(self.request, public_key=settings.RECAPTCHA_PUBLIC_KEY)
         else:
-            raise ESPError(True), 'Captcha field initialized without request.  Please set the widget\'s request attribute.'
+            raise ESPError('Captcha field initialized without request.  Please set the widget\'s request attribute.', log=True)
     
     def value_from_datadict(self, data, files, name):
         challenge = data.get('recaptcha_challenge_field')

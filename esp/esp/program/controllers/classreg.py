@@ -66,7 +66,7 @@ class ClassCreationController(object):
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
         except (TypeError, ClassSubject.DoesNotExist):
-            raise ESPError(False), "The class you're trying to edit (ID %s) does not exist!" % (repr(clsid))
+            raise ESPError("The class you're trying to edit (ID %s) does not exist!" % (repr(clsid)), log=False)
 
         extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
         for teacher in cls.get_teachers():
@@ -74,7 +74,7 @@ class ClassCreationController(object):
 
         self.make_class_happen(cls, None, reg_form, resource_formset, restype_formset, editing=True)
         
-        self.send_class_mail_to_directors(cls)
+        self.send_class_mail_to_directors(cls, False)
 
         return cls
         
@@ -189,9 +189,10 @@ class ClassCreationController(object):
     def require_teacher_has_time(self, user, current_user, hours):
         if not self.teacher_has_time(user, hours):
             if user == current_user:
-                raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+                message = 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
             else:
-                raise ESPError(False), "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
+                message = "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
+            raise ESPError(message, log=False)
 
     def add_teacher_to_program_mailinglist(self, user):
         add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
@@ -281,19 +282,26 @@ class ClassCreationController(object):
         return mail_ctxt
 
 
-    def send_class_mail_to_directors(self, cls):
+    def send_class_mail_to_directors(self, cls, create = True):
         mail_ctxt = self.generate_director_mail_context(cls)
+        subject = "Comments for " + cls.emailcode() + ': ' + cls.title
+
+        if not create:
+            subject = "Re: " + subject
+
+        # add program email tag
+        subject = '['+self.program.niceName()+'] ' + subject
         
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
+            send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
+            send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       [self.program.getDirectorCCEmail()], False)

@@ -47,7 +47,25 @@ td>ul { list-style-type: none; padding: 0px }
 </tr>
 {% for f in forms %}
 <tr style="border-bottom: 1px dashed grey;">
-    <td width="120px">{{ f.form.cost }} {% if f.LineItem.negative_amount %}<i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>{% endif %}</td>
+    <td width="120px">
+        {{ f.form.cost }}
+        {% if f.LineItem.negative_amount %}
+            <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
+            {% endif %}
+
+        {# If num_options, radio buttons will be used for the field. In order to  #}
+        {# be able to remove a selected item, we need a button. The Javascript    #}
+        {# code for the button is at the bottom.                                  #}
+
+        {% if f.LineItem.num_options %}
+            <button type="button"
+                    class="remove-item"
+                    name="{{ f.form.prefix }}-cost"
+                    onclick="remove_item(this);">
+                Remove this item
+            </button>
+        {% endif %}
+    </td>
 {% if select_qty %}    <td>{{ f.form.count }}</td>{% endif %}
     <td>{% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>  {% endif %}
 {% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}
@@ -64,5 +82,15 @@ td>ul { list-style-type: none; padding: 0px }
 </center>
 </form>
 </div>
+
+<script type="text/javascript">
+    /*
+     * A click handler that unchecks all inputs with the same name as the
+     * button.
+     **/
+    function remove_item(button) {
+        $j("input[name="+button.name+"]").prop("checked", false);
+    }
+</script>
 
 {% endblock %}

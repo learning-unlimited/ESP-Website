@@ -200,7 +200,8 @@ class SchedulingCheckRunner:
                qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
                qs = qs.exclude(parent_class__category__category=u'Lunch')
-               qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource')
+               qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
+               qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
                self.all_sections = list(qs)
                self.listed_sections = True
                return self.all_sections

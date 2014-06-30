@@ -4,7 +4,7 @@
 Teachers:{% for teacher in teachers %}
 
 {{ teacher.teacher.get_full_name }} <{{ teacher.teacher.email }}>
-{% if not teacher.from_here %}    *** This teacher is not from this university. ***
+{% if not teacher.from_here %}    *** This teacher is not currently enrolled at this university. ***
     Teacher's school/employer: {{ teacher.college }}{% endif %}{% if not teacher.taught_programs %}    *** This teacher is a first-time teacher. ***
 {% else %}    Programs this teacher has taught in: {{ teacher.taught_programs }}{% endif %}{% endfor %}
 

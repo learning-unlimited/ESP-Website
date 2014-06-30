@@ -41,7 +41,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, need
 from esp.cache           import cache_function
 from esp.web.util        import render_to_response
 
-from esp.program.models import ClassSubject, ClassFlag, ClassFlagType
+from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
@@ -88,6 +88,14 @@ class ClassFlagModule(ProgramModuleObj):
             return base.filter(**{lookup: v})
         elif t=='not flag':
             return base.exclude(**{lookup: v})
+        elif t=='category':
+            return base.filter(category=v)
+        elif t=='not category':
+            return base.exclude(category=v)
+        elif t=='status':
+            return base.filter(status=v)
+        elif t=='not status':
+            return base.exclude(status=v)
         else:
             # Here v is going to be a list of subqueries.  First, evaluate them.
             subqueries = [self.jsonToQuerySet(i) for i in v]
@@ -108,6 +116,17 @@ class ClassFlagModule(ProgramModuleObj):
         v = j['value']
         if 'flag' in t:
             return t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v).name+'"'
+        if 'category' in t:
+            return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
+        if 'status' in t:
+            statusname = {
+                    10: 'Accepted',
+                    5: 'Accepted but hidden',
+                    0: 'Unreviewed',
+                    -10: 'Rejected',
+                    -20: 'Cancelled',
+                    }[int(v)]
+            return t[:-6]+'the status "'+statusname+'"'
         else:
             subqueries = [self.jsonToEnglish(i) for i in v]
             return t+" of ("+', '.join(subqueries)+")"
@@ -127,17 +146,22 @@ class ClassFlagModule(ProgramModuleObj):
                 data = None
         else:
             data = request.POST['query']
+        context = {
+                'flag_types': ClassFlagType.get_flag_types(self.program),
+                'prog': self.program,
+                }
         if data is None:
             # We should display the query builder interface.
             fts = ClassFlagType.get_flag_types(self.program)
-            context = { 'flag_types': fts, 'prog': self.program }
+            context['categories'] = self.program.class_categories.all()
             return render_to_response(self.baseDir()+'flag_query_builder.html', request, context)
         else:
             # They've sent a query, let's process it.
             decoded = json.loads(data)
             queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
             english = self.jsonToEnglish(decoded)
-            context = { 'queryset' : queryset, 'english' : english, 'prog': self.program }
+            context['queryset']=queryset
+            context['english']=english
             return render_to_response(self.baseDir()+'flag_results.html', request, context)
 
 

@@ -5,34 +5,8 @@
         {% for flag in class.flags.all %}
             {% include "program/modules/classflagmodule/flag_detail.html" %}
         {% endfor %}
+        {% include "program/modules/classflagmodule/new_flag_form.html" %}
         <button class="add-flag btn btn-default">Add flag</button>
-        <div class="flag-detail" id="flag-extra" style="display: none;">
-            <div style="background: gray;">New Flag</div>
-            <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/newflag/">{% csrf_token %}<input type="hidden" name="subject" value="{{class.id}}"></input>
-                <table>
-                    <tbody>
-                        <tr>
-                            <th> Flag type: </th>
-                            <td>
-                                <select name="flag_type">
-                                    <option selected="selected" value=""></option>
-                                    {% for flag in flag_types %}
-                                        <option value="{{flag.id}}">{{flag.name}}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th> Comment: </th>
-                            <td>
-                                <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <input type="submit" id="flag-submit-new" class="btn btn-default" value="Save"></input>
-            </form>
-        </div>
     </div>
 {% else %}
     You need to enable some flags for this program in the <a href="/admin/program/program/{{program.id}}/#add_id_flag_types">admin panel</a> before you can edit them.

@@ -161,15 +161,15 @@ class AdminClass(ProgramModuleObj):
         """ Set the review status of a class """
         if request.method == 'POST':
             if not (request.POST.has_key('class_id') and request.POST.has_key('review_status')):
-                raise ESPError(), "Error: missing data on request"
+                raise ESPError("Error: missing data on request")
 
             class_id = request.POST['class_id']
             try:
                 class_subject = ClassSubject.objects.get(pk=class_id)
             except MultipleObjectsReturned:
-                raise ESPError(), "Error: multiple classes selected"
+                raise ESPError("Error: multiple classes selected")
             except DoesNotExist:
-                raise ESPError(), "Error: no classes found with id "+str(class_id)
+                raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']
 
@@ -188,7 +188,7 @@ class AdminClass(ProgramModuleObj):
             elif review_status == 'REJECT':
                 class_subject.reject()
             else:
-                raise ESPError(), "Error: invalid review status"
+                raise ESPError("Error: invalid review status")
             class_subject.save()
 
         return HttpResponse('')
@@ -201,7 +201,7 @@ class AdminClass(ProgramModuleObj):
         
         if request.method == 'POST':
             if not( request.POST.has_key('class_id') and request.POST.has_key('ids_to_enter') ):
-                raise ESPError(), "Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again."
+                raise ESPError("Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again.")
 
             usernames = []
             ids = []
@@ -290,7 +290,7 @@ class AdminClass(ProgramModuleObj):
                     s.delete()
                     return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
                 except:
-                    raise ESPError(False), 'Unable to delete a section.  The section requested was: %s' % request.GET['sec_id']
+                    raise ESPError('Unable to delete a section.  The section requested was: %s' % request.GET['sec_id'], log=False)
         else:
             section_id = int(request.GET['sec_id'])
             section = ClassSection.objects.get(id=section_id)
@@ -313,7 +313,7 @@ class AdminClass(ProgramModuleObj):
         cls, found = self.getClass(request,extra)
         sections = cls.sections.all().order_by('id')
         if not found:
-            return ESPError(False), 'Unable to find the requested class.'
+            return ESPError('Unable to find the requested class.', log=False)
         context = {}
         
         if cls.isCancelled():

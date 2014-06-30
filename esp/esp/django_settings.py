@@ -87,6 +87,8 @@ ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
 )
 
+GRAPPELLI_ADMIN_TITLE = "ESP administration"
+
 #############################
 # Default database settings #
 #############################
@@ -211,7 +213,6 @@ INSTALLED_APPS = (
     'esp.qsdmedia',
     'esp.resources',
     'esp.gen_media',
-    'esp.dblog',
     'esp.survey',
     'esp.accounting',
     'esp.accounting_core',
@@ -235,6 +236,7 @@ INSTALLED_APPS = (
     'bootstrapform',
     'django_nose',
     'esp.formstack',
+    'esp.application',
 )
 
 import os
@@ -309,6 +311,10 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+# allow configuration of additional Javascript to be placed on website
+# configuration should include <script></script> tags
+ADDITIONAL_TEMPLATE_SCRIPTS = ''
+
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
@@ -359,5 +365,10 @@ SHELL_PLUS_POST_IMPORTS = (
         )
 
 #   Exclude apps from testing
-TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
+TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion')
+
+#   Twilio configuration - should be completed in local_settings.py
+TWILIO_ACCOUNT_SID = None
+TWILIO_AUTH_TOKEN = None
+TWILIO_ACCOUNT_NUMBERS = None

@@ -92,7 +92,7 @@ class InlineLatex(GenImageBase):
         elif self.style == 'DISPLAY':
             math_style = '$$'
         else:
-            raise ESPError(False), 'Unknown display style'
+            raise ESPError('Unknown display style', log=False)
 
         tex = r"\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} " +\
               r"\usepackage[latin1]{inputenc} \begin{document} " + \
@@ -107,8 +107,8 @@ class InlineLatex(GenImageBase):
 
         if os.system('cd %s && %s -interaction=nonstopmode -halt-on-error %s > %s' % \
                 (TMP, COMMANDS['latex'], tmppath, NULL_FILE)) is not 0:
-            raise ESPError(False), 'latex compilation failed.'
+            raise ESPError('latex compilation failed.', log=False)
 
         if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > %s' % \
                 (COMMANDS['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath, NULL_FILE)) is not 0:
-            raise ESPError(False), 'dvipng failed.'
+            raise ESPError('dvipng failed.', log=False)

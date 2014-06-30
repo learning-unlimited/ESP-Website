@@ -1077,6 +1077,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
+        self.priority_rts=[self.priority_rt]
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1099,7 +1100,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 # 0.25 prob of adding a section as interested
                 if random.random() < 0.25:
                     StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
-
+            # Make sure the student actually entered the lottery
+            if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
+                pri = random.choice(self.program.sections())
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                
     def testLottery(self):
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
@@ -1111,13 +1116,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             # Figure out which classes they got
             interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
-            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship__in=self.priority_rts)
             enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
 
             interested_classes = set([sr.section for sr in interested_regs])
             priority_classes = set([sr.section for sr in priority_regs])
             enrolled_classes = set([sr.section for sr in enrolled_regs])
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
+            incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
 
             # Get their grade
@@ -1126,6 +1132,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+            # Check that they only got into classes that they asked for
+            self.failIf(incorrectly_enrolled_classes)
 
     def testStats(self):
         """ Verify that the values returned by compute_stats() are correct
@@ -1221,3 +1230,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
+    
+    def testLotteryMultiplePriorities(self):
+        """Creates some more priorities, then runs testLottery again."""
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 3
+        scrmi.save()
+
+        self.testLottery()

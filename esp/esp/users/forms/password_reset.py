@@ -97,7 +97,7 @@ class NewPasswordSetForm(forms.Form):
 
     code     = forms.CharField(widget = forms.HiddenInput())
     username = forms.CharField(max_length=128,
-                               help_text='(The one you used to receive the email.)')
+                               help_text='(The one you used to receive the email.)<br/><br/>')
     password = forms.CharField(max_length=128, min_length=5,widget=forms.PasswordInput())
     password_confirm = forms.CharField(max_length = 128,widget=forms.PasswordInput(),
                                        label='Password Confirmation')
@@ -106,7 +106,7 @@ class NewPasswordSetForm(forms.Form):
         from esp.middleware import ESPError
         username = self.cleaned_data['username'].strip()
         if not self.cleaned_data.has_key('code'):
-            raise ESPError(False), "The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?"
+            raise ESPError("The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?", log=False)
         try:
             ticket = PasswordRecoveryTicket.objects.get(recover_key = self.cleaned_data['code'], user__username = username)
         except PasswordRecoveryTicket.DoesNotExist:

@@ -9,36 +9,6 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 import datetime
 
-class UserBitAdmin(admin.ModelAdmin):
-    list_display = [ 'id', 'user', 'qsc', 'verb', 'startdate', 'enddate', 'recursive', ]
-    search_fields = ['user__last_name','user__first_name','user__username',
-                     'qsc__uri','verb__uri']
-    actions = [ 'expire', 'renew' ]
-
-    def expire(self, request, queryset):
-        rows_updated = queryset.update(enddate=datetime.datetime.now())
-        if rows_updated == 1:
-            message_bit = "1 userbit was"
-        else:
-            message_bit = "%s userbits were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
-    expire.short_description = "Expire bits"
-
-    def renew(self, request, queryset):
-        rows_updated = queryset.update(enddate=datetime.datetime(9999, 01, 01))
-        if rows_updated == 1:
-            message_bit = "1 userbit was"
-        else:
-            message_bit = "%s userbits were" % rows_updated
-        self.message_user(request, "%s successfully expired." % message_bit)
-    renew.short_description = "Renew bits"
-    
-
-
-class UserBitImplicationAdmin(admin.ModelAdmin):
-    exclude = ('created_bits',)
-
-
 admin_site.register(UserForwarder)
 
 admin_site.register(ZipCode)
@@ -69,6 +39,27 @@ admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
+    search_fields = ['user__last_name','user__first_name','user__username', 'permission_type', 'program__url']
+    actions = [ 'expire', 'renew' ]
+
+    def expire(self, request, queryset):
+        rows_updated = queryset.update(end_date=datetime.datetime.now())
+        if rows_updated == 1:
+            message_bit = "1 permission was"
+        else:
+            message_bit = "%s permissions were" % rows_updated
+        self.message_user(request, "%s successfully expired." % message_bit)
+    expire.short_description = "Expire permissions"
+
+    def renew(self, request, queryset):
+        rows_updated = queryset.update(end_date=None)
+        if rows_updated == 1:
+            message_bit = "1 permission was"
+        else:
+            message_bit = "%s permissions were" % rows_updated
+        self.message_user(request, "%s successfully expired." % message_bit)
+    renew.short_description = "Renew permissions"
+
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):

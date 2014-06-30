@@ -36,6 +36,7 @@ from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter
 from esp.middleware import ESPError
 from esp.web.util import render_to_response
 from esp.program.models import Program
+from esp.dbmail.models import MessageRequest
 
 from django.db.models.query import Q
 
@@ -74,7 +75,7 @@ class UserSearchController(object):
                 try:
                     userid.append(int(digit))
                 except:
-                    raise ESPError(False), 'User id invalid, please enter a number or comma-separated list of numbers.'
+                    raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
                     
             if criteria.has_key('userid__not'):
                 Q_exclude &= Q(id__in = userid)
@@ -91,7 +92,7 @@ class UserSearchController(object):
                     try:
                         rc = re.compile(criteria[field])
                     except:
-                        raise ESPError(False), 'Invalid search expression, please check your syntax: %s' % criteria[field]
+                        raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}
                     if criteria.has_key('%s__not' % field):
                         Q_exclude &= Q(**filter_dict)
@@ -104,7 +105,7 @@ class UserSearchController(object):
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
                 except:
-                    raise ESPError(False), 'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode']
+                    raise ESPError('Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode'], log=False)
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
@@ -147,13 +148,13 @@ class UserSearchController(object):
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
                 except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
+                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x >= gradyear_min, possible_gradyears)
             if criteria.has_key('gradyear_max') and len(criteria['gradyear_min'].strip()) > 0:
                 try:
                     gradyear_max = int(criteria['gradyear_max'])
                 except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
+                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
             if criteria.get('gradyear_min', None) or criteria.get('gradyear_max', None):
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
@@ -240,6 +241,20 @@ class UserSearchController(object):
             filterObj.useful_name = 'Custom user list'
         filterObj.save()
         return filterObj
+
+    def sendto_fn_from_postdata(self, data):
+        recipient_type = data.get('recipient_type', '') or data.get('combo_base_list', ':').split(':')[0]
+        sendtos = []
+        if recipient_type == 'Student':
+            for key,value in data.iteritems():
+                if ('student_sendto_' in key) and (value == '1'):
+                    sendtos.append(key[1+key.rindex('_'):])
+            if not sendtos:
+                sendtos.append('self')
+            sendtos.sort(key=['self', 'guardian', 'emergency'].index)
+            return 'send_to_' + '_and_'.join(sendtos)
+        else:
+            return MessageRequest.SEND_TO_SELF_REAL
 
     def prepare_context(self, program, target_path=None):
         context = {}

@@ -54,7 +54,6 @@ from django.utils import simplejson as json
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
 from esp.web.views.navBar import makeNavBar
-from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
@@ -62,7 +61,6 @@ from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.utils.query_utils import nest_Q
 
-from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
 from django.conf import settings
@@ -89,14 +87,6 @@ def home(request):
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
     context = {'navbar_list': makeNavBar('', nav_category)}
     return render_to_response('index.html', request, context)
-
-@vary_on_headers('Cookie')
-def myesp(request, module):
-	""" Return page handled by myESP (generally, a user-specific page) """
-	if myesp_handlers.has_key(module):
-		return myesp_handlers[module](request, module)
-
-	return render_to_response('users/construction', request, {})
 
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
@@ -158,7 +148,7 @@ def classchangerequest(request, tl, one, two):
     from esp.utils.scheduling import getRankInClass
 
     timeslots = prog.getTimeSlots()
-    sections = prog.sections().filter(status=10)
+    sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
     
     enrollments = {}
     for timeslot in timeslots:
@@ -208,7 +198,6 @@ def classchangerequest(request, tl, one, two):
                 if not section: 
                     continue
                 r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
-                r.end_date = datetime(9999, 1, 1, 0, 0, 0, 0)
                 r.save()
                 
             return HttpResponseRedirect(request.path.rstrip('/')+'/?success')

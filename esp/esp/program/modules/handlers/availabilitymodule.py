@@ -179,7 +179,7 @@ class AvailabilityModule(ProgramModuleObj):
             timeslots = Event.objects.filter(id__in=timeslot_ids).order_by('start')
             missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
             if missing_tsids:
-                raise ESPError(False), 'Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids)))
+                raise ESPError('Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids))), log=False)
             
             blank = (not (bool(len(timeslot_ids))))
             if not blank:
@@ -250,7 +250,7 @@ class AvailabilityModule(ProgramModuleObj):
                 try:
                     teacher = ESPUser.objects.get(username=target_id)
                 except:
-                    raise ESPError(False), "The user with id/username=" + str(target_id) + " does not appear to exist!"
+                    raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
         
         if teacher is None:
             form = GenericSearchForm()
@@ -325,7 +325,7 @@ class AvailabilityModule(ProgramModuleObj):
         	try:
         		teacher = ESPUser.objects.get(username=target_id)
         	except:
-        		raise ESPError(False), "The user with id/username=" + str(target_id) + " does not appear to exist!"
+        		raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 

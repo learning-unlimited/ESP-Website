@@ -2,15 +2,32 @@ function updateNode () {
     // Update the tree to reflect a change in a type selector.
     var typeSelector = $j(this);
     var value = typeSelector.val();
-    var flagSelector = typeSelector.siblings(".fqb-flags");
+    var flagSelector = typeSelector.siblings(".fqb-flag-list");
+    var statusSelector = typeSelector.siblings(".fqb-status-list");
+    var categorySelector = typeSelector.siblings(".fqb-category-list");
     var ul = typeSelector.siblings("ul");
+    function hideAll () {
+        // Hide all conditionally-displayed selectors.
+        flagSelector.hide();
+        statusSelector.hide();
+        categorySelector.hide();
+        ul.hide();
+    }
     if (value.indexOf("flag") > -1) {
         // The user has picked a single flag, we need to show the flag selector
+        hideAll();
         flagSelector.show();
-        ul.hide();
+    } else if (value.indexOf("status") > -1) {
+        // The user has picked a single status, we need to show the status selector
+        hideAll();
+        statusSelector.show();
+    } else if (value.indexOf("category") > -1) {
+        // The user has picked a single category, we need to show the category selector
+        hideAll();
+        categorySelector.show();
     } else if (value.length > 0) {
         // The user has picked a subexpression, we need to build it
-        flagSelector.hide();
+        hideAll();
         if (ul.length > 0) {
             // We can just unhide an existing ul
             ul.show();
@@ -21,8 +38,7 @@ function updateNode () {
         }
     } else {
         // The user has selected nothing, we need to hide everything
-        flagSelector.hide();
-        ul.hide();
+        hideAll();
     }
 }
 
@@ -64,6 +80,17 @@ function BuildQueryError(message) {
     this.name = "BuildQueryError";
 }
 
+function buildSingleObject (node, objectType, value) {
+    var objectValue = node.children(".fqb-"+objectType+"-list").val();
+    if (objectValue.length > 0) {
+        var obj = { type: value, value: objectValue };
+        return obj;
+    } else {
+        // But they didn't pick a thing-- bad user!
+        node.addClass("bad-node");
+        throw new BuildQueryError("No "+objectType);
+    }
+}
 
 function buildObject (node) {
     // Recursively builds the javascript object to be converted to JSON.
@@ -72,15 +99,13 @@ function buildObject (node) {
         var value = node.children(".fqb-type").val();
         if (value.indexOf("flag") > -1) {
             // We have just a single flag
-            var flag = node.children(".fqb-flags").val();
-            if (flag.length > 0) {
-                var obj = { type: value, value: flag };
-                return obj;
-            } else {
-                // But they didn't pick a flag -- bad user!
-                node.addClass("bad-node");
-                throw new BuildQueryError("No flag");
-            }
+            return buildSingleObject(node, "flag", value)
+        } else if (value.indexOf("status") > -1) {
+            // We have just a single status 
+            return buildSingleObject(node, "status", value)
+        } else if (value.indexOf("category") > -1) {
+            // We have just a single category 
+            return buildSingleObject(node, "category", value)
         } else if (value.length > 0) {
             // We have a subexpression -- recurse
             var ul = node.children("ul");

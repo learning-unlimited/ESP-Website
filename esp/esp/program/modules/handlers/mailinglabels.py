@@ -111,7 +111,7 @@ class MailingLabels(ProgramModuleObj):
                         try:
                             zipc = ZipCode.objects.get(zip_code = form.cleaned_data['zip_code'])
                         except:
-                            raise ESPError(False), 'Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code']
+                            raise ESPError('Please enter a valid US zipcode. "%s" is not valid.' % form.cleaned_data['zip_code'], log=False)
 
                         zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
 

@@ -116,7 +116,7 @@ class Token(object):
         """ Given a filtered set of arguments, deletes things. """
         # Check if this is a single item...
         if has_wildcard(filt):
-            raise ESPError(), "Tried to delete an argument set with a wildcard."
+            raise ESPError("Tried to delete an argument set with a wildcard.")
         self.cache.delete(self.key_filt(filt))
         # Send the signal...
         if send_signal:

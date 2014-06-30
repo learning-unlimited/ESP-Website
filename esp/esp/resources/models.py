@@ -37,7 +37,7 @@ Learning Unlimited, Inc.
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError_Log
+from esp.middleware import ESPError
 from esp.cache import cache_function
 from esp.tagdict.models          import Tag
 
@@ -276,7 +276,7 @@ class Resource(models.Model):
             new_ra.target = section
             new_ra.save()
         else:
-            raise ESPError_Log, 'Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id
+            raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
         
     assign_to_class = assign_to_section
         

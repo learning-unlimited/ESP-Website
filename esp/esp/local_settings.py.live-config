@@ -54,9 +54,6 @@ CACHE_PREFIX="ESP"
 # root directory
 PROJECT_ROOT = '/esp/web/esp.mit.edu/esp/'
 
-# log directory
-LOG_FILE = "/var/log/django/esp_errlog"
-
 
 ###################
 # Other settings  #

@@ -4,19 +4,18 @@ function submitFlagForm (event) {
     var data = form.serialize();
     $j.post(form.attr("action"), data, function (data) {
         form.parents("div.flag-detail").replaceWith(data);
-        $j("button.add-flag").show();
     })
     event.preventDefault();
 }
 
 function addFlag (event) {
-    $j("#flag-extra").clone().attr("id","flag-new").show().insertBefore(this);
-    $j(this).hide();
+    $j("#flag-extra").clone().attr("id","flag-new").show().insertBefore($j("#flag-extra"));
 }
 
 function removeFlag (url, id) {
-    var div = $j("div#flag-detail-"+id);
-    $j.post(url, {'csrfmiddlewaretoken': csrf_token(), 'id' : id}, function () { div.hide(); });
+    var div1 = $j("div#flag-detail-"+id);
+    var div2 = $j("span#fqr-flag-header-"+id);
+    $j.post(url, {'csrfmiddlewaretoken': csrf_token(), 'id' : id}, function () { div1.hide(); div2.hide(); });
 }
 
 $j(document).on("submit", "form.flag-form", submitFlagForm)

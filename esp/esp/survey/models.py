@@ -144,7 +144,7 @@ class SurveyResponse(models.Model):
             if len(value) == 1: value = value[0]
             str_list = key.split('_')
             if len(str_list) < 2 or len(str_list) > 3:
-                raise ESPError(), 'Inappropriate question key: %s' % key
+                raise ESPError('Inappropriate question key: %s' % key)
             
             new_answer = Answer()
             new_answer.survey_response = self
@@ -160,11 +160,11 @@ class SurveyResponse(models.Model):
                     question = Question.objects.get(id=qid)
                     sec = ClassSection.objects.get(id=cid)
                 except ClassSection.DoesNotExist:
-                    raise ESPError(), 'Error finding class from %s' % key
+                    raise ESPError('Error finding class from %s' % key)
                 except Question.DoesNotExist:
-                    raise ESPError(), 'Error finding question from %s' % key
+                    raise ESPError('Error finding question from %s' % key)
                 except ValueError:
-                    raise ESPError(), 'Error getting IDs from %s' % key
+                    raise ESPError('Error getting IDs from %s' % key)
 
                 new_answer.target = sec
                 
@@ -173,9 +173,9 @@ class SurveyResponse(models.Model):
                     qid = int(str_list[1])
                     question = Question.objects.get(id=qid)
                 except Question.DoesNotExist:
-                    raise ESPError(), 'Error finding question from %s' % key
+                    raise ESPError('Error finding question from %s' % key)
                 except ValueError:
-                    raise ESPError(), 'Error getting IDs from %s' % key
+                    raise ESPError('Error getting IDs from %s' % key)
                 new_answer.target = self.survey.program
             
             new_answer.answer = value

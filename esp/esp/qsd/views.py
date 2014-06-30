@@ -177,7 +177,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError(False), "You don't have permission to edit this page."
+            raise ESPError("You don't have permission to edit this page.", log=False)
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {

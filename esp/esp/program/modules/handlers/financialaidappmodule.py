@@ -115,7 +115,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False
                 else:
-                    raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
+                    raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
                 
                 app.save()
 

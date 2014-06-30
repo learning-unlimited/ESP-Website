@@ -43,19 +43,25 @@ class ResourceTypeAdmin(admin.ModelAdmin):
     rt_choices.short_description = 'Choices'
 
     list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'priority_default', 'rt_choices', 'distancefunc', 'program')
-    search_fields = ['name', 'description', 'consumable', 'priority_default', 'rt_choices', 'distancefunc', 'program']
+    search_fields = ['name', 'description', 'consumable', 'priority_default',
+            'attributes_pickled', 'distancefunc', 'program__name']
 
 class ResourceRequestAdmin(admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')
-    search_fields = ['target', 'res_type', 'desired_value']
+    search_fields = ['target__parent_class__title', 'res_type__name',
+            'res_type__description', 'res_type__program__name',
+            'desired_value']
 
 class ResourceAdmin(admin.ModelAdmin):
     list_display = ('name', 'res_type', 'num_students', 'event', 'group_id')
-    search_fields = ('name', 'res_type', 'num_students', 'event', 'group_id')
+    search_fields = ('name', 'res_type__name', 'res_type__description',
+            'res_type__attributes_pickled', 'res_type__program__name',
+            'num_students', 'event__name', 'event__short_description',
+            'group_id')
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'resource', 'target')
-    search_fields = ('id', 'resource', 'target')
+    search_fields = ('id', 'resource__name', 'target__parent_class__title')
 
 admin_site.register(ResourceType, ResourceTypeAdmin)
 admin_site.register(ResourceRequest, ResourceRequestAdmin)
