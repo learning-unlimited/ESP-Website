@@ -44,9 +44,3 @@ from django.dispatch import Signal
 
 """ Emitted when a cache is deleted. """
 cache_deleted = Signal(providing_args=[]) # DON'T FORGOT TO SPECIFY THESE AT SOME POINT...
-
-""" Emitted when an M2M entry is added. """
-m2m_added = Signal(providing_args=['instance', 'field', 'object'])
-
-""" Emitted when an M2M entry is removed. """
-m2m_removed = Signal(providing_args=['instance', 'field', 'object'])
