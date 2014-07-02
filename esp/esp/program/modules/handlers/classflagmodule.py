@@ -66,7 +66,8 @@ class ClassFlagModule(ProgramModuleObj):
         fts = ClassFlagType.get_flag_types(self.program)
         t = {}
         for flag_type in fts:
-            q = Q(classsubject__flags__flag_type=flag_type.id)
+            q = Q(classsubject__flags__flag_type=flag_type.id,
+                  classsubject__parent_program=self.program)
             if QObject:
                 t['flag_%s' % flag_type.id] = q
             else:
