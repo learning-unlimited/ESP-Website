@@ -1172,8 +1172,6 @@ class ClassSection(models.Model):
             remove_list_member(list_name, user.email)
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
-        StudentRegistration, RegistrationType = self.StudentRegistration, self.RegistrationType
-
         if prereg_verb == None:
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi and scrmi.use_priority:
