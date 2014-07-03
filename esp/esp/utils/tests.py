@@ -15,7 +15,7 @@ except:
 
 import os
 import sys
-from utils.defaultclass import defaultclass
+from esp.utils.defaultclass import defaultclass
 from esp import utils
 from django.conf import settings
 from esp.utils.models import TemplateOverride

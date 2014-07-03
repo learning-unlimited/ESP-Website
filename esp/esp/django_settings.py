@@ -210,7 +210,6 @@ INSTALLED_APPS = (
     'esp.qsdmedia',
     'esp.resources',
     'esp.gen_media',
-    'esp.dblog',
     'esp.survey',
     'esp.accounting',
     'esp.accounting_core',
@@ -341,8 +340,6 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
-        'esp.cache.signals.m2m_added',
-        'esp.cache.signals.m2m_removed',
     ],
     'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
@@ -362,5 +359,10 @@ SHELL_PLUS_POST_IMPORTS = (
         )
 
 #   Exclude apps from testing
-TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
+TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion')
+
+#   Twilio configuration - should be completed in local_settings.py
+TWILIO_ACCOUNT_SID = None
+TWILIO_AUTH_TOKEN = None
+TWILIO_ACCOUNT_NUMBERS = None

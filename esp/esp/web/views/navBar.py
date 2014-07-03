@@ -33,16 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from django.core.exceptions import PermissionDenied
-from django.contrib.auth.decorators import login_required
-from django.db.models.query import Q
-
-from esp.web.models import NavBarEntry, NavBarCategory
-from esp.users.models import AnonymousUser, ESPUser
-from esp.dblog.models import error
-from esp.program.models import Program
-from esp.middleware.esperrormiddleware import ESPError
+from esp.web.models import NavBarCategory
 
 def makeNavBar(section=None, category=None, path=None):
     if not category:

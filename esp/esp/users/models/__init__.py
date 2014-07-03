@@ -64,7 +64,6 @@ from esp.customforms.forms import AddressWidget, NameWidget
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
-from esp.dblog.models import error
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from esp.tagdict.models import Tag
@@ -403,7 +402,7 @@ class ESPUser(User, AnonymousUser):
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         if type(program) != Program: # if we did not receive a program
-            error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
+            raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
             if include_rejected: 
                 return self.classsubject_set.filter(parent_program = program)
