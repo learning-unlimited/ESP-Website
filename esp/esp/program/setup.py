@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.datatree.models import *
 from esp.users.models import ESPUser, User, Permission
-from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
 from django.contrib.auth.models import Group
