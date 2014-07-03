@@ -66,13 +66,10 @@ from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission
-from esp.users.models.userbits import UserBit
 from esp.program.models import Program
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
-from esp.program.models.app_ import StudentAppQuestion
-from esp.program.modules.module_ext import StudentClassRegModuleInfo
 from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from esp.cache                   import cache_function
 from esp.cache.key_set           import wildcard
@@ -454,6 +451,7 @@ class ClassSection(models.Model):
     _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
     _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
     def __get_studentclassregmoduleinfo():
+        from esp.program.modules.module_ext import StudentClassRegModuleInfo
         return StudentClassRegModuleInfo
     _get_capacity.depend_on_model(__get_studentclassregmoduleinfo)
 
@@ -1139,7 +1137,9 @@ class ClassSection(models.Model):
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of
         #   RegistrationType to match (if you want to use it)
-        
+
+        from esp.program.models.app_ import StudentAppQuestion
+
         now = datetime.datetime.now()
         
         #   Stop all active or pending registrations
@@ -1840,6 +1840,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         
     def archive(self, delete=False):
         """ Archive a class to reduce the size of the database. """
+        from esp.users.models.userbits import UserBit
+
         #   Ensure that the class has been saved in the archive.
         archived_class = self.getArchiveClass()
         
