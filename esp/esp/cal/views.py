@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.cal.models import Event
 from esp.web.util import render_to_response
-from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.forms import ModelForm
 
 

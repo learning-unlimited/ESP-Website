@@ -2,7 +2,6 @@
 
 from django import template
 from esp.web.util.template import cache_inclusion_tag
-from esp.miniblog.forms.form_comment import BlogCommentForm
 
 register = template.Library()
 

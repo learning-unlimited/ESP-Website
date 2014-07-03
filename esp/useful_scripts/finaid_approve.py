@@ -11,8 +11,6 @@ from script_setup import *
 
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
-from datetime import datetime
-import re
 
 
 # CONFIGURATION

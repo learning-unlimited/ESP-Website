@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-import random
 import types
 
 from django.core.cache import cache
@@ -44,11 +43,11 @@ from django.conf import settings
 from esp.middleware import ESPError
 
 from esp.cache.queued import WithDelayableMethods, delay_method
-from esp.cache.marinade import args_to_key, normalize_args
+from esp.cache.marinade import normalize_args
 from esp.cache.function import describe_func, get_uid
 from esp.cache.token import Token, SingleEntryToken
-from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
-from esp.cache.registry import cache_by_uid, register_cache, all_caches
+from esp.cache.key_set import specifies_key, token_list_for
+from esp.cache.registry import cache_by_uid, register_cache
 from esp.cache.sad_face import warn_if_loaded
 
 __all__ = ['ArgCache', 'ArgCacheDecorator', 'cache_function']

@@ -3,9 +3,7 @@ Tests for the theme editor.
 """
 
 import re
-import cssutils
 import os
-import os.path
 import random
 
 from django.conf import settings

@@ -31,9 +31,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-import os
 from django.conf.urls.defaults import patterns, include, url, handler500, handler404
-from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static

@@ -3,7 +3,7 @@
 # Main mailgate for ESP.
 # Handles incoming messages etc.
 
-import sys, os, operator, email, re, smtplib, socket, sha, random
+import sys, os, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")

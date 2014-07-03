@@ -1,5 +1,5 @@
 from selenium.webdriver.support.ui import WebDriverWait
-from sys import stderr, stdout, exc_info
+from sys import stderr, exc_info
 import time
 
 def noActiveAjaxJQuery(driver):

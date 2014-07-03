@@ -1,6 +1,5 @@
 import esp.web.util.globaltags
 from django.contrib.sites.models import Site
-from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 
 from esp.program.models import Program
@@ -13,7 +12,6 @@ def espuserified_request(request):
     return {'request': request, 'user': None, 'messages': None, 'perms': None}
 
 def esp_user(request):
-    from esp.users.models import ESPUser
     return {'user': lambda: request.user}
 
 def email_settings(request):

@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 
-from django.contrib.auth.models import User
 from django.db import models
 from django import forms
 

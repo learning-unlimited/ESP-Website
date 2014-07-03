@@ -3,8 +3,7 @@ import datetime
 from model_mommy import mommy
 
 from django import forms
-from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.models import Group
+from django.contrib.auth import login
 from django.core import mail
 from django.conf import settings
 from django.test.client import Client
@@ -17,8 +16,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
 from esp.users.views import make_user_admin
-
-import esp.users.views as views
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -133,8 +130,6 @@ class PasswordRecoveryTicketTest(TestCase):
         self.other.set_password('remembered_pw')
         self.other.save()
     def runTest(self):
-        from datetime import datetime
-        
         # First, make sure both people can log in
         self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
         self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")

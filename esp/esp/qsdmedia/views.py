@@ -33,11 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from esp.qsdmedia.models import Media
-from django.http import HttpResponseRedirect, HttpResponse, Http404
+from django.http import HttpResponse, Http404
 from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
-import os.path
 import fnmatch
 
 
