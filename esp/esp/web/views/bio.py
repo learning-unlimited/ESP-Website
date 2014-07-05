@@ -131,18 +131,15 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
     except:
-        raise Http404
+        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
 
     return bio_user(request, founduser)
 
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
     
-    if founduser is None:
-        raise Http404
-
-    if founduser.is_active == False:
-        raise Http404
+    if founduser is None or founduser.is_active == False:
+        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
 
     if not founduser.isTeacher():
         raise ESPError('%s is not a teacher of ESP.' % \
