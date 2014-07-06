@@ -1180,6 +1180,10 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg = LunchConstraintGenerator(self.program, [lunch_timeslot])
         lcg.generate_all_constraints()
 
+        lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+        lunch_sec = lunch_sec[0]
+
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
@@ -1188,23 +1192,18 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
-            lunch_sec = lunch_sec[0]
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
 
             self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
-        ts_copy = list(self.timeslots)[:]
-        lt1 = random.choice(ts_copy)
-        ts_copy.remove(lt1)
-        lt2 = random.choice(ts_copy)
-        ts_copy.remove(lt2)
-        lt3 = random.choice(ts_copy)
-        lcg = LunchConstraintGenerator(self.program, [lt1, lt2, lt3])
+        lunch_timeslots = random.sample(self.timeslots, 3)
+        lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
+
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
 
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
@@ -1214,8 +1213,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
 
             lunch_free = False
@@ -1224,6 +1221,15 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     lunch_free = True
                     break
             self.failUnless(lunch_free, "No lunch sections free for a student!")
+
+    def testNoLunchConstraint(self):
+        # Make sure LunchConstraintGenerator won't crash with no lunch timeslots
+        # (needed in case a multi-day program has lunch on some days but not others)
+        lcg = LunchConstraintGenerator(self.program, [])
+        lcg.generate_all_constraints()
+
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
     
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
