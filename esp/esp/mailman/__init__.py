@@ -161,7 +161,7 @@ def remove_list_member(list, member):
     if isinstance(member, unicode):
         member = member.encode('iso-8859-1', 'replace')
 
-    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(str(member))
+    return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
