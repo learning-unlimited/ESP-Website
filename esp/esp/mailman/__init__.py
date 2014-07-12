@@ -132,7 +132,12 @@ def add_list_member(list, member):
         member = "\n".join(member)
 
     if isinstance(member, unicode):
-        member = member.encode('ascii', 'replace')
+        # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
+        # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
+        # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
+        # this is probably fine since non-ASCII mostly happens in real names,
+        # for which it doesn't matter much if we lose a few chars
+        member = member.encode('iso-8859-1', 'replace')
 
     return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
@@ -154,7 +159,7 @@ def remove_list_member(list, member):
         member = "\n".join(member)
 
     if isinstance(member, unicode):
-        member = member.encode('ascii', 'replace')
+        member = member.encode('iso-8859-1', 'replace')
 
     return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(str(member))
 
