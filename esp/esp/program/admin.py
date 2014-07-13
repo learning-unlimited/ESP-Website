@@ -54,6 +54,8 @@ from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
+import datetime
+
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
@@ -170,6 +172,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    list_filter = ['section__parent_class__parent_program',]
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
