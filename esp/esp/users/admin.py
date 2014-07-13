@@ -102,8 +102,10 @@ admin_site.register(K12School, K12SchoolAdmin)
 
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
-    list_display = ['requesting_student', 'approved','acknowledged_by','acknowledged_time', 'created']
+    list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
     readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    search_fields = ['=requesting_student__email', 'requesting_student__username', 'requesting_student__first_name', 'requesting_student__last_name']
+    list_filter = ('created','approved',)
 
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:

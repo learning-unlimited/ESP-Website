@@ -173,16 +173,19 @@ def renew_student_registrations(modeladmin, request, queryset):
     modeladmin.message_user(request, "%s registration(s) successfully renewed" % count)
 
 class StudentRegistrationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
+    list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
-    list_filter = ['section__parent_class__parent_program',]
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', '=user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    list_filter = ['section__parent_class__parent_program', 'relationship']
+    date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
     search_fields = ['user__last_name', 'user__first_name', 'user__username', '=user__email', 'id', 'subject__id', 'subject__title']
+    list_filter = ['subject__parent_program',]
+    date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
@@ -192,7 +195,7 @@ def sec_teacher_optimal_capacity(obj):
 class SectionAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
-    list_filter = ['status']
+    list_filter = ['status', 'parent_class__parent_program']
     pass
 admin_site.register(ClassSection, SectionAdmin)
 

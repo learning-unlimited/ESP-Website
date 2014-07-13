@@ -41,6 +41,7 @@ import reversion
 class QuasiStaticDataAdmin(reversion.VersionAdmin):
     search_fields = ['title','name','keywords','description','url']
     list_display = ['nav_category', 'title', 'url', 'disabled']
+    list_filter = ['nav_category',]
 
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
 
