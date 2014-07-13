@@ -54,8 +54,6 @@ from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
-import datetime
-
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
@@ -92,7 +90,7 @@ class FinancialAidGrantInline(admin.TabularInline):
 
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__url']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', '=user__email', 'id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
@@ -161,12 +159,18 @@ class Admin_RegistrationType(admin.ModelAdmin):
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
+    count = 0
     for reg in queryset:
         reg.expire()
+        count += 1
+    modeladmin.message_user(request, "%s registration(s) successfully expired" % count)
 
 def renew_student_registrations(modeladmin, request, queryset):
+    count = 0
     for reg in queryset:
-        reg.unexpire()
+        reg.unexpire() 
+        count += 1
+    modeladmin.message_user(request, "%s registration(s) successfully renewed" % count)
 
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
@@ -178,7 +182,7 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'subject__id', 'subject__title']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', '=user__email', 'id', 'subject__id', 'subject__title']
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
