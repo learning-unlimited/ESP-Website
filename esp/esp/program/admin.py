@@ -145,8 +145,23 @@ class ScheduleTestSectionListAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
 admin_site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
-admin_site.register(VolunteerRequest)
-admin_site.register(VolunteerOffer)
+class VolunteerOfferInline(admin.StackedInline):
+    model = VolunteerOffer
+class VolunteerRequestAdmin(admin.ModelAdmin):
+    def description(obj):
+        return obj.timeslot.description
+    list_display = ('id', 'program', description, 'timeslot', 'num_volunteers')
+    list_filter = ('program',)
+    inlines = [VolunteerOfferInline,]
+admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
+
+class VolunteerOfferAdmin(admin.ModelAdmin):
+    def program(obj):
+        return obj.request.program
+    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    list_filter = ('request__program',)
+    search_fields = default_search_fields() + ['email', 'name']
+admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
 
@@ -224,7 +239,7 @@ admin_site.register(ClassSection, SectionAdmin)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
     list_display_links = ('title',)
-    search_fields = ['class_info', 'title']
+    search_fields = ['class_info', 'title', 'id']
     exclude = ('teachers',)
     list_filter = ('parent_program', 'category')
 admin_site.register(ClassSubject, SubjectAdmin)
@@ -235,6 +250,7 @@ admin_site.register(ClassCategories, Admin_ClassCategories)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):
      list_display = ('program', 'range_min', 'range_max', )
+     list_filter = ('program',)
 admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
