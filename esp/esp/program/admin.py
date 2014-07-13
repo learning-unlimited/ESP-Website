@@ -208,11 +208,9 @@ def sec_classrooms(obj):
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
-    status_display.short_description = 'status'
-
-    list_display = ('id', 'title', 'friendly_times', 'status_display', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
+    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
-    list_filter = [PrettyStatusFilter, 'parent_class__parent_program']
+    list_filter = ['status', 'parent_class__parent_program']
     search_fields = ['parent_class__title']
     pass
 admin_site.register(ClassSection, SectionAdmin)
