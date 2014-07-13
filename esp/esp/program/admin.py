@@ -207,25 +207,7 @@ def sec_classrooms(obj):
     return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
-class PrettyStatusFilter(admin.SimpleListFilter):
-    """This is in existance because this doesn't have a CHOICES"""
-    title = 'status'
-
-    parameter_name = 'status'
-
-    def lookups(self, request, model_admin):
-        return (
-                (-20, 'Cancelled'),
-                (-10, 'Rejected'),
-                (0, 'Unreviewed'),
-                (5, 'Accepted but Hidden'),
-                (10, 'Accepted'),
-                )
-    def queryset(self, request, queryset):
-        return queryset.filter(status=self.value)
 class SectionAdmin(admin.ModelAdmin):
-    def status_display(self, obj):
-        return {-20: 'canceled', -10: 'rejected', 0 : 'unreviewed', 5: 'accepted but hidden', 10: 'accepted'}.get(obj.status, "unknown")
     status_display.short_description = 'status'
 
     list_display = ('id', 'title', 'friendly_times', 'status_display', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
