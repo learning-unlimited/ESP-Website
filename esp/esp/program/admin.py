@@ -54,6 +54,8 @@ from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
+from esp.utils.admin_user_search import default_search_fields
+
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
@@ -73,12 +75,14 @@ admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'program')
+    search_fields = default_search_fields()
+    list_filter = ('program', )
     pass
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
-    search_fields = ['user__username', 'slugbio', 'bio']
+    search_fields = default_search_fields() + ['slugbio', 'bio']
 
 admin_site.register(TeacherBio, TeacherBioAdmin)
 
@@ -90,7 +94,7 @@ class FinancialAidGrantInline(admin.TabularInline):
 
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', '=user__email', 'id', 'program__url']
+    search_fields = default_search_fields() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
@@ -100,11 +104,7 @@ class Admin_SplashInfo(admin.ModelAdmin):
         'student',
         'program',
     )
-    search_fields = [
-        'student__username',
-        'student__last_name',
-        'student__email',
-    ]
+    search_fields = default_search_fields('student')
     list_filter = [ 'program', ]
 admin_site.register(SplashInfo, Admin_SplashInfo)
 
@@ -168,14 +168,14 @@ def expire_student_registrations(modeladmin, request, queryset):
 def renew_student_registrations(modeladmin, request, queryset):
     count = 0
     for reg in queryset:
-        reg.unexpire() 
+        reg.unexpire()
         count += 1
     modeladmin.message_user(request, "%s registration(s) successfully renewed" % count)
 
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', '=user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = default_search_fields() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
     list_filter = ['section__parent_class__parent_program', 'relationship']
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
@@ -183,7 +183,7 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', '=user__email', 'id', 'subject__id', 'subject__title']
+    search_fields = default_search_fields() + ['id', 'subject__id', 'subject__title']
     list_filter = ['subject__parent_program',]
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
@@ -192,10 +192,31 @@ def sec_classrooms(obj):
     return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
+class PrettyStatusFilter(admin.SimpleListFilter):
+    """This is in existance because this doesn't have a CHOICES"""
+    title = 'status'
+
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return (
+                (-20, 'Cancelled'),
+                (-10, 'Rejected'),
+                (0, 'Unreviewed'),
+                (5, 'Accepted but Hidden'),
+                (10, 'Accepted'),
+                )
+    def queryset(self, request, queryset):
+        return queryset.filter(status=self.value)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
+    def status_display(self, obj):
+        return {-20: 'canceled', -10: 'rejected', 0 : 'unreviewed', 5: 'accepted but hidden', 10: 'accepted'}.get(obj.status, "unknown")
+    status_display.short_description = 'status'
+
+    list_display = ('id', 'title', 'friendly_times', 'status_display', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
-    list_filter = ['status', 'parent_class__parent_program']
+    list_filter = [PrettyStatusFilter, 'parent_class__parent_program']
+    search_fields = ['parent_class__title']
     pass
 admin_site.register(ClassSection, SectionAdmin)
 
