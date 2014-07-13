@@ -307,7 +307,7 @@ class ClassSection(models.Model):
     parallel sections for a course being taught more than once at Splash or Spark. """
     
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
-    status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
+    status = models.IntegerField(default=0)                 #   -20 = canceled, -10 = rejected, 0 = unreviewed, 5 = accepted but hidden, 10 = accepted
     registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
