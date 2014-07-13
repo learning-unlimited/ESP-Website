@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
+from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories, ACCEPTED
 
 import datetime
 
@@ -128,7 +128,7 @@ class LunchConstraintGenerator(object):
             new_subject.class_info = 'Enjoy a break for lunch with your friends!  Please register for at least one lunch period on each day of the program.'
             new_subject.class_size_min = 0
             new_subject.class_size_max = self.program.program_size_max
-            new_subject.status = 10
+            new_subject.status = ACCEPTED #accept me!
             new_subject.duration = '%.4f' % timeslot_length
             new_subject.message_for_directors = day.isoformat()
             new_subject.save()
@@ -148,12 +148,12 @@ class LunchConstraintGenerator(object):
         for timeslot in self.days[day]['lunch']:
             lunch_sections = lunch_subject.sections.filter(meeting_times__id=timeslot.id)
             if lunch_sections.count() == 0:
-                new_section = lunch_subject.add_section(status=10)
+                new_section = lunch_subject.add_section(status=ACCEPTED) #accept me!
                 new_section.meeting_times.add(timeslot)
                 #   print 'Generated section for %s: %s' % (timeslot, new_section)
             else:
                 for sec in lunch_sections:
-                    sec.status = 10
+                    sec.status = ACCEPTED #accept me!
                     sec.save()
                     #   print 'Approved section for %s: %s' % (timeslot, sec)
 

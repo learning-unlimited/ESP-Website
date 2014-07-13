@@ -38,6 +38,7 @@ from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
+from esp.program.models.class_ import STATUS_CHOICES, REGISTRATION_CHOICES, ACCEPTED, HIDDEN, UNREVIEWED, REJECTED, CANCELLED, OPEN, CLOSED
 from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
@@ -78,9 +79,9 @@ class AdminClass(ProgramModuleObj):
         management forms. """
         
         if field_str == 'status':
-            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (5, 'Accepted but hidden'), (10, 'Accepted'))
+            return STATUS_CHOICES
         if field_str == 'reg_status':
-            return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
+            return (('', 'Leave unchanged')) + REGISTRATION_CHOICES
         if field_str == 'room':
             room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
@@ -177,7 +178,7 @@ class AdminClass(ProgramModuleObj):
                 # We can't just do class_subject.accept() since this only
                 # accepts sections that were previously unreviewed
                 for sec in class_subject.sections.all():
-                    sec.status = 10
+                    sec.status = ACCEPTED
                     sec.save()
                 class_subject.accept()
             elif review_status == 'UNREVIEW':
@@ -575,7 +576,7 @@ class AdminClass(ProgramModuleObj):
 
             if cls.conflicts(teacher):
                 conflictingusers.append(teacher.first_name+' '+teacher.last_name)
-            else:    
+            else:
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
             
@@ -660,10 +661,10 @@ class AdminClass(ProgramModuleObj):
             clsids = [''.join(c for c in id if c in '0123456789') for id in clsids]
 
             cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
-            cls_subjects.update(status=10)
+            cls_subjects.update(status=ACCEPTED)
 
             cls_sections = ClassSection.objects.filter(parent_class__in=cls_subjects)
-            cls_sections.update(status=10)
+            cls_sections.update(status=ACCEPTED)
 
             context = {}
             context['updated_classes'] = cls_subjects
