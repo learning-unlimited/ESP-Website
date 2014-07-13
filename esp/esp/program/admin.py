@@ -215,13 +215,28 @@ class SectionAdmin(admin.ModelAdmin):
     pass
 admin_site.register(ClassSection, SectionAdmin)
 
-
+class SectionInline(admin.TabularInline):
+    model = ClassSection
+    fields = ('status','meeting_times', 'prettyrooms')
+    readonly_fields = ('meeting_times', 'prettyrooms')
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
-    search_fields = ['class_info', 'title', 'id']
-    exclude = ('teachers',)
+    search_fields = default_search_fields('teachers') + ['class_info', 'title', 'id']
+    exclude = ('teachers','anchor')
     list_filter = ('parent_program', 'category')
+    inlines = (SectionInline,)
+    fieldsets= (
+            (None, {'fields':('title','parent_program', 'category', 'class_info', 'message_for_directors', 'directors_notes', 'purchase_requests')}),
+            ('Registration Info',
+                {'classes': ('collapse',),
+                'fields': (('grade_min', 'grade_max'),'allow_lateness','prereqs', 'hardness_rating')}),
+            ('Scheduling Info',
+                {'classes': ('collapse',),
+                 'fields':('requested_room', 'requested_special_resources', ('allowable_class_size_ranges', 'optimal_class_size_range'), ('class_size_min', 'class_size_optimal', 'class_size_max', 'session_count'))}),
+            ('Advanced',
+                {'fields': ('schedule','checklist_progress', 'custom_form_data')}),
+            )
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
