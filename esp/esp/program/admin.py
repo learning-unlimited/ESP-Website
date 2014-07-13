@@ -211,13 +211,13 @@ class SectionAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
-    search_fields = ['parent_class__title']
+    search_fields = ['parent_class__title', 'parent_class__info']
     pass
 admin_site.register(ClassSection, SectionAdmin)
 
 
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'parent_program', 'category')
+    list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
     search_fields = ['class_info', 'title', 'id']
     exclude = ('teachers',)
