@@ -32,9 +32,10 @@ class ESPUserAdmin(UserAdmin):
 admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'event', 'program']
-    list_filter = ['event', 'program', ]
+    list_display = ['id', 'user', 'event', 'program', 'time',]
+    list_filter = ['event', 'program', 'time']
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
+    date_hierarchy = 'time'
 admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
