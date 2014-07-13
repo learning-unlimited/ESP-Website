@@ -1375,6 +1375,7 @@ class TeacherBio(models.Model):
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'

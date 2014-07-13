@@ -95,6 +95,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             else:
                 progbio = lastbio
 
+            progbio.hidden = form.cleaned_data['hidden']
             # the slug bio and bio
             progbio.slugbio  = form.cleaned_data['slugbio']
             progbio.bio      = form.cleaned_data['bio']
@@ -111,7 +112,8 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             return HttpResponseRedirect(progbio.url())
         
     else:
-        formdata = {'slugbio': lastbio.slugbio, 'bio': lastbio.bio, 'picture': lastbio.picture}
+        formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio, 
+                    'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
         
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
@@ -146,6 +148,9 @@ def bio_user(request, founduser):
                                (founduser.name()), log=False)
     
     teacherbio = TeacherBio.getLastBio(founduser)
+    if teacherbio.hidden:
+        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
+
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
         
