@@ -90,11 +90,11 @@ HIDDEN = 5
 ACCEPTED = 10
 
 STATUS_CHOICES = (
-        (CANCELLED, "cancelled"),
-        (REJECTED, "rejected"),
-        (UNREVIEWED, "unreviewed"),
-        (HIDDEN, "accepted but hidden"),
-        (ACCEPTED, "accepted"),
+        (CANCELLED, "Cancelled"),
+        (REJECTED, "Rejected"),
+        (UNREVIEWED, "Unreviewed"),
+        (HIDDEN, "Accepted but hidden"),
+        (ACCEPTED, "Accepted"),
         )
 
 OPEN = 0

@@ -42,6 +42,7 @@ from esp.cache           import cache_function
 from esp.web.util        import render_to_response
 
 from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models.class_ import STATUS_CHOICES, ACCEPTED, HIDDEN, UNREVIEWED, REJECTED, CANCELLED
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
@@ -119,13 +120,7 @@ class ClassFlagModule(ProgramModuleObj):
         if 'category' in t:
             return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
         if 'status' in t:
-            statusname = {
-                    10: 'Accepted',
-                    5: 'Accepted but hidden',
-                    0: 'Unreviewed',
-                    -10: 'Rejected',
-                    -20: 'Cancelled',
-                    }[int(v)]
+            statusname = {i[0]:i[1] for i in STATUS_CHOICES}[int(v)]
             return t[:-6]+'the status "'+statusname+'"'
         else:
             subqueries = [self.jsonToEnglish(i) for i in v]
