@@ -108,7 +108,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
                     'choices_pretty', 'admissions_pretty']
     list_editable = ['admin_status']
     list_filter = ['admin_status', 'program']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', '=user__email']
 
     def choices_pretty(self, app):
         lines = []
@@ -162,9 +162,8 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                     'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
-    list_filter = ['app__admin_status']
-    list_filter = ['subject', 'subject__parent_program']
-    search_fields = ['app__user__username', 'app__user__first_name', 'app__user__last_name', 'app__user__email', 'subject__title', 'subject__id']
+    list_filter = ['app__admin_status', 'subject', 'subject__parent_program']
+    search_fields = ['app__user__username', 'app__user__first_name', 'app__user__last_name', '=app__user__email', 'subject__title', 'subject__id']
 
     def user(self, classapp):
         return classapp.app.user
