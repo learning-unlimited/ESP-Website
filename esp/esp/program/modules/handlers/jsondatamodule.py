@@ -48,6 +48,7 @@ from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
+from esp.program.models.class_ import STATUS_CHOICES, REGISTRATION_CHOICES, ACCEPTED, HIDDEN, UNREVIEWED, REJECTED, CANCELLED, OPEN, CLOSED
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -78,7 +79,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def counts(prog):
-        return {'sections': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values('id', 'enrolled_students'))}
+        return {'sections': list(ClassSection.objects.filter(status__gt=UNREVIEWED, parent_class__status__gt=UNREVIEWED, parent_class__parent_program=prog).values('id', 'enrolled_students'))}
     counts.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     counts.method.cached_function.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
     
@@ -134,7 +135,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
+        data = ClassSection.objects.filter(status__gte=UNREVIEWED, parent_class__status__gte=UNREVIEWED, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         #   Convert comma-separated timeslot IDs to lists
         for i in range(len(data)):
             if data[i]['timeslots']:
@@ -362,7 +363,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog): 
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
  
