@@ -227,7 +227,6 @@ INSTALLED_APPS = (
     'esp.dataviews',
     'esp.themes',
     'django_extensions',
-    'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
