@@ -1088,10 +1088,13 @@ def update_email(**kwargs):
             # accounts.  This seems like it makes the most sense.
             groups_to_deactivate.extend(['Student', 'Guardian', 'Educator'])
         if is_admin:
-            groups_to_deactivate = []
+            # If they're an admin, they might be doing something weird, so
+            # don't deactivate any of their accounts.
+            users_to_deactivate = other_users
+        else:
+            users_to_deactivate = other_users.filter(groups__name__in=groups_to_deactivate)
         # QuerySet.update() does not call save signals, so this won't be
         # circular.
-        users_to_deactivate = other_users.filter(groups__name__in=groups_to_deactivate)
         users_to_deactivate.update(is_active=False)
         # Only remove them from group-based lists; keep them on program and
         # class lists.
