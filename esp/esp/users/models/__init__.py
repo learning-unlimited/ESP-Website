@@ -1072,17 +1072,27 @@ def update_email(**kwargs):
             'Teacher': 'teachers',
     }
     other_users = ESPUser.objects.filter(email=old_email).exclude(id=old_user.id)
+    groups = (new_user or old_user).groups.values_list('name', flat=True)
+    is_admin = (new_user or old_user).isAdministrator()
     if old_email is None:
         # We will never get a newly created user here, because we only fire on
         # *activation*.  So we can use new_user.groups to figure out the lists
         # to which they should be added.
-        groups = new_user.groups.values_list('name', flat=True)
         for g in groups:
             if g in group_map:
                 mailman.add_list_member(group_map[g], new_email)
     elif new_email is None:
-        # QuerySet.update() does not call save signals, so this won't be circular.
-        other_users.update(is_active=False)
+        groups_to_deactivate = groups
+        if 'Student' in groups or 'Guardian' in groups or 'Educator' in groups:
+            # If they are a student, guardian, or educator, deactivate all such
+            # accounts.  This seems like it makes the most sense.
+            groups_to_deactivate.extend(['Student', 'Guardian', 'Educator'])
+        if is_admin:
+            groups_to_deactivate = []
+        # QuerySet.update() does not call save signals, so this won't be
+        # circular.
+        users_to_deactivate = other_users.filter(groups__name__in=groups_to_deactivate)
+        users_to_deactivate.update(is_active=False)
         # Only remove them from group-based lists; keep them on program and
         # class lists.
         for l in set(group_map.values()):
@@ -1090,7 +1100,40 @@ def update_email(**kwargs):
     else:
         # Transition all their lists, not just the group-based ones.  Rather
         # than try to guess which lists that is, we can just ask mailman.
-        lists = mailman.lists_containing(old_email)
+        mailman_lists = mailman.lists_containing(old_email)
+        if other_users.exists():
+            # If this is not their only account, only transition lists that
+            # make sense for this account type.
+            lists = []
+            for l in mailman_lists:
+                if l in group_map.values():
+                    # A role-based list: only transition them if they are an
+                    # appropriate type of account.
+                    if any(group_map[g] == l for g in groups) or is_admin:
+                        lists.append(l)
+                elif 'teachers' in l:
+                    if 'Teacher' in groups or is_admin:
+                        lists.append(l)
+                elif 'class' in l or 'students' in l:
+                    if 'Teacher' in groups or 'Student' in groups or is_admin:
+                        lists.append(l)
+                elif 'parents' in l or 'guardians' in l:
+                    # We don't currently (as of 7/2014) autocreate these lists,
+                    # but we sometimes manually create them, and may one day
+                    # autocreate them.  Handling these correctly would be a bit
+                    # trickier because they don't actually come from users,
+                    # they come from students' emergency contacts.
+                    # Nonetheless, updating the list based on the account is
+                    # probably good enough.
+                    if 'Guardian' in groups or is_admin:
+                        lists.append(l)
+                else:
+                    # Some list we don't really understand, quite possibly a
+                    # manually-created one.  If in doubt, let's transition
+                    # their membership.
+                    lists.append(l)
+        else:
+            lists = mailman_lists
         for l in lists:
             mailman.add_list_member(l, new_email)
         if not other_users.exists():
