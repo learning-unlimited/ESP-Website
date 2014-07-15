@@ -133,5 +133,5 @@ class TeacherPreviewModule(ProgramModuleObj):
         return False
 
     class Meta:
-        abstract = True
+        proxy = True
 
