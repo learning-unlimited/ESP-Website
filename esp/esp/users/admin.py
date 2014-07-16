@@ -7,7 +7,7 @@ from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from esp.utils.admin_user_search import default_search_fields
+from esp.utils.admin_user_search import default_user_search
 import datetime
 
 admin_site.register(UserForwarder)
@@ -15,7 +15,7 @@ admin_site.register(UserForwarder)
 admin_site.register(ZipCode)
 admin_site.register(ZipCodeSearches)
 
-#def default_search_fields(user_param='user'):
+#def default_user_search(user_param='user'):
 #    """Returns a list containing all the default ways we like to be able to search a user by."""
 #    return [i % user_param for i in ['%s__username', '%s__first_name', '%s__last_name', '=%s__email']]
 
@@ -24,7 +24,7 @@ class UserAvailabilityAdmin(admin.ModelAdmin):
         return obj.event.program
     list_display = ['id', 'user', 'event', parent_program]
     list_filter = ['event__program', ]
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
     ordering = ['-event__program', 'user__username', 'event__start']
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
@@ -47,13 +47,13 @@ admin_site.register(ESPUser, ESPUserAdmin)
 class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program', 'time',]
     list_filter = ['event', 'program', 'time']
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
     date_hierarchy = 'time'
 admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
-    search_fields = default_search_fields() + ['permission_type', 'program__url']
+    search_fields = default_user_search() + ['permission_type', 'program__url']
     list_filter = ['permission_type', 'program']
     actions = [ 'expire', 'renew' ]
 
@@ -79,30 +79,30 @@ admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
-    search_fields = default_search_fields() + ['e_mail']
+    search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
 class UserInfoAdmin(admin.ModelAdmin):
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
     list_filter = ['graduation_year']
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'from_here', 'college']
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'year_finished', 'num_kids']
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
 admin_site.register(GuardianInfo, GuardianInfoAdmin)
 
 class EducatorInfoAdmin(UserInfoAdmin):
-    search_fields=default_search_fields()
+    search_fields=default_user_search()
     list_display = ['id', 'user', 'position', 'k12school', 'school']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
@@ -123,7 +123,7 @@ admin_site.register(K12School, K12SchoolAdmin)
 class GradeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
     readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
-    search_fields = default_search_fields('requesting_student')
+    search_fields = default_user_search('requesting_student')
     list_filter = ('created','approved',)
 
     def save_model(self, request, obj, form, change):

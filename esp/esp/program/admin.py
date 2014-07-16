@@ -54,7 +54,7 @@ from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
-from esp.utils.admin_user_search import default_search_fields
+from esp.utils.admin_user_search import default_user_search
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
@@ -75,14 +75,14 @@ admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'program')
-    search_fields = default_search_fields()
+    search_fields = default_user_search()
     list_filter = ('program', )
     pass
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
-    search_fields = default_search_fields() + ['slugbio', 'bio']
+    search_fields = default_user_search() + ['slugbio', 'bio']
 
 admin_site.register(TeacherBio, TeacherBioAdmin)
 
@@ -94,7 +94,7 @@ class FinancialAidGrantInline(admin.TabularInline):
 
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
-    search_fields = default_search_fields() + ['id', 'program__url']
+    search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
@@ -104,7 +104,7 @@ class Admin_SplashInfo(admin.ModelAdmin):
         'student',
         'program',
     )
-    search_fields = default_search_fields('student')
+    search_fields = default_user_search('student')
     list_filter = [ 'program', ]
 admin_site.register(SplashInfo, Admin_SplashInfo)
 
@@ -160,7 +160,7 @@ class VolunteerOfferAdmin(admin.ModelAdmin):
         return obj.request.program
     list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
     list_filter = ('request__program',)
-    search_fields = default_search_fields() + ['email', 'name']
+    search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
@@ -190,7 +190,7 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = default_search_fields() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
     list_filter = ['section__parent_class__parent_program', 'relationship']
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
@@ -198,7 +198,7 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = default_search_fields() + ['id', 'subject__id', 'subject__title']
+    search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
     list_filter = ['subject__parent_program',]
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
@@ -222,7 +222,7 @@ class SectionInline(admin.TabularInline):
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
-    search_fields = default_search_fields('teachers') + ['class_info', 'title', 'id']
+    search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
     exclude = ('teachers','anchor')
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
@@ -250,7 +250,11 @@ admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
 
-admin_site.register(StudentApplication)
+class StudentAppAdmin(admin.ModelAdmin):
+    list_display = ('user','program', 'done')
+    search_fields = default_user_search()
+    list_filter = ('program',)
+admin_site.register(StudentApplication, StudentAppAdmin)
 
 class Admin_StudentAppQuestion(admin.ModelAdmin):
     list_display = (
@@ -258,6 +262,7 @@ class Admin_StudentAppQuestion(admin.ModelAdmin):
         'subject',
         'question',
     )
+    search_fields = ('subject__title', 'subject__id')
     list_display_links = ('program', 'subject', )
     list_filter = ('subject__parent_program', 'program', )
 admin_site.register(StudentAppQuestion, Admin_StudentAppQuestion)
@@ -268,7 +273,9 @@ class Admin_StudentAppResponse(admin.ModelAdmin):
         'response',
         'complete',
     )
+    readonly_fields = ('question',)
     list_display_links = list_display
+    search_fields = default_user_search('question__studentapplication__user')
     list_filter = ('question__subject__parent_program', 'question__program', )
 admin_site.register(StudentAppResponse, Admin_StudentAppResponse)
 
@@ -279,6 +286,8 @@ class Admin_StudentAppReview(admin.ModelAdmin):
         'score',
         'comments',
     )
+    search_fields = default_user_search('reviewer')
+    list_filter = ('date',)
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
 class ClassFlagTypeAdmin(admin.ModelAdmin):
@@ -289,7 +298,7 @@ admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
     list_display = ('flag_type','subject','comment', 'created_by', 'modified_by')
-    search_fields = default_search_fields('modified_by') + default_search_fields('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
+    search_fields = default_user_search('modified_by') + default_search_fields('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
 #    search_fields.extend([field + LOOKUP_SEP + lookup for field in ['modified_by', 'created_by'] for lookup in ['username', 'first_name', 'last_name', 'id']])
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)

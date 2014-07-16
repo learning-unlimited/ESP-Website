@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
-from esp.utils.admin_user_search import default_search_fields
+from esp.utils.admin_user_search import default_user_search
 
 class LIOInline(admin.TabularInline):
     model = LineItemOptions
@@ -48,7 +48,7 @@ admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
     list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'executed']
-    search_fields = default_search_fields() +['source__name', 'destination__name', 'line_item__text']
+    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text']
     list_filter = ['destination']
 admin_site.register(Transfer, TransferAdmin)
 
@@ -62,7 +62,7 @@ def finalize_finaid_grants(modeladmin, request, queryset):
 class FinancialAidGrantAdmin(admin.ModelAdmin):
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
     list_filter = ['request__program']
-    search_fields = default_search_fields('request__user')
+    search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
