@@ -15,10 +15,6 @@ admin_site.register(UserForwarder)
 admin_site.register(ZipCode)
 admin_site.register(ZipCodeSearches)
 
-#def default_user_search(user_param='user'):
-#    """Returns a list containing all the default ways we like to be able to search a user by."""
-#    return [i % user_param for i in ['%s__username', '%s__first_name', '%s__last_name', '=%s__email']]
-
 class UserAvailabilityAdmin(admin.ModelAdmin):
     def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
         return obj.event.program
@@ -102,7 +98,7 @@ class GuardianInfoAdmin(UserInfoAdmin):
 admin_site.register(GuardianInfo, GuardianInfoAdmin)
 
 class EducatorInfoAdmin(UserInfoAdmin):
-    search_fields=default_user_search()
+    search_fields = default_user_search()
     list_display = ['id', 'user', 'position', 'k12school', 'school']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
