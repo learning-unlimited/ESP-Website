@@ -47,12 +47,12 @@ import tempfile
 
 def copy_surveys(modeladmin, request, queryset):
     survey_count = 0
+    question_count = 0
     for survey in queryset:
 
         newsurvey, created = Survey.objects.get_or_create(name=survey.name + " (copy)", program=survey.program, category = survey.category)
         questions = survey.questions.order_by('id')
 
-        question_count = 0
         for q in questions:
             # Create a new question for the new survey
             newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
