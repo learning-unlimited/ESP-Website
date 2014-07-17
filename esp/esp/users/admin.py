@@ -10,9 +10,14 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
 import datetime
 
-admin_site.register(UserForwarder)
+class UserForwarderAdmin(admin.ModelAdmin):
+    list_display = ('source', 'target')
+    search_fields = default_user_search('source') + default_user_search('target')
+admin_site.register(UserForwarder, UserForwarderAdmin)
 
-admin_site.register(ZipCode)
+class ZipCodeAdmin(admin.ModelAdmin):
+    search_fields = ('=zip_code',)
+admin_site.register(ZipCode, ZipCodeAdmin)
 admin_site.register(ZipCodeSearches)
 
 class UserAvailabilityAdmin(admin.ModelAdmin):
