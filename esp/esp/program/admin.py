@@ -186,18 +186,14 @@ class Admin_RegistrationType(admin.ModelAdmin):
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
-    count = 0
     for reg in queryset:
         reg.expire()
-        count += 1
-    modeladmin.message_user(request, "%s registration(s) successfully expired" % count)
+    modeladmin.message_user(request, "%s registration(s) successfully expired" % len(queryset))
 
 def renew_student_registrations(modeladmin, request, queryset):
-    count = 0
     for reg in queryset:
         reg.unexpire()
-        count += 1
-    modeladmin.message_user(request, "%s registration(s) successfully renewed" % count)
+    modeladmin.message_user(request, "%s registration(s) successfully renewed" % len(queryset))
 
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)

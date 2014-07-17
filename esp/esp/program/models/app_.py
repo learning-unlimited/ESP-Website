@@ -152,8 +152,8 @@ class StudentAppResponse(BaseAppElement, models.Model):
 
     def user(self):
         """Get the user who filled out this form."""
-        #I made this to put into admin.py. Except this is about as slow as molassus
-        return (i.user for i in self.question.studentapplication_set.all())
+        #I made this to put into admin.py. Except this is about as slow as molasses
+        return self.question.studentapplication_set.values('user')
 
     class Meta:
         app_label = 'program'
