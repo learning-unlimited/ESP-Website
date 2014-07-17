@@ -117,13 +117,13 @@ subclass_instance_type.short_description = 'Instance type'
 class BooleanTokenAdmin(admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
-admin_site.register(BooleanToken, BooleanTokenAdmin)    
+admin_site.register(BooleanToken, BooleanTokenAdmin)
     
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
         return len(obj.get_stack())
-admin_site.register(BooleanExpression, BooleanExpressionAdmin)   
+admin_site.register(BooleanExpression, BooleanExpressionAdmin)
 
 class Admin_ScheduleConstraint(admin.ModelAdmin):
     list_display = (
@@ -131,18 +131,28 @@ class Admin_ScheduleConstraint(admin.ModelAdmin):
         'condition',
         'requirement',
     )
+    list_filter = ('program',)
 admin_site.register(ScheduleConstraint, Admin_ScheduleConstraint)
 
 class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'expr', 'seq', subclass_instance_type, 'text')
+    def program(obj):
+        return obj.timeblock.program
+    list_display = ('timeblock', program, 'expr', 'seq', subclass_instance_type, 'text')
+    list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
 
 class ScheduleTestCategoryAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'category', 'expr', 'seq', subclass_instance_type, 'text')
+    def program(obj):
+        return obj.timeblock.program
+    list_display = ('timeblock', program, 'category', 'expr', 'seq', subclass_instance_type, 'text')
+    list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
 
 class ScheduleTestSectionListAdmin(admin.ModelAdmin):
-    list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
+    def program(obj):
+        return obj.timeblock.program
+    list_display = ('timeblock', program, 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
+    list_filter = ('timeblock__program',)
 admin_site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
 class VolunteerOfferInline(admin.StackedInline):
