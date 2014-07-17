@@ -150,11 +150,6 @@ class StudentAppResponse(BaseAppElement, models.Model):
     def __unicode__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
 
-    def user(self):
-        """Get the user who filled out this form."""
-        #I made this to put into admin.py. Except this is about as slow as molasses
-        return self.question.studentapplication_set.values('user')
-
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'
