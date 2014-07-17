@@ -74,10 +74,10 @@ class ProgramAdmin(admin.ModelAdmin):
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'contact_user', 'program')
+    list_display = ('id', 'user', 'contact_user', 'contact_guardian', 'contact_emergency', 'program', 'last_ts')
     search_fields = default_user_search()
     list_filter = ('program', )
-    pass
+    date_hierarchy = 'last_ts'
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
