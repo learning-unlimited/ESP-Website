@@ -45,7 +45,9 @@ class AnnouncementLinkAdmin(admin.ModelAdmin):
 admin_site.register(AnnouncementLink, AnnouncementLinkAdmin)
 
 class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['content','title']
+    search_fields = ['slug', 'content','title']
+    list_display = ('section', 'slug', 'title', 'highlight_begin', 'highlight_expire')
+    list_filter = ('highlight_begin', 'highlight_expire')
     class Media:
         js = (
             '/media/scripts/admin_miniblog.js',
