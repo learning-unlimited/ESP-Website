@@ -17,8 +17,16 @@ admin_site.register(UserForwarder, UserForwarderAdmin)
 
 class ZipCodeAdmin(admin.ModelAdmin):
     search_fields = ('=zip_code',)
+    list_display = ('zip_code', 'latitude', 'longitude')
 admin_site.register(ZipCode, ZipCodeAdmin)
-admin_site.register(ZipCodeSearches)
+
+class ZipCodeSearchesAdmin(admin.ModelAdmin):
+    def count(obj):
+        return len(obj.zipcodes.split(','))
+    count.short_description = "Number of zip codes"
+    list_display = ('zip_code', 'distance', count)
+    search_fields = ('=zip_code__zip_code',)
+admin_site.register(ZipCodeSearches, ZipCodeSearchesAdmin)
 
 class UserAvailabilityAdmin(admin.ModelAdmin):
     def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
