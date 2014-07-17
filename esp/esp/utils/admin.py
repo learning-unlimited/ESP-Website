@@ -2,6 +2,7 @@
 """ Admin settings for esp.utils. """
 
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
+from esp.utils.admin_user_search import default_user_search
 
 from django.contrib import admin
 from esp.admin import admin_site
@@ -19,6 +20,9 @@ class PrinterAdmin(admin.ModelAdmin):
     
 class PrintRequestAdmin(admin.ModelAdmin):
     list_display = ['user', 'printer', 'time_requested', 'time_executed']
+    list_filter = ['time_requested', 'time_executed']
+    date_hierarchy = 'time_requested'
+    search_fields = default_user_search()
 
 admin_site.register(TemplateOverride, TemplateOverrideAdmin)
 admin_site.register(Printer, PrinterAdmin)
