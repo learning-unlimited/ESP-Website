@@ -46,33 +46,44 @@ from StringIO import StringIO
 import tempfile
 
 def copy_surveys(modeladmin, request, queryset):
+    survey_count = 0
     for survey in queryset:
 
         newsurvey, created = Survey.objects.get_or_create(name=survey.name + " (copy)", program=survey.program, category = survey.category)
         questions = survey.questions.order_by('id')
 
+        question_count = 0
         for q in questions:
             # Create a new question for the new survey
             newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
             newq.save()
+            question_count += 1
 
         newsurvey.save()
+        survey_count += 1
+
+    modeladmin.message_user(request, "%s survey(s) copied, a total of %s question(s) copied" % (survey_count, question_count))
 
 class SurveyAdmin(admin.ModelAdmin):
     actions = [ copy_surveys, ]
-
+    list_filter = ('category',)
 admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('survey', 'time_filled')
+    date_hierarchy = 'time_filled'
+    list_filter = ('survey','time_filled')
 admin_site.register(SurveyResponse, SurveyResponseAdmin)
-    
-admin_site.register(QuestionType)
+
+class QuestionTypeAdmin(admin.ModelAdmin):
+    list_display = ('name', '_param_names', 'is_numeric', 'is_countable')
+admin_site.register(QuestionType, QuestionTypeAdmin)
 
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ['seq', 'name', 'question_type', 'survey']
+    list_display = ['seq', 'name', 'question_type', 'survey', 'per_class']
     list_display_links = ['name']
     list_filter = ['survey']
+    search_filter = ('name',)
 admin_site.register(Question, QuestionAdmin)
 
 admin_site.register(Answer)
