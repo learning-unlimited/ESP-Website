@@ -46,12 +46,11 @@ admin_site.register(MessageVars, MessageVarsAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
     list_display = ('description', 'regex')
-    pass
 admin_site.register(EmailList, EmailListAdmin)
     
 class PlainRedirectAdmin(admin.ModelAdmin):
     list_display = ('original', 'destination')
-    pass
+    search_fields = ('original', 'destination')
 admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
 class MessageRequestAdmin(admin.ModelAdmin):
@@ -62,5 +61,8 @@ class MessageRequestAdmin(admin.ModelAdmin):
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'send_from', 'send_to', 'subject', 'sent')
+    search_fields = ('=id', 'send_from', 'send_to', 'subject')
+    date_hierarchy = 'sent'
+    list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)
