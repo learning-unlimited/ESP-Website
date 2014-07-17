@@ -54,7 +54,8 @@ admin_site.register(Record, RecordAdmin)
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
     search_fields = default_user_search() + ['permission_type', 'program__url']
-    list_filter = ['permission_type', 'program']
+    list_filter = ['permission_type', 'program', 'role']
+    date_hierarchy = 'start_date'
     actions = [ 'expire', 'renew' ]
 
     def expire(self, request, queryset):

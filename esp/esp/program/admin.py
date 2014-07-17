@@ -75,7 +75,9 @@ admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'contact_guardian', 'contact_emergency', 'program', 'last_ts')
-    search_fields = default_user_search()
+    search_fields = default_user_search() + ['contact_user__first_name', 'contact_user__last_name',
+                                            'contact_guardian__first_name', 'contact_guardian__last_name',
+                                            'contact_emergency__first_name', 'contact_emergency__last_name']
     list_filter = ('program', )
     date_hierarchy = 'last_ts'
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
