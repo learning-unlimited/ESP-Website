@@ -42,7 +42,6 @@ class ESPUserAdmin(UserAdmin):
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         (_('User Roles'), {'fields': ('groups',)}),
         )
-
 admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
@@ -107,19 +106,18 @@ class EducatorInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'position', 'k12school', 'school']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
-
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size':'50',}),},
     }
-
+    search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
+    list_filter = ['school_type']
     def contact_name(self, obj):
         return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)
-
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
