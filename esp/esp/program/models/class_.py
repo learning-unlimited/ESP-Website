@@ -1330,8 +1330,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     objects = ClassManager()
 
-    #   Backwards compatibility with Class database format.
-    #   Please don't use. :)
     status = models.IntegerField(choices = STATUS_CHOICES, default=UNREVIEWED)
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
