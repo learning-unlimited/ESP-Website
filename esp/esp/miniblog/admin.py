@@ -37,7 +37,12 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.miniblog.models import AnnouncementLink, Entry, Comment
 
-admin_site.register(AnnouncementLink)
+
+class AnnouncementLinkAdmin(admin.ModelAdmin):
+    list_display= ('category', 'title', 'section', 'highlight_begin', 'highlight_expire')
+    list_filter = ('section','highlight_begin', 'highlight_expire')
+    search_fields=('category', 'title', 'href')
+admin_site.register(AnnouncementLink, AnnouncementLinkAdmin)
 
 class EntryAdmin(admin.ModelAdmin):
     search_fields = ['content','title']

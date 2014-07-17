@@ -20,7 +20,7 @@ class PrinterAdmin(admin.ModelAdmin):
     
 class PrintRequestAdmin(admin.ModelAdmin):
     list_display = ['user', 'printer', 'time_requested', 'time_executed']
-    list_filter = ['time_requested', 'time_executed']
+    list_filter = ['printer', 'time_requested', 'time_executed']
     date_hierarchy = 'time_requested'
     search_fields = default_user_search()
 
