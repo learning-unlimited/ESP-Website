@@ -88,5 +88,5 @@ class CheckListModule(ProgramModuleObj):
         return finish_dict
 
     class Meta:
-        abstract = True
+        proxy = True
 

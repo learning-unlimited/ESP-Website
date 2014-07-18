@@ -204,4 +204,4 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
     class Meta:
-        abstract = True
+        proxy = True

@@ -369,5 +369,5 @@ class ListGenModule(ProgramModuleObj):
         return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
 
     class Meta:
-        abstract = True
+        proxy = True
 

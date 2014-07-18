@@ -111,7 +111,7 @@ function formTest() {
                 ['baddr1', 'address line 1'],
                 ['bcity', 'city'],
                 ['bstate', 'state'],
-                ['bzip', 'zipcode']{% if module.host_payment_form %},
+                ['bzip', 'zipcode']{% if host_payment_form %},
 		['cctype', 'credit card type'],
 		['cardnumber', 'credit card number'],
 		['expmonth', 'credit card expiration month'],
@@ -161,9 +161,9 @@ Please review the costs below. If you are concerned that there is a problem, ple
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.  Otherwise, please fill out the form below.  Required fields are boxed in a colored border.</p>
 
-<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
+<form onsubmit="return formTest();" action="{{ post_url }}" method="post" autocomplete="off">
 
-<input type="hidden" name="storename" value="{{ module.store_id }}" />
+<input type="hidden" name="storename" value="{{ storename }}" />
 <input type="hidden" name="oid" value="{{ invoice_id }}" />
 <input type="hidden" id="id_chargetotal" name="chargetotal" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" id="id_total" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
@@ -262,7 +262,7 @@ Autofill contact information:
         ZIP code: <input type="text" class="required" name="bzip" id="id_bzip" maxlength="5" size="5"/>
     </td>
 </tr>
-{% if module.host_payment_form %}
+{% if host_payment_form %}
 <tr>
     <td><b>Credit Card:</b>
     </td>
@@ -312,7 +312,7 @@ Autofill contact information:
 <td colspan="2">You will be asked for your credit card information on the next page.</td>
 </tr>
 {% endif %}
-{% if module.offer_donation %}
+{% if offer_donation %}
 <tr>
     <td colspan="2">
       <input type="checkbox" onclick="check_cost();" />Check here to support Learning Unlimited's mentoring of UMBC Splash with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the UMBC students in organizing this program and provided this Web site. </td>
@@ -325,7 +325,7 @@ Autofill contact information:
 <tr>
   <td colspan="2" align="center">
   Please check your form and click here to submit. <br />
-      <input id="submit_form" class="fancybutton" type="submit" value="{% if module.host_payment_form %}Submit Payment{% else %}Continue to Secure Payment{% endif %}"><br/>
+      <input id="submit_form" class="fancybutton" type="submit" value="{% if host_payment_form %}Submit Payment{% else %}Continue to Secure Payment{% endif %}"><br/>
       </td>
 </tr>
 </table>

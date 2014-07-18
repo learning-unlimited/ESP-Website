@@ -178,4 +178,4 @@ class GroupTextModule(ProgramModuleObj):
         return "\n".join(send_log)
 
     class Meta:
-        abstract = True
+        proxy = True
