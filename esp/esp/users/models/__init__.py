@@ -1087,15 +1087,14 @@ def update_email(**kwargs):
             # If they are a student, guardian, or educator, deactivate all such
             # accounts.  This seems like it makes the most sense.
             groups_to_deactivate.extend(['Student', 'Guardian', 'Educator'])
-        if is_admin:
+        if not is_admin:
             # If they're an admin, they might be doing something weird, so
             # don't deactivate any of their accounts.
-            users_to_deactivate = other_users
-        else:
             users_to_deactivate = other_users.filter(groups__name__in=groups_to_deactivate)
-        # QuerySet.update() does not call save signals, so this won't be
-        # circular.
-        users_to_deactivate.update(is_active=False)
+            # QuerySet.update() does not call save signals, so this won't be
+            # circular.  If we or django ever patch it to do so, we will need
+            # to be more careful here.
+            users_to_deactivate.update(is_active=False)
         # Only remove them from group-based lists; keep them on program and
         # class lists.
         for l in set(group_map.values()):
