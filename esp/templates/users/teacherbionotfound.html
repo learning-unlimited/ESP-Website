@@ -1,0 +1,23 @@
+{% extends "main.html" %}
+
+{% block title %}Not Found{% endblock %}
+
+{% block subsection_name %}Teacher Biography Not Found{% endblock %}
+
+{% block content %}
+
+<h1>Teacher biography not found</h1>
+
+{% if biouser != None %}
+{% if biouser.id == request.user.id or request.user.isAdministrator %}
+<a href="{{ edit_url }}" title="Edit this bio!">
+  Edit this biography!
+</a>
+{% endif %}
+{% endif %}
+
+<p>
+No teacher with that name exists, or the teacher's biography is not public.
+</p>
+
+{% endblock %}
