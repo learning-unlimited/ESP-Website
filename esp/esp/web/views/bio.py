@@ -123,6 +123,12 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     
     
+def bio_not_found(request, user=None, edit_url=None):
+    response = render_to_response('users/teacherbionotfound.html', request,
+                                  {'biouser': user,
+                                   'edit_url': edit_url})
+    response.status_code = 404
+    return response
 
 def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
     """ Displays a teacher bio """
@@ -133,7 +139,7 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
     except:
-        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
+        return bio_not_found(request)
 
     return bio_user(request, founduser)
 
@@ -141,7 +147,7 @@ def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
     
     if founduser is None or founduser.is_active == False:
-        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
+        return bio_not_found(request)
 
     if not founduser.isTeacher():
         raise ESPError('%s is not a teacher of ESP.' % \
@@ -149,7 +155,7 @@ def bio_user(request, founduser):
     
     teacherbio = TeacherBio.getLastBio(founduser)
     if teacherbio.hidden:
-        raise ESPError("No teacher with that name exists, or the teacher's bio is not public.", log=False)
+        return bio_not_found(request, founduser, teacherbio.edit_url())
 
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
