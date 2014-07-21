@@ -149,7 +149,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     
     def __unicode__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
-    
+
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'

@@ -41,6 +41,8 @@ from esp.program.models import ClassSubject
 from esp.formstack.objects import get_forms_for_api_key, get_form_by_id
 from esp.application.models import FormstackAppSettings, FormstackStudentProgramApp, FormstackStudentClassApp
 
+from esp.utils.admin_user_search import default_user_search
+
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
     fields = ['module', 'api_key', 'forms_for_api_key',
               'form_id', 'form_fields',
@@ -108,6 +110,7 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
                     'choices_pretty', 'admissions_pretty']
     list_editable = ['admin_status']
     list_filter = ['admin_status', 'program']
+    search_fields = default_user_search()
 
     def choices_pretty(self, app):
         lines = []
@@ -161,8 +164,8 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                     'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
-    list_filter = ['app__admin_status']
-#    list_filter = ['subject__parent_program', 'subject']
+    list_filter = ['app__admin_status', 'subject', 'subject__parent_program']
+    search_fields = default_user_search('app__user') + ['subject__title', 'subject__id']
 
     def user(self, classapp):
         return classapp.app.user

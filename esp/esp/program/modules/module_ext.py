@@ -392,6 +392,9 @@ class CreditCardSettings(models.Model):
     offer_donation = models.BooleanField(default=False)
     invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
 
+    def __unicode__(self):
+        return "Credit Card Settings for %s" % str(self.module)
+
 class AJAXChangeLogEntry(models.Model):
 
     # unique index in change_log of this entry

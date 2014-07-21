@@ -1968,7 +1968,7 @@ class PersistentQueryFilter(models.Model):
         return filterObj
 
     def __unicode__(self):
-        return str(self.useful_name)
+        return str(self.useful_name) + " (" + str(self.id) + ")"
 
 
 class ESPUser_Profile(models.Model):
