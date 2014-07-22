@@ -100,7 +100,6 @@ class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
               'admin_status', 'admin_comment',
               'admissions_pretty',
               'responses_pretty']
-    search_fields = ['user__username']
     readonly_fields = ['submission_id', 'program', 'user',
                        'admissions_pretty',
                        'responses_pretty']
@@ -162,7 +161,6 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                     'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
-    search_fields = ['user__username']
     list_filter = ['app__admin_status']
 #    list_filter = ['subject__parent_program', 'subject']
 
