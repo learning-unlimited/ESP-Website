@@ -1084,7 +1084,7 @@ def update_email(**kwargs):
             if g in group_map:
                 mailman.add_list_member(group_map[g], new_email)
     elif new_email is None:
-        groups_to_deactivate = groups
+        groups_to_deactivate = set(groups)
         if 'Student' in groups or 'Guardian' in groups or 'Educator' in groups:
             # If they are a student, guardian, or educator, deactivate all such
             # accounts.  This seems like it makes the most sense.
