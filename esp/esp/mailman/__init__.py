@@ -205,7 +205,6 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    print data
     data = data[0].split('\n')
 
     # find_member's output is of the form
@@ -220,5 +219,4 @@ def lists_containing(user):
     # We only want the lists; grab those:
 
     lists = [x.strip() for x in data if len(x) > 0 and x[0] in " \t"]
-    lists = [x for x in data if x != ""]
     return lists
