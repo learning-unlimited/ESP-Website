@@ -7,13 +7,35 @@ from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from esp.utils.admin_user_search import default_user_search
 import datetime
 
-admin_site.register(UserForwarder)
+class UserForwarderAdmin(admin.ModelAdmin):
+    list_display = ('source', 'target')
+    search_fields = default_user_search('source') + default_user_search('target')
+admin_site.register(UserForwarder, UserForwarderAdmin)
 
-admin_site.register(ZipCode)
-admin_site.register(ZipCodeSearches)
-admin_site.register(UserAvailability)
+class ZipCodeAdmin(admin.ModelAdmin):
+    search_fields = ('=zip_code',)
+    list_display = ('zip_code', 'latitude', 'longitude')
+admin_site.register(ZipCode, ZipCodeAdmin)
+
+class ZipCodeSearchesAdmin(admin.ModelAdmin):
+    def count(obj):
+        return len(obj.zipcodes.split(','))
+    count.short_description = "Number of zip codes"
+    list_display = ('zip_code', 'distance', count)
+    search_fields = ('=zip_code__zip_code',)
+admin_site.register(ZipCodeSearches, ZipCodeSearchesAdmin)
+
+class UserAvailabilityAdmin(admin.ModelAdmin):
+    def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
+        return obj.event.program
+    list_display = ['id', 'user', 'event', parent_program]
+    list_filter = ['event__program', ]
+    search_fields = default_user_search()
+    ordering = ['-event__program', 'user__username', 'event__start']
+admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
 class ESPUserAdmin(UserAdmin):
     #remove the user_permissions and is_superuser from adminpage
@@ -28,18 +50,20 @@ class ESPUserAdmin(UserAdmin):
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         (_('User Roles'), {'fields': ('groups',)}),
         )
-
 admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'event', 'program']
-    list_filter = ['event', 'program', ]
-    search_fields = ['user__username', 'user__first_name', 'user__last_name']
+    list_display = ['id', 'user', 'event', 'program', 'time',]
+    list_filter = ['event', 'program', 'time']
+    search_fields = default_user_search()
+    date_hierarchy = 'time'
 admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
-    search_fields = ['user__last_name','user__first_name','user__username', 'permission_type', 'program__url']
+    search_fields = default_user_search() + ['permission_type', 'program__url']
+    list_filter = ['permission_type', 'program', 'role']
+    date_hierarchy = 'start_date'
     actions = [ 'expire', 'renew' ]
 
     def expire(self, request, queryset):
@@ -64,45 +88,51 @@ admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'e_mail']
+    search_fields = default_user_search() + ['e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
 class UserInfoAdmin(admin.ModelAdmin):
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'user__email']
+    search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
+    list_filter = ['graduation_year']
+    search_fields = default_user_search()
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'from_here', 'college']
+    search_fields = default_user_search()
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'year_finished', 'num_kids']
+    search_fields = default_user_search()
 admin_site.register(GuardianInfo, GuardianInfoAdmin)
 
 class EducatorInfoAdmin(UserInfoAdmin):
+    search_fields = default_user_search()
     list_display = ['id', 'user', 'position', 'k12school', 'school']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
-
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size':'50',}),},
     }
-
+    search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
+    list_filter = ['school_type']
     def contact_name(self, obj):
         return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)
 
-
 class GradeChangeRequestAdmin(admin.ModelAdmin):
-    list_display = ['requesting_student', 'approved','acknowledged_by','acknowledged_time', 'created']
+    list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
     readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    search_fields = default_user_search('requesting_student')
+    list_filter = ('created','approved',)
 
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:

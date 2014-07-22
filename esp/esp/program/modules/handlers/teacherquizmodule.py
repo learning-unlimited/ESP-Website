@@ -153,5 +153,5 @@ class TeacherQuizModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
 
     class Meta:
-        abstract = True
+        proxy = True
 

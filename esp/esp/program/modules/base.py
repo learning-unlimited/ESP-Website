@@ -81,6 +81,10 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
+    def get_program(self):
+        """ Backward compatibility; see ClassRegModuleInfo.get_program """
+        return self.program
+
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with
@@ -279,15 +283,23 @@ class ProgramModuleObj(models.Model):
         """ Find module extensions that this program module inherits from, and 
         incorporate those into its attributes. """
         
-        old_id = self.id
-        old_module = self.module
+        self._ext_map = {}
         if self.program:
-            for x in self._meta.parents:
-                if x != ProgramModuleObj:
-                    new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
-                    self.__dict__.update(new_dict)
-            self.id = old_id
-            self.module = old_module
+            for key, x in self.extensions().items():
+                ext = self.program.getModuleExtension(x, module_id=self.id)
+                setattr(self, key, ext)
+                for attr in dir(ext):
+                    self._ext_map[attr] = key
+
+    def __getattr__(self, attr):
+        # backward compatibility
+        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
+            key = self._ext_map[attr]
+            ext = getattr(self, key)
+            import warnings
+            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
+            return getattr(ext, attr)
+        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
     
@@ -421,8 +433,9 @@ class ProgramModuleObj(models.Model):
     def isStep(self):
         return True
 
-    def extensions(self):
-        return []
+    @classmethod
+    def extensions(cls):
+        return {}
 
     @classmethod
     def module_properties(cls):

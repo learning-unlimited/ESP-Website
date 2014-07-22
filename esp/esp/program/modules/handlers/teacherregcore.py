@@ -82,5 +82,5 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

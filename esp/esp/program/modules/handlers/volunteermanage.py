@@ -96,5 +96,5 @@ class VolunteerManage(ProgramModuleObj):
         return render_to_response('program/modules/volunteermanage/main.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 
