@@ -137,8 +137,9 @@ class GradeChangeRequestAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:
             obj.acknowledged_by = request.user
+        if getattr(obj, 'acknowledged_time', None) is None:
+            obj.acknowledged_time = datetime.datetime.now()
         obj.save()
-
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
