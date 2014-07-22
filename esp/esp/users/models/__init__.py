@@ -1085,7 +1085,7 @@ def update_email(**kwargs):
         if 'Student' in groups or 'Guardian' in groups or 'Educator' in groups:
             # If they are a student, guardian, or educator, deactivate all such
             # accounts.  This seems like it makes the most sense.
-            groups_to_deactivate.extend(['Student', 'Guardian', 'Educator'])
+            groups_to_deactivate.update(['Student', 'Guardian', 'Educator'])
         if not is_admin:
             # If they're an admin, they might be doing something weird, so
             # don't deactivate any of their accounts.
