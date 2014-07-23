@@ -21,7 +21,7 @@ class TimeslotForm(forms.Form):
         elif type == "interview":
             slot.event_type = EventType.objects.get_or_create(description='Teacher Interview')[0]
         else:
-            slot.event_type = EventType.objects.all()[0] # default event type
+            slot.event_type = EventType.objects.get(description="Class Time Block") # default event type
 
         slot.program = program
         slot.short_description = slot.start.strftime('%A, %B %d %Y %I:%M %p') + " to " + slot.end.strftime('%I:%M %p')
