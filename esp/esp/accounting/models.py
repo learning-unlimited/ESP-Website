@@ -266,5 +266,3 @@ class Transfer(models.Model):
         else:
             return base_result
 
-
-

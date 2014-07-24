@@ -220,7 +220,6 @@ class SectionAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
     search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
-    pass
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):

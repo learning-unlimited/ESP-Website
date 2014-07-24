@@ -41,15 +41,15 @@ class LIOInline(admin.TabularInline):
 
 class LITAdmin(admin.ModelAdmin):
     list_display = ['text', 'amount_dec', 'program', 'required', 'num_options', 'max_quantity']
-    search_fields = ['text', 'amount_dec', 'program__url']
+    search_fields = ['text', 'amount_dec', 'program__url', 'program__name']
     list_filter = ['program']
     inlines = [LIOInline,]
 admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
     list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'executed']
-    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text']
-    list_filter = ['destination']
+    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
+    list_filter = ['source', 'destination']
 admin_site.register(Transfer, TransferAdmin)
 
 class AccountAdmin(admin.ModelAdmin):
@@ -65,5 +65,4 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
     search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
-
 

@@ -95,14 +95,15 @@ class UserInfoAdmin(admin.ModelAdmin):
     search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
-    list_filter = ['graduation_year']
+    list_display = ['id', 'user', 'graduation_year', 'getSchool']
+    list_filter = ['graduation_year', 'studentrep']
     search_fields = default_user_search()
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college']
-    search_fields = default_user_search()
+    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student']
+    search_fields = default_user_search() + ['college']
+    list_filter = ('from_here', 'is_graduate_student', 'graduation_year')
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
@@ -112,7 +113,7 @@ admin_site.register(GuardianInfo, GuardianInfoAdmin)
 
 class EducatorInfoAdmin(UserInfoAdmin):
     search_fields = default_user_search()
-    list_display = ['id', 'user', 'position', 'k12school', 'school']
+    list_display = ['id', 'user', 'position', 'getSchool']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
