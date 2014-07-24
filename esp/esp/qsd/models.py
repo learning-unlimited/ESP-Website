@@ -108,8 +108,8 @@ class QuasiStaticData(models.Model):
     
     nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
-    create_date = models.DateTimeField(default=datetime.now, editable=False)
-    author = AjaxForeignKey(ESPUser)
+    create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
+    author = AjaxForeignKey(ESPUser, verbose_name="last modifed by") #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
