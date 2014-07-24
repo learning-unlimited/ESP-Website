@@ -2413,7 +2413,9 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.module_name), args=(self.id,))
 
 
-
+    def __unicode__(self):
+        return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else None)
+        
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
