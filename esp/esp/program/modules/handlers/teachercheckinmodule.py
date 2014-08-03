@@ -147,7 +147,13 @@ class TeacherCheckinModule(ProgramModuleObj):
                 else:
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), mimetype='text/json')
-    
+
+    @staticmethod
+    def get_phone(user):
+        """Get the phone number to display for a user."""
+        contact_info = user.getLastProfile().contact_user
+        return contact_info.phone_cell or contact_info.phone_day
+
     def getMissingTeachers(self, prog, date=None, starttime=None, when=None):
         """Return a list of class sections with missing teachers as of 'when'.
 
@@ -179,14 +185,14 @@ class TeacherCheckinModule(ProgramModuleObj):
         and is used to filter the set of checked-in Records, so that the view
         shows who is not checked in yet for the day.
 
-        Returns the 2-tuple (class_arr, teacher_dict):
-          class_arr (list of ClassSection): A list of all sections starting at
-                                            'starttime' (if given), otherwise
-                                            all sections on 'date'.
-          teacher_dict (dict):              The keys are the id numbers of all
-                                            the ESPUsers teaching classes in
-                                            'class_arr'. The values are dicts
-                                            of teacher information.
+        Returns the 2-tuple (sections, arrived):
+            sections: A list of all sections starting at the given time or on
+                      the given date which do not have all teachers checked in,
+                      with those with no teachers checked in first.  If a date
+                      was given, includes only the first section of each class
+                      on that date.
+            arrived:  A dict of id -> teacher for all teachers who have already
+                      checked in.
         """
         if when is None:
             when = datetime.now()
@@ -200,74 +206,67 @@ class TeacherCheckinModule(ProgramModuleObj):
                                        meeting_times__start__day   = date.day)
         if starttime is not None:
             sections = sections.filter(begin_time=starttime.start)
+        sections = sections.select_related(
+            'parent_class',
+            'parent_class__category',
+        ).prefetch_related(
+            'parent_class__teachers',
+        )
         sections = sections.distinct()
-        teachers = ESPUser.objects.filter(classsubject__sections__in=sections)
 
         # A teacher is considered to have arrived if:
         # - They have a "teacher_checked_in" Record for the program
         # - which is from before 'when' (since we are considering the state of
         #   check-in at this time).
         # - which is from the same date as 'when'.
-        arrived = teachers.filter(record__program=prog,
-                                  record__event='teacher_checked_in',
-                                  record__time__lte   = when,
-                                  record__time__year  = when.year,
-                                  record__time__month = when.month,
-                                  record__time__day   = when.day).distinct()
+        teachers = ESPUser.objects.filter(
+            classsubject__sections__in=sections,
+            record__program=prog,
+            record__event='teacher_checked_in',
+            record__time__lte=when,
+            record__time__year=when.year,
+            record__time__month=when.month,
+            record__time__day=when.day).distinct()
 
-        missing = teachers.exclude(id__in=arrived)
-        missing_sections = sections.filter(parent_class__teachers__in=missing,)
-        teacher_tuples = ESPUser.objects.filter(classsubject__sections__in=missing_sections) \
-                                          .order_by('classsubject__sections__meeting_times__start',
-                                                    'last_name', 'first_name') \
-                                          .values_list('id', 'classsubject__id', 'classsubject__title') \
-                                          .distinct()
-        
-        teacher_dict = {}
-        for teacher in list(arrived) + list(missing):
-            contact = teacher.getLastProfile().contact_user
-            if contact is None:
-                contact = ContactInfo(phone_cell='N/A')
-            teacher_dict[teacher.id] = {'username': teacher.username,
-                                        'name': teacher.name(),
-                                        'last_name': teacher.last_name,
-                                        'phone': contact.phone_cell or contact.phone_day,
-                                        'arrived': True}
-        for teacher in missing:
-            teacher_dict[teacher.id]['arrived'] = False
-        
-        class_dict = {}
-        class_arr = []
-        for teacher_id, class_id, class_name in teacher_tuples:
-            if class_id not in class_dict:
-                class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(),
-                                        'name': class_name,
-                                        'teachers': {},
-                                        'any_arrived': False}
-                class_arr.append(class_dict[class_id])
-            if teacher_id not in class_dict[class_id]['teachers']:
-                class_dict[class_id]['teachers'][teacher_id] = teacher_dict[teacher_id]
-        
-        for sec in missing_sections:
-            if sec.parent_class.id in class_dict:
-                class_ = class_dict[sec.parent_class.id]
-                class_['room'] = (sec.prettyrooms() or [None])[0]
-                if 'time' in class_:
-                    class_['time'] = min(class_['time'], sec.begin_time)
-                else:
-                    class_['time'] = sec.begin_time
-        
-        #Move sections where at least one teacher showed up to end of list
-        for sec in class_arr:
-            for teacher in sec['teachers'].itervalues():
-                if teacher['arrived']:
-                    sec['any_arrived'] = True
-                    break
-        class_arr = [sec for sec in class_arr if sec['any_arrived'] == False] + \
-                    [sec for sec in class_arr if sec['any_arrived'] == True]
-        
-        return class_arr, teacher_dict
-    
+        # To save multiple calls to getLastProfile, precompute the teacher
+        # phones.
+        teacher_phones = {}
+        for section in sections:
+            for teacher in section.teachers:
+                if teacher.id not in teacher_phones:
+                    teacher_phones[teacher.id] = self.get_phone(teacher)
+
+        arrived = {}
+        for teacher in teachers:
+            if teacher.id not in teacher_phones:
+                teacher_phones[teacher.id] = self.get_phone(teacher)
+            teacher.phone = teacher_phones[teacher.id]
+            arrived[teacher.id] = teacher
+
+        sections_by_class = {}
+        for section in sections:
+            if not all(teacher.id in arrived for teacher in section.teachers):
+                # Put the first section of each class into sections_by_class
+                if (section.parent_class.id not in sections_by_class
+                        or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
+                    # Precompute some things and pack them on the section.
+                    section.any_arrived = any(teacher.id in arrived
+                                              for teacher in section.teachers)
+                    section.room = (section.prettyrooms() or [None])[0]
+                    for teacher in section.teachers:
+                        teacher.phone = teacher_phones[teacher.id]
+                    sections_by_class[section.parent_class_id] = section
+
+        sections = [
+            section for section in sections_by_class.values()
+            if not section.any_arrived
+        ] + [
+            section for section in sections_by_class.values()
+            if section.any_arrived
+        ]
+
+        return sections, arrived
+
     @aux_call
     @needs_onsite
     def missingteachers(self, request, tl, one, two, module, extra, prog):
@@ -300,10 +299,11 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             when = None
         context['date'] = date
-        context['sections'], teachers = self.getMissingTeachers(prog, date, starttime, when)
-        context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
+        context['sections'], context['arrived'] = self.getMissingTeachers(
+            prog, date, starttime, when)
         context['start_time'] = starttime
-        return render_to_response(self.baseDir()+'missingteachers.html', request, context)
-    
+        return render_to_response(self.baseDir()+'missingteachers.html',
+                                  request, context)
+
     class Meta:
         abstract = True

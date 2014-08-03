@@ -97,17 +97,17 @@
 {% for section in sections %}
 <tr>
     <td rowspan="{{ section.teachers|length }}">
-        {{ section.id }}: {{ section.name }}
+        {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
     <td class="room" rowspan="{{ section.teachers|length }}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
-            {{ section.time }}
+            {{ section.begin_time }}
         {% endif %}
     </td>
-    {% for teacher in section.teachers.itervalues %}
-        {% if teacher.arrived %}
+    {% for teacher in section.teachers %}
+        {% if teacher.id in arrived %}
         <td class="checked-in">
         {% else %}
         <td class="not-checked-in">
@@ -115,7 +115,7 @@
             <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
         </td>
         <td class="checkin-column">
-            {% if not teacher.arrived %}
+            {% if teacher.id not in arrived %}
             <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}" 
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
@@ -152,7 +152,7 @@
     </td>
 </tr>    
 {% endif %}
-{% for teacher in arrived %}
+{% for teacher in arrived.values %}
 <tr>
     <td class="checked-in">
         <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
