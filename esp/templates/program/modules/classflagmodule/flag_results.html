@@ -32,9 +32,7 @@ You asked for classes with {{english}}; {{queryset|length}} of {{program.classsu
             <div class="fqr-class-flags">
                 Flags: 
                 {% for flag in class.flags.all %}
-                <span class="flag-name" id="fqr-flag-header-{{flag.id}}" style="background: {{flag.flag_type.getColor}};" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');">
-                        {{flag.flag_type.name}}
-                    </span>
+                    {% include "program/modules/classflagmodule/flag_name.html" %}
                 {% endfor %}
             </div>
             <div class="fqr-class-buttons">

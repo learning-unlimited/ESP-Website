@@ -37,6 +37,7 @@ from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models.class_ import ClassSubject
+from esp.program.models.flags import ClassFlagType
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, Record, ContactInfo
@@ -211,6 +212,10 @@ class TeacherCheckinModule(ProgramModuleObj):
             'parent_class__category',
         ).prefetch_related(
             'parent_class__teachers',
+            'parent_class__flags',
+            'parent_class__flags__flag_type',
+            'parent_class__flags__modified_by',
+            'parent_class__flags__created_by',
         )
         sections = sections.distinct()
 
@@ -301,6 +306,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
             prog, date, starttime, when)
+        context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html',
                                   request, context)

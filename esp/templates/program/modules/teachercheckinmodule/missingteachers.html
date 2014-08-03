@@ -7,6 +7,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
     <style type="text/css">
         #shortcuts-box {
             position: fixed;
@@ -46,12 +47,31 @@
         input.not-found {
             background-color: #FFAAAA;
         }
+
+        .section-detail {
+            display: inline-block;
+            border: 1px solid #ccc;
+            margin: 0px;
+            width: 100%;
+        }
         
+        .section-detail-header {
+            background-color: #c6def7;
+            font-size: 1.2em;
+            width: 100%;
+        }
+
+        .flag-name-list {
+            display: inline-block;
+            width: 470px;
+            vertical-align: middle;
+        }
     </style>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
+    <script src="/media/scripts/flag-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
@@ -126,6 +146,32 @@
         </tr>
         <tr>
     {% endfor %}
+    <td colspan="5">
+        <div class="section-detail fqr-class">
+            <div class="section-detail-header"
+                 onclick="$j(this).siblings('.section-detail-info').toggle('blink');">
+                {{section.title}}
+            </div>
+            <div class="section-detail-info">
+                <span>
+                    <button class="add-flag btn">add flag</button>
+                    <div class="flag-name-list">
+                        {% for flag in section.parent_class.flags.all %}
+                            {% include "program/modules/classflagmodule/flag_name.html" %}
+                        {% endfor %}
+                    </div>
+                </span>
+                {% for flag in section.parent_class.flags.all %}
+                    {% include "program/modules/classflagmodule/flag_detail.html" %}
+                {% endfor %}
+                {% with section.parent_class as class %}
+                    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                {% endwith %}
+            </div>
+        </div>
+    </td>
+</tr>
+<tr>
     <td colspan="5"><hr/></td>
 </tr>
 {% endfor %}
