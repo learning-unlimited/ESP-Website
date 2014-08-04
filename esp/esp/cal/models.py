@@ -211,8 +211,9 @@ def install():
     """
     This ensures the existence of certain event types:
         Class Time Block -- for classes, obviously
+        Open Class Time Block -- for open classes, when not scheduling them in normal timeblocks
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer' ]:
+    for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
         EventType.objects.get_or_create(description=x)

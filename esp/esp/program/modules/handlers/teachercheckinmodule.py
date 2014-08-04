@@ -320,4 +320,4 @@ class TeacherCheckinModule(ProgramModuleObj):
                                   request, context)
 
     class Meta:
-        abstract = True
+        proxy = True

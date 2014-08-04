@@ -6,6 +6,8 @@
 {% block content %}
 <h1>Medical and Emergency Contact Information for {{ program.niceName }}</h1>
 
+<div class="Administrator hidden"><strong>Admins: to let a student (or yourself) skip the medical form, click <a href="/manage/{{program.url}}/medicalbypass">here</a>.</strong></div>
+
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:medliab" %}
 

@@ -255,5 +255,5 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return True
     
     class Meta:
-        abstract = True
+        proxy = True
 
