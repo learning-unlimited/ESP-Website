@@ -155,7 +155,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         contact_info = user.getLastProfile().contact_user
         return contact_info.phone_cell or contact_info.phone_day
 
-    def getMissingTeachers(self, prog, date=None, starttime=None, when=None):
+    def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
+                           show_flags=True):
         """Return a list of class sections with missing teachers as of 'when'.
 
         Parameters:
@@ -213,11 +214,14 @@ class TeacherCheckinModule(ProgramModuleObj):
         ).prefetch_related(
             'parent_class__teachers',
             'parent_class__sections',
-            'parent_class__flags',
-            'parent_class__flags__flag_type',
-            'parent_class__flags__modified_by',
-            'parent_class__flags__created_by',
         )
+        if show_flags:
+            sections = sections.prefetch_related(
+                'parent_class__flags',
+                'parent_class__flags__flag_type',
+                'parent_class__flags__modified_by',
+                'parent_class__flags__created_by',
+            )
         sections = sections.distinct()
 
         # A teacher is considered to have arrived if:
@@ -304,10 +308,13 @@ class TeacherCheckinModule(ProgramModuleObj):
                 context['url_when'] = request.GET['when']
         else:
             when = None
+        show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
         context['sections'], context['arrived'] = self.getMissingTeachers(
-            prog, date, starttime, when)
-        context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+            prog, date, starttime, when, show_flags)
+        if show_flags:
+            context['show_flags'] = True
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html',
                                   request, context)

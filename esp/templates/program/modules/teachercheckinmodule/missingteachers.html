@@ -85,7 +85,7 @@
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
     <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
-    <p>Click a class title for more info and class flags</p>
+    <p>Click a class title for more info{% if show_flags %} and class flags{% endif %}</p>
 </div>
 
 <div id='program_form'>
@@ -155,21 +155,25 @@
             </div>
             <div class="section-detail-info" style="display: none;">
                 {% with section.parent_class as class %}
-                    <span>
-                        <button class="add-flag btn">add flag</button>
-                        <div class="flag-name-list">
-                            {% for flag in class.flags.all %}
-                                {% include "program/modules/classflagmodule/flag_name.html" %}
-                            {% endfor %}
-                        </div>
-                    </span>
+                    {% if show_flags %}
+                        <span>
+                            <button class="add-flag btn">add flag</button>
+                            <div class="flag-name-list">
+                                {% for flag in class.flags.all %}
+                                    {% include "program/modules/classflagmodule/flag_name.html" %}
+                                {% endfor %}
+                            </div>
+                        </span>
+                    {% endif %}
                     <div>
                         {% include "program/modules/classflagmodule/class_detail.html" %}
                     </div>
-                    {% for flag in class.flags.all %}
-                        {% include "program/modules/classflagmodule/flag_detail.html" %}
-                    {% endfor %}
-                    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% if show_flags %}
+                        {% for flag in class.flags.all %}
+                            {% include "program/modules/classflagmodule/flag_detail.html" %}
+                        {% endfor %}
+                        {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% endif %}
                 {% endwith %}
             </div>
         </div>
