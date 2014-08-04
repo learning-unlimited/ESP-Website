@@ -85,6 +85,7 @@
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
     <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
+    <p>Click a class title for more info and class flags</p>
 </div>
 
 <div id='program_form'>
@@ -152,19 +153,22 @@
                  onclick="$j(this).siblings('.section-detail-info').toggle('blink');">
                 {{section.title}}
             </div>
-            <div class="section-detail-info">
-                <span>
-                    <button class="add-flag btn">add flag</button>
-                    <div class="flag-name-list">
-                        {% for flag in section.parent_class.flags.all %}
-                            {% include "program/modules/classflagmodule/flag_name.html" %}
-                        {% endfor %}
-                    </div>
-                </span>
-                {% for flag in section.parent_class.flags.all %}
-                    {% include "program/modules/classflagmodule/flag_detail.html" %}
-                {% endfor %}
+            <div class="section-detail-info" style="display: none;">
                 {% with section.parent_class as class %}
+                    <span>
+                        <button class="add-flag btn">add flag</button>
+                        <div class="flag-name-list">
+                            {% for flag in class.flags.all %}
+                                {% include "program/modules/classflagmodule/flag_name.html" %}
+                            {% endfor %}
+                        </div>
+                    </span>
+                    <div>
+                        {% include "program/modules/classflagmodule/class_detail.html" %}
+                    </div>
+                    {% for flag in class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_detail.html" %}
+                    {% endfor %}
                     {% include "program/modules/classflagmodule/new_flag_form.html" %}
                 {% endwith %}
             </div>

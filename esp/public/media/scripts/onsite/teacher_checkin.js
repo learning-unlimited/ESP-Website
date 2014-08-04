@@ -8,7 +8,6 @@ $j(function(){
     var checkins = [];
 
     $j(".flag-detail").hide();
-    $j(".section-detail-info").hide();
     
     //Replace hyphens with non-breaking hyphens, to stop Chrome from breaking up phone numbers
     function changeHyphens(n, node){

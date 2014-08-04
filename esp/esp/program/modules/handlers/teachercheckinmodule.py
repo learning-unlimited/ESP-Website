@@ -212,6 +212,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             'parent_class__category',
         ).prefetch_related(
             'parent_class__teachers',
+            'parent_class__sections',
             'parent_class__flags',
             'parent_class__flags__flag_type',
             'parent_class__flags__modified_by',
