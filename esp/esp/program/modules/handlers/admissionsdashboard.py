@@ -169,4 +169,4 @@ class AdmissionsDashboard(ProgramModuleObj):
             return {'success': 1, 'updated': updated}
 
     class Meta:
-        abstract = True
+        proxy = True

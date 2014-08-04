@@ -1,8 +1,8 @@
 from django.forms import *
 from django.contrib.formtools.wizard import FormWizard
 from django.template.context import RequestContext
-from dataviews import useful_models as all_usefull_models
-from dataviews import * 
+from esp.dataviews import useful_models as all_usefull_models
+from esp.dataviews import *
 from django.forms.util import flatatt, ErrorDict, ErrorList
 from django.forms.forms import pretty_name
 from django.core.urlresolvers import get_callable, get_mod_func

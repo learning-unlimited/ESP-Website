@@ -41,4 +41,5 @@ class MediaAdmin(admin.ModelAdmin):
     list_display = ['owner_type', 'owner_id', 'friendly_name', 'target_file', ]
     list_display_links = ['friendly_name']
     search_fields = ['friendly_name', 'owner_id', ]
+    list_filter = ('owner_type',)
 admin_site.register(Media, MediaAdmin)

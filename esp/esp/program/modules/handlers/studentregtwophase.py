@@ -375,4 +375,4 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return self.goToCore(tl)
 
     class Meta:
-        abstract = True
+        proxy = True

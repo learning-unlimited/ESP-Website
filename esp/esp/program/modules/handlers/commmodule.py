@@ -301,5 +301,5 @@ class CommModule(ProgramModuleObj):
                                                'body': body})
 
     class Meta:
-        abstract = True
+        proxy = True
 
