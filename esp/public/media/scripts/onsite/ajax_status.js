@@ -662,7 +662,7 @@ function render_classchange_table(student_id)
 */
 
 function update_category_filters()
-{
+{   
     $j(".section").removeClass("section_category_hidden");
     for (var id_str in data.categories)
     {
@@ -675,19 +675,43 @@ function update_category_filters()
     }
 }
 
+function toggle_categories() {
+    var showAll = $j(this).val() == "all";
+    var selectorToHide = showAll ? "category_hide_all" : "category_show_all";
+
+    $j("#" + selectorToHide).prop("checked",false);
+
+    if($j(this).prop("checked")) {
+
+        if(showAll) {
+            settings.categories_to_display = data.categories;
+        } else {
+            settings.categories_to_display = [];
+        }
+
+        $j("#category_list :checkbox").not(".category_selector")
+                                      .prop('checked', showAll);
+        update_category_filters();
+                                      
+    }
+}
+
 function render_category_options()
 {
     //  Clear category select area
     top_div = $j("#category_list");
-    top_div.html("");
+    //top_div.html("");
     //  Add a checkbox for each category we know about
     for (var id_str in data.categories)
     {
         var id = parseInt(id_str);
         var new_li = $j("<div/>").addClass("category_item");
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
-        if (settings.categories_to_display.indexOf(id) != -1)
+
+        if (settings.categories_to_display.indexOf(id) != -1) {
             new_checkbox.attr("checked", "checked");
+        }
+
         new_checkbox.change(function (event) {
             var target_id = parseInt(event.target.id.split("_")[2]);
             var id_index = settings.categories_to_display.indexOf(target_id);
@@ -697,10 +721,14 @@ function render_category_options()
                 settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
             update_category_filters();
         });
+
         new_li.append(new_checkbox);
         new_li.append($j("<span/>").html(data.categories[id].symbol + ": " + data.categories[id].category));
         top_div.append(new_li);
     }
+
+    //initialize select all/none
+    $j('.category_selector').click(toggle_categories);
 }
 
 function populate_classes()
