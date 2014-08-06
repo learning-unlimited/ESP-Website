@@ -670,7 +670,7 @@ function update_category_filters()
         if (settings.categories_to_display.indexOf(id) == -1)
         {
             console.log("Hiding category .section_category_" + id);
-            $j(".section_category_" + id).addClass("section_category_hidden");
+            $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
     }
 }
