@@ -667,6 +667,7 @@ function update_category_filters()
     for (var id_str in data.categories)
     {
         var id = parseInt(id_str);
+
         if (settings.categories_to_display.indexOf(id) == -1)
         {
             console.log("Hiding category .section_category_" + id);
@@ -676,24 +677,23 @@ function update_category_filters()
 }
 
 function toggle_categories() {
-    var showAll = $j(this).val() == "all";
-    var selectorToHide = showAll ? "category_hide_all" : "category_show_all";
+    var showAll = $j(this).prop("id") == "category_show_all";
 
-    $j("#" + selectorToHide).prop("checked",false);
+    if(showAll) {
+        settings.categories_to_display.length = 0;
 
-    if($j(this).prop("checked")) {
-
-        if(showAll) {
-            settings.categories_to_display = data.categories;
-        } else {
-            settings.categories_to_display = [];
+        for(var key in data.categories) {
+            settings.categories_to_display.push(parseInt(key));
         }
 
-        $j("#category_list :checkbox").not(".category_selector")
-                                      .prop('checked', showAll);
-        update_category_filters();
-                                      
+    } else {
+        settings.categories_to_display = [];
     }
+    
+    $j("#category_list :checkbox").not(".category_selector")
+                                  .prop('checked', showAll);
+    update_category_filters();
+
 }
 
 function render_category_options()
