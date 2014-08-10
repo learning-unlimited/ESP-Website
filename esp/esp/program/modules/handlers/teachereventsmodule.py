@@ -53,8 +53,8 @@ class TeacherEventsModule(ProgramModuleObj):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
     
     def event_types(self):
-        et_interview, created = EventType.objects.get_or_create(description='Teacher Interview')
-        et_training, created = EventType.objects.get_or_create(description='Teacher Training')
+        et_interview = EventType.get_from_desc('Teacher Interview')
+        et_training = EventType.get_from_desc('Teacher Training')
         return {
             'interview': et_interview,
             'training': et_training,

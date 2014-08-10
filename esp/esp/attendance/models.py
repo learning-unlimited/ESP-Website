@@ -129,7 +129,7 @@ class Attendance(models.Model):
                 event_args['short_description'] = str(start) + " to " + str(event_args['end'])
                 event_args['description'] = str(cls) + ': ' + event_args['short_description']
 
-                event_args['event_type'] = EventType.objects.get_or_create(description='Class Time Block')[0]
+                event_args['event_type'] = EventType.get_from_desc('Class Time Block')
 
                 return Event.objects.create(**event_args)
 

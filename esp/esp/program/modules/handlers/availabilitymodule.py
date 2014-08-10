@@ -72,7 +72,7 @@ class AvailabilityModule(ProgramModuleObj):
             } ]
     
     def event_type(self):
-        et, created = EventType.objects.get_or_create(description='Class Time Block')
+        et = EventType.get_from_desc('Class Time Block')
         return et
     
     def prepare(self, context={}):

@@ -323,7 +323,7 @@ class ProgramHappenTest(TestCase):
         self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
         
-        timeslot_type = EventType.objects.create(description='Class Time Block')
+        timeslot_type = EventType.get_from_desc('Class Time Block')
         now = datetime.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
             start=now, end=now+timedelta(0,3600), event_type=timeslot_type )
@@ -502,6 +502,7 @@ class ProgramFrameworkTest(TestCase):
     def setUp(self, *args, **kwargs):
         from esp.users.models import ESPUser
         from esp.cal.models import Event, EventType
+        from esp.cal.models import install as cal_install
         from esp.resources.models import Resource, ResourceType
         from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
         from esp.program.setup import prepare_program, commit_program
@@ -513,6 +514,7 @@ class ProgramFrameworkTest(TestCase):
 
         user_role_setup()
         program_modules_install()
+        cal_install()
         
         #   Default parameters
         settings = {'num_timeslots': 3,
@@ -620,7 +622,7 @@ class ProgramFrameworkTest(TestCase):
         self.program = new_prog
 
         #   Create timeblocks and resources
-        self.event_type, created = EventType.objects.get_or_create(description='Class Time Block')
+        self.event_type = EventType.get_from_desc('Class Time Block')
         for i in range(settings['num_timeslots']):
             start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=settings['timeslot_length'])

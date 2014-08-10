@@ -80,7 +80,7 @@ class VolunteerRequestForm(forms.Form):
             ts.start = self.cleaned_data['start_time']
             ts.end = self.cleaned_data['end_time']
             ts.short_description = ts.description = self.cleaned_data['description']
-            ts.event_type, created = EventType.objects.get_or_create(description='Volunteer')
+            ts.event_type = EventType.get_from_desc('Volunteer')
             ts.save()
             vr = VolunteerRequest()
             vr.program = self.program
