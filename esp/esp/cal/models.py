@@ -48,7 +48,7 @@ class EventType(models.Model):
         return unicode(self.description)
 
     @cache_function
-    def get_from_desc(self, desc):
+    def get_from_desc(cls, desc):
         """ A cached function for getting EventTypes that we know must exist
         if someone has run install() """
         return EventType.objects.get(description=desc)
