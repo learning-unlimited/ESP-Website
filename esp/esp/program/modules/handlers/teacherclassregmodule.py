@@ -197,7 +197,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program.id == self.program.id ]
+                if cls.parent_program_id == self.program.id ]
 
     @aux_call
     @needs_teacher
