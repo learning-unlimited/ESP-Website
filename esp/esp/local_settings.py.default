@@ -55,9 +55,6 @@ CACHE_PREFIX = "ESP"
 # Not necessary unless you want to override the default!
 # PROJECT_ROOT = '/path/to/website/code/'
 
-# log directory
-LOG_FILE = '/path/to/website/log'
-
 ###################
 # Plugin settings #
 ###################

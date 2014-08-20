@@ -59,5 +59,5 @@ class StudentRegConfirm(ProgramModuleObj):
         return True
 
     class Meta:
-        abstract = True
+        proxy = True
 

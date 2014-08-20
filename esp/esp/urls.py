@@ -175,6 +175,9 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.formstack.views',
     (r'^medicalsyncapi$', 'medicalsyncapi'),)
 
+urlpatterns += patterns('esp.formstack.views',
+    (r'^formstack_webhook/?$', 'formstack_webhook'),)
+
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
 	(r'^customforms/create/$','formBuilder'),

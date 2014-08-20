@@ -1,3 +1,21 @@
+from django.http import HttpResponse, Http404
+from django.dispatch import receiver
+from django.views.decorators.csrf import csrf_exempt
+from esp.formstack.signals import formstack_post_signal
+
+@csrf_exempt
+def formstack_webhook(request):
+    if request.method == 'POST':
+        data = request.POST.dict()
+        form_id = data.pop('FormID')
+        submission_id = data.pop('UniqueID')
+        handshake_key = data.pop('HandshakeKey', None)
+        # TODO: verify handshake key
+        formstack_post_signal.send(sender=None, form_id=form_id, submission_id=submission_id, fields=data)
+        return HttpResponse()
+    else:
+        raise Http404
+
 from django.contrib.auth import authenticate
 from django.http import HttpResponse, Http404, HttpResponseServerError, \
     HttpResponseForbidden, HttpResponseNotFound
@@ -38,16 +56,14 @@ def medicalsyncapi(request):
     # Find Program
     chunks = request.POST['program'].split(' ')
     if len(chunks) == 2:
-        a = chunks[0]
-        b = chunks[1]
+        url = chunks[0] + '/' + chunks[1]
     elif len(chunks) == 3:
-        a = chunks[1]
-        b = chunks[0] + ' ' + chunks[2]
+        url = chunks[1] + '/' + chunks[0] + '_' + chunks[2]
     else:
         return HttpResponseNotFound("Program could not be parsed")
     
-    results = Program.objects.filter(anchor__friendly_name__icontains=b,
-                                     anchor__parent__friendly_name__icontains=a)
+    results = Program.objects.filter(url=url)
+
     if len(results) != 1:
         return HttpResponseNotFound("No/multiple programs match criteria")
     prog = results[0]

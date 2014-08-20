@@ -423,6 +423,29 @@ def userview(request):
     }
     return render_to_response("users/userview.html", request, context )
 
+
+def deactivate_user(request):
+    return activate_or_deactivate_user(request, activate=False)
+
+def activate_user(request):
+    return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def activate_or_deactivate_user(request, activate):
+    """Linked from the userview page."""
+    if request.method != 'POST' or 'user_id' not in request.POST:
+        return HttpResponseBadRequest('')
+    else:
+        users = ESPUser.objects.filter(id=request.POST['user_id'])
+        if users.count() != 1:
+            return HttpResponseBadRequest('')
+        else:
+            user = users[0]
+            user.is_active = activate
+            user.save()
+            return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
+
+
 @admin_required
 def manage_programs(request):
     #as admin required implies can administrate all programs now,

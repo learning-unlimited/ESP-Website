@@ -21,7 +21,6 @@ from django.utils.decorators import method_decorator
 from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
-from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.tagdict.models import Tag
@@ -142,7 +141,7 @@ When there are already accounts with this email address (depending on some tags)
 
         #form is valid, and not caring about multiple accounts
         email = urllib.quote(form.cleaned_data['email'])
-        return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+email)
+        return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
                                   request,
@@ -180,12 +179,12 @@ def user_registration_phase2(request):
         return user_registration_validate(request)
 
     if not Tag.getBooleanTag("ask_about_duplicate_accounts",default=False):
-        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
+        return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
         email = urllib.unquote(request.GET['email'])
     except MultiValueDictKeyError:
-        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
+        return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email})
     return render_to_response('registration/newuser.html',
                               request, {'form':form, 'email':email})

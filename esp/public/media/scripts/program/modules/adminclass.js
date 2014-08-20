@@ -51,6 +51,12 @@ function getStatusDetails(statusCode) {
     return {text: "Unapproved", action: "", classes: ['unapproved']};
 }
 
+function make_attrib_para(field, content) {
+    return $j("<p></p>")
+        .append("<b>"+field+":</b>")
+        .append($j("<div/>").text(content));
+}
+
 function fill_class_popup(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
   var status_details = getStatusDetails(class_info.status);
@@ -91,21 +97,22 @@ function fill_class_popup(clsid, classes_data) {
         }
       }])
     .html('')
-    .append("<p><b>Status:</b> " + status_string + "</p>")
-    .append("<p><b>Teachers:</b> " + class_info.teacher_names + "</p>")
-    .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
+    .append(make_attrib_para("Status", status_string))
+    .append(make_attrib_para("Teachers", class_info.teacher_names))
+    .append(make_attrib_para("Sections", class_info.sections.length))
     .append(sections_list)
-    .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
-    .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
-    .append("<p><b>Location:</b> " + class_info.location + "</p>")
-    .append("<p><b>Grade Range:</b> " + class_info.grade_range + "</p>")
-    .append("<p><b>Category:</b> " + class_info.category + "</p>")
-    //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
-    .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
-    .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
-    .append("<p><b>Requests:</b> " + class_info.special_requests + "</p>")
-    .append("<p><b>Planned Purchases:</b> " + class_info.purchases + "</p>")
-    .append("<p><b>Comments:</b> " + class_info.comments + "</p>")
+    .append(make_attrib_para("Max Size", class_info.class_size_max))
+    .append(make_attrib_para("Duration", class_info.duration))
+    .append(make_attrib_para("Location", class_info.location))
+    .append(make_attrib_para("Grade Range", class_info.grade_range))
+    .append(make_attrib_para("Category", class_info.category))
+    //.append("<p>Difficulty: " + class_info.difficulty))
+    .append(make_attrib_para("Prereqs", class_info.prereqs))
+    // Ensure the class description gets HTML-escaped
+    .append(make_attrib_para("Description", class_info.class_info))
+    .append(make_attrib_para("Requests", class_info.special_requests))
+    .append(make_attrib_para("Planned Purchases", class_info.purchases))
+    .append(make_attrib_para("Comments", class_info.comments))
     .attr('clsid', clsid);
 }
 
@@ -207,7 +214,7 @@ function createClassRow(clsObj)
       {{ section_links }} \
       </span> \
     </td> \
-    <td class='clsleft classname' style='font-size: 60%; font-style: italic;'> \
+    <td class='clsleft classname' style='font-style: italic'> \
       <span title='Teacher Names'> \
         {{ teacher_names }} \
       </span> \
@@ -244,7 +251,7 @@ function createClassRow(clsObj)
     teacher_list = $j.map(teacher_list, function(val, index) {
 	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
     });
-    var teacher_list_string = "( " + teacher_list.join(", ") + " )";
+    var teacher_list_string = teacher_list.join(", ");
 
     var section_link_list = "";
     for (var i = 0; i < clsObj.sections.length; i++)

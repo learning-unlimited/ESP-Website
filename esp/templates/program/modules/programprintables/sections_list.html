@@ -58,7 +58,14 @@ table.sortable thead {
  <td>{{ cls.title }}</td>
  <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}
  <td>{{ cls.parent_class.getTeacherNamesLast|join:"; " }}</td>
- <td>{% for teacher in cls.teachers %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+ <td>{% for teacher in cls.teachers %}
+   {% if teacher.getLastProfile.contact_user.phone_cell %}
+   {{ teacher.getLastProfile.contact_user.phone_cell }}
+   {% else %}
+   {{ teacher.getLastProfile.contact_user.phone_day }}
+   {% endif %}
+   {% if not forloop.last %}, {% endif %}{% endfor %}
+ </td>
  <td>{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}</td>
  <td>{% if cls.friendly_times|length_is:0 %}Unassigned{% else %}{{ cls.friendly_times|join:"<br />"}}{% endif %}</td>
  <td>{% if cls.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>

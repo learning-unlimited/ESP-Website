@@ -382,4 +382,4 @@ class StudentRegTwoPhase(ProgramModuleObj,StudentRegistrationMixin):
         return self.goToCore(tl)
 
     class Meta:
-        abstract = True
+        proxy = True

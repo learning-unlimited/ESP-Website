@@ -1,4 +1,4 @@
-{# expects program, class, and teacherclsmodule (ClassRegModuleInfo) #}
+{# expects program, class, and crmi (ClassRegModuleInfo) #}
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
@@ -74,7 +74,7 @@
   </td>
 </tr>
 
-{% if teacherclsmodule.allow_coteach %}
+{% if crmi.allow_coteach %}
 <tr>
   <td class="clsleft"><b>(Co-)Teachers: </b></td>
   <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>

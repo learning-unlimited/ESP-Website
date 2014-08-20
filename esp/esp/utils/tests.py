@@ -16,11 +16,11 @@ except:
 import os
 import sys
 try:
-    from utils.memcached_multihost import CacheClass as MultihostCacheClass
+    from esp.utils.memcached_multihost import CacheClass as MultihostCacheClass
 except:
     MultihostCacheClass = False
     print "Couldn't import MultihostCacheClass.  Not running tests against it."
-from utils.defaultclass import defaultclass
+from esp.utils.defaultclass import defaultclass
 from esp import utils
 from django.conf import settings
 from esp.utils.models import TemplateOverride
