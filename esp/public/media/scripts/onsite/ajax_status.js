@@ -154,6 +154,8 @@ function setup_settings()
     $j("#grade_limits_control").unbind("change");
     $j("#compact_classes").unbind("change");
     $j("#show_closed_reg").unbind("change");
+    $j("#hide_past_time_blocks").unbind("change");
+
 
     //  Apply settings
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
@@ -161,12 +163,14 @@ function setup_settings()
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.compact_classes = $j("#compact_classes").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
+    settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#compact_classes").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
+    $j("#hide_past_time_blocks").change(handle_settings_change);
 }
 
 /*  Event handlers  */
@@ -230,12 +234,18 @@ function update_checkboxes()
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
             studentcheckbox.hover(check_conflicts, clear_conflicts);
             //  Disable the checkbox if the class is full, unless we are overriding that
-            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full)))
+            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full))) 
+            {
                 studentcheckbox.attr("disabled", "disabled");
-	    else if (section.registration_status != 0)
-		studentcheckbox.attr("disabled", "disabled");
-            else
+            } 
+            else if (section.registration_status != 0) 
+            {
+		      studentcheckbox.attr("disabled", "disabled");
+            } 
+            else 
+            {
                 studentcheckbox.change(handle_checkbox);
+            }
         }
     }
     
@@ -551,6 +561,11 @@ function render_table(display_mode, student_id)
     clear_table();
     for (var ts_id in data.timeslots)
     {
+        console.log(data.timeslots[ts_id]);
+        if (settings.hide_past_time_blocks) {
+            //hide time slot if complete
+        }
+
         var div_name = "timeslot_" + ts_id;
         var ts_div = $j("#" + div_name);
         
@@ -633,6 +648,10 @@ function render_table(display_mode, student_id)
 
             classes_div.append(new_div);
         }
+
+        
+
+
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
