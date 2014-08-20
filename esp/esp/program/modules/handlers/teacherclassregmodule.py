@@ -64,7 +64,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
 
-class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
+class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
@@ -78,18 +78,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "inline_template": "listclasses.html",
             }
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return {'crmi': module_ext.ClassRegModuleInfo}
 
 
     def prepare(self, context={}):
-        """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
-            since everything else can be gotten from hooks. """
+        """ prepare returns the context for the main teacherreg page. """
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self # ...
+        context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
@@ -198,7 +197,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program.id == self.program.id ]
+                if cls.parent_program_id == self.program.id ]
 
     @aux_call
     @needs_teacher
@@ -784,7 +783,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
@@ -883,6 +882,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             context['addoredit'] = 'Edit'
 
+        context['open_class_registration'] = self.crmi.open_class_registration
         context['classes'] = {
             0: {'type': 'class', 'link': 'makeaclass'}, 
             1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
@@ -988,5 +988,5 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return 'No classes.'
 
     class Meta:
-        abstract = True
+        proxy = True
 

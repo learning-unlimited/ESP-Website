@@ -83,6 +83,30 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
+CANCELLED = -20
+REJECTED = -10
+UNREVIEWED = 0
+HIDDEN = 5
+ACCEPTED = 10
+
+STATUS_CHOICES = (
+        (CANCELLED, "cancelled"),
+        (REJECTED, "rejected"),
+        (UNREVIEWED, "unreviewed"),
+        (HIDDEN, "accepted but hidden"),
+        (ACCEPTED, "accepted"),
+        )
+
+OPEN = 0
+CLOSED = 10
+
+REGISTRATION_CHOICES = (
+            (OPEN, "open"),
+            (CLOSED, "closed"),
+            )
+
+
+
 class ClassSizeRange(models.Model):
     from esp.program.models import Program
 
@@ -144,9 +168,9 @@ class ClassManager(ProcedureManager):
     
     def approved(self, return_q_obj=False):
         if return_q_obj:
-            return Q(status = 10)
+            return Q(status = ACCEPTED)
         
-        return self.filter(status = 10)
+        return self.filter(status = ACCEPTED)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
         # Try getting the catalog straight from cache
@@ -266,7 +290,7 @@ class ClassManager(ProcedureManager):
             teachers = ESPUser.objects.filter(classsubject__isnull=False)
 
         teachers_by_id = {}
-        for t in teachers:            
+        for t in teachers: 
             teachers_by_id[t.id] = t
 
         # Now, to combine all of the above
@@ -307,8 +331,8 @@ class ClassSection(models.Model):
     parallel sections for a course being taught more than once at Splash or Spark. """
     
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
-    status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
-    registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
+    status = models.IntegerField(choices=STATUS_CHOICES, default=UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
+    registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
@@ -438,7 +462,7 @@ class ClassSection(models.Model):
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
                 ans = self._get_room_capacity(rooms)
-            else: 
+            else:
                 ans = 0
             
         options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -555,7 +579,6 @@ class ClassSection(models.Model):
         else:
             st = first_block.start
             
-
         if st is None:
             return False
         else:
@@ -793,7 +816,7 @@ class ClassSection(models.Model):
         if not self.sufficient_length():
             return []
         
-        #   Start with all rooms the program has.  
+        #   Start with all rooms the program has.
         #   Filter the ones that are available at all times needed by the class.
         filter_qs = []
         ordered_times = self.meeting_times.order_by('start')
@@ -1040,7 +1063,7 @@ class ClassSection(models.Model):
             self.clearRooms()
             self.meeting_times.clear()
 
-        self.status = -20
+        self.status = CANCELLED
         self.save()
 
     def clearStudents(self):
@@ -1085,7 +1108,7 @@ class ClassSection(models.Model):
         if ir.count() == 0:
             return 0
         else:
-            return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
+            return reduce(lambda x,y: x+y, [r.num_students for r in ir])
             
     def isFull(self, ignore_changes=False):
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):
@@ -1118,7 +1141,7 @@ class ClassSection(models.Model):
         """
         classroom_type = ResourceType.get_or_create('Classroom')
         resources = Resource.objects.filter(resourceassignment__target=self).filter(res_type=classroom_type)
-        events = [r.event for r in resources] 
+        events = [r.event for r in resources]
         """
         if hasattr(self, "_events"):
             events = list(self._events)
@@ -1134,16 +1157,16 @@ class ClassSection(models.Model):
         return txtTimes
     friendly_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
     
-    def friendly_times_with_date(self, raw=False): 
+    def friendly_times_with_date(self, raw=False):
         return self.friendly_times(raw=raw, include_date=True)
     
-    def isAccepted(self): return self.status == 10
-    def isReviewed(self): return self.status != 0
-    def isRejected(self): return self.status == -10
-    def isCancelled(self): return self.status == -20
-    isCanceled = isCancelled   
-    def isRegOpen(self): return self.registration_status == 0
-    def isRegClosed(self): return self.registration_status == 10
+    def isAccepted(self): return self.status == ACCEPTED
+    def isReviewed(self): return self.status != UNREVIEWED
+    def isRejected(self): return self.status == REJECTED
+    def isCancelled(self): return self.status == CANCELLED
+    isCanceled = isCancelled
+    def isRegOpen(self): return self.registration_status == OPEN
+    def isRegClosed(self): return self.registration_status == CLOSED
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
     def getRegistrations(self, user = None):
@@ -1307,9 +1330,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     objects = ClassManager()
 
-    #   Backwards compatibility with Class database format.
-    #   Please don't use. :)
-    status = models.IntegerField(default=0)   
+    status = models.IntegerField(choices = STATUS_CHOICES, default=UNREVIEWED)
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
     
@@ -1352,7 +1373,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
             for subj in self.get_sections():
             	rooms.extend(subj.prettyrooms())
-       	    
+ 
             return rooms
 
     def ascii_info(self):
@@ -1435,13 +1456,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
         return new_section
 
-    def add_default_section(self, duration=0.0, status=0):
+    def add_default_section(self, duration=0.0, status=UNREVIEWED):
         """ Make sure this class has a section associated with it.  This should be called
         at least once on every class.  Afterwards, additional sections can be created using
         add_section. """
         
         #   Support migration from currently existing classes.
-        if self.status != 0:
+        if self.status != UNREVIEWED:
             status = self.status
         if self.duration is not None and self.duration > 0:
             duration = self.duration
@@ -1715,9 +1736,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
 
     def isAccepted(self): return self.status > 0
-    def isReviewed(self): return self.status != 0
-    def isRejected(self): return self.status == -10
-    def isCancelled(self): return self.status == -20
+    def isReviewed(self): return self.status != UNREVIEWED
+    def isRejected(self): return self.status == REJECTED
+    def isCancelled(self): return self.status == CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
     
     def isRegOpen(self):
@@ -1743,15 +1764,15 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.isAccepted():
             return False # already accepted
 
-        self.status = 10
+        self.status = ACCEPTED
         # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
         # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
         #self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
-            if sec.status == 0:
-                sec.status = 10
+            if sec.status == UNREVIEWED:
+                sec.status = ACCEPTED
                 sec.save()
 
         if not show_message:
@@ -1771,23 +1792,23 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def propose(self):
         """ Mark this class as just `proposed' """
-        self.status = 0
+        self.status = UNREVIEWED
         self.save()
 
     def reject(self):
         """ Mark this class as rejected; also kicks out students from each section. """
         for sec in self.sections.all():
-            sec.status = -10
+            sec.status = REJECTED
             sec.save()
         self.clearStudents()
-        self.status = -10
+        self.status = REJECTED
         self.save()
 
     def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
             sec.cancel(email_students, include_lottery_students, explanation, unschedule)
-        self.status = -20
+        self.status = CANCELLED
         self.save()
         
     def clearStudents(self):
@@ -1955,7 +1976,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
-        if self.status < 0:
+        if self.status < UNREVIEWED: #ie, all rejected or cancelled classes.
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:

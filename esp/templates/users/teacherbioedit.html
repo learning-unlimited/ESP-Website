@@ -41,6 +41,12 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 <tr><th colspan="2">Your Teacher Biography</th></tr>
 
 <tr>
+  <td><label for="id_hidden">Hide your teacher biography:<br />
+      <small>Your major, college or employer, graduation year, biography, photo, and a list of all classes you've taught appear on your public bio. You can choose to leave some fields blank, or you can hide your bio entirely using this checkbox. Note that your name will still appear in the class catalogs of programs you've taught for.</small></label></td>
+  <td>{{ form.hidden }}</td>
+</tr>
+
+<tr>
  <td><label for="id_slugbio">Description of you in 50 characters or less:<br />
        <small>(e.g. "{{ institution }} sophomore studying Architecture." or "Lifelong teacher of mathematics at the highschool level.")</small></label></td>
  <td>{{ form.slugbio }} {% if form.slugbio.errors %}

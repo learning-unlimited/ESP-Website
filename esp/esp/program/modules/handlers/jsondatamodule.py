@@ -765,4 +765,4 @@ len(teachers[key])))
     stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
 
     class Meta:
-        abstract = True
+        proxy = True

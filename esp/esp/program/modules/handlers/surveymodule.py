@@ -117,5 +117,5 @@ class SurveyModule(ProgramModuleObj):
             return survey_review_single(request, tl, one, two)
 
     class Meta:
-        abstract = True
+        proxy = True
 
