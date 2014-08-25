@@ -214,7 +214,7 @@ function createClassRow(clsObj)
       {{ section_links }} \
       </span> \
     </td> \
-    <td class='clsleft classname' style='font-size: 60%; font-style: italic;'> \
+    <td class='clsleft classname' style='font-style: italic'> \
       <span title='Teacher Names'> \
         {{ teacher_names }} \
       </span> \
@@ -251,7 +251,7 @@ function createClassRow(clsObj)
     teacher_list = $j.map(teacher_list, function(val, index) {
 	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
     });
-    var teacher_list_string = "( " + teacher_list.join(", ") + " )";
+    var teacher_list_string = teacher_list.join(", ");
 
     var section_link_list = "";
     for (var i = 0; i < clsObj.sections.length; i++)

@@ -35,7 +35,9 @@ Learning Unlimited, Inc.
 
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType
 from esp.web.util.main import render_to_response
+from esp.users.models import admin_required
 
+@admin_required
 def summary(request):
     context = {}
     context['accounts'] = Account.objects.all().order_by('id')

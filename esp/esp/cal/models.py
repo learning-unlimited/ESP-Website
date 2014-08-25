@@ -47,6 +47,14 @@ class EventType(models.Model):
     def __unicode__(self):
         return unicode(self.description)
 
+    @cache_function
+    def get_from_desc(cls, desc):
+        """ A cached function for getting EventTypes that we know must exist
+        if someone has run install() """
+        return EventType.objects.get(description=desc)
+    get_from_desc.depend_on_model(lambda: EventType)
+    get_from_desc = classmethod(get_from_desc)
+
 class Event(models.Model):
     """ A unit calendar entry.
 
@@ -211,8 +219,9 @@ def install():
     """
     This ensures the existence of certain event types:
         Class Time Block -- for classes, obviously
+        Open Class Time Block -- for open classes, when not scheduling them in normal timeblocks
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer' ]:
+    for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
         EventType.objects.get_or_create(description=x)

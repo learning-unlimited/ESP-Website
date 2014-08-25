@@ -50,7 +50,7 @@ from django.conf import settings
 
 from decimal import Decimal
 
-class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
+class CreditCardModule_FirstData(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
@@ -59,6 +59,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             "module_type": "learn",
             "seq": 10000,
             }
+
+    @classmethod
+    def extensions(cls):
+        return {'cc_settings': module_ext.CreditCardSettings}
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
@@ -165,11 +169,13 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         else:
             context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
-        context['storename'] = self.store_id
+        context['storename'] = self.cc_settings.store_id
+        for setting in ['host_payment_form', 'post_url', 'offer_donation']:
+            context[setting] = getattr(self.cc_settings, setting)
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 

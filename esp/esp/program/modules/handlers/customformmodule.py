@@ -122,5 +122,5 @@ class CustomFormModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
     
     class Meta:
-        abstract = True
+        proxy = True
 

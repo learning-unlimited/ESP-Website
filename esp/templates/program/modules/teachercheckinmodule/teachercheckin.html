@@ -36,25 +36,54 @@ Please select a timeslot:
 
 <ul>
 {% for time in time_slots %}
+{% ifchanged time.start.day %}
+<li style="margin-top:40px; margin-bottom:20px;">
+    <b>
+    {% if when %}
+        <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}&when={{ url_when }}">
+            View teachers from {{ when }} with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+        </a>
+    {% else %}
+        <a href="missingteachers?date={{ time.start.date|date:"m/d/Y" }}">
+            Check in teachers with classes starting on {{ time.start.date|date:"D m/d/Y" }}
+        </a>
+    {% endif %}
+    </b>
+</li>
+{% endifchanged %}
 <li>
-    {% if time == now %}<b>{% endif %}
+    {% comment %}
+    Bold any timeblocks that started this hour or start next hour.  Don't
+    factor in the date, because then this would only work on the first week
+    week of a multi-week program, or the first day of a Junction-like program.
+    This means that too many things may be bolded (Saturday and Sunday
+    timeslots will both get bolded for a two-day Splash), but I think this is
+    okay. -jmoldow, 2014/04/19
+    {% endcomment %}
+    {% if now.hour <= time.start.hour and time.start.hour <= now.hour|add:"1" %}<b>{% endif %}
+
     {% if when %}
         <a href="missingteachers?start={{ time.id }}&when={{ url_when }}">
             View teachers from {{ when }} with classes starting at {{ time.pretty_start_time }}
         </a>
     {% else %}
-        <a href="missingteachers?start={{ time.id }}">Check in teachers with classes starting at {{ time.pretty_start_time }}</a>
+        <a href="missingteachers?start={{ time.id }}">
+            Check in teachers with classes starting at {{ time.pretty_start_time }}
+        </a>
     {% endif %}
-    {% if time == now %}</b>{% endif %}
+
+    {% comment %}Expression must be same as above.{% endcomment %}
+    {% if now.hour <= time.start.hour and time.start.hour <= now.hour|add:"1" %}</b>{% endif %}
 </li>
 {% endfor %}
-<li><a href="missingteachers{% if when %}?when={{ url_when }}{% endif %}">
+<li style="margin-top:40px; margin-bottom:40px;">
+<b><a href="missingteachers{% if when %}?when={{ url_when }}{% endif %}">
     {% if when %}
         View all teachers from {{ when }}
     {% else %}
         Check in all teachers
     {% endif %}
-</a></li>
+</b></a></li>
 </ul>
 
 {% if when %}<a href="teachercheckin">&lt;&lt;Back to the present</a><br/>{% endif %}

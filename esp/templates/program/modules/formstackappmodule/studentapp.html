@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Student Application{% endblock %}
+{% block content_title %}Apply for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<h1>{{ program.niceName }} Student Application</h1>
+
+{% load render_qsd %}
+{% render_inline_program_qsd program "learn:studentapp" %}
+
+{% if app_is_open %}
+<form method="post" action="{{form.info.url}}">
+    <input type="hidden" name="form" value="{{form.id}}" />
+    <input type="hidden" name="viewkey" value="{{form.info.viewkey}}" />
+    <input type="hidden" name="field{{username_field}}" value="{{username}}" />
+    {% for field, value in autopopulated %}
+    <input type="hidden" name="field{{field}}" value="{{value}}" />
+    {% endfor %}
+    <input type="submit" value="Continue" />
+</form>
+{% endif %}
+
+{% endblock %}

@@ -198,7 +198,6 @@ def classchangerequest(request, tl, one, two):
                 if not section: 
                     continue
                 r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
-                r.end_date = datetime(9999, 1, 1, 0, 0, 0, 0)
                 r.save()
                 
             return HttpResponseRedirect(request.path.rstrip('/')+'/?success')

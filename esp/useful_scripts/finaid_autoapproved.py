@@ -18,12 +18,10 @@ import re
 
 
 # CONFIGURATION
-PROGRAM_ID = 50708  # Splash! 2012
-#  the id of the program in the datatree
-
+PROGRAM = "Splash! 2013"
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(program__anchor__id=PROGRAM_ID).exclude(approved=None).order_by('-approved')
+reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM).exclude(done=False)
 
 print "Auto-Approved Requests"
 if reqs.count() == 0:
@@ -31,9 +29,6 @@ if reqs.count() == 0:
 
 last_date = None
 
-for req in reqs:
-    if last_date != req.approved.date():
-        last_date = req.approved.date()
-        print last_date.strftime('%a %d %b:')
+print ", ".join([ req.user.email for req in reqs ])
 
-    print "  " + req.user.email
+

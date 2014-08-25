@@ -38,6 +38,7 @@ from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
 from esp.program.modules.tests.studentreg import StudentRegTest
 from esp.program.modules.tests.survey import SurveyTest
+from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
 from esp.program.modules.tests.dashboard import DashboardTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
