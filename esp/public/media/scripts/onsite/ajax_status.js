@@ -8,6 +8,7 @@
 
 //  This is the primary data structure for all received data.
 var data = {};
+var minMinutesToHideTimeSlot = 20;
 
 //  Some parameters for things that can be customized in the future.
 var settings = {
@@ -561,15 +562,24 @@ function render_table(display_mode, student_id)
     clear_table();
     for (var ts_id in data.timeslots)
     {
-        console.log(data.timeslots[ts_id]);
-        if (settings.hide_past_time_blocks) {
-            //hide time slot if complete
+        var timeSlotHeader = data.timeslots[ts_id].label;
+
+        if (settings.hide_past_time_blocks) 
+        {
+            var startTimeMillis = data.timeslots[ts_id].startTimeMillis;
+            //excludes timeslots that have a start time 20 minutes prior to the current time
+            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/86400);
+
+            if(differenceInMinutes > minMinutesToHideTimeSlot) 
+            {
+                continue;
+            }
         }
 
         var div_name = "timeslot_" + ts_id;
         var ts_div = $j("#" + div_name);
         
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
+        ts_div.append($j("<div/>").addClass("timeslot_header").html(timeSlotHeader));
         var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
@@ -779,6 +789,7 @@ function populate_classes()
         var new_ts = {};
         new_ts.id = data.catalog.timeslots[i][0];
         new_ts.label = data.catalog.timeslots[i][1];
+        new_ts.startTimeMillis = data.catalog.timeslots[i][2];
         new_ts.sections = [];
         data.timeslots[new_ts.id] = new_ts;
     }
