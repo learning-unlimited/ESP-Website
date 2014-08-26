@@ -75,11 +75,9 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
-admin_site.register(StripeCreditCardSettings)
-
 class CCSAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.module.program
     list_display = ('module', program)
     search_fields = ('program__name',)
-admin_site.register(CreditCardSettings, CCSAdmin)
+admin_site.register(StripeCreditCardSettings, CCSAdmin)
