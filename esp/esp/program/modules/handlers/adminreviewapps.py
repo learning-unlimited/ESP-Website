@@ -231,5 +231,5 @@ Student schedule for %s:
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

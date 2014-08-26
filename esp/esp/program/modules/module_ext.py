@@ -392,6 +392,9 @@ class CreditCardSettings(models.Model):
     offer_donation = models.BooleanField(default=False)
     invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
 
+    def __unicode__(self):
+        return "Credit Card Settings for %s" % str(self.module)
+
 class StripeCreditCardSettings(models.Model):
     """ Model for settings that control the Stripe credit card module.
         The account keys are inherited from site-wide defaults but can
@@ -506,3 +509,5 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
+
+from esp.application.models import FormstackAppSettings

@@ -40,6 +40,7 @@ from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestri
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
+from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -121,16 +122,21 @@ class TeacherClassRegForm(FormWithRequiredCss):
                 hide_field(field, default=field.choices[0][0])
         
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
+
+        if isinstance(module, ClassRegModuleInfo):
+            crmi = module
+        else:
+            crmi = module.crmi
         
-        prog = module.get_program()
+        prog = crmi.get_program()
         
-        section_numbers = module.allowed_sections_actual
+        section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
         
-        class_sizes = module.getClassSizes()
+        class_sizes = crmi.getClassSizes()
         class_sizes = zip(class_sizes, class_sizes)
         
-        class_grades = module.getClassGrades()
+        class_grades = crmi.getClassGrades()
         class_grades = zip(class_grades, class_grades)
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
@@ -141,25 +147,25 @@ class TeacherClassRegForm(FormWithRequiredCss):
         hide_choice_if_useless( self.fields['num_sections'] )
         # category: program.class_categories.all()
         self.fields['category'].choices = [ (x.id, x.category) for x in prog.class_categories.all() ]
-        # grade_min, grade_max: module.getClassGrades
+        # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if module.use_class_size_max:
-            # class_size_max: module.getClassSizes
+        if crmi.use_class_size_max:
+            # class_size_max: crmi.getClassSizes
             self.fields['class_size_max'].choices = class_sizes
         else:
             del self.fields['class_size_max']
 
         if Tag.getTag('use_class_size_optimal', default=False):
-            if not module.use_class_size_optimal:
+            if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 
-            if module.use_optimal_class_size_range:
+            if crmi.use_optimal_class_size_range:
                 self.fields['optimal_class_size_range'].choices = class_ranges
             else:
                 del self.fields['optimal_class_size_range']
 
-            if module.use_allowable_class_size_ranges:
+            if crmi.use_allowable_class_size_ranges:
                 self.fields['allowable_class_size_ranges'].choices = class_ranges
             else:
                 del self.fields['allowable_class_size_ranges']
@@ -168,10 +174,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['optimal_class_size_range']
             del self.fields['allowable_class_size_ranges']
             
-        # global_resources: module.getResourceTypes(is_global=True)
-        self.fields['global_resources'].choices = module.getResourceTypes(is_global=True)
-        # resources: module.getResourceTypes(is_global=False)
-        resource_choices = module.getResourceTypes(is_global=False)
+        # global_resources: crmi.getResourceTypes(is_global=True)
+        self.fields['global_resources'].choices = crmi.getResourceTypes(is_global=True)
+        # resources: crmi.getResourceTypes(is_global=False)
+        resource_choices = crmi.getResourceTypes(is_global=False)
         
         # decide whether to display certain fields
         # resources
@@ -181,26 +187,26 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields['resources'].widget = forms.HiddenInput()
         
         # prereqs
-        if not module.set_prereqs:
+        if not crmi.set_prereqs:
             self.fields['prereqs'].widget = forms.HiddenInput()
         
         # allow_lateness
-        if not module.allow_lateness:
+        if not crmi.allow_lateness:
             self.fields['allow_lateness'].widget = forms.HiddenInput()
             self.fields['allow_lateness'].initial = 'False'
 
-        self.fields['duration'].choices = sorted(module.getDurations())
+        self.fields['duration'].choices = sorted(crmi.getDurations())
         hide_choice_if_useless( self.fields['duration'] )
         
         # session_count
-        if module.session_counts:
-            session_count_choices = module.session_counts_ints
+        if crmi.session_counts:
+            session_count_choices = crmi.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
         
         # requested_room
-        if not module.ask_for_room:
+        if not crmi.ask_for_room:
             hide_field( self.fields['requested_room'] )
             
         #   Hide resource fields since separate forms are now being used. - Michael P

@@ -142,5 +142,5 @@ class SplashInfoModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'splashinfo.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 

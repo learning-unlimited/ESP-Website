@@ -831,9 +831,9 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
         
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        info_list = ClassRegModuleInfo.objects.filter(module__program=self)
-        if info_list.count() == 1 and type(info_list[0].class_max_duration) == int:
-            max_seconds = info_list[0].class_max_duration * 60
+        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        if crmi and crmi.class_max_duration is not None:
+            max_seconds = crmi.class_max_duration * 60
         else:
             max_seconds = None
 
@@ -999,12 +999,10 @@ class Program(models.Model, CustomFormsLinkModel):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        modinfo = self.getModuleExtension(ClassRegModuleInfo)
         retVal = None
-        if mod.count() == 1:
-            modinfo = mod[0].classregmoduleinfo_set.all()
-            if modinfo.count() == 1:
-                retVal = modinfo[0].color_code
+        if modinfo:
+            retVal = modinfo.color_code
 
         self._getColor = retVal
         return retVal
@@ -1376,6 +1374,7 @@ class TeacherBio(models.Model):
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'

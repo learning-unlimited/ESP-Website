@@ -151,5 +151,5 @@ class FormstackMedliabModule(ProgramModuleObj):
                                   request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 

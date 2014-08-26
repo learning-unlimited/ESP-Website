@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Admissions Dashboard</title>
+
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css"/>
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+
+<link rel="stylesheet" type="text/css" href="/media/styles/admissions.css" />
+
+<script type="text/javascript" src="/media/scripts/program/modules/admissionsdashboard.js"></script>
+
+<link rel="icon" href="/media/images/favicon.ico" />
+
+</head>
+
+<body class="tl-{{ navbar_list.section }}">
+  <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
+  <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
+  <datalist id="admin-status-choices">
+    {% for val, text in admin_status_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
+  <datalist id="teacher-rating-choices">
+    <option></option>
+    {% for val, text in teacher_rating_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
+  <datalist id="decision-action-choices">
+    <option></option>
+    {% for val, text in decision_action_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
+  <div id="students-list">
+    <p>
+      Review applications for class:
+      <select id="class-dropdown">
+	<option></option>
+	{% for cls in classes %}
+	<option value="{{ cls.id }}">{{ cls.title }}</option>
+	{% endfor %}
+      </select>
+    </p>
+    <p>
+      <button id="save-button">Save</button>
+      <button id="refresh-button">Refresh</button>
+    </p>
+    <table>
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+    <p id="loading">Loading...</p>
+  </div>
+  <div id="student-detail">
+    <p>Click on a student's name to the left to view their app here.</p>
+  </div>
+</body>
+
+</html>

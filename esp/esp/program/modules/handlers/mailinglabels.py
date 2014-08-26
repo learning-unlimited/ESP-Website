@@ -303,5 +303,5 @@ class MailingLabels(ProgramModuleObj):
         
 
     class Meta:
-        abstract = True
+        proxy = True
 
