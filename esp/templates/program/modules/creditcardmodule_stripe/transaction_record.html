@@ -23,9 +23,9 @@
         <td>${{ item.amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
-    <tr id="donation_option" class="hidden">
+    <tr id="donation_line_item">
         <td>Donation to Learning Unlimited</td>
-        <td>$10.00</td>
+        <td><span id="donation_amount_display">${{ amount_donation|floatformat:2 }}</span></td>
     </tr>
     {% if sibling_discount %}
     <tr>
@@ -47,7 +47,7 @@
     {% endif %}
     <tr>
         <td align="right"><b>Amount Due:</b></td>
-        <td><span id="id_totalcost_dollars">${{ itemizedcosttotal|floatformat:2 }}</span></td>
+        <td><span id="total_amount_display">${{ itemizedcosttotal|floatformat:2 }}</span></td>
     </tr>
     </tbody>
 </table>

@@ -4,34 +4,65 @@
 
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+#donation_choices {
+    width: 50%;
+}
+
+#donation_choices_wrapper {
+    align: center;
+}
+</style>
+{% endblock %}
+
 {% block xtrajs %}
 <script type="text/javascript">
 <!--
 // allow adding a donation
-var initial_cost = {{ totalcost_cents }};
-var current_cost = initial_cost;
-var donation_set = false;
-function check_cost()
-{
-    var cost_last = document.getElementById("id_totalcost_cents").value;
-    var label_last = document.getElementById("id_totalcost_dollars").innerHTML;
-    console.log("Checkbox clicked, donation = " + donation_set + ", initial cost = " + initial_cost + ", current cost = " + cost_last);
+var base_amount = parseFloat({{ amount_without_donation }});
+var donation_amount = parseFloat({{ amount_donation }});
+var donation_set = {{ has_donation|lower }};
+function update_donation_on_page() {
+    //  Tell the server about our change in preferences
+    $j.ajax("/json/{{ program.url }}/set_donation_amount", {
+        async: false,
+        data: {"amount": (donation_set ? donation_amount : 0.0)},
+        type: "GET",
+		dataType: "json",
+    });
+    var total_amount = base_amount + (donation_set ? donation_amount : 0.0);
+    $j("#donation_amount_display").html("$" + donation_amount.toFixed(2));
+    $j("#total_amount_display").html("$" + total_amount.toFixed(2));
+    $j("#id_totalcost_cents").val(Math.round(total_amount * 100));
+    if (donation_set)
+        $j("#donation_line_item").show();
+    else
+        $j("#donation_line_item").hide();
+}
+function toggle_donation() {
     donation_set = !donation_set;
     if (donation_set)
-    {
-        current_cost = initial_cost + 1000;
-        $j("#donation_option").removeClass("hidden");
-        $j("#id_donation").val("true");
-    }
-    else
-    {
-        current_cost = initial_cost;
-        $j("#donation_option").addClass("hidden");
-        $j("#id_donation").val("false");
-    }	      
-    document.getElementById("id_totalcost_cents").value = current_cost;
-    document.getElementById("id_totalcost_dollars").innerHTML = "$" + (current_cost / 100.0).toFixed(2);
+        donation_amount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
+    //  console.log("Updated donation_set = " + donation_set + ", donation_amount = " + donation_amount);
+    $j("#donation_choices").toggle();
+    $j("#donation_line_item").toggle();
+    update_donation_on_page();
 }
+function update_donation_amount() {
+    donation_amount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
+    //  console.log("Updated donation_amount = " + donation_amount);
+    update_donation_on_page();
+}
+
+$j(document).ready(function () {
+    $j("input:radio[name='amount_donation']").click(update_donation_amount);
+{% if not has_donation %}
+    $j("#donation_choices").hide();
+    $j("#donation_line_item").hide();
+{% endif %}
+});
 -->
 </script>
 {% endblock %}
@@ -51,16 +82,24 @@ function check_cost()
 <p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 {% else %}
 
-{% if module.offer_donation %}
-<input type="checkbox" onclick="check_cost();" />
-Check here to support Learning Unlimited's mentoring of {{ institution }} with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the {{ institution }} students in organizing this program and provided this Web site.
+<form action="/learn/{{ program.url }}/charge_payment" method="POST">
+{% if module.settings.offer_donation %}
+<input type="checkbox" name="select_donation" onclick="toggle_donation();" {% if has_donation %}checked {% endif %}/>
+Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
+<div id="donation_choices_wrapper"><div id="donation_choices">
+<b>Donation amount:</b>
+{% for option in module.settings.donation_options %}
+<label class="radio">
+    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
+</label>
+{% endfor %}
+</div></div>
 {% endif %}
 
-<form action="/learn/{{ program.url }}/charge_payment" method="POST">
 <div align="center">
   <script
     src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-    data-key="{{ module.publishable_key }}"
+    data-key="{{ module.settings.publishable_key }}"
     data-name="{{ institution }} Splash Payment"
     data-description="Registration for {{ program.niceName }}"
   >
@@ -69,7 +108,6 @@ Check here to support Learning Unlimited's mentoring of {{ institution }} with a
 <input type="hidden" name="ponumber" value="{{ invoice_id }}" />
 <input type="hidden" name="invoice_number" value="{{ identifier }}" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
-<input type="hidden" id="id_donation" name="donation" value="false" />
 <input type="hidden" id="id_totalcost_cents" name="totalcost_cents" value="{{ totalcost_cents }}" />
 {% csrf_token %}
 </div>
