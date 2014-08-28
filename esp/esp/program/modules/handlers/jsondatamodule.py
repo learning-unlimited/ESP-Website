@@ -41,7 +41,7 @@ import simplejson as json
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import Http404
+from django.http import Http404, HttpResponse
 
 from esp.cal.models import Event
 from esp.datatree.models import *
@@ -56,6 +56,9 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
+from esp.accounting.controllers import IndividualAccountingController
+
+from decimal import Decimal
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -763,6 +766,23 @@ len(teachers[key])))
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+
+    @aux_call
+    @needs_student
+    def set_donation_amount(self, request, tl, one, two, module, extra, prog):
+        """ Set the student's desired donation amount.
+            Creates a line item type for donations if it does not exist. """
+
+        amount_donation = Decimal(request.GET.get('amount', '0'))
+        iac = IndividualAccountingController(prog, request.user)
+        #   Clear the Transfers by specifying quantity 0
+        iac.set_preference('Donation to Learning Unlimited', 0)
+        if amount_donation != Decimal('0'):
+            #   Specify quantity 1 and the desired amount
+            iac.set_preference('Donation to Learning Unlimited', 1, amount=amount_donation)
+
+        data = {'amount_donation': amount_donation, 'amount_due': iac.amount_due()}
+        return HttpResponse(json.dumps(data), mimetype='application/json')
 
     class Meta:
         proxy = True
