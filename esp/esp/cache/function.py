@@ -52,8 +52,8 @@ def describe_func(func):
         # I don't think we actually hit this case... this is only for bound/unbound member functions
         return '%s.%s:%s' % (describe_class(func.im_class), func.__name__, get_line_number(func))
     else:
-        #       describe_func -> ArgCache -> ParametrizedSingleton -> containing class/module
-        class_name = inspect.currentframe().f_back.f_back.f_back.f_code.co_name
+        #       describe_func -> ArgCache -> containing class/module
+        class_name = inspect.currentframe().f_back.f_back.f_code.co_name
         if class_name == '<module>':
             return '%s.%s' % (func.__module__.rstrip('.'), func.__name__)
         else:

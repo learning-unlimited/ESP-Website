@@ -149,13 +149,6 @@ _delete_signal = Signal(providing_args=['key_set'])
 # more general tokens thing, which more-or-less depends on async caching
 
 
-class ParametrizedSingleton(type):
-    def __call__(cls, *args, **kwargs):
-        existing = cls.check_for_instance(*args, **kwargs)
-        if existing:
-            return existing
-        return super(ParametrizedSingleton, cls).__call__(*args, **kwargs)
-
 # XXX: This system cannot thunk functions!!!  We should do some other silly
 # thing, but I really don't want the syntax complicated.
 def handle_thunk(obj):
@@ -167,21 +160,7 @@ def handle_thunk(obj):
 class ArgCache(WithDelayableMethods):
     """ Implements a cache that allows for selectively dropping bits of itself. """
 
-    __metaclass__ = ParametrizedSingleton
     CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
-
-    @staticmethod
-    def check_for_instance(name, params, uid=None, *args, **kwargs):
-        """ Protect against stupid Django/Python multiple imports."""
-        if uid is None:
-            uid = name
-        existing = cache_by_uid(uid)
-        if existing:
-            if tuple(existing.params) != tuple(params):
-                raise ESPError("Cache %s already exists with different parameters." % name)
-            # Don't duplicate dependencies
-            existing.locked = True
-        return existing
 
     def __init__(self, name, params, uid=None, cache=cache, timeout_seconds=None, *args, **kwargs):
         if uid is None:
@@ -600,15 +579,6 @@ class ArgCache(WithDelayableMethods):
 
 class ArgCacheDecorator(ArgCache):
     """ An ArgCache that gets its parameters from a function. """
-
-    @staticmethod
-    def check_for_instance(func, *args, **kwargs):
-        """ Protect against stupid Django/Python multiple imports."""
-        import inspect
-        params = inspect.getargspec(func)[0] # FIXME: Make an esp.cache.functions or something
-        uid = get_uid(func)
-        # We don't really care about the name yet
-        return ArgCache.check_for_instance(None, params, uid)
 
     def __init__(self, func, *args, **kwargs):
         """ Wrap func in a ArgCache. """
