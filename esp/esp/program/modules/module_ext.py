@@ -395,20 +395,6 @@ class CreditCardSettings(models.Model):
     def __unicode__(self):
         return "Credit Card Settings for %s" % str(self.module)
 
-class StripeCreditCardSettings(models.Model):
-    """ Model for settings that control the Stripe credit card module.
-        The account keys are inherited from site-wide defaults but can
-        be changed in the admin interface. """
-
-    module = models.ForeignKey(ProgramModuleObj)
-    publishable_key = models.CharField(max_length=255, default=settings.STRIPE_CONFIG['publishable_key'])
-    secret_key = models.CharField(max_length=255, default=settings.STRIPE_CONFIG['secret_key'])
-    offer_donation = models.BooleanField(default=True)
-    invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
-
-    def __unicode__(self):
-        return u'Stripe configuration for %s' % (self.module.program.niceName(),)
-
 class AJAXChangeLogEntry(models.Model):
 
     # unique index in change_log of this entry

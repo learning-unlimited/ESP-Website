@@ -902,7 +902,6 @@ class Program(models.Model, CustomFormsLinkModel):
     # Feel free to adjust. -ageng 2010-10-23
     getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
     getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: StripeCreditCardSettings, lambda extobj: {'self': extobj.module.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -1931,4 +1930,4 @@ from esp.program.models.flags import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, StripeCreditCardSettings
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
