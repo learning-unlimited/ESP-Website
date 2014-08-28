@@ -35,15 +35,6 @@ Learning Unlimited, Inc.
 
 import inspect
 
-def get_line_number(obj):
-    return inspect.getsourcelines(obj)[1]
-
-def get_filename(obj):
-    return inspect.getsourcefile(obj)
-
-def get_uid(obj):
-    return '%s:%s' % (get_filename(obj), get_line_number(obj))
-
 def describe_class(cls):
     return '%s.%s' % (cls.__module__.rstrip('.'), cls.__name__)
 

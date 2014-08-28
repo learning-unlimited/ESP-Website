@@ -120,7 +120,7 @@ class CachedModuleViewDecorator(object):
 
         def prepare_dec(func):
             self.params, xx, xxx, defaults = getargspec(func)
-            self.cached_function = cache_function(func, uid_extra='*'+describe_func(func))
+            self.cached_function = cache_function(func, extra_name='*'+describe_func(func))
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
                 #   Construct argument list

@@ -45,7 +45,7 @@ from esp.middleware import ESPError
 
 from esp.cache.queued import WithDelayableMethods, delay_method
 from esp.cache.marinade import args_to_key, normalize_args
-from esp.cache.function import describe_func, get_uid
+from esp.cache.function import describe_func
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
 from esp.cache.registry import register_cache, all_caches
@@ -162,16 +162,13 @@ class ArgCache(WithDelayableMethods):
 
     CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
 
-    def __init__(self, name, params, uid=None, cache=cache, timeout_seconds=None, *args, **kwargs):
-        if uid is None:
-            uid = name
+    def __init__(self, name, params, cache=cache, timeout_seconds=None, *args, **kwargs):
         super(ArgCache, self).__init__(*args, **kwargs)
 
         if isinstance(params, list):
             params = tuple(params)
         self.name = name
         self.params = params
-        self.uid = uid
         self.cache = cache
         self.timeout_seconds = timeout_seconds
         self.tokens = []
@@ -597,15 +594,14 @@ class ArgCacheDecorator(ArgCache):
         self.argspec = inspect.getargspec(func)
         self.func = func
         params = self.argspec[0]
-        extra_name = kwargs.pop('uid_extra', '')
+        extra_name = kwargs.pop('extra_name', '')
         name = describe_func(func) + extra_name
-        uid = get_uid(func) + extra_name
         if self.argspec[1] is not None:
             raise ESPError("ArgCache does not support varargs.")
         if self.argspec[2] is not None:
             raise ESPError("ArgCache does not support keywords.")
 
-        super(ArgCacheDecorator, self).__init__(name=name, params=params, uid=uid, *args, **kwargs)
+        super(ArgCacheDecorator, self).__init__(name=name, params=params, *args, **kwargs)
 
     def arg_list_from(self, args, kwargs):
         """ Normalizes arguments to get an arg_list. """
