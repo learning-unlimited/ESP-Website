@@ -101,7 +101,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     def check_setup(self):
-        """ Validate the keys specified in the StripeCreditCardSettings object.
+        """ Validate the keys specified in the stripe_settings Tag.
             If something is wrong, provide an error message which will hopefully
             only be seen by admins during setup. """
 
