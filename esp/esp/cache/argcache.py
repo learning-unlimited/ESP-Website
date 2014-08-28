@@ -50,10 +50,9 @@ from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
 from esp.cache.registry import register_cache
 from esp.cache.sad_face import warn_if_loaded
+from esp.cache.signals import cache_deleted
 
 __all__ = ['ArgCache', 'ArgCacheDecorator', 'cache_function']
-
-_delete_signal = Signal(providing_args=['key_set'])
 
 # XXX: For now, all functions must have known arity. No *args or
 # **kwargs are allowed, but optional arguments are fine. This is done to
@@ -227,11 +226,11 @@ class ArgCache(WithDelayableMethods):
     # insurance, _delete_signal is not a member of ArgCache. :-D
     def connect(self, handler):
         """ Connect handler to this cache's delete signal. """
-        _delete_signal.connect(handler, sender=self, weak=False) # local functions will be used a lot, so no weak refs
+        cache_deleted.connect(handler, sender=self, weak=False) # local functions will be used a lot, so no weak refs
     connect.alters_data = True
     def send(self, key_set):
         """ Internal: Send the signal. """
-        _delete_signal.send(sender=self, key_set=key_set)
+        cache_deleted.send(sender=self, key_set=key_set)
     send.alters_data = True
 
     def index_of_param(self, param):
