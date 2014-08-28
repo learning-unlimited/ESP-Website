@@ -346,16 +346,20 @@ class IndividualAccountingController(ProgramAccountingController):
             result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount))
         return result
 
-    def get_transfers(self, **kwargs):
+    def get_transfers(self, line_items=None, **kwargs):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes(**kwargs)
+        if line_items is None:
+            line_items = self.get_lineitemtypes(**kwargs)
         return Transfer.objects.filter(user=self.user, line_item__in=line_items).order_by('id')
 
-    def get_preferences(self):
+    def get_preferences(self, line_items=None):
         #   Return a list of 3-tuples: (item name, quantity, cost option)
         result = []
-        transfers = self.get_transfers(optional_only=True)
+        if line_items is None:
+            transfers = self.get_transfers(optional_only=True)
+        else:
+            transfers = self.get_transfers(line_items, optional_only=True)
         for transfer in transfers:
             li_name = transfer.line_item.text
             if (li_name, transfer.amount_dec) not in map(lambda x: (x[0], x[2]), result):
