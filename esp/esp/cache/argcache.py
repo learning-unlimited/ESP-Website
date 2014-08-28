@@ -383,22 +383,21 @@ class ArgCache(WithDelayableMethods):
         self.send(key_set=key_set)
     delete.alters_data = True
 
-    # In case 'self' is a valid param, call this guy _self... :-D
-    def delete_key_set(_self, **key_set):
+    def delete_key_set(self, key_set):
         """ Delete everything in this key_set, rounding up if necessary. """
 
         if settings.CACHE_DEBUG:
-            print "Dumping from", _self.name, "keyset", key_set
+            print "Dumping from", self.name, "keyset", key_set
 
         # TODO: Would be nicer if we could just make a
         # proxy token for the single-element case
-        arg_list = _self.is_arg_list(key_set)
+        arg_list = self.is_arg_list(key_set)
         if arg_list:
-            return _self.delete(arg_list)
+            return self.delete(arg_list)
         else:
-            token = _self.find_token(key_set)
+            token = self.find_token(key_set)
             token.delete_key_set(key_set, send_signal=False) # We can send a more accurate signal
-            _self.send(key_set=key_set)
+            self.send(key_set=key_set)
     delete_key_set.alters_data = True
 
     def delete_key_sets(self, list_or_set):
@@ -409,7 +408,7 @@ class ArgCache(WithDelayableMethods):
             for item in list_or_set:
                 self.delete_key_sets(item)
         else:
-            self.delete_key_set(**list_or_set)
+            self.delete_key_set(list_or_set)
     delete_key_sets.alters_data = True
 
     def has_key(self, arg_list):
