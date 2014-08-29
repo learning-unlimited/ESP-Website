@@ -33,12 +33,28 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import inspect
+
 from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.contrib.auth.models import AnonymousUser
 
 from esp.utils import force_str
-from esp.cache.function import describe_class
+
+def describe_class(cls):
+    return '%s.%s' % (cls.__module__.rstrip('.'), cls.__name__)
+
+def describe_func(func):
+    if hasattr(func, 'im_class'):
+        # I don't think we actually hit this case... this is only for bound/unbound member functions
+        return '%s.%s:%s' % (describe_class(func.im_class), func.__name__, get_line_number(func))
+    else:
+        #       describe_func -> ArgCache -> containing class/module
+        class_name = inspect.currentframe().f_back.f_back.f_code.co_name
+        if class_name == '<module>':
+            return '%s.%s' % (func.__module__.rstrip('.'), func.__name__)
+        else:
+            return '%s.%s.%s' % (func.__module__.rstrip('.'), class_name, func.__name__)
 
 def marinade_dish(arg):
     if isinstance(arg, QuerySet):
