@@ -47,7 +47,7 @@ def describe_class(cls):
 def describe_func(func):
     if hasattr(func, 'im_class'):
         # I don't think we actually hit this case... this is only for bound/unbound member functions
-        return '%s.%s:%s' % (describe_class(func.im_class), func.__name__, get_line_number(func))
+        return '%s.%s' % (describe_class(func.im_class), func.__name__)
     else:
         #       describe_func -> ArgCache -> containing class/module
         class_name = inspect.currentframe().f_back.f_back.f_code.co_name
