@@ -45,6 +45,7 @@ from esp.middleware import ESPError
 from esp.cache.queued import WithDelayableMethods, delay_method
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
+from esp.cache.marinade import marinade_dish
 from esp.cache.registry import register_cache
 from esp.cache.sad_face import warn_if_loaded
 from esp.cache.signals import cache_deleted
@@ -246,7 +247,6 @@ class ArgCache(WithDelayableMethods):
 
     def key(self, arg_list):
         """ Returns a cache key, given a list of arguments. """
-        from esp.cache.marinade import marinade_dish
         return self.name + '|' + ':'.join([marinade_dish(arg) for arg in arg_list])
 
     def _token_keys(self, arg_list):

@@ -37,7 +37,7 @@ import inspect
 import types
 
 from esp.cache.argcache import ArgCache
-from esp.cache.marinade import describe_func, normalize_args
+from esp.cache.marinade import describe_func
 
 class ArgCacheDecorator(ArgCache):
     """ An ArgCache that gets its parameters from a function. """
@@ -54,22 +54,21 @@ class ArgCacheDecorator(ArgCache):
         if hasattr(func, '__doc__'):
             self.__doc__ = func.__doc__
 
-        self.argspec = inspect.getargspec(func)
         self.func = func
-        params = self.argspec[0]
         extra_name = kwargs.pop('extra_name', '')
         name = describe_func(func) + extra_name
-        if self.argspec[1] is not None:
+        params, varargs, keywords, _ = inspect.getargspec(func)
+        if varargs is not None:
             raise ESPError("ArgCache does not support varargs.")
-        if self.argspec[2] is not None:
+        if keywords is not None:
             raise ESPError("ArgCache does not support keywords.")
 
         super(ArgCacheDecorator, self).__init__(name=name, params=params, *args, **kwargs)
 
-    def arg_list_from(self, args, kwargs):
+    def arg_list_from(self, *args, **kwargs):
         """ Normalizes arguments to get an arg_list. """
-        nkwargs, nargs = normalize_args(self.argspec, args, kwargs)
-        return [nkwargs[param] for param in self.params]
+        callargs = inspect.getcallargs(self.func, *args, **kwargs)
+        return [callargs[param] for param in self.params]
 
     def __call__(self, *args, **kwargs):
         """ Call the function, using the cache is possible. """
@@ -77,7 +76,7 @@ class ArgCacheDecorator(ArgCache):
         cache_only = kwargs.pop('cache_only', False)
 
         if use_cache:
-            arg_list = self.arg_list_from(args, kwargs)
+            arg_list = self.arg_list_from(*args, **kwargs)
             retVal = self.get(arg_list, default=self.CACHE_NONE)
 
             if retVal is not self.CACHE_NONE:
