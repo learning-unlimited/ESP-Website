@@ -1110,7 +1110,7 @@ def update_email(**kwargs):
                 if l in group_map.values():
                     # A role-based list: only transition them if they are an
                     # appropriate type of account.
-                    if any(group_map[g] == l for g in groups) or is_admin:
+                    if any(group_map.get(g) == l for g in groups) or is_admin:
                         lists.append(l)
                 elif 'teachers' in l:
                     if 'Teacher' in groups or is_admin:
