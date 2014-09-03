@@ -173,7 +173,9 @@ class UserSearchController(object):
                 raw_lists = getattr(program, user_type)(True)
                 if list_name in raw_lists:
                     return user_type
-                    
+
+        subquery = None
+
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
             if data['recipient_type'] not in ESPUser.getTypes():
@@ -217,7 +219,6 @@ class UserSearchController(object):
             #as this could very well have different implications for other fields
 
             subqry_fieldmap = {'record__event':[]}
-            subquery = None
 
             for and_list_name in and_keys:
                 user_type = get_recipient_type(and_list_name)
