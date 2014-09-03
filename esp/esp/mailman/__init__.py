@@ -129,7 +129,7 @@ def add_list_member(list, member):
         member = [x.email for x in member]
 
     if not isinstance(member, basestring):
-        member = "\n".join(member)
+        member = "\n".join(str(x) for x in member)
 
     if isinstance(member, unicode):
         # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
