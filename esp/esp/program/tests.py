@@ -1044,6 +1044,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
         self.priority_rts=[self.priority_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 1
+        scrmi.save()
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1199,8 +1202,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
     
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
-        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
-        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/3')
         self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         scrmi.priority_limit = 3
