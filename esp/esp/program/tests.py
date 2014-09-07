@@ -1112,7 +1112,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.save_assignments()
 
         #   Get stats
-        stats = lotteryController.compute_stats()
+        stats = lotteryController.compute_stats(display=False)
 
         #   Check stats for correctness
         #   - Some basic stats

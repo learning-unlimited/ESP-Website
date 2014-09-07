@@ -60,6 +60,7 @@ from south.models import MigrationHistory
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
+              debug=False,
               *args, **kwargs):
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
@@ -69,7 +70,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     else:
         new_list = [ x for x in recipient_list ]
     from django.core.mail import EmailMessage #send_mail as django_send_mail
-    print "Sent mail to %s" % str(new_list)
+    if debug: print "Sent mail to %s" % str(new_list)
     
     #   Get whatever type of e-mail connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
@@ -293,7 +294,7 @@ class MessageRequest(models.Model):
                 'The error message is: "%s".' % \
                 (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
 
-    def process(self, processoverride = False):
+    def process(self, processoverride=False, debug=False):
         """ Process this request...if it's an email, create all the necessary email requests. """
 
         # if we already processed, return
@@ -349,7 +350,7 @@ class MessageRequest(models.Model):
 
                 newemailrequest.save()
 
-        print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
+        if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
 
     class Admin:
@@ -370,7 +371,7 @@ class TextOfEmail(models.Model):
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
-    def send(self):
+    def send(self, debug=False):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
 
         parent_request = None
@@ -394,7 +395,8 @@ class TextOfEmail(models.Model):
                   self.send_from,
                   self.send_to,
                   False,
-                  extra_headers=extra_headers)
+                  extra_headers=extra_headers,
+                  debug=debug)
 
         self.sent = now
         self.save()
