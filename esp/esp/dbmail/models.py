@@ -101,17 +101,8 @@ def can_process_and_send():
     """
     Returns True if the dbmail cronmail script is allowed to process and send
     emails, and False otherwise.
-
-    Currently, this function asserts that the expire_unsent_emails migration
-    has been run. If it hasn't, it is possible that there are old, unsent
-    messages from before 6e350a3735 that should not be sent because they are
-    out-of-date. This requirement can be removed after the full deployment of
-    stable release 4.
     """
-    now = datetime.now()
-    return MigrationHistory.objects.filter(app_name='dbmail',
-                                migration__contains='expire_unsent_emails',
-                                applied__lt=now).exists()
+    return True
 can_process_and_send.depend_on_model(MigrationHistory)
 
 
