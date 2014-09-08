@@ -126,7 +126,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stderr=open(os.devnull, "w"))
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
 
