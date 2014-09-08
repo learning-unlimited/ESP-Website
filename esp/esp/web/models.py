@@ -78,7 +78,8 @@ class NavBarCategory(models.Model):
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
         if not hasattr(cls, '_default'):
-
+            if not cls.objects.exists():
+                install()
             cls._default = cls.objects.all().order_by('id')[0]
         return cls._default
     
