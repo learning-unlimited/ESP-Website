@@ -45,18 +45,13 @@ from django.conf import settings
 
 import os.path
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    
-    if (not have_already_installed) and app == UsersModel:
+    if app == UsersModel:
         #   Check that required tables exist.
         if not db_table_exists('program_program'):
             return
         #   Run installation
         with custom_cache():
-            have_already_installed = True
             print "Installing esp.users initial data..."
             UsersModel.install()
             print 'Adding PostgreSQL extensions...'

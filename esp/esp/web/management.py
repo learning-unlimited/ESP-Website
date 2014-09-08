@@ -40,13 +40,9 @@ from django.contrib.contenttypes.management import update_contenttypes
 from esp.web import models as web
 from esp.utils.custom_cache import custom_cache
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    if app == web and not have_already_installed:
+    if app == web:
         with custom_cache():
-            have_already_installed = True
             print "Installing esp.web initial data..."
             web.install()
 

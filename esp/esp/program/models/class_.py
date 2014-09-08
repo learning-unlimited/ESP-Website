@@ -2076,7 +2076,4 @@ def install():
     }
     
     for key in category_dict:
-        cat = ClassCategories()
-        cat.symbol = key
-        cat.category = category_dict[key]
-        cat.save()
+        ClassCategories.objects.get_or_create(symbol=key, category=category_dict[key])
