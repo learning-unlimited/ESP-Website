@@ -50,7 +50,7 @@ def post_syncdb(sender, app, **kwargs):
         with custom_cache():
             #   Check that required tables exist.
             if (missing_db_table(program.Program) or missing_db_table(users.ContactInfo)
-                or not db_has_column("program_program_class_categories", "seq")):
+                or not db_has_column(class_models.ClassCategories._meta.db_table, "seq")):
                 return
             #   Run installation
             have_already_installed = True
