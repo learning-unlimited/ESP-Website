@@ -1,4 +1,7 @@
-from django.db import models
+from __future__ import with_statement
+
+from django.db import models, transaction, connection
+from django.db.utils import DatabaseError
 #from esp.users.models import ESPUser
 from django.contrib.auth.models import User
 from esp.program.models import Program
@@ -63,3 +66,20 @@ class Attribute(models.Model):
 
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
+
+def install():
+    create_schema()
+
+def create_schema():
+    """Create customforms schema."""
+    try:
+        # Wrapping this command in commit_on_success() ensures that, if the
+        # customforms schema already exists or the command fails for any
+        # other reason, future database queries will not generate "current
+        # transaction is aborted, commands ignored until end of transaction
+        # block" errors.
+        with transaction.commit_on_success():
+            cursor = connection.cursor()
+            cursor.execute("CREATE SCHEMA customforms")
+    except DatabaseError:
+        pass

@@ -2,12 +2,22 @@
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+from django.db import models, transaction
+from django.db.utils import DatabaseError
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.execute("CREATE SCHEMA customforms")
+        try:
+            # Wrapping this command in commit_on_success() ensures that, if
+            # the customforms schema already exists or the command fails for
+            # any other reason, future database queries will not generate
+            # "current transaction is aborted, commands ignored until end of
+            # transaction block" errors.
+            with transaction.commit_on_success():
+                db.execute("CREATE SCHEMA customforms")
+        except DatabaseError:
+            pass
 
     def backwards(self, orm):
         db.execute("DROP SCHEMA CASCADE")
