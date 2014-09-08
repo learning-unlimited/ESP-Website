@@ -20,7 +20,6 @@ from django.utils.decorators import method_decorator
 from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
-from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm

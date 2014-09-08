@@ -524,6 +524,9 @@ class MessageVars(models.Model):
         else:
             return result
 
+    def __unicode__(self):
+        return "Message Variables for %s" % self.messagerequest
+    
     class Meta:
         verbose_name_plural = 'Message Variables'
 
@@ -539,9 +542,6 @@ class EmailRequest(models.Model):
 
     class Admin:
         pass
-
-
-
 
 class EmailList(models.Model):
     """

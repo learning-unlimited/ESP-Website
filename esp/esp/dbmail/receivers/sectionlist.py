@@ -63,7 +63,20 @@ class SectionList(BaseHandler):
         if user_type != "teachers":
             add_list_member(list_name, ["%s %s <%s>" % (x.first_name, x.last_name, x.email, ) for x in section.students()])
 
-            apply_list_settings(list_name, {'moderator': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], '%s-teachers@%s' % (cls.emailcode(), Site.objects.get_current().domain)]})
+            apply_list_settings(list_name, {
+                'moderator': [
+                    settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
+                    '%s-teachers@%s' % (cls.emailcode(),
+                                        Site.objects.get_current().domain),
+                    # In theory this is redundant, but it's included just in
+                    # case.
+                    cls.parent_program.director_email,
+                ],
+                'owner': [
+                    settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
+                    cls.parent_program.director_email,
+                ],
+            })
             if DEBUG: print "Settings applied..."
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
                       render_to_string("mailman/new_list_intro_teachers.txt", 

@@ -79,5 +79,5 @@ class TeacherBioModule(ProgramModuleObj):
         return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
 
     class Meta:
-        abstract = True
+        proxy = True
 
