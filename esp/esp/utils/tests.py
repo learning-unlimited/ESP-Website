@@ -22,9 +22,7 @@ from esp.utils.models import TemplateOverride
 
 from django.test import TestCase as DjangoTestCase
 
-from django.core.management import call_command
 from django.core.cache.backends.base import default_key_func
-from django.db.models import loading
 
 from django.template import loader, Template, Context, TemplateDoesNotExist
 import reversion
@@ -179,15 +177,8 @@ class DefaultclassTestCase(unittest.TestCase):
     
         myOtherKls2 = kls[0]()
         self.assertEqual(myOtherKls2.get_name(), "otherKls")
-        
-class DBOpsTestCase(DjangoTestCase):
-    def testSyncdb(self):
-        loading.cache.loaded = False
-        call_command('syncdb', verbosity=0)
-    def testMigrate(self):
-        loading.cache.loaded = False
-        call_command('migrate', verbosity=0)
-        
+
+
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
