@@ -98,6 +98,18 @@ class ProgramCreationForm(BetterModelForm):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
+    def clean_program_modules(self):
+        value = self.cleaned_data['program_modules']
+        value = map(int, value)
+        json_module = ProgramModule.objects.get(handler=u'JSONDataModule')
+        # If the JSON Data Module isn't already in the list of selected
+        # program modules, add it. The JSON Data Module is a dependency for
+        # many commonly-used modules, so it is important that it be enbabled
+        # by default for all new programs.
+        if json_module.id not in value:
+            value.append(json_module.id)
+        return value
+
     # use field grouping
     #as_table = grouped_as_table
 
