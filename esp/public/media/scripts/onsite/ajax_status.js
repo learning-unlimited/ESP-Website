@@ -492,8 +492,8 @@ var last_select_event = null;
 function autocomplete_select_item(event, ui)
 {
     last_select_event = [event, ui];
-    var s = ui.item.value;
-    var student_id = s.slice(s.indexOf("(")+1, s.indexOf(")"));
+    event.preventDefault();
+    var student_id = ui.item.value;
     
     //  Refresh the table of checkboxes for the newly selected student.
     if ((student_id > 0) && (student_id < 99999999))
@@ -507,15 +507,23 @@ function autocomplete_select_item(event, ui)
 function setup_autocomplete()
 {
     var student_strings = [];
-    for (var i in data.students)
-    {
-        student_strings.push(data.students[i].first_name + " " + data.students[i].last_name + " (" + i + ")");
+    for (var i in data.students) {
+        var student = data.students[i];
+        var studentItem = {};
+        studentItem.value = i;
+        studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
+        
+        student_strings.push(studentItem);
     }
 
     $j("#student_selector").autocomplete({
         source: student_strings,
-        select: autocomplete_select_item
-  	});
+        select: autocomplete_select_item,
+        focus: function( event, ui ) {
+            $j( "#student_selector" ).val( ui.item.label );
+            return false;
+        },
+    });
 }
 
 function clear_table()
@@ -645,7 +653,9 @@ function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
     update_checkboxes();
-    add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
+    var studentLabel = data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")";
+    add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
+
 }
 
 /*  This function populates the linked data structures once all components have arrived.
