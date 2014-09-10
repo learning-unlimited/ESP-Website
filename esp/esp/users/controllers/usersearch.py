@@ -173,7 +173,9 @@ class UserSearchController(object):
                 raw_lists = getattr(program, user_type)(True)
                 if list_name in raw_lists:
                     return user_type
-                    
+
+        subquery = None
+
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
             if data['recipient_type'] not in ESPUser.getTypes():
@@ -210,7 +212,6 @@ class UserSearchController(object):
             and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
             or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
             not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
-           
             #if any keys concern the same field, we will place them into 
             #a subquery and count occurrences
 
@@ -218,26 +219,34 @@ class UserSearchController(object):
             #as this could very well have different implications for other fields
 
             subqry_fieldmap = {'record__event':[]}
-            subquery = None
 
             for and_list_name in and_keys:
                 user_type = get_recipient_type(and_list_name)
+
                 if user_type:
+
                     qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
-            
+
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
                     else:    
-                        field_name, field_value = qobject.children[1]
-                        if field_name not in subqry_fieldmap:
-                            q_program = q_program & qobject
-                        subqry_fieldmap[field_name].append(field_value)
+                        qobject_child = qobject.children[1]
+                        needs_subquery = False
 
+                        if isinstance(qobject_child, (list, tuple)):
+                            field_name, field_value = qobject.children[1]
+                            needs_subquery = field_name in subqry_fieldmap
+
+                            if needs_subquery:
+                                subqry_fieldmap[field_name].append(field_value)
+                        if not needs_subquery:
+                            q_program = q_program & qobject
                                     
             event_fields = subqry_fieldmap['record__event']
+
             if event_fields:
                 #annotation is needed to initiate group by
-                #except that it cause the query to return to columns
+                #except that it causes the query to return two columns
                 #so we call values at the end of the chain, however,
                 #that results in multiple group by fields(causing the query to fail)
                 #so, we assign a group by field, to force grouping by user_id
@@ -248,7 +257,6 @@ class UserSearchController(object):
                               .annotate(numusers=Count('user__id'))
                               .filter(numusers=len(event_fields))
                               .values_list('user_id',flat=True)
-                              
                             )
 
                 subquery.query.group_by = []#leave empty to strip out duplicate group by
