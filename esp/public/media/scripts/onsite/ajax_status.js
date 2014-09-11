@@ -568,7 +568,7 @@ function render_table(display_mode, student_id)
         {
             var startTimeMillis = data.timeslots[ts_id].startTimeMillis;
             //excludes timeslots that have a start time 20 minutes prior to the current time
-            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/86400);
+            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
 
             if(differenceInMinutes > minMinutesToHideTimeSlot) 
             {
