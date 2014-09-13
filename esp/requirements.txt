@@ -31,7 +31,14 @@ django-grappelli==2.4.9
 
 # 3.5.7 has bug that breaks incompatibility with Django 1.4, 1.5.
 # See <https://github.com/sehmaschine/django-filebrowser/issues/241>.
-django-filebrowser==3.5.6
+# But <3.5.7 have tests that fail on django>=1.4.14.
+# We don't want to disable filebrowser tests, since they have caught a
+# legitimate compatibility issue.
+# Instead, fork 3.5.7 and revert the offending break in compatibility, until
+# they fix it.
+# See the revert made in the fork, at
+# <https://github.com/learning-unlimited/django-filebrowser/commit/4557e6a6>.
+git+git://github.com/learning-unlimited/django-filebrowser.git
 
 werkzeug
 django-bootstrap-form==3.1
