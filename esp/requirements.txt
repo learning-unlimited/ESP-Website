@@ -28,7 +28,11 @@ wsgiref==0.1.2
 xlwt==0.7.5
 django-debug-toolbar==1.2.1
 django-grappelli==2.4.9
-django-filebrowser==3.5.7
+
+# 3.5.7 has bug that breaks incompatibility with Django 1.4, 1.5.
+# See <https://github.com/sehmaschine/django-filebrowser/issues/241>.
+django-filebrowser==3.5.6
+
 werkzeug
 django-bootstrap-form==3.1
 django-vanilla-views==1.0.2
