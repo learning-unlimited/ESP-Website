@@ -2238,7 +2238,6 @@ class Permission(ExpirableModel):
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Classes"),
-            ("Student/Classes/All", "Classes/All"),
             ("Student/Classes/OneClass", "Classes/OneClass"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/Lottery/View", "View lottery results"),
@@ -2281,6 +2280,8 @@ class Permission(ExpirableModel):
                           if x.startswith("Student")],
         "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
                           if x.startswith("Teacher")],
+        "Teacher/Classes/All": [x for x in flatten(PERMISSION_CHOICES)
+                                  if x.startswith("Teacher/Classes")],
     }
     #i'm not really sure if implications is a good idea
     #use sparingly
