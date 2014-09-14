@@ -99,11 +99,13 @@ class VolunteerOfferForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple, required=False)
+    has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
+    clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     
     comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
     
-    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>')
+    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>', required=False)
     
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
@@ -137,6 +139,7 @@ class VolunteerOfferForm(forms.Form):
             
         previous_offers = user.getVolunteerOffers(self.program).order_by('-id')
         if previous_offers.exists():
+            self.fields['has_previous_requests'].initial = True
             self.fields['requests'].initial = previous_offers.values_list('request', flat=True)
             if 'shirt_size' in self.fields:
                 self.fields['shirt_size'].initial = previous_offers[0].shirt_size 
@@ -150,6 +153,10 @@ class VolunteerOfferForm(forms.Form):
         if self.cleaned_data['user']:
             user = ESPUser.objects.get(id=self.cleaned_data['user'])
             user.volunteeroffer_set.all().delete()
+        
+        if self.cleaned_data.get('clear_requests', False):
+            #   They want to cancel all shifts - don't do anything further.
+            return []
         
         #   Create user if one doesn't already exist, otherwise associate a user.
         #   Note that this will create a new user account if they enter an e-mail
@@ -196,6 +203,20 @@ class VolunteerOfferForm(forms.Form):
         return offer_list
             
     def clean(self):
-        if 'confirm' in self.cleaned_data and not self.cleaned_data['confirm']:
-            raise forms.ValidationError('Please confirm that you will show up to volunteer at the times you selected.')
+        """ Does more thorough validation since to allow flexibility, all of the form fields
+            now have required=False.    """
+    
+        #   If the hidden field clear_requests is True, that means the user confirmed that
+        #   they want to cancel all of their volunteer shifts; skip further validation.
+        if not self.cleaned_data.get('clear_requests', False):
+            #   Having no shifts selected causes a different error message depending
+            #   on whether the user had existing shifts.
+            if len(self.cleaned_data.get('requests', [])) == 0:
+                if self.cleaned_data.get('has_previous_requests', False):
+                    raise forms.ValidationError('Error: You must click "Confirm" in the pop-up dialog to remove all of your previous requests.')
+                else:
+                    raise forms.ValidationError('You did not select any volunteer shifts.')
+            #   All changes must be accompanied by the confirmation checkbox.
+            if 'confirm' in self.cleaned_data and not self.cleaned_data['confirm']:
+                raise forms.ValidationError('Please confirm that you will show up to volunteer at the times you selected.')
         return self.cleaned_data
