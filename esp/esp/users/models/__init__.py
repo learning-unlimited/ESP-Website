@@ -2285,7 +2285,9 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/All", "Classes/All"),
             ("Teacher/Classes/View", "Classes/View"),
             ("Teacher/Classes/Edit", "Classes/Edit"),
-            ("Teacher/Classes/Create", "Classes/Create"),
+            ("Teacher/Classes/Create", "Create classes of all types"),
+            ("Teacher/Classes/Create/Class", "Create standard classes"),
+            ("Teacher/Classes/Create/OpenClass", "Create open classes"),
             ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/MainPage", "Registration mainpage"),
@@ -2308,6 +2310,8 @@ class Permission(ExpirableModel):
                           if x.startswith("Teacher")],
         "Teacher/Classes/All": [x for x in PERMISSION_CHOICES_FLAT
                                   if x.startswith("Teacher/Classes")],
+        "Teacher/Classes/Create": [x for x in PERMISSION_CHOICES_FLAT
+                                     if x.startswith("Teacher/Classes/Create")],
     }
     #i'm not really sure if implications is a good idea
     #use sparingly

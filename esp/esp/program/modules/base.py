@@ -35,8 +35,10 @@ Learning Unlimited, Inc.
     There are many useful and magical functions provided in here, most of which can be called
     from within the program handler.
 """
+from functools import wraps
 
 from django.db import models
+from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -730,6 +732,34 @@ def meets_all_deadlines(extensions=[]):
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline
+
+def user_passes_test(test_func, error_message):
+    """A method decorator based on django.contrib.auth.decorators.user_passes_test.
+
+    Decorate a ProgramModuleObj view method, such that requests will only
+    pass through if test_func(moduleObj) returns True. test_func must be a
+    callable with a signature of test_func(moduleObj) -> `bool`.
+    The body of test_func can use moduleObj and get_current_request()
+    (particularly, get_current_request().user) to decide if it should return
+    True or False.
+
+    In the failure case, an error page will be rendered. error_message will
+    be used as the 'extension' template variable in the error page, so it
+    should be formatted similarly to the output of list_extensions().
+    """
+    def user_passes_test(view_method):
+        @wraps(view_method, assigned=available_attrs(view_method))
+        def _check(moduleObj, request, tl, *args, **kwargs):
+            if test_func(moduleObj):
+                return view_method(moduleObj, request, tl, *args, **kwargs)
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            return render_to_response(
+                errorpage,
+                request,
+                {'extension': error_message, 'moduleObj': moduleObj},
+            )
+        return _check
+    return user_passes_test
 
 
 def main_call(func):

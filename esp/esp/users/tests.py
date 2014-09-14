@@ -701,3 +701,28 @@ class PermissionTestCase(TestCase):
         perm = 'Onsite'
         self.create_role_perm(perm)
         self.assertTrue(self.user_has_perm_for_program(perm, program_is_none_implies_all=True))
+
+    def testTeacherClassesCreateImpliesTeacherClassesCreateClass(self):
+        """Test that Teacher/Classes/Create implies Teacher/Classes/Create/Class.
+
+        Ensure that old Teacher/Classes/Create Permissions, which were
+        intended to give permission to create standard classes, are forward
+        compatible and still grant this permission, which is now
+        Teacher/Classes/Create/Class.
+        """
+        old_name = 'Teacher/Classes/Create'
+        new_name = 'Teacher/Classes/Create/Class'
+
+        self.create_user_perm_for_program(old_name)
+        self.assertTrue(self.user_has_perm_for_program(new_name))
+
+    def testOtherTeacherClassesCreateImplications(self):
+        """Test the other Teacher/Classes/Create implications.
+
+        - Ensure that Teacher/Classes/Create implies
+          Teacher/Classes/Create/OpenClass.
+        """
+        name = 'Teacher/Classes/Create'
+        implications = ['Teacher/Classes/Create/OpenClass']
+        self.create_user_perm_for_program(name)
+        self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
