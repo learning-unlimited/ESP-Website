@@ -2275,13 +2275,13 @@ class Permission(ExpirableModel):
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
      
 
-    implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
-                                  if x!="Administer"],
-                    "Student/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Student")],
-                    "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Teacher")],
-                    }
+    implications = {
+        "Administer": [x for x in flatten(PERMISSION_CHOICES)],
+        "Student/All": [x for x in flatten(PERMISSION_CHOICES)
+                          if x.startswith("Student")],
+        "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
+                          if x.startswith("Teacher")],
+    }
     #i'm not really sure if implications is a good idea
     #use sparingly
 
