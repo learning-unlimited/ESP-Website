@@ -2271,16 +2271,19 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Access to survey"),
         )),
     )
+
+    PERMISSION_CHOICES_FLAT = flatten(PERMISSION_CHOICES)
+
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
      
 
     implications = {
-        "Administer": [x for x in flatten(PERMISSION_CHOICES)],
-        "Student/All": [x for x in flatten(PERMISSION_CHOICES)
+        "Administer": PERMISSION_CHOICES_FLAT,
+        "Student/All": [x for x in PERMISSION_CHOICES_FLAT
                           if x.startswith("Student")],
-        "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
+        "Teacher/All": [x for x in PERMISSION_CHOICES_FLAT
                           if x.startswith("Teacher")],
-        "Teacher/Classes/All": [x for x in flatten(PERMISSION_CHOICES)
+        "Teacher/Classes/All": [x for x in PERMISSION_CHOICES_FLAT
                                   if x.startswith("Teacher/Classes")],
     }
     #i'm not really sure if implications is a good idea
@@ -2310,7 +2313,7 @@ class Permission(ExpirableModel):
         return initial_qset.filter(self.is_valid_qobject()).exists()
     
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
 
     @classmethod
     def deadlines(cls):
