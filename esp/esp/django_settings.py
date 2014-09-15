@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 ################################################################################
@@ -84,7 +84,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@lists.learningu.org'),
+    ('LU Web Team','serverlog@learningu.org'),
 )
 
 GRAPPELLI_ADMIN_TITLE = "ESP administration"
@@ -119,7 +119,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
     'bounces': 'learningubounces@gmail.com',
-    'support': 'websupport@lists.learningu.org',
+    'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
     'treasury': 'esp-credit-cards@mit.edu',
