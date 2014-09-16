@@ -52,7 +52,7 @@ from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
-
+from esp.tagdict.models import Tag
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -415,6 +415,11 @@ class OnSiteClassList(ProgramModuleObj):
         sort_spec = options.get('sorting', None)
         if sort_spec is None:
             sort_spec = extra
+
+        #   Enforce a maximum refresh speed to avoid server overload.
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        if int(context['refresh']) < min_refresh:
+            context['refresh'] = min_refresh
 
         if curtime:
             curtime = curtime[0]
