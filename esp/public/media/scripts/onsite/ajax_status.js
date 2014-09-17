@@ -515,26 +515,79 @@ function autocomplete_select_item(event, ui)
     }
 }
 
+function fetch_students(request, response) 
+{
+
+    $j.ajax({
+        url: program_base_url + "students_status",
+        dataType: "jsonp",
+        data: {
+            q: request.term
+        },
+        success: function(data) {
+            response(data);
+        }
+    });
+}
+
+
+function students_success(new_data, text_status, jqxhr)
+{
+    console.log(new_data);
+}
+
 function setup_autocomplete()
 {
     var student_strings = [];
-    for (var i in data.students) {
-        var student = data.students[i];
-        var studentItem = {};
-        studentItem.value = i;
-        studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
-        
-        student_strings.push(studentItem);
-    }
 
     $j("#student_selector").autocomplete({
-        source: student_strings,
+        width: 400,
+        max: 20,
+        source: function( request, response ) {
+            $j.ajax({
+                url: program_base_url + "students_status",
+                data: {
+                    q: request.term
+                },
+                success: function (new_data) {
+                    var student_strings = [];
+                    for (var i in new_data) {
+                        var student = new_data[i];
+                        var studentItem = {};
+                        studentItem.value = i;
+                        studentItem.label = student[1] + " " + student[2] + " (" + student[0] + ")";
+                        studentItem.noProfile = !student[3];
+                        
+                        student_strings.push(studentItem);
+                     
+                    }
+                    response(student_strings);
+
+                },
+                error: function (result) {
+                    alert('Some error');
+                }
+            });
+        
+        },
         select: autocomplete_select_item,
         focus: function( event, ui ) {
             $j( "#student_selector" ).val( ui.item.label );
             return false;
         },
-    });
+    }).data("autocomplete")._renderItem = function (ul, item) {
+        var listItem = $j("<li>")
+                        .attr( "data-value", item.value )
+                        .append("<a href='#'>" + item.label + "</a>")
+                        .data("item", item)
+
+        if(item.noProfile) {
+            listItem.addClass('no-profile');
+        }
+
+        listItem.appendTo(ul);
+        return listItem
+    }
 }
 
 function clear_table()
