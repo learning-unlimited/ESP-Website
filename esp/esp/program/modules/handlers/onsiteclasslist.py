@@ -43,7 +43,7 @@ from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.cache import cache_function
@@ -119,14 +119,31 @@ class OnSiteClassList(ProgramModuleObj):
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         #   Try to ensure we don't miss anyone
+
         students_dict = self.program.students(QObjects=True)
+        search_query = request.GET.get('q')
+
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
         students_Q = Q()
+        
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
-        students = ESPUser.objects.filter(students_Q).distinct()
-        data = students.values_list('id', 'last_name', 'first_name').distinct()
-        simplejson.dump(list(data), resp)
+
+        students = ESPUser.objects.filter(students_Q)
+        data = [] 
+        if search_query:
+            #If user provided a search term then we want to expand search to the
+            #entire student base
+            student_ids = students.values_list('id', flat=True).distinct()
+
+            students = ESPUser.objects.filter(Q(last_name__icontains=search_query) | \
+                               Q(first_name__icontains=search_query)) \
+
+        for student in students.values_list('id', 'last_name', 'first_name').distinct().order_by('last_name','first_name'):
+            data.append(list(student) + [ not search_query or student[0] in student_ids])
+       
+        sorted(data,key=lambda x: x[3])
+        simplejson.dump(data, resp)
         return resp
     
     @aux_call
