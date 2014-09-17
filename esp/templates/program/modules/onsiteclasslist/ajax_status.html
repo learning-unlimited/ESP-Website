@@ -21,6 +21,16 @@
     set_current_student({{ initial_student }});
     {% endif %}
 </script>
+<style type="text/css">
+
+    //todo - externalize 
+    .ui-autocomplete { position: absolute; cursor: default;z-index:30 !important;}
+    .no-profile {
+        background-color: #f7d0d0;
+    }
+
+
+</style>
 <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
@@ -76,7 +86,7 @@
 </select>
 </div>
 
-<div id='compact-classes-body' class='compact-classes'>
+<div id='compact-classes-body' class='compact-classes' style="z-index:-900;">
 <table class="narrow bordered">
 <tr>{% for timeslot in timeslots %}
     <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
