@@ -151,7 +151,7 @@ class StudentExtraCosts(ProgramModuleObj):
                            if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
-                                                     choices=x.options_str,
+                                                     choices=x.option_choices,
                                                      required=(x.required)) }
                              for x in multiselect_list ]
 
