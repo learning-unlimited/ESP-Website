@@ -321,6 +321,7 @@ class IndividualAccountingController(ProgramAccountingController):
             for lit in line_items:
                 if lit.text == item_name:
                     matched = True
+                    option = None
                     #   Determine the cost to apply to the transfer:
                     #   - Default to the cost of the line item type
                     transfer_amount = lit.amount_dec
@@ -334,7 +335,7 @@ class IndividualAccountingController(ProgramAccountingController):
                         if option.amount_dec is not None:
                             transfer_amount = option.amount_dec
                     for i in range(quantity):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option_id))
+                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
@@ -344,6 +345,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
+        option = None
         if amount is not None and option_id:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
         elif option_id:
@@ -362,7 +364,7 @@ class IndividualAccountingController(ProgramAccountingController):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
         for i in range(quantity):
-            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount, option=option_id))
+            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount, option=option))
 
         return result
 
