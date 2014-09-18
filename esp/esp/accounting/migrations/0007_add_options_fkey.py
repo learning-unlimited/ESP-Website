@@ -9,14 +9,14 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         # Adding field 'Transfer.options'
-        db.add_column('accounting_transfer', 'options',
+        db.add_column('accounting_transfer', 'option',
                       self.gf('django.db.models.fields.related.ForeignKey')(to=orm['accounting.LineItemOptions'], null=True, blank=True),
                       keep_default=False)
 
 
     def backwards(self, orm):
         # Deleting field 'Transfer.options'
-        db.delete_column('accounting_transfer', 'options_id')
+        db.delete_column('accounting_transfer', 'option_id')
 
 
     models = {
@@ -62,7 +62,7 @@ class Migration(SchemaMigration):
             'executed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'line_item': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['accounting.LineItemType']", 'null': 'True', 'blank': 'True'}),
-            'options': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['accounting.LineItemOptions']", 'null': 'True', 'blank': 'True'}),
+            'option': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['accounting.LineItemOptions']", 'null': 'True', 'blank': 'True'}),
             'source': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'transfer_source'", 'null': 'True', 'to': "orm['accounting.Account']"}),
             'timestamp': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'transaction_id': ('django.db.models.fields.TextField', [], {'default': "''", 'max_length': '64', 'blank': 'True'}),
