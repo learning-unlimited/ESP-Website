@@ -354,6 +354,8 @@ class IndividualAccountingController(ProgramAccountingController):
             option = LineItemOptions.objects.get(id=option_id)
             if option.amount_dec is not None:
                 amount = option.amount_dec
+            else:
+                amount = line_item.amount_dec
         elif amount is not None:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
         else:
