@@ -331,7 +331,7 @@ class IndividualAccountingController(ProgramAccountingController):
                     #   - Otherwise, if a line item option is specified and it has an amount, use its amount
                     elif option_id is not None:
                         option = LineItemOptions.objects.get(id=option_id)
-                        if option.amount_dec:
+                        if option.amount_dec is not None:
                             transfer_amount = option.amount_dec
 
                     for i in range(quantity):
@@ -349,15 +349,15 @@ class IndividualAccountingController(ProgramAccountingController):
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
-        if amount and option_id:
+        if amount is not None and option_id:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
         elif option_id:
             self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
             #   Pull the amount from the line item options, if it has one
             option = LineItemOptions.objects.get(id=option_id)
-            if option.amount_dec:
+            if option.amount_dec is not None:
                 amount = option.amount_dec
-        elif amount:
+        elif amount is not None:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
         else:
             self.get_transfers().filter(line_item=line_item).delete()
