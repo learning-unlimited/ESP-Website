@@ -333,13 +333,8 @@ class IndividualAccountingController(ProgramAccountingController):
                         option = LineItemOptions.objects.get(id=option_id)
                         if option.amount_dec is not None:
                             transfer_amount = option.amount_dec
-
                     for i in range(quantity):
-                        new_transfer = Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount)
-                        if option_id:
-                            new_transfer.option_id = option_id
-                            new_transfer.save()
-                        result.append(new_transfer)
+                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option_id))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
@@ -367,11 +362,7 @@ class IndividualAccountingController(ProgramAccountingController):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
         for i in range(quantity):
-            new_transfer = Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount)
-            if option_id:
-                new_transfer.option_id = option_id
-                new_transfer.save()
-            result.append(new_transfer)
+            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount, option=option_id))
 
         return result
 
