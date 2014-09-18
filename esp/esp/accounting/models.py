@@ -67,7 +67,9 @@ class LineItemType(models.Model):
         return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
     
     @property
-    def options_str(self):
+    def option_choices(self):
+        """ Return a list of (ID, description) tuples, one for each of the
+            possible options.  Intended for use as form field choices.  """
         return [(x[0], x[2]) for x in self.options]
 
     @property

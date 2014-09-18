@@ -206,7 +206,7 @@ class StudentExtraCosts(ProgramModuleObj):
                     for x in multicosts_list ] + \
                     [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
                                                      initial={'cost': count_map[x.text][3]},
-                                                     choices=x.options_str,
+                                                     choices=x.option_choices,
                                                      required=(x.required)),
                         'LineItem': x }
                       for x in multiselect_list ]
