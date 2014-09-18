@@ -124,7 +124,7 @@ class StudentExtraCosts(ProgramModuleObj):
         Right now it doesn't.
         """
         if self.have_paid():
-            raise ESPError("You've already paid for this program; you can't pay again!", log=False)
+            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
         iac = IndividualAccountingController(self.program, get_current_request().user)
@@ -165,13 +165,13 @@ class StudentExtraCosts(ProgramModuleObj):
                 if form.is_valid():
                     if isinstance(form, CostItem):
                         if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount))
+                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
                     elif isinstance(form, MultiCostItem):
                         if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount))
+                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['cost']:
-                            form_prefs.append((lineitem_type.text, 1, Decimal(form.cleaned_data['cost'])))
+                            form_prefs.append((lineitem_type.text, 1, None, form.cleaned_data['cost']))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -194,10 +194,10 @@ class StudentExtraCosts(ProgramModuleObj):
 
         count_map = {}
         for lineitem_type in iac.get_lineitemtypes(optional_only=True):
-            count_map[lineitem_type.text] = [lineitem_type.id, 0, None]
+            count_map[lineitem_type.text] = [lineitem_type.id, 0, None, None]
         for item in iac.get_preferences():
-            count_map[item[0]][1] = item[1]
-            count_map[item[0]][2] = item[2]
+            for i in range(1, 4):
+                count_map[item[0]][i] = item[i]
         forms = [ { 'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
                     'LineItem': x }
                   for x in costs_list ] + \
@@ -205,7 +205,7 @@ class StudentExtraCosts(ProgramModuleObj):
                       'LineItem': x }
                     for x in multicosts_list ] + \
                     [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
-                                                     initial={'cost': (('%.2f' % count_map[x.text][2]) if count_map[x.text][2] else None)},
+                                                     initial={'cost': count_map[x.text][3]},
                                                      choices=x.options_str,
                                                      required=(x.required)),
                         'LineItem': x }

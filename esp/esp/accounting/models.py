@@ -64,11 +64,28 @@ class LineItemType(models.Model):
     
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('amount_dec', 'description').order_by('amount_dec')
+        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
     
     @property
     def options_str(self):
-        return [('%.2f' % x[0], x[1]) for x in self.options]
+        return [(x[0], x[2]) for x in self.options]
+
+    @property
+    def options_cost_range(self):
+        """ Return a ($min, $max) tuple specifying the min and max cost of the
+            possible options for this line item type, or None if there are no
+            options.    """
+        opts = list(self.options)
+        if len(opts) == 0:
+            return None
+        else:
+            min_cost = opts[0][1]
+            max_cost = opts[-1][1]
+            if min_cost is None:
+                min_cost = self.amount_dec
+            if max_cost is None:
+                max_cost = self.amount_dec
+            return (min_cost, max_cost)
 
     def __unicode__(self):
         if self.num_options == 0:
@@ -78,8 +95,8 @@ class LineItemType(models.Model):
 
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
-    description = models.TextField()
-    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
+    description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
+    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
 
     @property
     def amount(self):
