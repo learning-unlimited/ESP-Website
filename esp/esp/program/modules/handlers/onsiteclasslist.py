@@ -137,14 +137,27 @@ class OnSiteClassList(ProgramModuleObj):
             #entire student base
             student_ids = students.values_list('id', flat=True).distinct()
 
-            students = ESPUser.objects.filter(Q(last_name__icontains=search_query) | \
-                               Q(first_name__icontains=search_query)) \
+            search_tokens = search_query.split(' ',1)
+            first_token = search_tokens[0]
 
-        for student in students.values_list('id', 'last_name', 'first_name').distinct().order_by('last_name','first_name'):
-            data.append(list(student) + [ not search_query or student[0] in student_ids])
-       
-        sorted(data,key=lambda x: x[3])
-        simplejson.dump(data, resp)
+            if len(search_tokens) == 1:
+                student_q = Q(last_name__icontains=first_token) | Q(first_name__icontains=first_token)
+            else:
+                second_token = search_tokens[1]
+                student_q = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
+                            (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token)) 
+
+            students = ESPUser.objects.filter(student_q) \
+                              .values_list('id', 'last_name', 'first_name') \
+                              .distinct() \
+                              .order_by('last_name','first_name')[:20]
+
+            for student in students:
+                data.append(list(student) + [student[0] in student_ids])
+
+        simplejson.dump(sorted(data,key=lambda x: not x[3]), resp)
+        return resp
+
     @aux_call
     @needs_onsite
     def register_student(self, request, tl, one, two, module, extra, prog):
