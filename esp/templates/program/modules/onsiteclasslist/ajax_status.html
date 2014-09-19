@@ -22,18 +22,14 @@
     {% endif %}
 </script>
 <style type="text/css">
-
-    //todo - externalize 
-    .ui-autocomplete { position: absolute; cursor: default;z-index:30 !important;}
     .no-profile {
         background-color: #f7d0d0;
     }
-
-
 </style>
 <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
+
 </head>
 
 <body>
@@ -97,6 +93,11 @@
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
 
 <a name="settings" />
-
+<div id="dialog-confirm" title="Register Account?" class="hide">
+  <div>
+    This account is not registered with this program. <br />
+    Would you like to proceed with registering this account?
+    </div>
+</div>
 </body>
 </html>
