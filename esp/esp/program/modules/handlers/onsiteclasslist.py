@@ -40,6 +40,7 @@ from datetime import datetime, timedelta
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
@@ -144,6 +145,15 @@ class OnSiteClassList(ProgramModuleObj):
        
         sorted(data,key=lambda x: x[3])
         simplejson.dump(data, resp)
+    @aux_call
+    @needs_onsite
+    def register_student(self, request, tl, one, two, module, extra, prog):
+        success = False
+        resp = HttpResponse(mimetype='application/json')
+        student = get_object_or_404(ESPUser,request.POST.get("student_id"))
+        
+        # This is where the actual profile assignment occurs
+        simplejson.dump(success, resp)
         return resp
     
     @aux_call
