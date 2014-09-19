@@ -433,6 +433,20 @@ function remove_student(student_id, section_id)
     });
 }
 
+function register_student(student_id) 
+{
+    $j.post(
+        program_base_url + "register_student",
+        {
+            student_id: student_id
+        },
+
+        function(data) {
+            alert(data);
+        }
+    );
+}
+
 //  Figure out what to do when one of the checkboxes is hit.
 //  It could be either "on" or "off".
 function handle_checkbox(event)
@@ -502,34 +516,33 @@ function handle_checkbox(event)
 var last_select_event = null;
 function autocomplete_select_item(event, ui)
 {
-    last_select_event = [event, ui];
     event.preventDefault();
-    var student_id = ui.item.value;
     
+    last_select_event = [event, ui];
+    var student_id = ui.item.value;
     //  Refresh the table of checkboxes for the newly selected student.
-    if ((student_id > 0) && (student_id < 99999999))
-        set_current_student(parseInt(student_id));
+
+    if ((student_id > 0) && (student_id < 99999999)) 
+    {
+        if(ui.item.noProfile)
+        {
+            var dialog = $j("#dialog-confirm")
+
+            dialog.data('student_id', student_id);
+            dialog.dialog('open');
+
+        }
+        else 
+        {
+            set_current_student(parseInt(student_id));
+        }
+        
+    }    
     else
     {
-        //  console.log("Invalid student selected: " + s);
+        console.log("Invalid student selected: " + student_id);
     }
 }
-
-function fetch_students(request, response) 
-{
-
-    $j.ajax({
-        url: program_base_url + "students_status",
-        dataType: "jsonp",
-        data: {
-            q: request.term
-        },
-        success: function(data) {
-            response(data);
-        }
-    });
-}
-
 
 function students_success(new_data, text_status, jqxhr)
 {
@@ -554,7 +567,7 @@ function setup_autocomplete()
                     for (var i in new_data) {
                         var student = new_data[i];
                         var studentItem = {};
-                        studentItem.value = i;
+                        studentItem.value = student[0];
                         studentItem.label = student[1] + " " + student[2] + " (" + student[0] + ")";
                         studentItem.noProfile = !student[3];
                         
@@ -565,7 +578,7 @@ function setup_autocomplete()
 
                 },
                 error: function (result) {
-                    alert('Some error');
+                    alert(result);
                 }
             });
         
@@ -579,13 +592,14 @@ function setup_autocomplete()
         var listItem = $j("<li>")
                         .attr( "data-value", item.value )
                         .append("<a href='#'>" + item.label + "</a>")
-                        .data("item", item)
+                        .data("item.autocomplete", item);
 
         if(item.noProfile) {
             listItem.addClass('no-profile');
         }
 
         listItem.appendTo(ul);
+        ul.css('z-index','30');
         return listItem
     }
 }
@@ -1081,6 +1095,23 @@ $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
     //  class changes grid will be displayed.
+
+    var dialog = $j("#dialog-confirm").dialog({
+                      resizable: true,
+                      width: 450,
+                      height:250,
+                      modal: true,
+                      buttons: {
+                        "Register Account": function() {
+                          register_student($j(this).data('student_id'));
+                        },
+                        Cancel: function() {
+                          $j(this).dialog( "close" );
+                        }
+                      }
+                    });
+
+        dialog.dialog("close");
 
     $j("#messages").html("Loading class and student data...");
     
