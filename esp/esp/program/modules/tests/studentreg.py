@@ -280,7 +280,8 @@ class StudentRegTest(ProgramFrameworkTest):
         
         #   Check that selecting an option for a "multiple choice" extra item works
         lit = LineItemType.objects.get(program=self.program, text='Food')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-cost' % lit.id: '7.00'})
+        lio = filter(lambda x: x[2] == 'Large', lit.options)[0]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-option' % lit.id: str(lio[0])})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)

@@ -47,7 +47,12 @@ class LITAdmin(admin.ModelAdmin):
 admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
-    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'executed']
+    def option_description(self, obj):
+        if obj.option:
+            return obj.option.description
+        else:
+            return u'--'
+    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description', 'executed']
     search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text']
     list_filter = ['destination']
 admin_site.register(Transfer, TransferAdmin)
