@@ -260,7 +260,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   We have a successful charge.  Save a record of it if we can uniquely identify the user/program.
         totalcost_dollars = float(request.POST['totalcost_cents']) / 100.0
-        iac.submit_payment(totalcost_dollars, request.POST['stripeToken'])
+        iac.submit_payment(totalcost_dollars, charge.id)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
