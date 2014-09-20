@@ -30,12 +30,15 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
+import functools
+
 from esp.web.util.main import render_to_response
 
 def anonymous_only(message="Sorry, you don't need this page -- you're logged in."):
     def _decorator(method):
+        @functools.wraps(method)
         def _inner_function(request, *args, **kwargs):
             if request.user.is_authenticated():
                 return render_to_response('errors/anonymous_only.html',
@@ -43,7 +46,6 @@ def anonymous_only(message="Sorry, you don't need this page -- you're logged in.
                                           {})
 
             return method(request, *args, **kwargs)
-        _inner_function.__doc__ = method.__doc__
         return _inner_function
 
     return _decorator

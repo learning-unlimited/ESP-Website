@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 ################################################################################
@@ -84,7 +84,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@lists.learningu.org'),
+    ('LU Web Team','serverlog@learningu.org'),
 )
 
 GRAPPELLI_ADMIN_TITLE = "ESP administration"
@@ -119,7 +119,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
     'bounces': 'learningubounces@gmail.com',
-    'support': 'websupport@lists.learningu.org',
+    'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
     'treasury': 'esp-credit-cards@mit.edu',
@@ -322,7 +322,6 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
-    'debug_toolbar.panels.redirects.RedirectsPanel',
     'debug_toolbar.panels.request.RequestPanel',
     'debug_toolbar.panels.settings.SettingsPanel',
     'debug_toolbar.panels.signals.SignalsPanel',
@@ -331,7 +330,8 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.templates.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
-    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel'
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
 )
 
 def custom_show_toolbar(request):
@@ -339,16 +339,18 @@ def custom_show_toolbar(request):
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
+    'DISABLE_PANELS': set([
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    ]),
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
     ],
-    'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'RENDER_PANELS': True, # Ideally would be None, but there is a bug in their code.
+    'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
 

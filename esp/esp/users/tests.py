@@ -591,3 +591,133 @@ class RecordTest(TestCase):
             self.assertFalse(user_completed(only_today=True))
             self.assertEqual(1, filter(self.future, only_today=True).count())
 
+class PermissionTestCase(TestCase):
+
+    def setUp(self):
+        super(PermissionTestCase, self).setUp()
+        self.role = Group.objects.create(name='group')
+        self.user = ESPUser.objects.create(username='user')
+        self.user.makeRole(self.role)
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def create_perm(self, name, user_or_role, **kwargs):
+        """Create Permission object of type `name`.
+
+        If user_or_role is 'user', sets user=self.user.
+
+        If user_or_role is 'role', sets role=self.role.
+        """
+        kwargs.update({user_or_role: getattr(self, user_or_role)})
+        return Permission.objects.create(permission_type=name, **kwargs)
+
+    def create_user_perm(self, name, **kwargs):
+        """Creates Permission object with user=self.user."""
+        return self.create_perm(name, user_or_role='user', **kwargs)
+
+    def create_user_perm_for_program(self, name, **kwargs):
+        """Creates Permission object with user=self.user and program=self.program."""
+        return self.create_user_perm(name, program=self.program, **kwargs)
+
+    def create_role_perm(self, name, **kwargs):
+        """Creates Permission object with role=self.role."""
+        return self.create_perm(name, user_or_role='role', **kwargs)
+
+    def create_role_perm_for_program(self, name, **kwargs):
+        """Creates Permission object with role=self.role and program=self.program."""
+        return self.create_role_perm(name, program=self.program, **kwargs)
+
+    def user_has_perm(self, name, *args, **kwargs):
+        """Checks for Permission object with user=self.user."""
+        return Permission.user_has_perm(self.user, name, *args, **kwargs)
+
+    def user_has_perm_for_program(self, name, *args, **kwargs):
+        """Checks for Permission object for self.program with user=self.user."""
+        return self.user_has_perm(name, program=self.program, *args, **kwargs)
+
+    def testUserAdministerProgram(self):
+        self.create_user_perm_for_program('Administer')
+        self.assertTrue(self.user_has_perm_for_program('test'))
+
+    def testRoleAdministerProgram(self):
+        self.create_role_perm_for_program('Administer')
+        self.assertTrue(self.user_has_perm_for_program('test'))
+
+    def testUserAdministerAll(self):
+        self.create_user_perm('Administer')
+        self.assertTrue(self.user_has_perm_for_program('test'))
+        self.assertTrue(self.user_has_perm('test'))
+
+    def testRoleAdministerAll(self):
+        self.create_role_perm('Administer')
+        self.assertTrue(self.user_has_perm_for_program('test'))
+        self.assertTrue(self.user_has_perm('test'))
+
+    def testAdministratorAlwaysHasPerm(self):
+        self.user.makeRole('Administrator')
+        self.assertTrue(self.user_has_perm_for_program('test'))
+        self.assertTrue(self.user_has_perm('test'))
+
+    def testImplications(self):
+        for base, implications in Permission.implications.iteritems():
+            perm = self.create_role_perm_for_program(base)
+            for implication in implications:
+                self.assertTrue(self.user_has_perm_for_program(implication))
+            perm.delete()
+
+    def testUserPerm(self):
+        perm = 'Student/MainPage'
+        other_user = ESPUser.objects.create(username='other')
+        self.create_user_perm_for_program(perm)
+        self.assertTrue(self.user_has_perm_for_program(perm))
+        self.assertFalse(Permission.user_has_perm(other_user, perm, program=self.program))
+
+    def testRolePerm(self):
+        perm = 'Student/MainPage'
+        other_user = ESPUser.objects.create(username='other')
+        self.create_role_perm_for_program(perm)
+        self.assertTrue(self.user_has_perm_for_program(perm))
+        self.assertFalse(Permission.user_has_perm(other_user, perm, program=self.program))
+
+    def testProgramPerm(self):
+        perm = 'Student/MainPage'
+        other_program = Program.objects.create(grade_min=7, grade_max=12)
+        self.create_role_perm_for_program(perm)
+        self.assertTrue(self.user_has_perm_for_program(perm))
+        self.assertFalse(self.user_has_perm(perm))
+        self.assertFalse(Permission.user_has_perm(self.user, perm, program=other_program))
+
+    def testProgramIsNonePerm(self):
+        perm = 'Student/MainPage'
+        self.create_role_perm(perm)
+        self.assertFalse(self.user_has_perm_for_program(perm))
+        self.assertTrue(self.user_has_perm(perm))
+
+    def testProgramIsNoneImpliesAllPerm(self):
+        perm = 'Onsite'
+        self.create_role_perm(perm)
+        self.assertTrue(self.user_has_perm_for_program(perm, program_is_none_implies_all=True))
+
+    def testTeacherClassesCreateImpliesTeacherClassesCreateClass(self):
+        """Test that Teacher/Classes/Create implies Teacher/Classes/Create/Class.
+
+        Ensure that old Teacher/Classes/Create Permissions, which were
+        intended to give permission to create standard classes, are forward
+        compatible and still grant this permission, which is now
+        Teacher/Classes/Create/Class.
+        """
+        old_name = 'Teacher/Classes/Create'
+        new_name = 'Teacher/Classes/Create/Class'
+
+        self.create_user_perm_for_program(old_name)
+        self.assertTrue(self.user_has_perm_for_program(new_name))
+
+    def testOtherTeacherClassesCreateImplications(self):
+        """Test the other Teacher/Classes/Create implications.
+
+        - Ensure that Teacher/Classes/Create implies
+          Teacher/Classes/Create/OpenClass.
+        """
+        name = 'Teacher/Classes/Create'
+        implications = ['Teacher/Classes/Create/OpenClass']
+        self.create_user_perm_for_program(name)
+        self.assertTrue(all(map(self.user_has_perm_for_program, implications)))

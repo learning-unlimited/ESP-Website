@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.users.models import ESPUser
@@ -64,11 +64,30 @@ class LineItemType(models.Model):
     
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('amount_dec', 'description').order_by('amount_dec')
+        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
     
     @property
-    def options_str(self):
-        return [('%.2f' % x[0], x[1]) for x in self.options]
+    def option_choices(self):
+        """ Return a list of (ID, description) tuples, one for each of the
+            possible options.  Intended for use as form field choices.  """
+        return [(x[0], x[2]) for x in self.options]
+
+    @property
+    def options_cost_range(self):
+        """ Return a ($min, $max) tuple specifying the min and max cost of the
+            possible options for this line item type, or None if there are no
+            options.    """
+        opts = list(self.options)
+        if len(opts) == 0:
+            return None
+        else:
+            min_cost = opts[0][1]
+            max_cost = opts[-1][1]
+            if min_cost is None:
+                min_cost = self.amount_dec
+            if max_cost is None:
+                max_cost = self.amount_dec
+            return (min_cost, max_cost)
 
     def __unicode__(self):
         if self.num_options == 0:
@@ -78,8 +97,8 @@ class LineItemType(models.Model):
 
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
-    description = models.TextField()
-    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
+    description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
+    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
 
     @property
     def amount(self):
@@ -209,6 +228,7 @@ class Transfer(models.Model):
     destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
+    option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
                       'credit card processor transaction ID number',

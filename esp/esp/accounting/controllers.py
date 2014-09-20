@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
@@ -301,7 +301,9 @@ class IndividualAccountingController(ProgramAccountingController):
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, accoring to their preferences.
-            optional_items is a list of 3-tuples: (item name, quantity, cost option) """
+            optional_items is a list of 4-tuples: (item name, quantity, cost, option ID)
+            The last 2 items, cost and option ID, are non-required and should
+            be set to None if unused.   """
 
         result = []
         program_account = self.default_program_account()
@@ -312,27 +314,48 @@ class IndividualAccountingController(ProgramAccountingController):
         Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False).delete()
 
         #   Create transfers for optional line item types
-        for item in optional_items:
+        for item_tup in optional_items:
+            (item_name, quantity, cost, option_id) = item_tup
             matched = False
             for lit in line_items:
-                if lit.text == item[0]:
+                if lit.text == item_name:
                     matched = True
-                    for i in range(item[1]):
-                        if item[2] is not None:
-                            if item[2] != 0:
-                                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=item[2]))
-                        else:
-                            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
+                    option = None
+                    #   Determine the cost to apply to the transfer:
+                    #   - Default to the cost of the line item type
+                    transfer_amount = lit.amount_dec
+                    #   - If a dollar amount is specified, use that amount
+                    #     (note: this will override any line item option)
+                    if cost is not None:
+                        transfer_amount = cost
+                    #   - Otherwise, if a line item option is specified and it has an amount, use its amount
+                    elif option_id is not None:
+                        option = LineItemOptions.objects.get(id=option_id)
+                        if option.amount_dec is not None:
+                            transfer_amount = option.amount_dec
+                    for i in range(quantity):
+                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
 
         return result
 
-    def set_preference(self, lineitem_name, quantity, amount=None):
-        #   Sets a single preference
+    def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
+        #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
-        if amount:
+        option = None
+        if amount is not None and option_id:
+            self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
+        elif option_id:
+            self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
+            #   Pull the amount from the line item options, if it has one
+            option = LineItemOptions.objects.get(id=option_id)
+            if option.amount_dec is not None:
+                amount = option.amount_dec
+            else:
+                amount = line_item.amount_dec
+        elif amount is not None:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
         else:
             self.get_transfers().filter(line_item=line_item).delete()
@@ -342,7 +365,8 @@ class IndividualAccountingController(ProgramAccountingController):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
         for i in range(quantity):
-            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount))
+            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount, option=option))
+
         return result
 
     def get_transfers(self, **kwargs):
@@ -352,16 +376,16 @@ class IndividualAccountingController(ProgramAccountingController):
         return Transfer.objects.filter(user=self.user, line_item__in=line_items).order_by('id')
 
     def get_preferences(self):
-        #   Return a list of 3-tuples: (item name, quantity, cost option)
+        #   Return a list of 4-tuples: (item name, quantity, cost, options)
         result = []
         transfers = self.get_transfers(optional_only=True)
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec) not in map(lambda x: (x[0], x[2]), result):
-                result.append([li_name, 0, transfer.amount_dec])
+            if (li_name, transfer.amount_dec, transfer.option_id) not in map(lambda x: (x[0], x[2], x[3]), result):
+                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
                 result_index = len(result) - 1
             else:
-                result_index = map(lambda x: (x[0], x[2]), result).index((li_name, transfer.amount_dec))
+                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.option_id))
             result[result_index][1] += 1
         return result
 
