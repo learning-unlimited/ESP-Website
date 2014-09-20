@@ -42,6 +42,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.query import Q
 from django.db.models import signals
+from django.db.models.manager import Manager
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -51,7 +52,6 @@ from django.contrib.sites.models import Site
 
 
 # ESP Util
-from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.fields import JSONField
@@ -156,7 +156,7 @@ class ProgramCheckItem(models.Model):
         app_label = 'program'
         db_table = 'program_programcheckitem'
 
-class ClassManager(ProcedureManager):
+class ClassManager(Manager):
     def __repr__(self):
         return "ClassManager()"
     

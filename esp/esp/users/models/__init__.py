@@ -48,6 +48,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals
 from django.db.models.base import ModelState
+from django.db.models.manager import Manager
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
@@ -64,7 +65,6 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
-from esp.db.models.prepared import ProcedureManager
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from esp.tagdict.models import Tag
@@ -133,7 +133,7 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(ProcedureManager):
+class ESPUserManager(Manager):
     pass
 
 def get_studentreg_model():
