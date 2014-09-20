@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 """ This module houses the base ProgramModuleObj from which all module handlers are derived.
     There are many useful and magical functions provided in here, most of which can be called
