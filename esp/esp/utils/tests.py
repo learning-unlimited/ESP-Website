@@ -88,7 +88,6 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("simplejson")  # Used for some of our AJAX magic
-        self.tryImport("icalendar")  # Currently not significantly used, but we have some hanging imports.  Originally used for exporting .ics calendar files, usable by many calendaring applications; we may do this again at some point.
         self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
 	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
