@@ -762,9 +762,24 @@ class ESPUser(User, AnonymousUser):
             return False
     hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
-    def isOnsite(self, program = None):
-        return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-            Permission.user_has_perm(self, "Onsite", program=program)
+    def isOnsite(self, program=None):
+        """Determine if the user is an authorized onsite user for the program.
+
+        :param program:
+            Check for permission to access onsite for this program.
+            If None, check for permission to access onsite for all programs.
+        :type program:
+            `Program` or None
+        """
+        return (
+            (getattr(self, 'onsite_local', False) is True) or
+            Permission.user_has_perm(
+                self,
+                'Onsite',
+                program=program,
+                program_is_none_implies_all=True,
+            )
+        )
 
     def recoverPassword(self):
         # generate the ticket, send the email.
@@ -799,18 +814,26 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
-    def isAdministrator(self, program = None):
-        #this method is in an intermediate state
-        #the underlying permission system changed, but not that actual calls
-        #to this
+    def isAdministrator(self, program=None):
+        """Determine if the user is an admin for the program.
+
+        :param program:
+            Check for admin privileges for this program.
+            If None, check for global admin privileges.
+        :type program:
+            `Program` or None
+        """
         if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
+        # Unexpectedly and unfortunately, program__in=[None, program] doesn't
+        # find objects with program=None.
+        qprogram = Q(program=None) | Q(program=program)
         return Permission.objects.filter(
-                        quser & Permission.is_valid_qobject(),
+                        quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
-                        program__in=[None, program]).exists()
+        ).exists()
     isAdmin = isAdministrator
 
     @cache_function
@@ -2228,64 +2251,70 @@ class Permission(ExpirableModel):
                              help_text="Apply this permission to an entire user role (can be blank).")
 
     #For now, we'll use plain text for a description of what permission it is
-    PERMISSION_CHOICES=(
+    PERMISSION_CHOICES = (
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
-        ("GradeOverride","Ignore grade ranges for studentreg"),
+        ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("Student Deadlines", (
-                ("Student", "Basic student access"),
-                ("Student/OverrideFull", "Register for a full program"),
-                ("Student/All", "All student deadlines"),
-                ("Student/Applications","Apply for classes"),
-                ("Student/Catalog","View the catalog"),
-                ("Student/Classes","Classes"),
-                ("Student/Classes/All","Classes/All"),
-                ("Student/Classes/OneClass","Class/OneClass"),
-                ("Student/Classes/Lottery","Enter the lottery"),
-                ("Student/Classes/Lottery/View","View lottery results"),
-                ("Student/ExtraCosts","Extra costs page"),
-                ("Student/MainPage","Registration mainpage"),
-                ("Student/Confirm","Confirm registration"),
-                ("Student/Cancel","Cancel registration"),
-                ("Student/Payment","Pay for a program"),
-                ("Student/Profile","Set profile info"),
-                ("Student/Survey", "Access to survey"),
-                ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
-                ("Student/Finaid", "Access to financial aid application"),
-                )
-         ),
+            ("Student", "Basic student access"),
+            ("Student/OverrideFull", "Register for a full program"),
+            ("Student/All", "All student deadlines"),
+            ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
+            ("Student/Classes", "Classes"),
+            ("Student/Classes/OneClass", "Classes/OneClass"),
+            ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/Lottery/View", "View lottery results"),
+            ("Student/ExtraCosts", "Extra costs page"),
+            ("Student/MainPage", "Registration mainpage"),
+            ("Student/Confirm", "Confirm registration"),
+            ("Student/Cancel", "Cancel registration"),
+            ("Student/Payment", "Pay for a program"),
+            ("Student/Profile", "Set profile info"),
+            ("Student/Survey", "Access to survey"),
+            ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
+            ("Student/Finaid", "Access to financial aid application"),
+        )),
         ("Teacher Deadlines", (
-                ("Teacher", "Basic teacher access"),
-                ("Teacher/All", "All teacher deadlines"),
-                ("Teacher/Acknowledgement", "Teacher acknowledgement"),
-                ("Teacher/AppReview", "Review students' apps"),
-                ("Teacher/Availability", "Set availability"),
-                ("Teacher/Catalog","Catalog"),
-                ("Teacher/Classes", "Classes"),
-                ("Teacher/Classes/All", "Class/All"),
-                ("Teacher/Classes/View", "Classes/View"),
-                ("Teacher/Classes/Edit", "Classes/Edit"),
-                ("Teacher/Classes/Create","Classes/Create"),
-                ("Teacher/Classes/SelectStudents","Classes/SelectStudents"),
-                ("Teacher/Quiz", "Teacher quiz"),
-                ("Teacher/MainPage","Registration mainpage"),
-                ("Teacher/Survey","Teacher Survey"),
-                ("Teacher/Profile","Set profile info"),
-                ("Teacher/Survey", "Access to survey"),
-                )
-         ),
+            ("Teacher", "Basic teacher access"),
+            ("Teacher/All", "All teacher deadlines"),
+            ("Teacher/Acknowledgement", "Teacher acknowledgement"),
+            ("Teacher/AppReview", "Review students' apps"),
+            ("Teacher/Availability", "Set availability"),
+            ("Teacher/Catalog", "Catalog"),
+            ("Teacher/Classes", "Classes"),
+            ("Teacher/Classes/All", "Classes/All"),
+            ("Teacher/Classes/View", "Classes/View"),
+            ("Teacher/Classes/Edit", "Classes/Edit"),
+            ("Teacher/Classes/Create", "Create classes of all types"),
+            ("Teacher/Classes/Create/Class", "Create standard classes"),
+            ("Teacher/Classes/Create/OpenClass", "Create open classes"),
+            ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
+            ("Teacher/Quiz", "Teacher quiz"),
+            ("Teacher/MainPage", "Registration mainpage"),
+            ("Teacher/Survey", "Teacher Survey"),
+            ("Teacher/Profile", "Set profile info"),
+            ("Teacher/Survey", "Access to survey"),
+        )),
     )
+
+    PERMISSION_CHOICES_FLAT = flatten(PERMISSION_CHOICES)
+
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
      
 
-    implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
-                                  if x!="Administer"],
-                    "Student/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Student")],
-                    "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Teacher")],
-                    }
+    implications = {
+        "Administer": PERMISSION_CHOICES_FLAT,
+        "Student/All": [x for x in PERMISSION_CHOICES_FLAT
+                          if x.startswith("Student")],
+        "Teacher/All": [x for x in PERMISSION_CHOICES_FLAT
+                          if x.startswith("Teacher")],
+        "Teacher/Classes/All": [x for x in PERMISSION_CHOICES_FLAT
+                                  if x.startswith("Teacher/Classes")],
+        "Teacher/Classes/Create": [x for x in PERMISSION_CHOICES_FLAT
+                                     if x.startswith("Teacher/Classes/Create")],
+    }
     #i'm not really sure if implications is a good idea
     #use sparingly
 
@@ -2301,19 +2330,71 @@ class Permission(ExpirableModel):
         app_label = 'users'
 
     @classmethod
-    def user_has_perm(self, user, name, program=None, when=None):
+    def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
+        """Determine if the user has the specified permission on the program.
+
+        :param user:
+            Check the permissions assigned to this user.
+        :type user:
+            `ESPUser`
+        :param name:
+            The unique identifier of the permission identifier to check for.
+            Must be in PERMISSION_CHOICES_FLAT.
+        :type name:
+            `str`
+        :param program:
+            Check for permission for `name` on this program.
+            If program is None, check only for Permission objects with
+            program=None.
+            If program_is_none_implies_all is False, check only for Permission
+            objects with program=program.
+            If program_is_none_implies_all is True, check for Permission
+            objects with program=program or program=None.
+        :type program:
+            `Program` or None
+        :param when:
+            Check permissions as of this point in time.
+            If None, default to datetime.datetime.now().
+        :type when:
+            `datetime.datetime` or None
+        :param program_is_none_implies_all:
+            If True, treat Permission objects with program=None as if they are
+            global across all programs. Return True if the user has a
+            Permission object with program=program or with program=None.
+            If False, do not treat Permission objects with program=None as if
+            they are global across all programs. Only return True if the user
+            has a Permission object with program=program.
+            The default behavior is that permissions are not globally
+            applicable. Only special permissions that are not in
+            deadline_types, like Administer and Onsite, can be granted
+            globally on all programs. When checking for these special
+            permissions, callers should pass True for this param.
+            If name is in deadline_types, set this param to False,
+            regardless of the original value.
+        :type program_is_none_implies_all:
+            `bool`
+        :return:
+            True if the user has the specified permission, else False.
+        :rtype:
+            `bool`
+        """
         if user.isAdministrator(program=program):
             return True
+        if name in cls.deadline_types:
+            program_is_none_implies_all = False
         perms=[name]
-        for k,v in self.implications.items():
+        for k,v in cls.implications.items():
             if name in v: perms.append(k)
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
-        return initial_qset.filter(self.is_valid_qobject()).exists()
+        qprogram = Q(program=program)
+        if program_is_none_implies_all:
+            qprogram |= Q(program=None)
+        initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
+        return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
     
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
 
     @classmethod
     def deadlines(cls):
