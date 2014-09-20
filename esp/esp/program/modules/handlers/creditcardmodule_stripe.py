@@ -128,6 +128,18 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     @meets_deadline('/Payment')
     def payonline(self, request, tl, one, two, module, extra, prog):
 
+        #   Check that the user has completed all required modules so that they
+        #   are "finished" registering for the program.  (In other words, they
+        #   should be registered for at least one class, and filled out other
+        #   required forms, before paying by credit card.)
+        modules = prog.getModules(request.user, tl)
+        completedAll = True
+        for module in modules:
+            if not module.isCompleted() and module.required:
+                completedAll = False
+        if not completedAll:
+            raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
+
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
 
