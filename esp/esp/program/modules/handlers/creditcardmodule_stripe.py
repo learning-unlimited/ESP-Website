@@ -255,5 +255,5 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'success.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 
