@@ -232,6 +232,10 @@ INSTALLED_APPS = (
     'django_nose',
     'esp.formstack',
     'esp.application',
+
+    # TODO(jmoldow): Remove after stable release, after last migration to
+    # remove tables has been run.
+    'esp.shortterm',
 )
 
 import os
