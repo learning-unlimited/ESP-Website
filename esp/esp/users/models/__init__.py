@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+import functools
 import simplejson as json
 
 from django import forms, dispatch
@@ -98,6 +99,7 @@ def user_get_key(user):
         return str(user.id)
 
 def admin_required(func):
+    @functools.wraps(func)
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))

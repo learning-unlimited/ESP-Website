@@ -322,7 +322,6 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
-    'debug_toolbar.panels.redirects.RedirectsPanel',
     'debug_toolbar.panels.request.RequestPanel',
     'debug_toolbar.panels.settings.SettingsPanel',
     'debug_toolbar.panels.signals.SignalsPanel',
@@ -331,7 +330,8 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.templates.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
-    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel'
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
 )
 
 def custom_show_toolbar(request):
@@ -339,16 +339,18 @@ def custom_show_toolbar(request):
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
+    'DISABLE_PANELS': set([
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    ]),
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
     ],
-    'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'RENDER_PANELS': True, # Ideally would be None, but there is a bug in their code.
+    'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
 
