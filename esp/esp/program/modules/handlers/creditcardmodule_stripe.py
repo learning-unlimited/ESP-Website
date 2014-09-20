@@ -252,6 +252,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
+        context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
 
     class Meta:
