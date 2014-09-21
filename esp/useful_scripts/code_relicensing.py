@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import re
 import os
@@ -5,7 +6,8 @@ import os
 direction = 'forward'
 #direction = 'backward'
 
-#   Note: codefiles.txt obtained by something like 'grep -r "__author__"'
+#   Note: codefiles.txt obtained by something like
+#         'git grep -Il "__author__" -- esp/esp > codefiles.txt'
 file = open('codefiles.txt', 'r')
 
 filenames = [r.strip() for r in file.readlines()]
@@ -39,7 +41,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 """

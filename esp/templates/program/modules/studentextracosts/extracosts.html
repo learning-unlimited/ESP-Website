@@ -48,7 +48,7 @@ td>ul { list-style-type: none; padding: 0px }
 {% for f in forms %}
 <tr style="border-bottom: 1px dashed grey;">
     <td width="120px">
-        {{ f.form.cost }}
+        {% if f.form.option %}{{ f.form.option }}{% else %}{{ f.form.cost }}{% endif %}
         {% if f.LineItem.negative_amount %}
             <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
             {% endif %}
@@ -60,7 +60,7 @@ td>ul { list-style-type: none; padding: 0px }
         {% if f.LineItem.num_options %}
             <button type="button"
                     class="remove-item"
-                    name="{{ f.form.prefix }}-cost"
+                    name="{{ f.form.prefix }}-option"
                     onclick="remove_item(this);">
                 Remove this item
             </button>

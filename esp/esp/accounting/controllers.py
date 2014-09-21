@@ -30,13 +30,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
-from esp.tagdict.models import Tag
 from esp.utils.query_utils import nest_Q
 
 from django.db.models import Sum, Q
@@ -316,11 +315,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
         #   Create transfers for optional line item types
         for item_tup in optional_items:
-            (item_name, quantity, cost, options_id) = item_tup
+            (item_name, quantity, cost, option_id) = item_tup
             matched = False
             for lit in line_items:
                 if lit.text == item_name:
                     matched = True
+                    option = None
                     #   Determine the cost to apply to the transfer:
                     #   - Default to the cost of the line item type
                     transfer_amount = lit.amount_dec
@@ -329,35 +329,33 @@ class IndividualAccountingController(ProgramAccountingController):
                     if cost is not None:
                         transfer_amount = cost
                     #   - Otherwise, if a line item option is specified and it has an amount, use its amount
-                    elif options_id is not None:
-                        option = LineItemOptions.objects.get(id=options_id)
-                        if option.amount_dec:
+                    elif option_id is not None:
+                        option = LineItemOptions.objects.get(id=option_id)
+                        if option.amount_dec is not None:
                             transfer_amount = option.amount_dec
-
                     for i in range(quantity):
-                        new_transfer = Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount)
-                        if options_id:
-                            new_transfer.options_id = options_id
-                            new_transfer.save()
-                        result.append(new_transfer)
+                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
 
         return result
 
-    def set_preference(self, lineitem_name, quantity, amount=None, options_id=None):
+    def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
-        if amount and options_id:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount, options__id=options_id).delete()
-        elif options_id:
-            self.get_transfers().filter(line_item=line_item, options__id=options_id).delete()
+        option = None
+        if amount is not None and option_id:
+            self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
+        elif option_id:
+            self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
             #   Pull the amount from the line item options, if it has one
-            option = LineItemOptions.objects.get(id=options_id)
-            if option.amount_dec:
+            option = LineItemOptions.objects.get(id=option_id)
+            if option.amount_dec is not None:
                 amount = option.amount_dec
-        elif amount:
+            else:
+                amount = line_item.amount_dec
+        elif amount is not None:
             self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
         else:
             self.get_transfers().filter(line_item=line_item).delete()
@@ -367,11 +365,7 @@ class IndividualAccountingController(ProgramAccountingController):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
         for i in range(quantity):
-            new_transfer = Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount)
-            if options_id:
-                new_transfer.options_id = options_id
-                new_transfer.save()
-            result.append(new_transfer)
+            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount, option=option))
 
         return result
 
@@ -391,11 +385,11 @@ class IndividualAccountingController(ProgramAccountingController):
             transfers = self.get_transfers(line_items, optional_only=True)
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if (li_name, transfer.amount_dec, transfer.options_id) not in map(lambda x: (x[0], x[2], x[3]), result):
-                result.append([li_name, 0, transfer.amount_dec, transfer.options_id])
+            if (li_name, transfer.amount_dec, transfer.option_id) not in map(lambda x: (x[0], x[2], x[3]), result):
+                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
                 result_index = len(result) - 1
             else:
-                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.options_id))
+                result_index = map(lambda x: (x[0], x[2], x[3]), result).index((li_name, transfer.amount_dec, transfer.option_id))
             result[result_index][1] += 1
         return result
 

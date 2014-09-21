@@ -1,7 +1,6 @@
 import httplib
 from sys import stdout, stderr
 
-from esp.tagdict.decorators import require_tag
 from esp.tagdict.models import Tag
 from django.contrib.sites.models import Site
 

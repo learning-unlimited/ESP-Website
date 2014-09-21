@@ -369,7 +369,7 @@ EOF
 
 SITE_INFO = (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site')
 ADMINS = (
-    ('LU Web group','serverlog@lists.learningu.org'),
+    ('LU Web group','serverlog@learningu.org'),
 )
 CACHE_PREFIX = "${SITENAME}ESP"
 
@@ -377,7 +377,7 @@ CACHE_PREFIX = "${SITENAME}ESP"
 DEFAULT_EMAIL_ADDRESSES = {
         'archive': 'learninguarchive@gmail.com',
         'bounces': 'learningubounces@gmail.com',
-        'support': '$SITENAME-websupport@lists.learningu.org',
+        'support': '$SITENAME-websupport@learningu.org',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
         }
@@ -434,7 +434,7 @@ email_choices = (
 # Corresponding email addresses                                                                                                                                 
 email_addresses = {
     'general': '$GROUPEMAIL',
-    'web':     '$SITENAME-websupport@lists.learningu.org',
+    'web':     '$SITENAME-websupport@learningu.org',
     }
 
 SELENIUM_TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'

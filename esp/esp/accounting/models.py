@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.users.models import ESPUser
@@ -67,7 +67,9 @@ class LineItemType(models.Model):
         return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
     
     @property
-    def options_str(self):
+    def option_choices(self):
+        """ Return a list of (ID, description) tuples, one for each of the
+            possible options.  Intended for use as form field choices.  """
         return [(x[0], x[2]) for x in self.options]
 
     @property
@@ -226,7 +228,7 @@ class Transfer(models.Model):
     destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
-    options = models.ForeignKey(LineItemOptions, blank=True, null=True)
+    option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
                       'credit card processor transaction ID number',

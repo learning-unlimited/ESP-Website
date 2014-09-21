@@ -13,9 +13,6 @@
 from script_setup import *
 
 from esp.program.models import FinancialAidRequest
-from datetime import datetime
-import re
-
 
 # CONFIGURATION
 PROGRAM = "Splash! 2013"
