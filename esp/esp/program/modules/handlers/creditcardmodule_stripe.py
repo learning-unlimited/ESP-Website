@@ -244,7 +244,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     # charged without a record being created on the site, nor
                     # vice-versa.
                     totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
-                    iac.submit_payment(totalcost_dollars, charge.id)
+
+                    #   Create a record of the transfer without the transaction ID.
+                    transfer = iac.submit_payment(totalcost_dollars, 'TBD')
 
                     # Create the charge on Stripe's servers - this will charge
                     # the user's card.
@@ -257,6 +259,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                             'ponumber': request.POST['ponumber'],
                         },
                     )
+
+                    #   Now that the charge has been performed by Stripe, save its
+                    #   transaction ID for our records.
+                    transfer.transaction_id = charge.id
+                    transfer.save()
             except stripe.error.CardError, e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
