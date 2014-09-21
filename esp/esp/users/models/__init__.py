@@ -1081,11 +1081,11 @@ def update_email(**kwargs):
             if g in group_map:
                 mailman.add_list_member(group_map[g], new_email)
     elif new_email is None:
-        groups_to_deactivate = groups
+        groups_to_deactivate = set(groups)
         if 'Student' in groups or 'Guardian' in groups or 'Educator' in groups:
             # If they are a student, guardian, or educator, deactivate all such
             # accounts.  This seems like it makes the most sense.
-            groups_to_deactivate.extend(['Student', 'Guardian', 'Educator'])
+            groups_to_deactivate.update(['Student', 'Guardian', 'Educator'])
         if not is_admin:
             # If they're an admin, they might be doing something weird, so
             # don't deactivate any of their accounts.
@@ -1110,7 +1110,7 @@ def update_email(**kwargs):
                 if l in group_map.values():
                     # A role-based list: only transition them if they are an
                     # appropriate type of account.
-                    if any(group_map[g] == l for g in groups) or is_admin:
+                    if any(group_map.get(g) == l for g in groups) or is_admin:
                         lists.append(l)
                 elif 'teachers' in l:
                     if 'Teacher' in groups or is_admin:
