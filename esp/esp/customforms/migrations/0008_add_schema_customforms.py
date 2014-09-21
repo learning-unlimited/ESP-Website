@@ -5,22 +5,15 @@ from south.v2 import SchemaMigration
 from django.db import models, transaction
 from django.db.utils import DatabaseError
 
+from esp.customforms.models import create_schema
+
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        try:
-            # Wrapping this command in commit_on_success() ensures that, if
-            # the customforms schema already exists or the command fails for
-            # any other reason, future database queries will not generate
-            # "current transaction is aborted, commands ignored until end of
-            # transaction block" errors.
-            with transaction.commit_on_success():
-                db.execute("CREATE SCHEMA customforms")
-        except DatabaseError:
-            pass
+        create_schema(db)
 
     def backwards(self, orm):
-        db.execute("DROP SCHEMA CASCADE")
+        db.execute("DROP SCHEMA customforms CASCADE")
 
 
     models = {
