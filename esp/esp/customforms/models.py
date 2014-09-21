@@ -78,19 +78,19 @@ def create_schema(db):
         The database backend you want to use (e.g. Django cursor object, or south.db.db).
     """
 
-        # Forcing this command to run by itself in a transaction. If the
-        # customforms schema already exists or the command fails for any
-        # other reason, future database queries will not generate "current
-        # transaction is aborted, commands ignored until end of transaction
-        # block" errors.
-        # Warning: This overrides the transaction management of any surrounding code.
-        
-        transaction.commit()    # flush any existing transaction
-        failed = False
-        try:
-            db.execute("CREATE SCHEMA customforms")
-        except:
-            failed = True
-            transaction.rollback()
-        if not failed:
-            transaction.commit()
+    # Forcing this command to run by itself in a transaction. If the
+    # customforms schema already exists or the command fails for any
+    # other reason, future database queries will not generate "current
+    # transaction is aborted, commands ignored until end of transaction
+    # block" errors.
+    # Warning: This overrides the transaction management of any surrounding code.
+    
+    transaction.commit()    # flush any existing transaction
+    failed = False
+    try:
+        db.execute("CREATE SCHEMA customforms")
+    except:
+        failed = True
+        transaction.rollback()
+    if not failed:
+        transaction.commit()
