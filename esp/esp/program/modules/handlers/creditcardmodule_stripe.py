@@ -209,6 +209,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
+        # We are using the 2014-03-13 version of the Stripe API, which is
+        # v1.12.2.
         stripe.api_version = '2014-03-13'
 
         if request.POST.get('ponumber', '') != iac.get_id():
