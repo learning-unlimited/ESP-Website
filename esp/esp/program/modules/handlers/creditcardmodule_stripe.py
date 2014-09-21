@@ -45,6 +45,7 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
@@ -230,16 +231,30 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         if 'error_type' not in context:
             try:
-                #   Create the charge on Stripe's servers - this will charge the user's card
-                charge = stripe.Charge.create(
-                    amount=amount_cents_post,
-                    currency="usd",
-                    card=request.POST['stripeToken'],
-                    description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
-                    metadata={
-                        'ponumber': request.POST['ponumber'],
-                    },
-                )
+                with transaction.commit_on_success():
+                    # Save a record of the charge if we can uniquely identify the user/program.
+                    # If this causes an error, the user will get a 500 error
+                    # page, and the card will NOT be charged.
+                    # If an exception is later raised by
+                    # stripe.Charge.create(), then the transaction will be
+                    # rolled back.
+                    # Thus, we will never be in a state where the card has been
+                    # charged without a record being created on the site, nor
+                    # vice-versa.
+                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    iac.submit_payment(totalcost_dollars, charge.id)
+
+                    # Create the charge on Stripe's servers - this will charge
+                    # the user's card.
+                    charge = stripe.Charge.create(
+                        amount=amount_cents_post,
+                        currency="usd",
+                        card=request.POST['stripeToken'],
+                        description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+                        metadata={
+                            'ponumber': request.POST['ponumber'],
+                        },
+                    )
             except stripe.error.CardError, e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
@@ -258,10 +273,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             #   If we got any sort of error, send an e-mail to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
-
-        #   We have a successful charge.  Save a record of it if we can uniquely identify the user/program.
-        totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
-        iac.submit_payment(totalcost_dollars, charge.id)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
