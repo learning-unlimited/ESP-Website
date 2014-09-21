@@ -68,18 +68,29 @@ from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
 
 def install():
-    create_schema()
+    cursor = connection.cursor()
+    create_schema(cursor)
 
-def create_schema():
-    """Create customforms schema."""
-    try:
-        # Wrapping this command in commit_on_success() ensures that, if the
+def create_schema(db):
+    """ Create customforms schema.
+    
+    :param db:
+        The database backend you want to use (e.g. Django cursor object, or south.db.db).
+    """
+
+        # Forcing this command to run by itself in a transaction. If the
         # customforms schema already exists or the command fails for any
         # other reason, future database queries will not generate "current
         # transaction is aborted, commands ignored until end of transaction
         # block" errors.
-        with transaction.commit_on_success():
-            cursor = connection.cursor()
-            cursor.execute("CREATE SCHEMA customforms")
-    except DatabaseError:
-        pass
+        # Warning: This overrides the transaction management of any surrounding code.
+        
+        transaction.commit()    # flush any existing transaction
+        failed = False
+        try:
+            db.execute("CREATE SCHEMA customforms")
+        except:
+            failed = True
+            transaction.rollback()
+        if not failed:
+            transaction.commit()
