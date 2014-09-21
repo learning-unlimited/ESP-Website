@@ -45,7 +45,6 @@ from django_selenium.testcases import SeleniumTestCase
 from selenium import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from sys import stdout, stderr, exc_info
 
 class TestQsdCachePurging(SeleniumTestCase):
     """

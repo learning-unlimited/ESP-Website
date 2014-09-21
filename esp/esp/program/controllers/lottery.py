@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -448,13 +450,26 @@ class LotteryAssignmentController(object):
         priority_assigned = [numpy.sum(priority_matches[i], 1) for i in range(self.effective_priority_limit+1)]
         priority_requested = [numpy.sum(self.priority[i], 1) for i in range(self.effective_priority_limit+1)]
         priority_fractions = [0 for i in range(self.effective_priority_limit+1)]
+
+        # We expect that there will occasionally be 0/0 division errors,
+        # whenver a student has not specified any classes for a particular
+        # priority level.  We handle this by calling nan_to_num(), but by
+        # default numpy will still raise and print a RuntimeWarning.  We can
+        # safely ignore this by passing 'ignore' to the errstate() context
+        # manager.  However, if display mode is on, then we can still print
+        # these warnings along with the rest of the debugging messages by
+        # passing 'warn'.
+        np_errstate = 'warn' if display else 'ignore'
+
         for i in range(1,self.effective_priority_limit+1):
-            priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
+            with numpy.errstate(divide=np_errstate, invalid=np_errstate):
+                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
         
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
-        interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
+        with numpy.errstate(divide=np_errstate, invalid=np_errstate):
+            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
         
         if self.effective_priority_limit > 1:
             for i in range(1,self.effective_priority_limit+1):
@@ -590,7 +605,7 @@ class LotteryAssignmentController(object):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
 
-    def generate_screwed_csv(self, directory=None, n=None, stats=None):
+    def generate_screwed_csv(self, directory=None, n=None, stats=None, debug_display=False):
         """Generate a CSV file of the n most screwed students. Default: All of them.
         Directory: string of what directory you like the information stored in.
         This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
@@ -618,7 +633,7 @@ class LotteryAssignmentController(object):
             csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
 
         csvfile.close()
-        print 'File can be found at: ' + fullfilename
+        if debug_display: print 'File can be found at: ' + fullfilename
     
     def save_assignments(self, debug_display=False, try_mailman=True):
         """ Store lottery assignments in the database once they have been computed.
@@ -635,8 +650,8 @@ class LotteryAssignmentController(object):
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
         StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        print "StudentRegistration enrollments all created to start at %s" % self.now
-        if debug_display:
+        if debug_display or self.options['stats_display']:
+            print "StudentRegistration enrollments all created to start at %s" % self.now
             print 'Created %d registrations' % student_ids.shape[0]
         
         #As mailman has sometimes not worked in the past,

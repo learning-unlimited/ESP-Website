@@ -46,7 +46,7 @@ from django.conf import settings
 import os
 
 @transaction.autocommit
-def process_messages():
+def process_messages(debug=False):
     """ Go through all unprocessed messages and process them. """
     
     #   Perform an atomic update in order to claim which messages we will be processing.
@@ -65,7 +65,7 @@ def process_messages():
     #   Process message requests
     for message in messages:
         try:
-            message.process(True)
+            message.process(True, debug=debug)
         except:
             message.processed_by = None
             message.save()
@@ -75,7 +75,7 @@ def process_messages():
     return list(messages)
 
 @transaction.autocommit
-def send_email_requests():
+def send_email_requests(debug=False):
     """ Go through all email requests that aren't sent and send them. """
 
     if not can_process_and_send():
@@ -109,7 +109,7 @@ def send_email_requests():
 
     for mailtxt in mailtxts_list:
         try:
-            mailtxt.send()
+            mailtxt.send(debug=debug)
         except Exception as e:
             #   Increment tries so that we don't continuously attempt to send this message
             mailtxt.tries = mailtxt.tries + 1
@@ -117,7 +117,7 @@ def send_email_requests():
 
             #   Queue report about this delivery failure
             errors.append({'email': mailtxt, 'exception': str(e)})
-            print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
+            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
         else:
             num_sent += 1
 
@@ -127,7 +127,7 @@ def send_email_requests():
     mailtxts.update(locked=False)
 
     if num_sent > 0:
-        print 'Sent %d messages' % num_sent
+        if debug: print 'Sent %d messages' % num_sent
 
     #   Report any errors
     if errors:
@@ -138,8 +138,9 @@ def send_email_requests():
 
         mail_context = {'errors': errors}
         delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
-        print 'Mail delivery failure'
-        print delivery_failed_string
+        if debug:
+            print 'Mail delivery failure'
+            print delivery_failed_string
         send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
     elif num_sent > 0:
-        print 'No mail delivery failures'
+        if debug: print 'No mail delivery failures'

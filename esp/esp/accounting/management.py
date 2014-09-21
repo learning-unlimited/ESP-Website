@@ -6,7 +6,7 @@ __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2009 by the individual contributors
+Copyright (c) 2014 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -34,15 +34,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.db.models import signals 
-from esp.resources import models as resources
+from django.db.models import signals
+from esp.accounting import models as accounting
 from esp.utils.custom_cache import custom_cache
 
 def post_syncdb(sender, app, **kwargs):
-    if app == resources:
+    if app == accounting:
         with custom_cache():
-            print "Installing esp.resources initial data..."
-            resources.install()
-        
-signals.post_syncdb.connect(post_syncdb)
+            print "Installing esp.accounting initial data..."
+            accounting.install()
 
+signals.post_syncdb.connect(post_syncdb)

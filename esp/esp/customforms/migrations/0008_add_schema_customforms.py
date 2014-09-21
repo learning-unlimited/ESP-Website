@@ -2,15 +2,18 @@
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
-from django.db import models
+from django.db import models, transaction
+from django.db.utils import DatabaseError
+
+from esp.customforms.models import create_schema
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.execute("CREATE SCHEMA customforms")
+        create_schema(db)
 
     def backwards(self, orm):
-        db.execute("DROP SCHEMA CASCADE")
+        db.execute("DROP SCHEMA customforms CASCADE")
 
 
     models = {

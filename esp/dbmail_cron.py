@@ -46,8 +46,8 @@ except IOError:
 from esp import cache_loader
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
-process_messages()
-send_email_requests()
+process_messages(debug=True)
+send_email_requests(debug=True)
 
 # Release the lock when message sending is complete.
 fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)

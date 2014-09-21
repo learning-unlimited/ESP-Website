@@ -287,4 +287,8 @@ class Transfer(models.Model):
             return base_result
 
 
-
+def install():
+    """Set up the default accounts."""
+    from esp.accounting.controllers import GlobalAccountingController
+    gac = GlobalAccountingController()
+    gac.setup_accounts()

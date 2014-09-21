@@ -44,10 +44,6 @@ SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 DEBUG=True
 DEBUG=False
 
-if DEBUG:
-    sys.stdout = open('/tmp/stdout', 'w',)
-    sys.stderr = open('/tmp/stderr', 'w',)
-
 #os.environ['LOCAL_PART'] = 'axiak'
 
 user = "UNKNOWN USER"
@@ -126,16 +122,13 @@ try:
         sys.exit(0)
 
 
-except Exception,e:
-    a = sys.exc_info()
-
+except Exception as e:
     # we dont' want to care if it's an exit
-    if isinstance(e,SystemExit):
-        raise a[0],a[1],a[2]
-        
+    if isinstance(e, SystemExit):
+        raise
 
     if DEBUG:
-        raise a[0],a[1],a[2]
+        raise
     else:
         print """
 ESP MAIL SERVER

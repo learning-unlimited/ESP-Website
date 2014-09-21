@@ -22,9 +22,7 @@ from esp.utils.models import TemplateOverride
 
 from django.test import TestCase as DjangoTestCase
 
-from django.core.management import call_command
 from django.core.cache.backends.base import default_key_func
-from django.db.models import loading
 
 from django.template import loader, Template, Context, TemplateDoesNotExist
 import reversion
@@ -126,7 +124,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stderr=open(os.devnull, "w"))
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
 
@@ -179,15 +177,8 @@ class DefaultclassTestCase(unittest.TestCase):
     
         myOtherKls2 = kls[0]()
         self.assertEqual(myOtherKls2.get_name(), "otherKls")
-        
-class DBOpsTestCase(DjangoTestCase):
-    def testSyncdb(self):
-        loading.cache.loaded = False
-        call_command('syncdb', verbosity=0)
-    def testMigrate(self):
-        loading.cache.loaded = False
-        call_command('migrate', verbosity=0)
-        
+
+
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
