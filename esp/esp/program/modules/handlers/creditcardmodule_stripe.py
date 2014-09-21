@@ -45,6 +45,7 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
@@ -72,12 +73,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
-            'publishable_key': settings.STRIPE_CONFIG['publishable_key'],
-            'secret_key': settings.STRIPE_CONFIG['secret_key'],
             'offer_donation': True,
             'donation_options': [10, 20, 50],
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
+        DEFAULTS.update(settings.STRIPE_CONFIG)
         tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
@@ -158,7 +158,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         donate_type = iac.get_lineitemtypes().get(text='Donation to Learning Unlimited')
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
-        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
+        context['totalcost_cents'] = Decimal(context['itemizedcosttotal']) * 100
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
@@ -167,10 +167,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,])
         if donation_prefs:
-            context['amount_donation'] = donation_prefs[0][2]
+            context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
         else:
-            context['amount_donation'] = Decimal('0')
+            context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
         context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
 
@@ -193,7 +193,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         domain_name = Site.objects.get_current().domain
         msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
         msg_subject = '[ ESP CC ] Credit card error on %s: %d %s' % (domain_name, request.user.id, request.user.name())
-        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['support'], self.program.getDirectorConfidentialEmail(), ])
+        # This message could contain sensitive information.  Send to the
+        # confidential messages address, and don't bcc the archive list.
+        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
     def charge_payment(self, request, tl, one, two, module, extra, prog):
@@ -207,6 +209,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Set Stripe key based on settings.  Also require the API version
         #   which our code is designed for.
         stripe.api_key = self.settings['secret_key']
+        # We are using the 2014-03-13 version of the Stripe API, which is
+        # v1.12.2.
         stripe.api_version = '2014-03-13'
 
         if request.POST.get('ponumber', '') != iac.get_id():
@@ -218,8 +222,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_post = int(request.POST['totalcost_cents'])
-            amount_cents_iac = int(iac.amount_due() * 100)
+            amount_cents_post = Decimal(request.POST['totalcost_cents'])
+            amount_cents_iac = Decimal(iac.amount_due()) * 100
             if amount_cents_post != amount_cents_iac:
                 context['error_type'] = 'inconsistent_amount'
                 context['error_info'] = {
@@ -229,16 +233,30 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         if 'error_type' not in context:
             try:
-                #   Create the charge on Stripe's servers - this will charge the user's card
-                charge = stripe.Charge.create(
-                    amount=amount_cents_post,
-                    currency="usd",
-                    card=request.POST['stripeToken'],
-                    description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
-                    metadata={
-                        'ponumber': request.POST['ponumber'],
-                    },
-                )
+                with transaction.commit_on_success():
+                    # Save a record of the charge if we can uniquely identify the user/program.
+                    # If this causes an error, the user will get a 500 error
+                    # page, and the card will NOT be charged.
+                    # If an exception is later raised by
+                    # stripe.Charge.create(), then the transaction will be
+                    # rolled back.
+                    # Thus, we will never be in a state where the card has been
+                    # charged without a record being created on the site, nor
+                    # vice-versa.
+                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    iac.submit_payment(totalcost_dollars, charge.id)
+
+                    # Create the charge on Stripe's servers - this will charge
+                    # the user's card.
+                    charge = stripe.Charge.create(
+                        amount=amount_cents_post,
+                        currency="usd",
+                        card=request.POST['stripeToken'],
+                        description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+                        metadata={
+                            'ponumber': request.POST['ponumber'],
+                        },
+                    )
             except stripe.error.CardError, e:
                 context['error_type'] = 'declined'
                 context['error_info'] = e.json_body['error']
@@ -257,10 +275,6 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             #   If we got any sort of error, send an e-mail to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
-
-        #   We have a successful charge.  Save a record of it if we can uniquely identify the user/program.
-        totalcost_dollars = float(request.POST['totalcost_cents']) / 100.0
-        iac.submit_payment(totalcost_dollars, charge.id)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars

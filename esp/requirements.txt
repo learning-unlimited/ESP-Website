@@ -47,4 +47,6 @@ model-mommy==1.2
 docutils==0.11
 Pygments==1.6
 twilio==3.6.5
-stripe
+
+# We are using the 2014-03-13 version of the Stripe API, which is v1.12.2.
+stripe==1.12.2
