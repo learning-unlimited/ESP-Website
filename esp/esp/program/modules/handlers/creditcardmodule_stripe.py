@@ -72,12 +72,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
-            'publishable_key': settings.STRIPE_CONFIG['publishable_key'],
-            'secret_key': settings.STRIPE_CONFIG['secret_key'],
             'offer_donation': True,
             'donation_options': [10, 20, 50],
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
+        DEFAULTS.update(settings.STRIPE_CONFIG)
         tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
