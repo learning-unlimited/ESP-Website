@@ -192,7 +192,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         domain_name = Site.objects.get_current().domain
         msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
         msg_subject = '[ ESP CC ] Credit card error on %s: %d %s' % (domain_name, request.user.id, request.user.name())
-        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['support'], self.program.getDirectorConfidentialEmail(), ])
+        # This message could contain sensitive information.  Send to the
+        # confidential messages address, and don't bcc the archive list.
+        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
     def charge_payment(self, request, tl, one, two, module, extra, prog):
