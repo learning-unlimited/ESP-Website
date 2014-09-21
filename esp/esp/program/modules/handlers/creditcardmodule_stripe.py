@@ -157,7 +157,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         donate_type = iac.get_lineitemtypes().get(text='Donation to Learning Unlimited')
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
-        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
+        context['totalcost_cents'] = Decimal(context['itemizedcosttotal']) * 100
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
@@ -166,10 +166,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,])
         if donation_prefs:
-            context['amount_donation'] = donation_prefs[0][2]
+            context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
         else:
-            context['amount_donation'] = Decimal('0')
+            context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
         context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
 
@@ -219,8 +219,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_post = int(request.POST['totalcost_cents'])
-            amount_cents_iac = int(iac.amount_due() * 100)
+            amount_cents_post = Decimal(request.POST['totalcost_cents'])
+            amount_cents_iac = Decimal(iac.amount_due()) * 100
             if amount_cents_post != amount_cents_iac:
                 context['error_type'] = 'inconsistent_amount'
                 context['error_info'] = {
@@ -260,7 +260,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
         #   We have a successful charge.  Save a record of it if we can uniquely identify the user/program.
-        totalcost_dollars = float(request.POST['totalcost_cents']) / 100.0
+        totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
         iac.submit_payment(totalcost_dollars, charge.id)
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
