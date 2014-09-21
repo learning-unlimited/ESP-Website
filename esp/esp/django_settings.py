@@ -168,9 +168,7 @@ MIDDLEWARE_GLOBAL = [
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
-   #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
-   #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
@@ -208,7 +206,6 @@ INSTALLED_APPS = (
     'esp.program.modules',
     'esp.dbmail',
     'esp.cal',
-    'esp.lib',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.resources',
@@ -217,7 +214,6 @@ INSTALLED_APPS = (
     'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
-    'esp.shortterm',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
@@ -236,6 +232,10 @@ INSTALLED_APPS = (
     'django_nose',
     'esp.formstack',
     'esp.application',
+
+    # TODO(jmoldow): Remove after stable release, after last migration to
+    # remove tables has been run.
+    'esp.shortterm',
 )
 
 import os

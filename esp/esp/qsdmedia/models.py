@@ -33,18 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from django.core.files import File
 
 from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
-from time import strftime
 import os.path
 from esp.middleware import ESPError
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.db.models import Q
 
 # Create your models here.
 

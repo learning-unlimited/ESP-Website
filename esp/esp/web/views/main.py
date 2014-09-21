@@ -45,8 +45,6 @@ from urllib import quote
 
 from Cookie import SimpleCookie
 
-#from icalendar import Calendar, Event as CalEvent, UTC
-
 import datetime
 import re
 from django.utils import simplejson as json

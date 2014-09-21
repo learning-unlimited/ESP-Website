@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.qsdmedia.models import Media
 from esp.tests.util import CacheFlushTestCase as TestCase
 
-from django.core.files.uploadedfile import UploadedFile
 from django.core.files.uploadhandler import MemoryFileUploadHandler, StopFutureHandlers
 
 class QSDMediaTest(TestCase):

@@ -39,9 +39,7 @@ import unicodedata
 from esp.users.models import StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule, ClassFlag
-from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
-from django.db.models import Q
 from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm

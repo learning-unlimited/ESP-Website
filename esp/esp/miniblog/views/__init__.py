@@ -35,13 +35,12 @@ Learning Unlimited, Inc.
 
 from datetime import datetime
 
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import AnonymousUser
 from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
 
 from esp.cache import cache_function
-from esp.web.util import render_to_response
 from esp.users.models import ESPUser
 
 #	Function for previewing announcements  - Michael P

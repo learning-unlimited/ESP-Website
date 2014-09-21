@@ -60,14 +60,12 @@ def get_from_id(id, module, strtype = 'object', error = True):
             raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
         return None
     return foundobj
-    
-def render_response(request, template, dictionary, mimetype=None, ):
-    from esp.web.util.idebug import idebug_hook
-    inst = RequestContext(request)
-    inst.update(dictionary)
-    idebug_hook(request, inst)
-    
-    return django.shortcuts.render_to_response(template, {}, context_instance = inst, mimetype=mimetype, )
+
+
+def render_response(request, *args, **kwargs):
+    kwargs['context_instance'] = RequestContext(request)
+    return django.shortcuts.render_to_response(*args, **kwargs)
+
 
 def _per_program_template_name(prog, templatename):
     tpath = templatename.split("/")

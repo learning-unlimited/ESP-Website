@@ -33,13 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from django.db.models.query import Q
 from esp.datatree.models import *
 from markdown import markdown
 from esp.users.models import ESPUser
-from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
-from django.core.cache import cache
 import datetime
 
 # Create your models here.

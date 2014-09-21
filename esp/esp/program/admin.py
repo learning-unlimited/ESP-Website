@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
-from django.db.models import ManyToManyField
 from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site

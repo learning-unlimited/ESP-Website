@@ -1,7 +1,6 @@
 from django import template
 from django.template.base import Node
 from esp.tagdict.models import Tag
-from esp.program.models import ClassSubject
 
 register = template.Library()
 

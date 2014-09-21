@@ -33,19 +33,32 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.users.models import ESPUser, StudentInfo, Permission
-from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
-from esp.resources.models import ResourceType
+        
+from esp.accounting.models import LineItemType
+from esp.cal.models import EventType, Event
+from esp.cal.models import install as cal_install
+from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.qsd.models import QuasiStaticData
+from esp.resources.models import Resource, ResourceType
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, Permission
+from esp.web.models import NavBarCategory
 
-from django.contrib.auth.models import User, Group
-import datetime, random, hashlib
-
+from django.contrib.auth.models import Group
 from django.test.client import Client
-from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from django import forms
 
+from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+from esp.program.forms import ProgramCreationForm
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.models import install as program_modules_install
+from esp.program.setup import prepare_program, commit_program
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
+from datetime import datetime, timedelta
+from decimal import Decimal
+import hashlib
 import numpy
 import random
 import re
@@ -53,7 +66,6 @@ import unicodedata
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
-        import random
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
@@ -219,8 +231,6 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
     
     def setUp(self):
-        from esp.users.models import ESPUser
-
         #create Groups for userroles
         user_role_setup()
 
@@ -241,15 +251,6 @@ class ProgramHappenTest(TestCase):
 
     def makeprogram(self):
         """ Test program creation through the web form. """
-        from esp.users.models import ESPUser
-        from esp.program.models import Program, ProgramModule, ClassCategories
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.accounting.models import LineItemType
-        from decimal import Decimal
-        # Imports for the HttpRequest hack
-        from esp.program.views import newprogram
-        from django.http import HttpRequest
-        
         # Make stuff that a program needs
         ClassCategories.objects.create(symbol='X', category='Everything')
         ClassCategories.objects.create(symbol='N', category='Nothing')
@@ -312,11 +313,6 @@ class ProgramHappenTest(TestCase):
 
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
-        from esp.cal.models import EventType, Event
-        from esp.resources.models import Resource, ResourceType, ResourceAssignment
-        from esp.program.controllers.classreg import get_custom_fields
-        from django import forms
-        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
@@ -431,10 +427,6 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
-        from esp.users.models import ContactInfo, StudentInfo
-        from esp.program.models import RegistrationProfile, StudentRegistration
-        from datetime import datetime, timedelta
-
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
@@ -500,18 +492,6 @@ class ProgramFrameworkTest(TestCase):
     """
     
     def setUp(self, *args, **kwargs):
-        from esp.users.models import ESPUser
-        from esp.cal.models import Event, EventType
-        from esp.cal.models import install as cal_install
-        from esp.resources.models import Resource, ResourceType
-        from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
-        from esp.program.setup import prepare_program, commit_program
-        from esp.program.forms import ProgramCreationForm
-        from esp.qsd.models import QuasiStaticData
-        from esp.web.models import NavBarCategory
-        from datetime import datetime, timedelta
-        from esp.program.modules.models import install as program_modules_install
-
         user_role_setup()
         program_modules_install()
         cal_install()
@@ -707,9 +687,6 @@ class ProgramFrameworkTest(TestCase):
     # Helper function to create another program in the past
     # Does not get called by default, but subclasses can call it
     def create_past_program(self):
-        from esp.program.models import ProgramModule
-        from esp.program.forms import ProgramCreationForm
-        from esp.program.setup import prepare_program, commit_program
         # Make a program
         prog_form_values = {
                 'term': '1111_Spring',
@@ -767,11 +744,6 @@ class ScheduleMapTest(ProgramFrameworkTest):
         properly reflected in their schedule map.
     """
     def runTest(self):
-        from esp.program.models import ScheduleMap, ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        
-        import random
-        
         def occupied_slots(map):
             result = []
             for key in map:
@@ -834,7 +806,6 @@ class BooleanLogicTest(TestCase):
         working correctly.
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression
         #   Create a logic expression with default values
         exp, created = BooleanExpression.objects.get_or_create(label='bltestexp')
         a = exp.add_token('1')
@@ -866,9 +837,6 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
            between the results of these tests. 
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
-        from esp.program.modules.base import ProgramModuleObj
-        
         #   Initialize
         student = self.students[0]
         program = self.program
@@ -992,10 +960,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
-        from esp.program.models import ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
-    
         #   Make all default modules non-required
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj

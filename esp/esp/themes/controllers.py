@@ -33,8 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from string import Template
-import cStringIO
 import datetime
 import os
 import os.path

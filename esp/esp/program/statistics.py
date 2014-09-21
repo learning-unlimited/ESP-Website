@@ -36,7 +36,6 @@ from django.template.loader import render_to_string
 
 from esp.datatree.models import *
 from esp.program.models import Program
-from esp.users.models import ESPUser, ZipCode
 
 """
 This file contains a set of functions used to perform statistics queries

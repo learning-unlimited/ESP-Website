@@ -36,9 +36,7 @@ import sys
 
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import User
 from esp.cache import cache_function
-from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey

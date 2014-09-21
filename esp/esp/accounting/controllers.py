@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
-from esp.tagdict.models import Tag
 from esp.utils.query_utils import nest_Q
 
 from django.db.models import Sum, Q

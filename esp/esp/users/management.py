@@ -38,7 +38,6 @@ Learning Unlimited, Inc.
 from django.db.models import signals 
 from esp.users import models as UsersModel
 from esp.utils.custom_cache import custom_cache
-from esp.utils.migration import missing_db_table
 from esp.utils.migration import db_table_exists
 
 from django.db import connection

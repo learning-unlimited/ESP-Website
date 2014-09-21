@@ -39,7 +39,7 @@ import simplejson as json
 
 from django import forms, dispatch
 from django.conf import settings
-from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
+from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.forms import USStateSelect
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
@@ -49,8 +49,9 @@ from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals
 from django.db.models.base import ModelState
+from django.db.models.manager import Manager
 from django.db.models.query import Q
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
@@ -65,7 +66,6 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
-from esp.db.models.prepared import ProcedureManager
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from esp.tagdict.models import Tag
@@ -135,7 +135,7 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(ProcedureManager):
+class ESPUserManager(Manager):
     pass
 
 def get_studentreg_model():
@@ -404,7 +404,7 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
-        from esp.program.models import ClassSubject, Program # Need the Class object.
+        from esp.program.models import Program # Need the Class object.
         if type(program) != Program: # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
@@ -417,8 +417,6 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        from esp.program.models import ClassSubject # Need the Class object.
-        
         return self.classsubject_set.all()
     getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
@@ -558,8 +556,6 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        from esp.resources.models import Resource, ResourceType
-        
         #   Because the timeslot has an anchor, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
@@ -681,8 +677,6 @@ class ESPUser(User, AnonymousUser):
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
-        from esp.program.models import Program, RegistrationProfile
-        
         if len(timeslots) < 1:
             return 0
         
@@ -2110,8 +2104,6 @@ class DBList(object):
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
-        from esp.users.models import User
-
         cache_id = urlencode('DBListCount: %s' % (self.key))
 
         retVal   = cache.get(cache_id) # get the cached result

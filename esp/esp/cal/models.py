@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from django.db import models
 from esp.datatree.models import *
 from datetime import datetime, timedelta
-from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
 
 # Create your models here.

@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
 """
 import functools
 
-from esp.middleware   import ESPError
-from django.contrib.auth.decorators import login_required
 from esp.web.util.main import render_to_response
 
 def anonymous_only(message="Sorry, you don't need this page -- you're logged in."):
