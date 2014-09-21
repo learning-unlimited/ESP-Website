@@ -4,6 +4,7 @@ from model_mommy import mommy
 
 from django import forms
 from django.contrib.auth import login
+from django.contrib.auth.models import Group
 from django.core import mail
 from django.conf import settings
 from django.test.client import Client
