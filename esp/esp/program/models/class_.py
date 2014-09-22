@@ -2066,6 +2066,7 @@ sections_in_program_by_id.depend_on_model(ClassSubject)
 
 def install():
     """ Initialize the default class categories. """
+    print "Installing esp.program.class initial data..."
     category_dict = {
         'S': 'Science',
         'M': 'Math & Computer Science',
@@ -2075,5 +2076,6 @@ def install():
         'X': 'Miscellaneous',
     }
     
-    for key in category_dict:
-        ClassCategories.objects.get_or_create(symbol=key, category=category_dict[key])
+    if not ClassCategories.objects.exists():
+        for key in category_dict:
+            ClassCategories.objects.create(symbol=key, category=category_dict[key])

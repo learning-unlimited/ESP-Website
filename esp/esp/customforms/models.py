@@ -68,6 +68,7 @@ from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
 
 def install():
+    print "Creating customforms schema..."
     cursor = connection.cursor()
     create_schema(cursor)
 
@@ -84,13 +85,12 @@ def create_schema(db):
     # transaction is aborted, commands ignored until end of transaction
     # block" errors.
     # Warning: This overrides the transaction management of any surrounding code.
-    
-    transaction.commit()    # flush any existing transaction
-    failed = False
-    try:
-        db.execute("CREATE SCHEMA customforms")
-    except:
-        failed = True
-        transaction.rollback()
-    if not failed:
-        transaction.commit()
+
+    with transaction.commit_manually():
+        transaction.commit()    # flush any existing transaction
+        try:
+            db.execute("CREATE SCHEMA customforms")
+        except:
+            transaction.rollback()
+        else:
+            transaction.commit()

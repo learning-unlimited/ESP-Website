@@ -222,5 +222,7 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
+    print "Installing esp.cal initial data..."
     for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
-        EventType.objects.get_or_create(description=x)
+        if not EventType.objects.filter(description=x).exists():
+            EventType.objects.create(description=x)

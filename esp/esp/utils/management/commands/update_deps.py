@@ -1,4 +1,3 @@
-from __future__ import with_statement
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -6,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2009 by the individual contributors
+Copyright (c) 2014 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -34,14 +33,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.db.models import signals 
-from esp.resources import models as resources
-from esp.utils.custom_cache import custom_cache
+import os
+import subprocess
 
-def post_syncdb(sender, app, **kwargs):
-    if app == resources:
-        with custom_cache():
-            resources.install()
-        
-signals.post_syncdb.connect(post_syncdb)
+from django.core.management.base import NoArgsCommand
+from django.conf import settings
 
+class Command(NoArgsCommand):
+    """Update the dependencies of the site."""
+    def handle_noargs(self, **options):
+        update_deps = os.path.join(settings.PROJECT_ROOT, 'update_deps.sh')
+        subprocess.check_call(['bash', update_deps])

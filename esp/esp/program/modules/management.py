@@ -42,7 +42,6 @@ from esp.utils.custom_cache import custom_cache
 def post_syncdb(sender, app, **kwargs):
     if app == Modules:
         with custom_cache():
-            print "Installing esp.program.modules initial data..."
             Modules.install()
 
 signals.post_syncdb.connect(post_syncdb)

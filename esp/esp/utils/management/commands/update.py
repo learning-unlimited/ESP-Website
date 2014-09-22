@@ -1,4 +1,3 @@
-from __future__ import with_statement
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -6,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2009 by the individual contributors
+Copyright (c) 2014 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -34,14 +33,31 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.db.models import signals 
-from esp.resources import models as resources
-from esp.utils.custom_cache import custom_cache
+from django.core.management import call_command
+from django.core.management.base import NoArgsCommand
 
-def post_syncdb(sender, app, **kwargs):
-    if app == resources:
-        with custom_cache():
-            resources.install()
-        
-signals.post_syncdb.connect(post_syncdb)
+class Command(NoArgsCommand):
+    """Update the site.
 
+    - Update site dependencies.
+    - Sync the database tables.
+    - Perform database migrations.
+    - Install initial data.
+    - Collect static files.
+    - Recompile the theme.
+    """
+    def handle_noargs(self, **options):
+        default_options = {
+            'verbosity': 1,
+            'interactive': False,
+            'merge': True,
+            'delete_ghosts': True,
+        }
+        default_options.update(options)
+        options = default_options
+        call_command('update_deps', **options)
+        call_command('syncdb', **options)
+        call_command('migrate', **options)
+        call_command('install', **options)
+        call_command('collectstatic', **options)
+        call_command('recompile_theme', **options)
