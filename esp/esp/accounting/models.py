@@ -289,6 +289,7 @@ class Transfer(models.Model):
 
 def install():
     """Set up the default accounts."""
+    print "Installing esp.accounting initial data..."
     from esp.accounting.controllers import GlobalAccountingController
     gac = GlobalAccountingController()
     gac.setup_accounts()

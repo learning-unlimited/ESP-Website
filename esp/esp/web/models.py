@@ -118,6 +118,9 @@ class NavBarEntry(models.Model):
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
-    NavBarCategory.objects.get_or_create(name='default', defaults={ 'long_explanation':
-        'The default category, to which new nav bars and QSD pages get assigned.'})
-
+    print "Installing esp.web initial data..."
+    if not NavBarCategory.objects.filter(name='default').exists():
+        NavBarCategory.objects.create(
+            name='default',
+            long_explanation='The default category, to which new nav bars and QSD pages get assigned.',
+        )

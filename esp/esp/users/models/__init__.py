@@ -2499,11 +2499,13 @@ def install():
     """
     Installs some initial users and permissions.
     """    
+    print "Installing esp.users initial data..."
+    from esp.users.views.make_admin import make_user_admin
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
-        user.makeRole('Administrator')
+        make_user_admin(user)
 
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():

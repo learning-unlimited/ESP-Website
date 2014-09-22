@@ -41,7 +41,6 @@ from esp.utils.custom_cache import custom_cache
 def post_syncdb(sender, app, **kwargs):
     if app == customforms:
         with custom_cache():
-            print "Creating customforms schema..."
             customforms.install()
 
 signals.post_syncdb.connect(post_syncdb)

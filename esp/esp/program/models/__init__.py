@@ -1928,6 +1928,11 @@ from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
 
+def install():
+    from esp.program.models.class_ import install as install_class
+    print "Installing esp.program initial data..."
+    install_class()
+
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo

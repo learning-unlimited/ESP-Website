@@ -50,8 +50,7 @@ def post_syncdb(sender, app, **kwargs):
                 or not db_has_column(class_models.ClassCategories._meta.db_table, "seq")):
                 return
             #   Run installation
-            print "Installing esp.program.class initial data..."
-            class_models.install()
+            program.install()
         
 signals.post_syncdb.connect(post_syncdb)
 

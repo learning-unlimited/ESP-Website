@@ -52,7 +52,6 @@ def post_syncdb(sender, app, **kwargs):
             return
         #   Run installation
         with custom_cache():
-            print "Installing esp.users initial data..."
             UsersModel.install()
             print 'Adding PostgreSQL extensions...'
             with open(os.path.join(settings.PROJECT_ROOT, "esp/users/sql-extensions.sql")) as f:

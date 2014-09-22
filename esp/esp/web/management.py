@@ -43,7 +43,6 @@ from esp.utils.custom_cache import custom_cache
 def post_syncdb(sender, app, **kwargs):
     if app == web:
         with custom_cache():
-            print "Installing esp.web initial data..."
             web.install()
 
 def update_esp_contenttypes(app, created_models, content_type_class=ContentType, verbosity=2, **kwargs):

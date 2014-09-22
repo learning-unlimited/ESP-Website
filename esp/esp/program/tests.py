@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
         
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
-from esp.cal.models import install as cal_install
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
@@ -52,7 +51,6 @@ from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.models import install as program_modules_install
 from esp.program.setup import prepare_program, commit_program
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
@@ -493,8 +491,6 @@ class ProgramFrameworkTest(TestCase):
     
     def setUp(self, *args, **kwargs):
         user_role_setup()
-        program_modules_install()
-        cal_install()
         
         #   Default parameters
         settings = {'num_timeslots': 3,

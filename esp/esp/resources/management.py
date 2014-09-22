@@ -41,7 +41,6 @@ from esp.utils.custom_cache import custom_cache
 def post_syncdb(sender, app, **kwargs):
     if app == resources:
         with custom_cache():
-            print "Installing esp.resources initial data..."
             resources.install()
         
 signals.post_syncdb.connect(post_syncdb)
