@@ -520,14 +520,12 @@ def usercheck_usetl(method):
     
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-            
-        if tl == 'learn' and not request.user.isStudent():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'teach' and not request.user.isTeacher():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
+
+        if ((not request.user.isAdmin(moduleObj.program))
+             and (
+                 (tl == 'learn' and not request.user.isStudent())
+                 or (tl == 'teach' and not request.user.isTeacher())
+                 or (tl == 'manage'))):
             return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
