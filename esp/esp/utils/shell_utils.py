@@ -8,7 +8,6 @@ import numpy
 from esp.utils.query_utils import nest_Q
 
 from esp.program.modules.base import CoreModule, ProgramModuleObj
-from esp.program.modules.models import install
 
 from esp.accounting.controllers import BaseAccountingController, GlobalAccountingController, IndividualAccountingController
 from esp.customforms.DynamicForm import BaseCustomForm, CustomFormHandler, FormStorage, ComboForm, FormHandler
