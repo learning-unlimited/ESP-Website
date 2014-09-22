@@ -136,7 +136,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         for module in modules:
             if not module.isCompleted() and module.required:
                 completedAll = False
-        if not completedAll:
+        if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
 
         #   Check for setup of module.  This is also required to initialize settings.
