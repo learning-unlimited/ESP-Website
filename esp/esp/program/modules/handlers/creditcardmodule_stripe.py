@@ -162,7 +162,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text'])
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
-        context['totalcost_cents'] = Decimal(context['itemizedcosttotal']) * 100
+        #   This amount should be formatted as an integer in order to be
+        #   accepted by Stripe.
+        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
