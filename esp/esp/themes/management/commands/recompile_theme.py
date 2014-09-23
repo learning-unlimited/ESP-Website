@@ -35,9 +35,8 @@ Learning Unlimited, Inc.
 
 from django.core.management.base import NoArgsCommand
 
-from esp.themes.controllers import ThemeController
-
 class Command(NoArgsCommand):
     """Recompile the current theme."""
     def handle_noargs(self, **options):
+        from esp.themes.controllers import ThemeController
         ThemeController().recompile_theme()

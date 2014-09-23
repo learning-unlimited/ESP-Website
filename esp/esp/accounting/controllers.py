@@ -210,6 +210,11 @@ class ProgramAccountingController(BaseAccountingController):
             q_object &= Q(required=True, for_payments=False, for_finaid=False)
         elif optional_only:
             q_object &= Q(required=False, for_payments=False, for_finaid=False)
+            # The Stripe module currently takes care of the donation
+            # optional line item, so ignore it in the optional costs module.
+            stripe_module = self.program.getModule('CreditCardModule_Stripe')
+            if stripe_module and stripe_module.get_setting('offer_donation'):
+                q_object &= ~Q(text=stripe_module.get_setting('donation_text'))
         elif payment_only:
             q_object &= Q(required=False, for_payments=True, for_finaid=False)
         return q_object

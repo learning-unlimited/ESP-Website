@@ -73,6 +73,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
             'offer_donation': True,
+            'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
@@ -80,6 +81,10 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
+        return self.settings
+
+    def get_setting(self, name, default=None):
+        return self.apply_settings().get(name, default)
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
@@ -110,7 +115,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Note: This could also be created by default for every program,
         #   in the accounting controllers.
         (lit, created) = LineItemType.objects.get_or_create(
-            text='Donation to Learning Unlimited',
+            text=self.settings['donation_text'],
             program=self.program,
             required=False
         )
@@ -136,7 +141,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         for module in modules:
             if not module.isCompleted() and module.required:
                 completedAll = False
-        if not completedAll:
+        if not completedAll and not request.user.isAdmin(prog):
             raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
 
         #   Check for setup of module.  This is also required to initialize settings.
@@ -154,10 +159,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         payment_type = iac.default_payments_lineitemtype()
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
-        donate_type = iac.get_lineitemtypes().get(text='Donation to Learning Unlimited')
+        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text'])
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
-        context['totalcost_cents'] = Decimal(context['itemizedcosttotal']) * 100
+        #   This amount should be formatted as an integer in order to be
+        #   accepted by Stripe.
+        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
