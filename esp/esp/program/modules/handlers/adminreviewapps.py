@@ -203,7 +203,7 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
+        schedule = u"""
 Student schedule for %s:
 
  Time               | Class                   | Room""" % student.name()
@@ -218,12 +218,12 @@ Student schedule for %s:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = 'N/A'
+                rooms = u'N/A'
             else:
-                rooms = ", ".join(rooms)
+                rooms = u", ".join(rooms)
                 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
+            schedule += u"""
+%s|%s|%s""" % (u",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
                

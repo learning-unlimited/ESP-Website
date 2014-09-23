@@ -717,13 +717,13 @@ class ProgramPrintables(ProgramModuleObj):
             #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
         elif key == 'student_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Student')
+            return ProgramPrintables.getSchedule(self.program, user, u'Student')
         elif key == 'student_schedule_norooms':
-            return ProgramPrintables.getSchedule(self.program, user, 'Student', room_numbers=False)
+            return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
         elif key == 'volunteer_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Volunteer')
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -731,7 +731,7 @@ class ProgramPrintables(ProgramModuleObj):
         elif key == 'transcript_latex':
             return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
-        return ''
+        return u''
 
     @staticmethod
     def get_student_classlist(program, student):
@@ -781,49 +781,49 @@ class ProgramPrintables(ProgramModuleObj):
         
         if schedule_type is None:
             if user.isStudent():
-                schedule_type = 'Student'
+                schedule_type = u'Student'
             elif user.isTeacher():
-                schedule_type = 'Teacher'
+                schedule_type = u'Teacher'
             elif user.isVolunteer():
-                schedule_type = 'Volunteer'
+                schedule_type = u'Volunteer'
             
-        schedule = ''
-        if schedule_type in ['Student', 'Teacher']:
+        schedule = u''
+        if schedule_type in [u'Student', u'Teacher']:
             if room_numbers:
-                schedule = """
+                schedule = u"""
     %s schedule for %s:
 
      Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
             else:
-                schedule = """
+                schedule = u"""
     %s schedule for %s:
 
      Time                   | Class                                  \n""" % (schedule_type, user.name())
-            schedule += '------------------------+---------------------------------------------------\n'
-            if schedule_type == 'Student':
+            schedule += u'------------------------+---------------------------------------------------\n'
+            if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
-            elif schedule_type == 'Teacher':
+            elif schedule_type == u'Teacher':
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
             for cls in classes:
                 rooms = cls.prettyrooms()
                 if len(rooms) == 0:
-                    rooms = ' N/A'
+                    rooms = u' N/A'
                 else:
-                    rooms = ' ' + ", ".join(rooms)
+                    rooms = u' ' + u", ".join(rooms)
                 if room_numbers:
-                    schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                    schedule += u'%s|%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40), rooms)
                 else:
-                    schedule += '%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40))
+                    schedule += u'%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40))
                 
-        elif schedule_type == 'Volunteer':
-            schedule = """
+        elif schedule_type == u'Volunteer':
+            schedule = u"""
 Volunteer schedule for %s:
 
  Time                   | Shift                                  \n""" % (user.name())
-            schedule += '------------------------+----------------------------------------\n'
+            schedule += u'------------------------+----------------------------------------\n'
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += ' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
+                schedule += u' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
 
         return schedule
 
