@@ -43,6 +43,10 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
+
+from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.program.models import RegistrationProfile
+
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.web.util import render_to_response
@@ -161,12 +165,40 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def register_student(self, request, tl, one, two, module, extra, prog):
-        success = False
         resp = HttpResponse(mimetype='application/json')
-        student = get_object_or_404(ESPUser,request.POST.get("student_id"))
+        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+
+
+        registration_profile = RegistrationProfile.getLastForProgram(student,
+                                                                self.program)
+        contact_user = ContactInfo(first_name = student.first_name,
+                                   last_name  = student.last_name,
+                                   e_mail     = student.email,
+                                   user       = student)
+        contact_user.save()
+        registration_profile.contact_user = contact_user
+
+        registration_profile.save()
+        
+        # if new_data['paid']:
+        #     self.createBit('paid')
+        #     self.updatePaid(True)
+        # else:
+        #     self.updatePaid(False)
+
+        # self.createBit('Attended')
+
+        # if new_data['medical']:
+        #     self.createBit('Med')
+
+        # if new_data['liability']:
+        #     self.createBit('Liab')
+
+        # self.createBit('OnSite')
+
         
         # This is where the actual profile assignment occurs
-        simplejson.dump(success, resp)
+        simplejson.dump(True, resp)
         return resp
     
     @aux_call
