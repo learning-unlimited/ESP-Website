@@ -435,16 +435,23 @@ function remove_student(student_id, section_id)
 
 function register_student(student_id) 
 {
-    $j.post(
-        program_base_url + "register_student",
-        {
-            student_id: student_id
-        },
 
-        function(data) {
+    $j.ajax({
+            url: program_base_url + "register_student",
+            type:'POST',
+            data: {
+                csrfmiddlewaretoken: csrf_token(),
+                student_id: student_id
+            },
+
+            success: function(data) {
             alert(data);
-        }
-    );
+            },
+
+            error: function (result) {
+                alert(result);
+            }
+    });
 }
 
 //  Figure out what to do when one of the checkboxes is hit.
