@@ -3,22 +3,36 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
     this.el = el
     this.el.id = "matrix-table"
 
-    this.dropHandler = function(el){
+    this.rooms = rooms
+    this.schedule_assignments = schedule_assignments
+    this.sections = sections
+
+    // TODO test
+    this.get_timeslot_by_index = function(index){
+	var result
+	// TODO there is probably a better way to do this using jquery
+	$j.each(timeslots, function(timeslot_id, timeslot){
+	    if (timeslot.order == index - 1) {
+		result = timeslot
+	    }
+	})
+	return result
     }
+
+    this.dropHandler = function(el, ui){
+	//TODO: this seems fragile
+	timeslot = this.get_timeslot_by_index(el.currentTarget.cellIndex)
+	room = el.currentTarget.parentElement.firstChild.firstChild.data
+	section = ui.draggable.data("section")
+	this.scheduleSection(section, room, [timeslot.id])
+    }.bind(this)
 
     this.init = function(){
 	this.el.on("drop", "td", this.dropHandler)
-	this.el.droppable({
-	    drop: this.dropHandler.bind(this)
-	})
     }
 
     this.init()
 
-    this.rooms = rooms
-    this.schedule_assignments = schedule_assignments
-    this.sections = sections
-    
     this.add_timeslots_order = function(timeslot_object){
 	//TODO test and actually implement this
 	//TODO should this be a helper elsewhere
@@ -71,6 +85,12 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	for(timeslot_index in schedule_timeslots){
 	    timeslot_id = schedule_timeslots[timeslot_index]
 	    this.getCell(room_name, timeslot_id).addSection(section)
+	}
+
+	this.schedule_assignments[section.id] = {
+	    room_name: room_name,
+	    timeslots: schedule_timeslots,
+	    id: section.id
 	}
 	return true
     }

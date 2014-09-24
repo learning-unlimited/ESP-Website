@@ -29,6 +29,13 @@ describe("Matrix", function(){
     })
     
     describe("dropHandler", function(){
+	describe("get_timeslot_by_index", function(){
+	    it("returns the correct timeslot object", function(){
+		expect(m.get_timeslot_by_index(1).label).toEqual("first timeslot");
+		expect(m.get_timeslot_by_index(2).label).toEqual("second timeslot");
+	     })
+	})
+
 	//need to know both where we're coming from and where we are
 	//figure out what cell we're in
 	//validations

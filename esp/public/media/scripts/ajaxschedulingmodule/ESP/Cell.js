@@ -9,9 +9,8 @@ function Cell(el, section) {
 	    helper: "clone",
 	})
 	this.el.droppable({
-	    drop: function(el, ui){
-		//this doesn't need to do anything, it just needs to receive the
-		//event so that the matrix can listen for it.
+	    drop: function(ev, ui){
+		//handled by matrix
 	    }
 	})
 	if (new_section != null){
