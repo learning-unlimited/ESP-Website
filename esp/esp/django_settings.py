@@ -176,7 +176,7 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
+    #(1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'), -- this doesn't workCDS
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),

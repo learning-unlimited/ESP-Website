@@ -40,7 +40,7 @@ from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
-import debug_toolbar
+#import debug_toolbar
 
 autodiscover(admin_site)
 
@@ -170,9 +170,9 @@ urlpatterns += patterns('esp.qsdmedia.views',
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
 
-urlpatterns += patterns('',
-    url(r'^__debug__/', include(debug_toolbar.urls)),
-)
+#urlpatterns += patterns('',
+#    url(r'^__debug__/', include(debug_toolbar.urls)),
+#)
 
 urlpatterns += patterns('esp.formstack.views',
     (r'^medicalsyncapi$', 'medicalsyncapi'),)

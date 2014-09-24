@@ -549,17 +549,17 @@ def needs_teacher(method):
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if request.session.has_key('user_morph'):
-            morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
-        else:
-            morpheduser=None
-            
-        if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        #if request.session.has_key('user_morph'):
+        #    morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
+        #else:
+        #    morpheduser=None
+        #    
+        #if not_logged_in(request):
+        #    return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
-            if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
-                return render_to_response('errors/program/notanadmin.html', request, {})
+        #if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
+        #    if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
+        #        return render_to_response('errors/program/notanadmin.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
