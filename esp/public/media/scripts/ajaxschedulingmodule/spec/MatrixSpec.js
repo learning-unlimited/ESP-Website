@@ -8,10 +8,6 @@ describe("Matrix", function(){
 	expect(m.el[0]).toBeHtmlNode()
     })
 
-    it("should be droppable", function(){
-	expect(m.el.droppable("option", "disabled")).toBeFalse()
-    })
-
     it("should have times, rooms, and schedule assignments", function(){
 	expect(m.timeslots).toBeObject()
 	expect(m.rooms).toBeObject()
@@ -27,22 +23,15 @@ describe("Matrix", function(){
 	    expect(m.getCell("room-2", 2).innerHTML).toEqual(null)
 	})
     })
-    
-    describe("dropHandler", function(){
-	describe("get_timeslot_by_index", function(){
-	    it("returns the correct timeslot object", function(){
-		expect(m.get_timeslot_by_index(1).label).toEqual("first timeslot");
-		expect(m.get_timeslot_by_index(2).label).toEqual("second timeslot");
-	     })
+   
+    describe("get_timeslot_by_index", function(){
+	it("returns the correct timeslot object", function(){
+	    expect(m.get_timeslot_by_index(1).label).toEqual("first timeslot");
+	    expect(m.get_timeslot_by_index(2).label).toEqual("second timeslot");
 	})
-
-	//need to know both where we're coming from and where we are
-	//figure out what cell we're in
-	//validations
-	//schedule into that cell
-	//unschedule from the old cell
-	//TODO:  send a notification to the server
     })
+
+	//unschedule from the old cell
 
     describe("scheduleSection", function(){
 	it("inserts the class into the matrix", function(){
@@ -54,6 +43,18 @@ describe("Matrix", function(){
 	    expect(cell1.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
 	    expect(cell2.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
 	    expect(m.schedule_assignments[section_2().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_2().id})
+	})
+
+	it("unschedules the class from the old location", function(){
+
+	    cell1 = m.getCell("room-1", 1)
+	    cell2 = m.getCell("room-1", 2)
+	    spyOn(cell1, 'removeSection')
+	    spyOn(cell2, 'removeSection')
+	    expect(m.scheduleSection(section_1(), "room-2", [1,2])).toBeTrue()
+	    expect(cell1.removeSection).toHaveBeenCalled()
+	    expect(cell2.removeSection).toHaveBeenCalled()
+	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_1().id})
 	})
 
 	describe("validation", function(){

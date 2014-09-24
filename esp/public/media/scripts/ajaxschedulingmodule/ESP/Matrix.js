@@ -87,6 +87,14 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	    this.getCell(room_name, timeslot_id).addSection(section)
 	}
 
+	//Unschedule from old place
+	old_assignment = this.schedule_assignments[section.id]
+	for (timeslot_index in old_assignment.timeslots) {
+	    timeslot_id = old_assignment.timeslots[timeslot_index]
+	    cell = this.getCell(old_assignment.room_name, timeslot_id)
+	    cell.removeSection()
+	}
+
 	this.schedule_assignments[section.id] = {
 	    room_name: room_name,
 	    timeslots: schedule_timeslots,
