@@ -152,9 +152,11 @@ def gen_latex(texcode, type='pdf', landscape=False, remove_files=False, stdout=P
 
     if type=='pdf':
         mime = 'application/pdf'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
-        call(['ps2pdf', '%s.ps' % file_base])
+        latex_options.append('-shell-escape')
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        #call(['latex'] + latex_options + ['%s.tex' % file_base])
+        #call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
+        #call(['ps2pdf', '%s.ps' % file_base])
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
