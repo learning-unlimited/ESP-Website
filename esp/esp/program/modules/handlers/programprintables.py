@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models import SplashInfo
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -998,6 +999,7 @@ Volunteer schedule for %s:
             student.amount_finaid = iac.amount_finaid()
             student.amount_siblingdiscount = iac.amount_siblingdiscount()
             student.itemizedcosttotal = iac.amount_due()
+            student.splashinfo = SplashInfo.getForUser(student, prog)
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
