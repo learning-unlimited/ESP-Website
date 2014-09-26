@@ -89,6 +89,7 @@ class NameTagModule(ProgramModuleObj):
                 users.append({'title': user_title,
                               'name' : '%s %s' % (student.first_name, student.last_name),
                               'id'   : student.id,
+                              'grade'  : student.getGrade(self.program),
                               'username': student.username})
 
         elif idtype == 'teacher':
