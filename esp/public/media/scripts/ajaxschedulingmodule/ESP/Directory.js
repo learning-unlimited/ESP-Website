@@ -4,7 +4,16 @@ function Directory(sections, el, schedule_assignments) {
     this.schedule_assignments = schedule_assignments
 
     this.render = function(){
-	this.el.empty()
+	var oldChildren = this.el.children()
+	$j.each(oldChildren, function(c){
+	    oldChildren[c].hidden = true
+	})
+
+	setTimeout(function(){
+	    $j.each(oldChildren, function(c){
+		oldChildren[c].remove()
+	    })
+	}.bind(this), 0)
 	table = $j("<table/>")
 	$j.each(this.filtered_sections(), function(id, section){
 	    row = new TableRow(section, $j("<tr/>"))
