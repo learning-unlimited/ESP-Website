@@ -136,6 +136,7 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
 
     if type == 'pdf':
         mime = 'application/pdf'
+        latex_options.append('-shell-escape')
         call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
 
     elif type == 'log':

@@ -960,6 +960,7 @@ Volunteer schedule for %s:
             student.amount_finaid = iac.amount_finaid()
             student.amount_siblingdiscount = iac.amount_siblingdiscount()
             student.itemizedcosttotal = iac.amount_due()
+            student.splashinfo = SplashInfo.getForUser(student, prog)
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
