@@ -100,6 +100,8 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	    timeslots: schedule_timeslots,
 	    id: section.id
 	}
+
+	$j("body").trigger("schedule-changed")
 	return true
     }
 
