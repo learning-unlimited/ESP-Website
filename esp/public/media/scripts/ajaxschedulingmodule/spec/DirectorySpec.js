@@ -1,6 +1,6 @@
 describe("Directory", function(){
     beforeEach(function(){
-	d = new Directory(sections_fixture(), $j("<div/>"))
+	d = new Directory(sections_fixture(), $j("<div/>"), empty_schedule_assignments_fixture())
     })
 
     it("should have a list of sections and an el", function(){
@@ -14,6 +14,21 @@ describe("Directory", function(){
 	    d.render()
 	})
 
+	describe("when there are classes scheduled", function(){
+	    beforeEach(function(){
+		d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture())
+		d.render()
+	    })
+
+	    it("should not show them in the directory", function(){
+		expect(d.el.children().length).toEqual(1)
+		table = d.el.children()[0]
+		expect(table.rows.length).toEqual(1)
+		expect(table.rows[0].innerHTML).toMatch("Become a LaTeX Guru")
+		expect(table.rows[0].innerHTML).toMatch("M3343s1")
+	    })
+	})
+
 	it("should present a list of classes with emailcodes", function (){
 	    expect(d.el.children().length).toEqual(1)
 	    table = d.el.children()[0]
@@ -22,6 +37,19 @@ describe("Directory", function(){
 	    expect(table.rows[0].innerHTML).toMatch("S3188s1")
 	    expect(table.rows[1].innerHTML).toMatch("Become a LaTeX Guru")
 	    expect(table.rows[1].innerHTML).toMatch("M3343s1")
+	})
+
+	it("should be able to render twice without duplicating content", function(){
+	    runs(function(){
+		d.render()
+		d.render()
+	    })
+	    //since we delete the old nodes asynchronously
+	    //need to add some asynchrony here
+	    waits(0)
+	    runs(function(){
+		expect(d.el.children().length).toEqual(1)
+	    })
 	})
     })
 })

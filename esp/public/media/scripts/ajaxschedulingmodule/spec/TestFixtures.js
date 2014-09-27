@@ -25,7 +25,19 @@ function schedule_assignments_fixture() {
 	    timeslots: [1, 2]
 	},
 	3538: {
-	    room_name: "",
+	    id: 3538,
+	    timeslots: []
+	}
+    }
+}
+
+function empty_schedule_assignments_fixture() {
+    return {
+	3329: {
+	    id: 3329,
+	    timeslots: []
+	},
+	3538: {
 	    id: 3538,
 	    timeslots: []
 	}
