@@ -1,6 +1,6 @@
 describe("Cell", function(){
     beforeEach(function(){
-	c = new Cell($j("<td/>"))
+	c = new Cell($j("<td/>"), null, "1-115", 1)
 
 	section = {
 	    emailcode: "my-emailcode",
@@ -10,6 +10,18 @@ describe("Cell", function(){
     it("has an element with the matrix cell class", function(){
 	expect(c.el).toBeDefined()
 	expect(c.el.hasClass("matrix-cell")).toBeTrue()
+    })
+
+    it("has a room attached as data on the el", function(){
+	expect(c.room_name).toEqual("1-115")
+    })
+
+    it("has a timeslot", function(){
+	expect(c.timeslot_id).toEqual(1)
+    })
+
+    it("attaches itself to its el", function(){
+	expect($j(c.el).data("cell")).toEqual(c)
     })
 
     describe("init", function(){

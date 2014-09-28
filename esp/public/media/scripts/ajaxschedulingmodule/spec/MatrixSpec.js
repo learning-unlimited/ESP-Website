@@ -18,21 +18,23 @@ describe("Matrix", function(){
     describe("getCell", function(){
 	it("returns the html cell for the requested room and time", function(){
 	    expect(m.getCell("room-1", 1).section).toEqual(section_1())
+	    expect(m.getCell("room-1", 1).room_name).toEqual("room-1")
+	    expect(m.getCell("room-1", 1).timeslot_id).toEqual(1)
+
 	    expect(m.getCell("room-1", 2).section).toEqual(section_1())
+	    expect(m.getCell("room-1", 2).room_name).toEqual("room-1")
+	    expect(m.getCell("room-1", 2).timeslot_id).toEqual(2)
+
 	    expect(m.getCell("room-2", 1).innerHTML).toEqual(null)
+	    expect(m.getCell("room-2", 1).room_name).toEqual("room-2")
+	    expect(m.getCell("room-1", 1).timeslot_id).toEqual(1)
+
 	    expect(m.getCell("room-2", 2).innerHTML).toEqual(null)
+	    expect(m.getCell("room-2", 2).room_name).toEqual("room-2")
+	    expect(m.getCell("room-1", 2).timeslot_id).toEqual(2)
 	})
     })
    
-    describe("get_timeslot_by_index", function(){
-	it("returns the correct timeslot object", function(){
-	    expect(m.get_timeslot_by_index(1).label).toEqual("first timeslot");
-	    expect(m.get_timeslot_by_index(2).label).toEqual("second timeslot");
-	})
-    })
-
-	//unschedule from the old cell
-
     describe("scheduleSection", function(){
 	it("inserts the class into the matrix", function(){
 	    cell1 = m.getCell("room-2", 1)

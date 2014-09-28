@@ -1,9 +1,12 @@
-function Cell(el, section) {
+function Cell(el, section, room_name, timeslot_id) {
     this.el = el
 
     this.cellColors = new CellColors()
+    this.room_name = room_name
+    this.timeslot_id = timeslot_id
 
     this.init = function(new_section){
+	this.el.data("cell", this)
 	this.el.draggable({
 	    stack: ".matrix-cell",
 	    helper: "clone",
