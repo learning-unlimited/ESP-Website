@@ -42,8 +42,8 @@ describe("Matrix", function(){
 	    spyOn(cell1, 'addSection')
 	    spyOn(cell2, 'addSection')
 	    expect(m.scheduleSection(section_2(), "room-2", [1,2])).toBeTrue()
-	    expect(cell1.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
-	    expect(cell2.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
+	    expect(cell1.addSection).toHaveBeenCalledWith(section_2())
+	    expect(cell2.addSection).toHaveBeenCalledWith(section_2())
 	    expect(m.schedule_assignments[section_2().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_2().id})
 	})
 
