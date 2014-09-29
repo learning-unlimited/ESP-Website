@@ -36,7 +36,6 @@ function room_fixture() {
     }
 }
 
-//TODO:  like this??
 function schedule_assignments_fixture() {
     return {
 	3329: {
@@ -64,7 +63,6 @@ function empty_schedule_assignments_fixture() {
     }
 }
 
-//TODO:  we don't need all this data.  Can we pare it down?
 function section_1() {
     return {
 	    status: 10, 

@@ -6,7 +6,6 @@ describe("Directory", function(){
     it("should have a list of sections and an el", function(){
 	expect(d.sections).toBeObject()
 	expect(d.el[0]).toBeHtmlNode()
-	//TODO:  actually, we should be asserting that it's a jquery object
     })
 
     describe("render", function(){

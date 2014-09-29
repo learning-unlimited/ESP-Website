@@ -4,7 +4,6 @@ describe("Scheduler", function(){
     })
 
     it("should have a directory and a matrix", function(){
-	//TODO:  can we assert on the types of these?
 	expect(s.directory).toBeDefined()
 	expect(s.matrix).toBeDefined()
     })

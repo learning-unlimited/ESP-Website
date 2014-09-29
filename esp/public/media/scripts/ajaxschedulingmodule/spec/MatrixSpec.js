@@ -4,7 +4,6 @@ describe("Matrix", function(){
     })
 
     it("should have an element", function(){
-	//TODO:  maybe we should assert that this is a jquery object?
 	expect(m.el[0]).toBeHtmlNode()
     })
 
@@ -81,7 +80,6 @@ describe("Matrix", function(){
 	    m.clearCell(m.getCell("room-2", 2))
 	})
 	//TODO:  unscheduling classes
-	//TODO:  what if the room or time is taken?
     })
 
     describe("clearCell", function(){
@@ -109,7 +107,6 @@ describe("Matrix", function(){
 	})
 
 	it("should have a column each timeslot", function(){
-	    //TODO:  timeslots should be ordered chronologically
 	    table = m.el.children()[0]
 	    
 	    header = table.tHead
@@ -129,7 +126,6 @@ describe("Matrix", function(){
 	    expect(table.rows[2].cells[2]).toBeDefined()
 	})
 
-	//TODO:  what assertions should this actually make?
 	it("should show already scheduled sections", function(){
 	    table = m.el.children()[0]
 	    expect(table.innerHTML).toMatch('S3188s1')

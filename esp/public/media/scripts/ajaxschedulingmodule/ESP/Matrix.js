@@ -46,7 +46,6 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 	return this.cells[room_name][this.timeslots[timeslot_id].order]
     }
 
-    //TODO:  use scheduleClass in timeslots
     this.scheduleSection = function(section, room_name, schedule_timeslots){
 	//validation
 	for(timeslot_index in schedule_timeslots){
@@ -102,11 +101,10 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 	})
 
 	//populate cells
-	cells = this.cells	//TODO:  what are you actually supposed to do here?
+	cells = this.cells
 	$j.each(this.rooms, function(id, room){
 	    row = rows[id]
 	    for(i = 0; i < Object.keys(timeslots).length; i++){
-		//TODO:  use getCell here
 		cells[id][i].el.appendTo(row)
 	    }
 	})
