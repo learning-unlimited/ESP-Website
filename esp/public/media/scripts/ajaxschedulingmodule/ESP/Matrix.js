@@ -20,15 +20,28 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
     this.init()
 
     this.add_timeslots_order = function(timeslot_object){
-	//TODO test and actually implement this
-	i = 0
+	timeslot_array = []
 	$j.each(timeslot_object, function(timeslot_id, timeslot){
-	    timeslot.order = i
-	    i = i+1
+	    timeslot_array.push(timeslot)
 	})
+
+	sorted_timeslot_array = timeslot_array.sort(function(a,b){
+	    for (i=0; i<a.start.length; i++){
+		comp = a.start[i] - b.start[i]
+		if (comp != 0){
+		    return comp
+		}
+	    }
+	    return 0
+	})
+
+	for (i=0; i<sorted_timeslot_array.length; i++){
+	    t = sorted_timeslot_array[i]
+	    timeslot_object[t.id].order = i
+	}
+
 	return timeslot_object
     }
-
     this.timeslots = this.add_timeslots_order(timeslots)
 
     this.cells = function(){
@@ -47,7 +60,6 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 	    $j.each(assignment_data.timeslots, function(j, timeslot_id){
 		class_emailcode = sections[class_id].emailcode
 		timeslot_order = timeslots[timeslot_id].order
-		//TODO:  augment timslots datastructure with order information
 		cells[assignment_data.room_name][timeslot_order].addSection(sections[class_id])
 	    })
 	})

@@ -1,10 +1,30 @@
 function time_fixture() {
     return {
 	1: {
-	    label:  "first timeslot"
+	    label:  "first timeslot",
+	    start:  [2010, 4, 17, 10, 0, 0],
+	    id: 1
 	},
 	2: {
-	    label:  "second timeslot"
+	    label:  "second timeslot",
+	    start:  [2010, 4, 17, 11, 0, 0],
+	    id: 2
+	}
+    }
+}
+
+function time_fixture_out_of_order() {
+    tf = time_fixture()
+    return {
+	2: {
+	    label:  "first timeslot",
+	    start:  [2010, 4, 17, 10, 0, 0],
+	    id: 2
+	},
+	1: {
+	    label:  "second timeslot",
+	    start:  [2010, 4, 17, 11, 0, 0],
+	    id: 1
 	}
     }
 }
