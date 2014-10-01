@@ -57,6 +57,7 @@ from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
+from esp.accounting.controllers import IndividualAccountingController
 
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
@@ -135,26 +136,27 @@ class OnSiteClassList(ProgramModuleObj):
             students_Q = students_Q | students_dict[student_type]
 
         students = ESPUser.objects.filter(students_Q)
+
+
         data = [] 
         if search_query:
             #If user provided a search term then we want to expand search to the
             #entire student base
             student_ids = students.values_list('id', flat=True).distinct()
-
             search_tokens = search_query.split(' ',1)
             first_token = search_tokens[0]
 
             if len(search_tokens) == 1:
-                student_q = Q(last_name__icontains=first_token) | Q(first_name__icontains=first_token)
+                search_qset = Q(last_name__icontains=first_token) | Q(first_name__icontains=first_token)
             else:
                 second_token = search_tokens[1]
-                student_q = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
+                search_qset = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
                             (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token)) 
 
-            students = ESPUser.objects.filter(student_q) \
+            students = ESPUser.objects.filter(search_qset) \
                               .values_list('id', 'last_name', 'first_name') \
                               .distinct() \
-                              .order_by('last_name','first_name')[:20]
+                              .order_by('last_name','first_name')
 
             for student in students:
                 data.append(list(student) + [student[0] in student_ids])
@@ -166,39 +168,23 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def register_student(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
+        program = self.program
+        success = False
         student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
 
-
         registration_profile = RegistrationProfile.getLastForProgram(student,
-                                                                self.program)
-        contact_user = ContactInfo(first_name = student.first_name,
-                                   last_name  = student.last_name,
-                                   e_mail     = student.email,
-                                   user       = student)
-        contact_user.save()
-        registration_profile.contact_user = contact_user
+                                                                program)
+        success = registration_profile.student_info is not None
 
-        registration_profile.save()
+        if success:
+            registration_profile.save()
+
+            for extension in ['paid','Attended','medical','liability','OnSite']:
+                Record.createBit(extension, program, student)
         
-        # if new_data['paid']:
-        #     self.createBit('paid')
-        #     self.updatePaid(True)
-        # else:
-        #     self.updatePaid(False)
+            IndividualAccountingController.updatePaid(self.program, student, paid=True)
 
-        # self.createBit('Attended')
-
-        # if new_data['medical']:
-        #     self.createBit('Med')
-
-        # if new_data['liability']:
-        #     self.createBit('Liab')
-
-        # self.createBit('OnSite')
-
-        
-        # This is where the actual profile assignment occurs
-        simplejson.dump(True, resp)
+        simplejson.dump({'status':success}, resp)   
         return resp
     
     @aux_call
