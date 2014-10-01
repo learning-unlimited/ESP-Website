@@ -1,0 +1,102 @@
+============================================
+ ESP Website Stable Release 05 release notes
+============================================
+
+.. contents:: :local:
+
+Changelog
+=========
+
+Class flags
+~~~~~~~~~~~
+
+Stripe credit card module
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Improvements to the onsite class changes grid
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Deadline for walk-in activities / open classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Teacher bio privacy setting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Minor feature additions and bugfixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Some dashboard display improvements.
+
+- Many small improvements to the admin panel, for better displaying,
+  filtering, and searching.
+
+- The "Administer" permission, when granted without a program being
+  specified, now correctly implies the "Administer" permission on all
+  programs.
+
+- Improvements to the student extra/optional costs module now allow
+  equally-priced options, such as lunch or t-shirt options, to be used in
+  the form.
+
+- Improvements to the user search controller now make it sometimes possible
+  to combine filters and not incorrectly get 0 results.
+
+- After searching for a teacher and going to their userview page, you can
+  now view their availability via a link to the check availability module.
+
+- A user's account can be activated/deactivated from their userview page.
+
+- Permissions can be expired/renewed in bulk from the Permission admin panel
+  page.
+
+- Fixes to the bulk financial aid approval script.
+
+- Performance improvements to teacherreg.
+
+- Deleting uploaded program files (the manage program documents/materials
+  module, not to be confused with the filebrowser for site media files) will
+  now ask for confirmation before performing the delete.
+
+Updating site installations (developers only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A few new custom ``manage.py`` commands have been defined to make it easier
+to update sites (including dev servers):
+
+- ``manage.py update_deps`` - The same as running ``esp/update_deps.sh``.
+
+- ``manage.py install`` - Calls ``app.models.install()`` on all apps that
+  have such a function.  Installs any newly-added initial data that wasn't
+  already in the database.  In particular, this will install new program
+  modules, without the need to open a Django shell and manually call
+  ``esp.program.modules.models.install()``.
+
+- ``manage.py recompile_theme`` - Recompiles the installed theme, if there
+  is one.  This will redefine the media and template overrides that make up
+  the theme, overriding any customizations in the template overrides for
+  that theme.  This is the same as opening a Django shell and manually
+  calling ThemeController().recompile_theme().  Depending on your
+  permissions on the site's ``/tmp`` subdirectory, this command may need to
+  be run as the webserver user.
+
+- ``manage.py update`` - The same as running the above three commands, plus
+  ``manage.py syncdb`` (to install new tables not under migration controll),
+  ``manage.py migrate``, and ``manage.py collectstatic``.
+
+When performing a production site release or pulling many new commits to
+your dev server, ``manage.py update`` can be an easy way to get the site
+back into a working state.  Running the individual commands can also be
+helpful in various situations.
+
+Local unit testing (developers only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Running ``manage.py test`` now bypasses running migrations, which saves many
+minutes of time.  Between that and the time needed to install dependencies,
+it is now much quicker to run the test suite locally than it is to run it on
+Travis.  Developers are encouraged to test their changes locally before
+pushing to Github, to reduce the need to push subsequent fixes to fix broken
+tests.  Developers are also strongly encouraged to write tests for their
+changes; locally verifying that new tests are correct is as easy as
+``manage.py test app.TestClassName``, which should now run relatively
+quickly.
