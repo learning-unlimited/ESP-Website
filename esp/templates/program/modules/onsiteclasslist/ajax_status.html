@@ -94,12 +94,18 @@
 
 <a name="settings" />
 <div id="dialog-confirm" title="Register Account?" class="hide">
+  <div id="not-registered-msg">
   <p>
     This student is not registered with {{ program.name }}. 
     </p>
     <p>
         Please verify that the student is wearing their {{ program.name }}-issued nametag or has otherwise completed all steps (including any forms and/or payment) necessary to participate in the program.
     </p>
+  </div>
+  <div id="noinfo-msg" style="display:none;">
+  Sorry, but this student needs to supply more information. Please register this student
+  using the New Student Registration form.
+  </div>
 </div>
 </body>
 </html>

@@ -290,6 +290,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
 //  Set the currently active student
 function set_current_student(student_id)
 {
+
     if (student_id)
     {
         state.student_id = student_id;
@@ -299,6 +300,7 @@ function set_current_student(student_id)
             async: false,
             success: handle_schedule_response
         });
+
         render_classchange_table(student_id);
         $j("#status_switch").removeAttr("disabled");
         $j("#schedule_print").removeAttr("disabled");
@@ -433,9 +435,8 @@ function remove_student(student_id, section_id)
     });
 }
 
-function register_student(student_id) 
+function register_student(student_id, dialog) 
 {
-
     $j.ajax({
             url: program_base_url + "register_student",
             type:'POST',
@@ -445,11 +446,18 @@ function register_student(student_id)
             },
 
             success: function(data) {
-            alert(data);
+                if(data.status) {
+                    refresh_counts();
+                    set_current_student(parseInt(student_id));
+                    dialog.close();
+                } else {
+                    $('#not-registered-msg').hide();
+                    $('#noinfo-msg').show();
+                }
             },
 
             error: function (result) {
-                alert(result);
+                console.log(result);
             }
     });
 }
@@ -537,7 +545,6 @@ function autocomplete_select_item(event, ui)
 
             dialog.data('student_id', student_id);
             dialog.dialog('open');
-
         }
         else 
         {
@@ -1110,7 +1117,7 @@ $j(document).ready(function () {
                       modal: true,
                       buttons: {
                         "Register Account": function() {
-                          register_student($j(this).data('student_id'));
+                          register_student($j(this).data('student_id'),$j(this));
                         },
                         Cancel: function() {
                           $j(this).dialog( "close" );
