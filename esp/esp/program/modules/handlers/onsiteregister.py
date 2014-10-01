@@ -54,28 +54,6 @@ class OnSiteRegister(ProgramModuleObj):
             "seq": 30
             }
 
-    def updatePaid(self, paid=True):
-        """ Create an invoice for the student and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        iac = IndividualAccountingController(self.program, self.student)
-        if not iac.has_paid():
-            iac.add_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
-
-    def createBit(self, extension):
-        if extension == 'Paid':
-            self.updatePaid(True)
-            
-        if Record.user_completed(self.student, extension.lower(), self.program):
-            return False
-        else:
-            Record.objects.create(
-                user = self.student,
-                event = extension.lower(),
-                program = self.program
-            )
-            return True
 
     @main_call
     @needs_onsite
@@ -125,20 +103,20 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
                 
                 if new_data['paid']:
-                    self.createBit('paid')
-                    self.updatePaid(True)
+                    Record.createBit('paid', self.program, self.user)
+                    IndividualAccountingController.updatePaid(True, self.program, self.user)
                 else:
-                    self.updatePaid(False)
+                    IndividualAccountingController.updatePaid(False, self.program, self.user)
 
-                self.createBit('Attended')
+                Record.createBit('Attended', self.program, self.user)
 
                 if new_data['medical']:
-                    self.createBit('Med')
+                    Record.createBit('Med', self.program, self.user)
 
                 if new_data['liability']:
-                    self.createBit('Liab')
+                    Record.createBit('Liab', self.program, self.user)
 
-                self.createBit('OnSite')
+                Record.createBit('OnSite', self.program, self.user)
 
                 
                 new_user.groups.add(Group.objects.get(name="Student"))
