@@ -1,6 +1,6 @@
 describe("Scheduler", function(){
     beforeEach(function(){
-	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"))
+	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"))
     })
 
     it("should have a directory and a matrix", function(){

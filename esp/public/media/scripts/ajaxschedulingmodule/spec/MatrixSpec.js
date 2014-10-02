@@ -1,10 +1,11 @@
 describe("Matrix", function(){
     beforeEach(function(){
-	m = new Matrix(time_fixture(), room_fixture(), schedule_assignments_fixture(), sections_fixture(), $j("<div/>"))
+	m = new Matrix(time_fixture(), room_fixture(), schedule_assignments_fixture(), sections_fixture(), $j("<div/>"), $j("<div/>"))
     })
 
-    it("should have an element", function(){
+    it("should have an element and a garbage element", function(){
 	expect(m.el[0]).toBeHtmlNode()
+	expect(m.garbage_el[0]).toBeHtmlNode()
     })
 
     it("should have times, rooms, and schedule assignments", function(){

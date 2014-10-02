@@ -22,6 +22,11 @@ table,th,td
     overflow-y: scroll;
 }
 
+.garbage-div {
+    background: grey;
+    height: 40px;
+}
+
 .no-border {
     border: 0px;
 }

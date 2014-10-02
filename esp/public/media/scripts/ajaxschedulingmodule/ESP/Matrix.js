@@ -1,12 +1,20 @@
-function Matrix(timeslots, rooms, schedule_assignments, sections, el){ 
+function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el){ 
 
     this.el = el
+    this.garbage_el = garbage_el
     this.el.id = "matrix-table"
 
     this.rooms = rooms
     this.schedule_assignments = schedule_assignments
     this.sections = sections
+    this.timeslots = helpers_add_timeslots_order(timeslots)
 
+    // garbage stuff
+    this.garbageDropHandler = function(ev, ui){
+	console.log("dropped")
+    }
+
+    // set up drophandler
     this.dropHandler = function(el, ui){
 	cell = $j(el.currentTarget).data("cell")
 	section = ui.draggable.data("section")
@@ -15,11 +23,14 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 
     this.init = function(){
 	this.el.on("drop", "td", this.dropHandler)
+	this.garbage_el.droppable({
+	    drop: this.garbageDropHandler
+	}) 
     }
 
     this.init()
-    this.timeslots = helpers_add_timeslots_order(timeslots)
 
+    // set up cells
     this.cells = function(){
 	cells = {}
 	$j.each(rooms, function(room_name, room){
@@ -46,6 +57,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 	return this.cells[room_name][this.timeslots[timeslot_id].order]
     }
 
+    // scheduling sections
     this.scheduleSection = function(section, room_name, schedule_timeslots){
 	//validation
 	for(timeslot_index in schedule_timeslots){
@@ -82,6 +94,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el){
 	cell.removeSection()
     }
 
+    // render
     this.render = function(){
 	table = $j("<table/>")
 
