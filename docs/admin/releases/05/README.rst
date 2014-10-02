@@ -13,11 +13,20 @@ Class flags
 Stripe credit card module
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Group texting with Twilio
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Student applications module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Deadline for walk-in activities / open classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Custom Javascript
+~~~~~~~~~~~~~~~~~
 
 Teacher bio privacy setting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,6 +42,20 @@ Minor feature additions and bugfixes
 - The "Administer" permission, when granted without a program being
   specified, now correctly implies the "Administer" permission on all
   programs.
+
+- New "cancel registration" deadline can be set to specify when students are
+  allowed to cancel their registrations themselves.
+
+- When a teacher modifies a class, the class comments email will have a
+  subject line that starts with "Re:".  This makes it clearer when new
+  classes are being registered versus when existing classes are being
+  edited.
+
+- By default, static QSD pages list the last modification time, as well as
+  the username of the user who last modified the page.  To hide the username
+  on all pages, go to /admin/tagdict/tag/ and set a Tag with key
+  qsd_display_date_author and value Date.  To hide the username and
+  modification time, set the value as False.
 
 - Improvements to the student extra/optional costs module now allow
   equally-priced options, such as lunch or t-shirt options, to be used in
