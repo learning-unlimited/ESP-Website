@@ -7,9 +7,6 @@
 Changelog
 =========
 
-Class flags
-~~~~~~~~~~~
-
 Stripe credit card module
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -30,6 +27,9 @@ Custom Javascript
 
 Teacher bio privacy setting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Class flags improvements
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Minor feature additions and bugfixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
