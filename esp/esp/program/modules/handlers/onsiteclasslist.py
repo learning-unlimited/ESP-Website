@@ -136,13 +136,13 @@ class OnSiteClassList(ProgramModuleObj):
             students_Q = students_Q | students_dict[student_type]
 
         students = ESPUser.objects.filter(students_Q)
-
+        program_students_ids = []
 
         data = [] 
         if search_query:
             #If user provided a search term then we want to expand search to the
             #entire student base
-            student_ids = students.values_list('id', flat=True).distinct()
+            
             search_tokens = search_query.split(' ',1)
             first_token = search_tokens[0]
 
@@ -152,14 +152,19 @@ class OnSiteClassList(ProgramModuleObj):
                 second_token = search_tokens[1]
                 search_qset = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
                             (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token)) 
-
-            students = ESPUser.objects.filter(search_qset) \
-                              .values_list('id', 'last_name', 'first_name') \
+            program_students_ids = set(students.values_list('id', flat=True).distinct())
+            students = ESPUser.objects.filter(search_qset)
+                              
+        students = students.values_list('id', 'last_name', 'first_name') \
                               .distinct() \
                               .order_by('last_name','first_name')
 
-            for student in students:
-                data.append(list(student) + [student[0] in student_ids])
+        if search_query:
+            students = students[:20]
+
+        for student in students:
+            has_profile = not search_query or student[0] in program_students_ids
+            data.append(list(student) + [has_profile])
 
         simplejson.dump(sorted(data,key=lambda x: not x[3]), resp)
         return resp

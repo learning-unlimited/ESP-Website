@@ -272,6 +272,8 @@ function update_checkboxes()
 
 function handle_schedule_response(new_data, text_status, jqxhr)
 {
+    console.log(new_data);
+    console.log(data.students);
     data.students[new_data.user].grade = new_data.user_grade
     //  Save the new schedule
     state.student_schedule = new_data.sections;
@@ -437,6 +439,7 @@ function remove_student(student_id, section_id)
 
 function register_student(student_id, dialog) 
 {
+   
     $j.ajax({
             url: program_base_url + "register_student",
             type:'POST',
@@ -447,12 +450,12 @@ function register_student(student_id, dialog)
 
             success: function(data) {
                 if(data.status) {
-                    refresh_counts();
+                    fetch_all();
                     set_current_student(parseInt(student_id));
-                    dialog.close();
+                    dialog.dialog("close");
                 } else {
-                    $('#not-registered-msg').hide();
-                    $('#noinfo-msg').show();
+                    $j('#not-registered-msg').hide();
+                    $j('#noinfo-msg').show();
                 }
             },
 
@@ -548,6 +551,7 @@ function autocomplete_select_item(event, ui)
         }
         else 
         {
+            fetch_all();
             set_current_student(parseInt(student_id));
         }
         
