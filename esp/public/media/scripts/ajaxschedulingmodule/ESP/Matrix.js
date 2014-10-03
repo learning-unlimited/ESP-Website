@@ -11,8 +11,8 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
 
     // garbage stuff
     this.garbageDropHandler = function(ev, ui){
-	console.log("dropped")
-    }
+	this.unscheduleSection(ui.draggable.data("section"))
+    }.bind(this)
 
     // set up drophandler
     this.dropHandler = function(el, ui){
@@ -88,6 +88,16 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
 
 	$j("body").trigger("schedule-changed")
 	return true
+    }
+
+    this.unscheduleSection = function(section){
+	assignment = this.schedule_assignments[section.id]
+	cell = this.getCell(assignment.room_name, assignment.timeslots[0])
+	this.clearCell(cell)
+
+	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
+
+	$j("body").trigger("schedule-changed")
     }
 
     this.clearCell = function(cell){

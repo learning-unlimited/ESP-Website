@@ -44,6 +44,7 @@ function schedule_assignments_fixture() {
 	    timeslots: [1, 2]
 	},
 	3538: {
+	    room_name: null,
 	    id: 3538,
 	    timeslots: []
 	}

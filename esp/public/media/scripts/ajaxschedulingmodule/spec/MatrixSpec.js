@@ -59,6 +59,15 @@ describe("Matrix", function(){
 	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_1().id})
 	})
 
+	it("fires a schedule-changed event", function(){
+	    event_fired = false
+	    $j("body").on("schedule-changed", function(){
+		event_fired = true
+	    })
+	    m.scheduleSection(section_2(), "room-2", [1,2])
+	    expect(event_fired).toBeTrue()
+	})
+
 	describe("validation", function(){
 	    describe("when a class is already scheduled in a room", function(){
 		beforeEach(function(){
@@ -80,7 +89,30 @@ describe("Matrix", function(){
 	    m.clearCell(m.getCell("room-2", 1))
 	    m.clearCell(m.getCell("room-2", 2))
 	})
-	//TODO:  unscheduling classes
+    })
+
+    describe("unscheduleSection", function(){
+	it("removes the class from the matrix", function(){
+	    expect(m.getCell("room-1", 1).section).toEqual(section_1())
+	    m.unscheduleSection(section_1())
+	    expect(m.getCell("room-1", 1).section).not.toEqual(section_1())
+	})
+
+	it("fires a schedule-changed event", function(){
+	    event_fired = false
+	    $j("body").on("schedule-changed", function(){
+		event_fired = true
+	    })
+	    m.unscheduleSection(section_1())
+	    expect(event_fired).toBeTrue()
+	})
+
+	it("modifies the schedule_assignments data structure", function(){
+	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-1", timeslots: [1,2], id: section_1().id})
+	    m.unscheduleSection(section_1())
+	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: null, timeslots: [], id: section_1().id})
+	})
+
     })
 
     describe("clearCell", function(){
