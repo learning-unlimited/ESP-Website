@@ -80,6 +80,21 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
 	    cell.removeSection()
 	}
 
+        var req = { 
+	    action: 'assignreg',
+            csrfmiddlewaretoken: csrf_token(),
+            cls: section.id,
+            block_room_assignments: timeslot_id + "," + room_name
+	}
+        $j.post('ajax_schedule_class', req, "json")
+        .success(function(ajax_data, status) {
+	    console.log("success")
+	 })
+	 .error(function(ajax_data, status) {
+	     console.log("failure")
+	 })
+
+
 	this.schedule_assignments[section.id] = {
 	    room_name: room_name,
 	    timeslots: schedule_timeslots,
