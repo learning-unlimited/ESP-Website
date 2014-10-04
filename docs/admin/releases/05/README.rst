@@ -31,6 +31,14 @@ Teacher bio privacy setting
 Class flags improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
+- Several bugs fixed, and performance improvements.
+
+- The flag query builder now has more filters, including flag
+  creation/modification time and class scheduling status.
+
+- The teacher check-in page now shows more information about a class, including
+  its flags.
+
 Minor feature additions and bugfixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,6 +87,9 @@ Minor feature additions and bugfixes
 - Deleting uploaded program files (the manage program documents/materials
   module, not to be confused with the filebrowser for site media files) will
   now ask for confirmation before performing the delete.
+
+- The teacher check-in page now shows more information about a class, including
+  its flags.
 
 Updating site installations (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
