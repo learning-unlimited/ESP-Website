@@ -161,9 +161,9 @@ class ClassFlagModule(ProgramModuleObj):
                 base = (query_type[:-4] + 'the flag "' +
                         ClassFlagType.objects.get(id=value['id']).name + '"')
             elif 'not' in query_type:
-                base = 'no flag'
+                base = 'not flags'
             else:
-                base = 'a flag'
+                base = 'any flag'
             modifiers = []
             for time_type in ['created', 'modified']:
                 if time_type+'_when' in value:
