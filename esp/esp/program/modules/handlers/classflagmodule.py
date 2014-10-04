@@ -82,7 +82,12 @@ class ClassFlagModule(ProgramModuleObj):
         return descs
 
     def jsonToQuerySet(self, j):
-        '''Takes a dict decoded from the json sent by the javascript in /manage///classflags/ and converts it to QuerySet.'''
+        '''Takes a dict from classflags and returns a QuerySet.
+
+        The dict is decoded from the json sent by the javascript in
+        /manage///classflags/; the format is specified in the docstring of
+        classflags() below.
+        '''
         base = ClassSubject.objects.filter(parent_program=self.program)
         time_fmt = "%m/%d/%Y %H:%M"
         query_type = j['type']
@@ -143,7 +148,12 @@ class ClassFlagModule(ProgramModuleObj):
                 raise ESPError('Invalid json for flag query builder!')
 
     def jsonToEnglish(self, j):
-        '''Takes a dict decided from the json sent by the javscript in /manage///classflags/ and converts it to something vaguely human-readable.'''
+        '''Takes a dict from classflags and returns something human-readable.
+
+        The dict is decoded from the json sent by the javascript in
+        /manage///classflags/; the format is specified in the docstring of
+        classflags() below.
+        '''
         query_type = j['type']
         value = j.get('value')
         if 'flag' in query_type:
@@ -157,8 +167,9 @@ class ClassFlagModule(ProgramModuleObj):
             modifiers = []
             for time_type in ['created', 'modified']:
                 if time_type+'_when' in value:
-                    modifiers.append(time_type + " " + value[time_type + '_when'] +
-                                     " " + value[time_type + '_time'])
+                    modifiers.append(time_type + " " +
+                                     value[time_type + '_when'] + " " +
+                                     value[time_type + '_time'])
             base += ' '+' and '.join(modifiers)
             return base
         elif 'category' in query_type:
@@ -182,11 +193,29 @@ class ClassFlagModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def classflags(self, request, tl, one, two, module, extra, prog):
-        '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
+        '''An interface to query for some boolean expression of flags.
 
-        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["flag", "not flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
+        The front-end javascript will allow the user to build a query, then
+        POST it in the form of a json.  The response to said post should be the
+        list of classes matching the flag query.
+
+        The json should be a single object, with keys 'type' and 'value'.  The
+        type of 'value' depends on the value of 'type':
+            * If 'type' is 'flag' or 'not flag', 'value' should be an object,
+            with some or all of the keys 'id', 'created_time', 'modified_time'
+            (all should be strings).
+            * If 'type' is 'category', 'not category', 'status', or
+            'not status', 'value' should be a string.
+            * If 'type' is 'some sections schedule',
+            'not all sections scheduled', 'all sections scheduled', or
+            'no sections scheduled', 'value' should be omitted.
+            * If 'type' is 'all', 'any', 'none', or 'not all', 'value' should
+            be an array of objects of the same form.
+        '''
         # Grab the data from either a GET or a POST.
-        # We allow a GET request to make them linkable, and POST requests for some kind of backwards-compatibility with the way the interface previously worked.
+        # We allow a GET request to make them linkable, and POST requests for
+        # some kind of backwards-compatibility with the way the interface
+        # previously worked.
         if request.method == 'GET':
             if 'query' in request.GET:
                 data = request.GET['query']
