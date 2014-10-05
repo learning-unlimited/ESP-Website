@@ -22,6 +22,27 @@ Improvements to the onsite class changes grid
 Deadline for walk-in activities / open classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+It is now possible to set a deadline for open class (a.k.a. walk-in activity)
+registration separately from that of normal teacher registration.
+
+- To set the registration deadline for open class registration only, create a
+  deadline with the "Create open classes" permission type.
+
+- To set the registration deadline for normal teacher registration only, create
+  a deadline with the "Create standard classes" permission type.
+
+- To set the registration deadline for all types of teacher registration,
+  create a deadline with the "Create classes of all types" permission type.
+  This is the same as the previously used teacher registration deadline, so any
+  registrations that have already been set up do not need any updating.
+
+NOTE: For more information on open classes, see the "Open classes" section of
+the previous release notes: `</docs/admin/releases/04/README.rst>`_.  The open
+classes feature is disabled by default.  And when it is disabled, you can
+safely use either the "Create standard classes" or
+"Create classes of all types" deadlines, without accidentally opening
+registration for open classes.
+
 Custom Javascript
 ~~~~~~~~~~~~~~~~~
 
