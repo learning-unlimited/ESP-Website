@@ -3,7 +3,19 @@ button.fqb-delete {
 }
 
 select.fqb-type {
-    width: 8em;
+    width: 10em;
+}
+
+.fqb-flag-details {
+    padding-left: 7em;
+}
+
+.fqb-flag-detail-select {
+    width: 6em;
+}
+
+.datetime-input {
+    width: 12em;
 }
 
 .bad-node {
@@ -55,7 +67,7 @@ select.fqb-type {
     margin-right: auto;
 }
 
-input#flag-submit-new {
+input.flag-submit-new {
     margin-left: auto;
     margin-right: 0px;
 }
