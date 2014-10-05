@@ -1,4 +1,12 @@
-function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el){ 
+function Matrix(
+    timeslots,
+    rooms,
+    schedule_assignments,
+    sections,
+    el,
+    garbage_el,
+    api_client
+){ 
 
     this.el = el
     this.garbage_el = garbage_el
@@ -8,6 +16,8 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
     this.schedule_assignments = schedule_assignments
     this.sections = sections
     this.timeslots = helpers_add_timeslots_order(timeslots)
+
+    this.api_client = api_client
 
     // garbage stuff
     this.garbageDropHandler = function(ev, ui){
@@ -67,6 +77,11 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
 	    }
 	}
 
+	success = this.api_client.schedule_section(section.id, timeslot_id, room_name)
+	if (!success) {
+	    return false
+	}
+
 	for(timeslot_index in schedule_timeslots){
 	    timeslot_id = schedule_timeslots[timeslot_index]
 	    this.getCell(room_name, timeslot_id).addSection(section)
@@ -80,21 +95,6 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
 	    cell.removeSection()
 	}
 
-        var req = { 
-	    action: 'assignreg',
-            csrfmiddlewaretoken: csrf_token(),
-            cls: section.id,
-            block_room_assignments: timeslot_id + "," + room_name
-	}
-        $j.post('ajax_schedule_class', req, "json")
-        .success(function(ajax_data, status) {
-	    console.log("success")
-	 })
-	 .error(function(ajax_data, status) {
-	     console.log("failure")
-	 })
-
-
 	this.schedule_assignments[section.id] = {
 	    room_name: room_name,
 	    timeslots: schedule_timeslots,
@@ -106,6 +106,11 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el, garbage_el
     }
 
     this.unscheduleSection = function(section){
+	success = this.api_client.unschedule_section(section.id)
+	if (!success){
+	    return
+	}
+
 	assignment = this.schedule_assignments[section.id]
 	cell = this.getCell(assignment.room_name, assignment.timeslots[0])
 	this.clearCell(cell)
