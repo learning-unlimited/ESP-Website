@@ -31,7 +31,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.db.models import signals 
@@ -42,20 +42,15 @@ from esp.utils.custom_cache import custom_cache
 from esp.utils.migration import db_has_column
 from esp.utils.migration import missing_db_table
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    if app == program and not have_already_installed:
+    if app == program:
         with custom_cache():
             #   Check that required tables exist.
             if (missing_db_table(program.Program) or missing_db_table(users.ContactInfo)
-                or not db_has_column("program_program_class_categories", "seq")):
+                or not db_has_column(class_models.ClassCategories._meta.db_table, "seq")):
                 return
             #   Run installation
-            have_already_installed = True
-            print "Installing esp.program.class initial data..."
-            class_models.install()
+            program.install()
         
 signals.post_syncdb.connect(post_syncdb)
 

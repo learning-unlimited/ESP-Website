@@ -30,12 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db import models
 from esp.datatree.models import *
 from datetime import datetime, timedelta
-from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
 
 # Create your models here.
@@ -46,6 +45,14 @@ class EventType(models.Model):
 
     def __unicode__(self):
         return unicode(self.description)
+
+    @cache_function
+    def get_from_desc(cls, desc):
+        """ A cached function for getting EventTypes that we know must exist
+        if someone has run install() """
+        return EventType.objects.get(description=desc)
+    get_from_desc.depend_on_model(lambda: EventType)
+    get_from_desc = classmethod(get_from_desc)
 
 class Event(models.Model):
     """ A unit calendar entry.
@@ -215,5 +222,7 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
+    print "Installing esp.cal initial data..."
     for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
-        EventType.objects.get_or_create(description=x)
+        if not EventType.objects.filter(description=x).exists():
+            EventType.objects.create(description=x)

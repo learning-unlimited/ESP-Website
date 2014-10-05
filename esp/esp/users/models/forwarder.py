@@ -1,6 +1,5 @@
 # django dependencies
 from django.db import models
-from django.contrib.auth.models import User, AnonymousUser
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey

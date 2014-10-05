@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
@@ -72,7 +72,7 @@ class AvailabilityModule(ProgramModuleObj):
             } ]
     
     def event_type(self):
-        et, created = EventType.objects.get_or_create(description='Class Time Block')
+        et = EventType.get_from_desc('Class Time Block')
         return et
     
     def prepare(self, context={}):

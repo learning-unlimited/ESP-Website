@@ -1,0 +1,126 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+#donation_choices {
+    width: 50%;
+}
+
+#donation_choices_wrapper {
+    align: center;
+}
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+<!--
+// allow adding a donation
+var base_amount = parseFloat({{ amount_without_donation }});
+var donation_amount = parseFloat({{ amount_donation }});
+var donation_set = {{ has_donation|lower }};
+function update_donation_on_page() {
+    //  Tell the server about our change in preferences
+    $j.ajax("/json/{{ program.url }}/set_donation_amount", {
+        async: false,
+        data: {"amount": (donation_set ? donation_amount : 0.0)},
+        type: "GET",
+		dataType: "json",
+    });
+    var total_amount = base_amount + (donation_set ? donation_amount : 0.0);
+    $j("#donation_amount_display").html("$" + donation_amount.toFixed(2));
+    $j("#total_amount_display").html("$" + total_amount.toFixed(2));
+    $j("#id_totalcost_cents").val(Math.round(total_amount * 100));
+    if (donation_set)
+        $j("#donation_line_item").show();
+    else
+        $j("#donation_line_item").hide();
+}
+function toggle_donation() {
+    donation_set = !donation_set;
+    if (donation_set)
+        donation_amount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
+    //  console.log("Updated donation_set = " + donation_set + ", donation_amount = " + donation_amount);
+    $j("#donation_choices").toggle();
+    $j("#donation_line_item").toggle();
+    update_donation_on_page();
+}
+function update_donation_amount() {
+    donation_amount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
+    //  console.log("Updated donation_amount = " + donation_amount);
+    update_donation_on_page();
+}
+
+$j(document).ready(function () {
+    $j("input:radio[name='amount_donation']").click(update_donation_amount);
+{% if not has_donation %}
+    $j("#donation_choices").hide();
+    $j("#donation_line_item").hide();
+{% endif %}
+});
+-->
+</script>
+{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }}</h1>
+
+<h3>Instructions for paying by credit card:</h3>
+<p><ol>
+<li>Please review the costs below. If you are concerned that there is a problem, please <a href="mailto:{{ program.director_email }}">e-mail the program directors</a>.<br />
+<li>Click the "Pay with Card" button.  You will see a form pop up asking for your credit card information.  When you submit the form, your information is sent to a secure <a href="https://stripe.com/us/help/faq" target="_blank">third party payment processor</a>.  Then you will be redirected to a confirmation receipt.</li>
+</ol></p>
+
+{% include "program/modules/creditcardmodule_stripe/transaction_record.html" %}
+
+{% if itemizedcosttotal <= 0 %}
+<p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
+{% else %}
+
+<form action="/learn/{{ program.url }}/charge_payment" method="POST">
+{% if module.settings.offer_donation %}
+<input type="checkbox" name="select_donation" onclick="toggle_donation();" {% if has_donation %}checked {% endif %}/>
+{% inline_program_qsd_block program "stripe_learningu_donation" %}
+Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
+{% end_inline_program_qsd_block %}
+<div id="donation_choices_wrapper"><div id="donation_choices">
+<b>Donation amount:</b>
+{% for option in module.settings.donation_options %}
+<label class="radio">
+    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
+</label>
+{% endfor %}
+</div></div>
+{% endif %}
+
+<div align="center">
+  <script
+    src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+    data-key="{{ module.settings.publishable_key }}"
+    data-name="{{ institution }} Splash Payment"
+    data-description="Registration for {{ program.niceName }}"
+  >
+  </script>
+
+<input type="hidden" name="ponumber" value="{{ invoice_id }}" />
+<input type="hidden" name="invoice_number" value="{{ identifier }}" />
+<input type="hidden" name="userid" value="{{ user.id }}" />
+<input type="hidden" id="id_totalcost_cents" name="totalcost_cents" value="{{ totalcost_cents }}" />
+{% csrf_token %}
+</div>
+
+</form>
+
+<br />
+<p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
+
+{% endif %}
+
+{% endblock %}
+
