@@ -134,7 +134,7 @@ class ClassFlagModule(ProgramModuleObj):
                 # Exclude classes with sections with meeting times.
                 return base.exclude(**{lookup: False})
         else:
-            # Here v is going to be a list of subqueries.  First, evaluate them.
+            # Here value is going to be a list of subqueries.  First, evaluate them.
             subqueries = [self.jsonToQuerySet(query_json) for query_json in value]
             if query_type == 'all':
                 return reduce(operator.and_, subqueries)
@@ -206,7 +206,7 @@ class ClassFlagModule(ProgramModuleObj):
             (all should be strings).
             * If 'type' is 'category', 'not category', 'status', or
             'not status', 'value' should be a string.
-            * If 'type' is 'some sections schedule',
+            * If 'type' is 'some sections scheduled',
             'not all sections scheduled', 'all sections scheduled', or
             'no sections scheduled', 'value' should be omitted.
             * If 'type' is 'all', 'any', 'none', or 'not all', 'value' should
