@@ -44,6 +44,7 @@ from esp.web.util        import render_to_response
 from esp.utils.query_utils import nest_Q
 
 from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models.class_ import STATUS_CHOICES
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
@@ -176,13 +177,7 @@ class ClassFlagModule(ProgramModuleObj):
             return (query_type[:-8] + 'the category "' +
                     str(ClassCategories.objects.get(id=value)) + '"')
         elif 'status' in query_type:
-            statusname = {
-                10: 'Accepted',
-                5: 'Accepted but hidden',
-                0: 'Unreviewed',
-                -10: 'Rejected',
-                -20: 'Cancelled',
-                }[int(value)]
+            statusname = STATUS_CHOICES[int(value)].capitalize()
             return query_type[:-6]+'the status "'+statusname+'"'
         elif 'scheduled' in query_type:
             return query_type
