@@ -77,47 +77,40 @@ function Matrix(
 	    }
 	}
 
-	success = this.api_client.schedule_section(section.id, timeslot_id, room_name)
-	if (!success) {
-	    return false
-	}
+	success = this.api_client.schedule_section(section.id, timeslot_id, room_name, function() {
+	    for(timeslot_index in schedule_timeslots){
+		timeslot_id = schedule_timeslots[timeslot_index]
+		this.getCell(room_name, timeslot_id).addSection(section)
+	    }
 
-	for(timeslot_index in schedule_timeslots){
-	    timeslot_id = schedule_timeslots[timeslot_index]
-	    this.getCell(room_name, timeslot_id).addSection(section)
-	}
+	    //Unschedule from old place
+	    old_assignment = this.schedule_assignments[section.id]
+	    for (timeslot_index in old_assignment.timeslots) {
+		timeslot_id = old_assignment.timeslots[timeslot_index]
+		cell = this.getCell(old_assignment.room_name, timeslot_id)
+		cell.removeSection()
+	    }
 
-	//Unschedule from old place
-	old_assignment = this.schedule_assignments[section.id]
-	for (timeslot_index in old_assignment.timeslots) {
-	    timeslot_id = old_assignment.timeslots[timeslot_index]
-	    cell = this.getCell(old_assignment.room_name, timeslot_id)
-	    cell.removeSection()
-	}
+	    this.schedule_assignments[section.id] = {
+		room_name: room_name,
+		timeslots: schedule_timeslots,
+		id: section.id
+	    }
 
-	this.schedule_assignments[section.id] = {
-	    room_name: room_name,
-	    timeslots: schedule_timeslots,
-	    id: section.id
-	}
-
-	$j("body").trigger("schedule-changed")
-	return true
+	    $j("body").trigger("schedule-changed")
+	}.bind(this))
     }
 
     this.unscheduleSection = function(section){
-	success = this.api_client.unschedule_section(section.id)
-	if (!success){
-	    return
-	}
+	success = this.api_client.unschedule_section(section.id, function(){
+	    assignment = this.schedule_assignments[section.id]
+	    cell = this.getCell(assignment.room_name, assignment.timeslots[0])
+	    this.clearCell(cell)
 
-	assignment = this.schedule_assignments[section.id]
-	cell = this.getCell(assignment.room_name, assignment.timeslots[0])
-	this.clearCell(cell)
+	    this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
 
-	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
-
-	$j("body").trigger("schedule-changed")
+	    $j("body").trigger("schedule-changed")
+        }.bind(this))
     }
 
     this.clearCell = function(cell){
