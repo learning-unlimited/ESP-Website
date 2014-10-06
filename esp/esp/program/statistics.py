@@ -30,13 +30,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.template.loader import render_to_string
 
 from esp.datatree.models import *
 from esp.program.models import Program
-from esp.users.models import ESPUser, ZipCode
 
 """
 This file contains a set of functions used to perform statistics queries

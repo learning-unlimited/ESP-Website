@@ -10,33 +10,46 @@
 from script_setup import *
 
 from esp.program.models import FinancialAidRequest
-from datetime import datetime
-import re
+from esp.accounting.models import FinancialAidGrant
 
 
 # CONFIGURATION
-PROGRAM_ID = 50708  # Splash! 2012
-#  the id of the program in the datatree
+PROGRAM = "Splash! 2013"
 PROGRAM_COST = 40
 
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(program__anchor__id=PROGRAM_ID, approved=None)
+reqs = FinancialAidRequest.objects.filter(done = False, program__name=PROGRAM).exclude(household_income = None, extra_explaination = None)
+
+print reqs.count()
 
 print "New Approvals:"
 approved_any = False
 
-for req in reqs:
-    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
-        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+emails = []
+errors = []
 
-       continue
-    
-    print req.user.email
-    req.approved = datetime.now()
-    req.amount_received = PROGRAM_COST
-    req.amount_needed = 0
-    req.save()
+for req in reqs:
+#    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
+#        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+
+#    if req.household_income is None and req.extra_explaination is None:
+#       continue
+
+    print req.user
+
+    if req.financialaidgrant_set.all().count() != 0 : continue
+
+    e = req.user.email
+    print e
+    emails.append(e)
+    try:
+        f = FinancialAidGrant(request = req, percent = 100)
+        f.save()
+        req.done = True
+        req.save()
+    except:
+        errors.append(req.user)
     approved_any = True
 
 if not approved_any:

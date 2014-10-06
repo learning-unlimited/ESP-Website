@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import datetime
@@ -176,19 +176,6 @@ class ESPErrorMiddleware(object):
 
             # Now we send the email
             mail_admins(subject, message, fail_silently=True)
-
-            # Now we store the error into the database:
-            try:
-                # We're going to 'try' everything
-                from esp.dblog.models import Log
-                new_log = Log(text        = str(exc_info[1]),
-                              extra       = str(request_repr),
-                              stack_trace = str(traceback))
-                new_log.save()
-
-            except:
-                # we just won't do anything if we can't log it...
-                pass
 
         elif isinstance(exception, Http403):
             context = {'error': exc_info[1]}

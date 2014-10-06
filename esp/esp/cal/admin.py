@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.contrib import admin
 from esp.admin import admin_site
@@ -39,8 +39,9 @@ from esp.cal.models import EventType, Event, EmailReminder
 admin_site.register(EventType)
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'program', 'name', 'short_description')
-    list_filter = ('start', 'end')
+    list_display = ('id', 'program', 'name', 'short_description', 'event_type')
+    list_filter = ('program', 'start', 'end', 'event_type')
+    date_hierarchy = 'start'
 
 admin_site.register(Event, EventAdmin)
 

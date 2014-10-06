@@ -30,17 +30,24 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.miniblog.models import AnnouncementLink, Entry, Comment
 
-admin_site.register(AnnouncementLink)
+
+class AnnouncementLinkAdmin(admin.ModelAdmin):
+    list_display= ('category', 'title', 'section', 'highlight_begin', 'highlight_expire')
+    list_filter = ('section','highlight_begin', 'highlight_expire')
+    search_fields=('category', 'title', 'href')
+admin_site.register(AnnouncementLink, AnnouncementLinkAdmin)
 
 class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['content','title']
+    search_fields = ['slug', 'content','title']
+    list_display = ('section', 'slug', 'title', 'highlight_begin', 'highlight_expire')
+    list_filter = ('highlight_begin', 'highlight_expire')
     class Media:
         js = (
             '/media/scripts/admin_miniblog.js',

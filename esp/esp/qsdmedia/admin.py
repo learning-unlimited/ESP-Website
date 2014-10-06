@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
@@ -41,4 +41,5 @@ class MediaAdmin(admin.ModelAdmin):
     list_display = ['owner_type', 'owner_id', 'friendly_name', 'target_file', ]
     list_display_links = ['friendly_name']
     search_fields = ['friendly_name', 'owner_id', ]
+    list_filter = ('owner_type',)
 admin_site.register(Media, MediaAdmin)

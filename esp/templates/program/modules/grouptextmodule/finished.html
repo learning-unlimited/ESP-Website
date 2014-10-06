@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block subsection_name %}Group Texting Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<h2>FINISHED!</h2>
+
+<p>Congratulations!</p>
+
+<p>The texts have been submitted to our SMS provider.</p>
+
+<h2>Send log</h2>
+
+<pre>{{ log }}</pre>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

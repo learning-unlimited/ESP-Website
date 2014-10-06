@@ -30,11 +30,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-from string import Template
-import cStringIO
 import datetime
 import os
 import os.path
@@ -265,15 +263,15 @@ class ThemeController(object):
         Reloads the theme (possibly updating the template overrides with recent
         code changes), then recompiles the customizations.
         """
-        if theme_name is None:
-            theme_name = self.get_current_theme()
         if (customization_name is None) or (customization_name == "None"):
             customization_name = self.get_current_customization()
+        if customization_name == "None":
+            return
+        if theme_name is None:
+            theme_name = self.get_current_theme()
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
         self.update_template_settings()
-        if customization_name == "None":
-            return
         (vars, palette) = self.load_customizations(customization_name)
         if vars:
             self.customize_theme(vars)

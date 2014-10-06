@@ -30,22 +30,33 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-from esp.users.models import ESPUser, StudentInfo, Permission
-from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
-from esp.resources.models import ResourceType
+        
+from esp.accounting.models import LineItemType
+from esp.cal.models import EventType, Event
+from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.qsd.models import QuasiStaticData
+from esp.resources.models import Resource, ResourceType
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, Permission
+from esp.web.models import NavBarCategory
 
-from django.contrib.auth.models import User, Group
-import datetime, random, hashlib
-
+from django.contrib.auth.models import Group
 from django.test.client import Client
-from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from django import forms
 
+from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+from esp.program.forms import ProgramCreationForm
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.setup import prepare_program, commit_program
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
+from datetime import datetime, timedelta
+from decimal import Decimal
+import hashlib
 import numpy
 import random
 import re
@@ -53,7 +64,6 @@ import unicodedata
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
-        import random
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
@@ -219,8 +229,6 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
     
     def setUp(self):
-        from esp.users.models import ESPUser
-
         #create Groups for userroles
         user_role_setup()
 
@@ -241,15 +249,6 @@ class ProgramHappenTest(TestCase):
 
     def makeprogram(self):
         """ Test program creation through the web form. """
-        from esp.users.models import ESPUser
-        from esp.program.models import Program, ProgramModule, ClassCategories
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.accounting.models import LineItemType
-        from decimal import Decimal
-        # Imports for the HttpRequest hack
-        from esp.program.views import newprogram
-        from django.http import HttpRequest
-        
         # Make stuff that a program needs
         ClassCategories.objects.create(symbol='X', category='Everything')
         ClassCategories.objects.create(symbol='N', category='Nothing')
@@ -312,18 +311,13 @@ class ProgramHappenTest(TestCase):
 
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
-        from esp.cal.models import EventType, Event
-        from esp.resources.models import Resource, ResourceType, ResourceAssignment
-        from esp.program.controllers.classreg import get_custom_fields
-        from django import forms
-        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
         self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
         
-        timeslot_type = EventType.objects.create(description='Class Time Block')
+        timeslot_type = EventType.get_from_desc('Class Time Block')
         now = datetime.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
             start=now, end=now+timedelta(0,3600), event_type=timeslot_type )
@@ -431,10 +425,6 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
-        from esp.users.models import ContactInfo, StudentInfo
-        from esp.program.models import RegistrationProfile, StudentRegistration
-        from datetime import datetime, timedelta
-
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
@@ -500,19 +490,7 @@ class ProgramFrameworkTest(TestCase):
     """
     
     def setUp(self, *args, **kwargs):
-        from esp.users.models import ESPUser
-        from esp.cal.models import Event, EventType
-        from esp.resources.models import Resource, ResourceType
-        from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
-        from esp.program.setup import prepare_program, commit_program
-        from esp.program.forms import ProgramCreationForm
-        from esp.qsd.models import QuasiStaticData
-        from esp.web.models import NavBarCategory
-        from datetime import datetime, timedelta
-        from esp.program.modules.models import install as program_modules_install
-
         user_role_setup()
-        program_modules_install()
         
         #   Default parameters
         settings = {'num_timeslots': 3,
@@ -620,7 +598,7 @@ class ProgramFrameworkTest(TestCase):
         self.program = new_prog
 
         #   Create timeblocks and resources
-        self.event_type, created = EventType.objects.get_or_create(description='Class Time Block')
+        self.event_type = EventType.get_from_desc('Class Time Block')
         for i in range(settings['num_timeslots']):
             start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=settings['timeslot_length'])
@@ -705,9 +683,6 @@ class ProgramFrameworkTest(TestCase):
     # Helper function to create another program in the past
     # Does not get called by default, but subclasses can call it
     def create_past_program(self):
-        from esp.program.models import ProgramModule
-        from esp.program.forms import ProgramCreationForm
-        from esp.program.setup import prepare_program, commit_program
         # Make a program
         prog_form_values = {
                 'term': '1111_Spring',
@@ -765,11 +740,6 @@ class ScheduleMapTest(ProgramFrameworkTest):
         properly reflected in their schedule map.
     """
     def runTest(self):
-        from esp.program.models import ScheduleMap, ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        
-        import random
-        
         def occupied_slots(map):
             result = []
             for key in map:
@@ -832,7 +802,6 @@ class BooleanLogicTest(TestCase):
         working correctly.
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression
         #   Create a logic expression with default values
         exp, created = BooleanExpression.objects.get_or_create(label='bltestexp')
         a = exp.add_token('1')
@@ -864,9 +833,6 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
            between the results of these tests. 
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
-        from esp.program.modules.base import ProgramModuleObj
-        
         #   Initialize
         student = self.students[0]
         program = self.program
@@ -990,10 +956,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
-        from esp.program.models import ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
-    
         #   Make all default modules non-required
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj
@@ -1078,6 +1040,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
         self.priority_rts=[self.priority_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 1
+        scrmi.save()
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1146,7 +1111,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.save_assignments()
 
         #   Get stats
-        stats = lotteryController.compute_stats()
+        stats = lotteryController.compute_stats(display=False)
 
         #   Check stats for correctness
         #   - Some basic stats
@@ -1180,6 +1145,10 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg = LunchConstraintGenerator(self.program, [lunch_timeslot])
         lcg.generate_all_constraints()
 
+        lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+        lunch_sec = lunch_sec[0]
+
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
@@ -1188,23 +1157,18 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
-            lunch_sec = lunch_sec[0]
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
 
             self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
-        ts_copy = list(self.timeslots)[:]
-        lt1 = random.choice(ts_copy)
-        ts_copy.remove(lt1)
-        lt2 = random.choice(ts_copy)
-        ts_copy.remove(lt2)
-        lt3 = random.choice(ts_copy)
-        lcg = LunchConstraintGenerator(self.program, [lt1, lt2, lt3])
+        lunch_timeslots = random.sample(self.timeslots, 3)
+        lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
+
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
 
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
@@ -1214,8 +1178,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
 
             lunch_free = False
@@ -1224,11 +1186,20 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     lunch_free = True
                     break
             self.failUnless(lunch_free, "No lunch sections free for a student!")
+
+    def testNoLunchConstraint(self):
+        # Make sure LunchConstraintGenerator won't crash with no lunch timeslots
+        # (needed in case a multi-day program has lunch on some days but not others)
+        lcg = LunchConstraintGenerator(self.program, [])
+        lcg.generate_all_constraints()
+
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
     
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
-        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
-        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/3')
         self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         scrmi.priority_limit = 3

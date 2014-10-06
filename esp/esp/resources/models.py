@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 """ Models for Resources application """
@@ -395,9 +395,34 @@ class ResourceAssignment(models.Model):
     
 def install():
     #   Create default resource types.
-    ResourceType.objects.get_or_create(name='Classroom',description='Type of classroom',attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space')
-    ResourceType.objects.get_or_create(name='A/V',description='A/V equipment',attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player')
-    ResourceType.objects.get_or_create(name='Computer[s]',description='Computer[s]',attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students')
-    ResourceType.objects.get_or_create(name='Seating',description='Seating arrangement',attributes_pickled="Don't care|Fixed seats|Movable desks")
-    ResourceType.objects.get_or_create(name='Light control',description='Light control',attributes_pickled="Don't care|Darkenable")
-    
+    print "Installing esp.resources initial data..."
+    if not ResourceType.objects.filter(name='Classroom').exists():
+        ResourceType.objects.create(
+            name='Classroom',
+            description='Type of classroom',
+            attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space',
+        )
+    if not ResourceType.objects.filter(name='A/V').exists():
+        ResourceType.objects.create(
+            name='A/V',
+            description='A/V equipment',
+            attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
+        )
+    if not ResourceType.objects.filter(name='Computer[s]').exists():
+        ResourceType.objects.create(
+            name='Computer[s]',
+            description='Computer[s]',
+            attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
+        )
+    if not ResourceType.objects.filter(name='Seating').exists():
+        ResourceType.objects.create(
+            name='Seating',
+            description='Seating arrangement',
+            attributes_pickled="Don't care|Fixed seats|Movable desks",
+        )
+    if not ResourceType.objects.filter(name='Light control').exists():
+        ResourceType.objects.create(
+            name='Light control',
+            description='Light control',
+            attributes_pickled="Don't care|Darkenable",
+        )

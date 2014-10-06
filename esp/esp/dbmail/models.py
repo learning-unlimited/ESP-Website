@@ -30,15 +30,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 import sys
 
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth.models import User
 from esp.cache import cache_function
-from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
@@ -60,8 +58,9 @@ from south.models import MigrationHistory
 
 
 
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
+              debug=False,
               *args, **kwargs):
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
@@ -71,12 +70,12 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     else:
         new_list = [ x for x in recipient_list ]
     from django.core.mail import EmailMessage #send_mail as django_send_mail
-    print "Sent mail to %s" % str(new_list)
+    if debug: print "Sent mail to %s" % str(new_list)
     
     #   Get whatever type of e-mail connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
-    msg = EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers)
+    msg = EmailMessage(subject, message, from_email, new_list, bcc=bcc, connection=connection, headers=extra_headers)
     
     #   Detect HTML tags in message and change content-type if they are found
     if '<html>' in message:
@@ -102,17 +101,8 @@ def can_process_and_send():
     """
     Returns True if the dbmail cronmail script is allowed to process and send
     emails, and False otherwise.
-
-    Currently, this function asserts that the expire_unsent_emails migration
-    has been run. If it hasn't, it is possible that there are old, unsent
-    messages from before 6e350a3735 that should not be sent because they are
-    out-of-date. This requirement can be removed after the full deployment of
-    stable release 4.
     """
-    now = datetime.now()
-    return MigrationHistory.objects.filter(app_name='dbmail',
-                                migration__contains='expire_unsent_emails',
-                                applied__lt=now).exists()
+    return True
 can_process_and_send.depend_on_model(MigrationHistory)
 
 
@@ -295,7 +285,7 @@ class MessageRequest(models.Model):
                 'The error message is: "%s".' % \
                 (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
 
-    def process(self, processoverride = False):
+    def process(self, processoverride=False, debug=False):
         """ Process this request...if it's an email, create all the necessary email requests. """
 
         # if we already processed, return
@@ -351,7 +341,7 @@ class MessageRequest(models.Model):
 
                 newemailrequest.save()
 
-        print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
+        if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
 
     class Admin:
@@ -372,7 +362,7 @@ class TextOfEmail(models.Model):
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
-    def send(self):
+    def send(self, debug=False):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
 
         parent_request = None
@@ -396,7 +386,8 @@ class TextOfEmail(models.Model):
                   self.send_from,
                   self.send_to,
                   False,
-                  extra_headers=extra_headers)
+                  extra_headers=extra_headers,
+                  debug=debug)
 
         self.sent = now
         self.save()
@@ -526,6 +517,9 @@ class MessageVars(models.Model):
         else:
             return result
 
+    def __unicode__(self):
+        return "Message Variables for %s" % self.messagerequest
+    
     class Meta:
         verbose_name_plural = 'Message Variables'
 
@@ -541,9 +535,6 @@ class EmailRequest(models.Model):
 
     class Admin:
         pass
-
-
-
 
 class EmailList(models.Model):
     """

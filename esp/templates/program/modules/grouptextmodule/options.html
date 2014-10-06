@@ -1,0 +1,60 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block subsection_name %}Group Texting Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+var lists = [
+ {% for dblist in lists %}['{{dblist.id|addslashes}}', '{{dblist.description|addslashes}}']{% if not forloop.last %},{% endif %}
+ {% endfor %}];
+
+var TextMessage = {
+  messageInput: null,
+  lengthRemainingText: null,
+  onMessageChange: function() {
+    if(!TextMessage.messageInput) {
+      TextMessage.messageInput = document.getElementById("message_input");
+    }
+    if(!TextMessage.lengthRemainingText) {
+      TextMessage.lengthRemainingText = document.getElementById("length_remaining");
+    }
+    var len = TextMessage.messageInput.textLength;
+    var remainingCharacters = 160 - len;
+    TextMessage.lengthRemainingText.textContent = remainingCharacters+" characters remaining";
+  }
+};
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+#length_remaining {
+  color: #777;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Group Texting Portal</h1>
+
+<h2>Step 2:</h2>
+<p>You have selected {{ num_users }} recipients. We estimate that sending this message with your current configuration will take {{ est_time }} seconds.  Enter the message you wish to send below.</p>
+
+<form action="/manage/{{ program.getUrlBase }}/grouptextfinal?filterid={{ filterid }}" method="post" name="grouptext">
+<textarea name="message" id="message_input" cols="40" rows="4" oninput="TextMessage.onMessageChange();"></textarea>
+<p id="length_remaining">160 characters remaining.</p>
+<input type="submit" value="Send your message!" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

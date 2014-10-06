@@ -30,11 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from collections import defaultdict
 
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
@@ -64,7 +64,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
 
-class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
+class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
@@ -78,18 +78,19 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "inline_template": "listclasses.html",
             }
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return {'crmi': module_ext.ClassRegModuleInfo}
 
 
     def prepare(self, context={}):
-        """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
-            since everything else can be gotten from hooks. """
+        """ prepare returns the context for the main teacherreg page. """
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
-        context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self # ...
+        context['can_create'] = self.any_reg_is_open()
+        context['can_create_class'] = self.class_reg_is_open()
+        context['can_create_open_class'] = self.open_class_reg_is_open()
+        context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
@@ -194,11 +195,33 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if len(extension) > 0:
             return tmpModule.deadline_met(extension)
         else:
-            return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
+            return (self.any_reg_is_open()
+                    or tmpModule.deadline_met('/Classes/Edit'))
+
+    def class_reg_is_open(self):
+        return self.deadline_met('/Classes/Create/Class')
+
+    def open_class_reg_is_open(self):
+        return (self.crmi.open_class_registration
+                and self.deadline_met('/Classes/Create/OpenClass'))
+
+    reg_is_open_methods = defaultdict(
+        (lambda: (lambda self: False)),
+        {
+            'Class': class_reg_is_open,
+            'OpenClass': open_class_reg_is_open,
+        },
+    )
+
+    def reg_is_open(self, reg_type='Class'):
+        return self.reg_is_open_methods[reg_type](self)
+
+    def any_reg_is_open(self):
+        return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
 
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program.id == self.program.id ]
+                if cls.parent_program_id == self.program.id ]
 
     @aux_call
     @needs_teacher
@@ -645,13 +668,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @main_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
@@ -677,7 +700,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def copyclasses(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
@@ -687,7 +710,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @user_passes_test(
+        open_class_reg_is_open,
+        (
+            'the deadline Teacher/Classes/Create/OpenClass '
+            'or the setting ClassRegModuleInfo.open_class_registration were'
+        ),
+    )
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
 
@@ -784,7 +813,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
@@ -884,8 +913,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['addoredit'] = 'Edit'
 
         context['classes'] = {
-            0: {'type': 'class', 'link': 'makeaclass'}, 
-            1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
+            0: {
+                'type': 'class',
+                'link': 'makeaclass',
+                'reg_open': self.class_reg_is_open(),
+            },
+            1: {
+                'type': self.program.open_class_category.category,
+                'link': 'makeopenclass',
+                'reg_open': self.open_class_reg_is_open(),
+            }
         }
         if action == 'create' or action == 'edit':
             context['isopenclass'] = 0
@@ -988,5 +1025,5 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return 'No classes.'
 
     class Meta:
-        abstract = True
+        proxy = True
 

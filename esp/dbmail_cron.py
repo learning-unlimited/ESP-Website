@@ -2,7 +2,17 @@
 
 import sys
 import os
+import fcntl
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+
+# Forces the evaluation of the Django settings. This otherwise won't happen
+# until later, because of lazy evaluation.
+from django.conf import settings
+dir(settings)
+
+# This import must be after the evaluation of the Django settings, because
+# esp.settings modifies tempfile to avoid collisions between sites.
+import tempfile
 
 import os.path
 project = os.path.dirname(os.path.realpath(__file__))
@@ -24,8 +34,22 @@ except IOError, e:
     if os.environ.get('VIRTUAL_ENV') is None:
         raise e
 
+# lock to ensure only one cron instance runs at a time
+lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
+lock_file_handle = open(lock_file_path, 'w')
+try:
+    fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except IOError:
+    # another instance has the lock
+    sys.exit(0)
+
 from esp import cache_loader
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
-process_messages()
-send_email_requests()
+process_messages(debug=True)
+send_email_requests(debug=True)
+
+# Release the lock when message sending is complete.
+fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+lock_file_handle.close()
+

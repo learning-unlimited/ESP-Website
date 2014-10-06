@@ -30,8 +30,8 @@ except IOError, e:
     if os.environ.get('VIRTUAL_ENV') is None:
         raise e
 
-import django.core.handlers.wsgi
-django_application = django.core.handlers.wsgi.WSGIHandler()
+import django.core.wsgi
+django_application = django.core.wsgi.get_wsgi_application()
 
 from django.conf import settings
 

@@ -1,6 +1,6 @@
 from django import forms
 from esp.db.forms import AjaxForeignKeyNewformField
-from esp.users.models import ESPUser, User
+from esp.users.models import ESPUser
 
 class UserMergeForm(forms.Form):
 	absorber = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='absorber', label='Absorber',

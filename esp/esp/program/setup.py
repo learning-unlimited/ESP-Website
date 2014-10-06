@@ -30,12 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.datatree.models import *
-from esp.users.models import ESPUser, User, Permission
-from esp.program.Lists_ClassCategories import populate as populate_LCC
-from esp.program.models import Program, ProgramModule
+from esp.users.models import ESPUser, Permission
+from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
 from django.contrib.auth.models import Group
 
@@ -61,13 +60,6 @@ def prepare_program(program, data):
     if ESPUser.onsite_user():
         perms += [('Onsite', ESPUser.onsite_user(), None, None)]
     
-    json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
-    # If the JSON Data Module isn't already in the list of selected
-    # program modules, add it. The JSON Data Module is a dependency for
-    # many commonly-used modules, so it is important that it be enbabled
-    # by default for all new programs.
-    if json_module.id not in data['program_modules']:
-        data['program_modules'].append(json_module.id)
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
        
     return perms, modules

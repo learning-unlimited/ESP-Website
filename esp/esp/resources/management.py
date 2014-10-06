@@ -31,21 +31,16 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.db.models import signals 
 from esp.resources import models as resources
 from esp.utils.custom_cache import custom_cache
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    if app == resources and not have_already_installed:
+    if app == resources:
         with custom_cache():
-            have_already_installed = True
-            print "Installing esp.resources initial data..."
             resources.install()
         
 signals.post_syncdb.connect(post_syncdb)
