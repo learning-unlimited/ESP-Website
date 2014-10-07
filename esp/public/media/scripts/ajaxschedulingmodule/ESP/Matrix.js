@@ -67,50 +67,72 @@ function Matrix(
 	return this.cells[room_name][this.timeslots[timeslot_id].order]
     }
 
-    // scheduling sections
-    this.scheduleSection = function(section, room_name, schedule_timeslots){
-	//validation
+    this.validateAssignment = function(section, room_name, schedule_timeslots){
 	for(timeslot_index in schedule_timeslots){
 	    timeslot_id = schedule_timeslots[timeslot_index]
 	    if (this.getCell(room_name, timeslot_id).section != null){
 		return false
 	    }
 	}
+	return true
+    }
 
-	success = this.api_client.schedule_section(section.id, timeslot_id, room_name, function() {
-	    for(timeslot_index in schedule_timeslots){
-		timeslot_id = schedule_timeslots[timeslot_index]
-		this.getCell(room_name, timeslot_id).addSection(section)
-	    }
+    // scheduling sections
+    this.scheduleSection = function(section, room_name, schedule_timeslots){
+	if (!this.validateAssignment(section, room_name, schedule_timeslots)){
+	    return
+	}
 
-	    //Unschedule from old place
-	    old_assignment = this.schedule_assignments[section.id]
-	    for (timeslot_index in old_assignment.timeslots) {
-		timeslot_id = old_assignment.timeslots[timeslot_index]
-		cell = this.getCell(old_assignment.room_name, timeslot_id)
-		cell.removeSection()
-	    }
+	this.api_client.schedule_section(
+	    section.id, 
+	    schedule_timeslots, 
+	    room_name, 
+	    function() {
+		this.scheduleSectionLocal(section, room_name, schedule_timeslots)
+	    }.bind(this)
+	)
+    }
 
-	    this.schedule_assignments[section.id] = {
-		room_name: room_name,
-		timeslots: schedule_timeslots,
-		id: section.id
-	    }
+    this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
+	for(timeslot_index in schedule_timeslots){
+	    timeslot_id = schedule_timeslots[timeslot_index]
+	    this.getCell(room_name, timeslot_id).addSection(section)
+	}
 
-	    $j("body").trigger("schedule-changed")
-	}.bind(this))
+	//Unschedule from old place
+	old_assignment = this.schedule_assignments[section.id]
+	for (timeslot_index in old_assignment.timeslots) {
+	    timeslot_id = old_assignment.timeslots[timeslot_index]
+	    cell = this.getCell(old_assignment.room_name, timeslot_id)
+	    cell.removeSection()
+	}
+
+	this.schedule_assignments[section.id] = {
+	    room_name: room_name,
+	    timeslots: schedule_timeslots,
+	    id: section.id
+	}
+
+	$j("body").trigger("schedule-changed")
     }
 
     this.unscheduleSection = function(section){
-	success = this.api_client.unschedule_section(section.id, function(){
-	    assignment = this.schedule_assignments[section.id]
-	    cell = this.getCell(assignment.room_name, assignment.timeslots[0])
-	    this.clearCell(cell)
+	this.api_client.unschedule_section(
+	    section.id, 
+	    function(){ 
+		this.unscheduleSectionLocal(section) 
+	    }
+	)
+    }
 
-	    this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
+    this.unscheduleSectionLocal = function(section) {
+	assignment = this.schedule_assignments[section.id]
+	cell = this.getCell(assignment.room_name, assignment.timeslots[0])
+	this.clearCell(cell)
 
-	    $j("body").trigger("schedule-changed")
-        }.bind(this))
+	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
+
+	$j("body").trigger("schedule-changed")
     }
 
     this.clearCell = function(cell){
