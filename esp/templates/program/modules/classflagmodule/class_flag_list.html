@@ -1,7 +1,7 @@
 <div class="class-flags">
 {% if flag_types %}
     <h3>Manage class flags</h3>
-    <div class="class-flag-list">
+    <div class="class-flag-list fqr-class">
         {% for flag in class.flags.all %}
             {% include "program/modules/classflagmodule/flag_detail.html" %}
         {% endfor %}
