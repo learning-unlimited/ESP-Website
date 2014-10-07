@@ -30,18 +30,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
@@ -53,12 +52,10 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
-from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member

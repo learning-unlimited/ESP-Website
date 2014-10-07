@@ -29,16 +29,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+import functools
 import simplejson as json
 
 from django import forms, dispatch
 from django.conf import settings
-from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
+from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.forms import USStateSelect
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
@@ -48,8 +49,9 @@ from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import signals
 from django.db.models.base import ModelState
+from django.db.models.manager import Manager
 from django.db.models.query import Q
-from django.http import HttpRequest, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
@@ -64,7 +66,6 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
-from esp.db.models.prepared import ProcedureManager
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from esp.tagdict.models import Tag
@@ -98,6 +99,7 @@ def user_get_key(user):
         return str(user.id)
 
 def admin_required(func):
+    @functools.wraps(func)
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -133,7 +135,7 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(ProcedureManager):
+class ESPUserManager(Manager):
     pass
 
 def get_studentreg_model():
@@ -402,7 +404,7 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
-        from esp.program.models import ClassSubject, Program # Need the Class object.
+        from esp.program.models import Program # Need the Class object.
         if type(program) != Program: # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
@@ -415,8 +417,6 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
-        from esp.program.models import ClassSubject # Need the Class object.
-        
         return self.classsubject_set.all()
     getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
@@ -556,8 +556,6 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        from esp.resources.models import Resource, ResourceType
-        
         #   Because the timeslot has an anchor, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
@@ -679,8 +677,6 @@ class ESPUser(User, AnonymousUser):
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
-        from esp.program.models import Program, RegistrationProfile
-        
         if len(timeslots) < 1:
             return 0
         
@@ -760,9 +756,24 @@ class ESPUser(User, AnonymousUser):
             return False
     hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
-    def isOnsite(self, program = None):
-        return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-            Permission.user_has_perm(self, "Onsite", program=program)
+    def isOnsite(self, program=None):
+        """Determine if the user is an authorized onsite user for the program.
+
+        :param program:
+            Check for permission to access onsite for this program.
+            If None, check for permission to access onsite for all programs.
+        :type program:
+            `Program` or None
+        """
+        return (
+            (getattr(self, 'onsite_local', False) is True) or
+            Permission.user_has_perm(
+                self,
+                'Onsite',
+                program=program,
+                program_is_none_implies_all=True,
+            )
+        )
 
     def recoverPassword(self):
         # generate the ticket, send the email.
@@ -797,18 +808,26 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
-    def isAdministrator(self, program = None):
-        #this method is in an intermediate state
-        #the underlying permission system changed, but not that actual calls
-        #to this
+    def isAdministrator(self, program=None):
+        """Determine if the user is an admin for the program.
+
+        :param program:
+            Check for admin privileges for this program.
+            If None, check for global admin privileges.
+        :type program:
+            `Program` or None
+        """
         if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
+        # Unexpectedly and unfortunately, program__in=[None, program] doesn't
+        # find objects with program=None.
+        qprogram = Q(program=None) | Q(program=program)
         return Permission.objects.filter(
-                        quser & Permission.is_valid_qobject(),
+                        quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
-                        program__in=[None, program]).exists()
+        ).exists()
     isAdmin = isAdministrator
 
     @cache_function
@@ -2088,8 +2107,6 @@ class DBList(object):
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
-        from esp.users.models import User
-
         cache_id = urlencode('DBListCount: %s' % (self.key))
 
         retVal   = cache.get(cache_id) # get the cached result
@@ -2229,64 +2246,70 @@ class Permission(ExpirableModel):
                              help_text="Apply this permission to an entire user role (can be blank).")
 
     #For now, we'll use plain text for a description of what permission it is
-    PERMISSION_CHOICES=(
+    PERMISSION_CHOICES = (
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
-        ("GradeOverride","Ignore grade ranges for studentreg"),
+        ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("Student Deadlines", (
-                ("Student", "Basic student access"),
-                ("Student/OverrideFull", "Register for a full program"),
-                ("Student/All", "All student deadlines"),
-                ("Student/Applications","Apply for classes"),
-                ("Student/Catalog","View the catalog"),
-                ("Student/Classes","Classes"),
-                ("Student/Classes/All","Classes/All"),
-                ("Student/Classes/OneClass","Class/OneClass"),
-                ("Student/Classes/Lottery","Enter the lottery"),
-                ("Student/Classes/Lottery/View","View lottery results"),
-                ("Student/ExtraCosts","Extra costs page"),
-                ("Student/MainPage","Registration mainpage"),
-                ("Student/Confirm","Confirm registration"),
-                ("Student/Cancel","Cancel registration"),
-                ("Student/Payment","Pay for a program"),
-                ("Student/Profile","Set profile info"),
-                ("Student/Survey", "Access to survey"),
-                ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
-                ("Student/Finaid", "Access to financial aid application"),
-                )
-         ),
+            ("Student", "Basic student access"),
+            ("Student/OverrideFull", "Register for a full program"),
+            ("Student/All", "All student deadlines"),
+            ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
+            ("Student/Classes", "Classes"),
+            ("Student/Classes/OneClass", "Classes/OneClass"),
+            ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/Lottery/View", "View lottery results"),
+            ("Student/ExtraCosts", "Extra costs page"),
+            ("Student/MainPage", "Registration mainpage"),
+            ("Student/Confirm", "Confirm registration"),
+            ("Student/Cancel", "Cancel registration"),
+            ("Student/Payment", "Pay for a program"),
+            ("Student/Profile", "Set profile info"),
+            ("Student/Survey", "Access to survey"),
+            ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
+            ("Student/Finaid", "Access to financial aid application"),
+        )),
         ("Teacher Deadlines", (
-                ("Teacher", "Basic teacher access"),
-                ("Teacher/All", "All teacher deadlines"),
-                ("Teacher/Acknowledgement", "Teacher acknowledgement"),
-                ("Teacher/AppReview", "Review students' apps"),
-                ("Teacher/Availability", "Set availability"),
-                ("Teacher/Catalog","Catalog"),
-                ("Teacher/Classes", "Classes"),
-                ("Teacher/Classes/All", "Class/All"),
-                ("Teacher/Classes/View", "Classes/View"),
-                ("Teacher/Classes/Edit", "Classes/Edit"),
-                ("Teacher/Classes/Create","Classes/Create"),
-                ("Teacher/Classes/SelectStudents","Classes/SelectStudents"),
-                ("Teacher/Quiz", "Teacher quiz"),
-                ("Teacher/MainPage","Registration mainpage"),
-                ("Teacher/Survey","Teacher Survey"),
-                ("Teacher/Profile","Set profile info"),
-                ("Teacher/Survey", "Access to survey"),
-                )
-         ),
+            ("Teacher", "Basic teacher access"),
+            ("Teacher/All", "All teacher deadlines"),
+            ("Teacher/Acknowledgement", "Teacher acknowledgement"),
+            ("Teacher/AppReview", "Review students' apps"),
+            ("Teacher/Availability", "Set availability"),
+            ("Teacher/Catalog", "Catalog"),
+            ("Teacher/Classes", "Classes"),
+            ("Teacher/Classes/All", "Classes/All"),
+            ("Teacher/Classes/View", "Classes/View"),
+            ("Teacher/Classes/Edit", "Classes/Edit"),
+            ("Teacher/Classes/Create", "Create classes of all types"),
+            ("Teacher/Classes/Create/Class", "Create standard classes"),
+            ("Teacher/Classes/Create/OpenClass", "Create open classes"),
+            ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
+            ("Teacher/Quiz", "Teacher quiz"),
+            ("Teacher/MainPage", "Registration mainpage"),
+            ("Teacher/Survey", "Teacher Survey"),
+            ("Teacher/Profile", "Set profile info"),
+            ("Teacher/Survey", "Access to survey"),
+        )),
     )
+
+    PERMISSION_CHOICES_FLAT = flatten(PERMISSION_CHOICES)
+
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
      
 
-    implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
-                                  if x!="Administer"],
-                    "Student/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Student")],
-                    "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Teacher")],
-                    }
+    implications = {
+        "Administer": PERMISSION_CHOICES_FLAT,
+        "Student/All": [x for x in PERMISSION_CHOICES_FLAT
+                          if x.startswith("Student")],
+        "Teacher/All": [x for x in PERMISSION_CHOICES_FLAT
+                          if x.startswith("Teacher")],
+        "Teacher/Classes/All": [x for x in PERMISSION_CHOICES_FLAT
+                                  if x.startswith("Teacher/Classes")],
+        "Teacher/Classes/Create": [x for x in PERMISSION_CHOICES_FLAT
+                                     if x.startswith("Teacher/Classes/Create")],
+    }
     #i'm not really sure if implications is a good idea
     #use sparingly
 
@@ -2302,19 +2325,71 @@ class Permission(ExpirableModel):
         app_label = 'users'
 
     @classmethod
-    def user_has_perm(self, user, name, program=None, when=None):
+    def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
+        """Determine if the user has the specified permission on the program.
+
+        :param user:
+            Check the permissions assigned to this user.
+        :type user:
+            `ESPUser`
+        :param name:
+            The unique identifier of the permission identifier to check for.
+            Must be in PERMISSION_CHOICES_FLAT.
+        :type name:
+            `str`
+        :param program:
+            Check for permission for `name` on this program.
+            If program is None, check only for Permission objects with
+            program=None.
+            If program_is_none_implies_all is False, check only for Permission
+            objects with program=program.
+            If program_is_none_implies_all is True, check for Permission
+            objects with program=program or program=None.
+        :type program:
+            `Program` or None
+        :param when:
+            Check permissions as of this point in time.
+            If None, default to datetime.datetime.now().
+        :type when:
+            `datetime.datetime` or None
+        :param program_is_none_implies_all:
+            If True, treat Permission objects with program=None as if they are
+            global across all programs. Return True if the user has a
+            Permission object with program=program or with program=None.
+            If False, do not treat Permission objects with program=None as if
+            they are global across all programs. Only return True if the user
+            has a Permission object with program=program.
+            The default behavior is that permissions are not globally
+            applicable. Only special permissions that are not in
+            deadline_types, like Administer and Onsite, can be granted
+            globally on all programs. When checking for these special
+            permissions, callers should pass True for this param.
+            If name is in deadline_types, set this param to False,
+            regardless of the original value.
+        :type program_is_none_implies_all:
+            `bool`
+        :return:
+            True if the user has the specified permission, else False.
+        :rtype:
+            `bool`
+        """
         if user.isAdministrator(program=program):
             return True
+        if name in cls.deadline_types:
+            program_is_none_implies_all = False
         perms=[name]
-        for k,v in self.implications.items():
+        for k,v in cls.implications.items():
             if name in v: perms.append(k)
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
-        return initial_qset.filter(self.is_valid_qobject()).exists()
+        qprogram = Q(program=program)
+        if program_is_none_implies_all:
+            qprogram |= Q(program=None)
+        initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
+        return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
     
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
 
     @classmethod
     def deadlines(cls):
@@ -2427,11 +2502,13 @@ def install():
     """
     Installs some initial users and permissions.
     """    
+    print "Installing esp.users initial data..."
+    from esp.users.views.make_admin import make_user_admin
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
-        user.makeRole('Administrator')
+        make_user_admin(user)
 
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():

@@ -1,8 +1,9 @@
 import sys
 from twilio.rest import TwilioRestClient
 
+# TODO(jmoldow): Use Python built-in argparse module.
 if len(sys.argv) < 6:
-  sys.stderr.write("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>\n" % sys.argv[0])
+  print ("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0])
   exit(1)
 
 account_sid = sys.argv[1]

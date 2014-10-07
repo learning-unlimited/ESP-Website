@@ -31,14 +31,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 
 from django.db.models import signals 
 from esp.users import models as UsersModel
 from esp.utils.custom_cache import custom_cache
-from esp.utils.migration import missing_db_table
 from esp.utils.migration import db_table_exists
 
 from django.db import connection
@@ -46,19 +45,13 @@ from django.conf import settings
 
 import os.path
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    
-    if (not have_already_installed) and app == UsersModel:
+    if app == UsersModel:
         #   Check that required tables exist.
         if not db_table_exists('program_program'):
             return
         #   Run installation
         with custom_cache():
-            have_already_installed = True
-            print "Installing esp.users initial data..."
             UsersModel.install()
             print 'Adding PostgreSQL extensions...'
             with open(os.path.join(settings.PROJECT_ROOT, "esp/users/sql-extensions.sql")) as f:

@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import random
 import urllib
@@ -22,7 +21,6 @@ from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser

@@ -15,7 +15,7 @@
     {{ block.super }}
     {% include "load_ajax_scripts.html" %}
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
-    <script type="text/javascript" src="/media/scripts/flag-edit.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -37,7 +37,7 @@
         <p align="center"><div class="info">If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div></p>
     {% end_inline_program_qsd_block %}
 
-    {% if open_class_registration and addoredit == 'Add' %}
+    {% if otherclass.reg_open and addoredit == 'Add' %}
     <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
     {% endif %}
 {% endif %}
