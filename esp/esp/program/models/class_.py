@@ -95,6 +95,8 @@ STATUS_CHOICES = (
         (ACCEPTED, "accepted"),
         )
 
+STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
+
 OPEN = 0
 CLOSED = 10
 
