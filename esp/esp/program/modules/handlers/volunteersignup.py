@@ -39,7 +39,7 @@ from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser, AnonymousUser
 from django.db.models.query import Q
 
-class VolunteerSignup(ProgramModuleObj, CoreModule):
+class VolunteerSignup(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
