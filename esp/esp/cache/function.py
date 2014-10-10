@@ -65,6 +65,9 @@ class ArgCacheDecorator(ArgCache):
 
         super(ArgCacheDecorator, self).__init__(name=name, params=params, *args, **kwargs)
 
+    # TODO: this signature may break if we have a kwarg named `self`
+    # (same applies to __call__ below)
+    # for now... assume this doesn't happen
     def arg_list_from(self, *args, **kwargs):
         """ Normalizes arguments to get an arg_list. """
         callargs = inspect.getcallargs(self.func, *args, **kwargs)
