@@ -10,8 +10,29 @@ Changelog
 Stripe credit card module
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+LU is switching credit card processors from First Data to Stripe; Stripe offers a
+more modern API, and also does not charge monthly fees.
+
+The front-end of this module is similar to the other credit card modules.
+The STRIPE_CONFIG settings should be configured for the module to interact with
+Stripe API servers.
+
+After submitting credit card information form, the data will be submitted directly
+to Stripe servers. The user will then send a Stripe token variable back to
+ESP-Website, which will be used to create a Stripe charge object. If invalid credit
+card information is submitted, Stripe will redirect back to website with error
+field set rather than the token.
+
 Group texting with Twilio
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The new Twilio group texting module enables mass texting messages to users who
+have opted to receive text messages, under the same filtering constraints
+available in the e-mail communications panel. Currently the only supported
+back-end is Twilio, so a Twilio account is needed and Twilio configuration
+options need to be set.
+
+We expect that this will be primarily used for emergency notification situations.
 
 Student applications module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,6 +66,10 @@ registration for open classes.
 
 Custom Javascript
 ~~~~~~~~~~~~~~~~~
+
+ADDITIONAL_TEMPLATE_SCRIPTS in django_settings.py can be configured to add
+arbitrary HTML code to the bottom of every page. The intended use case is for
+including JavaScript for analytics or similar tools.
 
 Teacher bio privacy setting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
