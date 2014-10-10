@@ -13,8 +13,11 @@ describe("ApiClient", function(){
 	it("makes an ajax request", function(){
 	    spyOn(a, "send_request")
 	    var callback_function = function(){}
+	    var errorReporter_function = function(){}
 	    
-	    a.schedule_section(1234, 1, "my-room", callback_function)
+	    a.schedule_section(1234, 1, "my-room",
+			       callback_function,
+			       errorReporter_function)
 
 	    expect(a.send_request).toHaveBeenCalledWith(
 		{
@@ -23,7 +26,8 @@ describe("ApiClient", function(){
 		    cls: 1234,
 		    block_room_assignments: '1,my-room',
 		}, 
-		callback_function
+		callback_function,
+		errorReporter_function
 	    )	    
 	})
     })
@@ -32,8 +36,9 @@ describe("ApiClient", function(){
 	it("makes an ajax request", function(){
 	    spyOn(a, "send_request")
 	    var callback_function = function(){}
-	    
-	    a.unschedule_section(1234, callback_function)
+	    var errorReporter_function = function(){}
+
+	    a.unschedule_section(1234, callback_function, errorReporter_function)
 
 	    expect(a.send_request).toHaveBeenCalledWith(
 		{
@@ -41,19 +46,21 @@ describe("ApiClient", function(){
 		    csrfmiddlewaretoken: 'abcd',
 		    cls: 1234,
 		}, 
-		callback_function
+		callback_function,
+		errorReporter_function
 	    )
 	})
     })
 
     describe("send_request", function(){
-	var request, callback;
+	var request, callback, errorReporter;
 
 	beforeEach(function(){
 	    jasmine.Ajax.useMock()
 	    callback = jasmine.createSpy('callback')
+	    errorReporter = jasmine.createSpy('errorReporter')
 	    
-	    a.send_request({}, callback)
+	    a.send_request({}, callback, errorReporter)
 	    request = mostRecentAjaxRequest()
 	})
 
@@ -61,11 +68,12 @@ describe("ApiClient", function(){
 	    beforeEach(function(){
 		request.response({
 		    status: 500,
-		    responseText: ''
+		    responseText: 'an error has occurred'
 		})
 	    })
 	    it("does not execute the callback", function(){
 		expect(callback).not.toHaveBeenCalled()
+		expect(errorReporter).toHaveBeenCalledWith("An error occurred saving the schedule change.")
 	    })
 	})
 
@@ -73,11 +81,12 @@ describe("ApiClient", function(){
 	    beforeEach(function(){
 		request.response({
 		    status: 200,
-		    responseText: '{"ret":false}'
+		    responseText: '{"ret":false,"msg":"The teacher is not available"}'
 		})
 	    })
 	    it("does not execute the callback", function(){
 		expect(callback).not.toHaveBeenCalled()
+		expect(errorReporter).toHaveBeenCalledWith("The teacher is not available")
 	    })
 	})
 
@@ -91,6 +100,7 @@ describe("ApiClient", function(){
 	    })
 	    it("executes the callback", function(){
 		expect(callback).toHaveBeenCalled()
+		expect(errorReporter).not.toHaveBeenCalled()
 	    })
 	})
     })

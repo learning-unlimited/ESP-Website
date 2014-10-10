@@ -89,7 +89,10 @@ function Matrix(
 	    room_name, 
 	    function() {
 		this.scheduleSectionLocal(section, room_name, schedule_timeslots)
-	    }.bind(this)
+	    }.bind(this),
+	    function(msg) {
+		console.log(msg)
+	    } 
 	)
     }
 
@@ -121,7 +124,10 @@ function Matrix(
 	    section.id, 
 	    function(){ 
 		this.unscheduleSectionLocal(section) 
-	    }.bind(this)
+	    }.bind(this),
+	    function(msg){
+		console.log(msg)
+	    }
 	)
     }
 
