@@ -29,14 +29,16 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 """ This module houses the base ProgramModuleObj from which all module handlers are derived.
     There are many useful and magical functions provided in here, most of which can be called
     from within the program handler.
 """
+from functools import wraps
 
 from django.db import models
+from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -80,6 +82,10 @@ class ProgramModuleObj(models.Model):
 
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
+
+    def get_program(self):
+        """ Backward compatibility; see ClassRegModuleInfo.get_program """
+        return self.program
 
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
@@ -279,15 +285,23 @@ class ProgramModuleObj(models.Model):
         """ Find module extensions that this program module inherits from, and 
         incorporate those into its attributes. """
         
-        old_id = self.id
-        old_module = self.module
+        self._ext_map = {}
         if self.program:
-            for x in self._meta.parents:
-                if x != ProgramModuleObj:
-                    new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
-                    self.__dict__.update(new_dict)
-            self.id = old_id
-            self.module = old_module
+            for key, x in self.extensions().items():
+                ext = self.program.getModuleExtension(x, module_id=self.id)
+                setattr(self, key, ext)
+                for attr in dir(ext):
+                    self._ext_map[attr] = key
+
+    def __getattr__(self, attr):
+        # backward compatibility
+        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
+            key = self._ext_map[attr]
+            ext = getattr(self, key)
+            import warnings
+            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
+            return getattr(ext, attr)
+        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
     
@@ -421,8 +435,9 @@ class ProgramModuleObj(models.Model):
     def isStep(self):
         return True
 
-    def extensions(self):
-        return []
+    @classmethod
+    def extensions(cls):
+        return {}
 
     @classmethod
     def module_properties(cls):
@@ -505,14 +520,12 @@ def usercheck_usetl(method):
     
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-            
-        if tl == 'learn' and not request.user.isStudent():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'teach' and not request.user.isTeacher():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
+
+        if ((not request.user.isAdmin(moduleObj.program))
+             and (
+                 (tl == 'learn' and not request.user.isStudent())
+                 or (tl == 'teach' and not request.user.isTeacher())
+                 or (tl == 'manage'))):
             return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
@@ -717,6 +730,34 @@ def meets_all_deadlines(extensions=[]):
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline
+
+def user_passes_test(test_func, error_message):
+    """A method decorator based on django.contrib.auth.decorators.user_passes_test.
+
+    Decorate a ProgramModuleObj view method, such that requests will only
+    pass through if test_func(moduleObj) returns True. test_func must be a
+    callable with a signature of test_func(moduleObj) -> `bool`.
+    The body of test_func can use moduleObj and get_current_request()
+    (particularly, get_current_request().user) to decide if it should return
+    True or False.
+
+    In the failure case, an error page will be rendered. error_message will
+    be used as the 'extension' template variable in the error page, so it
+    should be formatted similarly to the output of list_extensions().
+    """
+    def user_passes_test(view_method):
+        @wraps(view_method, assigned=available_attrs(view_method))
+        def _check(moduleObj, request, tl, *args, **kwargs):
+            if test_func(moduleObj):
+                return view_method(moduleObj, request, tl, *args, **kwargs)
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            return render_to_response(
+                errorpage,
+                request,
+                {'extension': error_message, 'moduleObj': moduleObj},
+            )
+        return _check
+    return user_passes_test
 
 
 def main_call(func):

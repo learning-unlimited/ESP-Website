@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
 from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
@@ -45,7 +45,6 @@ from django_selenium.testcases import SeleniumTestCase
 from selenium import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from sys import stdout, stderr, exc_info
 
 class TestQsdCachePurging(SeleniumTestCase):
     """

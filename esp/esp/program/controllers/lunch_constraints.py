@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
@@ -156,7 +156,7 @@ class LunchConstraintGenerator(object):
                     sec.status = 10
                     sec.save()
                     #   print 'Approved section for %s: %s' % (timeslot, sec)
-        
+
         return self.get_lunch_subject(day).get_sections()
 
     def get_failure_function(self, day):
@@ -256,6 +256,8 @@ else:
     def generate_all_constraints(self):
         self.clear_existing_constraints()
         for day in self.days:
+            if not self.days[day]['lunch']: # no lunch timeblocks
+                continue
             self.get_lunch_subject(day)
             self.get_lunch_sections(day)
             self.generate_constraint(day)

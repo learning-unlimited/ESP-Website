@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call
 from esp.program.modules import module_ext
@@ -117,5 +117,5 @@ class SurveyModule(ProgramModuleObj):
             return survey_review_single(request, tl, one, two)
 
     class Meta:
-        abstract = True
+        proxy = True
 

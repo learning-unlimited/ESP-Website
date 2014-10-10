@@ -48,7 +48,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 	<tr>
 		<td class="clsmiddle"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
-			<form method="post" action="./{{ cls.id }}">
+			<form method="post" action="./{{ cls.id }}" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
 				<input type="hidden" name="command" value="delete">
 				<input class="button" type="submit" value="Delete">

@@ -32,7 +32,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import datetime
@@ -277,9 +277,9 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             src_dict_perclass={}
             for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
                 sr=a.survey_response
-                cs=a.anchor.classsection_set.all()
-                if cs:
-                    key=(sr,cs[0])
+                cs=a.target
+                if isinstance(cs, ClassSection):
+                    key=(sr,cs)
                 else:
                     key=sr
                 if key in src_dict_perclass:
@@ -290,8 +290,8 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                     ws_perclass.write(i,0,sr.id)
                     ws_perclass.write(i,1,sr.time_filled,datetime_style)
                     if cs:
-                        ws_perclass.write(i,2,cs[0].emailcode())
-                        ws_perclass.write(i,3,cs[0].title())
+                        ws_perclass.write(i,2,cs.emailcode())
+                        ws_perclass.write(i,3,cs.title())
                     i+=1
                 ws_perclass.write(row,q_dict_perclass[a.question_id],delist(a.answer))
         out=StringIO()

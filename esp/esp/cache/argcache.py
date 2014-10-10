@@ -30,10 +30,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-import random
 import types
 
 from django.core.cache import cache
@@ -44,13 +43,12 @@ from django.conf import settings
 from esp.middleware import ESPError
 
 from esp.cache.queued import WithDelayableMethods, delay_method
-from esp.cache.marinade import args_to_key, normalize_args
+from esp.cache.marinade import normalize_args
 from esp.cache.function import describe_func, get_uid
 from esp.cache.token import Token, SingleEntryToken
-from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
-from esp.cache.registry import cache_by_uid, register_cache, all_caches
+from esp.cache.key_set import specifies_key, token_list_for
+from esp.cache.registry import cache_by_uid, register_cache
 from esp.cache.sad_face import warn_if_loaded
-from esp.cache.signals import m2m_added, m2m_removed
 
 __all__ = ['ArgCache', 'ArgCacheDecorator', 'cache_function']
 
@@ -184,7 +182,7 @@ class ArgCache(WithDelayableMethods):
             existing.locked = True
         return existing
 
-    def __init__(self, name, params, uid=None, cache=cache, *args, **kwargs):
+    def __init__(self, name, params, uid=None, cache=cache, timeout_seconds=None, *args, **kwargs):
         if uid is None:
             uid = name
         super(ArgCache, self).__init__(*args, **kwargs)
@@ -195,6 +193,7 @@ class ArgCache(WithDelayableMethods):
         self.params = params
         self.uid = uid
         self.cache = cache
+        self.timeout_seconds = timeout_seconds
         self.tokens = []
         self.token_dict = {}
         self.locked = False
@@ -390,6 +389,9 @@ class ArgCache(WithDelayableMethods):
         wrapped_value = [value]
         for tkey in token_keys:
             wrapped_value.append(ans_dict[tkey])
+
+        if timeout_seconds is None:
+            timeout_seconds = self.timeout_seconds
             
         self.cache.set(key, wrapped_value, timeout_seconds)
     set.alters_data = True
@@ -566,25 +568,33 @@ class ArgCache(WithDelayableMethods):
         if filter is None:
             filter = lambda instance, object: True
         Model = handle_thunk(Model)
+        IntermediateModel = getattr(Model, m2m_field).through
 
-        def add_cb(sender, instance, field, object, **kwargs):
-            if field != m2m_field:
-                return None
+        def change_cb(sender, instance, action, model, pk_set, **kwargs):
+            if action == "post_add":
+                objects = model.objects.filter(pk__in=pk_set)
+                selector = add_func
+            elif action == "pre_remove":
+                objects = model.objects.filter(pk__in=pk_set)
+                selector = rem_func
+            elif action == "pre_clear":
+                objects = model.objects.all()
+                selector = rem_func
+            else:
+                return
+            if isinstance(instance, Model):
+                for object in objects:
+                    do_delete(instance, object, selector, filter)
+            else: # reversed m2m; switch instance and object
+                for object in objects:
+                    do_delete(object, instance, selector, filter)
+        def do_delete(instance, object, selector, filter):
             if not filter(instance, object):
                 return None
-            new_key_set = add_func(instance, object)
+            new_key_set = selector(instance, object)
             if new_key_set is not None:
                 self.delete_key_sets(new_key_set)
-        def rem_cb(sender, instance, field, object, **kwargs):
-            if field != m2m_field:
-                return None
-            if not filter(instance, object):
-                return None
-            new_key_set = rem_func(instance, object)
-            if new_key_set is not None:
-                self.delete_key_sets(new_key_set)
-        m2m_added.connect(add_cb, sender=Model, weak=False)
-        m2m_removed.connect(rem_cb, sender=Model, weak=False)
+        signals.m2m_changed.connect(change_cb, sender=IntermediateModel, weak=False)
 
 
 class ArgCacheDecorator(ArgCache):

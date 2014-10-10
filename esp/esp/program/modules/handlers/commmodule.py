@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
@@ -70,6 +70,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
+        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
 
         # Set From address
         if request.POST.has_key('from') and \
@@ -97,6 +98,8 @@ class CommModule(ProgramModuleObj):
         except:
             raise ESPError("You seem to be trying to email 0 people!  Please go back, edit your search, and try again.")
 
+        MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+
         #   If they were trying to use HTML, don't sanitize the content.
         if '<html>' not in body:
             htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
@@ -110,12 +113,35 @@ class CommModule(ProgramModuleObj):
         
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
+                                               'sendto_fn_name': sendto_fn_name,
                                                'listcount': listcount,
                                                'subject': subject,
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'body': body,
                                                'renderedtext': renderedtext})
+
+    def approx_num_of_recipients(self, filterObj, sendto_fn):
+        """
+        Approximates the number of recipients of a message, given the filter
+        and the sendto function.
+        """
+        userlist = filterObj.getList(ESPUser).distinct()
+        numusers = userlist.count()
+        if numusers > 0:
+            # Approximate the number of emails that each user will receive, by
+            # taking the maximum number of emails per user over a small subset.
+            # This is approximate because different users may receive different
+            # numbers of emails, since the sendto functions remove duplicates.
+            # And we don't attempt to get the exact number, because it doesn't
+            # matter much and it would be expensive to evaluate the sendto
+            # function for all users just to get that one number.
+            emails_per_user = 1
+            short_userlist = userlist[:min(numusers, 10)]
+            for user in short_userlist:
+                emails_per_user = max(emails_per_user, len(sendto_fn(user)))
+            numusers *= emails_per_user
+        return numusers
 
 
     @aux_call
@@ -130,6 +156,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
+        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         
         try:
             filterid = int(filterid)
@@ -138,11 +165,14 @@ class CommModule(ProgramModuleObj):
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
+        sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+
         variable_modules = {'user': request.user, 'program': self.program}
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                       subject    = subject,
                                                       recipients = filterobj,
+                                                      sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       msgtext    = body,
@@ -155,7 +185,7 @@ class CommModule(ProgramModuleObj):
         # nah, we'll do this later.
         #newmsg_request.process()
 
-        numusers = filterobj.getList(ESPUser).distinct().count()
+        numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
 
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
@@ -185,11 +215,15 @@ class CommModule(ProgramModuleObj):
         if not found:
             return filterObj
 
-        listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
+
+        listcount = self.approx_num_of_recipients(filterObj, sendto_fn)
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
-                                               'filterid': filterObj.id })
+                                               'filterid': filterObj.id,
+                                               'sendto_fn_name': sendto_fn_name })
 
     @main_call
     @needs_admin
@@ -211,20 +245,25 @@ class CommModule(ProgramModuleObj):
         
                 
                 filterObj = usc.filter_from_postdata(prog, data)
+                sendto_fn_name = usc.sendto_fn_from_postdata(data)
+                sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
                 if data['use_checklist'] == '1':
                     (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
                     return response
                     
                 context['filterid'] = filterObj.id
-                context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                context['sendto_fn_name'] = sendto_fn_name
+                context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
                 return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
                 msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
                 context['filterid'] = msgreq.recipients.id
-                context['listcount'] = msgreq.recipients.getList(ESPUser).count()
+                context['sendto_fn_name'] = msgreq.sendto_fn_name
+                sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(msgreq.sendto_fn_name)
+                context['listcount'] = self.approx_num_of_recipients(msgreq.recipients, sendto_fn)
                 context['from'] = msgreq.sender
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
@@ -250,15 +289,17 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['replyto'],
                                                          request.POST['subject'],
                                                          request.POST['body']    ]
+        sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
                                                'filterid': filterid,
+                                               'sendto_fn_name': sendto_fn_name,
                                                'from': fromemail,
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
 
     class Meta:
-        abstract = True
+        proxy = True
 

@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.core.files.base import ContentFile
 
@@ -95,6 +95,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             else:
                 progbio = lastbio
 
+            progbio.hidden = form.cleaned_data['hidden']
             # the slug bio and bio
             progbio.slugbio  = form.cleaned_data['slugbio']
             progbio.bio      = form.cleaned_data['bio']
@@ -111,7 +112,8 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             return HttpResponseRedirect(progbio.url())
         
     else:
-        formdata = {'slugbio': lastbio.slugbio, 'bio': lastbio.bio, 'picture': lastbio.picture}
+        formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio, 
+                    'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
         
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
@@ -121,6 +123,12 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     
     
+def bio_not_found(request, user=None, edit_url=None):
+    response = render_to_response('users/teacherbionotfound.html', request,
+                                  {'biouser': user,
+                                   'edit_url': edit_url})
+    response.status_code = 404
+    return response
 
 def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
     """ Displays a teacher bio """
@@ -131,24 +139,24 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
     except:
-        raise Http404
+        return bio_not_found(request)
 
     return bio_user(request, founduser)
 
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
     
-    if founduser is None:
-        raise Http404
-
-    if founduser.is_active == False:
-        raise Http404
+    if founduser is None or founduser.is_active == False:
+        return bio_not_found(request)
 
     if not founduser.isTeacher():
         raise ESPError('%s is not a teacher of ESP.' % \
                                (founduser.name()), log=False)
     
     teacherbio = TeacherBio.getLastBio(founduser)
+    if teacherbio.hidden:
+        return bio_not_found(request, founduser, teacherbio.edit_url())
+
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
         

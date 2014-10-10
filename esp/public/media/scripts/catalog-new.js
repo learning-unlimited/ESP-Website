@@ -487,7 +487,7 @@ var CatalogViewModel = function () {
         }
         if (dirty_priorities) {
             var priorities = {};
-            $j('#catalog-sticky .pri-select').each(function() {
+            $j('#catalog-sticky select.pri-select').each(function() {
                 priorities[$j(this).data('pri')] = $j(this).val();
             });
             var response = {};

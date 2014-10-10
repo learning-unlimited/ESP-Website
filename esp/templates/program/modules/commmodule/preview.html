@@ -67,6 +67,7 @@ users to whom you are sending this email.
 <br />
 <form action="/manage/{{program.getUrlBase}}/maincomm2" method="post" name="mainback">
 <input type="hidden" name="filterid" value="{{filterid}}" />
+<input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 <input type="hidden" name="from" value="{{from}}" />
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
@@ -76,6 +77,7 @@ users to whom you are sending this email.
 </form>
 <form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
 <input type="hidden" name="filterid" value="{{filterid}}" />
+<input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 <input type="hidden" name="from" value="{{from}}" />
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />

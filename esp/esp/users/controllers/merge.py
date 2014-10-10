@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.utils import IntegrityError
 
-from esp.users.models import ESPUser, UserForwarder
+from esp.users.models import UserForwarder
 
 __all__ = ['get_related', 'merge', 'merge_users']
 

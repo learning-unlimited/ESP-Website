@@ -1,0 +1,20 @@
+# Default: git checks if file is text or binary, what line endings to use.
+* text=auto
+
+# For text files we develop with, always use Linux LF line endings.
+*.py text eol=lf diff=python
+*.htm text eol=lf diff=html
+*.html text eol=lf diff=html
+*.css text eol=lf
+*.less text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.conf text eol=lf
+*.config text eol=lf
+*.rst text eol=lf
+*.sh text eol=lf
+*.tex text eol=lf diff=tex
+*.txt text eol=lf
+*.xml text eol=lf diff=html
+*.yml text eol=lf

@@ -29,7 +29,7 @@ class SchedulingCheckModule(ProgramModuleObj):
          return render_to_response(self.baseDir()+'output.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 
 #For formatting output.  The default is to use HTMLSCFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures

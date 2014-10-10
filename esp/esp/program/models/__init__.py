@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import copy
@@ -831,9 +831,9 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
         
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        info_list = ClassRegModuleInfo.objects.filter(module__program=self)
-        if info_list.count() == 1 and type(info_list[0].class_max_duration) == int:
-            max_seconds = info_list[0].class_max_duration * 60
+        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        if crmi and crmi.class_max_duration is not None:
+            max_seconds = crmi.class_max_duration * 60
         else:
             max_seconds = None
 
@@ -924,6 +924,19 @@ class Program(models.Model, CustomFormsLinkModel):
     hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
     hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
 
+    @cache_function
+    def getModule(self, name):
+        """ Returns the specified module for this program if it is enabled.
+            'name' should be a module name like 'AvailabilityModule'. """
+
+        if self.hasModule(name):
+            #   Sometimes there are multiple modules with the same handler.
+            #   This function is not choosy, since the return value
+            #   is typically used just to access a view function.
+            return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
+        else:
+            return None
+    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
     def getModuleViews(self, main_only=False, tl=None):
@@ -985,12 +998,10 @@ class Program(models.Model, CustomFormsLinkModel):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        modinfo = self.getModuleExtension(ClassRegModuleInfo)
         retVal = None
-        if mod.count() == 1:
-            modinfo = mod[0].classregmoduleinfo_set.all()
-            if modinfo.count() == 1:
-                retVal = modinfo[0].color_code
+        if modinfo:
+            retVal = modinfo.color_code
 
         self._getColor = retVal
         return retVal
@@ -1207,12 +1218,12 @@ class SplashInfo(models.Model):
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
 
-        if self.lunchsat == 'no':
+        if not self.lunchsat or self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
         elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
-        if self.lunchsun == 'no':
+        if not self.lunchsun or self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
         elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
@@ -1362,6 +1373,7 @@ class TeacherBio(models.Model):
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -1915,6 +1927,11 @@ class StudentSubjectInterest(ExpirableModel):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+
+def install():
+    from esp.program.models.class_ import install as install_class
+    print "Installing esp.program initial data..."
+    install_class()
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj

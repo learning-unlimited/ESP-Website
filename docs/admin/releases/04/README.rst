@@ -116,6 +116,17 @@ the complete list of modules, choose "Manage class flags".
 This is still a work in progress; everything should work fine, but if there are
 more interfaces you would like to see, let the web team know!
 
+Emailing Program Guardians From the Communications Panel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The communications panel can now send mail to the listed guardian and emergency
+contact email address for students. On the first screen of the commpanel
+(/manage/<program>/<instance>/commpanel), after you select that you are
+emailing students, you can select which combination of students, guardians, and
+emergency contacts you wish to address. On the next screen, you can narrow down
+your query (for example, for all students who are enrolled in the program).
+When you send the message, it will go to the types of contacts (students and/or
+guardians and/or emergency contacts) that you specified.
+
 Accounting System
 ~~~~~~~~~~~~~~~~~
 
@@ -205,6 +216,27 @@ multiple users works decently.
 
 - Filtering: several filtering modes exist now that can be used to filter the
 list of classes. This is accessible from the right-hand-side frame.
+
+Two-phase student registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a new mode of student registration which functions much like the lottery
+(in the back-end) but has a new front-end interface.  In the first step,
+students are asked to "star" the classes they are interested in, using a
+searchable interactive catalog.  In the second step, students can select which
+classes to mark as "priority" and which to mark as "interested" for each time
+slot.
+
+To make use of this module, enable Two-Phase Student Registration from the admin
+panel. This module will replace the student registration landing page (the page
+with the checkboxes) until it is disabled. This is something we would ideally
+fix in a future release, but for now the recommended workflow is to enable the
+module for the Two-Phase portion of registration, then disable it and allow
+students to land at the normal landing page to complete registration and change
+classes after the lottery has been run.
+
+Full documentation can be found in the program modules docs:
+`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
 
 Markdown Version Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -321,6 +353,7 @@ Grade change requests
 
 Students can now request to have their current grade changed through the
 website, by filling out the new grade and a reason that it needs to be changed.
+The page to do this is /myesp/grade_change_request.
 After the student confirms the change, an email will be sent to the admin
 contact address notifying that the change was requested. An admin page exists
 where admins can approve the requests (after which an email will be sent to the

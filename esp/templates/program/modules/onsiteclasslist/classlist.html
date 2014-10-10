@@ -22,7 +22,7 @@ function getElementStyleById(id, propertyName) {
     return el.style[propertyName];
 }
 
-function scroll() 
+function scroll()
 {
     scroll_offset -= {{ scrollspeed }};
     elt1 = document.getElementById("scroller_top");
@@ -32,7 +32,7 @@ function scroll()
     }
     setElementStyleById("scroller_top", "top", scroll_offset + "px");
     setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
-    
+
     if(start_times[next_start_time]){
         if($(start_times[next_start_time]).position().top < -scroll_offset + 24){
             $(".fixed_header1").css("top", $(start_times[next_start_time]).position().top + scroll_offset);
@@ -54,7 +54,7 @@ function scroll()
             next_category++;
         }
     }
-    
+
     sessionStorage.onsiteClassListOffset = scroll_offset;
 }
 
@@ -120,6 +120,21 @@ font-size: 1.7em;
     width: 49%;
     z-index: 10;
 }
+
+.classlist_emailcode {
+   font-size: 0.7em;
+   line-height: 0.6em;
+   font-weight: bold;
+}
+
+.classlist_title {
+    font-size: 0.7em;
+}
+
+table .openclasslist td {
+    height: 16px !important;
+}
+
 </style>
 
 <meta http-equiv="refresh" content="{{ refresh }}" />
@@ -138,21 +153,23 @@ font-size: 1.7em;
 <table width="100%">
 <tr>
 <td width="50%" valign="top">
-  <table cellpadding="2" cellspacing="0" width="100%">
+  <table class="openclasslist" cellpadding="2" cellspacing="0" width="100%">
     <tr>
-        <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour: starting at {{ current_time.start|date:"D P" }}</th>
+        <th style="font-size: 1.0em" colspan="2">Open classes starting at {{ current_time.start|date:"D P" }}</th>
     </tr>
+{% comment %}
     <tr>
-        <th style="font-size: 1.7em" class="materials">Code</th>
-        <th style="font-size: 1.7em" class="materials">Class Title</th>
+        <th style="font-size: 1.3em" class="materials">Code</th>
+        <th style="font-size: 1.3em" class="materials">Class Title</th>
     </tr>
+{% endcomment %}
     {% for class in classes %}
         {% ifequal class.start_time current_time %}
         {% if not class.isFull %}
         {% if not class.already_passed %}
     <tr>
-        <td>{{class.emailcode}}</td>
-        <td>{{class.title}} ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}; Grades {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})</td>
+        <td><div class="classlist_emailcode">{{class.emailcode}}</div></td>
+        <td><div class="classlist_title">{{class.title}} ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}; {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})</div></td>
     </tr>
         {% endif %}
         {% endif %}

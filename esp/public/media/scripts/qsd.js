@@ -39,6 +39,7 @@ function qsd_send_command(qsd_url, edit_id, postdata)
             if (data)
             {
                 qsd_inline_update(qsd_url, edit_id, data);
+                window.location.reload(true); // bust the cache
             }
         }
         else

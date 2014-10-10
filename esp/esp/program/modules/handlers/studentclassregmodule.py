@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import simplejson
@@ -47,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
 from esp.program.modules import module_ext
@@ -126,7 +127,7 @@ def json_encode(obj):
 
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+class StudentClassRegModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return [ {
@@ -138,9 +139,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "required": True,
             }]
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return {'scrmi': module_ext.StudentClassRegModuleInfo}
 
 
     def students(self, QObject = False):
@@ -394,10 +395,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.enforce_max)
+            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.enforce_max) or section.cannotAdd(request.user, self.enforce_max)
+            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -755,6 +756,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             return []
 
+    @aux_call
+    def openclasses(self, request, tl, one, two, module, extra, prog):
+        """ A publicly viewable version of the onsite class list. 
+            Should be revisited in the future, as this was a temporary
+            hack created for Stanford Splash in fall 2013. """
+
+        module = prog.getModule('OnSiteClassList')
+        if module:
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
+        
+        #  Otherwise this will be a 404
+        return None
+
     class Meta:
-        abstract = True
+        proxy = True
 

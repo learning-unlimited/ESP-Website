@@ -30,18 +30,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
@@ -53,12 +52,10 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
-from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
@@ -422,6 +419,29 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
+
+
+def deactivate_user(request):
+    return activate_or_deactivate_user(request, activate=False)
+
+def activate_user(request):
+    return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def activate_or_deactivate_user(request, activate):
+    """Linked from the userview page."""
+    if request.method != 'POST' or 'user_id' not in request.POST:
+        return HttpResponseBadRequest('')
+    else:
+        users = ESPUser.objects.filter(id=request.POST['user_id'])
+        if users.count() != 1:
+            return HttpResponseBadRequest('')
+        else:
+            user = users[0]
+            user.is_active = activate
+            user.save()
+            return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
+
 
 @admin_required
 def manage_programs(request):

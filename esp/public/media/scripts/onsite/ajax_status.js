@@ -8,6 +8,7 @@
 
 //  This is the primary data structure for all received data.
 var data = {};
+var minMinutesToHideTimeSlot = 20;
 
 //  Some parameters for things that can be customized in the future.
 var settings = {
@@ -154,6 +155,8 @@ function setup_settings()
     $j("#grade_limits_control").unbind("change");
     $j("#compact_classes").unbind("change");
     $j("#show_closed_reg").unbind("change");
+    $j("#hide_past_time_blocks").unbind("change");
+
 
     //  Apply settings
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
@@ -161,12 +164,14 @@ function setup_settings()
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.compact_classes = $j("#compact_classes").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
+    settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#compact_classes").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
+    $j("#hide_past_time_blocks").change(handle_settings_change);
 }
 
 /*  Event handlers  */
@@ -190,12 +195,12 @@ function print_schedule()
 {
     printer_name = $j("#printer_selector").attr("value");
     printing_url = program_base_url + "printschedule_status";
-    data = { 'user' : state.student_id }
+    var student_data = { 'user' : state.student_id }
     if (printer_name)
-        data.printer = printer_name
+        student_data.printer = printer_name
     result = $j.ajax({
         url: printing_url,
-        data: data,
+        data: student_data,
         async: false
     });
     add_message(JSON.parse(result.responseText).message);
@@ -230,12 +235,18 @@ function update_checkboxes()
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
             studentcheckbox.hover(check_conflicts, clear_conflicts);
             //  Disable the checkbox if the class is full, unless we are overriding that
-            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full)))
+            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full))) 
+            {
                 studentcheckbox.attr("disabled", "disabled");
-	    else if (section.registration_status != 0)
-		studentcheckbox.attr("disabled", "disabled");
-            else
+            } 
+            else if (section.registration_status != 0) 
+            {
+		      studentcheckbox.attr("disabled", "disabled");
+            } 
+            else 
+            {
                 studentcheckbox.change(handle_checkbox);
+            }
         }
     }
     
@@ -261,6 +272,7 @@ function update_checkboxes()
 
 function handle_schedule_response(new_data, text_status, jqxhr)
 {
+    data.students[new_data.user].grade = new_data.user_grade
     //  Save the new schedule
     state.student_schedule = new_data.sections;
     state.student_schedule.sort();
@@ -491,8 +503,8 @@ var last_select_event = null;
 function autocomplete_select_item(event, ui)
 {
     last_select_event = [event, ui];
-    var s = ui.item.value;
-    var student_id = s.slice(s.indexOf("(")+1, s.indexOf(")"));
+    event.preventDefault();
+    var student_id = ui.item.value;
     
     //  Refresh the table of checkboxes for the newly selected student.
     if ((student_id > 0) && (student_id < 99999999))
@@ -506,15 +518,23 @@ function autocomplete_select_item(event, ui)
 function setup_autocomplete()
 {
     var student_strings = [];
-    for (var i in data.students)
-    {
-        student_strings.push(data.students[i].first_name + " " + data.students[i].last_name + " (" + i + ")");
+    for (var i in data.students) {
+        var student = data.students[i];
+        var studentItem = {};
+        studentItem.value = i;
+        studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
+        
+        student_strings.push(studentItem);
     }
 
     $j("#student_selector").autocomplete({
         source: student_strings,
-        select: autocomplete_select_item
-  	});
+        select: autocomplete_select_item,
+        focus: function( event, ui ) {
+            $j( "#student_selector" ).val( ui.item.label );
+            return false;
+        },
+    });
 }
 
 function clear_table()
@@ -542,10 +562,24 @@ function render_table(display_mode, student_id)
     clear_table();
     for (var ts_id in data.timeslots)
     {
+        var timeSlotHeader = data.timeslots[ts_id].label;
+
+        if (settings.hide_past_time_blocks) 
+        {
+            var startTimeMillis = data.timeslots[ts_id].startTimeMillis;
+            //excludes timeslots that have a start time 20 minutes prior to the current time
+            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+            if(differenceInMinutes > minMinutesToHideTimeSlot) 
+            {
+                continue;
+            }
+        }
+
         var div_name = "timeslot_" + ts_id;
         var ts_div = $j("#" + div_name);
         
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
+        ts_div.append($j("<div/>").addClass("timeslot_header").html(timeSlotHeader));
         var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
@@ -624,6 +658,10 @@ function render_table(display_mode, student_id)
 
             classes_div.append(new_div);
         }
+
+        
+
+
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
@@ -644,24 +682,47 @@ function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
     update_checkboxes();
-    add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
+    var studentLabel = data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")";
+    add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
+
 }
 
 /*  This function populates the linked data structures once all components have arrived.
 */
 
 function update_category_filters()
-{
+{   
     $j(".section").removeClass("section_category_hidden");
     for (var id_str in data.categories)
     {
         var id = parseInt(id_str);
+
         if (settings.categories_to_display.indexOf(id) == -1)
         {
             console.log("Hiding category .section_category_" + id);
-            $j(".section_category_" + id).addClass("section_category_hidden");
+            $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
     }
+}
+
+function toggle_categories() {
+    var showAll = $j(this).prop("id") == "category_show_all";
+
+    if(showAll) {
+        settings.categories_to_display.length = 0;
+
+        for(var key in data.categories) {
+            settings.categories_to_display.push(parseInt(key));
+        }
+
+    } else {
+        settings.categories_to_display = [];
+    }
+    
+    $j("#category_list :checkbox").not(".category_selector")
+                                  .prop('checked', showAll);
+    update_category_filters();
+
 }
 
 function render_category_options()
@@ -669,14 +730,18 @@ function render_category_options()
     //  Clear category select area
     top_div = $j("#category_list");
     top_div.html("");
+
     //  Add a checkbox for each category we know about
     for (var id_str in data.categories)
     {
         var id = parseInt(id_str);
         var new_li = $j("<div/>").addClass("category_item");
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
-        if (settings.categories_to_display.indexOf(id) != -1)
+
+        if (settings.categories_to_display.indexOf(id) != -1) {
             new_checkbox.attr("checked", "checked");
+        }
+
         new_checkbox.change(function (event) {
             var target_id = parseInt(event.target.id.split("_")[2]);
             var id_index = settings.categories_to_display.indexOf(target_id);
@@ -686,10 +751,14 @@ function render_category_options()
                 settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
             update_category_filters();
         });
+
         new_li.append(new_checkbox);
         new_li.append($j("<span/>").html(data.categories[id].symbol + ": " + data.categories[id].category));
         top_div.append(new_li);
     }
+
+    //initialize select all/none
+    $j('.category_selector').click(toggle_categories);
 }
 
 function populate_classes()
@@ -721,6 +790,7 @@ function populate_classes()
         var new_ts = {};
         new_ts.id = data.catalog.timeslots[i][0];
         new_ts.label = data.catalog.timeslots[i][1];
+        new_ts.startTimeMillis = data.catalog.timeslots[i][2];
         new_ts.sections = [];
         data.timeslots[new_ts.id] = new_ts;
     }
@@ -789,7 +859,7 @@ function populate_students()
         new_student.id = data.students_list[i][0];
         new_student.last_name = data.students_list[i][1];
         new_student.first_name = data.students_list[i][2];
-        new_student.grade = data.students_list[i][3];
+        new_student.grade = 0;
         new_student.sections = [];
         new_student.checked_in = null;
         data.students[new_student.id] = new_student;

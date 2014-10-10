@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.handlers import *
@@ -106,6 +106,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
 
 def install(model=None):
     """ Install the initial ProgramModule table data for all currently-existing modules """
+    print "Installing esp.program.modules initial data..."
     from esp.program.modules import handlers
     modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
 
