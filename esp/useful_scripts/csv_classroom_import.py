@@ -1,11 +1,10 @@
 #!/usr/bin/env python2
 #
 # Import classrooms from a CSV file. Columns should be:
-#   Date: 01-Mar-14 (meaning March 1st, 2014)
-#   Begin Time: 700 (meaning 7:00 AM -- on the hour, not five minutes after)
-#   End Time: 2000 (meaning 8:00 PM)
-#   Building: 1
-#   Room: 136 (meaining 1-136 when put together)
+#   Date: 11/22/2014
+#   Begin Time: noon
+#   End Time: 10:00p
+#   Classroom: 1-115
 #
 # Room capacities and furnishings are drawn from a reference program of your
 # choice. Note that the 'Sound system' resource should now be called 'Speakers'.
@@ -31,12 +30,23 @@ filename = os.path.expanduser(raw_input("Full path to CSV file: "))
 csvfile = open(filename, "r")
 reader = csv.reader(csvfile)
 
+def parse_time(date, time):
+    if time == "noon":
+        time = "12:00p"
+    elif time == "midnight":
+        time = "11:00p"
+    time = (time + "m").upper()
+    return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
+
 for row in reader:
     # Parse Input
-    date = datetime.strptime(row[0], "%d-%b-%y").date()
-    start = datetime.combine(date, datetime.strptime(row[1], "%H%M").time())
-    end = datetime.combine(date, datetime.strptime(row[2], "%H%M").time())
-    room_number = "%s-%s" % (row[3], row[4])
+    date = datetime.strptime(row[0], "%m/%d/%Y").date()
+    start = parse_time(date, row[1])
+    end = parse_time(date, row[2])
+    room_number = row[3]
+
+    # Test parsing code
+    print "%s from %s to %s" % (room_number, start.__repr__(), end.__repr__())
 
     # Find Reference Room from Reference Program
     results = Resource.objects.filter(event__program=REFPROG,
