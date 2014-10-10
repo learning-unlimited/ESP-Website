@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import re
@@ -39,9 +39,7 @@ import unicodedata
 from esp.users.models import StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule, ClassFlag
-from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
-from django.db.models import Q
 from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm
@@ -99,6 +97,18 @@ class ProgramCreationForm(BetterModelForm):
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
+
+    def clean_program_modules(self):
+        value = self.cleaned_data['program_modules']
+        value = map(int, value)
+        json_module = ProgramModule.objects.get(handler=u'JSONDataModule')
+        # If the JSON Data Module isn't already in the list of selected
+        # program modules, add it. The JSON Data Module is a dependency for
+        # many commonly-used modules, so it is important that it be enbabled
+        # by default for all new programs.
+        if json_module.id not in value:
+            value.append(json_module.id)
+        return value
 
     # use field grouping
     #as_table = grouped_as_table

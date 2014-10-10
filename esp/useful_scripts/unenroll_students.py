@@ -4,15 +4,12 @@ Kick students out of their classes (or only next hour's classes, if the
 --per-hour option is used) if they haven't checked in yet.
 """
 
-import sys
 import argparse
 
 from script_setup import *
 
-from esp.program.models import Program, StudentRegistration, ClassSection
+from esp.program.models import Program, StudentRegistration
 from esp.users.models import ESPUser
-from esp.users.models.userbits import UserBit
-from esp.datatree.models import GetNode
 from datetime import datetime, timedelta
 from django.db.models.aggregates import Min
 

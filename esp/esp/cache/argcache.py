@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import types
@@ -44,7 +44,7 @@ from esp.middleware import ESPError
 
 from esp.cache.queued import WithDelayableMethods, delay_method
 from esp.cache.token import Token, SingleEntryToken
-from esp.cache.key_set import is_wildcard, specifies_key, token_list_for
+from esp.cache.key_set import specifies_key, token_list_for
 from esp.cache.marinade import marinade_dish
 from esp.cache.registry import register_cache
 from esp.cache.sad_face import warn_if_loaded

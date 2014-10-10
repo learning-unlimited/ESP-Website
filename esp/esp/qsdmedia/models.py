@@ -30,21 +30,18 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db import models
-from django.core.files import File
 
 from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
-from time import strftime
 import os.path
 from esp.middleware import ESPError
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.db.models import Q
 
 # Create your models here.
 

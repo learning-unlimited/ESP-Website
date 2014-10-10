@@ -30,14 +30,15 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 """ This module will render latex code and return a rendered display. """
 
 import os.path
 import os
-import subprocess
+from subprocess import check_call, PIPE, STDOUT
 from random import random
+from functools import partial
 import hashlib
 import tempfile
 from esp.middleware import ESPError
@@ -79,10 +80,46 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None)
     return gen_latex(rendered_source, filetype, landscape)
 
 
-def gen_latex(texcode, type='pdf', landscape=False):
-    """ Generate the latex code. """
+def gen_latex(texcode, type='pdf', landscape=False, remove_files=False, stdout=PIPE, stderr=STDOUT):
+    """Generate the latex code.
 
-    remove_files = True
+    :param texcode:
+        The latex source code to use to generate the output.
+    :type texcode:
+        `unicode`
+    :param type:
+        The type of file to generate.
+        Must be one of 'tex', 'dvi', 'ps', 'log', 'svg', or 'png'.
+        'tex' returns texcode itself, without processing.
+        'log' returns the log file from the execution of latex on texcode.
+        The others return the compilation of texcode into that format.
+    :type type:
+        `str`, element of ('tex', 'dvi', 'ps', 'log', 'svg', 'png')
+    :param landscape:
+        True if the output should be in landscape format, else False.
+    :type landscape:
+        `bool`
+    :param remove_files:
+        True if intermediate build files should be removed, else False.
+    :type remove_files:
+        `bool`
+    :param stdout:
+        See subprocess.__doc__.
+        Default is PIPE, which does not print output to stdout.
+    :type stdout:
+        `int` or `file` or `None`
+    :param stderr:
+        See subprocess.__doc__.
+        Default is STDOUT, which directs output to the same place that is
+        specified by the stdout param.
+    :type stderr:
+        `int`
+    :return:
+        The generated file.
+    :rtype:
+        HttpResponse
+    """
+
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
@@ -108,36 +145,41 @@ def gen_latex(texcode, type='pdf', landscape=False):
     if landscape:
         dvips_options = ['-t', 'letter,landscape']
 
+    # All command calls will use the same values for the cwd, stdout, and
+    # stderr arguments, so we define a partially-applied callable call()
+    # that makes it easier to call check_call() with these values.
+    call = partial(check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+
     if type=='pdf':
         mime = 'application/pdf'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
+        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
+        call(['ps2pdf', '%s.ps' % file_base])
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
         
     elif type=='ps':
         mime = 'application/postscript'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + [file_base, '-o', '%s.ps' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
+        call(['dvips'] + dvips_options + [file_base, '-o', '%s.ps' % file_base])
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
     elif type=='log':
         mime = 'text/plain'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
 
     elif type=='svg':
         mime = 'image/svg+xml'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
+        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
+        call(['ps2pdf', '%s.ps' % file_base])
+        call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
@@ -145,9 +187,9 @@ def gen_latex(texcode, type='pdf', landscape=False):
         
     elif type=='png':
         mime = 'image/png'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
+        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
+        call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base])
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)

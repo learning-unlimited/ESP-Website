@@ -11,8 +11,8 @@
 {% endblock %}
 
 {% block xtrajs %}
-    <script type="text/javascript" src="/media/scripts/flag-results-page.js"></script>
-    <script type="text/javascript" src="/media/scripts/flag-edit.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/flag-results-page.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
 <h1>Manage Class Flags for {{ program.niceName }}</h1>
 
 <p>
-You asked for classes with {{english}}; {{queryset.count}} of {{program.classsubject_set.count}} classes fit that query.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
+You asked for classes with {{english}}; {{queryset|length}} of {{program.classsubject_set.count}} classes fit that query.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
 <div class="flag-query-results" id="program_form">
@@ -85,7 +85,7 @@ You asked for classes with {{english}}; {{queryset.count}} of {{program.classsub
             </div>
         </div>
     {% empty %}
-        No classes were found.  <a href="">Search again?</a>
+        No classes were found.  <a href="?">Search again?</a>
     {% endfor %}
 </div>
 
