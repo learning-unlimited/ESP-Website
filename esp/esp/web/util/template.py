@@ -117,6 +117,8 @@ class InclusionTagCacheDecorator(object):
                     return in_self.nodelist.render(context_class(dict, autoescape=in_self._context.autoescape))
 
                 if not disable:
+                    # TODO: fix how describe_func inspects the stack
+                    # so that we don't have to call it manually here
                     render_given_args = cache_function(render_given_args, extra_name='*'+describe_func(func))
                     render_given_args.get_or_create_token(('args',))
                     def render_map(**kwargs):

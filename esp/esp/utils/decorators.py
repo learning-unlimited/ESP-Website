@@ -120,6 +120,8 @@ class CachedModuleViewDecorator(object):
 
         def prepare_dec(func):
             self.params, xx, xxx, defaults = getargspec(func)
+            # TODO: fix how describe_func inspects the stack
+            # so that we don't have to call it manually here
             self.cached_function = cache_function(func, extra_name='*'+describe_func(func))
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
