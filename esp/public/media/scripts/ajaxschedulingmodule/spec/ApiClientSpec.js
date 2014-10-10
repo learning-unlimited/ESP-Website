@@ -54,9 +54,7 @@ describe("ApiClient", function(){
 	    callback = jasmine.createSpy('callback')
 	    
 	    a.send_request({}, callback)
-	    //	    request = mostRecentAjaxRequest()
 	    request = mostRecentAjaxRequest()
-
 	})
 
 	describe("when there is an error", function(){

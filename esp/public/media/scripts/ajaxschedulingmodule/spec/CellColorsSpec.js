@@ -1,4 +1,6 @@
 describe("CellColors", function(){
+    var cc;
+
     beforeEach(function(){
 	cc = new CellColors()
 	section = { 
@@ -11,21 +13,21 @@ describe("CellColors", function(){
 
     describe("color", function(){
 	it("should return a valid color code", function(){
-	    color = cc.color(section)
+	    var color = cc.color(section)
 	    expect(color).toBeString()
 	    expect(color).toBeSameLengthAs("#123456")
 	    expect(color).toStartWith("#")
 	    valid_characters = ["0", "1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"]
 	    characters = color.substr(1)
 	    for (i in characters){
-		c = characters[i]
+		var c = characters[i]
 		expect(valid_characters.indexOf(c)).toBeGreaterThan(-1)
 	    }	    
 	})
 
 	it("should return different colors for different classes", function(){
-	    color1 = cc.color(section)
-	    color2 = cc.color(section2)
+	    var color1 = cc.color(section)
+	    var color2 = cc.color(section2)
 	    expect(color1).not.toEqual(color2)
 	})
     })

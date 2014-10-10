@@ -1,4 +1,6 @@
 describe("Matrix", function(){
+    var m;
+
     beforeEach(function(){
 	m = new Matrix(
 	    time_fixture(),
@@ -67,7 +69,7 @@ describe("Matrix", function(){
 		m.scheduleSection(section_2(), "room-2", 1)
 		expect(m.api_client.schedule_section).toHaveBeenCalled()
 		
-		args = m.api_client.schedule_section.argsForCall[0]
+		var args = m.api_client.schedule_section.argsForCall[0]
 		expect(args[0]).toEqual(section_2().id)
 		expect(args[1]).toEqual(1)
 		expect(args[2]).toEqual("room-2")
@@ -90,7 +92,7 @@ describe("Matrix", function(){
 	    m.unscheduleSection(section_2(), "room-2", 1)
 	    expect(m.api_client.unschedule_section).toHaveBeenCalled()
 	    
-	    args = m.api_client.unschedule_section.argsForCall[0]
+	    var args = m.api_client.unschedule_section.argsForCall[0]
 	    expect(args[0]).toEqual(section_2().id)
 	})
     })
@@ -98,8 +100,8 @@ describe("Matrix", function(){
     
     describe("scheduleSectionLocal", function(){
 	it("inserts the class into the matrix", function(){
-	    cell1 = m.getCell("room-2", 1)
-	    cell2 = m.getCell("room-2", 2)
+	    var cell1 = m.getCell("room-2", 1)
+	    var cell2 = m.getCell("room-2", 2)
 	    spyOn(cell1, 'addSection')
 	    spyOn(cell2, 'addSection')
 	    m.scheduleSectionLocal(section_2(), "room-2", [1,2])
@@ -110,8 +112,8 @@ describe("Matrix", function(){
 
 	it("unschedules the class from the old location", function(){
 
-	    cell1 = m.getCell("room-1", 1)
-	    cell2 = m.getCell("room-1", 2)
+	    var cell1 = m.getCell("room-1", 1)
+	    var cell2 = m.getCell("room-1", 2)
 	    spyOn(cell1, 'removeSection')
 	    spyOn(cell2, 'removeSection')
 	    m.scheduleSectionLocal(section_1(), "room-2", [1,2])
@@ -121,7 +123,7 @@ describe("Matrix", function(){
 	})
 
 	it("fires a schedule-changed event", function(){
-	    event_fired = false
+	    var event_fired = false
 	    $j("body").on("schedule-changed", function(){
 		event_fired = true
 	    })
@@ -143,7 +145,7 @@ describe("Matrix", function(){
 	})
 
 	it("fires a schedule-changed event", function(){
-	    event_fired = false
+	    var event_fired = false
 	    $j("body").on("schedule-changed", function(){
 		event_fired = true
 	    })
@@ -160,7 +162,7 @@ describe("Matrix", function(){
 
     describe("clearCell", function(){
 	it("removes a section from that cell", function(){
-	    cell = m.getCell("room-1", 1)
+	    var cell = m.getCell("room-1", 1)
 	    spyOn(cell, "removeSection")
 	    expect(cell.section).not.toBeNull()
 	    m.clearCell(m.getCell("room-1", 1))
@@ -175,7 +177,7 @@ describe("Matrix", function(){
 
 	it("should have a row for each room", function(){
  	    expect(m.el.children().length).toEqual(1)
-	    table = m.el.children()[0]
+	    var table = m.el.children()[0]
 	    expect(table.rows.length).toEqual(3)
 	    //TODO:  ordering should probably be deterministic, but I'm not sure how
 	    expect(table.rows[1].cells[0].innerHTML).toMatch("room-1")
@@ -183,9 +185,9 @@ describe("Matrix", function(){
 	})
 
 	it("should have a column each timeslot", function(){
-	    table = m.el.children()[0]
+	    var table = m.el.children()[0]
 	    
-	    header = table.tHead
+	    var header = table.tHead
 	    expect(header).toBeHtmlNode()
 	    headers = header.rows[0].cells
 	    expect(headers.length).toEqual(3)
@@ -195,7 +197,7 @@ describe("Matrix", function(){
 	})
 
 	it("should have a cell for every timeslot/room combination", function(){
-	    table = m.el.children()[0]
+	    var table = m.el.children()[0]
 	    expect(table.rows[1].cells[1]).toBeDefined()
 	    expect(table.rows[1].cells[2]).toBeDefined()
 	    expect(table.rows[2].cells[1]).toBeDefined()
@@ -203,7 +205,7 @@ describe("Matrix", function(){
 	})
 
 	it("should show already scheduled sections", function(){
-	    table = m.el.children()[0]
+	    var table = m.el.children()[0]
 	    expect(table.innerHTML).toMatch('S3188s1')
 	})
     })

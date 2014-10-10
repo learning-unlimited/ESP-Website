@@ -1,4 +1,6 @@
 describe("Cell", function(){
+    var c;
+
     beforeEach(function(){
 	c = new Cell($j("<td/>"), null, "1-115", 1)
 

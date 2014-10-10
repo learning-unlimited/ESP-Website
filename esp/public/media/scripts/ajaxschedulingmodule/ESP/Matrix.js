@@ -26,8 +26,8 @@ function Matrix(
 
     // set up drophandler
     this.dropHandler = function(el, ui){
-	cell = $j(el.currentTarget).data("cell")
-	section = ui.draggable.data("section")
+	var cell = $j(el.currentTarget).data("cell")
+	var section = ui.draggable.data("section")
 	this.scheduleSection(section, cell.room_name, [cell.timeslot_id])
     }.bind(this)
 
@@ -42,12 +42,12 @@ function Matrix(
 
     // set up cells
     this.cells = function(){
-	cells = {}
+	var cells = {}
 	$j.each(rooms, function(room_name, room){
 	    cells[room_name] = []
 	    i = 0
 	    $j.each(timeslots, function(timeslot_id_string, timeslot){
-		timeslot_id = parseInt(timeslot_id_string)
+		var timeslot_id = parseInt(timeslot_id_string)
 		cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id)
 		i = i + 1
 	    })
@@ -55,8 +55,8 @@ function Matrix(
 
 	$j.each(schedule_assignments, function(class_id, assignment_data){
 	    $j.each(assignment_data.timeslots, function(j, timeslot_id){
-		class_emailcode = sections[class_id].emailcode
-		timeslot_order = timeslots[timeslot_id].order
+		var class_emailcode = sections[class_id].emailcode
+		var timeslot_order = timeslots[timeslot_id].order
 		cells[assignment_data.room_name][timeslot_order].addSection(sections[class_id])
 	    })
 	})
@@ -69,7 +69,7 @@ function Matrix(
 
     this.validateAssignment = function(section, room_name, schedule_timeslots){
 	for(timeslot_index in schedule_timeslots){
-	    timeslot_id = schedule_timeslots[timeslot_index]
+	    var timeslot_id = schedule_timeslots[timeslot_index]
 	    if (this.getCell(room_name, timeslot_id).section != null){
 		return false
 	    }
@@ -95,15 +95,15 @@ function Matrix(
 
     this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
 	for(timeslot_index in schedule_timeslots){
-	    timeslot_id = schedule_timeslots[timeslot_index]
+	    var timeslot_id = schedule_timeslots[timeslot_index]
 	    this.getCell(room_name, timeslot_id).addSection(section)
 	}
 
 	//Unschedule from old place
-	old_assignment = this.schedule_assignments[section.id]
+	var old_assignment = this.schedule_assignments[section.id]
 	for (timeslot_index in old_assignment.timeslots) {
-	    timeslot_id = old_assignment.timeslots[timeslot_index]
-	    cell = this.getCell(old_assignment.room_name, timeslot_id)
+	    var timeslot_id = old_assignment.timeslots[timeslot_index]
+	    var cell = this.getCell(old_assignment.room_name, timeslot_id)
 	    cell.removeSection()
 	}
 
@@ -126,8 +126,8 @@ function Matrix(
     }
 
     this.unscheduleSectionLocal = function(section) {
-	assignment = this.schedule_assignments[section.id]
-	cell = this.getCell(assignment.room_name, assignment.timeslots[0])
+	var assignment = this.schedule_assignments[section.id]
+	var cell = this.getCell(assignment.room_name, assignment.timeslots[0])
 	this.clearCell(cell)
 
 	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
@@ -141,25 +141,25 @@ function Matrix(
 
     // render
     this.render = function(){
-	table = $j("<table/>")
+	var table = $j("<table/>")
 
 	//Time headers
-	header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table))
+	var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table))
 	$j("<th/>").appendTo(header_row)
 	$j.each(this.timeslots, function(id, timeslot){
 	    $j("<th>" + timeslot.label + "</th>").appendTo(header_row)
 	})
 
 	//Room headers
-	rows = {}	//table rows by room name
+	var rows = {}	//table rows by room name
 	$j.each(this.rooms, function(id, room){
-	    row = $j("<tr><th>" + id + "</th></tr>")
+	    var row = $j("<tr><th>" + id + "</th></tr>")
 	    rows[id] = row
 	    row.appendTo(table)
 	})
 
 	//populate cells
-	cells = this.cells
+	var cells = this.cells
 	$j.each(this.rooms, function(id, room){
 	    row = rows[id]
 	    for(i = 0; i < Object.keys(timeslots).length; i++){

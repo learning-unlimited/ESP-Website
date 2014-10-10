@@ -1,4 +1,6 @@
 describe("Directory", function(){
+    var d;
+
     beforeEach(function(){
 	d = new Directory(sections_fixture(), $j("<div/>"), empty_schedule_assignments_fixture())
     })
@@ -21,7 +23,7 @@ describe("Directory", function(){
 
 	    it("should not show them in the directory", function(){
 		expect(d.el.children().length).toEqual(1)
-		table = d.el.children()[0]
+		var table = d.el.children()[0]
 		expect(table.rows.length).toEqual(1)
 		expect(table.rows[0].innerHTML).toMatch("Become a LaTeX Guru")
 		expect(table.rows[0].innerHTML).toMatch("M3343s1")
@@ -30,7 +32,7 @@ describe("Directory", function(){
 
 	it("should present a list of classes with emailcodes", function (){
 	    expect(d.el.children().length).toEqual(1)
-	    table = d.el.children()[0]
+	    var table = d.el.children()[0]
 	    expect(table.rows.length).toEqual(2)
 	    expect(table.rows[0].innerHTML).toMatch("Fascinating Science Phenomena")
 	    expect(table.rows[0].innerHTML).toMatch("S3188s1")
@@ -54,6 +56,8 @@ describe("Directory", function(){
 })
 
 describe("TableRow", function(){
+    var tr;
+
     beforeEach(function(){
 	tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"))
     })

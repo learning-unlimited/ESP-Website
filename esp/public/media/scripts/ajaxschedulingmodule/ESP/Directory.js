@@ -14,9 +14,9 @@ function Directory(sections, el, schedule_assignments) {
 		oldChildren[c].remove()
 	    })
 	}.bind(this), 0)
-	table = $j("<table/>")
+	var table = $j("<table/>")
 	$j.each(this.filtered_sections(), function(id, section){
-	    row = new TableRow(section, $j("<tr/>"))
+	    var row = new TableRow(section, $j("<tr/>"))
 	    row.render()
 	    row.el.appendTo(table)
 	})
@@ -29,9 +29,9 @@ function Directory(sections, el, schedule_assignments) {
     this.init()
 
     this.filtered_sections = function(){
-	returned_sections = []
+	var returned_sections = []
 	for (i in this.sections){
-	    section = this.sections[i]
+	    var section = this.sections[i]
 	    if (schedule_assignments[section.id] && schedule_assignments[section.id].room_name == null){
 		returned_sections.push(section)
 	    }

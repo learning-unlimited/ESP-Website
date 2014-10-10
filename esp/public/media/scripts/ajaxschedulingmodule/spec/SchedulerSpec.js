@@ -1,4 +1,6 @@
 describe("Scheduler", function(){
+    var s;
+
     beforeEach(function(){
 	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"))
     })
