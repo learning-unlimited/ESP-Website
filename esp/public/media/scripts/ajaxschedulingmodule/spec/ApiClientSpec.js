@@ -3,9 +3,14 @@ csrf_token = function(){
 }
 
 describe("ApiClient", function(){
+    var a
+
+    beforeEach(function(){
+	a = new ApiClient()
+    })
+
     describe("schedule_section", function(){
 	it("makes an ajax request", function(){
-	    var a = new ApiClient()
 	    spyOn(a, "send_request")
 	    var callback_function = function(){}
 	    
@@ -25,7 +30,6 @@ describe("ApiClient", function(){
 
     describe("unschedule_section", function(){
 	it("makes an ajax request", function(){
-	    var a = new ApiClient()
 	    spyOn(a, "send_request")
 	    var callback_function = function(){}
 	    
@@ -43,19 +47,52 @@ describe("ApiClient", function(){
     })
 
     describe("send_request", function(){
+	var request, callback;
+
+	beforeEach(function(){
+	    jasmine.Ajax.useMock()
+	    callback = jasmine.createSpy('callback')
+	    
+	    a.send_request({}, callback)
+	    //	    request = mostRecentAjaxRequest()
+	    request = mostRecentAjaxRequest()
+
+	})
+
 	describe("when there is an error", function(){
+	    beforeEach(function(){
+		request.response({
+		    status: 500,
+		    responseText: ''
+		})
+	    })
 	    it("does not execute the callback", function(){
-		
+		expect(callback).not.toHaveBeenCalled()
 	    })
 	})
 
 	describe("when the request comes back with failure", function(){
+	    beforeEach(function(){
+		request.response({
+		    status: 200,
+		    responseText: '{"ret":false}'
+		})
+	    })
 	    it("does not execute the callback", function(){
+		expect(callback).not.toHaveBeenCalled()
 	    })
 	})
 
 	describe("when the request comes back with success", function(){
+	    beforeEach(function(){
+		request.response({
+		    status: 200,
+		    responseText: '{"ret":true}'
+		})	
+		
+	    })
 	    it("executes the callback", function(){
+		expect(callback).toHaveBeenCalled()
 	    })
 	})
     })

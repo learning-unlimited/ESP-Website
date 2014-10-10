@@ -25,9 +25,10 @@ function ApiClient(){
 		console.log("success")
 		callback()
 	    }
+	    console.log("failure")
 	})
 	.error(function(ajax_data, status) {
-	    console.log("failure")
+	    console.log("error")
 	    return false
 	})
     }
