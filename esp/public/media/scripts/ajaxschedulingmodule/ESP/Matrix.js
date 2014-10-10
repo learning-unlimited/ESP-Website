@@ -121,7 +121,7 @@ function Matrix(
 	    section.id, 
 	    function(){ 
 		this.unscheduleSectionLocal(section) 
-	    }
+	    }.bind(this)
 	)
     }
 
