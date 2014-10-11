@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Schedule Diagnostics for {{program.niceName}} </h1>
+
+<ul>
+{% for diag in diagnostics %}
+     <li><a href="scheduling_checks/{{diag}}">{{diag}}</a></li>
+{% endfor %}
+</ul>
+
+{% endblock %}
