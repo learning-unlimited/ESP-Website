@@ -513,3 +513,7 @@ def set_csrf_token(request):
     from django.middleware.csrf import get_token
     get_token(request)
     return HttpResponse('') # Return the minimum possible 
+
+def thanks(request):
+    """Return a generic "thank you for submitting the form" page."""
+    return render_to_response('thanks.html', request, {})

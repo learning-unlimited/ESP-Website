@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %}
+Thanks!
+{% endblock %}
+
+{% block content %}
+
+<h2>Thanks!</h2>
+
+{% inline_qsd_block "thanks" %}
+<p>
+Your form submission has been saved.  You can return to the <a href="javascript:history.back()">previous page</a>.
+</p>
+{% end_inline_qsd_block %}
+
+{% endblock %}
