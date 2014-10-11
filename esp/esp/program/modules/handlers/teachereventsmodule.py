@@ -148,7 +148,7 @@ class TeacherEventsModule(ProgramModuleObj):
                 # Register for training
                 if data['training']:
                     ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['training'], role=self.availability_role())
-                return self.goToCore(tl)
+                return self.goToCore(tl, check_deadline=True)
         else:
             data = {}
             entries = self.entriesByTeacher(request.user)
