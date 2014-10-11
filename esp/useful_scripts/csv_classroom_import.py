@@ -49,9 +49,8 @@ for row in reader:
     print "%s from %s to %s" % (room_number, start.__repr__(), end.__repr__())
 
     # Find Reference Room from Reference Program
-    results = Resource.objects.filter(event__program=REFPROG,
-                                      res_type=RTYPE_CLASSROOM,
-                                      name=room_number)
+    results = Resource.objects.filter(res_type=RTYPE_CLASSROOM,
+                                      name=room_number).order_by("-id")
     if not results:
         print "Couldn't find reference information for %s; skipping" % room_number
         continue
