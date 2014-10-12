@@ -1,5 +1,5 @@
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
@@ -24,9 +24,19 @@ class SchedulingCheckModule(ProgramModuleObj):
     @needs_admin
     def scheduling_checks(self, request, tl, one, two, module, extra, prog):
          s = SchedulingCheckRunner(prog)
-         results = s.run_diagnostics()
+         if extra:
+              results = s.run_diagnostics([extra])
+         else:
+              results = s.run_diagnostics()
          context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def scheduling_check_list(self, request, tl, one, two, module, extra, prog):
+         s = SchedulingCheckRunner(prog)
+         context = {'diagnostics': s.all_diagnostics}
+         return render_to_response(self.baseDir()+'list.html', request, context)
 
     class Meta:
         proxy = True
@@ -152,28 +162,34 @@ class SchedulingCheckRunner:
                     l.append(ts)
           return l
 
-     def run_diagnostics(self):
-         return [
-             self.lunch_blocks_setup(),
-             self.high_school_only_setup(),
-             self.incompletely_scheduled_classes(),
-             self.wrong_classroom_type(),
-             self.classes_missing_resources(),
-             self.multiple_classes_same_room_same_time(),
-             self.teachers_unavailable(),
-             self.teachers_teaching_two_classes_same_time(),
-             self.classes_which_cover_lunch(),
-             self.room_capacity_mismatch(),
-             self.middle_school_evening_classes(),
-             self.classes_by_category(),
-             self.capacity_by_category(),
-             self.classes_by_grade(),
-             self.capacity_by_grade(),
-             self.admins_teaching_per_timeblock(),
-             self.teachers_who_like_running(),
-             self.hungry_teachers(),
-             self.no_overlap_classes(),
-          ]
+     def run_diagnostics(self, diagnostics=None):
+          if diagnostics is None:
+               diagnostics = self.all_diagnostics
+          return [getattr(self, diag)() for diag in diagnostics]
+         
+
+     # Update this to add a scheduling check.
+     all_diagnostics = [
+          'lunch_blocks_setup',
+          'high_school_only_setup',
+          'incompletely_scheduled_classes',
+          'wrong_classroom_type',
+          'classes_missing_resources',
+          'multiple_classes_same_room_same_time',
+          'teachers_unavailable',
+          'teachers_teaching_two_classes_same_time',
+          'classes_which_cover_lunch',
+          'room_capacity_mismatch',
+          'middle_school_evening_classes',
+          'classes_by_category',
+          'capacity_by_category',
+          'classes_by_grade',
+          'capacity_by_grade',
+          'admins_teaching_per_timeblock',
+          'teachers_who_like_running',
+          'hungry_teachers',
+          'no_overlap_classes',
+     ]
 
      #################################################
      #
