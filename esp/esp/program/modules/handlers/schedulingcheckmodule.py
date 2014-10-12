@@ -450,9 +450,9 @@ class SchedulingCheckRunner:
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":
-                             l_classrooms.append({ "Section": s, "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
+                             l_classrooms.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
                      else:
-                         l_resources.append({ "Section": s, "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
+                         l_resources.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
          self.calculated_classes_missing_resources = True
@@ -461,7 +461,7 @@ class SchedulingCheckRunner:
 
      def classes_missing_resources(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom"]})
+         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom", "First Hour"]})
 
      def missing_resources_by_hour(self):
          self._calculate_classes_missing_resources()
@@ -488,7 +488,7 @@ class SchedulingCheckRunner:
 
      def wrong_classroom_type(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom"]})
+         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom", "First Hour"]})
 
      def teachers_unavailable(self):
          l = []
