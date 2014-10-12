@@ -175,6 +175,7 @@ class SchedulingCheckRunner:
           'incompletely_scheduled_classes',
           'wrong_classroom_type',
           'classes_missing_resources',
+          'missing_resources_by_hour',
           'multiple_classes_same_room_same_time',
           'teachers_unavailable',
           'teachers_teaching_two_classes_same_time',
@@ -449,9 +450,9 @@ class SchedulingCheckRunner:
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":
-                             l_classrooms.append({ "Section": s, "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
+                             l_classrooms.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
                      else:
-                         l_resources.append({ "Section": s, "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
+                         l_resources.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
          self.calculated_classes_missing_resources = True
@@ -460,11 +461,34 @@ class SchedulingCheckRunner:
 
      def classes_missing_resources(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom"]})
+         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom", "First Hour"]})
+
+     def missing_resources_by_hour(self):
+         self._calculate_classes_missing_resources()
+         key_string = "Unfulfilled Request Numbers"
+         num_string = "num"
+         def ts_dict():
+             return { }
+
+         timeslots = self._timeslot_dict(slot=ts_dict)
+         for sec in self.l_missing_resources:
+             sec_times = sec["Section"].get_meeting_times()
+             for time in sec_times:
+                 timeslots[time][sec["Unfulfilled Request"].res_type] = \
+                     timeslots[time].get(sec["Unfulfilled Request"].res_type, 0) + 1
+         final_data = []
+         for t in timeslots:
+             for r in timeslots[t]:
+                 final_data.append({"Timeblock": t, "Resource type": r,
+                                "Number": timeslots[t][r]})
+         final_data.sort(key=lambda d: d["Timeblock"].start)
+         return self.formatter.format_table(
+               final_data, "Unfulfilled resource requests by hour",
+               {"headings": ["Timeblock", "Resource type", "Number"]})
 
      def wrong_classroom_type(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom"]})
+         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom", "First Hour"]})
 
      def teachers_unavailable(self):
          l = []
