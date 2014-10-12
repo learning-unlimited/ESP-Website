@@ -402,6 +402,7 @@ class SchedulingCheckRunner:
 
      def admins_teaching_per_timeblock(self):
           key_string = "Admins Teaching"
+          num_string = "num"
           def admin_dict():
                return { key_string: [] }
 
@@ -413,7 +414,11 @@ class SchedulingCheckRunner:
                     mt =  s.get_meeting_times()
                     for t in mt:
                          d[t][key_string].append(str(a))
-          return self.formatter.format_table(d, "Admins teaching per timeslot", {"headings":[key_string]})
+          for k in d:
+               d[k][num_string] = len(d[k][key_string])
+          return self.formatter.format_table(
+               d, "Admins teaching per timeslot",
+               {"headings": [num_string, key_string]})
 
      def _calculate_classes_missing_resources(self):
          if self.calculated_classes_missing_resources:
