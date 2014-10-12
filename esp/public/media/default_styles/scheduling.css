@@ -95,7 +95,7 @@ height: 458px;
 margin-bottom: 200px;
 }
 .matrix-row-header-box {
-display: block; z-index: auto;
+display: block; z-index: 98;
 position: relative; left: 0; width: 121px; height: 40px; top: 0; bottom: 0;
 border-right: 2px solid #000; border-bottom: 2px solid #000; background: #eee;
 text-align: center;
@@ -104,6 +104,9 @@ font-size: small;
       .matrix-row-header-box td {
 	  width: 100%; max-width: none; min-width: none;
 	  border-bottom: 1px solid #666; font-size: smaller;
+      }
+      .matrix-row-header-box .tooltip_popup {
+          left: 121px;
       }
 
 .matrix-cell-body {
