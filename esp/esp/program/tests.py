@@ -529,19 +529,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
+            name = u'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
+            name = u'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
+            name = u'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
