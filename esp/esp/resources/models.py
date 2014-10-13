@@ -178,6 +178,9 @@ class Resource(models.Model):
     name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
+    # do not use group_id, use res_group instead
+    # group_id can be removed with a future migration after all sites
+    # have successfully run the migration to res_group
     group_id = models.IntegerField(default=-1)
     res_group = models.ForeignKey(ResourceGroup, null=True)
     is_unique = models.BooleanField(default=False)
