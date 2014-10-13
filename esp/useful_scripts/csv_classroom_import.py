@@ -57,7 +57,7 @@ for row in reader:
     furnishings = set() # a set of ResourceTypes, not Resources
     furnishings.add(RTYPE_CLASS_SPACE) # always add classroom space
 
-    ref_furnishings = Resource.objects.filter(group=reference.group)
+    ref_furnishings = Resource.objects.filter(res_group=reference.res_group)
     for f in ref_furnishings:
         if f.res_type == RTYPE_CLASSROOM:
             # skip the classroom resource itself; we only want to copy projectors
@@ -93,7 +93,7 @@ for row in reader:
             resource.event = block
             resource.res_type = res_type
             resource.name = res_type.name + ' for ' + room_number
-            resource.group = room.group
+            resource.res_group = room.res_group
             resource.save()
 
 print "Done!"

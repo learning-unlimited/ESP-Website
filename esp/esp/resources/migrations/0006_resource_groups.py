@@ -23,7 +23,12 @@ class Migration(DataMigration):
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        pass
+        groups = orm.ResourceGroup.objects.all()
+        for group in groups:
+            resources = orm.Resource.objects.filter(res_group=group)
+            for res in resources:
+                res.group_id = group.id
+                res.save()
 
     models = {
         'auth.group': {
