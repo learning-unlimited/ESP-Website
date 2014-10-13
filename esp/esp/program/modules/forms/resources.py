@@ -181,7 +181,7 @@ class ClassroomForm(forms.Form):
                 new_resource.event = t
                 new_resource.res_type = f
                 new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
-                new_resource.group_id = new_room.group_id
+                new_resource.res_group = new_room.res_group
                 new_resource.save()
                 f.new_resource = new_resource
                 
@@ -207,18 +207,18 @@ class ClassroomForm(forms.Form):
             room.save()
             
             # Add furnishings that we didn't have before
-            for f in furnishings.exclude(resource__group_id=room.group_id):
+            for f in furnishings.exclude(resource__res_group=room.res_group):
                 #   Create associated resource
                 new_resource = Resource()
                 new_resource.event = room.event
                 new_resource.res_type = f
                 new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
-                new_resource.group_id = room.group_id
+                new_resource.res_group = room.res_group
                 new_resource.save()
                 f.new_resource = new_resource
 
             # Delete furnishings that we don't have any more
-            for f in Resource.objects.filter(group_id=room.group_id).exclude(id=room.id).exclude(res_type__in=furnishings):
+            for f in Resource.objects.filter(res_group=room.res_group).exclude(id=room.id).exclude(res_type__in=furnishings):
                 f.delete()
 
 class ClassroomImportForm(forms.Form):
