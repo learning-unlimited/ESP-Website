@@ -196,7 +196,9 @@ class Resource(models.Model):
     def save(self, *args, **kwargs):
         if self.res_group is None:
             #   Make a new group for this
-            self.res_group = ResourceGroup()
+            new_group = ResourceGroup()
+            new_group.save()
+            self.res_group = new_group
             self.is_unique = True
         else:
             self.is_unique = False
