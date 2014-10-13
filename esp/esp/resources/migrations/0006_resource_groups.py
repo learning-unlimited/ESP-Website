@@ -15,19 +15,15 @@ class Migration(DataMigration):
         resources = orm.Resource.objects.all()
         for gid in resources.values_list('group_id', flat=True).distinct():
             new_group = orm.ResourceGroup()
+            new_group.save()
             in_group = orm.Resource.objects.filter(group_id=gid)
             for res in in_group:
                 res.res_group = new_group
+                res.save()
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        res_groups = orm.ResourceGroup.objects.all()
-        counter = 1
-        for group in groups:
-            resources = orm.Resource.objects.filter(res_group=group)
-            for res in resources:
-                res.group_id = counter
-            counter += 1
+        pass
 
     models = {
         'auth.group': {
