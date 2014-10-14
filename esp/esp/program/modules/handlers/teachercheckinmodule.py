@@ -153,7 +153,10 @@ class TeacherCheckinModule(ProgramModuleObj):
     def get_phone(user):
         """Get the phone number to display for a user."""
         contact_info = user.getLastProfile().contact_user
-        return contact_info.phone_cell or contact_info.phone_day
+        default = '(missing contact info)'
+        if contact_info:
+            return contact_info.phone_cell or contact_info.phone_day or default
+        return default
 
     def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
                            show_flags=True):
@@ -263,7 +266,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                     section.any_arrived = any(teacher.id in arrived
                                               for teacher in section.teachers)
                     section.room = (section.prettyrooms() or [None])[0]
-                    for teacher in section.teachers:
+                    # section.teachers is a property, so we can't add extra
+                    # data to the ESPUser objects and have them stick. We must
+                    # make a new list and then modify that.
+                    section.teachers_list = list(section.teachers)
+                    for teacher in section.teachers_list:
                         teacher.phone = teacher_phones[teacher.id]
                     sections_by_class[section.parent_class_id] = section
 

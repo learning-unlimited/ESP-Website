@@ -127,7 +127,7 @@
             {{ section.begin_time }}
         {% endif %}
     </td>
-    {% for teacher in section.teachers %}
+    {% for teacher in section.teachers_list %}
         {% if teacher.id in arrived %}
         <td class="checked-in">
         {% else %}
