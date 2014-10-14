@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db.models.query import Q
 from django.http import HttpResponseBadRequest, HttpResponse
@@ -44,6 +44,7 @@ from esp.web.util        import render_to_response
 from esp.utils.query_utils import nest_Q
 
 from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models.class_ import STATUS_CHOICES_DICT
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
@@ -82,108 +83,134 @@ class ClassFlagModule(ProgramModuleObj):
         return descs
 
     def jsonToQuerySet(self, j):
-        '''Takes a dict decoded from the json sent by the javascript in /manage///classflags/ and converts it to QuerySet.'''
+        '''Takes a dict from classflags and returns a QuerySet.
+
+        The dict is decoded from the json sent by the javascript in
+        /manage///classflags/; the format is specified in the docstring of
+        classflags() below.
+        '''
         base = ClassSubject.objects.filter(parent_program=self.program)
         time_fmt = "%m/%d/%Y %H:%M"
-        t = j['type']
-        v = j.get('value')
-        if 'flag' in t:
+        query_type = j['type']
+        value = j.get('value')
+        if 'flag' in query_type:
             lookups = {}
-            if 'id' in v:
-                lookups['flag_type'] = v['id']
-            for i in ['created', 'modified']:
-                when = v.get(i+'_when')
-                lookup = i + '_time'
+            if 'id' in value:
+                lookups['flag_type'] = value['id']
+            for time_type in ['created', 'modified']:
+                when = value.get(time_type + '_when')
+                lookup = time_type + '_time'
                 if when == 'before':
                     lookup += '__lt'
                 elif when == 'after':
                     lookup += '__gt'
                 if when:
-                    lookups[lookup] = datetime.datetime.strptime(v[i+'_time'], time_fmt)
-            if 'not' in t:
+                    lookups[lookup] = datetime.datetime.strptime(value[time_type+'_time'], time_fmt)
+            if 'not' in query_type:
                 # Due to https://code.djangoproject.com/ticket/14645, we have
                 # to write this query a little weirdly.
                 return base.exclude(id__in=ClassFlag.objects.filter(**lookups).values('subject'))
             else:
                 return base.filter(nest_Q(Q(**lookups), 'flags'))
-        elif t=='category':
-            return base.filter(category=v)
-        elif t=='not category':
-            return base.exclude(category=v)
-        elif t=='status':
-            return base.filter(status=v)
-        elif t=='not status':
-            return base.exclude(status=v)
-        elif 'scheduled' in t:
+        elif query_type == 'category':
+            return base.filter(category=value)
+        elif query_type == 'not category':
+            return base.exclude(category=value)
+        elif query_type == 'status':
+            return base.filter(status=value)
+        elif query_type == 'not status':
+            return base.exclude(status=value)
+        elif 'scheduled' in query_type:
             lookup = 'sections__meeting_times__isnull'
-            if 'some sections' in t:
+            if 'some sections' in query_type:
                 # Get classes with sections with meeting times.
                 return base.filter(**{lookup: False})
-            elif 'not all sections' in t:
+            elif 'not all sections' in query_type:
                 # Get classes with sections with meeting times.
                 return base.filter(**{lookup: True})
-            elif 'all sections' in t:
+            elif 'all sections' in query_type:
                 # Exclude classes with sections with no meeting times.
                 return base.exclude(**{lookup: True})
-            elif 'no sections' in t:
+            elif 'no sections' in query_type:
                 # Exclude classes with sections with meeting times.
                 return base.exclude(**{lookup: False})
         else:
-            # Here v is going to be a list of subqueries.  First, evaluate them.
-            subqueries = [self.jsonToQuerySet(i) for i in v]
-            if t=='all':
+            # Here value is going to be a list of subqueries.  First, evaluate them.
+            subqueries = [self.jsonToQuerySet(query_json) for query_json in value]
+            if query_type == 'all':
                 return reduce(operator.and_, subqueries)
-            elif t=='any':
+            elif query_type == 'any':
                 return reduce(operator.or_, subqueries)
-            elif t=='none':
+            elif query_type == 'none':
                 return base.exclude(pk__in=reduce(operator.or_, subqueries))
-            elif t=='not all':
+            elif query_type == 'not all':
                 return base.exclude(pk__in=reduce(operator.and_, subqueries))
             else:
                 raise ESPError('Invalid json for flag query builder!')
 
     def jsonToEnglish(self, j):
-        '''Takes a dict decided from the json sent by the javscript in /manage///classflags/ and converts it to something vaguely human-readable.'''
-        t = j['type']
-        v = j.get('value')
-        if 'flag' in t:
-            if 'id' in v:
-                base = t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v['id']).name+'"'
-            elif 'not' in t:
-                base = 'no flag'
+        '''Takes a dict from classflags and returns something human-readable.
+
+        The dict is decoded from the json sent by the javascript in
+        /manage///classflags/; the format is specified in the docstring of
+        classflags() below.
+        '''
+        query_type = j['type']
+        value = j.get('value')
+        if 'flag' in query_type:
+            if 'id' in value:
+                base = (query_type[:-4] + 'the flag "' +
+                        ClassFlagType.objects.get(id=value['id']).name + '"')
+            elif 'not' in query_type:
+                base = 'not flags'
             else:
-                base = 'a flag'
+                base = 'any flag'
             modifiers = []
-            for i in ['created', 'modified']:
-                if i+'_when' in v:
-                    modifiers.append(i+" "+v[i+'_when']+" "+v[i+'_time'])
+            for time_type in ['created', 'modified']:
+                if time_type+'_when' in value:
+                    modifiers.append(time_type + " " +
+                                     value[time_type + '_when'] + " " +
+                                     value[time_type + '_time'])
             base += ' '+' and '.join(modifiers)
             return base
-        elif 'category' in t:
-            return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
-        elif 'status' in t:
-            statusname = {
-                    10: 'Accepted',
-                    5: 'Accepted but hidden',
-                    0: 'Unreviewed',
-                    -10: 'Rejected',
-                    -20: 'Cancelled',
-                    }[int(v)]
-            return t[:-6]+'the status "'+statusname+'"'
-        elif 'scheduled' in t:
-            return t
+        elif 'category' in query_type:
+            return (query_type[:-8] + 'the category "' +
+                    str(ClassCategories.objects.get(id=value)) + '"')
+        elif 'status' in query_type:
+            statusname = STATUS_CHOICES_DICT[int(value)].capitalize()
+            return query_type[:-6]+'the status "'+statusname+'"'
+        elif 'scheduled' in query_type:
+            return query_type
         else:
-            subqueries = [self.jsonToEnglish(i) for i in v]
-            return t+" of ("+', '.join(subqueries)+")"
+            subqueries = [self.jsonToEnglish(query) for query in value]
+            return query_type+" of ("+', '.join(subqueries)+")"
 
     @main_call
     @needs_admin
     def classflags(self, request, tl, one, two, module, extra, prog):
-        '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
+        '''An interface to query for some boolean expression of flags.
 
-        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["flag", "not flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
+        The front-end javascript will allow the user to build a query, then
+        POST it in the form of a json.  The response to said post should be the
+        list of classes matching the flag query.
+
+        The json should be a single object, with keys 'type' and 'value'.  The
+        type of 'value' depends on the value of 'type':
+            * If 'type' is 'flag' or 'not flag', 'value' should be an object,
+            with some or all of the keys 'id', 'created_time', 'modified_time'
+            (all should be strings).
+            * If 'type' is 'category', 'not category', 'status', or
+            'not status', 'value' should be a string.
+            * If 'type' is 'some sections scheduled',
+            'not all sections scheduled', 'all sections scheduled', or
+            'no sections scheduled', 'value' should be omitted.
+            * If 'type' is 'all', 'any', 'none', or 'not all', 'value' should
+            be an array of objects of the same form.
+        '''
         # Grab the data from either a GET or a POST.
-        # We allow a GET request to make them linkable, and POST requests for some kind of backwards-compatibility with the way the interface previously worked.
+        # We allow a GET request to make them linkable, and POST requests for
+        # some kind of backwards-compatibility with the way the interface
+        # previously worked.
         if request.method == 'GET':
             if 'query' in request.GET:
                 data = request.GET['query']

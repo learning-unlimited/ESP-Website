@@ -1,6 +1,5 @@
 import os
 import csv
-import string
 import random
 import datetime
 import collections

@@ -31,9 +31,9 @@ class TimeslotForm(forms.Form):
         slot.start = self.cleaned_data['start']
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
         if self.cleaned_data['openclass']:
-            slot.event_type = EventType.objects.get(description="Open Class Time Block")
+            slot.event_type = EventType.get_from_desc("Open Class Time Block")
         else:
-            slot.event_type = EventType.objects.get(description="Class Time Block")    # default event type for now
+            slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
         slot.program = program
         slot.save()
        

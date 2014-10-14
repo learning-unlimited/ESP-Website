@@ -48,7 +48,7 @@ td>ul { list-style-type: none; padding: 0px }
 {% for f in forms %}
 <tr style="border-bottom: 1px dashed grey;">
     <td width="120px">
-        {{ f.form.cost }}
+        {% if f.form.option %}{{ f.form.option }}{% else %}{{ f.form.cost }}{% endif %}
         {% if f.LineItem.negative_amount %}
             <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
             {% endif %}
@@ -60,7 +60,7 @@ td>ul { list-style-type: none; padding: 0px }
         {% if f.LineItem.num_options %}
             <button type="button"
                     class="remove-item"
-                    name="{{ f.form.prefix }}-cost"
+                    name="{{ f.form.prefix }}-option"
                     onclick="remove_item(this);">
                 Remove this item
             </button>
@@ -70,7 +70,9 @@ td>ul { list-style-type: none; padding: 0px }
     <td>{% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>  {% endif %}
 {% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}
 {% else %}<b>{{ f.LineItem.text }}</b>{% endif %}</td>
-    <td>{% if f.LineItem.num_options %}varies{% else %}${{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
+    <td>{% if f.LineItem.num_options %}{% with f.LineItem.options_cost_range as cost_range %}
+    {% if cost_range.0 == cost_range.1 %}${{ cost_range.0|floatformat:2 }}{% else %}${{ cost_range.0|floatformat:2 }}--{{ cost_range.1|floatformat:2 }}{% endif %}
+    {% endwith %}{% else %}${{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
 </tr>
 {% endfor %}
 <tr>

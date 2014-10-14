@@ -1,0 +1,53 @@
+
+
+<table class="table table-bordered">
+    <thead>
+    <tr>
+        <td colspan="2" style="text-align: center; background-color: #ccc;">
+            <h3>Transaction Record</h3>
+            <div style="font-size: 0.9em;">
+            <b>User:</b> {{ user.name }}<br />
+            <b>Event:</b> {{ program.niceName }}
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td><b>Item description</b></td>
+        <td><b>Cost</b></td>
+    </tr>
+    </thead>
+    <tbody>
+    {% for item in itemizedcosts %}
+    <tr>
+        <td width="75%">{{ item.line_item.text }}</td>
+        <td>${{ item.amount|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+    <tr id="donation_line_item">
+        <td>Donation to Learning Unlimited</td>
+        <td><span id="donation_amount_display">${{ amount_donation|floatformat:2 }}</span></td>
+    </tr>
+    {% if sibling_discount %}
+    <tr>
+        <td>Sibling Discount</td>
+        <td>-${{ sibling_discount|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if financial_aid %}
+    <tr>
+        <td>Financial Aid Grant</td>
+        <td>-${{ financial_aid|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if amount_paid %}
+    <tr>
+        <td>Amount Paid (so far)</td>
+        <td>-${{ amount_paid|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td align="right"><b>Amount Due:</b></td>
+        <td><span id="total_amount_display">${{ itemizedcosttotal|floatformat:2 }}</span></td>
+    </tr>
+    </tbody>
+</table>

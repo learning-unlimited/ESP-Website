@@ -30,14 +30,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db import models, transaction
 from django.db.models import Q
+from django.db.models.manager import Manager
 from django.contrib.auth.models import User
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
-from esp.db.models.prepared import ProcedureManager
 from esp.users.models import ESPUser
 
 from datetime import datetime
@@ -52,7 +52,7 @@ class CompletedTransactionException(AccountingException):
 class EmptyTransactionException(AccountingException):
     pass
 
-class LineItemTypeManager(ProcedureManager):
+class LineItemTypeManager(Manager):
     def forProgram(self, program):
         """ Get all LineItemTypes (currently including optional ones) for the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
@@ -249,7 +249,7 @@ class Transaction(models.Model):
         return li
 
 
-class LineItemManager(ProcedureManager):
+class LineItemManager(Manager):
     def forProgram(self, program):
         """ Get all LineItems (currently including optional ones) whose types are anchored in the given program. """
         a = GetNode(program.anchor.get_uri()+'/LineItemTypes')
