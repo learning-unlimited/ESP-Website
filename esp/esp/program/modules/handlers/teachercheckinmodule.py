@@ -181,6 +181,9 @@ class TeacherCheckinModule(ProgramModuleObj):
                                         teacher check-ins on this date, as of
                                         this time.
                                         Defaults to datetime.now().
+          show_flags (bool, optional):  If True, prefetch class flags
+                                        information for the list of class
+                                        sections.
 
         NOTE: For multi-week programs, classes are only scheduled once on the
         website, even though they meet multiple times and teachers need to be
