@@ -73,12 +73,10 @@ class DonationModule(ProgramModuleObj):
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
-            'offer_donation': True,
             'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
         }
-        #DEFAULTS.update(settings.DONATION_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
+        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
