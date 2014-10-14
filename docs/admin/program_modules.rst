@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (15)
+Student modules (16)
 ====================
 
 Extra Registration Info (CustomFormModule)
@@ -272,10 +272,16 @@ Text Message Reminders (TextMessageModule)
 
 With this module, students will be prompted to enter a phone number at which you will send reminders about the program (typically around the closing of registration, or the day before the program).  You can get a list of these numbers using the user list generator.
 
-This module does *NOT* send text messages, although this feature will be included in a future version of the site.  Please send your messages using a third party service.
+This module does *NOT* send text messages. For that functionality, see the "Group Text Module" below.
 
+Formstack Application Module
+----------------------------
 
-Teacher modules (12)
+This is the module that embeds a Formstack form on a student-facing page for
+student applications.  For more information, see
+`</docs/admin/student_apps.rst>`_.
+
+Teacher modules (13)
 ====================
 
 Teacher Availability (AvailabilityModule)
@@ -363,8 +369,13 @@ This module will allow teachers to create one or more application questions for 
 
 Do not include this module unless you intend to review the responses in order to determine which students are admitted to the program.  It is unnecessary and confusing otherwise.
 
+Teacher Admissions Dashboard
+----------------------------
 
-Management modules (24)
+Provides an interface for teachers to review applications for their class.
+For more information, see `</docs/admin/student_apps.rst>`_.
+
+Management modules (26)
 =======================
 
 Class Management For Admin (AdminClass)
@@ -447,18 +458,39 @@ This module allows you to use the Web site to send e-mail to participants in you
 
 To send an HTML e-mail (e.g. with images and formatting), begin your e-mail text with <html> and end it with </html>.  Besides using proper HTML code in the message text, please test send the message to yourself (before sending to a larger list) so you can verify that the message displays properly.
 
-Credit Card Module (CreditCardModule_Cybersource)
--------------------------------------------------
+Cybersource Credit Card Module
+------------------------------
 
 This is a module to allow credit card payments using the Cybersource hosted order page.  It is used only by MIT.
 
-Credit Card Module (CreditCardModule_FirstData)
--------------------------------------------------
+Stripe Credit Card Module
+-------------------------
 
-This is a module to allow credit card payments using the First Data hosted order page.  It can be used by LU hosted sites.  It will need to be configured for your specific program, so please contact your mentors and support team to discuss well in advance (at least one month) of your student registration.
+This is a module to allow credit card payments using Stripe.  It can be used by
+LU hosted sites.  It will need to be configured for your specific program, so
+please contact your mentors and/or websupport@learningu.org to discuss well in
+advance (at least one month) of your student registration.
 
-Credit Card Viewer(CreditCardViewer_Cybersource)
--------------------------------------------------
+The STRIPE_CONFIG settings should be configured for the module to interact with
+Stripe API servers.  There are two possible public/secret key pairs that can be
+used: one for live transactions, and one for testing.
+
+Once Stripe is configured, you can use the module for your program by enabling
+it in the admin panel and opening the "Pay for a program" deadline for
+students.  On the page, students will be able to confirm their current charges,
+and then enter their credit card information.  They can also opt to make a
+donation to LU.
+
+After submitting credit card information form, the data will be submitted
+directly to Stripe servers. The user will then send a Stripe token variable
+back to ESP-Website, which will be used to create a Stripe charge object. If
+invalid credit card information is submitted, Stripe will redirect back to
+website with error field set rather than the token.
+
+You will probably also want to enable the "Credit Card Viewer" (see below).
+
+Credit Card Viewer
+------------------
 
 This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.  
 
@@ -530,6 +562,16 @@ Volunteer Management (VolunteerManage)
 
 Include this module if you will be using the Web site for volunteer registration.  It lets you define time slots for volunteering (each with a desired number of volunteers) and shows you who has signed up for each slot.
 
+Group Text Module
+-----------------
+
+
+
+Admin Admissions Dashboard
+--------------------------
+
+Provides an interface for admins to review all of the applications in the
+program. For more information, see `</docs/admin/student_apps.rst>`_.
 
 Onsite modules (8)
 ==================
