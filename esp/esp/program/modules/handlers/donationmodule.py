@@ -86,7 +86,7 @@ class DonationModule(ProgramModuleObj):
 
     def line_item_type(self):
         pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(text=self.get_setting('donation_text'))
+        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):
