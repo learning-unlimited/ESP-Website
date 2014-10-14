@@ -46,6 +46,17 @@ see `<docs/admin/student_apps.rst>`_.
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+There have been various improvements to the class changes grid, including:
+
+- Enrolled classes will always be displayed, even if their categories are
+  hidden.
+
+- It is possible to show all / hide all categories at once, without manually
+  toggling all categories.
+
+- Timeblocks that have already occured can be hidden from the page, so that the
+  timeblock on the left is the current or upcoming timeblock.
+
 Deadline for walk-in activities / open classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -136,6 +147,12 @@ Minor feature additions and bugfixes
   now view their availability via a link to the check availability module.
 
 - A user's account can be activated/deactivated from their userview page.
+
+- The scrolling list of open classes (/onsite/<program>/<instance>/classList)
+  now has a landing page where you can toggle settings, such as scroll speed,
+  refresh rate, timeblocks, and sorting. WARNING: Don't set the refresh rate
+  too low (too little time between refreshes), because this can crash your
+  site.
 
 - Permissions can be expired/renewed in bulk from the Permission admin panel
   page.
