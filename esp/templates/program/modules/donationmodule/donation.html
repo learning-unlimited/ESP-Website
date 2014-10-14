@@ -23,7 +23,6 @@
 <script type="text/javascript">
 <!--
 // allow adding a donation
-var baseAmount = parseFloat({{ amount_without_donation }});
 var donationAmount = parseFloat({{ amount_donation }});
 var donationSet = {{ has_donation|lower }};
 
@@ -35,9 +34,6 @@ function updateDonationOnPage() {
         type: "GET",
 		dataType: "json",
     });
-
-    $j("#donation_line_item").toggle(donationSet);
- 
 }
 
 function toggleDonation() {
@@ -46,10 +42,7 @@ function toggleDonation() {
     if (donationSet) {
         donationAmount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
     }
-    //  console.log("Updated donationSet = " + donationSet + ", donationAmount = " + donationAmount);
     $j("#donation_choices").toggle();
-    $j("#donation_line_item").toggle();
-
     updateDonationOnPage();
 }
 function updateDonationAmount() {
@@ -59,26 +52,15 @@ function updateDonationAmount() {
 
 $j(document).ready(function () {
     $j("input:radio[name='amount_donation']").click(updateDonationAmount);
-{% if not has_donation %}
-    $j("#donation_choices").hide();
-    $j("#donation_line_item").hide();
-{% endif %}
 });
 -->
 </script>
 {% endblock %}
 
 {% block content %}
-<h1>Credit Card Payment for {{ program.niceName }}</h1>
-
-<h3>Instructions for pledging a donation:</h3>
-<p><ol>
-<li>If you are concerned that there is a problem, please <a href="mailto:{{ program.director_email }}">e-mail the program directors</a>.<br />
-</ol></p>
-
+<h1>Optional Donation for {{ program.niceName }}</h1>
 
 <form action="/learn/{{ program.url }}/charge_payment" method="POST">
-{% if module.settings.offer_donation %}
 <input type="checkbox" name="select_donation" onclick="toggleDonation();" {% if has_donation %}checked {% endif %}/>
 {% inline_program_qsd_block program "learningu_donation" %}
 Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.

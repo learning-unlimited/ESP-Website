@@ -110,47 +110,25 @@ class DonationModule(ProgramModuleObj):
     @meets_deadline('/ExtraCosts')
     def donation(self, request, tl, one, two, module, extra, prog):
 
-        #   Check that the user has completed all required modules so that they
-        #   are "finished" registering for the program.  (In other words, they
-        #   should be registered for at least one class, and filled out other
-        #   required forms, before paying by credit card.)
-        modules = prog.getModules(request.user, tl)
-        completedAll = True
-
-        #   Check for setup of module.  This is also required to initialize settings.
-        #self.check_setup()
-
         user = ESPUser(request.user)
 
-        iac = IndividualAccountingController(self.program, request.user)
+        iac = IndividualAccountingController(self.program, user)
         context = {}
         context['module'] = self
         context['program'] = prog
         context['user'] = user
-        context['identifier'] = iac.get_identifier()
-   
-        donate_type = ''#FAILS iac.get_lineitemtypes().get(text=self.settings['donation_text'])
-   
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
-        donation_prefs = iac.get_preferences([donate_type,])
+        donation_prefs = iac.get_preferences([self.line_item_type(),])
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
-        context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
-
-        if 'HTTP_HOST' in request.META:
-            context['hostname'] = request.META['HTTP_HOST']
-        else:
-            context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
-        context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
 
         return render_to_response(self.baseDir() + 'donation.html', request, context)
-
 
     class Meta:
         proxy = True
