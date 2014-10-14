@@ -69,56 +69,47 @@ class DonationModule(ProgramModuleObj):
             }
 
     def apply_settings(self):
-        #   Rather than using a model in module_ext.*, configure the module
+             #   Rather than using a model in module_ext.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
             'offer_donation': True,
             'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
+            'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
-        #DEFAULTS.update(settings.DONATION_CONFIG)
+        DEFAULTS.update(settings.STRIPE_CONFIG)
         tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
 
-    def get_setting(self, name, default=None):
-        return self.apply_settings().get(name, default)
+    def check_setup(self):
+        """ Validate the keys specified in the stripe_settings Tag.
+            If something is wrong, provide an error message which will hopefully
+            only be seen by admins during setup. """
 
-    def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
-    have_paid = isCompleted
+        self.apply_settings()
 
-    def students(self, QObject = False):
-        #   This query represented students who have a payment transfer from the outside
-        pac = ProgramAccountingController(self.program)
-        QObj = Q(transfer__source__isnull=True, transfer__line_item=pac.default_payments_lineitemtype())
-
-        if QObject:
-            return {'creditcard': QObj}
-        else:
-            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
-
-    def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
-
+        #   Check for a 'donation' line item type on this program, which we will need
+        #   Note: This could also be created by default for every program,
+        #   in the accounting controllers.
+        (lit, created) = LineItemType.objects.get_or_create(
+            text=self.settings['donation_text'],
+            program=self.program,
+            required=False
+        )
 
     @main_call
     @usercheck_usetl
-    @meets_deadline('/Payment')
     def donation(self, request, tl, one, two, module, extra, prog):
-
-        #   Check that the user has completed all required modules so that they
+  #   Check that the user has completed all required modules so that they
         #   are "finished" registering for the program.  (In other words, they
         #   should be registered for at least one class, and filled out other
-        #   required forms, before paying by credit card.)
-        modules = prog.getModules(request.user, tl)
-        completedAll = True
-
+        #   required forms, before paying by credit card.)    
+      
         #   Check for setup of module.  This is also required to initialize settings.
-        #self.check_setup()
+        self.check_setup()
 
         user = ESPUser(request.user)
 
@@ -128,10 +119,9 @@ class DonationModule(ProgramModuleObj):
         context['program'] = prog
         context['user'] = user
         context['identifier'] = iac.get_identifier()
-   
-        donate_type = ''#FAILS iac.get_lineitemtypes().get(text=self.settings['donation_text'])
-   
-
+    
+        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text'])
+      
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([donate_type,])
         if donation_prefs:
@@ -140,8 +130,7 @@ class DonationModule(ProgramModuleObj):
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
-        context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
-
+    
         if 'HTTP_HOST' in request.META:
             context['hostname'] = request.META['HTTP_HOST']
         else:
