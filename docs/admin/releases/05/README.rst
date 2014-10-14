@@ -80,6 +80,14 @@ including JavaScript for analytics or similar tools.
 Teacher bio privacy setting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+It is now possible for teachers to make their biographies private, so that no
+non-admins can see their biography or list of past classes. To hide their
+biography, a teacher needs to edit their teacher biography
+(/teach/teachers/<username>/bio.edit.html), check the box "Hide your teacher
+biography", and then clicking "Save" at the bottom. Admins can also do this via
+morphing, or by finding the correct TeacherBio (at /admin/program/teacherbio/),
+checking the "Hidden" box, and then clicking "Save" at the bottom.
+
 Class flags improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
