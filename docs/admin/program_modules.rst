@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (15)
+Student modules (16)
 ====================
 
 Extra Registration Info (CustomFormModule)
@@ -274,7 +274,14 @@ With this module, students will be prompted to enter a phone number at which you
 
 This module does *NOT* send text messages. For that functionality, see the "Group Text Module" below.
 
-Teacher modules (12)
+Formstack Application Module
+----------------------------
+
+This is the module that embeds a Formstack form on a student-facing page for
+student applications.  For more information, see
+`</docs/admin/student_apps.rst>`_.
+
+Teacher modules (13)
 ====================
 
 Teacher Availability (AvailabilityModule)
@@ -362,8 +369,13 @@ This module will allow teachers to create one or more application questions for 
 
 Do not include this module unless you intend to review the responses in order to determine which students are admitted to the program.  It is unnecessary and confusing otherwise.
 
+Teacher Admissions Dashboard
+----------------------------
 
-Management modules (25)
+Provides an interface for teachers to review applications for their class.
+For more information, see `</docs/admin/student_apps.rst>`_.
+
+Management modules (26)
 =======================
 
 Class Management For Admin (AdminClass)
@@ -554,6 +566,12 @@ Group Text Module
 -----------------
 
 
+
+Admin Admissions Dashboard
+--------------------------
+
+Provides an interface for admins to review all of the applications in the
+program. For more information, see `</docs/admin/student_apps.rst>`_.
 
 Onsite modules (8)
 ==================

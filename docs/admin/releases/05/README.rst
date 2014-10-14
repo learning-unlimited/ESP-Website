@@ -37,6 +37,12 @@ For more information on usage, see
 Student applications module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Some programs may want to run admissions and have students apply for enrollment
+to specific classes.  The new application system provides functionality for
+program and class-specific applications, teacher review of applicants, admin
+review of applicants, and admin admissions management. For more information,
+see `<docs/admin/student_apps.rst>`_.
+
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
