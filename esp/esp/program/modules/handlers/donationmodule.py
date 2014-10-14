@@ -107,7 +107,7 @@ class DonationModule(ProgramModuleObj):
 
     @main_call
     @usercheck_usetl
-    @meets_deadline('/Payment')
+    @meets_deadline('/ExtraCosts')
     def donation(self, request, tl, one, two, module, extra, prog):
 
         #   Check that the user has completed all required modules so that they
