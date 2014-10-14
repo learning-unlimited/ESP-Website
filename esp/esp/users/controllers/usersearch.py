@@ -41,6 +41,7 @@ from esp.dbmail.models import MessageRequest
 from django.db.models import Count
 from django.db.models.query import Q
 
+import collections
 import re
 
 class UserSearchController(object):
@@ -277,8 +278,16 @@ class UserSearchController(object):
         qobject = (q_extra & q_program & Q(is_active=True))
 
         #strip out duplicate clauses
-        childset = set(qobject.children)
-        qobject.children = list(childset)
+        #   Note: in some cases, the children of the Q object are unhashable.
+        #   Keep these separate.
+        clauses_hashable = []
+        clauses_unhashable = []
+        for clause in qobject.children:
+            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], collections.Hashable)):
+                clauses_hashable.append(clause)
+            else:
+                clauses_unhashable.append(clause)
+        qobject.children = list(set(clauses_hashable)) + clauses_unhashable
 
         if subquery:
             qobject = qobject & subquery
