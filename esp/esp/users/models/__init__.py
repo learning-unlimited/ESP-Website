@@ -2283,6 +2283,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
             ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
+            ("Teacher/Events", "Teacher training signup"),
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/MainPage", "Registration mainpage"),
             ("Teacher/Survey", "Teacher Survey"),
