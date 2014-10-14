@@ -98,13 +98,12 @@ class DonationModule(ProgramModuleObj):
         QObj = Q(transfer__line_item=self.line_item_type())
 
         if QObject:
-            return {'creditcard': QObj}
+            return {'donation': QObj}
         else:
-            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
+            return {'donation': ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
-
+        return {'donation': """Students who have chosen to make an optional donation."""}
 
     @main_call
     @usercheck_usetl
