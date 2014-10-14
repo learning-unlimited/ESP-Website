@@ -57,6 +57,11 @@ There have been various improvements to the class changes grid, including:
 - Timeblocks that have already occured can be hidden from the page, so that the
   timeblock on the left is the current or upcoming timeblock.
 
+Improvements to scheduling checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
 Deadline for walk-in activities / open classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -125,6 +130,9 @@ Minor feature additions and bugfixes
 - New "cancel registration" deadline can be set to specify when students are
   allowed to cancel their registrations themselves.
 
+- New "Teacher training signup" deadline can be set to specify when teachers
+  are allowed to sign up for teacher training.
+
 - When a teacher modifies a class, the class comments email will have a
   subject line that starts with "Re:".  This makes it clearer when new
   classes are being registered versus when existing classes are being
@@ -153,6 +161,10 @@ Minor feature additions and bugfixes
   refresh rate, timeblocks, and sorting. WARNING: Don't set the refresh rate
   too low (too little time between refreshes), because this can crash your
   site.
+
+- Volunteers can remove all their shifts and drop out of volunteering for the
+  program. It was previously possible to remove some shifts, but a bug
+  prevented removing all of them.
 
 - Permissions can be expired/renewed in bulk from the Permission admin panel
   page.
