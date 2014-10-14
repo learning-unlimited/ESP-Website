@@ -77,26 +77,26 @@ class Event(models.Model):
         dur = self.end - self.start
         hours = int(dur.seconds / 3600)
         minutes = int(dur.seconds / 60) - hours * 60
-        return '%d hr %d min' % (hours, minutes)
+        return u'%d hr %d min' % (hours, minutes)
     
     def __unicode__(self):
-        return self.start.strftime('%a %b %d: ') + self.short_time()
+        return self.start.strftime('%a %b %d: ').decode('utf-8') + self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        day_list = [u'Mon', u'Tue', u'Wed', u'Thu', u'Fri', u'Sat', u'Sun']
         
-        start_minutes = ''
-        end_minutes = ''
-        start_ampm = ''
+        start_minutes = u''
+        end_minutes = u''
+        start_ampm = u''
         if self.start.minute != 0:
-            start_minutes = ':%02d' % self.start.minute
+            start_minutes = u':%02d' % self.start.minute
         if self.end.minute != 0:
-            end_minutes = ':%02d' % self.end.minute
+            end_minutes = u':%02d' % self.end.minute
         if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p')
+            start_ampm = self.start.strftime(' %p').decode('utf-8')
         
         return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
 
     def is_happening(self, time=datetime.now()):
         """ Return True if the specified time is between start and end """
@@ -165,24 +165,24 @@ class Event(models.Model):
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a')
-        s2 = self.end.strftime('%a')
+        s = self.start.strftime('%a').decode('utf-8')
+        s2 = self.end.strftime('%a').decode('utf-8')
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,')
-            s2 += self.end.strftime(', %b %d,')
+            s += self.start.strftime(', %b %d,').decode('utf-8')
+            s2 += self.end.strftime(', %b %d,').decode('utf-8')
         if s != s2:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
+               + s2 + u' ' + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
         else:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
+               + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
     
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d')
+        return self.start.strftime('%A, %B %d').decode('utf-8')
     
     def pretty_start_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
+        return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
     
     def num_classes_assigned(self):
         #   Return the number of classes assigned to classrooms in this time slot.
@@ -212,7 +212,7 @@ class EmailReminder(models.Model):
     sent = models.BooleanField(default=True)
 
     def __unicode__(self):
-        return unicode(self.event) + ': ' + unicode(self.email)
+        return unicode(self.event) + u': ' + unicode(self.email)
 
 def install():
     """

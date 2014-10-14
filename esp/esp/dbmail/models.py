@@ -327,19 +327,31 @@ class MessageRequest(models.Model):
             # For each user, create an EmailRequest and a TextOfEmail
             # for each address given by the output of the sendto function.
             for address_pair in sendto_fn(user):
-                newemailrequest = EmailRequest(target = user, msgreq = self)
+                newemailrequest = {'target': user, 'msgreq': self}
+                send_to = ESPUser.email_sendto_address(*address_pair)
+                newtxt = {
+                    'send_to': send_to,
+                    'send_from': send_from,
+                    'subject': subject,
+                    'msgtext': msgtext,
+                    'defaults': {'sent': None},
+                }
 
-                newtxt = TextOfEmail(send_to   = ESPUser.email_sendto_address(*address_pair),
-                                     send_from = send_from,
-                                     subject   = subject,
-                                     msgtext   = msgtext,
-                                     sent      = None)
+                # Use get_or_create so that, if this send_to address is
+                # already receiving the exact same email, it doesn't need to
+                # get sent a second time.
+                # This is useful to de-duplicate announcement emails for
+                # people with multiple accounts, or for preventing a user
+                # from receiving a duplicate when a message request needs to
+                # be resent after a bug prevented it from being received by
+                # all recipients the first time.
+                newtxt, created = TextOfEmail.objects.get_or_create(**newtxt)
+                if not created:
+                    if debug: print 'Skipped duplicate creation of message to %s for message request %d: %s' % (send_to, self.id, self.subject)
 
-                newtxt.save()
+                newemailrequest['textofemail'] = newtxt
 
-                newemailrequest.textofemail = newtxt
-
-                newemailrequest.save()
+                EmailRequest.objects.get_or_create(**newemailrequest)
 
         if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 

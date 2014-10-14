@@ -127,10 +127,10 @@ class ClassSizeRange(models.Model):
             return cls.objects.filter(program=prog)
 
     def range_str(self):
-        return "%d-%d" %(self.range_min, self.range_max)
+        return u"%d-%d" %(self.range_min, self.range_max)
 
     def __unicode__(self):
-        return "Class Size Range: " + self.range_str()
+        return u"Class Size Range: " + self.range_str()
 
     class Meta:
         app_label='program'
@@ -151,7 +151,7 @@ class ProgramCheckItem(models.Model):
         super(ProgramCheckItem, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return '%s for "%s"' % (self.title, str(self.program).strip())
+        return u'%s for "%s"' % (self.title, unicode(self.program).strip())
 
     class Meta:
         ordering = ('seq',)
@@ -160,7 +160,7 @@ class ProgramCheckItem(models.Model):
 
 class ClassManager(Manager):
     def __repr__(self):
-        return "ClassManager()"
+        return u"ClassManager()"
     
     def approved(self, return_q_obj=False):
         if return_q_obj:
@@ -488,7 +488,7 @@ class ClassSection(models.Model):
         return self.parent_class.title
 
     def __unicode__(self):
-        return '%s: %s' % (self.emailcode(), self.title())
+        return u'%s: %s' % (self.emailcode(), self.title())
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
@@ -559,7 +559,7 @@ class ClassSection(models.Model):
             return []
    
     def emailcode(self):
-        return self.parent_class.emailcode() + 's' + str(self.index())
+        return self.parent_class.emailcode() + u's' + unicode(self.index())
    
     def starts_soon(self):
         #   Return true if the class's start time is less than 50 minutes after the current time
@@ -603,7 +603,7 @@ class ClassSection(models.Model):
         if s:
             return s.short_time()
         else:
-            return 'N/A'
+            return u'N/A'
 
     #   Scheduling helper functions
 
@@ -858,7 +858,7 @@ class ClassSection(models.Model):
             sm.remove_section(self)
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=False):
-                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+                    return u"You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False):
@@ -882,7 +882,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
+                    return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
@@ -900,24 +900,24 @@ class ClassSection(models.Model):
         my_timeslots = self.timeslot_ids()
         for sec in section_list:
             if sec.parent_class == self.parent_class:
-                return 'You are already signed up for a section of this class!'
+                return u'You are already signed up for a section of this class!'
             if hasattr(sec, '_timeslot_ids'):
                 timeslot_ids = sec._timeslot_ids
             else:
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    return 'This section conflicts with your schedule--check out the other sections!'
+                    return u'This section conflicts with your schedule--check out the other sections!'
                     
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
-            return 'Registration for this section is not currently open.'
+            return u'Registration for this section is not currently open.'
 
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
             if priority > scrmi.priority_limit:
-                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
+                return u'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
@@ -947,10 +947,10 @@ class ClassSection(models.Model):
             available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
             for e in meeting_times:
                 if e not in available:
-                    return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                    return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
             conflicts = self.conflicts(t, meeting_times)
             if conflicts:
-                return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+                return u"The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
             # Fallback in case we couldn't come up with details
         return False
 
@@ -1257,9 +1257,9 @@ class ClassSection(models.Model):
 
     def prettyDuration(self):
         if self.duration is None:
-            return 'N/A'
+            return u'N/A'
 
-        return '%s:%02d' % \
+        return u'%s:%02d' % \
                (int(self.duration),
             int((self.duration - int(self.duration)) * 60))
 
@@ -1336,13 +1336,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     def prettyDuration(self):
         if len(self.get_sections()) <= 0:
-            return "N/A"
+            return u"N/A"
         else:
             return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
         if len(self.get_sections()) <= 0:
-            return "N/A"
+            return u"N/A"
         else:
             rooms = []
         
@@ -1462,8 +1462,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         blocks = []
         
         for s in self.get_sections():
-            rooms = ", ".join(s.prettyrooms())
-            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+            rooms = u", ".join(s.prettyrooms())
+            blocks += [(x + u" in " + rooms) for x in s.friendly_times()]
 
         return blocks
 
@@ -1515,7 +1515,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.symbol+str(self.id)
+        return self.category.symbol+unicode(self.id)
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
@@ -1532,10 +1532,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
     def __unicode__(self):
-        if self.title != "":
-            return "%s: %s" % (self.id, self.title)
+        if self.title != u"":
+            return u"%s: %s" % (self.id, self.title)
         else:
-            return "%s: (none)" % self.id
+            return u"%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
         if self.num_students() > 0 and not adminoverride:
@@ -1563,7 +1563,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1615,18 +1615,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cannotAdd(self, user, checkFull=True, which_section=None):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
-            return 'You are not a student!'
+            return u'You are not a student!'
         
         blocked_student_types = Tag.getTag("blocked_student_types", target=self)
         if blocked_student_types and not (set(user.getUserTypes()) & set(blocked_student_types.split(","))):
-            return "Cannot accept more users of your account type!"
+            return u"Cannot accept more users of your account type!"
         
         if not self.isAccepted():
-            return 'This class is not accepted.'
+            return u'This class is not accepted.'
 
 #        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
         if checkFull and self.parent_program.isFull() and not ESPUser(user).canRegToFullProgram(self.parent_program):
-            return 'This program cannot accept any more students!  Please try again in its next session.'
+            return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -1636,7 +1636,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if user.getGrade(self.parent_program) < self.grade_min or \
                    user.getGrade(self.parent_program) > self.grade_max:
                 if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
-                    return 'You are not in the requested grade range for this class.'
+                    return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
@@ -1644,7 +1644,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):
-                return 'You are already signed up for a section of this class!'
+                return u'You are already signed up for a section of this class!'
         
         if which_section:
             sections = [which_section]
@@ -1661,7 +1661,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
-        return 'This class conflicts with your schedule!'
+        return u'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
         self.teachers.add(user)
@@ -1985,7 +1985,7 @@ class ClassImplication(models.Model):
         pass
     
     def __unicode__(self):
-        return 'Implications for %s' % self.cls
+        return u'Implications for %s' % self.cls
     
     def _and(lst):
         """ True iff all elements in lst are true """
