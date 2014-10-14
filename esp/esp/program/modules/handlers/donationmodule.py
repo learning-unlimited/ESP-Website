@@ -84,15 +84,18 @@ class DonationModule(ProgramModuleObj):
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
 
+    def line_item_type(self):
+        pac = ProgramAccountingController(self.program)
+        (donate_type, created) = pac.get_lineitemtypes().get_or_create(text=self.get_setting('donation_text'))
+        return donate_type
+
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
-    have_paid = isCompleted
+        iac = IndividualAccountingController(self.program, get_current_request().user)
+        return (len(iac.get_preferences([self.line_item_type(),])) > 0)
 
     def students(self, QObject = False):
-        #   This query represented students who have a payment transfer from the outside
-        pac = ProgramAccountingController(self.program)
-        QObj = Q(transfer__source__isnull=True, transfer__line_item=pac.default_payments_lineitemtype())
+        QObj = Q(transfer__line_item=self.line_item_type())
 
         if QObject:
             return {'creditcard': QObj}
