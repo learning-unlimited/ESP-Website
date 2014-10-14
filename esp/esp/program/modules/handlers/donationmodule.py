@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 by the individual contributors
+Copyright (c) 2014 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
