@@ -63,9 +63,9 @@ class DonationModule(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Donation Module",
-            "link_title": "Pledge Donations",
+            "link_title": "Optional Donation",
             "module_type": "learn",
-            "seq": 10000,#TODO - investigate how this number is hamdled
+            "seq": 50,
             }
 
     def apply_settings(self):
