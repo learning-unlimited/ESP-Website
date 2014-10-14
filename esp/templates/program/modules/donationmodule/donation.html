@@ -51,6 +51,7 @@ function updateDonationAmount() {
 }
 
 $j(document).ready(function () {
+    {% if not has_donation %}$j("#donation_choices").hide();{% endif %}
     $j("input:radio[name='amount_donation']").click(updateDonationAmount);
 });
 -->
