@@ -90,7 +90,9 @@ class DonationModule(ProgramModuleObj):
         return donate_type
 
     def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has selected a donation.  (It's an optional 
+            module, so it's fine to have isCompleted() return False if 
+            they have seen the page but declined to donate.)    """
         iac = IndividualAccountingController(self.program, get_current_request().user)
         return (len(iac.get_preferences([self.line_item_type(),])) > 0)
 
