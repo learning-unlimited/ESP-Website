@@ -10,11 +10,10 @@
 <!--
 function updateDonationOnPage(donationAmount) {
     //  Tell the server about our change in preferences
-    var donationSet = $j("#id-select-donation").is(":checked");
     $j.ajax("/json/{{ program.url }}/set_donation_amount", {
         async: false,
         data: {
-            "amount": (donationSet ? donationAmount : 0.0),
+            "amount": donationAmount,
             "csrfmiddlewaretoken": csrf_token()
         },
         type: "POST",
@@ -49,7 +48,6 @@ $j(document).ready(function () {
     <h1>{% trans "Optional Donation for " %}{{ program.niceName }}</h1>
 
     <form>
-        <input type="checkbox" name="select_donation" id="id-select-donation" {% if has_donation %}checked {% endif %}/>
         {% inline_program_qsd_block program "learningu_donation" %}
         {% trans "Check here to support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
         {% end_inline_program_qsd_block %}
