@@ -75,7 +75,9 @@ class DonationModule(ProgramModuleObj):
         DEFAULTS = {
             'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
+            'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
+
         tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
@@ -128,8 +130,8 @@ class DonationModule(ProgramModuleObj):
         else:
             context['amount_donation'] = Decimal('0.00')
             context['has_donation'] = False
-        context['institution'] = settings.INSTITUTION_NAME
 
+        context['institution'] = settings.INSTITUTION_NAME
         return render_to_response(self.baseDir() + 'donation.html', request, context)
 
     class Meta:

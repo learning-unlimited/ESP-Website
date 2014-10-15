@@ -1,33 +1,16 @@
 {% extends "main.html" %}
+
+{% load i18n %}
 {% load render_qsd %}
 
-{% block title %}{{program.niceName}} Registration{% endblock %}
-
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
-{% block stylesheets %}
-{{ block.super }}
-
-<style type="text/css">
-#donation_choices {
-    width: 50%;
-}
-
-#donation_choices_wrapper {
-    align: center;
-}
-</style>
-{% endblock %}
+{% block title %}{{program.niceName}} {% trans "Registration" %}{% endblock %}
 
 {% block xtrajs %}
 <script type="text/javascript">
 <!--
-// allow adding a donation
-var donationAmount = parseFloat({{ amount_donation }});
-var donationSet = {{ has_donation|lower }};
-
-function updateDonationOnPage() {
+function updateDonationOnPage(donationAmount) {
     //  Tell the server about our change in preferences
+    var donationSet = $j("#id-select-donation").is(":checked");
     $j.ajax("/json/{{ program.url }}/set_donation_amount", {
         async: false,
         data: {
@@ -40,50 +23,52 @@ function updateDonationOnPage() {
 }
 
 function toggleDonation() {
-    donationSet = !donationSet;
-
-    if (donationSet) {
-        donationAmount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
-    }
-    $j("#donation_choices").toggle();
-    updateDonationOnPage();
-}
-function updateDonationAmount() {
     donationAmount = parseFloat($j("input:radio[name='amount_donation']:checked").val());
-    updateDonationOnPage();
+    $j("#donation_choices").toggle();
+    updateDonationOnPage(donationAmount);
+}
+
+function updateDonationAmount() {
+    var donationAmount = parseFloat($j(this).val());
+    updateDonationOnPage(donationAmount);
 }
 
 $j(document).ready(function () {
     {% if not has_donation %}$j("#donation_choices").hide();{% endif %}
     $j("input:radio[name='amount_donation']").click(updateDonationAmount);
+    $j("#id-select-donation").click(toggleDonation);
 });
 -->
 </script>
 {% endblock %}
 
 {% block content %}
-<h1>Optional Donation for {{ program.niceName }}</h1>
+<div class="row">
+  <div class="span7">
+ 
+    <h1>{% trans "Optional Donation for " %}{{ program.niceName }}</h1>
 
-<form>
-<input type="checkbox" name="select_donation" onclick="toggleDonation();" {% if has_donation %}checked {% endif %}/>
-{% inline_program_qsd_block program "learningu_donation" %}
-Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
-{% end_inline_program_qsd_block %}
-<div id="donation_choices_wrapper">
-	<div id="donation_choices">
-		<b>Donation amount:</b>
-		{% for option in module.settings.donation_options %}
-		<label class="radio">
-		    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
-		</label>
-		{% endfor %}
-	</div>
+    <form>
+        <input type="checkbox" name="select_donation" id="id-select-donation" {% if has_donation %}checked {% endif %}/>
+        {% inline_program_qsd_block program "learningu_donation" %}
+        {% trans "Check here to support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
+        {% end_inline_program_qsd_block %}
+        <div id="donation_choices_wrapper">
+        	<div id="donation_choices">
+        		<b>{% trans "Donation amount:" %}</b>
+        		{% for option in module.settings.donation_options %}
+        		<label class="radio">
+        		    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
+        		</label>
+        		{% endfor %}
+        	</div>
+        </div>
+    </form>
+    <br />
+    <p>{% trans "Your choice here is automatically saved." %} <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">{% trans "Click here" %}</a> {% trans "to return to the main registration page" %}.</p>
+
+  </div>
 </div>
-
-</form>
-
-<br />
-<p>Your choice here is automatically saved. <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">Click here</a> to return to the main registration page.</p>
 
 {% endblock %}
 
