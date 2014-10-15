@@ -30,8 +30,11 @@ function updateDonationOnPage() {
     //  Tell the server about our change in preferences
     $j.ajax("/json/{{ program.url }}/set_donation_amount", {
         async: false,
-        data: {"amount": (donationSet ? donationAmount : 0.0)},
-        type: "GET",
+        data: {
+            "amount": (donationSet ? donationAmount : 0.0),
+            "csrfmiddlewaretoken": csrf_token()
+        },
+        type: "POST",
 		dataType: "json",
     });
 }

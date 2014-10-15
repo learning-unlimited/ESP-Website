@@ -29,8 +29,11 @@ function update_donation_on_page() {
     //  Tell the server about our change in preferences
     $j.ajax("/json/{{ program.url }}/set_donation_amount", {
         async: false,
-        data: {"amount": (donation_set ? donation_amount : 0.0)},
-        type: "GET",
+        data: {
+            "amount": (donation_set ? donation_amount : 0.0),
+            "csrfmiddlewaretoken": csrf_token()
+        },
+        type: "POST",
 		dataType: "json",
     });
     var total_amount = base_amount + (donation_set ? donation_amount : 0.0);
