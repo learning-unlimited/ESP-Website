@@ -61,7 +61,7 @@ $j(document).ready(function () {
 {% block content %}
 <h1>Optional Donation for {{ program.niceName }}</h1>
 
-<form action="/learn/{{ program.url }}/charge_payment" method="POST">
+<form>
 <input type="checkbox" name="select_donation" onclick="toggleDonation();" {% if has_donation %}checked {% endif %}/>
 {% inline_program_qsd_block program "learningu_donation" %}
 Check here to support <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> with an additional donation. Learning Unlimited supports {{ institution }} and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country.
