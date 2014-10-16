@@ -75,7 +75,6 @@ class DonationModule(ProgramModuleObj):
         DEFAULTS = {
             'donation_text': 'Donation to Learning Unlimited',
             'donation_options': [10, 20, 50],
-            'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
 
         tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
