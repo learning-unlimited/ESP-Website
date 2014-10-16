@@ -33,9 +33,7 @@ function updateDonationAmount() {
 }
 
 $j(document).ready(function () {
-    {% if not has_donation %}$j("#donation_choices").hide();{% endif %}
     $j("input:radio[name='amount_donation']").click(updateDonationAmount);
-    $j("#id-select-donation").click(toggleDonation);
 });
 -->
 </script>
@@ -49,17 +47,20 @@ $j(document).ready(function () {
 
     <form>
         {% inline_program_qsd_block program "learningu_donation" %}
-        {% trans "Check here to support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
+        {% trans "Please support " %}<a href="http://www.learningu.org/about" target="_blank">{% trans "Learning Unlimited" %}</a> {% trans "with an additional donation. Learning Unlimited supports " %}{{ institution }} {% trans "and dozens of other Splashes with mentoring and maintains this website. Your gift helps start new Splashes and provide support to existing ones across the country." %}
         {% end_inline_program_qsd_block %}
         <div id="donation_choices_wrapper">
-        	<div id="donation_choices">
-        		<b>{% trans "Donation amount:" %}</b>
-        		{% for option in module.settings.donation_options %}
-        		<label class="radio">
-        		    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
-        		</label>
-        		{% endfor %}
-        	</div>
+            <div id="donation_choices">
+            <b>{% trans "Donation amount:" %}</b>
+                <label class="radio">
+                    <input type="radio" name="amount_donation" id="amount_donation_0" value="0" {% if not has_donation %}checked {% endif %}/>I won't be making a donation at this time
+                </label>
+                {% for option in module.settings.donation_options %}
+                <label class="radio">
+                    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation %}checked {% endif %}/>${{ option }}
+                </label>
+                {% endfor %}
+            </div>
         </div>
     </form>
     <br />
