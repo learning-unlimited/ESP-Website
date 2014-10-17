@@ -116,6 +116,13 @@ class DonationModule(ProgramModuleObj):
 
         iac = IndividualAccountingController(self.program, user)
 
+        # It's unclear if we support changing line item preferences after
+        # credit card payment has occured. For now, just do the same thing we
+        # do in other accounting modules, and don't allow changes after payment
+        # has occured.
+        if iac.amount_due() <= 0:
+            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+
         # Donations and non-donations go through different code paths. If a
         # user chooses to make a donation, set_donation_amount() is called via
         # an AJAX request. If a user chooses not to make a donation, their
