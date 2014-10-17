@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (16)
+Student modules (17)
 ====================
 
 Extra Registration Info (CustomFormModule)
