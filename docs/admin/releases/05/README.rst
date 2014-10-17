@@ -41,7 +41,7 @@ Some programs may want to run admissions and have students apply for enrollment
 to specific classes.  The new application system provides functionality for
 program and class-specific applications, teacher review of applicants, admin
 review of applicants, and admin admissions management. For more information,
-see `<docs/admin/student_apps.rst>`_.
+see `</docs/admin/student_apps.rst>`_.
 
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,7 +69,7 @@ costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
 
 For more information on configuring and using the module, see
-`<docs/admin/program_modules.rst#donation-module>`_.
+`</docs/admin/program_modules.rst#donation-module>`_.
 
 Improvements to scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
