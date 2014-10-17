@@ -159,16 +159,20 @@ class StudentExtraCosts(ProgramModuleObj):
             #   as well as a list of line items which had invalid forms
             form_prefs = []
             preserve_items = []
+
             for item in costs_db:
                 form = item['CostChoice']
                 lineitem_type = item['LineItemType']
+
                 if form.is_valid():
                     if isinstance(form, CostItem):
                         if form.cleaned_data['cost'] is True:
                             form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
+
                     elif isinstance(form, MultiCostItem):
                         if form.cleaned_data['cost'] is True:
                             form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
+
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['option']:
                             form_prefs.append((lineitem_type.text, 1, None, int(form.cleaned_data['option'])))
@@ -182,6 +186,7 @@ class StudentExtraCosts(ProgramModuleObj):
             for lineitem_name in preserve_items:
                 if lineitem_name in map(lambda x: x[0], prefs):
                     new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
+
             new_prefs += form_prefs
 
             iac.apply_preferences(new_prefs)
@@ -195,21 +200,46 @@ class StudentExtraCosts(ProgramModuleObj):
         count_map = {}
         for lineitem_type in iac.get_lineitemtypes(optional_only=True):
             count_map[lineitem_type.text] = [lineitem_type.id, 0, None, None]
+
         for item in iac.get_preferences():
             for i in range(1, 4):
                 count_map[item[0]][i] = item[i]
-        forms = [ { 'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
-                    'LineItem': x }
-                  for x in costs_list ] + \
-                  [ { 'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 'count': count_map[x.text][1] } ),
-                      'LineItem': x }
-                    for x in multicosts_list ] + \
-                    [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
-                                                     initial={'option': count_map[x.text][3]},
-                                                     choices=x.option_choices,
-                                                     required=(x.required)),
-                        'LineItem': x }
-                      for x in multiselect_list ]
+
+        cost_items =  \
+        [ 
+            { 
+               'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
+               'LineItem': x
+            }
+
+            for x in costs_list
+        ]
+
+        multi_cost_items = \
+        [ 
+            { 
+                'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 
+                'count': count_map[x.text][1] } ),
+                'LineItem': x 
+            }
+
+            for x in multicosts_list 
+        ]
+
+        multiselect_costitems = \
+        [   
+            { 
+                'form': MultiSelectCostItem( prefix="multi%s" % x.id,
+                                           initial={'option': count_map[x.text][3]},
+                                           choices=x.option_choices,
+                                           required=(x.required)),
+               'LineItem': x 
+            }
+                      
+            for x in multiselect_list 
+        ]
+
+        forms = cost_items + multi_cost_items + multiselect_costitems
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
