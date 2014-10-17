@@ -203,9 +203,9 @@ There are two configurable options for the module:
   options, in US dollars, that students are able to select between. In
   addition, "I won't be making a donation" is always an option.
 
-To override any of these settings, create a Tag for the program, with the key
-donation_settings, and with the value being a JSON object with the overriden
-keys/values.
+To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
+the program, with the key donation_settings, and with the value being a JSON
+object with the overriden keys/values.
 
 The module also has a donation pitch built into the inline QSD on that page. It
 can be edited inline by an admin to something more customized.
