@@ -57,6 +57,20 @@ There have been various improvements to the class changes grid, including:
 - Timeblocks that have already occured can be hidden from the page, so that the
   timeblock on the left is the current or upcoming timeblock.
 
+Donation module
+~~~~~~~~~~~~~~~
+
+This program module can be used to solicit donations for Learning Unlimited. If
+this module is enabled, students who visit the page can, if they so choose,
+select one of a few donation options (and those options are admin
+configurable). Asking for donations from parents and students can be a good way
+to help fundraise for LU community events, chapter services, and operational
+costs. If you are interested in fundraising this way, get in contact with an LU
+volunteer.
+
+For more information on configuring and using the module, see
+`<docs/admin/program_modules.rst#donation-module>`_.
+
 Improvements to scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
