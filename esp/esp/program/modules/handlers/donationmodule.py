@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.datatree.models import *
 from esp.web.util import render_to_response
 from esp.dbmail.models import send_mail
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -58,6 +58,8 @@ import json
 import re
 
 class DonationModule(ProgramModuleObj):
+
+    event = "donation_done"
 
     @classmethod
     def module_properties(cls):
@@ -91,11 +93,8 @@ class DonationModule(ProgramModuleObj):
         return donate_type
 
     def isCompleted(self):
-        """ Whether the user has selected a donation.  (It's an optional 
-            module, so it's fine to have isCompleted() return False if 
-            they have seen the page but declined to donate.)    """
-        iac = IndividualAccountingController(self.program, get_current_request().user)
-        return (len(iac.get_preferences([self.line_item_type(),])) > 0)
+        """Whether the user made a decision about donating to LU."""
+        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())
@@ -116,6 +115,20 @@ class DonationModule(ProgramModuleObj):
         user = ESPUser(request.user)
 
         iac = IndividualAccountingController(self.program, user)
+
+        # Donations and non-donations go through different code paths. If a
+        # user chooses to make a donation, set_donation_amount() is called via
+        # an AJAX request. If a user chooses not to make a donation, their
+        # browser makes a request to the studentreg main page. Therefore, it is
+        # impossible set the donation_done Record after the user is actually
+        # done with the module. So our only option is to mark them done when
+        # they first visit the page. This should be fine, since donations are
+        # always optional. If we really care about being correct, if we switch
+        # this page to not use AJAX but instead use a normal form submission,
+        # we can then switch to granting the Record after the user is done with
+        # the page.
+        Record.objects.get_or_create(user=user, program=self.program, event=self.event)
+
         context = {}
         context['module'] = self
         context['program'] = prog
