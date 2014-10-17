@@ -773,7 +773,7 @@ len(teachers[key])))
         """ Set the student's desired donation amount.
             Creates a line item type for donations if it does not exist. """
 
-        amount_donation = Decimal(request.GET.get('amount', '0'))
+        amount_donation = Decimal(request.POST.get('amount', '0'))
         iac = IndividualAccountingController(prog, request.user)
         #   Clear the Transfers by specifying quantity 0
         iac.set_preference('Donation to Learning Unlimited', 0)
