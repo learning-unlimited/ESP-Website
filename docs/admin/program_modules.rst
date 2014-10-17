@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (16)
+Student modules (17)
 ====================
 
 Extra Registration Info (CustomFormModule)
@@ -181,6 +181,42 @@ still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
 longer have a separate cost for financial aid students; the amount these
 students are charged is determined by the financial aid grant.
 
+
+Donation module
+---------------
+
+This program module can be used to solicit donations for Learning Unlimited. If
+this module is enabled, students who visit the page can, if they so choose,
+select one of a few donation options (and those options are admin
+configurable). Asking for donations from parents and students can be a good way
+to help fundraise for LU community events, chapter services, and operational
+costs. If you are interested in fundraising this way, get in contact with an LU
+volunteer.
+
+There are two configurable options for the module:
+
+- donation_text: Defaults to "Donation to Learning Unlimited". This is the
+  description of the line item that will show up on student invoices when they
+  pay.
+
+- donation_options: Defaults to the list [10, 20, 50]. These are the donation
+  options, in US dollars, that students are able to select between. In
+  addition, "I won't be making a donation" is always an option.
+
+To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
+the program, with the key donation_settings, and with the value being a JSON
+object with the overriden keys/values.
+
+The module also has a donation pitch built into the inline QSD on that page. It
+can be edited inline by an admin to something more customized.
+
+The module, when enabled, is available at the url
+/learn/<program>/<instance>/donation. It will also show up as an item in the
+student checklist. When students visit the page, they will see the donation
+pitch and the donation options. They may or may not select any of the options;
+if they select any of the options, it will be instantly recorded with an AJAX
+request to the server. When they are done, they can click a link to return to
+the main student registration page.
 
 Student Application (StudentJunctionAppModule)
 ----------------------------------------------
