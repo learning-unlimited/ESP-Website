@@ -194,9 +194,11 @@ costs. If you are interested in fundraising this way, get in contact with an LU
 volunteer.
 
 There are two configurable options for the module:
+
 - donation_text: Defaults to "Donation to Learning Unlimited". This is the
   description of the line item that will show up on student invoices when they
   pay.
+
 - donation_options: Defaults to the list [10, 20, 50]. These are the donation
   options, in US dollars, that students are able to select between. In
   addition, "I won't be making a donation" is always an option.
