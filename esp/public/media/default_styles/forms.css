@@ -17,7 +17,7 @@
 }
 
 #divmaintext form table thead th {
-    background-color: #e8f0f7;
+    background-color: #cccccc;
     text-align: center;
     border: 2px solid black;
     padding: 2px;
@@ -33,7 +33,7 @@
     font-style: normal;
 }
 
-#divmaintext form table ul.errorlist, #divmaintext form table ul.errorlist li {
+#content form table ul.errorlist, #divmaintext form table ul.errorlist li {
     list-style-type: none;
     padding: 0; margin: 0;
     font-style: italic !important;
@@ -54,13 +54,13 @@
     text-align: center;
 }
 
-#divmaintext form .errors { 
-     font-size:12px !important; 
+#divmaintext form .errors {
+     font-size:12px !important;
      font-style: normal;
-     display:block; padding:4px 5px 4px 25px; 
-     margin:0 10px 3px 10px; border:1px solid red; 
-     
-    color:red;background:#ffd url(/media/images/icon_error.gif) 5px .3em no-repeat; 
+     display:block; padding:4px 5px 4px 25px;
+     margin:0 10px 3px 10px; border:1px solid red;
+
+    color:red;background:#ffd url(/media/images/icon_error.gif) 5px .3em no-repeat;
 }
 
 /* prettier forms */
@@ -146,7 +146,7 @@
     text-indent: 10px;
 }
 
-#alumni_form form th label 
+#alumni_form form th label
 {
     color: black;
 }
@@ -195,6 +195,8 @@ th .program_form_small{
 }
 
 #program_form label {
+    display: block;
+    text-align: left;
     font-size: 12px;
 }
 
@@ -202,7 +204,7 @@ th .program_form_small{
    font-family: Arial, Helvetica, sans-serif;
    padding: 5px;
    font-weight: bold;
-   background-color: #c6def7;
+   background-color: #cccccc;
    color: #000;
     text-align: center;
 }
@@ -222,26 +224,36 @@ th .program_form_small{
 }
 
 #program_form input {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.9em;
+  font-weight: bold;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #000000;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  font-size: 0.9em;
+  vertical-align: middle;
+  padding: 4px;
+  margin-top: 0px;
+}
+
+#program_form input:focus {
+  outline: none;
 }
 
 #program_form textarea {
-    font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
 #program_form select {
-    font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
-#program_form input.button,button.button {
+#program_form input.button {
     background-color: #c6def7;
     border: 1px solid black;
     font-weight: bold;
     font-size: 13px;
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 #program_form a.button {
@@ -254,7 +266,7 @@ th .program_form_small{
     font-family: Arial, Helvetica, sans-serif;
 }
 
-#program_form input.button:hover,button.button:hover {
+#program_form input.button:hover {
     background-color: #333399;
     color: #c6def7;
 }
@@ -288,10 +300,6 @@ th .program_form_small{
     margin-left: 0;
 }
 
-#program_form ul.errorlist li {
-    color: red;
-}
-
 /* Volunteer signup form */
 
 #volunteer_form thead th {
@@ -316,3 +324,4 @@ div.raw_id_admin {
 div.calendar {
     z-index: 10; /* 2 actually suffices, but I'm leaving a safety margin. -ageng 2009-02-02 */
 }
+
