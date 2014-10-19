@@ -78,7 +78,7 @@ def get_user_list(request, listDict2, extra=''):
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
-                if type(getUser) == User or type(getUser) == ESPUser:
+                if isinstance(getUser, User):
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
                 else:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
@@ -167,7 +167,7 @@ def get_user_list(request, listDict2, extra=''):
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
-                if type(getUser) == User or type(getUser) == ESPUser:
+                if isinstance(getUser, User):
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
                 else:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
@@ -191,7 +191,7 @@ def get_user_list(request, listDict2, extra=''):
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], ESPUser)
         getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
-            if type(getUser) == User or type(getUser) == ESPUser:
+            if isinstance(getUser, ESPUser):
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
             else:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')         

@@ -970,7 +970,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._moduleExtension[key]
         
         ext_cls = None
-        if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
+        if isinstance(ext_name_or_cls, basestring):
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
@@ -1583,7 +1583,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if type(token_or_value) == str:
+        if isinstance(token_or_value, basestring):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1619,7 +1619,7 @@ class ScheduleMap:
         schedule change.
     """
     def __init__(self, user, program):
-        if type(user) is not ESPUser:
+        if not isinstance(user, ESPUser):
             user = ESPUser(user)
         self.program = program
         self.user = user
@@ -1691,7 +1691,7 @@ class ScheduleConstraint(models.Model):
                 if recursive:
                     #   Try using the execution hook for arbitrary code... and running again to see if it helped.
                     (fail_result, data) = self.handle_failure()
-                    if type(fail_result) == ScheduleMap:
+                    if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
                     #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)

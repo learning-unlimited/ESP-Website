@@ -65,7 +65,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if type(recipient_list) == str or type(recipient_list) == unicode:
+    if isinstance(recipient_list, basestring):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -187,7 +187,7 @@ class MessageRequest(models.Model):
         return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
     def special_headers_dict_set(self, value):
         import cPickle as pickle
-        if type(value) is not dict:
+        if not isinstance(value, dict):
             value = {}
         self.special_headers = pickle.dumps(value)
     special_headers_dict = property( special_headers_dict_get, special_headers_dict_set )
