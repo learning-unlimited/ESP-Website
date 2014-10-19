@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
@@ -390,7 +390,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
-            users = {}
+            users = OrderedDict()
             for module in modules:
                 tmpusers = getattr(module, method_name)(QObjects)
                 if tmpusers is not None:

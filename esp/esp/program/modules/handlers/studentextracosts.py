@@ -31,6 +31,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from collections import OrderedDict
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.modules import module_ext
@@ -92,21 +94,33 @@ class StudentExtraCosts(ProgramModuleObj):
         pac = ProgramAccountingController(self.program)
         for i in pac.get_lineitemtypes(optional_only=True):
             student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
+            for option in i.options:
+                key = 'extracosts_%d_%d' % (i.id, option[0])
+                student_desc[key] = """Students who have opted for '%s' == '%s' ($%s)""" % (i.text, option[2], option[1] or i.amount_dec)
 
         return student_desc
 
     def students(self, QObject = False):
         """ Return the useful lists of students for the Extra Costs module. """
 
-        student_lists = {}
+        student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
         
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
-                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(transfer__line_item = i))
+                students = pac.all_students_Q(lineitemtype_id=i.id)
+                student_lists['extracosts_%d' % i.id] = students
             else:
-                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(transfer__line_item = i).distinct()
+                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                student_lists['extracosts_%d' % i.id] = students
+            for option in i.options:
+                key = 'extracosts_%d_%d' % (i.id, option[0])
+                filter_kwargs = {'transfer__option': option[0]}
+                if QObject:
+                    student_lists[key] = students & Q(**filter_kwargs)
+                else:
+                    student_lists[key] = students.filter(**filter_kwargs).distinct()
 
         return student_lists
 
