@@ -34,5 +34,5 @@ Learning Unlimited, Inc.
 """
 
 # Convenience imports
-from esp.cache.argcache import cache_function
+from esp.cache.argcache import cache_function, cache_function_for
 from esp.cache.key_set import wildcard

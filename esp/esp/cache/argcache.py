@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import functools
 import types
 
 from django.core.cache import cache
@@ -671,3 +672,10 @@ class ArgCacheDecorator(ArgCache):
 
 # This is a bit more of a decorator-style name
 cache_function = ArgCacheDecorator
+
+
+def cache_function_for(timeout_seconds):
+    def _dec(f):
+        return functools.wraps(f)(
+            cache_function(f, timeout_seconds=timeout_seconds))
+    return _dec
