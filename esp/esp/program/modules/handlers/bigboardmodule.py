@@ -45,8 +45,6 @@ class BigBoardModule(ProgramModuleObj):
              self.num_ssis(prog)),
             ("lottery preferences entered",
              self.num_prefs(prog)),
-            # avg/median stars per student or something related
-            # avg/median number of timeblocks with full prefs
         ]
 
         numbers = [(desc, num) for desc, num in numbers if num]
