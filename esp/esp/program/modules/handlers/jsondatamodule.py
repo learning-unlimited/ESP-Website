@@ -366,7 +366,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @json_response()
     @needs_student
     def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
-        if prog.priorityLimit() > 1:
+        if prog.priorityLimit() >= 1:
             return self.lottery_preferences_usepriority(request, prog)
  
         sections = list(prog.sections().values('id'))
