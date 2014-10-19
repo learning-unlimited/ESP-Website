@@ -117,12 +117,14 @@ class BigBoardModule(ProgramModuleObj):
         classes = ClassSubject.objects.filter(
             parent_program=prog).exclude(category__category='Lunch')
         fields = [
-            ("number of stars", 'studentsubjectinterest'),
-            ("number of first choices", 'sections__studentregistration'),
+            ("number of stars", 'studentsubjectinterest', classes),
+            ("number of first choices", 'sections__studentregistration',
+             classes.filter(
+                 sections__studentregistration__relationship__name='Priority/1')),
         ]
         popular_classes = []
-        for description, field in fields:
-            qs = classes.annotate(points=Count(field)).values(
+        for description, field, qs in fields:
+            qs = qs.annotate(points=Count(field)).values(
                 'id', 'category__symbol', 'title', 'points'
             ).order_by('-points')[:num]
             # The above query should Just Work, but django does something
