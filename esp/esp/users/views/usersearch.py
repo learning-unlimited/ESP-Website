@@ -56,7 +56,7 @@ def get_user_list(request, listDict2, extra=''):
         Otherwise, it returns a response that's expected to be returned to django.
         """
 
-    if type(listDict2) != dict or len(listDict2) == 0:
+    if (not isinstance(listDict2, dict)) or len(listDict2) == 0:
         raise ESPError('User lists were not specified correctly!')
 
     listDict = {}
