@@ -729,7 +729,9 @@ class ESPUser(User, AnonymousUser):
         return clsObj.students().filter(id=self.id).exists()
 
     def canRegToFullProgram(self, program):
-        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
+        from esp.program.models import Program
+        perm = Program.OVERRIDE_FULL_PERM
+        return Permission.user_has_perm(self, perm, program)
 
     #   This is needed for cache dependencies on financial aid functions
     def get_finaid_model():
@@ -2249,9 +2251,9 @@ class Permission(ExpirableModel):
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
         ("GradeOverride", "Ignore grade ranges for studentreg"),
+        ("OverrideFull", "Register for a full program"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
-            ("Student/OverrideFull", "Register for a full program"),
             ("Student/All", "All student deadlines"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),

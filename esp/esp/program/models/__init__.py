@@ -585,6 +585,8 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
+    OVERRIDE_FULL_PERM = 'OverrideFull'
+
     @cache_function
     def open_class_registration(self):
         return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
