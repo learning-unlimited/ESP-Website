@@ -576,8 +576,8 @@ class Program(models.Model, CustomFormsLinkModel):
             return float('inf')
 
         students_dict = self.students(QObjects = True)
-        if students_dict.has_key('classreg'):
-            students = ESPUser.objects.filter(students_dict['classreg'])
+        if students_dict.has_key('student_profile'):
+            students = ESPUser.objects.filter(students_dict['student_profile'])
 
             # Because of Django bug <code.djangoproject.com/ticket/14645>,
             # these line possibly depends on the fact that
@@ -595,6 +595,7 @@ class Program(models.Model, CustomFormsLinkModel):
     remaining_space.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     remaining_space.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     remaining_space.depend_on_model(lambda: Permission)
+    remaining_space.depend_on_model(lambda: RegistrationProfile)
     remaining_space.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
     @cache_function
@@ -604,6 +605,7 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_model(lambda: Permission)
+    isFull.depend_on_model(lambda: RegistrationProfile)
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
     OVERRIDE_FULL_PERM = 'OverrideFull'
