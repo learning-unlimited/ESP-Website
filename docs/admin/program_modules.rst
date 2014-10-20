@@ -576,7 +576,17 @@ This module is essential to most programs (e.g. those with classes that need to 
 Scheduling checks (SchedulingCheckModule)
 -----------------------------------------
 
-During and after scheduling a program, you should periodically visit this page to see if you made any mistakes.  It may take a few minutes to run, but you will see a summary of common issues such as teachers that have to travel between adjacent timeslots and classes that aren't assigned the resources they need.
+During and after scheduling a program, you should periodically visit this page
+to see if you made any mistakes.  It may take a few minutes to run, but you
+will see a summary of common issues such as teachers that have to travel
+between adjacent timeslots and classes that aren't assigned the resources they
+need.
+
+For larger chapters the page may take a long time to load.  More improvements
+are in the works, but for now, the page
+<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
+will display a list of links to display the checks individually; most will load
+much more quickly than the entire page.
 
 Old-style scheduling (SchedulingModule)
 ---------------------------------------
