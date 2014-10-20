@@ -44,14 +44,20 @@ from esp.utils import force_str
 def describe_class(cls):
     return '%s.%s' % (cls.__module__.rstrip('.'), cls.__name__)
 
-def describe_func(func):
+def get_containing_class():
+    # intended to be called from a method decorator's body
+    # get_containg_class -> decorator -> containing class/module
+    class_name = inspect.currentframe().f_back.f_back.f_code.co_name
+    if class_name == '<module>':
+        return None
+    return class_name
+
+def describe_func(func, class_name=None):
     if hasattr(func, 'im_class'):
         # I don't think we actually hit this case... this is only for bound/unbound member functions
         return '%s.%s' % (describe_class(func.im_class), func.__name__)
     else:
-        #       describe_func -> ArgCache -> containing class/module
-        class_name = inspect.currentframe().f_back.f_back.f_code.co_name
-        if class_name == '<module>':
+        if class_name is None:
             return '%s.%s' % (func.__module__.rstrip('.'), func.__name__)
         else:
             return '%s.%s.%s' % (func.__module__.rstrip('.'), class_name, func.__name__)

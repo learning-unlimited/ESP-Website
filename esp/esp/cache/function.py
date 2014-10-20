@@ -37,7 +37,7 @@ import inspect
 import types
 
 from esp.cache.argcache import ArgCache
-from esp.cache.marinade import describe_func
+from esp.cache.marinade import describe_func, get_containing_class
 
 class ArgCacheDecorator(ArgCache):
     """ An ArgCache that gets its parameters from a function. """
@@ -55,8 +55,9 @@ class ArgCacheDecorator(ArgCache):
             self.__doc__ = func.__doc__
 
         self.func = func
+        containing_class = kwargs.pop('containing_class', get_containing_class())
         extra_name = kwargs.pop('extra_name', '')
-        name = describe_func(func) + extra_name
+        name = describe_func(func, containing_class) + extra_name
         params, varargs, keywords, _ = inspect.getargspec(func)
         if varargs is not None:
             raise ESPError("ArgCache does not support varargs.")

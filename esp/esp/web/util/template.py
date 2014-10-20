@@ -84,11 +84,14 @@ class InclusionTagCacheDecorator(object):
             warnings.warn('Cache key function for cache_inclusion_tag is being ignored, now that cache_inclusion_tag uses caching API', DeprecationWarning)
 
         parent_obj = self
+        # NOTE: get_containing_class inspects the stack, so we have to
+        # call it ourselves. TODO fix this?
+        from esp.cache.function import get_containing_class
+        containing_class = get_containing_class()
 
         def prepare_dec(func):
             params, xx, xxx, defaults = getargspec(func)
-            from esp.cache.function import describe_func
-            cached_function = cache_function(func)
+            cached_function = cache_function(func, containing_class=containing_class)
 
             if takes_context:
                 if params[0] == 'context':
@@ -119,7 +122,7 @@ class InclusionTagCacheDecorator(object):
                 if not disable:
                     # TODO: fix how describe_func inspects the stack
                     # so that we don't have to call it manually here
-                    render_given_args = cache_function(render_given_args, extra_name='*'+describe_func(func))
+                    render_given_args = cache_function(render_given_args, extra_name='*'+cached_function.name)
                     render_given_args.get_or_create_token(('args',))
                     def render_map(**kwargs):
                         
