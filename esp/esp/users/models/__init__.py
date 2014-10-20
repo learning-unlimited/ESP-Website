@@ -731,7 +731,7 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, program):
         from esp.program.models import Program
         perm = Program.OVERRIDE_FULL_PERM
-        return Permission.user_has_perm(self, perm, program)
+        return Permission.user_has_perm(self, perm, program) or (self in program.students()['classreg'])
 
     #   This is needed for cache dependencies on financial aid functions
     def get_finaid_model():
@@ -2391,6 +2391,10 @@ class Permission(ExpirableModel):
             For database performance reasons, when a `Q` object is returned,
             the query is represented as a filter on user ids. The true query
             would have too many inefficient JOINs.
+            Also, because of <code.djangoproject.com/ticket/14645>, any code
+            that takes the result of this function call and passes it to
+            QuerySet.exclude() may depend on the fact that this function
+            returns a filter on user ids.
         :rtype:
             `Q` or `QuerySet`
         """

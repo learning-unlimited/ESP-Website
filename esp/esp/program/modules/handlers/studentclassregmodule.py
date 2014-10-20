@@ -46,6 +46,7 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
+from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
@@ -150,11 +151,22 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        override_full = Permission.users_with_perm(Program.OVERRIDE_FULL_PERM, program=self.program)
+        override_full = override_full.exclude(id__in=self.program.get_admins().values_list('id', flat=True).distinct())
+        override_full = override_full.distinct()
         
         if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
+            retVal = {
+                'enrolled': self.getQForUser(Enrolled & Par & Unexpired),
+                'classreg': self.getQForUser(Par & Unexpired),
+                'override_full': Q(id__in=override_full.values_list('id', flat=True).distinct()),
+            }
         else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
+            retVal = {
+                'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(),
+                'classreg': ESPUser.objects.filter(Par & Unexpired).distinct(),
+                'override_full': override_full,
+            }
 
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
@@ -175,8 +187,11 @@ class StudentClassRegModule(ProgramModuleObj):
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who signed up for at least one class""",
-                  'enrolled': """Students who are enrolled in at least one class"""}
+        result = {
+            'classreg': """Students who signed up for at least one class""",
+            'enrolled': """Students who are enrolled in at least one class""",
+            'override_full': """Students who have permission to ignore the program max size""",
+        }
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
