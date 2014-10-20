@@ -1,4 +1,6 @@
-from django.db.models.aggregates import Count, Max
+import datetime
+
+from django.db.models.aggregates import Count, Max, Min
 from django.db.models.query import Q
 
 from esp.cache import cache_function_for
@@ -49,9 +51,28 @@ class BigBoardModule(ProgramModuleObj):
 
         numbers = [(desc, num) for desc, num in numbers if num]
 
+        timess = [
+            ("completed the medical form", self.times_medical(prog)),
+            ("signed up for classes", self.times_classes(prog)),
+        ]
+        # Drop the first and last 10 times, because those are usually
+        # special snowflakes or admins and really aren't worth getting excited
+        # about.  Then round start down and end up to the nearest day.
+        start = min([times[10:-10][0] for desc, times in timess])
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = max([times[10:-10][-1] for desc, times in timess])
+        end = end.replace(hour=0, minute=0, second=0, microsecond=0)
+        end += datetime.timedelta(1)
+        end = min(end, datetime.datetime.now())
+        graph_data = [{"description": desc,
+                       "data": BigBoardModule.chunk_times(times, start, end)}
+                      for desc, times in timess]
+
         context = {
             "numbers": numbers,
             "popular_classes": self.popular_classes(prog),
+            "first_hour": start,
+            "graph_data": graph_data,
         }
         return render_to_response(self.baseDir()+'bigboard.html',
                                   request, context)
@@ -161,3 +182,53 @@ class BigBoardModule(ProgramModuleObj):
                                  if column in qs.query.select]
             popular_classes.append((description, list(qs)))
         return popular_classes
+
+    @cache_function_for(105)
+    def times_medical(self, prog):
+        return list(
+            Record.objects
+            .filter(program=prog, event__in=('med', 'med_bypass'))
+            .values('user').annotate(Min('time'))
+            .order_by('time__min').values_list('time__min', flat=True))
+
+    @cache_function_for(105)
+    def times_classes(self, prog):
+        ssi_times_dict = dict(
+            StudentSubjectInterest.objects.filter(subject__parent_program=prog)
+            # GROUP BY user, SELECT user and min start date.
+            # Don't you love django ORM syntax?
+            .values_list('user').annotate(Min('start_date')))
+        sr_times = StudentRegistration.objects.filter(
+            section__parent_class__parent_program=prog
+        ).values_list('user').annotate(Min('start_date'))
+        for id, sr_time in sr_times:
+            if id not in ssi_times_dict or sr_time < ssi_times_dict[id]:
+                ssi_times_dict[id] = sr_time
+        return sorted(ssi_times_dict.itervalues())
+
+    @staticmethod
+    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600)):
+        """Given a list of times, return hourly summaries.
+
+        `times` should be a list of datetime.datetime objects.
+        `start` and `end` should be datetimes; the chunks will be for hours
+        between them, inclusive.
+        Returns a list of integers, each of which is the number of times that
+        precede the given hour.
+        """
+        # Round down to the nearest hour.
+        chunks = []
+        i = 0
+        # Unpythonic, I know.  Iterating over hours is annoying, and we're also
+        # iterating over timestamps at the same time.
+        while start < end + delta:
+            if i < len(times) and times[i] < start:
+                # If this time is in the hour we're currently processing, just
+                # go to the next time.
+                i += 1
+            else:
+                # Otherwise, move to the next hour, and save the number of
+                # times preceding it for the previous hour.
+                chunks.append(i)
+                start += delta
+        return chunks

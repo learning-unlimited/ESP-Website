@@ -11,7 +11,57 @@
   <link rel="stylesheet" type="text/css" href="/media/styles/bigboard.css" />
 {% endblock %}
 
+{% block xtrajs %}
+  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+{% endblock xtrajs %}
+
+
 {% block body %}
+
+<div class="bigboard-graph">
+  <div id="highcharts-placeholder"></div>
+  <script type="text/javascript">
+    $j(function () {
+      $j('#highcharts-placeholder').highcharts({
+        legend: {
+          align: "right",
+          floating: true,
+          layout: "vertical",
+          verticalAlign: "middle",
+        },
+        title: {
+          text: null,
+        },
+        tooltip: {
+          shared: true,
+        },
+        xAxis: {
+          type: 'datetime',
+          minRange: 24 * 60 * 60 * 1000, // one day
+        },
+        yAxis: {
+          title: {text: null},
+          min: 0,
+          maxPadding: 0.01,
+          endOnTick: false,
+        },
+        series: [
+          {% for series in graph_data %}
+            {
+              type: 'line',
+              name: '{{series.description}}',
+              pointInterval: 60 * 60 * 1000, // one hour
+              pointStart: Date.UTC(
+                  {{first_hour.year}}, {{first_hour.month}} - 1,
+                  {{first_hour.day}}, {{first_hour.hour}}),
+              data: {{series.data}},
+            },
+          {% endfor %}
+        ],
+      });
+    });
+  </script>
+</div>
 
 <div class="bigboard-numbers">
   {% for description, number in numbers %}
