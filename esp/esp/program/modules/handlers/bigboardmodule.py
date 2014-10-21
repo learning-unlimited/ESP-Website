@@ -24,6 +24,9 @@ class BigBoardModule(ProgramModuleObj):
             "seq": 10
             }
 
+    class Meta:
+        proxy = True
+
     @main_call
     # @needs_admin
     def bigboard(self, request, tl, one, two, module, extra, prog):
