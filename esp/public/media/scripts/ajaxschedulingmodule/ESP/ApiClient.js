@@ -1,10 +1,15 @@
 function ApiClient(){
-    this.schedule_section = function(section_id, timeslot_id, room_name, callback, errorReporter){
+    //TODO: schedule_section should take a list of timeslot ids
+    this.schedule_section = function(section_id, timeslot_ids, room_name, callback, errorReporter){
+	assignments = timeslot_ids.map(function(id) {
+	    return id + "," + room_name
+	}).join("\n")
+
         var req = { 
 	    action: 'assignreg',
             csrfmiddlewaretoken: csrf_token(),
             cls: section_id,
-            block_room_assignments: timeslot_id + "," + room_name
+            block_room_assignments: assignments
 	}
 	return this.send_request(req, callback, errorReporter)
     }

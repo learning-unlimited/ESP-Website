@@ -71,7 +71,7 @@ describe("Matrix", function(){
 		
 		var args = m.api_client.schedule_section.argsForCall[0]
 		expect(args[0]).toEqual(section_2().id)
-		expect(args[1]).toEqual(1)
+		expect(args[1]).toEqual([1])
 		expect(args[2]).toEqual("room-2")
 	    })
 	})

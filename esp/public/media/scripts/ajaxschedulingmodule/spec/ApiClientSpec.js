@@ -15,7 +15,7 @@ describe("ApiClient", function(){
 	    var callback_function = function(){}
 	    var errorReporter_function = function(){}
 	    
-	    a.schedule_section(1234, 1, "my-room",
+	    a.schedule_section(1234, [1], "my-room",
 			       callback_function,
 			       errorReporter_function)
 
@@ -29,6 +29,27 @@ describe("ApiClient", function(){
 		callback_function,
 		errorReporter_function
 	    )	    
+	})
+
+	it("can send a request with multiple timeslots", function(){
+	    spyOn(a, "send_request")
+	    var callback_function = function(){}
+	    var errorReporter_function = function(){}
+
+	    a.schedule_section(1234, [1,2], "my-room",
+			       callback_function,
+			       errorReporter_function)
+
+	    expect(a.send_request).toHaveBeenCalledWith(
+		{
+		    action: 'assignreg',
+		    csrfmiddlewaretoken: 'abcd',
+		    cls: 1234,
+		    block_room_assignments: '1,my-room\n2,my-room',
+		},
+		callback_function,
+		errorReporter_function
+	    )
 	})
     })
 

@@ -7,7 +7,6 @@ function Matrix(
     garbage_el,
     api_client
 ){ 
-
     this.el = el
     this.garbage_el = garbage_el
     this.el.id = "matrix-table"
@@ -15,7 +14,7 @@ function Matrix(
     this.rooms = rooms
     this.schedule_assignments = schedule_assignments
     this.sections = sections
-    this.timeslots = helpers_add_timeslots_order(timeslots)
+    this.timeslots = new Timeslots(timeslots)
 
     this.api_client = api_client
 
@@ -64,7 +63,7 @@ function Matrix(
     }()
 
     this.getCell = function(room_name, timeslot_id){
-	return this.cells[room_name][this.timeslots[timeslot_id].order]
+	return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order]
     }
 
     this.validateAssignment = function(section, room_name, schedule_timeslots){
@@ -87,7 +86,7 @@ function Matrix(
 	this.api_client.schedule_section(
 	    section.id, 
 	    //TODO: schedule_timeslots instead of first_timeslot_id
-	    first_timeslot_id,
+	    schedule_timeslots,
 	    room_name, 
 	    function() {
 		this.scheduleSectionLocal(section, room_name, schedule_timeslots)
@@ -154,7 +153,7 @@ function Matrix(
 	//Time headers
 	var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table))
 	$j("<th/>").appendTo(header_row)
-	$j.each(this.timeslots, function(id, timeslot){
+	$j.each(timeslots, function(id, timeslot){
 	    $j("<th>" + timeslot.label + "</th>").appendTo(header_row)
 	})
 
