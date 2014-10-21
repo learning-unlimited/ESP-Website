@@ -28,7 +28,7 @@ function Matrix(
     this.dropHandler = function(el, ui){
 	var cell = $j(el.currentTarget).data("cell")
 	var section = ui.draggable.data("section")
-	this.scheduleSection(section, cell.room_name, [cell.timeslot_id])
+	this.scheduleSection(section, cell.room_name, cell.timeslot_id)
     }.bind(this)
 
     this.init = function(){
@@ -78,14 +78,16 @@ function Matrix(
     }
 
     // scheduling sections
-    this.scheduleSection = function(section, room_name, schedule_timeslots){
+    this.scheduleSection = function(section, room_name, first_timeslot_id){
+	schedule_timeslots = [first_timeslot_id]
 	if (!this.validateAssignment(section, room_name, schedule_timeslots)){
 	    return
 	}
 
 	this.api_client.schedule_section(
 	    section.id, 
-	    schedule_timeslots, 
+	    //TODO: schedule_timeslots instead of first_timeslot_id
+	    first_timeslot_id,
 	    room_name, 
 	    function() {
 		this.scheduleSectionLocal(section, room_name, schedule_timeslots)

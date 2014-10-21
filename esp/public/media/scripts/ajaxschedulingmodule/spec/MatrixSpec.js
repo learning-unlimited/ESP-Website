@@ -89,7 +89,7 @@ describe("Matrix", function(){
     describe("unscheduleSection", function(){
 	it("calls out to the api", function() {
 	    spyOn(m.api_client, 'unschedule_section')
-	    m.unscheduleSection(section_2(), "room-2", 1)
+	    m.unscheduleSection(section_2())
 	    expect(m.api_client.unschedule_section).toHaveBeenCalled()
 	    
 	    var args = m.api_client.unschedule_section.argsForCall[0]
@@ -127,7 +127,7 @@ describe("Matrix", function(){
 	    $j("body").on("schedule-changed", function(){
 		event_fired = true
 	    })
-	    m.scheduleSection(section_2(), "room-2", [1,2])
+	    m.scheduleSection(section_2(), "room-2", 1)
 	    expect(event_fired).toBeTrue()
 	})
 
