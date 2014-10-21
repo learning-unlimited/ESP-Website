@@ -3,6 +3,31 @@
   height: 250px;
 }
 
+.load-averages {
+  text-align: center;
+}
+
+.load-average {
+  display: inline-block;
+  width: 300px;
+  height: 200px;
+}
+
+.load-average-gauge {
+  display: block;
+  width: 300px;
+  height: 175px;
+}
+
+.load-average-title {
+  display: block;
+}
+
+.load-title {
+  font-size: 25px;
+  color: black;
+}
+
 .bigboard-numbers, .popular-classeses {
   text-align: center;
   margin-top: 25px;
@@ -23,7 +48,7 @@
   font-weight: bold;
 }
 
-.bigboard-number-description {
+.bigboard-description {
   font-size: 18px;
 }
 
@@ -40,7 +65,6 @@
 }
 
 .popular-classes {
-  font-size: 18px;
   margin-bottom: 15px;
   text-align: left;
 }

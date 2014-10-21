@@ -13,6 +13,8 @@
 
 {% block xtrajs %}
   <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="http://code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/solid-gauge.js"></script>
 {% endblock xtrajs %}
 
 
@@ -23,6 +25,9 @@
   <script type="text/javascript">
     $j(function () {
       $j('#highcharts-placeholder').highcharts({
+        credits: {
+            enabled: false
+        },
         legend: {
           align: "right",
           floating: true,
@@ -72,8 +77,79 @@
   {% for description, number in numbers %}
     <div class="bigboard-number-block">
       <div class="bigboard-number">{{number}}</div>
-      <div class="bigboard-number-description">{{description}}</div>
+      <div class="bigboard-number-description bigboard-description">{{description}}</div>
     </div>
+  {% endfor %}
+</div>
+
+<div class="load-averages">
+  {% for t, load_avg in loads %}
+  <div class="load-average">
+    <div class="load-average-gauge" id="load-average-gauge-{{t}}"></div>
+    <div class="load-average-title bigboard-description">{{t}}-minute load average</div>
+  </div>
+  <script type="text/javascript">
+    $j(function () {
+      $j('#load-average-gauge-{{t}}').highcharts({
+        // mostly grabbed from http://www.highcharts.com/demo/gauge-solid
+        chart: {
+            type: 'solidgauge'
+        },
+        credits: {
+            enabled: false
+        },
+        pane: {
+          center: ['50%', '85%'],
+          size: '140%',
+          startAngle: -90,
+          endAngle: 90,
+          background: {
+            backgroundColor: '#EEE',
+            innerRadius: '60%',
+            outerRadius: '100%',
+            shape: 'arc'
+          }
+        },
+        plotOptions: {
+          solidgauge: {
+            dataLabels: {
+              y: 5,
+              borderWidth: 0,
+              useHTML: true
+            },
+            wrap: false,
+          }
+        },
+        title: {
+          text: null,
+        },
+        tooltip: {
+          enabled: false,
+        },
+        yAxis: {
+          min: 0,
+          max: 32,
+          stops: [
+            [0, '#55BF3B'], // green
+            [0.2, '#DDDF0D'], // yellow
+            [0.5, '#DF5353'] // red
+          ],
+          lineWidth: 0,
+          minorTickInterval: null,
+          tickInterval: 32,
+          tickWidth: 0,
+          title: {text: null},
+          labels: {y: 16},
+        },
+        series: [
+          {
+            data: [{{load_avg}}],
+            dataLabels: {format: '<span class="load-title">{y}</span>'},
+          },
+        ],
+      });
+    });
+  </script>
   {% endfor %}
 </div>
 
@@ -84,7 +160,7 @@
       <div class="popular-classes-heading">
         {{description}}
       </div>
-      <table class="popular-classes">
+      <table class="popular-classes bigboard-description">
         {% for class in classes %}
           <tr>
             <td class="popular-class-num">{{class.points}}</td>

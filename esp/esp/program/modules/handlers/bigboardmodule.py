@@ -1,4 +1,5 @@
 import datetime
+import subprocess
 
 from django.db.models.aggregates import Count, Max, Min
 from django.db.models.query import Q
@@ -73,6 +74,7 @@ class BigBoardModule(ProgramModuleObj):
             "popular_classes": self.popular_classes(prog),
             "first_hour": start,
             "graph_data": graph_data,
+            "loads": zip([1, 5, 15], self.load_averages()),
         }
         return render_to_response(self.baseDir()+'bigboard.html',
                                   request, context)
@@ -232,3 +234,12 @@ class BigBoardModule(ProgramModuleObj):
                 chunks.append(i)
                 start += delta
         return chunks
+
+    # runs in 9ms, so don't bother caching
+    def load_averages(self):
+        try:
+            uptime = subprocess.check_output('uptime')
+            # The output ends in e.g. "load average: 1.65, 1.84, 1.67\n"
+            return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
+        except:
+            return []
