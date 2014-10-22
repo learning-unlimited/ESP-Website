@@ -7,6 +7,7 @@ from fabric.contrib import files
 from fabric.contrib import django as fabric_django
 from fabric.context_managers import settings
 from fabric.operations import get
+from fabric.state import default_channel
 
 import fabtools
 import fabtools.vagrant
@@ -15,12 +16,46 @@ from contextlib import contextmanager
 import posixpath
 import string
 import random
+import getpass
+import subprocess
+import socket
 
 fabric_django.project('esp')
 
 REMOTE_USER = 'vagrant'
 REMOTE_PROJECT_DIR = '/home/vagrant/devsite'
 REMOTE_VIRTUALENV_DIR = '/home/vagrant/devsite_virtualenv'
+ENCRYPTED_VG_NAME = 'ubuntu--12--vg-keep_1'
+
+"""
+The following remote_pipe() function is from:
+  https://github.com/goncalopp/btrfs-send-snapshot
+
+The code has been adapted only for style.
+"""
+def remote_pipe(local_command, remote_command, buf_size=1024*1024):
+    """ Executes a local command and a remove command (with fabric), and
+        sends the local's stdout to the remote's stdin.  """
+    local_p = subprocess.Popen(local_command, shell=True, stdout=subprocess.PIPE)
+    channel = default_channel()
+    channel.set_combine_stderr(True)
+    channel.settimeout(2)
+    channel.exec_command(remote_command)
+    try:
+        read_bytes = local_p.stdout.read(buf_size)
+        while read_bytes:
+            channel.sendall(read_bytes)
+            read_bytes = local_p.stdout.read(buf_size)
+    except socket.error:
+        local_p.kill()
+        #   fail to send data, let's see the return codes and received data...
+    local_ret = local_p.wait()
+    received = channel.recv(buf_size)
+    channel.shutdown_write()
+    channel.shutdown_read()
+    remote_ret = channel.recv_exit_status()
+    if local_ret != 0 or remote_ret != 0:
+        raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
 
 def use_vagrant():
     vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ')[1]
@@ -99,14 +134,101 @@ def link_media():
         run('ln -s default_images images')
         run('ln -s default_styles styles')
 
+def mount_encrypted_partition():
+    if sudo('df | grep encrypted | wc -l').strip() == '1':
+        print 'Encrypted partition is already mounted; not doing anything.'
+        return
+    if sudo('ls -l /dev/mapper/encrypted &> /dev/null ; echo $?').strip() != '0':
+        print 'Opening the encrypted partition for data storage.'
+        print 'Please enter your passphrase when prompted.'
+        sudo('cryptsetup luksOpen /dev/mapper/%s encrypted' % (ENCRYPTED_VG_NAME,))
+    sudo('mount /dev/mapper/encrypted /mnt/encrypted')
+
+def create_encrypted_partition():
+
+    #   Check for the encrypted partition already existing on the
+    #   VM, and quit if it does.
+    if sudo('cryptsetup isLuks /dev/mapper/%s ; echo $?' % (ENCRYPTED_VG_NAME,)).strip() == '0':
+        print 'Encrypted partition already exists; mounting.'
+        mount_encrypted_partition()
+        return
+    
+    print 'Now creating encrypted partition for data storage.'
+    print 'Please make up a passphrase and enter it when prompted.'
+    
+    #   Get cryptsetup and create the encrypted filesystem
+    sudo('apt-get install -y -qq cryptsetup')
+    sudo('cryptsetup luksFormat /dev/mapper/%s' % (ENCRYPTED_VG_NAME,))
+    sudo('cryptsetup luksOpen /dev/mapper/%s encrypted' % (ENCRYPTED_VG_NAME,))
+    sudo('mkfs.ext4 /dev/mapper/encrypted')
+    sudo('mkdir -p /mnt/encrypted')
+    sudo('mount /dev/mapper/encrypted /mnt/encrypted')
+    
+    #   Get postgres and create the tablespace on that filesystem
+    fabtools.require.postgres.server()
+    sudo('chown -R postgres /mnt/encrypted')
+    run('sudo -u postgres psql -c "CREATE TABLESPACE encrypted LOCATION \'/mnt/encrypted\'"')
+
+def load_encrypted_database(db_owner, db_filename):
+    """ Load an encrypted database dump (.sql.gz.gpg) into the VM.
+        Expects to receive the Postgres username of the role
+        that "owns" the objects in the database (typically 
+        this matches the chapter's site directory name, or 'esp'
+        in the case of MIT).    """
+    
+    #   Generate a new local_settings.py file with this database owner
+    context = {
+        'db_user': db_owner,
+        'db_name': 'devsite_django',
+        'db_password': gen_password(8),
+        'secret_key': gen_password(64),
+    }
+    files.upload_template('./config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
+
+    #   Set up the user (with blank DB) in Postgres
+    run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
+    run('sudo -u postgres psql -c "DROP ROLE IF EXISTS %s"' % (db_owner,))
+    run('sudo -u postgres psql -c "CREATE ROLE %s LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
+    run('sudo -u postgres psql -c "CREATE DATABASE devsite_django OWNER %s TABLESPACE encrypted"' % (db_owner,))
+    
+    #   Decrypt the DB dump (if needed) and send to the VM's Postgres install.
+    #   This sends the SQL commands to the VM via the remote_pipe function.
+    if db_filename.endswith('.gpg'):
+        local_cmd = 'gpg -d %s | gunzip -c' % (db_filename,)
+    else:
+        local_cmd = 'gunzip -c %s' % (db_filename,)
+    remote_cmd = 'sudo -u postgres psql devsite_django'
+    remote_pipe(local_cmd, remote_cmd)
+
 @task
-def vagrant_dev_setup():
-    """ Set up the development environment. """
+def load_db_dump(dbuser, dbfile):
+    """ Create an encrypted partition on the VM and load a database dump
+        using that encrypted storage.   """
+
     with use_vagrant():
-        create_settings()
+        create_encrypted_partition()
+        load_encrypted_database(dbuser, dbfile)
+
+@task
+def vagrant_dev_setup(dbuser=None, dbfile=None):
+    """ Set up the development environment.
+        If the dbuser and dbfile arguments are supplied, sets up
+        encrypted database storage and loads a DB dump. """
+
+    if dbuser is not None and dbfile is None:
+        raise Exception('You must provide a database dump file to load in the dbfile argument.')
+    if dbuser is None and dbfile is not None:
+        raise Exception('You must specify the PostgreSQL user that your database belongs to in the dbuser argument.')
+    using_db_dump = (dbuser is not None and dbfile is not None)
+
+    with use_vagrant():
+        if using_db_dump:
+            load_db_dump(dbuser, dbfile)
+        else:
+            create_settings()
+            initialize_db()
         setup_apache()
         link_media()
-        initialize_db()
 
 @task
 def run_devserver():
@@ -114,6 +236,14 @@ def run_devserver():
     with use_vagrant():
         with esp_env():
             sudo('python manage.py runserver 0.0.0.0:8000')
+
+@task
+def open_db():
+    """ Mounts the encrypted filesystem containing any loaded database
+        dumps.  Should be executed after 'vagrant up' and before any
+        other operations such as run_devserver. """
+    with use_vagrant():
+        mount_encrypted_partition()
 
 @task
 def reload_apache():
