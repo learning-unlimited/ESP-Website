@@ -53,18 +53,30 @@ Note that you will not be able to see the VM, since it runs in a "headless" mode
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    vagrant ssh -- -n -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv" 
+    vagrant ssh -- -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv" 
 
 Finally, you should use Fabric to deploy the development environment. At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
     cd ../esp
     fab vagrant_dev_setup
 
+The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
+
+    fab vagrant_dev_setup:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+
+Typically the user name for the database is typically the lowercase name of the chapter; however, for MIT's system it is simply "esp".  Please ask the Web team for assistance if you need to know the user name, or obtain a database dump.
+
+If you would like to load a database dump to a system that has already been set up, you may do so with the "load_db_dump" task (which overwrites the existing database on the dev server): ::
+
+    fab load_db_dump:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+
 Now you can run the dev server: ::
 
     fab run_devserver
 
 Once this is running, you should be able to open a Web browser on your computer (not within the VM) and navigate to http://localhost:8000, where you will see the site.  
+
+If you are using encrypted databases, you will need to run 'fab open_db' after each time you start the VM ('vagrant up'), and enter the passphrase that you specified during the setup process.
 
 Usage
 -----
@@ -76,6 +88,13 @@ If you need to debug things inside of the VM, you can go to the ``vagrant`` dire
 * The location of the working copy within the VM is ``/home/vagrant/devsite``
 * The location of the virtualenv used by the VM is ``/home/vagrant/devsite_virtualenv``
   This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links.
+  
+For example, if you want to run a shell: ::
+
+    vagrant ssh
+    source ~/devsite_virtualenv/bin/activate
+    cd ~/devsite/esp
+    ./manage.py shell_plus
 
 An Apache2 server is also set up; you can access it from http://localhost:8080.  Note that whenever you change the code, you will need to run ``fab reload_apache`` to reload Apache2 inside the VM so that your changes take effect.
 
@@ -84,7 +103,6 @@ Functionality that is lacking
 
 This is a TODO list for the developers:
 
-* Support loading of a DB dump via (e.g. ``fab load_db_dump``) - needs encrypted storage
 * Support deploying to other targets (other than Vagrant VMs) - could be useful for deployment
 * Make things more customizable
 * Reduce number of setup steps
