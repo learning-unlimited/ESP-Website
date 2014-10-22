@@ -39,6 +39,8 @@ class BigBoardModule(ProgramModuleObj):
         # Most of the numbers on the page are rendered from this list, which
         # should consist of pairs (description, number)
         numbers = [
+            ("students registering in the last 10 minutes",
+             self.num_active_users(prog)),
             ("students with lottery preferences",
              self.num_users_with_lottery(prog)),
             ("students enrolled in a class",
@@ -113,6 +115,26 @@ class BigBoardModule(ProgramModuleObj):
                 section__parent_class__parent_program=prog)
             .values_list('user').distinct())
         return len(users_with_ssis | users_with_srs)
+
+    @cache_function_for(105)
+    def num_active_users(self, prog, minutes=10):
+        recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
+        users_with_ssis = set(
+            StudentSubjectInterest.objects
+            .filter(subject__parent_program=prog)
+            .filter(start_date__gt=recent)
+            .values_list('user').distinct())
+        users_with_srs = set(
+            StudentRegistration.objects
+            .filter(section__parent_class__parent_program=prog)
+            .filter(start_date__gt=recent)
+            .values_list('user').distinct())
+        users_with_meds = set(
+            Record.objects
+            .filter(program=prog, event__in=['med', 'med_bypass'])
+            .filter(time__gt=recent)
+            .values_list('user').distinct())
+        return len(users_with_ssis | users_with_srs | users_with_meds)
 
     @cache_function_for(105)
     def num_ssis(self, prog):
