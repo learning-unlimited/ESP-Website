@@ -74,6 +74,20 @@ For more information on configuring and using the module, see
 Improvements to scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Some improvements were made to the scheduling checks page, including:
+
+- a new "missing resources by hour" check
+
+- timeblock information in the "classes missing resources" and "wrong classroom
+  type" checks
+
+- counts in the "admins teaching per timeslot" check
+
+Additionally, for larger chapters the page may take a long time to load.  More
+improvements are in the works, but for now, the page
+<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
+will display a list of links to display the checks individually; most will load
+much more quickly than the entire page.
 
 
 Deadline for walk-in activities / open classes
