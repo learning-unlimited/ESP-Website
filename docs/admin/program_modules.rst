@@ -525,6 +525,26 @@ website with error field set rather than the token.
 
 You will probably also want to enable the "Credit Card Viewer" (see below).
 
+There are three configurable options for the module:
+
+- donation_text: Defaults to "Donation to Learning Unlimited". This is the
+  description of the line item that will show up on student invoices when they
+  have made a donation.
+
+- donation_options: Defaults to the list [10, 20, 50]. These are the donation
+  options, in US dollars, that students are able to select between. In
+  addition, "I won't be making a donation" is always an option.
+
+- offer_donation: Defaults to True. If it is set to False, there will be no
+  prompt to donate to LU.
+
+To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
+the program, with the key stripe_settings, and with the value being a JSON
+object with the overriden keys/values.
+
+The module also has a donation pitch built into the inline QSD on that page. It
+can be edited inline by an admin to something more customized.
+
 Credit Card Viewer
 ------------------
 
