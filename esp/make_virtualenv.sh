@@ -55,8 +55,18 @@
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
+# The directory to store the virtualenv can be supplied as an argument.
+if [[ "$#" -lt "1" ]]
+then
+    VENVDIR="$BASEDIR/env"
+else
+    VENVDIR=$1
+fi
+
+echo "Creating Virtualenv in $VENVDIR"
+
 sudo pip install "virtualenv>=1.10"
-virtualenv "$BASEDIR/env"
-source "$BASEDIR/env/bin/activate"
+virtualenv "$VENVDIR"
+source "$VENVDIR/bin/activate"
 pip install -r "$BASEDIR/esp/requirements.txt"
 
