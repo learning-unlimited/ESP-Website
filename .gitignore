@@ -11,6 +11,7 @@ esp/public/media/uploaded/*
 esp/public/media/styles
 esp/public/media/images
 esp/public/media/default_images/theme
+esp/public/media/default_images/favicon.ico
 esp/public/media/theme_editor/themes
 esp/public/media/scripts/theme
 esp/public/static
