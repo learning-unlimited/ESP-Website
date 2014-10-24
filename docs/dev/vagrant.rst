@@ -42,7 +42,6 @@ Using a shell, navigate to the directory where you would like to place the code 
 
     git clone https://github.com/learning-unlimited/ESP-Website.git devsite
     cd devsite
-    git checkout fabric-deployment  # temporary, as this is not yet in the main branch
 
 Next, use Vagrant to create your VM: ::
 
@@ -97,6 +96,31 @@ For example, if you want to run a shell: ::
     ./manage.py shell_plus
 
 An Apache2 server is also set up; you can access it from http://localhost:8080.  Note that whenever you change the code, you will need to run ``fab reload_apache`` to reload Apache2 inside the VM so that your changes take effect.
+
+Usual workflow
+-----------------------------
+
+Once you have everything set up, normal usage of your vagrant dev server should look something like this.
+
+Before you start anything: ::
+
+    cd vagrant/
+    vagrant up
+    cd ../esp
+    fab open_db
+
+To run your dev server: ::
+
+    fab run_devserver
+
+Other useful command examples: ::
+
+    fab manage:cmd=shell_plus
+    fab manage:cmd='migrate program'
+
+Once you're done: ::
+
+    vagrant halt
 
 Functionality that is lacking
 -----------------------------
