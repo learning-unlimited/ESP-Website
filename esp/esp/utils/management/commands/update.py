@@ -39,7 +39,6 @@ from django.core.management.base import NoArgsCommand
 class Command(NoArgsCommand):
     """Update the site.
 
-    - Update site dependencies.
     - Sync the database tables.
     - Perform database migrations.
     - Install initial data.
@@ -55,7 +54,6 @@ class Command(NoArgsCommand):
         }
         default_options.update(options)
         options = default_options
-        call_command('update_deps', **options)
         call_command('syncdb', **options)
         call_command('migrate', **options)
         call_command('install', **options)
