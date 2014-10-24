@@ -37,11 +37,12 @@ then
     sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
 fi
 
-if [[ ! -f "$BASEDIR/env/bin/activate" ]]
+VIRTUALENV_DIR=${VIRTUALENV_DIR:-$BASEDIR/env}
+if [[ ! -f "$VIRTUALENV_DIR/bin/activate" ]]
 then
     $BASEDIR/esp/make_virtualenv.sh $VIRTUALENV_DIR
 else
-    source "$BASEDIR/env/bin/activate"
+    source "$VIRTUALENV_DIR/bin/activate"
     pip install -r "$BASEDIR/esp/requirements.txt"
 fi
 
