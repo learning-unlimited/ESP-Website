@@ -238,6 +238,13 @@ def run_devserver():
             sudo('python manage.py runserver 0.0.0.0:8000')
 
 @task
+def manage(cmd):
+    """ Run a manage.py command """
+    with use_vagrant():
+        with esp_env():
+            sudo('python manage.py '+cmd)
+
+@task
 def open_db():
     """ Mounts the encrypted filesystem containing any loaded database
         dumps.  Should be executed after 'vagrant up' and before any
