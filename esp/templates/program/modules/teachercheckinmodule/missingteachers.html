@@ -7,6 +7,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel='stylesheet' type='text/css' href='/media/styles/flags.css' />
     <style type="text/css">
         #shortcuts-box {
             position: fixed;
@@ -46,12 +47,31 @@
         input.not-found {
             background-color: #FFAAAA;
         }
+
+        .section-detail {
+            display: inline-block;
+            border: 1px solid #ccc;
+            margin: 0px;
+            width: 100%;
+        }
         
+        .section-detail-header {
+            background-color: #c6def7;
+            font-size: 1.2em;
+            width: 100%;
+        }
+
+        .flag-name-list {
+            display: inline-block;
+            width: 470px;
+            vertical-align: middle;
+        }
     </style>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
+    <script src="/media/scripts/flag-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
@@ -65,6 +85,7 @@
     <p>'?' to view information about teacher</p>
     <p>'Shift-Enter' to check in teacher</p>
     <p>'Ctrl-Z' to un-check-in <span id='last_checkin'></span></p>
+    <p>Click a class title for more info{% if show_flags %} and class flags{% endif %}</p>
 </div>
 
 <div id='program_form'>
@@ -97,17 +118,17 @@
 {% for section in sections %}
 <tr>
     <td rowspan="{{ section.teachers|length }}">
-        {{ section.id }}: {{ section.name }}
+        {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
     <td class="room" rowspan="{{ section.teachers|length }}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
-            {{ section.time }}
+            {{ section.begin_time }}
         {% endif %}
     </td>
-    {% for teacher in section.teachers.itervalues %}
-        {% if teacher.arrived %}
+    {% for teacher in section.teachers_list %}
+        {% if teacher.id in arrived %}
         <td class="checked-in">
         {% else %}
         <td class="not-checked-in">
@@ -115,7 +136,7 @@
             <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
         </td>
         <td class="checkin-column">
-            {% if not teacher.arrived %}
+            {% if teacher.id not in arrived %}
             <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}" 
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
@@ -126,6 +147,39 @@
         </tr>
         <tr>
     {% endfor %}
+    <td colspan="5">
+        <div class="section-detail fqr-class">
+            <div class="section-detail-header"
+                 onclick="$j(this).siblings('.section-detail-info').toggle('blink');">
+                {{section.title}}
+            </div>
+            <div class="section-detail-info" style="display: none;">
+                {% with section.parent_class as class %}
+                    {% if show_flags %}
+                        <span>
+                            <button class="add-flag btn">add flag</button>
+                            <div class="flag-name-list">
+                                {% for flag in class.flags.all %}
+                                    {% include "program/modules/classflagmodule/flag_name.html" %}
+                                {% endfor %}
+                            </div>
+                        </span>
+                    {% endif %}
+                    <div>
+                        {% include "program/modules/classflagmodule/class_detail.html" %}
+                    </div>
+                    {% if show_flags %}
+                        {% for flag in class.flags.all %}
+                            {% include "program/modules/classflagmodule/flag_detail.html" %}
+                        {% endfor %}
+                        {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </td>
+</tr>
+<tr>
     <td colspan="5"><hr/></td>
 </tr>
 {% endfor %}
@@ -152,7 +206,7 @@
     </td>
 </tr>    
 {% endif %}
-{% for teacher in arrived %}
+{% for teacher in arrived.values %}
 <tr>
     <td class="checked-in">
         <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>

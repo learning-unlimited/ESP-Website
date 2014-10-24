@@ -125,7 +125,7 @@ class TeacherEventsModule(ProgramModuleObj):
     # Views
     @main_call
     @needs_teacher
-    @meets_deadline('/MainPage')
+    @meets_deadline('/Events')
     def event_signup(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = TeacherEventSignupForm(self, request.POST)
