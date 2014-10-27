@@ -245,6 +245,12 @@ def manage(cmd):
             sudo('python manage.py '+cmd)
 
 @task
+def update_deps():
+    with use_vagrant():
+        with esp_env():
+            sudo('python manage.py update_deps')
+
+@task
 def open_db():
     """ Mounts the encrypted filesystem containing any loaded database
         dumps.  Should be executed after 'vagrant up' and before any
