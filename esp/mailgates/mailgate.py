@@ -15,20 +15,14 @@ project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 # Path for ESP code
 sys.path.insert(0, project)
 
-# activate virtualenv
-root = os.path.dirname(project)
-activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-
-try:
+# Check if a virtualenv has been installed and activated from elsewhere.
+# If this has happened, then the VIRTUAL_ENV environment variable should be
+# defined.
+# If the variable isn't defined, then activate our own virtualenv.
+if os.environ.get('VIRTUAL_ENV') is None:
+    root = os.path.dirname(project)
+    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     execfile(activate_this, dict(__file__=activate_this))
-except IOError, e:
-    # Check if a virtualenv has been installed and activated from elsewhere.
-    # If this has happened, then the VIRTUAL_ENV environment variable should be
-    # defined, and we can ignore the IOError.
-    # If the variable isn't defined, then we really should be using our own
-    # virtualenv, so we re-raise the error.
-    if os.environ.get('VIRTUAL_ENV') is None:
-        raise e
 
 from esp import cache_loader # Needed to block an annoying circular-dependency issue
 from esp.dbmail.models import EmailList
