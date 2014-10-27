@@ -91,7 +91,8 @@ def use_docker():
 def esp_env():
     with cd('%s/esp' % REMOTE_PROJECT_DIR):
         with prefix('source %s/bin/activate' % REMOTE_VIRTUALENV_DIR):
-            yield
+            with prefix('export LANG=en_US.UTF-8'):
+                yield
 
 def gen_password(length):
     return ''.join([random.choice(string.letters + string.digits) for i in range(length)])
