@@ -26,9 +26,6 @@ RUN apt-get update && apt-get install -y git sudo openssh-server
 # create local user
 RUN useradd -m -s /bin/bash -d /home/vagrant -u 1000 -U vagrant && echo 'vagrant:vagrant' | chpasswd && adduser vagrant sudo
 
-# set up SSH privilege separation directory
-RUN mkdir /var/run/sshd
-
 # get setup scripts from source code
 COPY ./esp/update_deps.sh \
      ./esp/packages_base.txt \
@@ -37,11 +34,11 @@ COPY ./esp/update_deps.sh \
      ./esp/requirements.txt \
      /home/vagrant/devsite/esp/
 
-# fix perms
-RUN chown -R vagrant:vagrant /home/vagrant/devsite
-
 # install dependencies
 RUN /home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv
+
+# set up SSH privilege separation directory
+RUN mkdir /var/run/sshd
 
 # run services
 CMD service postgresql start && service memcached start && /usr/sbin/sshd -D
