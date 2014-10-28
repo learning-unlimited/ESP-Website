@@ -46,7 +46,7 @@ describe("Matrix", function(){
     describe("validateAssignment", function(){
 	describe("when a class is already scheduled in a room", function(){
 	    beforeEach(function(){
-		m.scheduleSection(section_1(), "room-2", [2])
+		m.scheduleSection(section_1(), "room-2", 2)
 	    })
 	    
 	    it("returns false", function(){
@@ -66,11 +66,11 @@ describe("Matrix", function(){
 	    it("calls out to the api", function() {
 		spyOn(m.api_client, 'schedule_section')
 		spyOn(m, 'validateAssignment').andReturn(true)
-		m.scheduleSection(section_2(), "room-2", 1)
+		m.scheduleSection(section_1(), "room-2", 1)
 		expect(m.api_client.schedule_section).toHaveBeenCalled()
 		
 		var args = m.api_client.schedule_section.argsForCall[0]
-		expect(args[0]).toEqual(section_2().id)
+		expect(args[0]).toEqual(section_1().id)
 		expect(args[1]).toEqual([1])
 		expect(args[2]).toEqual("room-2")
 	    })

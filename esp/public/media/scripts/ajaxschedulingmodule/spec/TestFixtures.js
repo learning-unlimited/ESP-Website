@@ -3,11 +3,13 @@ function time_fixture() {
 	1: {
 	    label:  "first timeslot",
 	    start:  [2010, 4, 17, 10, 0, 0],
+	    end:  [2010, 4, 17, 10, 50, 0],
 	    id: 1
 	},
 	2: {
 	    label:  "second timeslot",
 	    start:  [2010, 4, 17, 11, 0, 0],
+	    end:  [2010, 4, 17, 11, 50, 0],
 	    id: 2
 	}
     }
@@ -18,12 +20,14 @@ function time_fixture_with_order(){
 	1: {
 	    label:  "first timeslot",
 	    start:  [2010, 4, 17, 10, 0, 0],
+	    end:  [2010, 4, 17, 10, 50, 0],
 	    order: 0,
 	    id: 1
 	},
 	2: {
 	    label:  "second timeslot",
 	    start:  [2010, 4, 17, 11, 0, 0],
+	    end:  [2010, 4, 17, 11, 50, 0],
 	    order: 1,
 	    id: 2
 	}
@@ -36,11 +40,13 @@ function time_fixture_out_of_order() {
 	2: {
 	    label:  "first timeslot",
 	    start:  [2010, 4, 17, 10, 0, 0],
+	    end:  [2010, 4, 17, 10, 50, 0],
 	    id: 2
 	},
 	1: {
 	    label:  "second timeslot",
 	    start:  [2010, 4, 17, 11, 0, 0],
+	    end:  [2010, 4, 17, 11, 50, 0],
 	    id: 1
 	}
     }
@@ -91,7 +97,7 @@ function section_1() {
 	    title: "Fascinating Science Phenomena", 
 	    category_id: 17, 
 	    class_size_max: 150, 
-	    length: 1.83, 
+	    length: 1, 
 	    grade_min: 7, 
 	    num_students: 42, 
 	    grade_max: 12, 

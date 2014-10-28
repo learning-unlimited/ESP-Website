@@ -78,7 +78,7 @@ function Matrix(
 
     // scheduling sections
     this.scheduleSection = function(section, room_name, first_timeslot_id){
-	schedule_timeslots = [first_timeslot_id]
+	schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id)
 	if (!this.validateAssignment(section, room_name, schedule_timeslots)){
 	    return
 	}
