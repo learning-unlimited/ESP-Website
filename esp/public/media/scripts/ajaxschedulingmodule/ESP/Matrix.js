@@ -134,8 +134,12 @@ function Matrix(
 
     this.unscheduleSectionLocal = function(section) {
 	var assignment = this.schedule_assignments[section.id]
-	var cell = this.getCell(assignment.room_name, assignment.timeslots[0])
-	this.clearCell(cell)
+
+	var timeslot_index
+	for (timeslot_index in assignment.timeslots) {
+	    var cell = this.getCell(assignment.room_name, assignment.timeslots[timeslot_index])
+	    this.clearCell(cell)
+	}
 
 	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id}
 

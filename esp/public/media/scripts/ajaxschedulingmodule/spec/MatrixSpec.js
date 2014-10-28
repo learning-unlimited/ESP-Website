@@ -139,9 +139,13 @@ describe("Matrix", function(){
 
     describe("unscheduleSectionLocal", function(){
 	it("removes the class from the matrix", function(){
-	    expect(m.getCell("room-1", 1).section).toEqual(section_1())
-	    m.unscheduleSectionLocal(section_1())
-	    expect(m.getCell("room-1", 1).section).not.toEqual(section_1())
+	    m.scheduleSection(section_2(), "room-2", 1)
+
+	    expect(m.getCell("room-2", 1).section).toEqual(section_2())
+	    expect(m.getCell("room-2", 2).section).toEqual(section_2())
+	    m.unscheduleSectionLocal(section_2())
+	    expect(m.getCell("room-2", 1).section).not.toEqual(section_2())
+	    expect(m.getCell("room-2", 2).section).not.toEqual(section_2())
 	})
 
 	it("fires a schedule-changed event", function(){
