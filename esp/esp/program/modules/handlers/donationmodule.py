@@ -44,6 +44,8 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
+
+from django import forms
 from django.conf import settings
 from django.db import transaction
 from django.db.models.query import Q
@@ -57,6 +59,30 @@ import stripe
 import json
 import re
 
+
+
+class DonationForm(forms.Form):
+    amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
+    custom_amount = forms.IntegerField(min_value=1, max_value=1000, required=False)
+    
+    def __init__(self, *args, **kwargs):
+        super(DonationForm, self).__init__(*args, **kwargs)
+        self.amount = None
+
+    def clean(self):
+        super(DonationForm, self).clean()
+        amount_donation = self.cleaned_data.get('amount_donation','') 
+        custom_amount = self.cleaned_data.get('custom_amount','')
+
+        if amount_donation == -1:
+            if custom_amount:
+                self.amount = custom_amount
+                raise forms.ValidationError("Please enter a donation amount")
+        else:
+            self.amount = amount_donation
+        return self.cleaned_data
+
+            
 class DonationModule(ProgramModuleObj):
 
     event = "donation_done"
@@ -76,7 +102,7 @@ class DonationModule(ProgramModuleObj):
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
             'donation_text': 'Donation to Learning Unlimited',
-            'donation_options': [10, 20, 50],
+            'donation_options':[10, 20, 50],
         }
 
         tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
@@ -107,6 +133,14 @@ class DonationModule(ProgramModuleObj):
     def studentDesc(self):
         return {'donation': """Students who have chosen to make an optional donation."""}
 
+    def get_form(self, form_data=None):
+        form = DonationForm(form_data)
+        form.fields['amount_donation'].choices = [(0, "I won't be making a donation at this time")] + \
+                                  [(option, '$%d'%option) for option in self.settings['donation_options']] + \
+                                  [(-1, "I would like to donate a different amount")]
+        return form
+
+      
     @main_call
     @usercheck_usetl
     @meets_deadline('/ExtraCosts')
@@ -116,12 +150,32 @@ class DonationModule(ProgramModuleObj):
 
         iac = IndividualAccountingController(self.program, user)
 
+        context = {}
+        context['module'] = self
+        context['program'] = prog
+        context['user'] = user
+ 
         # It's unclear if we support changing line item preferences after
         # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
         if iac.amount_due() <= 0:
             raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+
+        form = None
+
+        if request.method == 'POST':
+
+            self.apply_settings()
+            form = self.get_form(form_data=request.POST)
+
+            if form.is_valid():
+                #   Clear the Transfers by specifying quantity 0
+                iac.set_preference('Donation to Learning Unlimited', 0)
+                if form.amount:
+                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
+
+                return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
         # Donations and non-donations go through different code paths. If a
         # user chooses to make a donation, set_donation_amount() is called via
@@ -136,10 +190,6 @@ class DonationModule(ProgramModuleObj):
         # the page.
         Record.objects.get_or_create(user=user, program=self.program, event=self.event)
 
-        context = {}
-        context['module'] = self
-        context['program'] = prog
-        context['user'] = user
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
         donation_prefs = iac.get_preferences([self.line_item_type(),])
@@ -151,6 +201,8 @@ class DonationModule(ProgramModuleObj):
             context['has_donation'] = False
 
         context['institution'] = settings.INSTITUTION_NAME
+
+        context['form'] = form and form or self.get_form()
         return render_to_response(self.baseDir() + 'donation.html', request, context)
 
     class Meta:
