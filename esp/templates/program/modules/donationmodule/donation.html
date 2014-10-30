@@ -8,19 +8,6 @@
 {% block xtrajs %}
 <script type="text/javascript">
 <!--
-function updateDonationOnPage(donationAmount) {
-    //  Tell the server about our change in preferences
-    $j.ajax("/json/{{ program.url }}/set_donation_amount", {
-        async: false,
-        data: {
-            "amount": donationAmount,
-            "csrfmiddlewaretoken": csrf_token()
-        },
-        type: "POST",
-		dataType: "json",
-    });
-}
-
 function toggleDonationAmount() {
     var donationAmount = parseFloat($j(this).val());
     if (donationAmount == -1) {
@@ -77,8 +64,6 @@ label input {
         </div>
     </form>
     <br />
-    <p>{% trans "Your choice here is automatically saved." %} <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">{% trans "Click here" %}</a> {% trans "to return to the main registration page" %}.</p>
-
   </div>
 </div>
 
