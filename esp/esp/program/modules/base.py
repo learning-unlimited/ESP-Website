@@ -202,7 +202,7 @@ class ProgramModuleObj(models.Model):
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         user = ESPUser(request.user)
-        if (tl == "learn") and prog.isFull() and not user.canRegToFullProgram(prog) and not prog.isConfirmed(user):
+        if (tl == "learn") and (call_txt != "catalog") and prog.isFull() and not user.canRegToFullProgram(prog) and not prog.isConfirmed(user):
             raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
 
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
