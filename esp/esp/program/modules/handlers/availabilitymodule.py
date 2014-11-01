@@ -291,11 +291,11 @@ class AvailabilityModule(ProgramModuleObj):
         
         for t in timeslots:
             teaching = t in teaching_times
-            diff_day = t.start.strftime('%A, %b %d').decode('utf-8') != t.end.strftime('%A, %b %d').decode('utf-8')
-            available.append((self.prettyTime(t.start), self.prettyTime(t.end, inc_date=diff_day), (t in marked_available), teaching, \
-                teaching_times.get(t)[0] if teaching else None, \
-                teaching_times.get(t)[1] if teaching else None, \
-                teaching_times.get(t)[2] if teaching else None, \
+            diff_day = t.start.date() != t.end.date()
+            available.append((self.prettyTime(t.start), self.prettyTime(t.end, inc_date=diff_day), (t in marked_available), teaching,
+                teaching_times.get(t)[0] if teaching else None,
+                teaching_times.get(t)[1] if teaching else None,
+                teaching_times.get(t)[2] if teaching else None,
                 teaching_times.get(t)[3] if teaching else None))
 
         context = {'available': available, 'unscheduled': unscheduled_classes, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username), 'form': form }
