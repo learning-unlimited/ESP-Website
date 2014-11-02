@@ -1042,16 +1042,6 @@ class Program(models.Model, CustomFormsLinkModel):
     getShirtInfo.depend_on_row(lambda: ClassSubject, lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_model(lambda: TeacherInfo) 
 
-    def archive(self):
-        archived_classes = []
-        #   I think we should delete resources and user bits, but I'm afraid to.
-        #   So, just archive all of the classes.
-        for c in self.classes():
-            archived_classes.append(c.archive())
-            print 'Archived: %s' % c.title()
-        
-        return archived_classes
-
     @cache_function
     def incrementGrade(self): 
         return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))

@@ -1865,27 +1865,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.save()
         
         return result
-        
-    def archive(self, delete=False):
-        """ Archive a class to reduce the size of the database. """
-        from esp.users.models.userbits import UserBit
-
-        #   Ensure that the class has been saved in the archive.
-        archived_class = self.getArchiveClass()
-        
-        #   Delete user bits and resource stuff associated with the class.
-        #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
-        if delete:
-            UserBit.objects.filter(qsc=self.anchor).delete()
-            ResourceRequest.objects.filter(target_subj=self).delete()
-            #   ResourceAssignment.objects.filter(target_subj=self).delete()
-            for s in self.sections.all():
-                ResourceRequest.objects.filter(target=s).delete()
-                #   ResourceAssignment.objects.filter(target=s).delete()
-        
-        #   This function leaves the actual ClassSubject object, its ClassSections,
-        #   and the QSD pages alone.
-        return archived_class
 
     @staticmethod
     def catalog_sort(one, other):
