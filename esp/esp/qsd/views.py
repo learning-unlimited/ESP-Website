@@ -50,7 +50,7 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.cache.varnish import purge_page
+from esp.varnish import purge_page
 
 from django.conf import settings
 
