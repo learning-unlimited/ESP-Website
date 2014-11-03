@@ -28,7 +28,7 @@ class BigBoardModule(ProgramModuleObj):
         proxy = True
 
     @main_call
-    # @needs_admin
+    @needs_admin
     def bigboard(self, request, tl, one, two, module, extra, prog):
         """Loads a few numbers about student registration.
 
