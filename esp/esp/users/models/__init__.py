@@ -2526,6 +2526,7 @@ class GradeChangeRequest(TimeStampedModel):
     """
   
     claimed_grade = models.PositiveIntegerField()
+    grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)

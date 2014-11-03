@@ -247,6 +247,7 @@ class GradeChangeRequestView(CreateView):
     def form_valid(self, form):
         change_request = form.save(commit=False)
         change_request.requesting_student = self.request.user
+        change_request.grade_before_request = self.request.user.getGrade()
         change_request.save()
         messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
         
