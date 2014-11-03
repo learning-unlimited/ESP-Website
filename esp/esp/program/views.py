@@ -58,7 +58,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
+from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -531,8 +531,8 @@ def newprogram(request):
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
                 if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
-                    add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-                    add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             
 
             return HttpResponseRedirect(manage_url)

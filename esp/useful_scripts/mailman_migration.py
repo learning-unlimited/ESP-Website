@@ -36,10 +36,9 @@ def update_membership(base_users, list_name, dry_run=DRY_RUN):
     users_to_maybe_add = base_users.filter(is_active=True)
     users_not_to_add = ESPUser.objects.filter(is_active=False)
     users_to_add = users_to_maybe_add.exclude(email__in=users_not_to_add.values('email'))
-    members_to_add = set(users_to_add.values_list('email', flat=True)) - current_members
     print "Adding %s users..." % len(members_to_add),
     if not dry_run:
-        mailman.add_list_member(list_name, members_to_add)
+        mailman.add_list_members(list_name, users_to_add)
     print "added."
 
     new_members = mailman.list_contents(list_name)
