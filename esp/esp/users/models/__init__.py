@@ -1074,7 +1074,7 @@ def update_email(**kwargs):
         old_user = User.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
         new_email = new_user.get_email_sendto_address() if new_user.is_active else None
-        if old_email == new_email:
+        if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
             # They didn't change their email and didn't activate/deactivate,
             # don't do anything.
             return
