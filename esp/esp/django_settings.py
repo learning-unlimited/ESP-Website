@@ -222,6 +222,7 @@ INSTALLED_APPS = (
     'esp.seltests',
     'esp.dataviews',
     'esp.themes',
+    'esp.varnish',
     'django_extensions',
     'reversion',
     'south',
