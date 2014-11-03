@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import functools
 import types
 
 from django.core.cache import cache
