@@ -129,7 +129,7 @@ admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
-    readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    readonly_fields = ['grade_before_request', 'requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
     search_fields = default_user_search('requesting_student')
     list_filter = ('created','approved',)
 

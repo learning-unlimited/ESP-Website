@@ -158,4 +158,5 @@ class GradeChangeRequestForm(forms.ModelForm):
     """
     class Meta:
         model = GradeChangeRequest
-        exclude = ('acknowledged_by','acknowledged_time','requesting_student','approved',)
+        exclude = ('acknowledged_by','acknowledged_time','requesting_student',
+                   'approved', 'grade_before_request',)
