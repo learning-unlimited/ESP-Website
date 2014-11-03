@@ -84,7 +84,7 @@ class BaseAppElement:
         #   Enlarge text fields to a reasonable size (dangit Django).
         for field in self._field_names:
             django_field = get_field_by_name(field)
-            if type(django_field) == models.TextField:
+            if isinstance(django_field, models.TextField):
                 form_class.base_fields[field].widget = forms.Textarea(attrs={'cols': 80, 'rows': 8})
                 form_class.base_fields[field].required = False
         

@@ -127,7 +127,7 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
         default_args = kwargs.copy()
         if hasattr(self, 'resource_type'):
             #   Select out appropriate list item for the form being constructed.
-            if type(self.resource_type) == list:
+            if isinstance(self.resource_type, list):
                 default_args['resource_type'] = self.resource_type[i]
         default_args['static_resource_requests'] = self.static_resource_requests
             

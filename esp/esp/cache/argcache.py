@@ -400,7 +400,7 @@ class ArgCache(WithDelayableMethods):
         """ Delete one or multiple (including nested lists) key sets. 
             - Michael P 11/1/2009
         """
-        if type(list_or_set) == list:
+        if isinstance(list_or_set, list):
             for item in list_or_set:
                 self.delete_key_sets(item)
         else:

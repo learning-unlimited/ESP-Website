@@ -49,7 +49,7 @@ class ClassManageForm(ManagementForm):
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
     def load_data(self, cls, prefix=''):
-        if type(cls.class_size_max) == int:
+        if isinstance(cls.class_size_max, int):
             csm = cls.class_size_max
         else:  csm = 0
         self.initial = {
@@ -178,4 +178,3 @@ class SectionCancellationForm(forms.Form):
         initial['target'] = kwargs.pop('section', None)
         kwargs['initial'] = initial
         super(SectionCancellationForm, self).__init__(*args, **kwargs)
-    
