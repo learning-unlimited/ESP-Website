@@ -637,24 +637,34 @@ class PermissionTestCase(TestCase):
 
     def testUserAdministerProgram(self):
         self.create_user_perm_for_program('Administer')
+        self.assertTrue(self.user.isAdmin(self.program))
+        self.assertFalse(self.user.isAdmin())
         self.assertTrue(self.user_has_perm_for_program('test'))
 
     def testRoleAdministerProgram(self):
         self.create_role_perm_for_program('Administer')
+        self.assertTrue(self.user.isAdmin(self.program))
+        self.assertFalse(self.user.isAdmin())
         self.assertTrue(self.user_has_perm_for_program('test'))
 
     def testUserAdministerAll(self):
         self.create_user_perm('Administer')
+        self.assertTrue(self.user.isAdmin(self.program))
+        self.assertTrue(self.user.isAdmin())
         self.assertTrue(self.user_has_perm_for_program('test'))
         self.assertTrue(self.user_has_perm('test'))
 
     def testRoleAdministerAll(self):
         self.create_role_perm('Administer')
+        self.assertTrue(self.user.isAdmin(self.program))
+        self.assertTrue(self.user.isAdmin())
         self.assertTrue(self.user_has_perm_for_program('test'))
         self.assertTrue(self.user_has_perm('test'))
 
     def testAdministratorAlwaysHasPerm(self):
         self.user.makeRole('Administrator')
+        self.assertTrue(self.user.isAdmin(self.program))
+        self.assertTrue(self.user.isAdmin())
         self.assertTrue(self.user_has_perm_for_program('test'))
         self.assertTrue(self.user_has_perm('test'))
 

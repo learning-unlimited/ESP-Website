@@ -730,7 +730,9 @@ class ESPUser(User, AnonymousUser):
         return clsObj.students().filter(id=self.id).exists()
 
     def canRegToFullProgram(self, program):
-        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
+        from esp.program.models import Program
+        perm = Program.OVERRIDE_FULL_PERM
+        return Permission.user_has_perm(self, perm, program) or (self in program.students()['student_profile'])
 
     #   This is needed for cache dependencies on financial aid functions
     def get_finaid_model():
@@ -819,17 +821,33 @@ class ESPUser(User, AnonymousUser):
             `Program` or None
         """
         if self.is_anonymous() or self.id is None: return False
-        is_admin_role = self.groups.filter(name="Administrator").exists()
-        if is_admin_role: return True
-        quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
-        # Unexpectedly and unfortunately, program__in=[None, program] doesn't
-        # find objects with program=None.
-        qprogram = Q(program=None) | Q(program=program)
-        return Permission.objects.filter(
-                        quser & qprogram & Permission.is_valid_qobject(),
-                        permission_type="Administer",
-        ).exists()
+        return self.administrators(program).filter(id=self.id).exists()
     isAdmin = isAdministrator
+
+    @classmethod
+    def administrators(cls, program=None, QObject=False):
+        """Admins for the program.
+
+        :param program:
+            Find admins for this program.
+            If None, check for global admin privileges.
+        :type program:
+            `Program` or None
+        :param QObject:
+            If True, return a `Q` object.
+            If False, return a `QuerySet`.
+        :type QObject:
+            `bool`
+        :return:
+            Set of admins.
+        :rtype:
+            `Q` or `QuerySet`
+        """
+        return Permission.users_with_perm(
+            "Administer",
+            program=program,
+            QObject=QObject,
+        )
 
     @cache_function
     def getAllUserTypes(use_tag=True):
@@ -2250,9 +2268,9 @@ class Permission(ExpirableModel):
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
         ("GradeOverride", "Ignore grade ranges for studentreg"),
+        ("OverrideFull", "Register for a full program"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
-            ("Student/OverrideFull", "Register for a full program"),
             ("Student/All", "All student deadlines"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
@@ -2325,13 +2343,9 @@ class Permission(ExpirableModel):
         app_label = 'users'
 
     @classmethod
-    def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
-        """Determine if the user has the specified permission on the program.
+    def users_with_perm(cls, name, program=None, when=None, program_is_none_implies_all=False, QObject=False):
+        """Users that have the specified permission on the program.
 
-        :param user:
-            Check the permissions assigned to this user.
-        :type user:
-            `ESPUser`
         :param name:
             The unique identifier of the permission identifier to check for.
             Must be in PERMISSION_CHOICES_FLAT.
@@ -2368,26 +2382,63 @@ class Permission(ExpirableModel):
             regardless of the original value.
         :type program_is_none_implies_all:
             `bool`
-        :return:
-            True if the user has the specified permission, else False.
-        :rtype:
+        :param QObject:
+            If True, return a `Q` object.
+            If False, return a `QuerySet`.
+        :type QObject:
             `bool`
+        :return:
+            Users that have the specified permission on the program.
+            For database performance reasons, when a `Q` object is returned,
+            the query is represented as a filter on user ids. The true query
+            would have too many inefficient JOINs.
+            Also, because of <code.djangoproject.com/ticket/14645>, any code
+            that takes the result of this function call and passes it to
+            QuerySet.exclude() may depend on the fact that this function
+            returns a filter on user ids.
+        :rtype:
+            `Q` or `QuerySet`
         """
-        if user.isAdministrator(program=program):
-            return True
+        # This is the only explicit check for admin privileges (which confer
+        # all permissions) that is needed. The other checks are handled via
+        # implications ("Administer" implies all other permissions).
+        admin_group = Group.objects.filter(name="Administrator")
+        admins = admin_group.values_list('user', flat=True).distinct()
+        qadmins = Q(id__in=admins)
+
         if name in cls.deadline_types:
             program_is_none_implies_all = False
-        perms=[name]
+        perms=[name, "Administer"]
         for k,v in cls.implications.items():
             if name in v: perms.append(k)
 
-        quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        qprogram = Q(program=program)
-        if program_is_none_implies_all:
-            qprogram |= Q(program=None)
-        initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
-        return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
-    
+        qusers = qadmins
+        for perm in perms:
+            qprogram = Q(program=program)
+            if program_is_none_implies_all or (perm == "Administer"):
+                qprogram |= Q(program=None)
+            initial_qset = cls.objects.filter(qprogram).filter(permission_type=perm)
+            initial_qset = initial_qset.filter(cls.is_valid_qobject(when=when))
+
+            # Users can be directly associated with a Permission.
+            perm_via_user = initial_qset.values_list('user', flat=True)
+            qperm_via_user = Q(id__in=perm_via_user.distinct())
+
+            # Users can be associated with a Permission via a Group.
+            perm_via_group = initial_qset.values_list('role__user', flat=True)
+            qperm_via_group = Q(id__in=perm_via_group.distinct())
+            qusers = qusers | qperm_via_user | qperm_via_group
+
+        if QObject:
+            return qusers
+        else:
+            return ESPUser.objects.filter(qusers).distinct()
+
+    @classmethod
+    def user_has_perm(cls, user, *args, **kwargs):
+        """Determine if the user has the specified perm on the program."""
+        if user.is_anonymous() or user.id is None: return False
+        return cls.users_with_perm(*args, **kwargs).filter(id=user.id).exists()
     #list of all the permission types which are deadlines
     deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
 
