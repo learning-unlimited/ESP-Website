@@ -55,7 +55,7 @@ class HTMLSCFormatter:
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
     def format_table(self, d, title, options={}, help_text=""):
-        if type(d) == list:
+        if isinstance(d, list):
             return self._format_list_table(d, title, options['headings'], help_text=help_text)
         else:
             return self._format_dict_table(d, title, options['headings'], help_text=help_text)
@@ -90,7 +90,7 @@ class HTMLSCFormatter:
         next_row = ""
         for r in row:
             #displaying lists is sometimes borked.  This makes it not borked
-            if type(r) == list:
+            if isinstance(r, list):
                 r = [str(i) for i in r]
             next_row += "<td>" + str(r) + "</td>"
         next_row += "</tr>"
