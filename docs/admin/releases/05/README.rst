@@ -41,7 +41,7 @@ Some programs may want to run admissions and have students apply for enrollment
 to specific classes.  The new application system provides functionality for
 program and class-specific applications, teacher review of applicants, admin
 review of applicants, and admin admissions management. For more information,
-see `<docs/admin/student_apps.rst>`_.
+see `</docs/admin/student_apps.rst>`_.
 
 Improvements to the onsite class changes grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,6 +56,39 @@ There have been various improvements to the class changes grid, including:
 
 - Timeblocks that have already occured can be hidden from the page, so that the
   timeblock on the left is the current or upcoming timeblock.
+
+Donation module
+~~~~~~~~~~~~~~~
+
+This program module can be used to solicit donations for Learning Unlimited. If
+this module is enabled, students who visit the page can, if they so choose,
+select one of a few donation options (and those options are admin
+configurable). Asking for donations from parents and students can be a good way
+to help fundraise for LU community events, chapter services, and operational
+costs. If you are interested in fundraising this way, get in contact with an LU
+volunteer.
+
+For more information on configuring and using the module, see
+`</docs/admin/program_modules.rst#donation-module>`_.
+
+Improvements to scheduling checks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some improvements were made to the scheduling checks page, including:
+
+- a new "missing resources by hour" check
+
+- timeblock information in the "classes missing resources" and "wrong classroom
+  type" checks
+
+- counts in the "admins teaching per timeslot" check
+
+Additionally, for larger chapters the page may take a long time to load.  More
+improvements are in the works, but for now, the page
+<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
+will display a list of links to display the checks individually; most will load
+much more quickly than the entire page.
+
 
 Deadline for walk-in activities / open classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -125,6 +158,9 @@ Minor feature additions and bugfixes
 - New "cancel registration" deadline can be set to specify when students are
   allowed to cancel their registrations themselves.
 
+- New "Teacher training signup" deadline can be set to specify when teachers
+  are allowed to sign up for teacher training.
+
 - When a teacher modifies a class, the class comments email will have a
   subject line that starts with "Re:".  This makes it clearer when new
   classes are being registered versus when existing classes are being
@@ -153,6 +189,10 @@ Minor feature additions and bugfixes
   refresh rate, timeblocks, and sorting. WARNING: Don't set the refresh rate
   too low (too little time between refreshes), because this can crash your
   site.
+
+- Volunteers can remove all their shifts and drop out of volunteering for the
+  program. It was previously possible to remove some shifts, but a bug
+  prevented removing all of them.
 
 - Permissions can be expired/renewed in bulk from the Permission admin panel
   page.
