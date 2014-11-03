@@ -30,4 +30,4 @@ class TeacherCheckinForm(forms.Form):
     def __init__(self, *args, **kwargs):
         now = datetime.datetime.now()
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
-        super(type(self), self).__init__(*args, **kwargs)
+        super(TeacherCheckinForm, self).__init__(*args, **kwargs)

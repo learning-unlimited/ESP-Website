@@ -472,7 +472,7 @@ class ProgramModuleObj(models.Model):
             if not "seq" in props:
                 props["seq"] = 200
 
-        if type(props) == dict:
+        if isinstance(props, dict):
             props = [ props ]
 
         for prop in props:

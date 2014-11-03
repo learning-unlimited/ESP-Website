@@ -47,7 +47,7 @@ def ajax_autocomplete(request):
     else:
         query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff)
 
-    if type(query_set) == QuerySet:
+    if isinstance(query_set, QuerySet):
         raise NotImplementedError
     else:
         output = list(query_set[:limit])
