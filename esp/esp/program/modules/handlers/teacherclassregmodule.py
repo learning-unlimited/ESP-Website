@@ -677,7 +677,12 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes/Create/Class')
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
-            return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
+            action = 'create'
+            if request.POST.has_key('category'):
+                category = request.POST['category']
+                if category.isdigit() and int(category) == int(self.program.open_class_category.id):
+                    action = 'createopenclass'
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
         if not request.GET.has_key('cls'):
             raise ESPError("No class specified!", log=False)
         
