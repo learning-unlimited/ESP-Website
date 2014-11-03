@@ -117,11 +117,11 @@ class StudentExtraCosts(ProgramModuleObj):
                 student_lists['extracosts_%d' % i.id] = students
             for option in i.options:
                 key = 'extracosts_%d_%d' % (i.id, option[0])
-                filter_kwargs = {'transfer__option': option[0]}
+                filter_qobject = Q(transfer__option=option[0])
                 if QObject:
-                    student_lists[key] = students & Q(**filter_kwargs)
+                    student_lists[key] = students & filter_qobject
                 else:
-                    student_lists[key] = students.filter(**filter_kwargs).distinct()
+                    student_lists[key] = students.filter(filter_qobject).distinct()
 
         return student_lists
 
