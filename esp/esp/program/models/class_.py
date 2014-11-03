@@ -1048,14 +1048,15 @@ class ClassSection(models.Model):
     def clearStudents(self):
         now = datetime.datetime.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
-        qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
         qs.update(end_date=now)
-        qs_ssi.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
             signals.post_save.send(sender=StudentRegistration, instance=reg)
-        for ssi in qs_ssi:
-            signals.post_save.send(sender=StudentSubjectInterest, instance=ssi)
+        if all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self]):
+            qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
+            qs_ssi.update(end_date=now)
+            for ssi in qs_ssi:
+                signals.post_save.send(sender=StudentSubjectInterest, instance=ssi)
 
     @staticmethod
     def idcmp(one, other):
