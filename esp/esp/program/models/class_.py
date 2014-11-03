@@ -1048,7 +1048,7 @@ class ClassSection(models.Model):
     def clearStudents(self):
         now = datetime.datetime.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
-        qs_ssi = StudentSubjectInterest.valid_objects(now).filter(section=self)
+        qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
         qs.update(end_date=now)
         qs_ssi.update(end_date=now)
         #   Compensate for the lack of a signal on update().
