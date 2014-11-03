@@ -92,11 +92,12 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for i in pac.get_lineitemtypes(optional_only=True):
-            student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
-            for option in i.options:
-                key = 'extracosts_%d_%d' % (i.id, option[0])
-                student_desc[key] = """Students who have opted for '%s' == '%s' ($%s)""" % (i.text, option[2], option[1] or i.amount_dec)
+        for line_item_type in pac.get_lineitemtypes(optional_only=True):
+            student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
+            for option in line_item_type.options:
+                (option_id, option_amount, option_description) = option
+                key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
+                student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
         return student_desc
 
