@@ -33,8 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import types
-
 from django.core.cache import cache
 from django.dispatch import Signal
 from django.db.models import signals
@@ -42,7 +40,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 
-from esp.cache.queued import WithDelayableMethods, delay_method
+from esp.cache.queued import WithDelayableMethods, add_lazy_dependency
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import specifies_key, token_list_for
 from esp.cache.marinade import marinade_dish
@@ -145,25 +143,6 @@ __all__ = ['ArgCache']
 # something, but I'm not very happy with that... probably best to go for the
 # more general tokens thing, which more-or-less depends on async caching
 
-
-# XXX: This system cannot thunk functions!!!  We should do some other silly
-# thing, but I really don't want the syntax complicated.
-# def handle_thunk(obj):
-#     """ If obj is a function (thunk), return result; otherwise return obj. """
-#     if isinstance(obj, types.FunctionType):
-#         return obj()
-#     return obj
-def add_lazy_dependency(self, obj, operation):
-    """ If obj is a function (thunk), delay operation; otherwise execute immediately. """
-    # XXX: this is temporarily clunky because it's using delay_method in an unintended way.
-    # TODO: delete delay_method and do something better here.
-    if isinstance(obj, types.FunctionType):
-        @delay_method
-        def wrapped(self, obj):
-            return operation(self, obj())
-        wrapped(self, obj)
-    else:
-        operation(self, obj)
 
 class ArgCache(WithDelayableMethods):
     """ Implements a cache that allows for selectively dropping bits of itself. """
