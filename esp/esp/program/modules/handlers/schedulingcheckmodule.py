@@ -1,5 +1,5 @@
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
@@ -24,9 +24,19 @@ class SchedulingCheckModule(ProgramModuleObj):
     @needs_admin
     def scheduling_checks(self, request, tl, one, two, module, extra, prog):
          s = SchedulingCheckRunner(prog)
-         results = s.run_diagnostics()
+         if extra:
+              results = s.run_diagnostics([extra])
+         else:
+              results = s.run_diagnostics()
          context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def scheduling_check_list(self, request, tl, one, two, module, extra, prog):
+         s = SchedulingCheckRunner(prog)
+         context = {'diagnostics': s.all_diagnostics}
+         return render_to_response(self.baseDir()+'list.html', request, context)
 
     class Meta:
         proxy = True
@@ -45,7 +55,7 @@ class HTMLSCFormatter:
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
     def format_table(self, d, title, options={}, help_text=""):
-        if type(d) == list:
+        if isinstance(d, list):
             return self._format_list_table(d, title, options['headings'], help_text=help_text)
         else:
             return self._format_dict_table(d, title, options['headings'], help_text=help_text)
@@ -80,7 +90,7 @@ class HTMLSCFormatter:
         next_row = ""
         for r in row:
             #displaying lists is sometimes borked.  This makes it not borked
-            if type(r) == list:
+            if isinstance(r, list):
                 r = [str(i) for i in r]
             next_row += "<td>" + str(r) + "</td>"
         next_row += "</tr>"
@@ -152,28 +162,35 @@ class SchedulingCheckRunner:
                     l.append(ts)
           return l
 
-     def run_diagnostics(self):
-         return [
-             self.lunch_blocks_setup(),
-             self.high_school_only_setup(),
-             self.incompletely_scheduled_classes(),
-             self.wrong_classroom_type(),
-             self.classes_missing_resources(),
-             self.multiple_classes_same_room_same_time(),
-             self.teachers_unavailable(),
-             self.teachers_teaching_two_classes_same_time(),
-             self.classes_which_cover_lunch(),
-             self.room_capacity_mismatch(),
-             self.middle_school_evening_classes(),
-             self.classes_by_category(),
-             self.capacity_by_category(),
-             self.classes_by_grade(),
-             self.capacity_by_grade(),
-             self.admins_teaching_per_timeblock(),
-             self.teachers_who_like_running(),
-             self.hungry_teachers(),
-             self.no_overlap_classes(),
-          ]
+     def run_diagnostics(self, diagnostics=None):
+          if diagnostics is None:
+               diagnostics = self.all_diagnostics
+          return [getattr(self, diag)() for diag in diagnostics]
+         
+
+     # Update this to add a scheduling check.
+     all_diagnostics = [
+          'lunch_blocks_setup',
+          'high_school_only_setup',
+          'incompletely_scheduled_classes',
+          'wrong_classroom_type',
+          'classes_missing_resources',
+          'missing_resources_by_hour',
+          'multiple_classes_same_room_same_time',
+          'teachers_unavailable',
+          'teachers_teaching_two_classes_same_time',
+          'classes_which_cover_lunch',
+          'room_capacity_mismatch',
+          'middle_school_evening_classes',
+          'classes_by_category',
+          'capacity_by_category',
+          'classes_by_grade',
+          'capacity_by_grade',
+          'admins_teaching_per_timeblock',
+          'teachers_who_like_running',
+          'hungry_teachers',
+          'no_overlap_classes',
+     ]
 
      #################################################
      #
@@ -402,6 +419,7 @@ class SchedulingCheckRunner:
 
      def admins_teaching_per_timeblock(self):
           key_string = "Admins Teaching"
+          num_string = "num"
           def admin_dict():
                return { key_string: [] }
 
@@ -413,7 +431,11 @@ class SchedulingCheckRunner:
                     mt =  s.get_meeting_times()
                     for t in mt:
                          d[t][key_string].append(str(a))
-          return self.formatter.format_table(d, "Admins teaching per timeslot", {"headings":[key_string]})
+          for k in d:
+               d[k][num_string] = len(d[k][key_string])
+          return self.formatter.format_table(
+               d, "Admins teaching per timeslot",
+               {"headings": [num_string, key_string]})
 
      def _calculate_classes_missing_resources(self):
          if self.calculated_classes_missing_resources:
@@ -421,6 +443,10 @@ class SchedulingCheckRunner:
          l_resources = []
          l_classrooms = []
          for s in self._all_class_sections():
+             meeting_times = s.get_meeting_times()
+             first_hour = meeting_times[0] if meeting_times else None
+             classrooms = s.classrooms()
+             classroom = classrooms[0] if classrooms else None
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
                  for u in unsatisfied_requests:
@@ -428,9 +454,9 @@ class SchedulingCheckRunner:
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":
-                             l_classrooms.append({ "Section": s, "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
+                             l_classrooms.append({ "Section": s, "First Hour": first_hour, "Requested Type": u.desired_value, "Classroom": classroom })
                      else:
-                         l_resources.append({ "Section": s, "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
+                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
          self.calculated_classes_missing_resources = True
@@ -439,11 +465,34 @@ class SchedulingCheckRunner:
 
      def classes_missing_resources(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom"]})
+         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom", "First Hour"]})
+
+     def missing_resources_by_hour(self):
+         self._calculate_classes_missing_resources()
+         key_string = "Unfulfilled Request Numbers"
+         num_string = "num"
+         def ts_dict():
+             return { }
+
+         timeslots = self._timeslot_dict(slot=ts_dict)
+         for sec in self.l_missing_resources:
+             sec_times = sec["Section"].get_meeting_times()
+             for time in sec_times:
+                 timeslots[time][sec["Unfulfilled Request"].res_type] = \
+                     timeslots[time].get(sec["Unfulfilled Request"].res_type, 0) + 1
+         final_data = []
+         for t in timeslots:
+             for r in timeslots[t]:
+                 final_data.append({"Timeblock": t, "Resource type": r,
+                                "Number": timeslots[t][r]})
+         final_data.sort(key=lambda d: d["Timeblock"].start)
+         return self.formatter.format_table(
+               final_data, "Unfulfilled resource requests by hour",
+               {"headings": ["Timeblock", "Resource type", "Number"]})
 
      def wrong_classroom_type(self):
          self._calculate_classes_missing_resources()
-         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom"]})
+         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom", "First Hour"]})
 
      def teachers_unavailable(self):
          l = []

@@ -83,14 +83,20 @@ def onSubmit(request):
     if request.is_ajax():
         if request.method == 'POST':
             metadata = json.loads(request.raw_post_data)
-            
             fields = []
-            
+
+        # truncating field lengths to the character limits specified
+        title = metadata['title'][0:Form._meta.get_field_by_name('title')[0].max_length]
+        link_type = metadata['link_type'][0:Form._meta.get_field_by_name('link_type')[0].max_length]
+        perms = metadata['perms'][0:Form._meta.get_field_by_name('perms')[0].max_length]
+        success_message = metadata['success_message'][0:Form._meta.get_field_by_name('success_message')[0].max_length]
+        success_url = metadata['success_url'][0:Form._meta.get_field_by_name('success_url')[0].max_length]
+
         # Creating form
-        form = Form.objects.create(title=metadata['title'], 
-            description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], 
-            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
-            success_message=metadata['success_message'], success_url=metadata['success_url']
+        form = Form.objects.create(title=title, 
+            description=metadata['desc'], created_by=request.user, link_type=link_type, 
+            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=perms,
+            success_message=success_message, success_url=success_url
             )
         
         # Inserting pages

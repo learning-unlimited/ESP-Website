@@ -30,11 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.cache import cache_function
-from esp.cache.function import describe_func
+from esp.cache.function import get_containing_class
 
 from django.http import HttpResponse
 from django.db.models import Model
@@ -117,10 +117,13 @@ class CachedModuleViewDecorator(object):
     
     def __init__(self, func):
         parent_obj = self
+        # NOTE: get_containing_class inspects the stack, so we have to
+        # call it ourselves. TODO fix this?
+        containing_class = get_containing_class()
 
         def prepare_dec(func):
             self.params, xx, xxx, defaults = getargspec(func)
-            self.cached_function = cache_function(func, uid_extra='*'+describe_func(func))
+            self.cached_function = cache_function(func, containing_class=containing_class)
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
                 #   Construct argument list

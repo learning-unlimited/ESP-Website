@@ -30,9 +30,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 # Convenience imports
-from esp.cache.argcache import cache_function
+from esp.cache.function import cache_function, cache_function_for
 from esp.cache.key_set import wildcard

@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
@@ -54,7 +54,7 @@ class EditPermissionForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
 
 class NewPermissionForm(forms.Form):
-    permission_type=forms.ChoiceField(choices=filter(lambda x:type(x[1])==tuple and "Deadline" in x[0],Permission.PERMISSION_CHOICES))
+    permission_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)

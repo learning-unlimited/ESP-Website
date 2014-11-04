@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import random
 import urllib
@@ -21,9 +20,7 @@ from django.utils.decorators import method_decorator
 from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
-from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
@@ -250,6 +247,7 @@ class GradeChangeRequestView(CreateView):
     def form_valid(self, form):
         change_request = form.save(commit=False)
         change_request.requesting_student = self.request.user
+        change_request.grade_before_request = self.request.user.getGrade()
         change_request.save()
         messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
         

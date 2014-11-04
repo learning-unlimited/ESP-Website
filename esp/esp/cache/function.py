@@ -30,31 +30,85 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
+import functools
 import inspect
+import types
 
-def get_line_number(obj):
-    return inspect.getsourcelines(obj)[1]
+from esp.cache.argcache import ArgCache
+from esp.cache.marinade import describe_func, get_containing_class
 
-def get_filename(obj):
-    return inspect.getsourcefile(obj)
+class ArgCacheDecorator(ArgCache):
+    """ An ArgCache that gets its parameters from a function. """
 
-def get_uid(obj):
-    return '%s:%s' % (get_filename(obj), get_line_number(obj))
+    def __init__(self, func, *args, **kwargs):
+        """ Wrap func in a ArgCache. """
 
-def describe_class(cls):
-    return '%s.%s' % (cls.__module__.rstrip('.'), cls.__name__)
+        ## Keep the original function's name and docstring
+        ## If the original function has any more-complicated attrs,
+        ## don't bother to maintain them; we have our own attrs,
+        ## and merging custom stuff could be dangerous.
+        if hasattr(func, '__name__'):
+            self.__name__ = func.__name__
+        if hasattr(func, '__doc__'):
+            self.__doc__ = func.__doc__
 
-def describe_func(func):
-    if hasattr(func, 'im_class'):
-        # I don't think we actually hit this case... this is only for bound/unbound member functions
-        return '%s.%s:%s' % (describe_class(func.im_class), func.__name__, get_line_number(func))
-    else:
-        #       describe_func -> ArgCache -> ParametrizedSingleton -> containing class/module
-        class_name = inspect.currentframe().f_back.f_back.f_back.f_code.co_name
-        if class_name == '<module>':
-            return '%s.%s' % (func.__module__.rstrip('.'), func.__name__)
+        self.func = func
+        containing_class = kwargs.pop('containing_class', get_containing_class())
+        extra_name = kwargs.pop('extra_name', '')
+        name = describe_func(func, containing_class) + extra_name
+        params, varargs, keywords, _ = inspect.getargspec(func)
+        if varargs is not None:
+            raise ESPError("ArgCache does not support varargs.")
+        if keywords is not None:
+            raise ESPError("ArgCache does not support keywords.")
+
+        super(ArgCacheDecorator, self).__init__(name=name, params=params, *args, **kwargs)
+
+    # TODO: this signature may break if we have a kwarg named `self`
+    # (same applies to __call__ below)
+    # for now... assume this doesn't happen
+    def arg_list_from(self, *args, **kwargs):
+        """ Normalizes arguments to get an arg_list. """
+        callargs = inspect.getcallargs(self.func, *args, **kwargs)
+        return [callargs[param] for param in self.params]
+
+    def __call__(self, *args, **kwargs):
+        """ Call the function, using the cache is possible. """
+        use_cache = kwargs.pop('use_cache', True)
+        cache_only = kwargs.pop('cache_only', False)
+
+        if use_cache:
+            arg_list = self.arg_list_from(*args, **kwargs)
+            retVal = self.get(arg_list, default=self.CACHE_NONE)
+
+            if retVal is not self.CACHE_NONE:
+                return retVal
+
+            if cache_only:
+                retVal = None
+            else:
+                retVal = self.func(*args, **kwargs)
+                self.set(arg_list, retVal)
         else:
-            return '%s.%s.%s' % (func.__module__.rstrip('.'), class_name, func.__name__)
+            retVal = self.func(*args, **kwargs)
+
+        return retVal
+
+    # make bound member functions work...
+    def __get__(self, obj, objtype=None):
+        """ Python member functions are such hacks... :-D """
+        return types.MethodType(self, obj, objtype)
+
+
+# This is a bit more of a decorator-style name
+cache_function = ArgCacheDecorator
+
+
+def cache_function_for(timeout_seconds):
+    def _dec(f):
+        return functools.wraps(f)(
+            cache_function(f, timeout_seconds=timeout_seconds))
+    return _dec

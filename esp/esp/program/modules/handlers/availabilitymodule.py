@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
@@ -72,7 +72,7 @@ class AvailabilityModule(ProgramModuleObj):
             } ]
     
     def event_type(self):
-        et, created = EventType.objects.get_or_create(description='Class Time Block')
+        et = EventType.get_from_desc('Class Time Block')
         return et
     
     def prepare(self, context={}):
@@ -122,6 +122,12 @@ class AvailabilityModule(ProgramModuleObj):
         #   Get a list of tuples with the id and name of each of the program's timeslots
         times = self.program.getTimeSlots(types=[self.event_type()])
         return [(str(t.id), t.short_description) for t in times]
+
+    def prettyTime(self, time, inc_date=True):
+        if inc_date:
+            return time.strftime('%A, %b %d, ').decode('utf-8') + time.strftime('%I:%M %p').lower().strip('0').decode('utf-8')
+        else:
+            return time.strftime('%I:%M %p').lower().strip('0').decode('utf-8')
 
     @main_call
     @needs_teacher
@@ -284,20 +290,13 @@ class AvailabilityModule(ProgramModuleObj):
         available = []
         
         for t in timeslots:
-            if t in teaching_times:
-                if t in marked_available:
-                    available.append((t.start, t.end, True, True, teaching_times.get(t)[0], \
-                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
-                                          teaching_times.get(t)[3]))
-                else:
-                    available.append((t.start, t.end, False, True, teaching_times.get(t)[0], \
-                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
-                                          teaching_times.get(t)[3]))
-            else:
-                if t in marked_available:
-                    available.append((t.start, t.end, True, False, None, None, None, None))
-                else:
-                    available.append((t.start, t.end, False, False, None, None, None, None))
+            teaching = t in teaching_times
+            diff_day = t.start.date() != t.end.date()
+            available.append((self.prettyTime(t.start), self.prettyTime(t.end, inc_date=diff_day), (t in marked_available), teaching,
+                teaching_times.get(t)[0] if teaching else None,
+                teaching_times.get(t)[1] if teaching else None,
+                teaching_times.get(t)[2] if teaching else None,
+                teaching_times.get(t)[3] if teaching else None))
 
         context = {'available': available, 'unscheduled': unscheduled_classes, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username), 'form': form }
         return render_to_response(self.baseDir()+'check_availability.html', request, context)

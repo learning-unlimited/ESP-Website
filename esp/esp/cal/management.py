@@ -31,7 +31,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 
@@ -39,15 +39,9 @@ from django.db.models import signals
 from esp.cal import models as cal
 from esp.utils.custom_cache import custom_cache
 
-have_already_installed = False
-
 def post_syncdb(sender, app, **kwargs):
-    global have_already_installed
-    
-    if (not have_already_installed) and app == cal:
+    if app == cal:
         with custom_cache():
-            have_already_installed = True
-            print "Installing esp.cal initial data..."
             cal.install()
 
 signals.post_syncdb.connect(post_syncdb)

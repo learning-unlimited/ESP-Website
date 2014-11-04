@@ -17,8 +17,11 @@ live sites. There is then a period of manual testing and bugfixing on the live
 sites before the code is declared stable. At this point, the code on the live
 sites is frozen until the next release.
 
-`SR04 - January 2014 <04/>`_
+`SR05 - October 2014 <05/>`_
 ----------------------------
+
+`SR04 (tag: stable-release-04) - January 2014 <04/>`_
+-----------------------------------------------------
 
 SR03 (tag: stable-release-3) - March 2013
 -----------------------------------------

@@ -29,11 +29,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
-import os
 from django.conf.urls.defaults import patterns, include, url, handler500, handler404
-from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
@@ -68,12 +66,6 @@ urlpatterns += patterns('',
 urlpatterns += patterns('',
 (r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
 
-#   Short term views
-urlpatterns += patterns('',
-                        (r'^', include('esp.shortterm.urls'),),
-                        )
-
-
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
                         (r'^error_reporter', 'error_reporter'),
@@ -101,7 +93,8 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls'),)
+                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^varnish/', include('esp.varnish.urls'))
                         )
 
 urlpatterns += patterns('esp.qsd.views',

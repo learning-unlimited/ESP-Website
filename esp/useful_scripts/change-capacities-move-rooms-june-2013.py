@@ -13,7 +13,7 @@
 #
 
 import csv
-from esp.program.models.class_ import ClassSection, ClassSubject
+from esp.program.models.class_ import ClassSubject
 from esp.resources.models import Resource
 
 def makeChanges(filename,override=False):

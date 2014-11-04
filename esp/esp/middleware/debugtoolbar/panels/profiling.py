@@ -2,14 +2,12 @@ from debug_toolbar.panels.profiling import ProfilingPanel
 
 class ESPProfilingPanel(ProfilingPanel):
     """
-    A subclass of ProfilingPanel that defaults to disabled rather than enabled,
-    since it incurs such a performance hit. This lets us have the panel always
-    display and makes it easier to enable when it is needed.
-    """
+    A subclass of ProfilingPanel that warns admins to disable it when not
+    needed, since it incurs such a performance hit.
 
-    @property
-    def enabled(self):
-        return self.toolbar.request.COOKIES.get('djdt' + self.panel_id, 'off') == 'on'
+    Should be listed in the DISABLE_PANELS toolbar option so that it
+    defaults to disabled.
+    """
 
     @property
     def nav_subtitle(self):

@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import numpy
@@ -148,7 +148,7 @@ class StudentRegSanityController(object):
             print '-------------Known Bugs-----------------'
             print "Guys, I'm not course 6 for a reason~shulinye"
             return None
-        if type(checks) == str:
+        if isinstance(checks, basestring):
             checks = [checks]
         if csvlog:
             import csv

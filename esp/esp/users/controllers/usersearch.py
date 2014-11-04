@@ -29,17 +29,19 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
-
-from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter
+from collections import defaultdict
+from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.middleware import ESPError
 from esp.web.util import render_to_response
 from esp.program.models import Program
 from esp.dbmail.models import MessageRequest
 
+from django.db.models import Count
 from django.db.models.query import Q
 
+import collections
 import re
 
 class UserSearchController(object):
@@ -172,7 +174,9 @@ class UserSearchController(object):
                 raw_lists = getattr(program, user_type)(True)
                 if list_name in raw_lists:
                     return user_type
-                    
+
+        subquery = None
+
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
             if data['recipient_type'] not in ESPUser.getTypes():
@@ -209,32 +213,95 @@ class UserSearchController(object):
             and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
             or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
             not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
-            
+            #if any keys concern the same field, we will place them into 
+            #a subquery and count occurrences
+
+            #for the purpose of experimentation simply fix this to the record__event
+            #as this could very well have different implications for other fields
+
+            subqry_fieldmap = {'record__event':[]}
+
             for and_list_name in and_keys:
                 user_type = get_recipient_type(and_list_name)
+
                 if user_type:
-                    if and_list_name not in not_keys:
-                        q_program = q_program & (getattr(program, user_type)(QObjects=True)[and_list_name])
-                    else:
-                        q_program = q_program & (~getattr(program, user_type)(QObjects=True)[and_list_name])
+
+                    qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
+
+                    if and_list_name in not_keys:
+                        q_program = q_program & ~qobject
+                    else:    
+                        qobject_child = qobject.children[1]
+                        needs_subquery = False
+
+                        if isinstance(qobject_child, (list, tuple)):
+                            field_name, field_value = qobject.children[1]
+                            needs_subquery = field_name in subqry_fieldmap
+
+                            if needs_subquery:
+                                subqry_fieldmap[field_name].append(field_value)
+                        if not needs_subquery:
+                            q_program = q_program & qobject
+                                    
+            event_fields = subqry_fieldmap['record__event']
+
+            if event_fields:
+                #annotation is needed to initiate group by
+                #except that it causes the query to return two columns
+                #so we call values at the end of the chain, however,
+                #that results in multiple group by fields(causing the query to fail)
+                #so, we assign a group by field, to force grouping by user_id
+                subquery = (
+                              Record
+                              .objects
+                              .filter(program=program,event__in=event_fields)
+                              .annotate(numusers=Count('user__id'))
+                              .filter(numusers=len(event_fields))
+                              .values_list('user_id',flat=True)
+                            )
+
+                subquery.query.group_by = []#leave empty to strip out duplicate group by
+                subquery = Q(pk__in=subquery)
+
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
                 if user_type:
+                    qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
                     if or_list_name not in not_keys:
-                        q_program = q_program | (getattr(program, user_type)(QObjects=True)[or_list_name])
+                        q_program = q_program | qobject
                     else:
-                        q_program = q_program | (~getattr(program, user_type)(QObjects=True)[or_list_name])
+                        q_program = q_program | ~qobject
                     
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria(recipient_type, data)
-         
-        return (q_extra & q_program & Q(is_active=True))
+    
+        qobject = (q_extra & q_program & Q(is_active=True))
+
+        #strip out duplicate clauses
+        #   Note: in some cases, the children of the Q object are unhashable.
+        #   Keep these separate.
+        clauses_hashable = []
+        clauses_unhashable = []
+        for clause in qobject.children:
+            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], collections.Hashable)):
+                clauses_hashable.append(clause)
+            else:
+                clauses_unhashable.append(clause)
+        qobject.children = list(set(clauses_hashable)) + clauses_unhashable
+
+        if subquery:
+            qobject = qobject & subquery
+        return qobject
 
     def filter_from_postdata(self, program, data):
         """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
     
         query = self.query_from_postdata(program, data)
+
+        #TODO-determine best location to inject subquery
+        #the string subquery should be assigned to .extra of the resultant filter
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, query)
+
         if 'base_list' in data and 'recipient_type' in data:
             filterObj.useful_name = 'Program list: %s' % data['base_list']
         elif 'combo_base_list' in data:

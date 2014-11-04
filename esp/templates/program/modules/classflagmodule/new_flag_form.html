@@ -1,4 +1,4 @@
-<div class="flag-detail" id="flag-extra" style="display: none;">
+<div class="flag-detail flag-extra" style="display: none;">
     <div style="background: gray;">New Flag</div>
     <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/newflag/">{% csrf_token %}<input type="hidden" name="subject" value="{{class.id}}"></input>
         <table>
@@ -17,7 +17,7 @@
                 <tr>
                     <th>
                         Comment:<br/>
-                        <input type="submit" id="flag-submit-new" class="btn btn-default" value="Save"></input>
+                        <input type="submit" class="flag-submit-new btn btn-default" value="Save"></input>
                     </th>
                     <td>
                         <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>

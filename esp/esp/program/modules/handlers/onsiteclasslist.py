@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import simplejson
@@ -52,7 +52,7 @@ from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
-
+from esp.tagdict.models import Tag
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -99,10 +99,11 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
-            'timeslots': list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label')),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
         simplejson.dump(data, resp)
+
         return resp
     
     @aux_call
@@ -369,35 +370,56 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
-        return self.classList_base(request, tl, one, two, module, extra, prog, 'classlist.html')
+        return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
     @needs_student
     def classlist_public(self, request, tl, one, two, module, extra, prog):
-        return self.classList_base(request, tl, one, two, module, extra, prog, 'allclass_fragment.html')
+        return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
-    def classList_base(self, request, tl, one, two, module, extra, prog, template_name=None):
+    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name=None):
         """ Display a list of all classes that still have space in them """
+
+        #   Allow options to be supplied as an argument to the view function, in lieu
+        #   of request.GET (used by the public view just above)
+        if options is None:
+            options = request.GET.copy()
+
+            #   Display options-selection page if this page is requested with no GET variables
+            if len(options.keys()) == 0:
+                return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
+
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}
         for key_option in defaults.keys():
-            if request.GET.has_key(key_option):
-                context[key_option] = request.GET[key_option]
+            if options.has_key(key_option):
+                context[key_option] = options[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
         time_now = datetime.now()
 
-        if 'start' in request.GET:
-            curtime = Event.objects.filter(id=request.GET['start'])
+        start_id = int(options.get('start', -1))
+        if start_id != -1:
+            curtime = Event.objects.filter(id=start_id)
         else:
             window_start = time_now + timedelta(-1, 85200)
             curtime = Event.objects.filter(start__gte=window_start).order_by('start')
 
-        if 'end' in request.GET:
-            endtime = Event.objects.filter(id=request.GET['end'])
+        end_id = int(options.get('end', -1))
+        if end_id != -1:
+            endtime = Event.objects.filter(id=end_id)
         else:
             endtime = None
+
+        sort_spec = options.get('sorting', None)
+        if sort_spec is None:
+            sort_spec = extra
+
+        #   Enforce a maximum refresh speed to avoid server overload.
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        if int(context['refresh']) < min_refresh:
+            context['refresh'] = min_refresh
 
         if curtime:
             curtime = curtime[0]
@@ -412,16 +434,16 @@ class OnSiteClassList(ProgramModuleObj):
                      status=10, parent_class__status=10,
                      begin_time__gte=curtime.start
                      )
-            if extra == 'unsorted':
+            if sort_spec == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
-            elif extra == 'by_time':
+            elif sort_spec == 'by_time':
                 classes = classes.order_by('begin_time', 'parent_class__category', 'id').distinct()
             else:
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
         
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
 
-        if extra == 'unsorted':
+        if sort_spec == 'unsorted':
             context['use_categories'] = False
         else:
             context['use_categories'] = True

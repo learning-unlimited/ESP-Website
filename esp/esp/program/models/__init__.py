@@ -29,11 +29,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import copy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
@@ -160,7 +160,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return 'Program Module: %s' % self.admin_title
+        return u'Program Module: %s' % self.admin_title
     
     
 class ArchiveClass(models.Model):
@@ -248,8 +248,7 @@ class ArchiveClass(models.Model):
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
         from django.db.models.query import Q
-        Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
-               Q(teacher_ids__icontains = ('|%s|' % user.id))
+        Q_ClassTeacher = Q(teacher_ids__icontains = ('|%s|' % user.id))
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
@@ -381,16 +380,16 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = self.getModules(user)
         for module in modules:
             retVal = module.get_msg_vars(user, key)
-            if retVal is not None and len(str(retVal).strip()) > 0:
+            if retVal is not None and retVal.strip():
                 return retVal
 
-        return ''
+        return u''
     
     @staticmethod
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
-            users = {}
+            users = OrderedDict()
             for module in modules:
                 tmpusers = getattr(module, method_name)(QObjects)
                 if tmpusers is not None:
@@ -772,13 +771,13 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return '%s' % d1.strftime('%b. %d, %Y')
+                        return u'%s' % d1.strftime('%b. %d, %Y').decode('utf-8')
                     else:
-                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
             else:
-                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return u'%s - %s' % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
         else:
             return None
 
@@ -970,7 +969,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._moduleExtension[key]
         
         ext_cls = None
-        if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
+        if isinstance(ext_name_or_cls, basestring):
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
@@ -1149,7 +1148,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __unicode__(self):
-        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
+        return u'Lunch/sibling info for %s at %s' % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1182,9 +1181,9 @@ class SplashInfo(models.Model):
             tag_struct = json.loads(tag_data)
             for item in tag_struct[attr_name]:
                 if item[0] == getattr(self, attr_name):
-                    return item[1]
+                    return item[1].decode('utf-8')
                     
-        return 'N/A'
+        return u'N/A'
     
     def pretty_satlunch(self):
         return self.pretty_version('lunchsat')
@@ -1332,9 +1331,9 @@ class RegistrationProfile(models.Model):
             
     def __unicode__(self):
         if self.program_id == None:
-            return '<Registration for %s>' % unicode(self.user)
+            return u'<Registration for %s>' % unicode(self.user)
         if self.user is not None:
-            return '<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
+            return u'<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1373,6 +1372,7 @@ class TeacherBio(models.Model):
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -1443,22 +1443,22 @@ class FinancialAidRequest(models.Model):
     def __unicode__(self):
         """ Represent this as a string. """
         if self.reduced_lunch:
-            reducedlunch = "(Free Lunch)"
+            reducedlunch = u"(Free Lunch)"
         else:
-            reducedlunch = ''
+            reducedlunch = u''
             
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = ''
+            explanation = u''
         elif len(explanation) > 40:
-            explanation = explanation[:40] + "..."
+            explanation = explanation[:40] + u"..."
 
 
-        string = "%s (%s@%s) for %s (%s, %s) %s"%\
+        string = u"%s (%s@%s) for %s (%s, %s) %s"%\
                  (ESPUser(self.user).name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = "Finished: [" + string + "]"
+            string = u"Finished: [" + string + u"]"
 
         return string
         
@@ -1506,7 +1506,7 @@ class BooleanToken(models.Model):
     expr = property(get_expr)
 
     def __unicode__(self):
-        return '[%d] %s' % (self.seq, self.text)
+        return u'[%d] %s' % (self.seq, self.text)
 
     @cache_function
     def subclass_instance(self):
@@ -1567,7 +1567,7 @@ class BooleanExpression(models.Model):
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
-        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
+        return u'(%d tokens) %s' % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1582,7 +1582,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if type(token_or_value) == str:
+        if isinstance(token_or_value, basestring):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1618,7 +1618,7 @@ class ScheduleMap:
         schedule change.
     """
     def __init__(self, user, program):
-        if type(user) is not ESPUser:
+        if not isinstance(user, ESPUser):
             user = ESPUser(user)
         self.program = program
         self.user = user
@@ -1650,7 +1650,7 @@ class ScheduleMap:
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
         
     def __unicode__(self):
-        return '%s' % self.map
+        return u'%s' % self.map
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested: 
@@ -1677,7 +1677,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
     
     def __unicode__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return u'%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -1690,7 +1690,7 @@ class ScheduleConstraint(models.Model):
                 if recursive:
                     #   Try using the execution hook for arbitrary code... and running again to see if it helped.
                     (fail_result, data) = self.handle_failure()
-                    if type(fail_result) == ScheduleMap:
+                    if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
                     #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
@@ -1890,7 +1890,7 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        if self.displayName is not None and self.displayName != "":
+        if self.displayName is not None and self.displayName != u"":
             return self.displayName
         else:
             return self.name
@@ -1926,6 +1926,11 @@ class StudentSubjectInterest(ExpirableModel):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+
+def install():
+    from esp.program.models.class_ import install as install_class
+    print "Installing esp.program initial data..."
+    install_class()
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj

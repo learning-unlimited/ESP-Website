@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.contrib import admin
 from esp.admin import admin_site
@@ -47,7 +47,12 @@ class LITAdmin(admin.ModelAdmin):
 admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
-    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'executed']
+    def option_description(self, obj):
+        if obj.option:
+            return obj.option.description
+        else:
+            return u'--'
+    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description', 'executed']
     search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
     list_filter = ['source', 'destination']
 admin_site.register(Transfer, TransferAdmin)

@@ -2,7 +2,6 @@ from django.contrib import admin
 from esp.admin import admin_site
 from django import forms
 from django.db import models
-from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
@@ -42,7 +41,7 @@ class ESPUserAdmin(UserAdmin):
     #(since we don't use either of those)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
-    from django.utils.translation import ugettext, ugettext_lazy as _
+    from django.utils.translation import ugettext_lazy as _
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
@@ -131,7 +130,7 @@ admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
-    readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    readonly_fields = ['grade_before_request', 'requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
     search_fields = default_user_search('requesting_student')
     list_filter = ('created','approved',)
 
