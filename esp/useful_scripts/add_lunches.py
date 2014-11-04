@@ -32,7 +32,7 @@ users_by_id = {user.id: user for user in users}
 sections_by_id = {section.id: section for section in sections}
 timeblocks_by_id = {timeblock.id: timeblock for timeblock in timeblocks}
 sections_by_user_timeblock = {
-    (user_id, timeblock.id)
+    (user_id, timeblock.id): section_id
     for user_id, section_id in srs_pairs
     for timeblock in sections_by_id[section_id].meeting_times.all()}
 
@@ -52,18 +52,16 @@ for timeblock_id, section_id in lunches:
         lunchtimes_by_day[date].append(timeblock_id)
 
 for user in users:
-    for day in lunchtimes_by_day.keys():
-        lunchtimes = lunchtimes_by_day[day]
+    for day, lunchtimes in lunchtimes_by_day.iteritems():
         # If the user has any lunch already, continue to the next day/user
         if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
                in lunch_ids for lunchtime_id in lunchtimes):
-                break
-#        if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
-#               in lunch_ids for lunchtime_id in lunchtimes):
-#                break
+            print "[", user.username, "already had lunch]"
+            continue
         # Otherwise, check lunch blocks in a random order until finding an
         # empty one
         random.shuffle(lunchtimes)
+        hungry = True
         for lunchtime_id in lunchtimes:
             if (user.id, lunchtime_id) not in sections_by_user_timeblock:
                 # The user has nothing here; assign a lunch and skip to the
@@ -71,8 +69,11 @@ for user in users:
                 print "assigning", user.username, "to lunch",
                 print timeblocks_by_id[lunchtime_id]
                 StudentRegistration.objects.create(
-                    user=user.id,
-                    section=lunches_by_timeblock[lunchtime_id],
+                    user=users_by_id[user.id],
+                    section=sections_by_id[lunches_by_timeblock[lunchtime_id]],
                     relationship=relationship)
+                hungry = False
                 break
+        if hungry:
             print "***", user.username, "is hungry ***"
+            hungry = False
