@@ -1161,10 +1161,11 @@ class ClassSection(models.Model):
 
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of reg-types that a student has on this class. """
+        qs = self.getRegistrations(user).select_related('relationship')
         if not allowed_verbs:
-            return [v.relationship for v in self.getRegistrations(user).distinct()]
+            return [v.relationship for v in qs.distinct()]
         else:
-            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
+            return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of
