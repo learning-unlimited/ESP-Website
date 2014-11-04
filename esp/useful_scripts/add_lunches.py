@@ -12,7 +12,7 @@ from esp.program.models import Program, StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSection
 from esp.users.models import ESPUser
 
-program = Program.objects.get(id=115)  # Change me!
+program = Program.objects.get(id=115)  # Change me! (Splash 2014)
 relationship = RegistrationType.objects.get(name='Enrolled')
 
 srs = StudentRegistration.valid_objects().filter(
@@ -41,20 +41,26 @@ lunches = ClassSection.objects.filter(parent_class__parent_program=program,
                                       meeting_times__isnull=False
                                       ).values_list('meeting_times', 'id')
 lunches_by_timeblock = dict(lunches)
-lunch_ids = set(lunches.values())
+lunch_ids = set(lunches_by_timeblock.values())
 
 lunchtimes_by_day = {}
-for timeblock_id, section_id in lunches_by_timeblock:
-    lunchtimes_by_day.get(
-        timeblocks_by_id[timeblock_id].start.date(), []
-    ).append(timeblock_id)
+for timeblock_id, section_id in lunches:
+    date = timeblocks_by_id[timeblock_id].start.date()
+    if date not in lunchtimes_by_day:
+        lunchtimes_by_day[date] = [timeblock_id]
+    else:
+        lunchtimes_by_day[date].append(timeblock_id)
 
 for user in users:
-    for day, lunchtimes in lunchtimes_by_day:
+    for day in lunchtimes_by_day.keys():
+        lunchtimes = lunchtimes_by_day[day]
         # If the user has any lunch already, continue to the next day/user
         if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
                in lunch_ids for lunchtime_id in lunchtimes):
                 break
+#        if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
+#               in lunch_ids for lunchtime_id in lunchtimes):
+#                break
         # Otherwise, check lunch blocks in a random order until finding an
         # empty one
         random.shuffle(lunchtimes)
