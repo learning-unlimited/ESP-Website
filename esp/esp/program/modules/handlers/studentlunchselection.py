@@ -65,6 +65,7 @@ class StudentLunchSelectionForm(forms.Form):
         
     def load_data(self):
         lunch_registrations = list(StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program))
+        lunch_registrations = [lunch_reg for lunch_reg in lunch_registrations if len(lunch_reg.section.get_meeting_times()) > 0 and lunch_reg.section.get_meeting_times()[0].start.day == self.day.day]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:
@@ -74,7 +75,6 @@ class StudentLunchSelectionForm(forms.Form):
     def save_data(self):
         msg = ''
         result = False
-        
         #   Clear existing lunch periods for this day
         for section in self.user.getEnrolledSections(self.program):
             if section.parent_class.category.category == 'Lunch':
