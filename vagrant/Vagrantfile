@@ -25,6 +25,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Provider-specific configuration: headless mode, memory
   config.vm.provider :virtualbox do |vb|
+    vb.name = 'esp-website'
     # vb.gui = true
     vb.customize ["modifyvm", :id, "--memory", "2048"]
   end
