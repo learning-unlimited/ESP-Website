@@ -1,7 +1,16 @@
 describe("Timeslots", function(){
     var t;
+    var one_hour_section;
+    var two_hour_section;
+
     beforeEach(function(){
 	t = new Timeslots(time_fixture())
+	one_hour_section =  {
+            length: 0.83
+	}
+	two_hour_section =  {
+            length: 1.83
+	}
     })
 
     it("returns timeslots by id", function(){
@@ -17,25 +26,39 @@ describe("Timeslots", function(){
     })
 
     describe("get_timeslots_to_schedule_section", function(){
-       describe("a one hour class", function(){
-           it("returns the timeslot passed", function(){
-               var section = {
-                   length: 0.83
-               }
+	var section
 
-               expect(t.get_timeslots_to_schedule_section(section, 1)).toEqual([1])
-           })
-       })
+	beforeEach
 
-       describe("a two hour class", function(){
-           it("returns the timeslot passed and the next one", function(){
-               var section = {
-                   length: 1.83
-               }
+	describe("a one hour class", function(){
+            it("returns the timeslot passed", function(){
+		expect(t.get_timeslots_to_schedule_section(one_hour_section, 1)).toEqual([1])
+            })
+	})
 
-               expect(t.get_timeslots_to_schedule_section(section, 1)).toEqual([1,2])
+	describe("a two hour class", function(){
+            it("returns the timeslot passed and the next one", function(){
+		expect(t.get_timeslots_to_schedule_section(two_hour_section, 1)).toEqual([1,2])
             })
         })
+	describe("when scheduling over the day break", function(){
+	    it("returns null", function(){
+		var times = {
+		    1: {
+			id: 1,
+			start: [2010, 4, 17, 10, 0, 0],
+			end: [2010, 4, 17, 10, 50, 0]
+		    },
+		    2: {
+			id: 2,
+			start: [2010, 4, 18, 10, 0, 0],
+			end: [2010, 4, 18, 10, 50, 0]
+		    }
+		}
+		t = new Timeslots(times)
+		expect(t.get_timeslots_to_schedule_section(two_hour_section, 1)).toEqual(null)
+	    })
+	})
      })
 
     describe("get_timeslot_length", function(){

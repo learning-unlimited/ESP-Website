@@ -59,6 +59,12 @@ describe("Matrix", function(){
 		expect(m.validateAssignment(section_2(), "room-2", [1,2])).toEqual(true)
 	    })
 	})
+
+	describe("when the timeslots are null", function(){
+	    it("returns false", function(){
+		expect(m.validateAssignment(section_2(), "room-2", null)).toEqual(false)
+	    })
+	})
     })
 
     describe("scheduleSection", function(){

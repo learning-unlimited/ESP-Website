@@ -14,13 +14,23 @@ function Timeslots(timeslots_data){
 	}	
     }
 
+    this.on_same_day = function(timeslot_1, timeslot_2){
+	return timeslot_1.end[2] == timeslot_2.start[2]
+    }
+
     this.get_timeslots_to_schedule_section = function(section, first_timeslot_id){
 	var times = [first_timeslot_id]
 	var last_timeslot_id = first_timeslot_id
 	while (this.get_time_between(first_timeslot_id, last_timeslot_id) < section.length){
 	    var last_timeslot = this.get_by_id(last_timeslot_id)
-	    last_timeslot_id = this.get_by_order(last_timeslot.order + 1).id
-	    times.push(last_timeslot_id)
+	    next_timeslot = this.get_by_order(last_timeslot.order + 1)
+
+	    if (!this.on_same_day(last_timeslot, next_timeslot)){
+		console.log("timeslot "+last_timeslot.id+" and timeslot "+ next_timeslot.id +" are on different days")
+	        return null
+	    }
+	    last_timeslot_id = next_timeslot.id
+	    times.push(next_timeslot.id)
 	}
 	return times
     }

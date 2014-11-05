@@ -67,6 +67,10 @@ function Matrix(
     }
 
     this.validateAssignment = function(section, room_name, schedule_timeslots){
+	if (!schedule_timeslots){
+	    return false
+	}
+
 	for(timeslot_index in schedule_timeslots){
 	    var timeslot_id = schedule_timeslots[timeslot_index]
 	    if (this.getCell(room_name, timeslot_id).section != null){
