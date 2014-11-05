@@ -1,11 +1,13 @@
 describe("Cell", function(){
     var c;
+    var section;
 
     beforeEach(function(){
 	c = new Cell($j("<td/>"), null, "1-115", 1)
 
 	section = {
 	    emailcode: "my-emailcode",
+	    length: 1.83
 	}
     })
 
@@ -24,6 +26,22 @@ describe("Cell", function(){
 
     it("attaches itself to its el", function(){
 	expect($j(c.el).data("cell")).toEqual(c)
+    })
+
+    describe("dragHelper", function(){
+	beforeEach(function(){
+	    c.addSection(section)
+	})
+
+	it("has the name of the section once for each hour of the class", function(){
+	    var helper = c.dragHelper()[0].innerHTML
+	    expect(helper).toMatch("my-emailcode.*my-emailcode")
+	})
+
+	it("has one child for each hour", function(){
+	    var helper = c.dragHelper()[0]
+	    expect(helper.children.length).toEqual(2)
+	})
     })
 
     describe("init", function(){

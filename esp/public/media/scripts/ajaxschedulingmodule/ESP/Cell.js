@@ -5,11 +5,20 @@ function Cell(el, section, room_name, timeslot_id) {
     this.room_name = room_name
     this.timeslot_id = timeslot_id
 
+    this.dragHelper = function(){
+	var div = $j("<div/>")
+	var i
+	for (i = 0; i < this.section.length; i++){
+	    div.append(this.el.clone(true))
+	}
+	return div
+    }.bind(this)
+
     this.init = function(new_section){
 	this.el.data("cell", this)
 	this.el.draggable({
 	    stack: ".matrix-cell",
-	    helper: "clone",
+	    helper: this.dragHelper,
 	})
 	this.el.droppable({
 	    drop: function(ev, ui){
