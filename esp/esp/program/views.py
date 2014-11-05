@@ -572,9 +572,9 @@ def submit_transaction(request):
     if request.POST.has_key("decision") and request.POST["decision"] != "REJECT":
 
         #   Figure out which user and program the payment are for.
-        post_identifier = request.POST.get('merchantDefinedData1', '')
+        post_identifier = request.POST['req_merchant_defined_data1']
+        post_amount = Decimal(request.POST['req_amount'])
         iac = IndividualAccountingController.from_identifier(post_identifier)
-        post_amount = Decimal(request.POST.get('orderAmount', '0.0'))
 
         #   Warn for possible duplicate payments
         prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
@@ -591,11 +591,11 @@ def submit_transaction(request):
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
                   """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
-                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), request) , \
+                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('req_bill_to_surname', '--'), request.POST.get('req_bill_to_forename', '--'), request) , \
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('transaction_id', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
