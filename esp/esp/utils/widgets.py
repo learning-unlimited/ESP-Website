@@ -1,17 +1,20 @@
 #   Downloaded from http://www.djangosnippets.org/snippets/391/
 #   Modified to not force unicode
 #   - Michael P
+import datetime
+import simplejson as json
+import time
 
-from django.conf import settings
 from django import forms
+from django.conf import settings
+from django.contrib.localflavor.us.forms import *
 from django.forms import widgets
+from django.template import Template, Context
+from django.utils.encoding import StrAndUnicode, force_unicode
+from django.utils.safestring import mark_safe
 from django.utils.safestring import mark_safe
 import django.utils.formats
-from django.template import Template, Context
 
-import simplejson as json
-import datetime
-import time
 
 from esp.utils import captcha
 
@@ -221,7 +224,6 @@ class NullCheckboxSelect(forms.CheckboxInput):
         values =  {'on': True, 'true': True, 'false': False}
         if isinstance(value, basestring):
             value = values.get(value.lower(), value)
-        print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
         return value
 
 class DummyWidget(widgets.Input):
@@ -360,3 +362,77 @@ $j(document).ready({{ name }}_setup);
     def value_from_datadict(self, data, files, name):
         result = json.loads(data[name])
         return result
+        
+#adapted from https://djangosnippets.org/snippets/863/
+class ChoiceWithOtherRenderer(forms.RadioSelect.renderer):
+    """RadioFieldRenderer that renders its last choice with a placeholder."""
+    def __init__(self, *args, **kwargs):
+        super(ChoiceWithOtherRenderer, self).__init__(*args, **kwargs)
+        self.choices, self.other = self.choices[:-1], self.choices[-1]
+
+    def __iter__(self):
+        for input in super(ChoiceWithOtherRenderer, self).__iter__():
+            yield input
+        id = '%s_%s' % (self.attrs['id'], self.other[0]) if 'id' in self.attrs else ''
+        label_for = ' for="%s"' % id if id else ''
+        checked = '' if not force_unicode(self.other[0]) == self.value else 'checked="true" '
+        yield '<label%s><input type="radio" id="%s" value="%s" name="%s" %s/> %s</label> %%s' % (
+            label_for, id, self.other[0], self.name, checked, self.other[1])
+
+
+class ChoiceWithOtherWidget(forms.MultiWidget):
+    """MultiWidget for use with ChoiceWithOtherField."""
+    def __init__(self, choices):
+        widgets = [
+            forms.RadioSelect(choices=choices, renderer=ChoiceWithOtherRenderer),
+            forms.TextInput
+        ]
+        super(ChoiceWithOtherWidget, self).__init__(widgets)
+
+    def decompress(self, value):
+        if not value:
+            return [None, None]
+        return value
+
+    def format_output(self, rendered_widgets):
+        """Format the output by substituting the "other" choice into the first widget."""
+        return rendered_widgets[0] % rendered_widgets[1]
+
+
+class ChoiceWithOtherField(forms.MultiValueField):
+    def __init__(self, *args, **kwargs):
+        fields = [
+            forms.ChoiceField(widget=forms.RadioSelect(), *args, **kwargs),
+            forms.CharField(required=False)
+        ]
+
+        self.choices = []
+
+        if 'choices' in kwargs:
+            self.choices = kwargs['choices']
+            widget = ChoiceWithOtherWidget(choices=kwargs['choices'])
+            kwargs.pop('choices')
+            self._was_required = kwargs.pop('required', True)
+            kwargs['required'] = False
+            super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
+        else:
+             super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
+
+
+    def compress(self, value):
+        option_value, other_value = value
+
+        if self._was_required and not value or option_value in (None, ''):
+            raise forms.ValidationError(self.error_messages['required'])
+
+        #if custom choice is selected
+        custom_value = self.choices[-1][0]
+
+        if option_value == custom_value and not other_value:#this would be the value of the last choice
+            raise forms.ValidationError(self.error_messages['required'])
+
+        if not value:
+            return [None, u'']
+
+        return other_value or option_value
+

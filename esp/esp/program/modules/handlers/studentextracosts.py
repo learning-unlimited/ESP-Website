@@ -35,6 +35,9 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
+
+
+from esp.utils.widgets import ChoiceWithOtherField
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, Record
 from django.db.models.query import Q
@@ -57,14 +60,16 @@ class MultiCostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
     count = forms.IntegerField(max_value=10, min_value=0)
 
+
+
 class MultiSelectCostItem(forms.Form):
-    option = forms.ChoiceField(required=False, label='', widget=forms.RadioSelect, choices=[])
+    
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
-        self.fields['option'].choices = choices
-        self.fields['option'].required = required
+
+        self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices)
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -188,7 +193,6 @@ class StudentExtraCosts(ProgramModuleObj):
                     new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
 
             new_prefs += form_prefs
-
             iac.apply_preferences(new_prefs)
 
             #   Redirect to main student reg page if all data was recorded properly

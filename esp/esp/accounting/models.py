@@ -50,6 +50,7 @@ class LineItemType(models.Model):
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
     for_finaid = models.BooleanField(default=False)
+
     
     @property
     def amount(self):
@@ -99,7 +100,8 @@ class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this option--leave blank to inherit from the line item type.')
-
+    is_custom = models.BooleanField(default=False)
+    
     @property
     def amount(self):
         if self.amount_dec is None:
