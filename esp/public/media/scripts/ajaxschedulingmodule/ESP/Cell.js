@@ -39,6 +39,7 @@ function Cell(el, section, room_name, timeslot_id) {
 	this.el.removeData("section")
 	this.el[0].innerHTML = ""
 	this.el.addClass("available-cell")
+	this.el.css("background-color", "#222222")
 	this.el.droppable("enable")
 	this.el.draggable("disable")
 	this.el.removeClass("occupied-cell")
