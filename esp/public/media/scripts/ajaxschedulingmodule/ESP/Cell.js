@@ -9,7 +9,7 @@ function Cell(el, section, room_name, timeslot_id) {
 	var div = $j("<div/>")
 	var i
 	for (i = 0; i < this.section.length; i++){
-	    div.append(this.el.clone(true))
+	    div.append(this.el.clone(false))
 	}
 	return div
     }.bind(this)
