@@ -91,8 +91,8 @@ DEFAULT_USER_TYPES = [
 
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
-    if user is None or type(user) == AnonymousUser or \
-        (type(user) != User and type(user) != ESPUser) or \
+    if user is None or isinstance(user, AnonymousUser) or \
+        (not isinstance(user, User)) or \
          user.id is None:
         return 'None'
     else:
@@ -261,7 +261,7 @@ class ESPUser(User, AnonymousUser):
         return self.__olduser
 
     def name(self):
-        return '%s %s' % (self.first_name, self.last_name)
+        return u'%s %s' % (self.first_name, self.last_name)
 
     def get_email_sendto_address_pair(self):
         """
@@ -387,7 +387,7 @@ class ESPUser(User, AnonymousUser):
                          (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
-        return ''
+        return u''
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(classsubject__teachers=self)
@@ -405,7 +405,7 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import Program # Need the Class object.
-        if type(program) != Program: # if we did not receive a program
+        if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
             if include_rejected: 
@@ -471,7 +471,8 @@ class ESPUser(User, AnonymousUser):
             rounded_hours = lambda x: float( x )
         for s in user_sections:
             #   don't count cancelled or rejected classes -- Ted
-            if (include_scheduled or (s.start_time() is None)) and (s.parent_class.status >= 0):
+            #   or rejected sections -- lua
+            if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
@@ -1073,8 +1074,8 @@ def update_email(**kwargs):
             return
         old_user = User.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
-        new_email = new_user.email if new_user.is_active else None
-        if old_email == new_email:
+        new_email = new_user.get_email_sendto_address() if new_user.is_active else None
+        if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
             # They didn't change their email and didn't activate/deactivate,
             # don't do anything.
             return
@@ -1322,7 +1323,7 @@ class StudentInfo(models.Model):
         username = "N/A"
         if self.user != None:
             username = self.user.username
-        return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
+        return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
@@ -1442,7 +1443,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         username = ""
         if self.user != None:
             username = self.user.username
-        return 'ESP Teacher Info (%s)' % username
+        return u'ESP Teacher Info (%s)' % username
 
     class Meta:
         app_label = 'users'
@@ -1503,7 +1504,7 @@ class GuardianInfo(models.Model):
         username = ""
         if self.user != None:
             username = self.user.username
-        return 'ESP Guardian Info (%s)' % username
+        return u'ESP Guardian Info (%s)' % username
 
 
 class EducatorInfo(models.Model):
@@ -1568,7 +1569,7 @@ class EducatorInfo(models.Model):
         username = ""
         if self.user != None:
             username = self.user.username
-        return 'ESP Educator Info (%s)' % username
+        return u'ESP Educator Info (%s)' % username
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1634,7 +1635,7 @@ class ZipCode(models.Model):
         return winners
 
     def __unicode__(self):
-        return '%s (%s, %s)' % (self.zip_code,
+        return u'%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
 
@@ -1650,7 +1651,7 @@ class ZipCodeSearches(models.Model):
         db_table = 'users_zipcodesearches'
 
     def __unicode__(self):
-        return '%s Zip Codes that are less than %s miles from %s' % \
+        return u'%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
 class ContactInfo(models.Model, CustomFormsLinkModel):
@@ -1718,7 +1719,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
 
 
     def name(self):
-        return '%s %s' % (self.first_name, self.last_name)
+        return u'%s %s' % (self.first_name, self.last_name)
 
     email = property(lambda self: self.e_mail)
 
@@ -1735,7 +1736,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
-        return '%s, %s, %s %s' % \
+        return u'%s, %s, %s %s' % \
             (self.address_street,
              self.address_city,
              self.address_state,
@@ -1858,10 +1859,10 @@ class K12School(models.Model):
 
     def __unicode__(self):
         if self.contact_id:
-            return '%s in %s, %s' % (self.name, self.contact.address_city,
+            return u'%s in %s, %s' % (self.name, self.contact.address_city,
                                        self.contact.address_state)
         else:
-            return '%s' % self.name
+            return u'%s' % self.name
 
     @classmethod
     def choicelist(cls, other_help_text=''):
@@ -2170,6 +2171,7 @@ class Record(models.Model):
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
+        ("donation_done", "Filled out Donation Form"),
         ("waitlist","Waitlisted for a program"),
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
@@ -2230,7 +2232,7 @@ class Record(models.Model):
 def flatten(choices):
     l=[]
     for x in choices:
-        if type(x[1])!=tuple: l.append(x[0])
+        if not isinstance(x[1], tuple): l.append(x[0])
         else: l=l+flatten(x[1])
     return l
 
@@ -2283,6 +2285,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
             ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
+            ("Teacher/Events", "Teacher training signup"),
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/MainPage", "Registration mainpage"),
             ("Teacher/Survey", "Teacher Survey"),
@@ -2415,7 +2418,7 @@ class Permission(ExpirableModel):
         def squash(choices):
             l=[]
             for x in choices:
-                if type(x[1])!=tuple: l.append(x)
+                if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
         
@@ -2426,7 +2429,7 @@ class Permission(ExpirableModel):
         def squash(choices):
             l=[]
             for x in choices:
-                if type(x[1])!=tuple: l.append(x)
+                if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
         
@@ -2523,6 +2526,7 @@ class GradeChangeRequest(TimeStampedModel):
     """
   
     claimed_grade = models.PositiveIntegerField()
+    grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)

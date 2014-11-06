@@ -148,7 +148,7 @@ class StudentRegSanityController(object):
             print '-------------Known Bugs-----------------'
             print "Guys, I'm not course 6 for a reason~shulinye"
             return None
-        if type(checks) == str:
+        if isinstance(checks, basestring):
             checks = [checks]
         if csvlog:
             import csv

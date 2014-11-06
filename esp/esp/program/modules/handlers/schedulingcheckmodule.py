@@ -49,7 +49,7 @@ class HTMLSCFormatter:
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
     def format_table(self, d, options={}, help_text=""):
-        if type(d) == list:
+        if isinstance(d, list):
             return self._format_list_table(d, options['headings'], help_text=help_text)
         else:
             return self._format_dict_table(d, options['headings'], help_text=help_text)
@@ -80,7 +80,7 @@ class HTMLSCFormatter:
         next_row = ""
         for r in row:
             #displaying lists is sometimes borked.  This makes it not borked
-            if type(r) == list:
+            if isinstance(r, list):
                 r = [str(i) for i in r]
             next_row += "<td>" + str(r) + "</td>"
         next_row += "</tr>"
@@ -430,6 +430,10 @@ class SchedulingCheckRunner:
          l_resources = []
          l_classrooms = []
          for s in self._all_class_sections():
+             meeting_times = s.get_meeting_times()
+             first_hour = meeting_times[0] if meeting_times else None
+             classrooms = s.classrooms()
+             classroom = classrooms[0] if classrooms else None
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
                  for u in unsatisfied_requests:
@@ -437,9 +441,9 @@ class SchedulingCheckRunner:
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":
-                             l_classrooms.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
+                             l_classrooms.append({ "Section": s, "First Hour": first_hour, "Requested Type": u.desired_value, "Classroom": classroom })
                      else:
-                         l_resources.append({ "Section": s, "First Hour": s.get_meeting_times()[0], "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
+                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
          self.calculated_classes_missing_resources = True

@@ -39,7 +39,7 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
-from esp.users.models import ESPUser, ContactInfo, StudentInfo, Permission
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 
 from django.contrib.auth.models import Group
@@ -529,19 +529,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
+            name = u'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
+            name = u'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
+            name = u'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -652,15 +655,42 @@ class ProgramFrameworkTest(TestCase):
                         sec.assign_room(random.choice(vr))
                         #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
-    #   Helper function to give each student a profile so they can sign up for classes.
-    #   Does not get called by default, but subclasses can call it.
-    def add_student_profiles(self):
+    def add_user_profiles(self):
+        """Helper function to give each user a profile so they can register.
+
+        Does not get called by default, but subclasses can call it.
+        """
         for student in self.students:
             student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
-            
+        for teacher in self.teachers:
+            teacher_teacherinfo = TeacherInfo(user=teacher)
+            teacher_teacherinfo.save()
+            digit = teacher.id % 10
+            phone = (u'%d' % digit) * 10
+            teacher_contactinfo = ContactInfo(
+                user=teacher,
+                first_name=teacher.first_name,
+                last_name=teacher.last_name,
+                e_mail=teacher.email,
+                phone_day=phone,
+                phone_cell=phone,
+            )
+            teacher_contactinfo.save()
+            teacher_regprofile = RegistrationProfile(
+                user=teacher,
+                program=self.program,
+                teacher_info=teacher_teacherinfo,
+                contact_user=teacher_contactinfo,
+                most_recent_profile=True,
+            )
+            teacher_regprofile.save()
+
+    # For backwards compatability.
+    add_student_profiles = add_user_profiles
+
     #   Helper function to put the students in classes.
     #   Does not get called by default, but subclasses can call it.
     def classreg_students(self):

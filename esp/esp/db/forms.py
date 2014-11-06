@@ -20,7 +20,7 @@ class AjaxForeignKeyFieldBase:
 
         old_init_val = init_val = data
 
-        if type(data) == int:
+        if isinstance(data, int):
             if hasattr(self, "field"):
                 query_objects = self.field.rel.to.objects
                 
@@ -32,7 +32,7 @@ class AjaxForeignKeyFieldBase:
                     old_init_val = unicode(obj)
                 else:
                     old_init_val = init_val = unicode(obj) + " (%s)" % data
-        elif isinstance(data, str) or isinstance(data, unicode):
+        elif isinstance(data, basestring):
             pass
         else:
             data = init_val = ''

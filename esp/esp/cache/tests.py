@@ -4,7 +4,7 @@ from django.test import TestCase
 import unittest
 
 from esp.cache import registry
-from esp.cache.argcache import cache_function
+from esp.cache.function import cache_function
 from esp.cache.key_set import wildcard
 
 # hack the cache loader so we can define more caches
