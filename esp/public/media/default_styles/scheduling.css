@@ -14,6 +14,7 @@ table,th,td
 
 .available-cell{
     background: #222222;
+    opacity: 0.35
 }
 
 .occupied-cell{
