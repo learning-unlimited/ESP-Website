@@ -56,6 +56,16 @@ function Cell(el, section, room_name, timeslot_id) {
 	this.el.draggable("enable")
     }
 
+    this.tooltip = function(){
+	tooltip_parts = [
+	    "Code: " + this.section.emailcode,
+	    "Title: " + this.section.title,
+	    "Class size max: " + this.section.class_size_max,
+	    "Length: " + Math.ceil(this.section.length)
+	]
+	return tooltip_parts.join("<br/>")
+    }
+
     this.hasSection = function(){
 	return this.section != null
     }

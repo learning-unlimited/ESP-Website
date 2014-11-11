@@ -44,6 +44,20 @@ describe("Cell", function(){
 	})
     })
 
+    describe("tooltip", function(){
+	beforeEach(function(){
+	    c.addSection(section_2())
+	})
+
+	it("contains the emailcode, title, length, and max students", function(){
+	    var tooltip = c.tooltip()
+	    expect(tooltip).toContain("Code: M3343s1")
+	    expect(tooltip).toContain("Title: Become a LaTeX Guru")
+	    expect(tooltip).toContain("Class size max: 15")
+	    expect(tooltip).toContain("Length: 2")
+	})
+    })
+
     describe("init", function(){
 	it("makes the element draggable", function(){
 	    spyOn(c.el, 'draggable')

@@ -9,8 +9,20 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
 	garbageEl,
 	new ApiClient()
     )
+
     this.render = function(){
 	this.directory.render()
 	this.matrix.render()
+
+	//turn on tooltips
+	$j(document)
+	    .tooltip({
+		items: ".occupied-cell",
+		content: function(){
+		    var cell = $j("td:contains("+ this.innerHTML +")").filter(".matrix-cell").first().data("cell")
+		    return cell.tooltip()
+		}
+	    })
+
     }
 }
