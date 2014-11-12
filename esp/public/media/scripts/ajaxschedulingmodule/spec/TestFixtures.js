@@ -12,8 +12,8 @@ function time_fixture() {
 	    end:  [2010, 4, 17, 11, 50, 0],
 	    id: 2
 	}
-    }
-}
+    };
+};
 
 function time_fixture_with_order(){
     return {
@@ -31,11 +31,10 @@ function time_fixture_with_order(){
 	    order: 1,
 	    id: 2
 	}
-    }
-}
+    };
+};
 
 function time_fixture_out_of_order() {
-    tf = time_fixture()
     return {
 	2: {
 	    label:  "first timeslot",
@@ -49,15 +48,15 @@ function time_fixture_out_of_order() {
 	    end:  [2010, 4, 17, 11, 50, 0],
 	    id: 1
 	}
-    }
-}
+    };
+};
 
 function room_fixture() {
     return {
 	"room-1": {},
 	"room-2": {}
-    }
-}
+    };
+};
 
 function schedule_assignments_fixture() {
     return {
@@ -71,8 +70,8 @@ function schedule_assignments_fixture() {
 	    id: 3538,
 	    timeslots: []
 	}
-    }
-}
+    };
+};
 
 function empty_schedule_assignments_fixture() {
     return {
@@ -84,8 +83,8 @@ function empty_schedule_assignments_fixture() {
 	    id: 3538,
 	    timeslots: []
 	}
-    }
-}
+    };
+};
 
 function section_1() {
     return {
@@ -103,8 +102,8 @@ function section_1() {
 	    grade_max: 12, 
 	    id: 3329, 
 	    teachers: [6460]
-	}
-}
+	};
+};
 
 function section_2() {
     return {
@@ -122,12 +121,12 @@ function section_2() {
 	    grade_max: 12, 
 	    id: 3538, 
 	    teachers: [45225]
-	}
-}
+	};
+};
 
 function sections_fixture() {
     return {
 	3329: section_1(), 
 	3538: section_2()
-    }
-}
+    };
+};

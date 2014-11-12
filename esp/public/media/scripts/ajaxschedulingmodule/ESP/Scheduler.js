@@ -1,5 +1,5 @@
 function Scheduler(data, directoryEl, matrixEl, garbageEl) {
-    this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments)
+    this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments);
     this.matrix = new Matrix(
 	data.timeslots,
 	data.rooms,
@@ -8,21 +8,21 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
 	matrixEl,
 	garbageEl,
 	new ApiClient()
-    )
+    );
 
     this.render = function(){
-	this.directory.render()
-	this.matrix.render()
+	this.directory.render();
+	this.matrix.render();
 
 	//turn on tooltips
 	$j(document)
 	    .tooltip({
 		items: ".occupied-cell",
 		content: function(){
-		    var cell = $j("td:contains("+ this.innerHTML +")").filter(".matrix-cell").first().data("cell")
-		    return cell.tooltip()
+		    var cell = $j("td:contains("+ this.innerHTML +")").filter(".matrix-cell").first().data("cell");
+		    return cell.tooltip();
 		}
-	    })
+	    });
 
-    }
-}
+    };
+};

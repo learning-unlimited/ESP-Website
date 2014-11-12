@@ -1,23 +1,23 @@
 csrf_token = function(){
-    return "abcd"
-}
+    return "abcd";
+};
 
 describe("ApiClient", function(){
-    var a
+    var a;
 
     beforeEach(function(){
-	a = new ApiClient()
-    })
+	a = new ApiClient();
+    });
 
     describe("schedule_section", function(){
 	it("makes an ajax request", function(){
-	    spyOn(a, "send_request")
-	    var callback_function = function(){}
-	    var errorReporter_function = function(){}
+	    spyOn(a, "send_request");
+	    var callback_function = function(){};
+	    var errorReporter_function = function(){};
 	    
 	    a.schedule_section(1234, [1], "my-room",
 			       callback_function,
-			       errorReporter_function)
+			       errorReporter_function);
 
 	    expect(a.send_request).toHaveBeenCalledWith(
 		{
@@ -28,17 +28,17 @@ describe("ApiClient", function(){
 		}, 
 		callback_function,
 		errorReporter_function
-	    )	    
-	})
+	    );
+	});
 
 	it("can send a request with multiple timeslots", function(){
-	    spyOn(a, "send_request")
-	    var callback_function = function(){}
-	    var errorReporter_function = function(){}
+	    spyOn(a, "send_request");
+	    var callback_function = function(){};
+	    var errorReporter_function = function(){};
 
 	    a.schedule_section(1234, [1,2], "my-room",
 			       callback_function,
-			       errorReporter_function)
+			       errorReporter_function);
 
 	    expect(a.send_request).toHaveBeenCalledWith(
 		{
@@ -49,17 +49,17 @@ describe("ApiClient", function(){
 		},
 		callback_function,
 		errorReporter_function
-	    )
-	})
-    })
+	    );
+	});
+    });
 
     describe("unschedule_section", function(){
 	it("makes an ajax request", function(){
-	    spyOn(a, "send_request")
-	    var callback_function = function(){}
-	    var errorReporter_function = function(){}
+	    spyOn(a, "send_request");
+	    var callback_function = function(){};
+	    var errorReporter_function = function(){};
 
-	    a.unschedule_section(1234, callback_function, errorReporter_function)
+	    a.unschedule_section(1234, callback_function, errorReporter_function);
 
 	    expect(a.send_request).toHaveBeenCalledWith(
 		{
@@ -69,60 +69,60 @@ describe("ApiClient", function(){
 		}, 
 		callback_function,
 		errorReporter_function
-	    )
-	})
-    })
+	    );
+	});
+    });
 
     describe("send_request", function(){
 	var request, callback, errorReporter;
 
 	beforeEach(function(){
-	    jasmine.Ajax.useMock()
-	    callback = jasmine.createSpy('callback')
-	    errorReporter = jasmine.createSpy('errorReporter')
+	    jasmine.Ajax.useMock();
+	    callback = jasmine.createSpy('callback');
+	    errorReporter = jasmine.createSpy('errorReporter');
 	    
-	    a.send_request({}, callback, errorReporter)
-	    request = mostRecentAjaxRequest()
-	})
+	    a.send_request({}, callback, errorReporter);
+	    request = mostRecentAjaxRequest();
+	});
 
 	describe("when there is an error", function(){
 	    beforeEach(function(){
 		request.response({
 		    status: 500,
 		    responseText: 'an error has occurred'
-		})
-	    })
+		});
+	    });
 	    it("does not execute the callback", function(){
-		expect(callback).not.toHaveBeenCalled()
-		expect(errorReporter).toHaveBeenCalledWith("An error occurred saving the schedule change.")
-	    })
-	})
+		expect(callback).not.toHaveBeenCalled();
+		expect(errorReporter).toHaveBeenCalledWith("An error occurred saving the schedule change.");
+	    });
+	});
 
 	describe("when the request comes back with failure", function(){
 	    beforeEach(function(){
 		request.response({
 		    status: 200,
 		    responseText: '{"ret":false,"msg":"The teacher is not available"}'
-		})
-	    })
+		});
+	    });
 	    it("does not execute the callback", function(){
-		expect(callback).not.toHaveBeenCalled()
-		expect(errorReporter).toHaveBeenCalledWith("The teacher is not available")
-	    })
-	})
+		expect(callback).not.toHaveBeenCalled();
+		expect(errorReporter).toHaveBeenCalledWith("The teacher is not available");
+	    });
+	});
 
 	describe("when the request comes back with success", function(){
 	    beforeEach(function(){
 		request.response({
 		    status: 200,
 		    responseText: '{"ret":true}'
-		})	
+		});
 		
-	    })
+	    });
 	    it("executes the callback", function(){
-		expect(callback).toHaveBeenCalled()
-		expect(errorReporter).not.toHaveBeenCalled()
-	    })
-	})
-    })
-})
+		expect(callback).toHaveBeenCalled();
+		expect(errorReporter).not.toHaveBeenCalled();
+	    });
+	});
+    });
+});
