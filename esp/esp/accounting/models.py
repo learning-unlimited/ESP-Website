@@ -65,7 +65,7 @@ class LineItemType(models.Model):
     
     @property
     def options(self):
-        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
+        return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description','is_custom').order_by('-is_custom')
     
     @property
     def option_choices(self):

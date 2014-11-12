@@ -180,7 +180,9 @@ class StudentExtraCosts(ProgramModuleObj):
 
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['option']:
-                            form_prefs.append((lineitem_type.text, 1, None, int(form.cleaned_data['option'])))
+                        
+                            option_id, option_amount = form.cleaned_data['option']
+                            form_prefs.append((lineitem_type.text, 1, int(option_id), float(option_amount) ))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -200,6 +202,8 @@ class StudentExtraCosts(ProgramModuleObj):
             if forms_all_valid:
                 bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
+
+            ### End Post
 
         count_map = {}
         for lineitem_type in iac.get_lineitemtypes(optional_only=True):

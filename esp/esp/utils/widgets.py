@@ -420,6 +420,9 @@ class ChoiceWithOtherField(forms.MultiValueField):
 
 
     def compress(self, value):
+        if not value:
+            return [None, u'']
+
         option_value, other_value = value
 
         if self._was_required and not value or option_value in (None, ''):
@@ -427,12 +430,11 @@ class ChoiceWithOtherField(forms.MultiValueField):
 
         #if custom choice is selected
         custom_value = self.choices[-1][0]
-
-        if option_value == custom_value and not other_value:#this would be the value of the last choice
+        is_custom = option_value == custom_value 
+        if is_custom and not other_value:#this would be the value of the last choice
             raise forms.ValidationError(self.error_messages['required'])
-
-        if not value:
-            return [None, u'']
-
-        return other_value or option_value
+        else:
+            return option_value, option_value
+        
+        return other_value, option_value
 
