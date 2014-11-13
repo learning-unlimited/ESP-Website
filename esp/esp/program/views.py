@@ -569,7 +569,7 @@ def newprogram(request):
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
     
-    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT":
+    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT" and request.POST["decision"] != "ERROR":
 
         #   Figure out which user and program the payment are for.
         post_identifier = request.POST['req_merchant_defined_data1']
