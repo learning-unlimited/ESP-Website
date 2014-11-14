@@ -39,6 +39,7 @@ from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
+from django.test import LiveServerTestCase
 
 from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
@@ -602,7 +603,7 @@ class ProgramFrameworkTest(TestCase):
             raise Exception("Program form creation errors")
         
         temp_prog = pcf.save(commit=False)
-        (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
+        (perms, modules) = prepare_program(temp_prog, pcf.data)
         
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
