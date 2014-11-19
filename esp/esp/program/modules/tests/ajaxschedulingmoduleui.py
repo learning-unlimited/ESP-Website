@@ -46,17 +46,22 @@ class AJAXSchedulingModuleUITest(ProgramFrameworkSeleniumTest):
         submit_el_id = "gologin"
  
         self.browser.get(self.live_server_url)
-        
-        e = WebDriverWait(self.browser, 10).until(
-             lambda driver: self.browser.find_element_by_id(uname_el_id))
-        e.send_keys(uname)
-        e = WebDriverWait(self.browser, 10).until(
-             lambda driver: self.browser.find_element_by_id(pword_el_id))
-        e.send_keys(pword)
-        e = WebDriverWait(self.browser, 60).until(
-             lambda driver:    self.browser.find_element_by_id(submit_el_id))
-        e.click()
-        time.sleep(30)
+
+        # wait until the page loads
+        WebDriverWait(self.browser, 10).until(
+            lambda d: self.browser.find_element_by_id(uname_el_id))
+
+        # fill out login form and click submit
+        uname_element = self.browser.find_element_by_id(uname_el_id)
+        uname_element.send_keys(uname)
+        password_element = self.browser.find_element_by_id(pword_el_id)
+        password_element.send_keys(pword)
+        submit_element = self.browser.find_element_by_id(submit_el_id)
+        submit_element.click()
+
+        # wait until we're redirected
+        WebDriverWait(self.browser, 10).until(
+            lambda d: self.browser.title == "MIT ESP - Page Does Not Exist")
 
     def loadAjax(self):
         self.loginAdminBrowser(self.admins[0].username, "password")
