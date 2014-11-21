@@ -505,6 +505,11 @@ class ProgramFrameworkTest(TestCase):
         from esp.cal.models import Event, EventType
         from esp.cal.models import install as cal_install
         from esp.resources.models import Resource, ResourceType
+        # We manually cache the creation of resource types
+        # since the cache persists between tests, and the underlying database objects do not
+        # we clear it here
+        ResourceType._get_or_create_cache = {}
+
         from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
         from esp.program.setup import prepare_program, commit_program
         from esp.program.forms import ProgramCreationForm
