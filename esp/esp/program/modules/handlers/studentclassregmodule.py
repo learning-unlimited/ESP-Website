@@ -49,7 +49,7 @@ from django.core.cache import cache
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -150,12 +150,19 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        SubjPar = Q(studentsubjectinterest__subject__parent_program=self.program)
+        SubjUnexpired = nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
+        GoodReg = (SubjPar & SubjUnexpired)
+        # Test = Q(studentregistration__isnull = False)
+        # SubjTest = Q(studentsubjectinterest__isnull = False)
         
         if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
+            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser((SubjPar & SubjUnexpired))}
         else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
-
+            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': (ESPUser.objects.filter(GoodReg).distinct() | ESPUser.objects.filter(Par & Unexpired).distinct()).distinct()}
+        print ESPUser.objects.filter(Par & Unexpired).count()
+        print len(ESPUser.objects.filter(Par & Unexpired).distinct().union(ESPUser.objects.filter(SubjPar & SubjUnexpired).distinct()))
+        print ESPUser.objects.filter(SubjPar & SubjUnexpired).count()
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
