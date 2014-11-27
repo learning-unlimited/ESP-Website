@@ -1285,14 +1285,14 @@ class StudentInfo(models.Model):
             studentInfo.food_preference      = new_data['food_preference']
 
         
-        studentInfo.studentrep = new_data.get('studentrep', False)    
+        studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.post_hs = new_data.get('post_hs', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
-        studentInfo.transportation = new_data.get('transportation', '')        
+        studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
         if new_data.get('studentrep', False):
             #   E-mail membership notifying them of the student rep request.
@@ -1311,13 +1311,15 @@ class StudentInfo(models.Model):
         return studentInfo
 
     def getSchool(self):
-        """ Obtain a string representation of the student's school  """ 
+        """ Obtain a string representation of the student's school  """
         if self.k12school:
             return self.k12school
         elif self.school:
             return self.school
         else:
             return None
+
+    getSchool.short_description = "School"
 
     def __unicode__(self):
         username = "N/A"
@@ -1331,8 +1333,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name = 'TeacherInfo'
     link_fields_list = [
-        ('graduation_year', 'Graduation year'), 
-        ('from_here', 'Current student checkbox'), 
+        ('graduation_year', 'Graduation year'),
+        ('from_here', 'Current student checkbox'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1565,6 +1567,16 @@ class EducatorInfo(models.Model):
         educatorInfo.save()
         return educatorInfo
 
+    def getSchool(self):
+        """ Obtain a string representation of the educator's school  """
+        if self.k12school:
+            return self.k12school
+        elif self.school:
+            return self.school
+        else:
+            return None
+    getSchool.short_description = "School"
+
     def __unicode__(self):
         username = ""
         if self.user != None:
@@ -1714,9 +1726,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return myZip.distance(remoteZip)
         except:
             return -1
-
-
-
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
@@ -2613,7 +2622,9 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.module_name), args=(self.id,))
 
 
-
+    def __unicode__(self):
+        return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else None)
+        
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
