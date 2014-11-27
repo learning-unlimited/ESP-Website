@@ -67,7 +67,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission
 from esp.program.models import Program
-from esp.program.models import StudentRegistration, RegistrationType
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
@@ -1048,10 +1048,19 @@ class ClassSection(models.Model):
     def clearStudents(self):
         now = datetime.datetime.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
+        for reg in qs:
+            signals.pre_save.send(sender=StudentRegistration, instance=reg)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
             signals.post_save.send(sender=StudentRegistration, instance=reg)
+        if all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self]):
+            qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
+            for ssi in qs_ssi:
+                signals.pre_save.send(sender=StudentSubjectInterest, instance=ssi)
+            qs_ssi.update(end_date=now)
+            for ssi in qs_ssi:
+                signals.post_save.send(sender=StudentSubjectInterest, instance=ssi)
 
     @staticmethod
     def idcmp(one, other):
