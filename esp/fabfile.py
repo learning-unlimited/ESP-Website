@@ -59,7 +59,6 @@ def remote_pipe(local_command, remote_command, buf_size=1024*1024):
 
 def use_vagrant():
     vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ', 1)[1].strip("\"")
-    print vagrant_key_file
     host_str = '127.0.0.1:2222'
     config_dict = {
         'user': REMOTE_USER,
