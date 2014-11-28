@@ -632,9 +632,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for key in teachers.keys():
             if key in teacher_labels_dict:
                 vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
-len(teachers[key])))
+len(teachers[key].filter(is_active = True))))
             else:
-                vitals['teachernum'].append((key, len(teachers[key])))
+                vitals['teachernum'].append((key, len(teachers[key].filter(is_active = True))))
                 
         student_labels_dict = {}
         for module in prog.getModules():
@@ -646,9 +646,9 @@ len(teachers[key])))
         students = prog.students()
         for key in students.keys():
             if key in student_labels_dict:
-                vitals['studentnum'].append((student_labels_dict[key], len(students[key])))
+                vitals['studentnum'].append((student_labels_dict[key], len(students[key].filter(is_active = True))))
             else:
-                vitals['studentnum'].append((key, len(students[key])))
+                vitals['studentnum'].append((key, len(students[key]).filter(is_active = True)))
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
