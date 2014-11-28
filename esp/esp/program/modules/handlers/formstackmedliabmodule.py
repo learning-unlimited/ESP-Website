@@ -75,17 +75,17 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         Q_students = Q(record__event="med",
-                       record__program=self.program).distinct()
+                       record__program=self.program)
         Q_bypass = Q(record__event="med_bypass",
-                       record__program=self.program).distinct()
+                       record__program=self.program)
 
 
         if QObject:
             students = Q_students
             bypass = Q_bypass
         else:
-            students = ESPUser.objects.filter(Q_students)
-            bypass = ESPUser.objects.filter(Q_bypass)
+            students = ESPUser.objects.filter(Q_students).distinct()
+            bypass = ESPUser.objects.filter(Q_bypass).distinct()
 
         return {
             'studentmedliab': students,
