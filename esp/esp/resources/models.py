@@ -161,6 +161,15 @@ class ResourceRequest(models.Model):
 
     class Admin:
         pass
+
+class ResourceGroup(models.Model):
+    """ A hack to make the database handle resource group ID creation """
+
+    def __unicode__(self):
+        return 'Resource group %d' % (self.id,)
+
+    class Admin:
+        pass
     
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
@@ -169,7 +178,11 @@ class Resource(models.Model):
     name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType)
     num_students = models.IntegerField(blank=True, default=-1)
-    group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
+    # do not use group_id, use res_group instead
+    # group_id can be removed with a future migration after all sites
+    # have successfully run the migration to res_group
+    group_id = models.IntegerField(default=-1)
+    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True)
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
@@ -184,14 +197,10 @@ class Resource(models.Model):
                 return '%s (%s)' % (self.name, unicode(self.res_type))
     
     def save(self, *args, **kwargs):
-        if self.group_id == -1:
-            #   Give this a new group id.
-            vals = Resource.objects.all().order_by('-group_id').values_list('group_id', flat=True)
-            max_id = 0
-            if len(vals) > 0:
-                max_id = vals[0]
-                
-            self.group_id = max_id + 1
+        if self.res_group is None:
+            #   Make a new group for this
+            new_group = ResourceGroup.objects.create()
+            self.res_group = new_group
             self.is_unique = True
         else:
             self.is_unique = False
@@ -252,9 +261,9 @@ class Resource(models.Model):
         return result
     
     def grouped_resources(self):
-        if self.group_id == -1:
+        if self.res_group is None:
             return Resource.objects.filter(id=self.id)
-        return Resource.objects.filter(group_id=self.group_id)
+        return Resource.objects.filter(res_group=self.res_group)
     
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
@@ -387,7 +396,7 @@ class ResourceAssignment(models.Model):
         return self.target_subj
     
     def resources(self):
-        return Resource.objects.filter(group_id=self.resource.group_id)
+        return Resource.objects.filter(res_group=self.resource.res_group)
     
     class Admin:
         pass
