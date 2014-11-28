@@ -58,7 +58,7 @@ def remote_pipe(local_command, remote_command, buf_size=1024*1024):
         raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
 
 def use_vagrant():
-    vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ')[1]
+    vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ', 1)[1].strip("\"")
     host_str = '127.0.0.1:2222'
     config_dict = {
         'user': REMOTE_USER,
