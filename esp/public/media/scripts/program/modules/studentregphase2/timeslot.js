@@ -209,7 +209,7 @@ var Timeslot = function(data){
 		}
 	    }
 	    if (has_priority_class == false){
-		interested_div.append("<font color='red'>Nothing selected.</font><br/>");
+		interested_div.append("<font color='red'>No classes.</font><br/>");
 	    }
 	}    
     }
