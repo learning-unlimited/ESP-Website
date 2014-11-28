@@ -259,7 +259,6 @@ class StudentClassRegModule(ProgramModuleObj):
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -270,9 +269,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
+                doesnt_have_enrollment = not any(sec['section'].is_enrolled
+                                                 for sec in cls_list)
+                schedule.append((timeslot, cls_list, blockCount + 1,
+                                 doesnt_have_enrollment))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
+                schedule.append((timeslot, [], blockCount + 1, False))
 
             prevTimeSlot = timeslot
                 
