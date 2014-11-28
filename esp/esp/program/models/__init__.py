@@ -590,7 +590,7 @@ class Program(models.Model, CustomFormsLinkModel):
     open_class_registration.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.get_program()})
     open_class_registration = property(open_class_registration)
 
-    @property
+    @cache_function
     def open_class_category(self):
         """Return the name of the open class category, as determined by the program tag.
 
@@ -610,6 +610,9 @@ class Program(models.Model, CustomFormsLinkModel):
         if cc is None:
             cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
         return cc
+    open_class_category.depend_on_model(lambda: Tag)
+    open_class_category.depend_on_model(lambda: ClassCategories)
+    open_class_category = property(open_class_category)
 
     @cache_function
     def getScheduleConstraints(self):
