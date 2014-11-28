@@ -75,9 +75,9 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         Q_students = Q(record__event="med",
-                       record__program=self.program)
+                       record__program=self.program).distinct()
         Q_bypass = Q(record__event="med_bypass",
-                       record__program=self.program)
+                       record__program=self.program).distinct()
 
 
         if QObject:
