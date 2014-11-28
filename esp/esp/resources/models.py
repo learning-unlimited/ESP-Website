@@ -182,7 +182,7 @@ class Resource(models.Model):
     # group_id can be removed with a future migration after all sites
     # have successfully run the migration to res_group
     group_id = models.IntegerField(default=-1)
-    res_group = models.ForeignKey(ResourceGroup, null=True)
+    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True)
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
@@ -199,8 +199,7 @@ class Resource(models.Model):
     def save(self, *args, **kwargs):
         if self.res_group is None:
             #   Make a new group for this
-            new_group = ResourceGroup()
-            new_group.save()
+            new_group = ResourceGroup.objects.create()
             self.res_group = new_group
             self.is_unique = True
         else:
