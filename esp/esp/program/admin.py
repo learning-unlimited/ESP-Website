@@ -215,17 +215,18 @@ def sec_classrooms(obj):
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
+    list_display = ('emailcode', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
-    search_fields = ['parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
-    pass
+    search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
     model = ClassSection
     fields = ('status','meeting_times', 'prettyrooms')
     readonly_fields = ('meeting_times', 'prettyrooms')
+    can_delete = False
+
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)

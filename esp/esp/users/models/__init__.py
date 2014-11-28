@@ -712,19 +712,6 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
-        
-    #   We often request the registration priority for all timeslots individually
-    #   because our schedules display enrollment status on a per-timeslot (rather
-    #   than per-class) basis.  This function is intended to speed that up.
-    def getRegistrationPriorities(self, prog, timeslot_ids):
-        num_slots = len(timeslot_ids)
-        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
-        result = [0 for i in range(num_slots)]
-        id_order = range(num_slots)
-        id_order.sort(key=lambda i: timeslot_ids[i])
-        for i in range(num_slots):
-            result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
-        return result
 
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
@@ -1285,14 +1272,14 @@ class StudentInfo(models.Model):
             studentInfo.food_preference      = new_data['food_preference']
 
         
-        studentInfo.studentrep = new_data.get('studentrep', False)    
+        studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.post_hs = new_data.get('post_hs', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
-        studentInfo.transportation = new_data.get('transportation', '')        
+        studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
         if new_data.get('studentrep', False):
             #   E-mail membership notifying them of the student rep request.
@@ -1311,13 +1298,15 @@ class StudentInfo(models.Model):
         return studentInfo
 
     def getSchool(self):
-        """ Obtain a string representation of the student's school  """ 
+        """ Obtain a string representation of the student's school  """
         if self.k12school:
             return self.k12school
         elif self.school:
             return self.school
         else:
             return None
+
+    getSchool.short_description = "School"
 
     def __unicode__(self):
         username = "N/A"
@@ -1331,8 +1320,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name = 'TeacherInfo'
     link_fields_list = [
-        ('graduation_year', 'Graduation year'), 
-        ('from_here', 'Current student checkbox'), 
+        ('graduation_year', 'Graduation year'),
+        ('from_here', 'Current student checkbox'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1565,6 +1554,16 @@ class EducatorInfo(models.Model):
         educatorInfo.save()
         return educatorInfo
 
+    def getSchool(self):
+        """ Obtain a string representation of the educator's school  """
+        if self.k12school:
+            return self.k12school
+        elif self.school:
+            return self.school
+        else:
+            return None
+    getSchool.short_description = "School"
+
     def __unicode__(self):
         username = ""
         if self.user != None:
@@ -1714,9 +1713,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return myZip.distance(remoteZip)
         except:
             return -1
-
-
-
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
@@ -2613,7 +2609,9 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.module_name), args=(self.id,))
 
 
-
+    def __unicode__(self):
+        return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else None)
+        
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder

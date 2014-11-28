@@ -79,11 +79,19 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
-render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'cls': reg.section.parent_class, 'user': reg.user})
+render_class.cached_function.get_or_create_token(('cls',))
+# We need to depend on not only the user's StudentRegistrations for this
+# section, but in fact on their StudentRegistrations for all sections, because
+# of things like lunch constraints -- a change made in another block could
+# affect whether you can add a class in this one.  So we depend on all SRs for
+# this user.
+render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
+render_class.cached_function.get_or_create_token(('user',))
 
 @cache_function
 def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_to_string('inclusion/program/class_catalog.html', render_class_helper(cls))
+render_class_direct.get_or_create_token(('cls',))
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=None):
