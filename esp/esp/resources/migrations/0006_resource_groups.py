@@ -14,7 +14,7 @@ class Migration(DataMigration):
 
         resources = orm.Resource.objects.all()
         for gid in resources.values_list('group_id', flat=True).distinct():
-            new_group = orm.ResourceGroup().objects.create()
+            new_group = orm.ResourceGroup.objects.create()
             orm.Resource.objects.filter(group_id=gid).update(res_group=new_group)
 
     def backwards(self, orm):
