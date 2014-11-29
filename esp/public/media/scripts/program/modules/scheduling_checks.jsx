@@ -68,7 +68,10 @@ var SchedulingCheck = React.createClass({
     } else if (!this.state.data) {
       body = <div className="placeholder">loading...</div>;
     } else {
-      body = <div className="data" dangerouslySetInnerHTML={{__html: this.state.data}} />;
+      body = <div>
+        <div className="placeholder">(click title to close)</div>
+        <div className="data" dangerouslySetInnerHTML={{__html: this.state.data}} />
+      </div>;
     }
 
     return <div className="scheduling-check">
