@@ -17,13 +17,17 @@
         color: @identity-blue;
         text-decoration: underline;
     }
-    .btn {
+    .btn, .button {
         border: 1px solid @identity-blue;
         background: @pale;
+        &:active, &:focus {
+            outline: none;
+            border-color: @highlight-orange;
+        }
     }
     .btn-primary,
     .btn-inverse {
-        border: none;
+        border-color: transparent;
     }
     .btn-primary {
         background: @identity-blue;
