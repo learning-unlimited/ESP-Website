@@ -455,7 +455,7 @@ Custom forms and Formstack may be used to augment or replace these features.
 Admin Module for showing basic vitals (AdminVitals)
 ---------------------------------------------------
 
-This module is deprecated and will be removed in a future release.
+This module shows statistics about your program on the dashboard.
 
 AJAX Scheduling Module (AJAXSchedulingModule)
 ---------------------------------------------
