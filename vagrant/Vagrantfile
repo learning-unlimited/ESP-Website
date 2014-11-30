@@ -11,6 +11,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-12.04-encrypted.box'
   config.vm.hostname = 'ludev'
 
+  config.vm.provision 'shell', path: 'bootstrap.sh'
+
   # Forward ports for Django dev server and Apache.
   config.vm.network :forwarded_port, guest: 80, host: 8080
   config.vm.network :forwarded_port, guest: 8000, host: 8000
