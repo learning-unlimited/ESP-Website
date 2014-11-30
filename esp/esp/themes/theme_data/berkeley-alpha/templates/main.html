@@ -1,0 +1,131 @@
+{% extends "elements/html" %}
+{% comment %}
+Customize your title formatting here. For example: {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %}
+{% endcomment %}
+
+{% block fulltitle %}{% block title %}{% endblock %} - Splash at Berkeley{% endblock %}
+{% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css" />
+{% comment %}
+<link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+<link rel="stylesheet" type="text/css" href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" />
+<link rel="stylesheet" type="text/css" href="/media/splash-at-berkeley/flatstrap.min.css" media="all" />
+{% endcomment %}
+<link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+{% block jquery_ui_stylesheet_version %}
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+{% endblock jquery_ui_stylesheet_version %}
+{% comment %}
+  Example: <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> -->
+{% endcomment %}
+{% endblock stylesheets %}
+
+{% block js1 %}
+<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+<script type="text/javascript" src="/media/splash-at-berkeley/user_classes.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+{% comment %}
+<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">
+ MathJax.Hub.Config({
+   messageStyle: "none",
+   displayAlign: "left",
+   displayIndent: "0em",
+   "HTML-CSS": {
+     styles: {
+       '.MathJax_Display': {
+         display: "inline"
+       }
+     }
+   }
+ });
+</script>
+{% endcomment %}
+<script type="text/javascript" src="/media/scripts/json2.js"></script>
+<script type="text/javascript" src="/media/scripts/qsd.js"></script>
+<script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
+<script type="text/javascript"> window.jsprettify.run(); </script>
+{% endblock js1 %}
+
+{% block javascript %}
+{{ block.super }}
+{# Customize your scripts here #}
+{% endblock %}
+
+{% block body %}
+
+{% comment %}
+{% block navbar %}{% include "navbar.html" %}{% endblock navbar%}
+{% endcomment %}
+{% block navbar %}
+<div class="navbar">
+  <div class="navbar-inner">
+    {% include "loginbox_content.html" %}
+  </div>
+</div>
+{% endblock navbar%}
+
+<header class="jumbotron subhead" id="overview">
+  <div>
+    <div class="header-cell">
+      <a href="/">
+        <img src="/media/splash-at-berkeley/logo.png" alt="Splash at Berkeley" class="logo">
+      </a>
+    </div>
+    <div class="header-cell jumbotron-announcements">
+      {% load render_qsd %}
+      {% inline_qsd_block "jumbotron" %}
+      {% end_inline_qsd_block %}
+    </div>
+  </div>
+</header>
+
+{% block main %}
+
+<div class="container">
+  <div class="row">
+    {% block sidebar %}
+    <div id="sidebar" class="span3">
+      <ul class="nav nav-list sidebar">
+        {% include "sidebar/nav.html" %}
+        {% include "sidebar/programs.html" %}
+        {% include "sidebar/admin.html" %}
+      </ul>
+
+      {% load preview %}
+      {% if request.path == "/teach/index.html" %}
+      {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+      {% else %}
+      {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+      {% endif %}
+      {% if not announcements.announcementList|length_is:0 %}
+      <ul class="nav nav-list sidebar">
+        <li class="nav-header"> Announcements</li>
+        {% for announce in announcements.announcementList %}
+        <li>
+          {% if announce.makeUrl %}
+          <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a> {% else %} {{ announce.makeTitle }} {% endif %}
+        </li>
+        {% endfor %}
+        {% if announcements.overflowed %}
+        <li id="divannouncemore">
+          <a href="/myesp/home/">More Notices...</a>
+        </li>
+        {% endif %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endblock %}
+
+    <div id="main" class="span9 resizable">
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </div>
+</div>
+</div>
+{% endblock main %}
+
+
+{% endblock body %}
