@@ -13,16 +13,5 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
     this.render = function(){
 	this.directory.render();
 	this.matrix.render();
-
-	//turn on tooltips
-	$j(document)
-	    .tooltip({
-		items: ".occupied-cell",
-		content: function(){
-		    var cell = $j("td:contains("+ this.innerHTML +")").filter(".matrix-cell").first().data("cell");
-		    return cell.tooltip();
-		}
-	    });
-
     };
 };

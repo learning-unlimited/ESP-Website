@@ -25,6 +25,10 @@ function Cell(el, section, room_name, timeslot_id) {
 		//handled by matrix
 	    }
 	});
+	$j(this.el).tooltip({
+	    items: ".occupied-cell",
+	    content: this.tooltip.bind(this)
+	})
 	if (new_section != null){
 	    this.addSection(new_section);
 	}
