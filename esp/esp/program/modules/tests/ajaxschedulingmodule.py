@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules.tests.support import TestProgramManager
 from esp.program.modules.module_ext import AJAXChangeLog
 import json
 import time
@@ -47,6 +48,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
         super(AJAXSchedulingModuleTestBase, self).setUp(*args, **kwargs)
+        self.program_manager = TestProgramManager(self.client, self.program, self.teachers, self.rooms, self.timeslots)
 
         # Set the section durations to 1:50
         for sec in self.program.sections():
@@ -56,7 +58,6 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         #some useful urls
         self.ajax_url_base = '/manage/%s/' % self.program.getUrlBase()
         self.changelog_url = self.ajax_url_base + 'ajax_change_log'    
-        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'     
 
 
     def loginAdmin(self):
@@ -78,47 +79,6 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         self.emptySchedule()
         self.loginAdmin()
         self.forceAvailability()
-
-
-    def getClassToSchedule(self, section=None, teacher=None, timeslots=None, rooms=None):
-        if section == None:
-            if teacher == None:
-                teacher = self.teachers[0]
-            section = teacher.getTaughtSections(self.program)[0]
-
-        if rooms == None:
-            rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
-
-        if timeslots == None:
-            timeslots = self.program.getTimeSlots().order_by('start')       
-        
-        return (section, timeslots, rooms)
-
-    #schedule class, 
-    #NO guarantee that it's a class that hasn't been scheduled yet
-    #return a tuple (section, times, rooms)
-    def scheduleClass(self, section=None, teacher=None, timeslots=None, rooms=None, shouldFail=False):
-        #choose section, times, and rooms
-        (section, timeslots, rooms) = self.getClassToSchedule(section=section, teacher=teacher, timeslots=timeslots, rooms=rooms)
-
-        #schedule the class
-        blocks = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
-        response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks})
-        assert response.status_code == 200
-
-        #make sure the scheduling had the expected result
-        success = json.loads(response.content)['ret']
-        if not shouldFail:
-            self.failUnless(success, "Class not successfully scheduled: " + response.content)                
-        else:
-            self.failIf(success, "Class successfully scheduled, which we didn't expect.") 
-        
-        #return information about the class we tried to schedule
-        return (section, timeslots, rooms)
-
-    def unschedule_class(self, section_id):
-        resp = self.client.post(self.schedule_class_url, {'action': 'deletereg', 'cls': section_id})
-        assert resp.status_code == 200 #successful deleting of class
         
 class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):        
 
@@ -236,7 +196,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.clearScheduleAvailability()
 
         #put something in the changelog to fetch
-        self.scheduleClass()
+        self.program_manager.scheduleClass()
 
         #fetch the changelog
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 0 })
@@ -247,7 +207,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     #TODO use a new program for each test
     def testChangeLogIndexZero(self):
         self.clearScheduleAvailability()
-        self.scheduleClass()
+        self.program_manager.scheduleClass()
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 0 })        
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
@@ -255,9 +215,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
     def testChangeLogUnscheduledClasses(self):
         self.clearScheduleAvailability()
-        (section, times, rooms) = self.scheduleClass()
 
-        self.unschedule_class(section.id)
+        (section, times, rooms, success) = self.program_manager.scheduleClass()
+        self.failUnless(success)
+
+        self.program_manager.unschedule_class(section.id)
 
         #change log should include unscheduled classes 
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
@@ -268,7 +230,8 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     def testChangeLogFailedScheduling(self):
         #change log should not include failed scheduling of classes
         self.clearScheduleAvailability()
-        (s1, times, rooms) = self.scheduleClass()
+        (s1, times, rooms, success) = self.program_manager.scheduleClass()
+        self.failUnless(success)
 
         #Long setup to create an unsuccessful scheduling attempt
         #choose another section taught by the same teacher
@@ -278,7 +241,8 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #our test set up makes this true, but we want to be notiafied if this changes and tests are going to break because of it
         s2 = sections[0]
         #schedule it
-        self.scheduleClass(section=s2, timeslots=times, rooms=rooms, shouldFail=True)
+        (section, times, rooms, success) = self.program_manager.scheduleClass(section=s2, timeslots=times, rooms=rooms)
+        self.failIf(success)
 
         #change log should not include it
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
