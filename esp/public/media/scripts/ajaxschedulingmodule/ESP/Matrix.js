@@ -102,13 +102,21 @@ function Matrix(
     }
 
     this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
+	var old_assignment = this.schedule_assignments[section.id];
+
+	if(
+	    old_assignment.room_name == room_name &&
+	    JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
+	){
+	    return;
+	}
+
 	for(timeslot_index in schedule_timeslots){
 	    var timeslot_id = schedule_timeslots[timeslot_index];
 	    this.getCell(room_name, timeslot_id).addSection(section);
 	}
 
 	//Unschedule from old place
-	var old_assignment = this.schedule_assignments[section.id];
 	for (timeslot_index in old_assignment.timeslots) {
 	    var timeslot_id = old_assignment.timeslots[timeslot_index];
 	    var cell = this.getCell(old_assignment.room_name, timeslot_id);
@@ -150,8 +158,33 @@ function Matrix(
 	$j("body").trigger("schedule-changed");
     };
 
+    //changelog fetching
+    this.last_applied_index = 0
+
     this.clearCell = function(cell){
 	cell.removeSection();
+    };
+
+    this.pollForChanges = function(){
+	//TODO: configurable interval
+	setInterval(this.getChanges.bind(this), 5000)
+    };
+
+    this.getChanges = function(){
+	this.api_client.get_change_log(this.last_applied_index, this.applyChangeLog.bind(this))
+    };
+
+    this.applyChangeLog = function(data){
+	//TODO: allow unscheduling sections
+	$j.each(data.changelog, function(id, change){
+	    var section = this.sections[change.id]
+	    if (change.timeslots.length == 0){
+		this.unscheduleSectionLocal(section)
+	    } else {
+		this.scheduleSectionLocal(section, change.room_name, change.timeslots)
+	    }
+	    this.last_applied_index = change.index
+	}.bind(this))
     };
 
     // render
@@ -163,7 +196,7 @@ function Matrix(
 	$j("<th/>").appendTo(header_row);
 	$j.each(timeslots, function(id, timeslot){
 	    $j("<th>" + timeslot.label + "</th>").appendTo(header_row);
-	})
+	});
 
 	//Room headers
 	var rows = {};	//table rows by room name
@@ -180,7 +213,7 @@ function Matrix(
 	    for(i = 0; i < Object.keys(timeslots).length; i++){
 		cells[id][i].el.appendTo(row);
 	    }
-	})
+	});
 	table.appendTo(this.el);
     };
 };

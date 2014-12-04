@@ -127,6 +127,18 @@ describe("Matrix", function(){
 	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_1().id});
 	});
 
+	describe("when the class is already scheduled in the same spot", function(){
+	    beforeEach(function(){
+		m.scheduleSectionLocal(section_2(), "room-2", [1,2]);
+	    })
+
+	    it("doesn't change anything when the assignment is the same as the old one", function(){
+		m.scheduleSectionLocal(section_2(), "room-2", [1,2]);
+
+		expect(m.getCell("room-2", 1).section).toEqual(section_2());
+	    })
+	})
+
 	it("fires a schedule-changed event", function(){
 	    var event_fired = false;
 	    $j("body").on("schedule-changed", function(){
@@ -178,6 +190,72 @@ describe("Matrix", function(){
 	    expect(cell.removeSection).toHaveBeenCalled();
 	});
     });
+
+    describe("change log stuff", function() {
+	var changelog_entry = {
+	    id: 3538,
+	    index: 2,
+	    room_name: "room-2",
+	    timeslots: [ "1", "2" ],
+	}
+	var changelog = {
+	    changelog: [changelog_entry]
+	}
+
+	describe("getChanges", function(){
+	    it("calls the API client", function(){
+		spyOn(m.api_client, "get_change_log")
+		m.getChanges()
+
+		expect(m.api_client.get_change_log).toHaveBeenCalled()
+		//TODO: assert on the parameters
+	    })
+	})
+
+	describe("applyChangeLog", function(){
+	    it("schedules the class locally", function(){
+		spyOn(m, "scheduleSectionLocal")
+		m.applyChangeLog(changelog)
+		expect(m.scheduleSectionLocal).toHaveBeenCalled()
+
+		var args = m.scheduleSectionLocal.argsForCall[0];
+		expect(args[0]).toEqual(section_2());
+		expect(args[1]).toEqual("room-2");
+		expect(args[2]).toEqual(["1", "2"]);
+	    })
+
+	    describe("when the changelog includes an unschedule request", function(){
+		var unschedule_changelog_entry = {
+		    timeslots: [],
+		    room_name: "",
+		    id: 3329,
+		    index: 2,
+		}
+
+		it("unschedules the class locally", function(){
+		    spyOn(m, "unscheduleSectionLocal")
+		    m.applyChangeLog({changelog: [unschedule_changelog_entry]})
+		    expect(m.unscheduleSectionLocal).toHaveBeenCalled()
+
+		    var args = m.unscheduleSectionLocal.argsForCall[0]
+		    expect(args[0]).toEqual(section_1())
+		})
+	    })
+
+	    it("updates the last fetched number", function(){
+		m.applyChangeLog( { changelog: [ changelog_entry ] })
+		expect(m.last_applied_index).toEqual(2);
+		// TODO: test with multiple entries
+	    })
+	    //TODO: multiple classes
+
+	    it("unschedules classes", function(){
+		//TODO
+	    })
+	})
+    })
+
+
 
     describe("render", function(){
 	beforeEach(function(){

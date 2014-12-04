@@ -1,4 +1,15 @@
 function ApiClient() {
+    //TODO: also take an error reporter
+    this.get_change_log = function(last_fetched_index, callback){
+	$j.getJSON(
+	    'ajax_change_log',
+	    { 'last_fetched_index': last_fetched_index })
+	.success(function(ajax_data, status) {
+	    callback(ajax_data)
+	    //TODO: test this line
+	})
+    }
+
     this.schedule_section = function(section_id, timeslot_ids, room_name, callback, errorReporter){
 	assignments = timeslot_ids.map(function(id) {
 	    return id + "," + room_name;

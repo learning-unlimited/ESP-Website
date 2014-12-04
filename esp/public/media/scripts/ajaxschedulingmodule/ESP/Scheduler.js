@@ -13,5 +13,6 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
     this.render = function(){
 	this.directory.render();
 	this.matrix.render();
+	this.matrix.pollForChanges();
     };
 };

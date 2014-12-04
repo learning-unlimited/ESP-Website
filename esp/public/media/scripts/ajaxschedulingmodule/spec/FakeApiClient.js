@@ -8,6 +8,11 @@ function FakeApiClient() {
 	callback();
 	return true;
     };
+
+    this.get_change_log = function(index, callback){
+	console.log("hi i'm here")
+	callback();
+    };
 };
 
 function FakeFailingApiClient() {
