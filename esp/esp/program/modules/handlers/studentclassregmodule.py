@@ -152,17 +152,14 @@ class StudentClassRegModule(ProgramModuleObj):
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         SubjPar = Q(studentsubjectinterest__subject__parent_program=self.program)
         SubjUnexpired = nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
-        GoodReg = (SubjPar & SubjUnexpired)
-        # Test = Q(studentregistration__isnull = False)
-        # SubjTest = Q(studentsubjectinterest__isnull = False)
+        GoodReg = (SubjPar & SubjUnexpired) | (Par & Unexpired)
         
         if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser((SubjPar & SubjUnexpired))}
+            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(GoodReg)}
         else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': (ESPUser.objects.filter(GoodReg).distinct() | ESPUser.objects.filter(Par & Unexpired).distinct()).distinct()}
-        print ESPUser.objects.filter(Par & Unexpired).count()
-        print len(ESPUser.objects.filter(Par & Unexpired).distinct().union(ESPUser.objects.filter(SubjPar & SubjUnexpired).distinct()))
-        print ESPUser.objects.filter(SubjPar & SubjUnexpired).count()
+            # Yes, the definition for classreg is weird, but just putting in GoodReg gives an obviously false answer (i.e. less than putting in SubjPar & SubjUnexpired)..
+            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': (ESPUser.objects.filter(Par & Unexpired) | ESPUser.objects.filter(SubjPar & SubjUnexpired)).distinct()}
+        
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
