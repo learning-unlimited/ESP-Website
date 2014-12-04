@@ -345,7 +345,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 return self.makeret(prog, ret=False, msg=cannot_schedule)
             
             cls.assign_meeting_times(times)
-            status, errors = cls.assign_room(classroom)
+            status, errors = cls.assign_room(classroom, clear_others=True)
 
             if not status: # If we failed any of the scheduling-constraints checks in assign_room()
                 cls.clear_meeting_times()
