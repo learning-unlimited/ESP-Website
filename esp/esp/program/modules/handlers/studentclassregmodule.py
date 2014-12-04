@@ -152,13 +152,16 @@ class StudentClassRegModule(ProgramModuleObj):
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         SubjPar = Q(studentsubjectinterest__subject__parent_program=self.program)
         SubjUnexpired = nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
-        GoodReg = (SubjPar & SubjUnexpired) | (Par & Unexpired)
+        
+        # Force Django to generate two subqueries without joining SRs to SSIs
+        sr_ids = ESPUser.objects.filter(Par & Unexpired).distinct().values('id')
+        ssi_ids = ESPUser.objects.filter(SubjPar & SubjUnexpired).distinct().values('id')
+        GoodReg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
         
         if QObject:
             retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(GoodReg)}
         else:
-            # Yes, the definition for classreg is weird, but just putting in GoodReg gives an obviously false answer (i.e. less than putting in SubjPar & SubjUnexpired)..
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': (ESPUser.objects.filter(Par & Unexpired) | ESPUser.objects.filter(SubjPar & SubjUnexpired)).distinct()}
+            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(GoodReg).distinct()}
         
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
