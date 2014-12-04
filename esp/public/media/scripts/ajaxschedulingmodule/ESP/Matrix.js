@@ -145,17 +145,7 @@ function Matrix(
     };
 
     this.unscheduleSectionLocal = function(section) {
-	var assignment = this.schedule_assignments[section.id];
-
-	var timeslot_index;
-	for (timeslot_index in assignment.timeslots) {
-	    var cell = this.getCell(assignment.room_name, assignment.timeslots[timeslot_index]);
-	    this.clearCell(cell);
-	}
-
-	this.schedule_assignments[section.id] = { room_name: null, timeslots: [], id: section.id};
-
-	$j("body").trigger("schedule-changed");
+	this.scheduleSectionLocal(section, null, [])
     };
 
     //changelog fetching
