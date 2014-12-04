@@ -121,7 +121,7 @@ class SchedulingModule(ProgramModuleObj):
                             sec.clearRooms()
                         else:
                             new_room = Resource.objects.get(id=int(new_dict[key]))
-                            (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
+                            (status, errors) = sec.assign_room(new_room, clear_others=True)
                             if status is False:
                                 raise ESPError('Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors), log=False)
 
