@@ -1,0 +1,24 @@
+.scheduling-check {
+     border: 1px solid black;
+     padding: 10px;
+     margin: 10px;
+}
+
+.scheduling-check-title {
+     width: 100%;
+     text-align: center;
+}
+
+.scheduling-check-title span {
+     font-weight: bold;
+     font-size: 14px;
+}
+
+.refresh-button {
+     margin-left: auto;
+     float: right;
+}
+
+.placeholder {
+     text-align: center;
+}
