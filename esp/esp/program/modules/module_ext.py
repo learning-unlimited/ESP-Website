@@ -426,6 +426,8 @@ class AJAXChangeLogEntry(models.Model):
         super(AJAXChangeLogEntry, self).save(*args, **kwargs)
 
     def getTimeslots(self):
+        if self.timeslots == "":
+            return []
         return self.timeslots.split(',')
 
     def getUserName(self):
