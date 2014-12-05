@@ -18,5 +18,12 @@ describe("Scheduler", function(){
 	    expect(s.directory.render).toHaveBeenCalled();
 	    expect(s.matrix.render).toHaveBeenCalled();
 	});
+
+	it("starts the changelog fetcher", function(){
+	    spyOn(s.changelogFetcher, "pollForChanges")
+
+	    s.render()
+	    expect(s.changelogFetcher.pollForChanges).toHaveBeenCalled()
+	})
     });
 });

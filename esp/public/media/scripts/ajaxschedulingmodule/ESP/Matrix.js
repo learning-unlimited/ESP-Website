@@ -148,33 +148,8 @@ function Matrix(
 	this.scheduleSectionLocal(section, null, [])
     };
 
-    //changelog fetching
-    this.last_applied_index = 0
-
     this.clearCell = function(cell){
 	cell.removeSection();
-    };
-
-    this.pollForChanges = function(){
-	//TODO: configurable interval
-	setInterval(this.getChanges.bind(this), 5000)
-    };
-
-    this.getChanges = function(){
-	this.api_client.get_change_log(this.last_applied_index, this.applyChangeLog.bind(this))
-    };
-
-    this.applyChangeLog = function(data){
-	//TODO: allow unscheduling sections
-	$j.each(data.changelog, function(id, change){
-	    var section = this.sections[change.id]
-	    if (change.timeslots.length == 0){
-		this.unscheduleSectionLocal(section)
-	    } else {
-		this.scheduleSectionLocal(section, change.room_name, change.timeslots)
-	    }
-	    this.last_applied_index = change.index
-	}.bind(this))
     };
 
     // render

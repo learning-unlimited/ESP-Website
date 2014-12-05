@@ -9,10 +9,18 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
 	garbageEl,
 	new ApiClient()
     );
+    this.changelogFetcher = new ChangelogFetcher(
+	this.matrix,
+	new ApiClient(),
+	//TODO:  update to configurable values
+	10,
+	0,
+	data.sections
+    );
 
     this.render = function(){
 	this.directory.render();
 	this.matrix.render();
-	this.matrix.pollForChanges();
+	this.changelogFetcher.pollForChanges();
     };
 };
