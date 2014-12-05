@@ -610,7 +610,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list = []
         class_num_list.append(("Total # of Classes", classes.distinct().count()))
         class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).distinct().count()))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).distinct().count()))
