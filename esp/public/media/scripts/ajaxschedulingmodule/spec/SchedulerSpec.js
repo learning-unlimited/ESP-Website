@@ -2,13 +2,18 @@ describe("Scheduler", function(){
     var s;
 
     beforeEach(function(){
-	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"));
+	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"), 11);
     });
 
     it("should have a directory and a matrix", function(){
 	expect(s.directory).toBeDefined();
 	expect(s.matrix).toBeDefined();
     });
+
+    it("should have a changelogFetcher with the right initial index", function(){
+	expect(s.changelogFetcher).toBeDefined()
+	expect(s.changelogFetcher.last_applied_index).toEqual(11)
+    })
 
     describe("render", function(){
 	it("calls render on the directory and matrix",  function(){

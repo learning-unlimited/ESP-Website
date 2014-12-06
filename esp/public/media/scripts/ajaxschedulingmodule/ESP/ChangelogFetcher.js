@@ -4,7 +4,7 @@ function ChangelogFetcher(matrix, api_client, interval, start_index, sections){
     this.sections = sections
 
     //changelog fetching
-    this.last_applied_index = 0
+    this.last_applied_index = start_index
 
     this.pollForChanges = function(){
 	//TODO: configurable interval

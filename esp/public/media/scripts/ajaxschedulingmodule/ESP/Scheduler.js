@@ -1,4 +1,4 @@
-function Scheduler(data, directoryEl, matrixEl, garbageEl) {
+function Scheduler(data, directoryEl, matrixEl, garbageEl, last_applied_index) {
     this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments);
     this.matrix = new Matrix(
 	data.timeslots,
@@ -9,12 +9,13 @@ function Scheduler(data, directoryEl, matrixEl, garbageEl) {
 	garbageEl,
 	new ApiClient()
     );
+
     this.changelogFetcher = new ChangelogFetcher(
 	this.matrix,
 	new ApiClient(),
 	//TODO:  update to configurable values
 	10,
-	0,
+	last_applied_index,
 	data.sections
     );
 

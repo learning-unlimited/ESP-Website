@@ -1,5 +1,5 @@
 describe("ChangelogFetcher", function() {
-    var c = new ChangelogFetcher(new FakeMatrix(), new FakeApiClient(), 10000000000, 0, sections_fixture())
+    var c = new ChangelogFetcher(new FakeMatrix(), new FakeApiClient(), 10000000000, 32, sections_fixture())
 
     var changelog_entry = {
 	id: 3538,
@@ -18,6 +18,10 @@ describe("ChangelogFetcher", function() {
     var changelog = {
 	changelog: [changelog_entry, unschedule_changelog_entry]
     }
+
+    it("should set the last_applied_index", function(){
+	expect(c.last_applied_index).toEqual(32)
+    })
 
     describe("getChanges", function(){
 	it("calls the API client", function(){
