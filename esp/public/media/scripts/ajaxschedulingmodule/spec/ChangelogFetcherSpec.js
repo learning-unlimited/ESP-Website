@@ -1,5 +1,5 @@
 describe("ChangelogFetcher", function() {
-    var c = new ChangelogFetcher(new FakeMatrix(), new FakeApiClient(), 10000000000, 32, sections_fixture())
+    var c = new ChangelogFetcher(new FakeMatrix(), new FakeApiClient(), 10000000000, 32)
 
     var changelog_entry = {
 	id: 3538,
@@ -40,7 +40,7 @@ describe("ChangelogFetcher", function() {
 	    expect(c.matrix.scheduleSectionLocal).toHaveBeenCalled()
 
 	    var args = c.matrix.scheduleSectionLocal.argsForCall[0];
-	    expect(args[0]).toEqual(section_2());
+	    expect(args[0]).toEqual(section_2().id);
 	    expect(args[1]).toEqual("room-2");
 	    expect(args[2]).toEqual(["1", "2"]);
 	})
@@ -51,7 +51,7 @@ describe("ChangelogFetcher", function() {
 	    expect(c.matrix.unscheduleSectionLocal).toHaveBeenCalled()
 
 	    var args = c.matrix.unscheduleSectionLocal.argsForCall[0]
-	    expect(args[0]).toEqual(section_1())
+	    expect(args[0]).toEqual(section_1().id)
 	})
 
 	it("updates the last fetched number", function(){

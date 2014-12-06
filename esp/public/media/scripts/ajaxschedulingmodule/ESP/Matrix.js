@@ -81,7 +81,9 @@ function Matrix(
     };
 
     // scheduling sections
-    this.scheduleSection = function(section, room_name, first_timeslot_id){
+    this.scheduleSection = function(section_id, room_name, first_timeslot_id){
+	section = this.sections[section_id]
+
 	schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id);
 	if (!this.validateAssignment(section, room_name, schedule_timeslots)){
 	    return;
@@ -89,11 +91,10 @@ function Matrix(
 
 	this.api_client.schedule_section(
 	    section.id,
-	    //TODO: schedule_timeslots instead of first_timeslot_id
 	    schedule_timeslots,
 	    room_name, 
 	    function() {
-		this.scheduleSectionLocal(section, room_name, schedule_timeslots);
+		this.scheduleSectionLocal(section_id, room_name, schedule_timeslots);
 	    }.bind(this),
 	    function(msg) {
 		console.log(msg);
@@ -101,8 +102,9 @@ function Matrix(
 	);
     }
 
-    this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
-	var old_assignment = this.schedule_assignments[section.id];
+    this.scheduleSectionLocal = function(section_id, room_name, schedule_timeslots){
+	var old_assignment = this.schedule_assignments[section_id];
+	var section = this.sections[section_id];
 
 	if(
 	    old_assignment.room_name == room_name &&
@@ -132,11 +134,11 @@ function Matrix(
 	$j("body").trigger("schedule-changed");
     }
 
-    this.unscheduleSection = function(section){
+    this.unscheduleSection = function(section_id){
 	this.api_client.unschedule_section(
-	    section.id, 
+	    section_id,
 	    function(){ 
-		this.unscheduleSectionLocal(section);
+		this.unscheduleSectionLocal(section_id);
 	    }.bind(this),
 	    function(msg){
 		console.log(msg);
@@ -144,8 +146,8 @@ function Matrix(
 	);
     };
 
-    this.unscheduleSectionLocal = function(section) {
-	this.scheduleSectionLocal(section, null, [])
+    this.unscheduleSectionLocal = function(section_id) {
+	this.scheduleSectionLocal(section_id, null, [])
     };
 
     this.clearCell = function(cell){

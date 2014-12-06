@@ -46,7 +46,7 @@ describe("Matrix", function(){
     describe("validateAssignment", function(){
 	describe("when a class is already scheduled in a room", function(){
 	    beforeEach(function(){
-		m.scheduleSection(section_1(), "room-2", 2);
+		m.scheduleSection(section_1().id, "room-2", 2);
 	    });
 	    
 	    it("returns false", function(){
@@ -72,7 +72,7 @@ describe("Matrix", function(){
 	    it("calls out to the api", function() {
 		spyOn(m.api_client, 'schedule_section');
 		spyOn(m, 'validateAssignment').andReturn(true);
-		m.scheduleSection(section_1(), "room-2", 1);
+		m.scheduleSection(section_1().id, "room-2", 1);
 		expect(m.api_client.schedule_section).toHaveBeenCalled();
 		
 		var args = m.api_client.schedule_section.argsForCall[0];
@@ -86,7 +86,7 @@ describe("Matrix", function(){
 	    it("calls out to the api", function() {
 		spyOn(m.api_client, 'schedule_section');
 		spyOn(m, 'validateAssignment').andReturn(false);
-		m.scheduleSection(section_2(), "room-2", 1);
+		m.scheduleSection(section_2().id, "room-2", 1);
 		expect(m.api_client.schedule_section).not.toHaveBeenCalled();
 	    });
 	});
@@ -95,7 +95,7 @@ describe("Matrix", function(){
     describe("unscheduleSection", function(){
 	it("calls out to the api", function() {
 	    spyOn(m.api_client, 'unschedule_section');
-	    m.unscheduleSection(section_2());
+	    m.unscheduleSection(section_2().id);
 	    expect(m.api_client.unschedule_section).toHaveBeenCalled();
 	    
 	    var args = m.api_client.unschedule_section.argsForCall[0];
@@ -110,7 +110,7 @@ describe("Matrix", function(){
 	    var cell2 = m.getCell("room-2", 2);
 	    spyOn(cell1, 'addSection');
 	    spyOn(cell2, 'addSection');
-	    m.scheduleSectionLocal(section_2(), "room-2", [1,2]);
+	    m.scheduleSectionLocal(section_2().id, "room-2", [1,2]);
 	    expect(cell1.addSection).toHaveBeenCalledWith(section_2());
 	    expect(cell2.addSection).toHaveBeenCalledWith(section_2());
 	    expect(m.schedule_assignments[section_2().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_2().id});
@@ -121,7 +121,7 @@ describe("Matrix", function(){
 	    var cell2 = m.getCell("room-1", 2);
 	    spyOn(cell1, 'removeSection');
 	    spyOn(cell2, 'removeSection');
-	    m.scheduleSectionLocal(section_1(), "room-2", [1,2]);
+	    m.scheduleSectionLocal(section_1().id, "room-2", [1,2]);
 	    expect(cell1.removeSection).toHaveBeenCalled();
 	    expect(cell2.removeSection).toHaveBeenCalled();
 	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-2", timeslots: [1, 2], id: section_1().id});
@@ -129,11 +129,11 @@ describe("Matrix", function(){
 
 	describe("when the class is already scheduled in the same spot", function(){
 	    beforeEach(function(){
-		m.scheduleSectionLocal(section_2(), "room-2", [1,2]);
+		m.scheduleSectionLocal(section_2().id, "room-2", [1,2]);
 	    })
 
 	    it("doesn't change anything when the assignment is the same as the old one", function(){
-		m.scheduleSectionLocal(section_2(), "room-2", [1,2]);
+		m.scheduleSectionLocal(section_2().id, "room-2", [1,2]);
 
 		expect(m.getCell("room-2", 1).section).toEqual(section_2());
 	    })
@@ -144,7 +144,7 @@ describe("Matrix", function(){
 	    $j("body").on("schedule-changed", function(){
 		event_fired = true;
 	    })
-	    m.scheduleSection(section_2(), "room-2", 1);
+	    m.scheduleSection(section_2().id, "room-2", 1);
 	    expect(event_fired).toBeTrue();
 	});
 
@@ -156,11 +156,11 @@ describe("Matrix", function(){
 
     describe("unscheduleSectionLocal", function(){
 	it("removes the class from the matrix", function(){
-	    m.scheduleSection(section_2(), "room-2", 1);
+	    m.scheduleSection(section_2().id, "room-2", 1);
 
 	    expect(m.getCell("room-2", 1).section).toEqual(section_2());
 	    expect(m.getCell("room-2", 2).section).toEqual(section_2());
-	    m.unscheduleSectionLocal(section_2());
+	    m.unscheduleSectionLocal(section_2().id);
 	    expect(m.getCell("room-2", 1).section).not.toEqual(section_2());
 	    expect(m.getCell("room-2", 2).section).not.toEqual(section_2());
 	});
@@ -170,13 +170,13 @@ describe("Matrix", function(){
 	    $j("body").on("schedule-changed", function(){
 		event_fired = true;
 	    })
-	    m.unscheduleSectionLocal(section_1());
+	    m.unscheduleSectionLocal(section_1().id);
 	    expect(event_fired).toBeTrue();
 	});
 
 	it("modifies the schedule_assignments data structure", function(){
 	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: "room-1", timeslots: [1,2], id: section_1().id});
-	    m.unscheduleSectionLocal(section_1());
+	    m.unscheduleSectionLocal(section_1().id);
 	    expect(m.schedule_assignments[section_1().id]).toEqual({room_name: null, timeslots: [], id: section_1().id});
 	});
     });
