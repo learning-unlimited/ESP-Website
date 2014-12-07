@@ -12,13 +12,15 @@ table,th,td
     text-align: center;
 }
 
-.available-cell{
+.disabled-cell{
     background: #222222;
+}
+
+.available-cell{
     opacity: 0.35
 }
 
 .occupied-cell{
-    background:  violet;
 }
 
 .component-div {

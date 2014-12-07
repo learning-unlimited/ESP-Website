@@ -43,6 +43,29 @@ describe("Matrix", function(){
 	});
     });
 
+    describe("when a room doesn't exist for some times", function(){
+	beforeEach(function(){
+	    var modified_room_fixture = room_fixture()
+	    modified_room_fixture["room-2"].availability = [2]
+
+	    m = new Matrix(
+		time_fixture(),
+		modified_room_fixture,
+		schedule_assignments_fixture(),
+		sections_fixture(),
+		$j("<div/>"), $j("<div/>"),
+		new FakeApiClient());
+	})
+
+	it("should have disabled cells around it", function(){
+	    expect(m.getCell("room-1", 1).disabled).toBeFalse();
+	    expect(m.getCell("room-2", 1).disabled).toBeTrue();
+	    expect(m.getCell("room-1", 2).disabled).toBeFalse();
+	    expect(m.getCell("room-2", 2).disabled).toBeFalse();
+	});
+
+    });
+
     describe("validateAssignment", function(){
 	describe("when a class is already scheduled in a room", function(){
 	    beforeEach(function(){

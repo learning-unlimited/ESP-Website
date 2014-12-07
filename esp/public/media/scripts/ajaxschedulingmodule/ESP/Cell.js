@@ -4,6 +4,7 @@ function Cell(el, section, room_name, timeslot_id) {
     this.cellColors = new CellColors();
     this.room_name = room_name;
     this.timeslot_id = timeslot_id;
+    this.disabled = false; // for tests
 
     this.dragHelper = function(){
 	var div = $j("<div/>");
@@ -75,4 +76,15 @@ function Cell(el, section, room_name, timeslot_id) {
     };
 
     this.init(section);
+}
+
+function DisabledCell(el) {
+    this.el = el;
+    this.disabled = true;
+    this.init = function(new_section){
+	this.el.addClass("matrix-cell");
+	this.el.addClass("disabled-cell");
+    };
+
+    this.init();
 }

@@ -53,8 +53,12 @@ function time_fixture_out_of_order() {
 
 function room_fixture() {
     return {
-	"room-1": {},
-	"room-2": {}
+	"room-1": {
+	    availability: [1, 2]
+	},
+	"room-2": {
+	    availability: [1, 2]
+	}
     };
 };
 

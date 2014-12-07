@@ -47,7 +47,11 @@ function Matrix(
 	    i = 0;
 	    $j.each(timeslots, function(timeslot_id_string, timeslot){
 		var timeslot_id = parseInt(timeslot_id_string);
-		cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id);
+		if (room.availability.indexOf(timeslot_id) >= 0){
+		    cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id);
+		} else {
+		    cells[room_name][i] = new DisabledCell($j("<td/>"))
+		}
 		i = i + 1;
 	    });
 	});
