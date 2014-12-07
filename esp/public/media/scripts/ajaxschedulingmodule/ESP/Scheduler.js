@@ -20,10 +20,7 @@ function Scheduler(
     this.changelogFetcher = new ChangelogFetcher(
 	this.matrix,
 	new ApiClient(),
-	//TODO:  update to configurable values
-	10,
-	last_applied_index,
-	data.sections
+	last_applied_index
     );
 
     this.render = function(){

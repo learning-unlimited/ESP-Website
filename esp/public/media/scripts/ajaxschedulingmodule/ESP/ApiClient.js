@@ -1,5 +1,4 @@
 function ApiClient() {
-    //TODO: also take an error reporter
     this.get_change_log = function(last_fetched_index, callback, errorReporter){
 	$j.getJSON(
 	    'ajax_change_log',
