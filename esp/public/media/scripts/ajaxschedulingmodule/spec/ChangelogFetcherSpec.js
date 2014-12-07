@@ -33,6 +33,17 @@ describe("ChangelogFetcher", function() {
 	})
     })
 
+    describe("pollForChanges", function(){
+	it("sets an interval", function(){
+	    spyOn(window, "setInterval");
+	    c.pollForChanges(1234567)
+
+	    expect(window.setInterval).toHaveBeenCalled()
+	    args = window.setInterval.argsForCall[0]
+	    expect(args[1]).toEqual(1234567)
+	})
+    })
+
     describe("applyChangeLog", function(){
 	it("schedules the classes locally", function(){
 	    spyOn(c.matrix, "scheduleSectionLocal")

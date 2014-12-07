@@ -5,9 +5,8 @@ function ChangelogFetcher(matrix, api_client, interval, start_index){
     //changelog fetching
     this.last_applied_index = start_index
 
-    this.pollForChanges = function(){
-	//TODO: configurable interval
-	setInterval(this.getChanges.bind(this), 5000)
+    this.pollForChanges = function(interval){
+	window.setInterval(this.getChanges.bind(this), interval)
     };
 
     this.getChanges = function(){

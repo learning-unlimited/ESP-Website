@@ -2,7 +2,7 @@ describe("Scheduler", function(){
     var s;
 
     beforeEach(function(){
-	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"), 11);
+	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"), 11, 12345678);
     });
 
     it("should have a directory and a matrix", function(){
@@ -29,6 +29,9 @@ describe("Scheduler", function(){
 
 	    s.render()
 	    expect(s.changelogFetcher.pollForChanges).toHaveBeenCalled()
+
+	    args = s.changelogFetcher.pollForChanges.argsForCall[0]
+	    expect(args[0]).toEqual(12345678)
 	})
     });
 });
