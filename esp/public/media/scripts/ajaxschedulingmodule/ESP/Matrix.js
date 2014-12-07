@@ -20,14 +20,14 @@ function Matrix(
 
     // garbage stuff
     this.garbageDropHandler = function(ev, ui){
-	this.unscheduleSection(ui.draggable.data("section"));
+	this.unscheduleSection(ui.draggable.data("section").id);
     }.bind(this);
 
     // set up drophandler
     this.dropHandler = function(el, ui){
 	var cell = $j(el.currentTarget).data("cell");
 	var section = ui.draggable.data("section");
-	this.scheduleSection(section, cell.room_name, cell.timeslot_id);
+	this.scheduleSection(section.id, cell.room_name, cell.timeslot_id);
     }.bind(this);
 
     this.init = function(){
