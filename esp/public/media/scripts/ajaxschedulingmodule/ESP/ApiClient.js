@@ -1,13 +1,15 @@
 function ApiClient() {
     //TODO: also take an error reporter
-    this.get_change_log = function(last_fetched_index, callback){
+    this.get_change_log = function(last_fetched_index, callback, errorReporter){
 	$j.getJSON(
 	    'ajax_change_log',
 	    { 'last_fetched_index': last_fetched_index })
 	.success(function(ajax_data, status) {
-	    callback(ajax_data)
-	    //TODO: test this line
+	    callback(ajax_data);
 	})
+	.error(function(ajax_data, status) {
+	    errorReporter("An error occurred fetching the changelog.");
+	});
     }
 
     this.schedule_section = function(section_id, timeslot_ids, room_name, callback, errorReporter){
@@ -48,7 +50,6 @@ function ApiClient() {
 	.error(function(ajax_data, status) {
 	    console.log("error");
 	    errorReporter("An error occurred saving the schedule change.");
-	    return false
 	});
     };
 }

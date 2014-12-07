@@ -125,4 +125,45 @@ describe("ApiClient", function(){
 	    });
 	});
     });
+
+    describe("get_change_log", function(){
+	var request, callback, errorReporter;
+
+	beforeEach(function(){
+	    jasmine.Ajax.useMock();
+	    callback = jasmine.createSpy('callback');
+	    errorReporter = jasmine.createSpy('errorReporter');
+
+	    a.get_change_log(0, callback, errorReporter);
+	    request = mostRecentAjaxRequest();
+	});
+
+	describe("when there is an error", function(){
+	    beforeEach(function(){
+		request.response({
+		    status: 500,
+		    responseText: 'an error has occurred'
+		});
+	    });
+
+	    it("does not execute the callback", function(){
+		expect(callback).not.toHaveBeenCalled();
+		expect(errorReporter).toHaveBeenCalledWith("An error occurred fetching the changelog.");
+	    });
+	});
+
+	describe("when the request comes back with success", function(){
+	    beforeEach(function(){
+		request.response({
+		    status: 200,
+		    responseText: '{"changelog":[], "other":[]}'
+		});
+	    });
+
+	    it("executes the callback", function(){
+		expect(callback).toHaveBeenCalled();
+		expect(errorReporter).not.toHaveBeenCalled();
+	    });
+	});
+    });
 });

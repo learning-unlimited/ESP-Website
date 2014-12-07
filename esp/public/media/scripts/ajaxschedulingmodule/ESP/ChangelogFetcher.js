@@ -11,7 +11,13 @@ function ChangelogFetcher(matrix, api_client, interval, start_index){
     };
 
     this.getChanges = function(){
-	this.api_client.get_change_log(this.last_applied_index, this.applyChangeLog.bind(this))
+	this.api_client.get_change_log(
+	    this.last_applied_index,
+	    this.applyChangeLog.bind(this),
+	    function(msg) {
+		console.log(msg);
+	    }
+	)
     };
 
     this.applyChangeLog = function(data){
