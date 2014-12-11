@@ -1018,6 +1018,7 @@ class ClassSection(models.Model):
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students(student_verbs)
+        context['class_cancellation_body'] = render_to_string('email/class_cancellation_body.txt', context)
         email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
         if email_students:
             email_content = render_to_string('email/class_cancellation.txt', context)
