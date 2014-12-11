@@ -903,11 +903,16 @@ are a teacher of the class"""
 
     @staticmethod
     def current_schoolyear(program=None):
-        if program == None:
-            now = date.today()
+        if program is not None:
+            schoolyear = Tag.getProgramTag('schoolyear', program)
+            if schoolyear is not None:
+                # tag override
+                return int(schoolyear)
+            else:
+                # "now" is actually whenever the program ran or will run
+                now = program.dates()[0]
         else:
-            # "now" is actually whenever the program ran or will run
-            now = program.dates()[0]
+            now = date.today()
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
