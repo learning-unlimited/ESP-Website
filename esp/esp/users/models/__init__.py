@@ -923,6 +923,8 @@ are a teacher of the class"""
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
+        if program is not None:
+            schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
 
     @cache_function
@@ -937,8 +939,6 @@ are a teacher of the class"""
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
-                    if program:
-                        grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
 
         return grade
     #   The cache will need to be cleared once per academic year.
