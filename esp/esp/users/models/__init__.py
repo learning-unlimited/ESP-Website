@@ -902,6 +902,7 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
+    @cache_function
     def current_schoolyear(program=None):
         if program is not None:
             schoolyear = Tag.getProgramTag('schoolyear', program)
@@ -926,6 +927,8 @@ are a teacher of the class"""
         if program is not None:
             schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
+    #   The cache will need to be cleared once per academic year.
+    current_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
 
     @cache_function
     def getGrade(self, program = None):
