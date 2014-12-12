@@ -931,8 +931,7 @@ are a teacher of the class"""
     current_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
 
     @cache_function
-    def getGrade(self, program = None):
-        grade = 0
+    def getYOG(self, program = None):
         if self.isStudent():
             if program is None:
                 regProf = self.getLastProfile()
@@ -941,12 +940,19 @@ are a teacher of the class"""
                 regProf = RegistrationProfile.getLastForProgram(self,program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
+                    return regProf.student_info.graduation_year
+        return None
+    getYOG.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
+    @cache_function
+    def getGrade(self, program = None):
+        grade = 0
+        yog = self.getYOG(program)
+        if yog is not None:
+            grade = ESPUser.gradeFromYOG(yog, ESPUser.current_schoolyear(program))
         return grade
-    #   The cache will need to be cleared once per academic year.
-    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
-    getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
+    getGrade.depend_on_cache(getYOG, lambda self=wildcard, program=wildcard, **kwargs: {'self': self, 'program': program})
+    getGrade.depend_on_cache(current_schoolyear.__func__, lambda self=wildcard, **kwargs: {'program': self})
 
     @staticmethod
     def gradeFromYOG(yog, schoolyear=None):
