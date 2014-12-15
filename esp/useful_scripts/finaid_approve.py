@@ -4,7 +4,7 @@
 # 
 # Approves not-yet-approved requests where both answers are non-blank/None/whitespace
 # and prints the email address of these users to the screen. Make sure to configure
-# PROGRAM_ID and (in dollars) below.
+# PROGRAM_ID below.
 #
 
 from script_setup import *
