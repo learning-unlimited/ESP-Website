@@ -102,17 +102,10 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
     else:
         section = None
 
-    #   Add ajax_addclass to prereg_url if registering from catalog is allowed
-    ajax_prereg_url = None
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
 
     #   Ensure cached catalog shows buttons and fillslots don't
-    # NOTE: I believe that this is deprecated; it isn't referred to anywhere. 
-    # Which means that scrmi.register_from_catalog is currently useless.
-    # This should be fixed. -jmoldow 11/06/2011
-    if scrmi.register_from_catalog and not timeslot:
-        ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     prereg_url = None
     if not (crmi.open_class_registration and cls.category == cls.parent_program.open_class_category):
@@ -127,7 +120,6 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'section':    section,
             'user':       user,
             'prereg_url': prereg_url,
-            'ajax_prereg_url': ajax_prereg_url,
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class,
