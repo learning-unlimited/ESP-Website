@@ -18,14 +18,13 @@ from esp.program.models import FinancialAidRequest
 PROGRAM = "Splash 2014"
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM).exclude(done=False)
+reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
 tagged_reqs = {}
 
 print "Auto-Approved Requests"
 
 for req in reqs:
-    if not req.financialaidgrant_set.count():
-        print "  Skipping %s, request never approved" % req.user.username
+    if not req.approved:
         continue
     date = min(x['timestamp'].date() for x in req.financialaidgrant_set.values())
     lst = tagged_reqs.get(date, [])

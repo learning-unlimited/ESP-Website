@@ -20,17 +20,20 @@ PROGRAM = "Splash 2014"
 
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(done = False, program__name=PROGRAM).exclude(household_income = None, extra_explaination = None)
+reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
 
 print "New Approvals:"
 approved_any = False
 
+def is_blank(x):
+    return x is None or re.match(r'^(\s)*$', x)
+
 for req in reqs:
-    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
-        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+    if is_blank(req.household_income) and is_blank(req.extra_explaination):
         continue
 
-    if req.financialaidgrant_set.all().count() != 0 : continue
+    if req.approved:
+        continue
 
     print req.user.email
     try:
