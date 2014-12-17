@@ -17,7 +17,7 @@ for student in students:
 
 schools = school_dict.keys()
 def school_key(school):
-    if type(school) == str:
+    if isinstance(school, basestring):
         return school.lower()
     else:
         return 'N/A'

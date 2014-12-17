@@ -43,16 +43,14 @@ from django.conf import settings
 from esp.middleware import ESPError
 
 from esp.cache.queued import WithDelayableMethods, delay_method
-from esp.cache.marinade import normalize_args
-from esp.cache.function import describe_func, get_uid
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import specifies_key, token_list_for
-from esp.cache.registry import cache_by_uid, register_cache
+from esp.cache.marinade import marinade_dish
+from esp.cache.registry import register_cache
 from esp.cache.sad_face import warn_if_loaded
+from esp.cache.signals import cache_deleted
 
-__all__ = ['ArgCache', 'ArgCacheDecorator', 'cache_function']
-
-_delete_signal = Signal(providing_args=['key_set'])
+__all__ = ['ArgCache']
 
 # XXX: For now, all functions must have known arity. No *args or
 # **kwargs are allowed, but optional arguments are fine. This is done to
@@ -148,13 +146,6 @@ _delete_signal = Signal(providing_args=['key_set'])
 # more general tokens thing, which more-or-less depends on async caching
 
 
-class ParametrizedSingleton(type):
-    def __call__(cls, *args, **kwargs):
-        existing = cls.check_for_instance(*args, **kwargs)
-        if existing:
-            return existing
-        return super(ParametrizedSingleton, cls).__call__(*args, **kwargs)
-
 # XXX: This system cannot thunk functions!!!  We should do some other silly
 # thing, but I really don't want the syntax complicated.
 def handle_thunk(obj):
@@ -166,32 +157,15 @@ def handle_thunk(obj):
 class ArgCache(WithDelayableMethods):
     """ Implements a cache that allows for selectively dropping bits of itself. """
 
-    __metaclass__ = ParametrizedSingleton
     CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
 
-    @staticmethod
-    def check_for_instance(name, params, uid=None, *args, **kwargs):
-        """ Protect against stupid Django/Python multiple imports."""
-        if uid is None:
-            uid = name
-        existing = cache_by_uid(uid)
-        if existing:
-            if tuple(existing.params) != tuple(params):
-                raise ESPError("Cache %s already exists with different parameters." % name)
-            # Don't duplicate dependencies
-            existing.locked = True
-        return existing
-
-    def __init__(self, name, params, uid=None, cache=cache, timeout_seconds=None, *args, **kwargs):
-        if uid is None:
-            uid = name
+    def __init__(self, name, params, cache=cache, timeout_seconds=None, *args, **kwargs):
         super(ArgCache, self).__init__(*args, **kwargs)
 
         if isinstance(params, list):
             params = tuple(params)
         self.name = name
         self.params = params
-        self.uid = uid
         self.cache = cache
         self.timeout_seconds = timeout_seconds
         self.tokens = []
@@ -250,11 +224,11 @@ class ArgCache(WithDelayableMethods):
     # insurance, _delete_signal is not a member of ArgCache. :-D
     def connect(self, handler):
         """ Connect handler to this cache's delete signal. """
-        _delete_signal.connect(handler, sender=self, weak=False) # local functions will be used a lot, so no weak refs
+        cache_deleted.connect(handler, sender=self, weak=False) # local functions will be used a lot, so no weak refs
     connect.alters_data = True
     def send(self, key_set):
         """ Internal: Send the signal. """
-        _delete_signal.send(sender=self, key_set=key_set)
+        cache_deleted.send(sender=self, key_set=key_set)
     send.alters_data = True
 
     def index_of_param(self, param):
@@ -273,7 +247,6 @@ class ArgCache(WithDelayableMethods):
 
     def key(self, arg_list):
         """ Returns a cache key, given a list of arguments. """
-        from esp.cache.marinade import marinade_dish
         return self.name + '|' + ':'.join([marinade_dish(arg) for arg in arg_list])
 
     def _token_keys(self, arg_list):
@@ -406,33 +379,32 @@ class ArgCache(WithDelayableMethods):
         self.send(key_set=key_set)
     delete.alters_data = True
 
-    # In case 'self' is a valid param, call this guy _self... :-D
-    def delete_key_set(_self, **key_set):
+    def delete_key_set(self, key_set):
         """ Delete everything in this key_set, rounding up if necessary. """
 
         if settings.CACHE_DEBUG:
-            print "Dumping from", _self.name, "keyset", key_set
+            print "Dumping from", self.name, "keyset", key_set
 
         # TODO: Would be nicer if we could just make a
         # proxy token for the single-element case
-        arg_list = _self.is_arg_list(key_set)
+        arg_list = self.is_arg_list(key_set)
         if arg_list:
-            return _self.delete(arg_list)
+            return self.delete(arg_list)
         else:
-            token = _self.find_token(key_set)
+            token = self.find_token(key_set)
             token.delete_key_set(key_set, send_signal=False) # We can send a more accurate signal
-            _self.send(key_set=key_set)
+            self.send(key_set=key_set)
     delete_key_set.alters_data = True
 
     def delete_key_sets(self, list_or_set):
         """ Delete one or multiple (including nested lists) key sets. 
             - Michael P 11/1/2009
         """
-        if type(list_or_set) == list:
+        if isinstance(list_or_set, list):
             for item in list_or_set:
                 self.delete_key_sets(item)
         else:
-            self.delete_key_set(**list_or_set)
+            self.delete_key_set(list_or_set)
     delete_key_sets.alters_data = True
 
     def has_key(self, arg_list):
@@ -595,79 +567,3 @@ class ArgCache(WithDelayableMethods):
             if new_key_set is not None:
                 self.delete_key_sets(new_key_set)
         signals.m2m_changed.connect(change_cb, sender=IntermediateModel, weak=False)
-
-
-class ArgCacheDecorator(ArgCache):
-    """ An ArgCache that gets its parameters from a function. """
-
-    @staticmethod
-    def check_for_instance(func, *args, **kwargs):
-        """ Protect against stupid Django/Python multiple imports."""
-        import inspect
-        params = inspect.getargspec(func)[0] # FIXME: Make an esp.cache.functions or something
-        uid = get_uid(func)
-        # We don't really care about the name yet
-        return ArgCache.check_for_instance(None, params, uid)
-
-    def __init__(self, func, *args, **kwargs):
-        """ Wrap func in a ArgCache. """
-
-        ## Keep the original function's name and docstring
-        ## If the original function has any more-complicated attrs,
-        ## don't bother to maintain them; we have our own attrs,
-        ## and merging custom stuff could be dangerous.
-        if hasattr(func, '__name__'):
-            self.__name__ = func.__name__
-        if hasattr(func, '__doc__'):
-            self.__doc__ = func.__doc__
-        
-        import inspect
-
-        self.argspec = inspect.getargspec(func)
-        self.func = func
-        params = self.argspec[0]
-        extra_name = kwargs.pop('uid_extra', '')
-        name = describe_func(func) + extra_name
-        uid = get_uid(func) + extra_name
-        if self.argspec[1] is not None:
-            raise ESPError("ArgCache does not support varargs.")
-        if self.argspec[2] is not None:
-            raise ESPError("ArgCache does not support keywords.")
-
-        super(ArgCacheDecorator, self).__init__(name=name, params=params, uid=uid, *args, **kwargs)
-
-    def arg_list_from(self, args, kwargs):
-        """ Normalizes arguments to get an arg_list. """
-        nkwargs, nargs = normalize_args(self.argspec, args, kwargs)
-        return [nkwargs[param] for param in self.params]
-
-    def __call__(self, *args, **kwargs):
-        """ Call the function, using the cache is possible. """
-        use_cache = kwargs.pop('use_cache', True)
-        cache_only = kwargs.pop('cache_only', False)
-
-        if use_cache:
-            arg_list = self.arg_list_from(args, kwargs)
-            retVal = self.get(arg_list, default=self.CACHE_NONE)
-
-            if retVal is not self.CACHE_NONE:
-                return retVal
-
-            if cache_only:
-                retVal = None
-            else:
-                retVal = self.func(*args, **kwargs)
-                self.set(arg_list, retVal)
-        else:
-            retVal = self.func(*args, **kwargs)
-
-        return retVal
-
-    # make bound member functions work...
-    def __get__(self, obj, objtype=None):
-        """ Python member functions are such hacks... :-D """
-        return types.MethodType(self, obj, objtype)
-
-
-# This is a bit more of a decorator-style name
-cache_function = ArgCacheDecorator

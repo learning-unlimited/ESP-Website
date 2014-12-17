@@ -93,7 +93,8 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls'),)
+                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^varnish/', include('esp.varnish.urls'))
                         )
 
 urlpatterns += patterns('esp.qsd.views',

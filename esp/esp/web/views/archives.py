@@ -173,7 +173,7 @@ def archive_classes(request, category, options, sortorder = None):
     """
     
     #    Sort the results by the specified order
-    if type(sortorder) is not list or len(sortorder) < 1:
+    if (not isinstance(sortorder, list)) or len(sortorder) < 1:
         sortorder = ['year', 'category', 'program', 'title', 'teacher', 'description']
 
     sortorder.reverse()

@@ -64,7 +64,8 @@ class StudentLunchSelectionForm(forms.Form):
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
         
     def load_data(self):
-        lunch_registrations = list(StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program))
+        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
+        lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:

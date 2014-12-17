@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import copy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
@@ -248,8 +248,7 @@ class ArchiveClass(models.Model):
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
         from django.db.models.query import Q
-        Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
-               Q(teacher_ids__icontains = ('|%s|' % user.id))
+        Q_ClassTeacher = Q(teacher_ids__icontains = ('|%s|' % user.id))
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
@@ -390,7 +389,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
-            users = {}
+            users = OrderedDict()
             for module in modules:
                 tmpusers = getattr(module, method_name)(QObjects)
                 if tmpusers is not None:
@@ -591,7 +590,7 @@ class Program(models.Model, CustomFormsLinkModel):
     open_class_registration.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.get_program()})
     open_class_registration = property(open_class_registration)
 
-    @property
+    @cache_function
     def open_class_category(self):
         """Return the name of the open class category, as determined by the program tag.
 
@@ -611,6 +610,9 @@ class Program(models.Model, CustomFormsLinkModel):
         if cc is None:
             cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
         return cc
+    open_class_category.depend_on_model(lambda: Tag)
+    open_class_category.depend_on_model(lambda: ClassCategories)
+    open_class_category = property(open_class_category)
 
     @cache_function
     def getScheduleConstraints(self):
@@ -970,7 +972,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._moduleExtension[key]
         
         ext_cls = None
-        if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
+        if isinstance(ext_name_or_cls, basestring):
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
@@ -1041,16 +1043,6 @@ class Program(models.Model, CustomFormsLinkModel):
     #   Update cache whenever a class is approved or a teacher changes their profile
     getShirtInfo.depend_on_row(lambda: ClassSubject, lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_model(lambda: TeacherInfo) 
-
-    def archive(self):
-        archived_classes = []
-        #   I think we should delete resources and user bits, but I'm afraid to.
-        #   So, just archive all of the classes.
-        for c in self.classes():
-            archived_classes.append(c.archive())
-            print 'Archived: %s' % c.title()
-        
-        return archived_classes
 
     @cache_function
     def incrementGrade(self): 
@@ -1583,7 +1575,7 @@ class BooleanExpression(models.Model):
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if type(token_or_value) == str:
+        if isinstance(token_or_value, basestring):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1619,7 +1611,7 @@ class ScheduleMap:
         schedule change.
     """
     def __init__(self, user, program):
-        if type(user) is not ESPUser:
+        if not isinstance(user, ESPUser):
             user = ESPUser(user)
         self.program = program
         self.user = user
@@ -1691,7 +1683,7 @@ class ScheduleConstraint(models.Model):
                 if recursive:
                     #   Try using the execution hook for arbitrary code... and running again to see if it helped.
                     (fail_result, data) = self.handle_failure()
-                    if type(fail_result) == ScheduleMap:
+                    if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
                     #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)

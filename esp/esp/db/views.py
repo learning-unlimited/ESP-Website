@@ -40,14 +40,14 @@ def ajax_autocomplete(request):
         return response
 
     # import the model
-    Model = getattr(__import__(model_module,(),(),['']),model_name)
+    Model = getattr(__import__(model_module,(),(),[str(model_name)]),model_name)
 
     if hasattr(Model.objects, ajax_func):
         query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff)
     else:
         query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff)
 
-    if type(query_set) == QuerySet:
+    if type(query_set) is QuerySet:
         raise NotImplementedError
     else:
         output = list(query_set[:limit])

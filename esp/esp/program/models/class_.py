@@ -67,7 +67,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission
 from esp.program.models import Program
-from esp.program.models import StudentRegistration, RegistrationType
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
@@ -1048,10 +1048,19 @@ class ClassSection(models.Model):
     def clearStudents(self):
         now = datetime.datetime.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
+        for reg in qs:
+            signals.pre_save.send(sender=StudentRegistration, instance=reg)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
             signals.post_save.send(sender=StudentRegistration, instance=reg)
+        if all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self]):
+            qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
+            for ssi in qs_ssi:
+                signals.pre_save.send(sender=StudentSubjectInterest, instance=ssi)
+            qs_ssi.update(end_date=now)
+            for ssi in qs_ssi:
+                signals.post_save.send(sender=StudentSubjectInterest, instance=ssi)
 
     @staticmethod
     def idcmp(one, other):
@@ -1161,10 +1170,11 @@ class ClassSection(models.Model):
 
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of reg-types that a student has on this class. """
+        qs = self.getRegistrations(user).select_related('relationship')
         if not allowed_verbs:
-            return [v.relationship for v in self.getRegistrations(user).distinct()]
+            return [v.relationship for v in qs.distinct()]
         else:
-            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
+            return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of
@@ -1247,8 +1257,8 @@ class ClassSection(models.Model):
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
-                add_list_member(list_name, user.email)
-            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
+                add_list_member(list_name, user)
+            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user)
 
             return True
         else:
@@ -1865,27 +1875,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.save()
         
         return result
-        
-    def archive(self, delete=False):
-        """ Archive a class to reduce the size of the database. """
-        from esp.users.models.userbits import UserBit
-
-        #   Ensure that the class has been saved in the archive.
-        archived_class = self.getArchiveClass()
-        
-        #   Delete user bits and resource stuff associated with the class.
-        #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
-        if delete:
-            UserBit.objects.filter(qsc=self.anchor).delete()
-            ResourceRequest.objects.filter(target_subj=self).delete()
-            #   ResourceAssignment.objects.filter(target_subj=self).delete()
-            for s in self.sections.all():
-                ResourceRequest.objects.filter(target=s).delete()
-                #   ResourceAssignment.objects.filter(target=s).delete()
-        
-        #   This function leaves the actual ClassSubject object, its ClassSections,
-        #   and the QSD pages alone.
-        return archived_class
 
     @staticmethod
     def catalog_sort(one, other):

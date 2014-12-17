@@ -608,15 +608,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         vitals = {'id': 'vitals'}
 
         class_num_list = []
-        class_num_list.append(("Total # of Classes", len(classes)))
-        class_num_list.append(("Total # of Class Sections", len(prog.sections().select_related())))
-        class_num_list.append(("Total # of Lunch Classes", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", len(classes.filter(status=0))))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
+        class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).distinct().count()))
         for ft in ClassFlagType.get_flag_types(prog):
-            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).count()))
+            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).distinct().count()))
         vitals['classnum'] = class_num_list
 
         #   Display pretty labels for teacher and student numbers
@@ -632,9 +632,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for key in teachers.keys():
             if key in teacher_labels_dict:
                 vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
-len(teachers[key])))
+teachers[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['teachernum'].append((key, len(teachers[key])))
+                vitals['teachernum'].append((key, teachers[key].filter(is_active = True).distinct().count()))
                 
         student_labels_dict = {}
         for module in prog.getModules():
@@ -646,9 +646,9 @@ len(teachers[key])))
         students = prog.students()
         for key in students.keys():
             if key in student_labels_dict:
-                vitals['studentnum'].append((student_labels_dict[key], len(students[key])))
+                vitals['studentnum'].append((student_labels_dict[key], students[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['studentnum'].append((key, len(students[key])))
+                vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []

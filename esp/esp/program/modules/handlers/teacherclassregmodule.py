@@ -56,7 +56,7 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
-from esp.mailman                 import add_list_member
+from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.util           import ErrorDict
@@ -473,7 +473,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
-            add_list_member("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
+            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
 
         op = ''
         if request.POST.has_key('op'):
@@ -677,7 +677,12 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes/Create/Class')
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
-            return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
+            action = 'create'
+            if request.POST.has_key('category'):
+                category = request.POST['category']
+                if category.isdigit() and int(category) == int(self.program.open_class_category.id):
+                    action = 'createopenclass'
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
         if not request.GET.has_key('cls'):
             raise ESPError("No class specified!", log=False)
         
