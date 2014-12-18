@@ -336,11 +336,12 @@ class IndividualAccountingController(ProgramAccountingController):
                     #     (note: this will override any line item option)
                     if cost is not None:
                         transfer_amount = cost
-                    #   - Otherwise, if a line item option is specified and it has an amount, use its amount
-                    elif option_id is not None:
+                    #   - If a line item option is specified, use its amount
+                    #     (which may inherit from the line item type)
+                    if option_id is not None:
                         option = LineItemOptions.objects.get(id=option_id)
-                        if option.amount_dec is not None:
-                            transfer_amount = option.amount_dec
+                        if cost is None:
+                            transfer_amount = option.amount_dec_inherited
                     for i in range(quantity):
                         result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
