@@ -68,6 +68,12 @@ class LineItemType(models.Model):
         return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description','is_custom').order_by('-is_custom')
     
     @property
+    def has_custom_options(self):
+        """ Return True if at least one of the options for this line item type
+            allows a custom dollar amount to be entered.    """
+        return self.lineitemoptions_set.filter(is_custom=True).exists()
+
+    @property
     def option_choices(self):
         """ Return a list of (ID, description) tuples, one for each of the
             possible options.  Intended for use as form field choices.  """
