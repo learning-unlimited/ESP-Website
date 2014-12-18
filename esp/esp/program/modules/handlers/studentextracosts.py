@@ -48,7 +48,7 @@ from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting_core.models import LineItemType
+from esp.accounting.models import LineItemType, LineItemOptions
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
@@ -59,19 +59,19 @@ class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
 
 class MultiCostItem(forms.Form):
+    count = forms.IntegerField(max_value=10, min_value=0, widget=forms.TextInput(attrs={'class': 'input-mini'}))
     cost = forms.BooleanField(required=False, label='')
-    count = forms.IntegerField(max_value=10, min_value=0)
-
-
 
 class MultiSelectCostItem(forms.Form):
-    
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
+        is_custom = kwargs.pop('is_custom', False)
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
-
-        self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices)
+        if is_custom:
+            self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices)
+        else:
+            self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=forms.RadioSelect)
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -164,15 +164,14 @@ class StudentExtraCosts(ProgramModuleObj):
             costs_db = [ { 'LineItemType': x, 
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
-                         [ x for x in \
                            [ { 'LineItemType': x, 
                                'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
-                             for x in multicosts_list ] \
-                           if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
+                             for x in multicosts_list ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
                                                      choices=x.option_choices,
-                                                     required=(x.required)) }
+                                                     required=(x.required),
+                                                     is_custom=(x.has_custom_options)) }
                              for x in multiselect_list ]
 
             #   Get a list of the (line item, quantity) pairs stored in the forms
@@ -190,14 +189,21 @@ class StudentExtraCosts(ProgramModuleObj):
                             form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
 
                     elif isinstance(form, MultiCostItem):
-                        if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
+                        form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
 
                     elif isinstance(form, MultiSelectCostItem):
                         if form.cleaned_data['option']:
-                        
-                            option_id, option_amount = form.cleaned_data['option']
-                            form_prefs.append((lineitem_type.text, 1, int(option_id), float(option_amount) ))
+                            if lineitem_type.has_custom_options:
+                                option_id, option_amount = form.cleaned_data['option']
+                            else:
+                                option_id = form.cleaned_data['option']
+                                option_amount = None
+                            if option_id:
+                                #   Use default amount if none was typed in, or if this option doesn't allow a custom amount
+                                option = LineItemOptions.objects.get(id=option_id)
+                                if not option_amount or not option.is_custom:
+                                    option_amount = option.amount_dec_inherited
+                                form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -232,6 +238,7 @@ class StudentExtraCosts(ProgramModuleObj):
         [ 
             { 
                'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
+               'type': 'single',
                'LineItem': x
             }
 
@@ -243,31 +250,39 @@ class StudentExtraCosts(ProgramModuleObj):
             { 
                 'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 
                 'count': count_map[x.text][1] } ),
+                'type': 'multiple',
+                'max': x.max_quantity,
                 'LineItem': x 
             }
 
             for x in multicosts_list 
         ]
 
-        multiselect_costitems = \
-        [   
-            { 
-                'form': MultiSelectCostItem( prefix="multi%s" % x.id,
-                                           initial={'option': count_map[x.text][3]},
-                                           choices=x.option_choices,
-                                           required=(x.required)),
-               'LineItem': x 
-            }
-                      
-            for x in multiselect_list 
-        ]
+        multiselect_costitems = []
+        for x in multiselect_list:
+            new_entry = {'type': 'select', 'LineItem': x}
+            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required}
+            if x.has_custom_options:
+                #   Provide an initial value for a custom amount if an option has been selected
+                #   and the saved amount differs from the amount this option would normally cost.
+                custom_amount = ''
+                if count_map[x.text][3]:
+                    default_amount = LineItemOptions.objects.get(id=count_map[x.text][3]).amount_dec_inherited
+                    if count_map[x.text][2] != default_amount:
+                        custom_amount = count_map[x.text][2]
+                form_kwargs['initial'] = {'option': (count_map[x.text][3], custom_amount)}
+                form_kwargs['is_custom'] = True
+            else:
+                form_kwargs['initial'] = {'option': count_map[x.text][3]}
+                form_kwargs['is_custom'] = False
+            new_entry['form'] = MultiSelectCostItem(**form_kwargs)
+            multiselect_costitems.append(new_entry)
 
         forms = cost_items + multi_cost_items + multiselect_costitems
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
                                   { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
-
 
     class Meta:
         proxy = True

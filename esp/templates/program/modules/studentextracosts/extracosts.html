@@ -5,11 +5,22 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
 {% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+{% block xtrajs %}
+<script type="text/javascript">
+$j(document).ready(function () {
+    {% for f in forms %}{% if f.type == "multiple" %}
+    $j("#id_{{ f.form.prefix }}-count").spinner({
+        min: 0,
+        max: {{ f.max }},
+        change: function (event, ui) { $j("#id_{{ f.form.prefix }}-count").attr("value", $j("#id_{{ f.form.prefix }}-count").spinner("value")) }
+    });
+    {% endif %}{% endfor %}
+});
+</script>
+{% endblock %}
 
 {% block content %}
 <style type="text/css">
@@ -33,51 +44,47 @@ td>ul { list-style-type: none; padding: 0px }
 <br />
 
 {% if errors %}<div class="formerror">There was a problem recording your choices.  Please review the form and make sure that it is filled out completely.</div>{% endif %}
-  
+
 <div id="program_form">
 <form action="" method="post">
 <center>
 <table width="400" cellpadding="2" cellspacing="0">
-<tr><th colspan="{% if select_qty %}4{% else %}3{% endif %}">Additional Items for {{ program.niceName }}</th></tr>
-<tr>    
-    <th class="small">Buy</th>
-{% if select_qty %}    <th class="small">Qty</th>{% endif %}
-    <th class="small">Item</th>
-    <th class="small">Cost Each</th>
-</tr>
+<tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
+<tr>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required %}(required; please make a selection below){% else %}<!-- (optional) -->{% endif %}</td>
+</tr>
 <tr style="border-bottom: 1px dashed grey;">
-    <td width="120px">
-        {% if f.form.option %}{{ f.form.option }}{% else %}{{ f.form.cost }}{% endif %}
-        {% if f.LineItem.negative_amount %}
-            <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
-            {% endif %}
-
+    <td>
+        {% if f.type == "single" %}
+            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
+        {% endif %}
+        {% if f.type == "multiple" %}
+            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
+        {% endif %}
+        {% if f.type == "select" %}
+            <div class="form-inline">{{ f.form.option }}</div>
+        {% endif %}
+        {% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>{% endif %}
+        
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
         {# code for the button is at the bottom.                                  #}
 
-        {% if f.LineItem.num_options %}
+        {% if f.LineItem.num_options and not f.LineItem.required %}
             <button type="button"
                     class="remove-item"
-                    name="{{ f.form.prefix }}-option"
+                    name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
                     onclick="remove_item(this);">
                 Remove this item
             </button>
         {% endif %}
     </td>
-{% if select_qty %}    <td>{{ f.form.count }}</td>{% endif %}
-    <td>{% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>  {% endif %}
-{% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}
-{% else %}<b>{{ f.LineItem.text }}</b>{% endif %}</td>
-    <td>{% if f.LineItem.num_options %}{% with f.LineItem.options_cost_range as cost_range %}
-    {% if cost_range.0 == cost_range.1 %}${{ cost_range.0|floatformat:2 }}{% else %}${{ cost_range.0|floatformat:2 }}--{{ cost_range.1|floatformat:2 }}{% endif %}
-    {% endwith %}{% else %}${{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
 </tr>
 {% endfor %}
 <tr>
-    <td colspan="{% if select_qty %}4{% else %}3{% endif %}" align="center">
-        <input type="submit" class="fancybutton" value="Save"/>
+    <td align="center">
+        <input type="submit" class="btn btn-primary" value="Save"/>
     </td>
 </tr>
 </table>
