@@ -77,7 +77,14 @@ class LineItemType(models.Model):
     def option_choices(self):
         """ Return a list of (ID, description) tuples, one for each of the
             possible options.  Intended for use as form field choices.  """
-        return [(x[0], x[2]) for x in self.options]
+        #   We can't use the 'options' property anymore since we need to compute the inherited amount.
+        result = []
+        for option in self.lineitemoptions_set.all():
+            if option.is_custom:
+                result.append((option.id, '%s -- enter amount below' % (option.description,)))
+            else:
+                result.append((option.id, '%s -- $%.2f' % (option.description, option.amount_dec_inherited)))
+        return result
 
     @property
     def options_cost_range(self):
