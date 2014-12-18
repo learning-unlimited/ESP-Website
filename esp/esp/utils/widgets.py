@@ -416,7 +416,7 @@ class ChoiceWithOtherField(forms.MultiValueField):
             kwargs['required'] = False
             super(ChoiceWithOtherField, self).__init__(widget=widget, fields=fields, *args, **kwargs)
         else:
-             super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
+            super(ChoiceWithOtherField, self).__init__(*args,**kwargs)
 
 
     def compress(self, value):
@@ -424,17 +424,8 @@ class ChoiceWithOtherField(forms.MultiValueField):
             return [None, u'']
 
         option_value, other_value = value
-
         if self._was_required and not value or option_value in (None, ''):
             raise forms.ValidationError(self.error_messages['required'])
 
-        #if custom choice is selected
-        custom_value = self.choices[-1][0]
-        is_custom = option_value == custom_value 
-        if is_custom and not other_value:#this would be the value of the last choice
-            raise forms.ValidationError(self.error_messages['required'])
-        else:
-            return option_value, option_value
-        
-        return other_value, option_value
+        return option_value, other_value
 
