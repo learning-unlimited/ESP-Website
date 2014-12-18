@@ -1,0 +1,3 @@
+Dear {% templatetag openvariable %} user.first_name {% templatetag closevariable %},
+
+{% include "email/class_cancellation_ssi_body.txt" %}
