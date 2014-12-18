@@ -103,6 +103,15 @@ class LineItemOptions(models.Model):
     is_custom = models.BooleanField(default=False)
     
     @property
+    def amount_dec_inherited(self):
+        """ The amount to charge for this option; inherits from parent
+            line item type if amount_dec is not set.    """
+        if self.amount_dec is None:
+            return self.lineitem_type.amount_dec
+        else:
+            return self.amount_dec
+
+    @property
     def amount(self):
         if self.amount_dec is None:
             return None
