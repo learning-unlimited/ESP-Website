@@ -1013,11 +1013,14 @@ class ClassSection(models.Model):
         else:
             student_verbs = ['Enrolled']
 
+        email_ssis = email_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self])
+
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students(student_verbs)
+        context['email_ssis']= email_ssis
         email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
         ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
         if email_students:
@@ -1031,11 +1034,11 @@ class ClassSection(models.Model):
                 send_mail(email_title, msgtext, from_email, to_email)
 
         #   Email students with StudentSubjectInterests if needed
-        if email_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self]):
+        if email_ssis:
             email_content = render_to_string('email/class_cancellation_ssi.txt', context)
             template = Template (email_content)
             q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
-            students = ESPUser.objects.filter(q_ssi).exclude(self.students(student_verbs)).distinct()
+            students = ESPUser.objects.filter(q_ssi).exclude(id__in=self.students(student_verbs)).distinct()
             for student in students:
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
