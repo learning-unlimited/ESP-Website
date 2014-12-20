@@ -2,13 +2,4 @@
 Class Section {{ sec.emailcode }} has been cancelled.  {% if email_students %}{{ num_students }} students have been sent the following e-mail.{% else %}Students were not e-mailed.{% endif %}  All students have been removed from the class.
 -------------------------
 
-We regret to inform you that class section {{ sec.emailcode }}: {{ sec.title }} at the upcoming {{ prog.niceName }} has been cancelled.  {% if sec.friendly_times|length_is:1 %}The class had been scheduled for {{ sec.friendly_times.0 }}, so you can switch into another class during that period.  You can do this on our Web site or on-site at {{ prog.program_type }}.{% else %}You can sign up for other classes on our Web site or on-site at {{ prog.program_type }}.{% endif %}
-{% if explanation %}
-The class was cancelled for the following reason:
-    {{ explanation }}
-    
-{% endif %}We apologize for the inconvenience, and we hope you'll have a great time at {{ prog.program_type }}!
-
-{{ prog.niceName }} Directors
-{{ full_group_name }}
-https://{{ site_url }}
+{% include "email/class_cancellation_body.txt" %}

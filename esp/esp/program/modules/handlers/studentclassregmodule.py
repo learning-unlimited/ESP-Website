@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import simplejson
@@ -49,7 +49,7 @@ from django.core.cache import cache
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -150,12 +150,19 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        SubjPar = Q(studentsubjectinterest__subject__parent_program=self.program)
+        SubjUnexpired = nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
+        
+        # Force Django to generate two subqueries without joining SRs to SSIs
+        sr_ids = ESPUser.objects.filter(Par & Unexpired).distinct().values('id')
+        ssi_ids = ESPUser.objects.filter(SubjPar & SubjUnexpired).distinct().values('id')
+        GoodReg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
         
         if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
+            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(GoodReg)}
         else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
-
+            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(GoodReg).distinct()}
+        
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -222,9 +229,6 @@ class StudentClassRegModule(ProgramModuleObj):
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        # Hack, to hide the Saturday night timeslots from grades 7-8
-        if not is_onsite and not user.getGrade() > 8:
-            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -259,7 +263,6 @@ class StudentClassRegModule(ProgramModuleObj):
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -270,9 +273,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
+                doesnt_have_enrollment = not any(sec['section'].is_enrolled
+                                                 for sec in cls_list)
+                schedule.append((timeslot, cls_list, blockCount + 1,
+                                 doesnt_have_enrollment))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
+                schedule.append((timeslot, [], blockCount + 1, False))
 
             prevTimeSlot = timeslot
                 

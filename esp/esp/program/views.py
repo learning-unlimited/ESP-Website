@@ -30,18 +30,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
@@ -53,15 +52,13 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
-from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
+from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -534,8 +531,8 @@ def newprogram(request):
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
                 if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
-                    add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-                    add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             
 
             return HttpResponseRedirect(manage_url)
@@ -572,12 +569,12 @@ def newprogram(request):
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
     
-    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT":
+    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT" and request.POST["decision"] != "ERROR":
 
         #   Figure out which user and program the payment are for.
-        post_identifier = request.POST.get('merchantDefinedData1', '')
+        post_identifier = request.POST['req_merchant_defined_data1']
+        post_amount = Decimal(request.POST['req_amount'])
         iac = IndividualAccountingController.from_identifier(post_identifier)
-        post_amount = Decimal(request.POST.get('orderAmount', '0.0'))
 
         #   Warn for possible duplicate payments
         prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
@@ -594,11 +591,11 @@ def submit_transaction(request):
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
                   """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
-                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), request) , \
+                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('req_bill_to_surname', '--'), request.POST.get('req_bill_to_forename', '--'), request) , \
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('transaction_id', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')

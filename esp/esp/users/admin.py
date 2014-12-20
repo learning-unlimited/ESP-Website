@@ -2,7 +2,6 @@ from django.contrib import admin
 from esp.admin import admin_site
 from django import forms
 from django.db import models
-from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
@@ -42,7 +41,7 @@ class ESPUserAdmin(UserAdmin):
     #(since we don't use either of those)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
-    from django.utils.translation import ugettext, ugettext_lazy as _
+    from django.utils.translation import ugettext_lazy as _
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
@@ -95,14 +94,15 @@ class UserInfoAdmin(admin.ModelAdmin):
     search_fields = default_user_search()
 
 class StudentInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
-    list_filter = ['graduation_year']
+    list_display = ['id', 'user', 'graduation_year', 'getSchool']
+    list_filter = ['graduation_year', 'studentrep']
     search_fields = default_user_search()
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college']
-    search_fields = default_user_search()
+    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student']
+    search_fields = default_user_search() + ['college']
+    list_filter = ('from_here', 'is_graduate_student', 'graduation_year')
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
@@ -112,7 +112,7 @@ admin_site.register(GuardianInfo, GuardianInfoAdmin)
 
 class EducatorInfoAdmin(UserInfoAdmin):
     search_fields = default_user_search()
-    list_display = ['id', 'user', 'position', 'k12school', 'school']
+    list_display = ['id', 'user', 'position', 'getSchool']
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
@@ -130,15 +130,16 @@ admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ['requesting_student', 'claimed_grade', 'approved','acknowledged_by','acknowledged_time', 'created']
-    readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+    readonly_fields = ['grade_before_request', 'requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
     search_fields = default_user_search('requesting_student')
     list_filter = ('created','approved',)
 
     def save_model(self, request, obj, form, change):
         if getattr(obj, 'acknowledged_by', None) is None:
             obj.acknowledged_by = request.user
+        if getattr(obj, 'acknowledged_time', None) is None and getattr(request.POST, 'approved', None) is True:
+            obj.acknowledged_time = datetime.datetime.now()
         obj.save()
-
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group

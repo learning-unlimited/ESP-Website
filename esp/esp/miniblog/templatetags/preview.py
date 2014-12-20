@@ -2,7 +2,6 @@ import re
 
 from django import template
 from django.contrib.auth.models import User, AnonymousUser
-from django.db.models.query import Q
 
 from esp.datatree.models import *
 from esp.miniblog.views import get_visible_announcements

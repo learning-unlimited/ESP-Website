@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import *
@@ -84,8 +84,8 @@ class FormstackMedliabModule(ProgramModuleObj):
             students = Q_students
             bypass = Q_bypass
         else:
-            students = ESPUser.objects.filter(Q_students)
-            bypass = ESPUser.objects.filter(Q_bypass)
+            students = ESPUser.objects.filter(Q_students).distinct()
+            bypass = ESPUser.objects.filter(Q_bypass).distinct()
 
         return {
             'studentmedliab': students,

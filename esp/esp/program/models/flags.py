@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.db import models
@@ -89,9 +89,9 @@ class ClassFlag(models.Model):
     comment = models.TextField(blank=True)
 
     #The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
-    modified_by = AjaxForeignKey(ESPUser, editable=False,related_name='classflags_modified')
+    modified_by = AjaxForeignKey(ESPUser, related_name='classflags_modified')
     modified_time = models.DateTimeField(auto_now=True)
-    created_by = AjaxForeignKey(ESPUser, editable=False,related_name='classflags_created')
+    created_by = AjaxForeignKey(ESPUser, related_name='classflags_created')
     created_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:

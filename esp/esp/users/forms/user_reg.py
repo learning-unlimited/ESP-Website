@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.auth.models import User
 from django.contrib.localflavor.us.forms import USPhoneNumberField
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
@@ -159,4 +158,5 @@ class GradeChangeRequestForm(forms.ModelForm):
     """
     class Meta:
         model = GradeChangeRequest
-        exclude = ('acknowledged_by','acknowledged_time','requesting_student','approved',)
+        exclude = ('acknowledged_by','acknowledged_time','requesting_student',
+                   'approved', 'grade_before_request',)

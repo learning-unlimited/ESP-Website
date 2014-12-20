@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from collections import defaultdict
@@ -41,7 +41,7 @@ import simplejson as json
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import Http404
+from django.http import Http404, HttpResponse
 
 from esp.cal.models import Event
 from esp.datatree.models import *
@@ -56,6 +56,9 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
+from esp.accounting.controllers import IndividualAccountingController
+
+from decimal import Decimal
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -605,15 +608,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         vitals = {'id': 'vitals'}
 
         class_num_list = []
-        class_num_list.append(("Total # of Classes", len(classes)))
-        class_num_list.append(("Total # of Class Sections", len(prog.sections().select_related())))
-        class_num_list.append(("Total # of Lunch Classes", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", len(classes.filter(status=0))))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
+        class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).distinct().count()))
         for ft in ClassFlagType.get_flag_types(prog):
-            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).count()))
+            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).distinct().count()))
         vitals['classnum'] = class_num_list
 
         #   Display pretty labels for teacher and student numbers
@@ -629,9 +632,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for key in teachers.keys():
             if key in teacher_labels_dict:
                 vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
-len(teachers[key])))
+teachers[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['teachernum'].append((key, len(teachers[key])))
+                vitals['teachernum'].append((key, teachers[key].filter(is_active = True).distinct().count()))
                 
         student_labels_dict = {}
         for module in prog.getModules():
@@ -643,9 +646,9 @@ len(teachers[key])))
         students = prog.students()
         for key in students.keys():
             if key in student_labels_dict:
-                vitals['studentnum'].append((student_labels_dict[key], len(students[key])))
+                vitals['studentnum'].append((student_labels_dict[key], students[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['studentnum'].append((key, len(students[key])))
+                vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
@@ -763,6 +766,23 @@ len(teachers[key])))
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+
+    @aux_call
+    @needs_student
+    def set_donation_amount(self, request, tl, one, two, module, extra, prog):
+        """ Set the student's desired donation amount.
+            Creates a line item type for donations if it does not exist. """
+
+        amount_donation = Decimal(request.POST.get('amount', '0'))
+        iac = IndividualAccountingController(prog, request.user)
+        #   Clear the Transfers by specifying quantity 0
+        iac.set_preference('Donation to Learning Unlimited', 0)
+        if amount_donation != Decimal('0'):
+            #   Specify quantity 1 and the desired amount
+            iac.set_preference('Donation to Learning Unlimited', 1, amount=amount_donation)
+
+        data = {'amount_donation': amount_donation, 'amount_due': iac.amount_due()}
+        return HttpResponse(json.dumps(data), mimetype='application/json')
 
     class Meta:
         proxy = True

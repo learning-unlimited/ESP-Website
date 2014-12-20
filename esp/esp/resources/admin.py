@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
@@ -56,12 +56,12 @@ class ResourceRequestAdmin(admin.ModelAdmin):
 class ResourceAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.res_type.program.name
-    list_display = ('name', 'res_type', 'num_students', 'event', 'group_id', program)
+    list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
     list_filter = ('res_type__program',)
     search_fields = ('name', 'res_type__name', 'res_type__description',
             'res_type__attributes_pickled', 'res_type__program__name',
             'num_students', 'event__name', 'event__short_description',
-            '=group_id')
+            '=res_group__id')
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'resource', 'target')

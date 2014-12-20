@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
@@ -125,7 +125,7 @@ class TeacherEventsModule(ProgramModuleObj):
     # Views
     @main_call
     @needs_teacher
-    @meets_deadline('/MainPage')
+    @meets_deadline('/Events')
     def event_signup(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = TeacherEventSignupForm(self, request.POST)

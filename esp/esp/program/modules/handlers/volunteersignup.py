@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
@@ -57,10 +57,13 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             form = VolunteerOfferForm(request.POST, program=prog)
             if form.is_valid():
                 offers = form.save()
-                context['complete'] = True
-                context['complete_name'] = offers[0].name
-                context['complete_email'] = offers[0].email
-                context['complete_phone'] = offers[0].phone
+                if len(offers) > 0:
+                    context['complete'] = True
+                    context['complete_name'] = offers[0].name
+                    context['complete_email'] = offers[0].email
+                    context['complete_phone'] = offers[0].phone
+                else:
+                    context['cancelled'] = True
                 form = VolunteerOfferForm(program=prog)
         else:
             form = VolunteerOfferForm(program=prog)

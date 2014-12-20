@@ -621,7 +621,7 @@ function render_table(display_mode, student_id)
         {
             var startTimeMillis = data.timeslots[ts_id].startTimeMillis;
             //excludes timeslots that have a start time 20 minutes prior to the current time
-            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/86400);
+            var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
 
             if(differenceInMinutes > minMinutesToHideTimeSlot) 
             {
@@ -782,7 +782,8 @@ function render_category_options()
 {
     //  Clear category select area
     top_div = $j("#category_list");
-    //top_div.html("");
+    top_div.html("");
+
     //  Add a checkbox for each category we know about
     for (var id_str in data.categories)
     {
