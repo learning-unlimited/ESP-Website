@@ -930,7 +930,6 @@ are a teacher of the class"""
             schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
-    #   The cache will need to be cleared once per academic year.
     program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
 
     @cache_function
@@ -958,6 +957,7 @@ are a teacher of the class"""
         if yog is not None:
             grade = ESPUser.gradeFromYOG(yog, schoolyear)
         return grade
+    #   The cache will need to be cleared once per academic year.
     getGrade.get_or_create_token(('self',))
     getGrade.get_or_create_token(('program',))
     getGrade.depend_on_cache(getYOG, lambda self=wildcard, program=wildcard, **kwargs: {'self': self, 'program': program})
