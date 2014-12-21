@@ -942,6 +942,7 @@ are a teacher of the class"""
                 if regProf.student_info.graduation_year:
                     return regProf.student_info.graduation_year
         return None
+    getYOG.get_or_create_token(('self',))
     getYOG.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
     @cache_function
@@ -951,6 +952,8 @@ are a teacher of the class"""
         if yog is not None:
             grade = ESPUser.gradeFromYOG(yog, ESPUser.current_schoolyear(program))
         return grade
+    getGrade.get_or_create_token(('self',))
+    getGrade.get_or_create_token(('program',))
     getGrade.depend_on_cache(getYOG, lambda self=wildcard, program=wildcard, **kwargs: {'self': self, 'program': program})
     getGrade.depend_on_cache(current_schoolyear.__func__, lambda self=wildcard, **kwargs: {'program': self})
 
