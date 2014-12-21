@@ -31,13 +31,13 @@ def program(request):
     return {}
 
 def schoolyear(request):
-    program = None
     path_parts = request.path.lstrip('/').split('/')
     if len(path_parts) > 3:
         program_url = '/'.join(path_parts[1:3])
         if Program.objects.filter(url=program_url).count() == 1:
             program = Program.objects.get(url=program_url)
-    return {'schoolyear': ESPUser.current_schoolyear(program)}
+            return {'schoolyear': ESPUser.program_schoolyear(program)}
+    return {'schoolyear': ESPUser.current_schoolyear()}
 
 def index_backgrounds(request):
     #if request.path.strip() == '':
