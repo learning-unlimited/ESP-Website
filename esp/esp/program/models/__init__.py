@@ -509,7 +509,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
         # lists['all_former_students'] as well.
         del lists['all_students']
-        yog_12 = ESPUser.YOGFromGrade(12)
+        yog_12 = ESPUser.YOGFromGrade(12, ESPUser.program_schoolyear(self))
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
