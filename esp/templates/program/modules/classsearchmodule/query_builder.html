@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+
+{% block title %}Search Classes for {{ program.niceName }}{% endblock %}
+
+{% block subsection_name %}Class Search{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
+{% endblock %}
+
+{% block content %}
+<h1>Search Classes for {{ program.niceName }}</h1>
+
+{{ query_builder|safe }}
+{% endblock %}
