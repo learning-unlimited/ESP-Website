@@ -54,7 +54,6 @@ class DBReceipt(models.Model):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 
-REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -91,9 +90,6 @@ class StudentClassRegModuleInfo(models.Model):
     visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
     #   Meeting times visibility
     visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
-    
-    #   Show classes that have not yet been scheduled?
-    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
     
     #   Customize buttons
     #   - Labels
@@ -142,8 +138,6 @@ class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
-    display_times        = models.BooleanField(blank=True, default=False)
-    times_selectmultiple = models.BooleanField(blank=True, default=False)
     
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
@@ -154,10 +148,6 @@ class ClassRegModuleInfo(models.Model):
     class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
     class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
     
-    director_email       = models.EmailField(blank=True, null=True)
-    class_durations      = models.CharField(max_length=128, blank=True, null=True)
-    teacher_class_noedit = models.DateTimeField(blank=True, null=True, help_text='Teachers will not be able to edit their classes after this time.')
-    
     #   Allowed numbers of sections and meeting days
     allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
         help_text='Allow this many independent sections of a class (comma separated list of integers). Leave blank to allow arbitrarily many.')
@@ -165,7 +155,6 @@ class ClassRegModuleInfo(models.Model):
         help_text='Possibilities for the number of days that a class could meet (comma separated list of integers). Leave blank if this is not a relevant choice for the teachers.')
     
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True, help_text='The maximum number of application questions that can be specified for each class.')
-    num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
     
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
