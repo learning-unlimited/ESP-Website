@@ -140,59 +140,40 @@ def gen_latex(texcode, type='pdf', landscape=False, remove_files=False, stdout=P
     
     #   Set latex options
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
-    #   Set dvips options
-    dvips_options = ['-t', 'letter']
-    if landscape:
-        dvips_options = ['-t', 'letter,landscape']
 
     # All command calls will use the same values for the cwd, stdout, and
     # stderr arguments, so we define a partially-applied callable call()
     # that makes it easier to call check_call() with these values.
     call = partial(check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
-    if type=='pdf':
+    if type == 'pdf':
         mime = 'application/pdf'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
-        call(['ps2pdf', '%s.ps' % file_base])
-        if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
-            
-    elif type=='dvi':
-        mime = 'application/x-dvi'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        
-    elif type=='ps':
-        mime = 'application/postscript'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        call(['dvips'] + dvips_options + [file_base, '-o', '%s.ps' % file_base])
-        if remove_files:
-            os.remove('%s.dvi' % file_base)
-        
-    elif type=='log':
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+
+    elif type == 'dvi':
+        raise NotImplementedError
+
+    elif type == 'ps':
+        raise NotImplementedError
+
+    elif type == 'log':
         mime = 'text/plain'
         call(['latex'] + latex_options + ['%s.tex' % file_base])
 
-    elif type=='svg':
+    elif type == 'svg':
         mime = 'image/svg+xml'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
-        call(['ps2pdf', '%s.ps' % file_base])
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
         call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
         if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
             os.remove('%s.pdf' % file_base)
-        
-    elif type=='png':
+
+    elif type == 'png':
         mime = 'image/png'
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
-        call(['dvips'] + dvips_options + ['%s.dvi' % file_base])
-        call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base])
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        call(['convert', '-density', '192',
+              '%s.pdf' % file_base, '%s.png' % file_base])
         if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
+            os.remove('%s.pdf' % file_base)
 
     else:
         raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))

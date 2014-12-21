@@ -171,11 +171,15 @@ def histogram(answer_list, format='html'):
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     if format == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
+        image_path = '%s/%s.png' % (tempfile.gettempdir(), file_base)
     elif format == 'html':
         image_path = '%s%s.png' % (HISTOGRAM_DIR, file_base)
-        if not os.path.exists(image_path):
-            os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s %s' % (image_path, file_name))
+    if not os.path.exists(image_path):
+        os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s %s' % (image_path, file_name))
+    if format == 'tex':
+        return '\includegraphics[width=%fin]{%s}' % (image_width, "%s.png" %
+                                                     file_base)
+    if format == 'html':
         return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
     
 @register.filter
