@@ -1122,7 +1122,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
 
             # Get their grade
-            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
+            grade = ESPUser.getGrade(self.program)
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
