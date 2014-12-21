@@ -974,8 +974,9 @@ are a teacher of the class"""
         return schoolyear + 12 - yog
 
     @staticmethod
-    def YOGFromGrade(grade):
-        schoolyear = ESPUser.current_schoolyear()
+    def YOGFromGrade(grade, schoolyear=None):
+        if schoolyear is None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             grade = int(grade)
         except:
