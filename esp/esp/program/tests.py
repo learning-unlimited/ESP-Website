@@ -1121,9 +1121,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
 
-            # Get their grade
-            grade = ESPUser.getGrade(self.program)
-
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
