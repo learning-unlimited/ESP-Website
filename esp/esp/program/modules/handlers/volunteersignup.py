@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
-from esp.users.models import ESPUser, AnonymousUser
+from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
