@@ -70,22 +70,10 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @aux_call
     @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
-        #   tl, one, two, module, extra, prog
-        format = 'pdf'
-        if 'format' in request.GET:
-            format = request.GET['format'].lower()
         if 'user' in request.GET:
             user = ESPUser.objects.get(id=request.GET['user'])
         else:
             user = request.user
-        request.GET = {'op':'usersearch',
-                       'userid': str(user.id) }
-
-        module = [module for module in self.program.getModules('manage')
-                  if isinstance(module, ProgramPrintables)][0]
-
-        module.user = user
-        module.program = self.program
         
         #  onsite=False since we probably want a PDF
         return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
