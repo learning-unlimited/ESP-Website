@@ -33,4 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+# Adding this import to stop cache errors,
+# as suggested in esp/cache/sad_face.py
 import esp.miniblog.views
