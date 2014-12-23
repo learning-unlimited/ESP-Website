@@ -96,8 +96,10 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             elif 'json_debug' in request.GET:
-                return render_to_response(module_obj.baseDir()+'jsondebug.html',
-                                          request, {'data': result},
+                data = simplejson.dumps(result, sort_keys=True,
+                                        indent = '    ')
+                return render_to_response('utils/jsondebug.html',
+                                          request, {'data': data},
                                           mimetype="text/html")
             else:
                 if field_map is None:
