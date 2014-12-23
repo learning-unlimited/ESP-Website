@@ -74,6 +74,9 @@ def json_response(field_map={}):
         if related lookups were used. 
     """
     
+    # Here instead of at the top because of circular imports
+    from esp.web.util.main import render_to_response
+
     def map_fields(item):
         if isinstance(item, Model):
             item = item.__dict__
@@ -88,10 +91,14 @@ def json_response(field_map={}):
 
     def dec(func):
         @wraps(func)
-        def _evaluate(*args, **kwargs):
-            result = func(*args, **kwargs)
+        def _evaluate(module_obj, request, *args, **kwargs):
+            result = func(module_obj, request, *args, **kwargs)
             if isinstance(result, HttpResponse):
                 return result
+            elif 'json_debug' in request.GET:
+                return render_to_response(module_obj.baseDir()+'jsondebug.html',
+                                          request, {'data': result},
+                                          mimetype="text/html")
             else:
                 if field_map is None:
                     new_result = result
