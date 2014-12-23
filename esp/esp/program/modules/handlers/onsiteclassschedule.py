@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
@@ -68,7 +68,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         return HttpResponseRedirect(redirectURL)
 
     @aux_call
-    @needs_student
+    @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
         #   tl, one, two, module, extra, prog
         format = 'pdf'
