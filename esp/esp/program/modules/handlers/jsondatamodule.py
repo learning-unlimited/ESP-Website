@@ -102,7 +102,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
