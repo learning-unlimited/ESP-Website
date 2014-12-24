@@ -735,7 +735,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         for g in grades:
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
+            grade_students = filter(
+                lambda x: x.getGrade(prog, assume_student=True)==g,
+                students['enrolled'])
             grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
         dictOut["stats"].append({"id": "grades", "data": grades_annotated})
 
