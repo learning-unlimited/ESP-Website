@@ -679,7 +679,9 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
         curclasses = ClassSection.prefetch_catalog_data(
-            ClassSection.objects.filter(parent_class__parent_program = prog))
+            ClassSection.objects
+            .filter(parent_class__parent_program=prog)
+            .select_related('parent_class', 'parent_class__category'))
 
         ## Is it really faster to do this logic in Python?
         ## It'd be even faster to just write a raw SQL query to do it.
