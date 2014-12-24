@@ -89,15 +89,6 @@ DEFAULT_USER_TYPES = [
     ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
-def user_get_key(user):
-    """ Returns the key of the user, regardless of anything about the user object. """
-    if user is None or isinstance(user, AnonymousUser) or \
-        (not isinstance(user, User)) or \
-         user.id is None:
-        return 'None'
-    else:
-        return str(user.id)
-
 def admin_required(func):
     @functools.wraps(func)
     def wrapped(request, *args, **kwargs):

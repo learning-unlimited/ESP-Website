@@ -40,7 +40,7 @@ import random
 import simplejson as json
 
 from django.conf import settings
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
 from django.contrib.localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
@@ -1311,7 +1311,7 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        if isinstance(user, AnonymousUser):
+        if user.is_anonymous():
             regProfList = RegistrationProfile.objects.none()
         else:
             regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]

@@ -37,6 +37,7 @@ from esp.web.util        import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.middleware import ESPError
+from esp.program.models import StudentRegistration
 from django.db.models.query      import Q
 from django import forms
 

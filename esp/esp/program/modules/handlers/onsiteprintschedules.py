@@ -84,19 +84,6 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # No response if no users
             return HttpResponse('')
 
-    def studentschedule(self, request, *args, **kwargs):
-        request.GET = {'extra': str(285), 'op':'usersearch',
-                       'userid': str(request.user.id) }
-
-        module = [module for module in self.program.getModules('manage')
-                  if isinstance(module, ProgramPrintables)][0]
-
-        module.user = request.user
-        module.program = self.program
-#        return module.studentschedules(request, *args, **kwargs)
-        return ProgramPrintables.get_student_schedules(request, [request.user], self.program, onsite=True)
-        
-
     class Meta:
         proxy = True
 
