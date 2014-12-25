@@ -166,7 +166,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if QObject:
             retVal = qobjects
         else:
-            retVal = {k: ESPUser.objects.filter(v)
+            retVal = {k: ESPUser.objects.filter(v).distinct()
                       for k, v in qobjects.iteritems()}
         
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
