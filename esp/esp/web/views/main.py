@@ -259,11 +259,8 @@ def contact(request, section='esp'):
             if form.cleaned_data['cc_myself']:
                 to_email.append(email)
 
-            try:
-                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-            except KeyError:
-                to_email.append(fallback_address)
-
+            to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            
             if len(form.cleaned_data['name'].strip()) > 0:
                 email = '%s <%s>' % (form.cleaned_data['name'], email)
 
