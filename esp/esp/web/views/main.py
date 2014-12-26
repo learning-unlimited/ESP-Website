@@ -241,11 +241,8 @@ def contact(request, section='esp'):
             logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
             
-            if len(form.cleaned_data['sender'].strip()) == 0:
-                email = 'esp@mit.edu'
-            else:
-                email = form.cleaned_data['sender']
-                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+            email = form.cleaned_data['sender']
+            usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
             if usernames and not form.cleaned_data['decline_password_recovery']:
                 m = 'password|account|log( ?)in'
