@@ -11,8 +11,14 @@ json_fetch(['sections', 'timeslots', 'rooms', 'schedule_assignments'], function(
     console.log(data)
 
     var window_height = window.innerHeight - 20;
-    $j("#directory-wrapper-div").height(window_height);
-    $j("#matrix-div").height(window_height);
+    var window_width = window.innerWidth - 20;
+    $j("#directory-wrapper-div").height(window_height)
+        .width(window_width/4);
+    $j("#matrix-div").height(window_height)
+        .width(window_width*3/4);
+
+
+
 
     var s = new Scheduler(
 	    data,

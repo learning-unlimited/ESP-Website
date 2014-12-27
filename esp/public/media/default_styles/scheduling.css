@@ -30,6 +30,7 @@ table,th,td
 .garbage-div {
     background: grey;
     height: 40px;
+    width: 80px;
 }
 
 .no-border {
