@@ -15,12 +15,12 @@ json_fetch(['sections', 'timeslots', 'rooms', 'schedule_assignments'], function(
     $j("#matrix-div").height(window_height);
 
     var s = new Scheduler(
-	data,
-	$j("#directory-div"),
-	$j("#matrix-div"),
-	$j("#garbage-div"),
-	last_applied_index,
-	5000
+	    data,
+	    $j("#directory-div"),
+	    $j("#matrix-div"),
+	    $j("#garbage-div"),
+	    last_applied_index,
+	    5000
     );
     s.render();
 }, 
