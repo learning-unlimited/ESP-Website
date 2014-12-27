@@ -1,20 +1,41 @@
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTestBase
-
-from django.test import LiveServerTestCase
+from esp.program.modules.tests.selenium_support import ProgramFrameworkSeleniumTest
+from esp.users.models import ESPUser
 
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
+
 import time
 
-class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase, LiveServerTestCase):
-    def setUp(self, *args, **kwargs): 
-         super(AJAXSchedulingModuleUITest, self).setUp(*args, **kwargs)
-         self.browser = WebDriver()
-         self.update_interval = 4
-         self.filter_interval = 5
+class AJAXSchedulingModuleUITest(ProgramFrameworkSeleniumTest):
+    fixtures = ['testdata']
+
+    def setUp(self, *args, **kwargs):
+        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        # Set up the program -- we want to be sure of these parameters
+        kwargs.update({
+            'num_rooms': 4,
+            'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
+            })
+
+        super(AJAXSchedulingModuleUITest, self).setUp(self, *args, **kwargs)
+
+        # Set the section durations to 1:50
+        for sec in self.program.sections():
+            sec.duration = '1.83'
+            sec.save()
+
+        #some useful urls
+        self.ajax_url_base = '/manage/%s/' % self.program.getUrlBase()
+        self.changelog_url = self.ajax_url_base + 'ajax_change_log'
+        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
+
+        self.browser = WebDriver()
+        self.update_interval = 4
+        self.filter_interval = 5
 
     def tearDown(self):
         self.browser.quit()
@@ -25,16 +46,22 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase, LiveServerTestCas
         submit_el_id = "gologin"
  
         self.browser.get(self.live_server_url)
-        
-        e = WebDriverWait(self.browser, 10).until(
-             lambda driver: self.browser.find_element_by_id(uname_el_id))
-        e.send_keys(uname)
-        e = WebDriverWait(self.browser, 10).until(
-             lambda driver: self.browser.find_element_by_id(pword_el_id))
-        e.send_keys(pword)
-        e = WebDriverWait(self.browser, 60).until(
-             lambda driver:    self.browser.find_element_by_id(submit_el_id))
-        e.click()
+
+        # wait until the page loads
+        WebDriverWait(self.browser, 10).until(
+            lambda d: self.browser.find_element_by_id(uname_el_id))
+
+        # fill out login form and click submit
+        uname_element = self.browser.find_element_by_id(uname_el_id)
+        uname_element.send_keys(uname)
+        password_element = self.browser.find_element_by_id(pword_el_id)
+        password_element.send_keys(pword)
+        submit_element = self.browser.find_element_by_id(submit_el_id)
+        submit_element.click()
+
+        # wait until we're redirected
+        WebDriverWait(self.browser, 10).until(
+            lambda d: self.browser.title == "MIT ESP - Page Does Not Exist")
 
     def loadAjax(self):
         self.loginAdminBrowser(self.admins[0].username, "password")

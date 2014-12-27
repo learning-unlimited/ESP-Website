@@ -1,261 +1,37 @@
-body { padding: 0px; margin: 0; }
-table { border-spacing: 0; }
-
-/*
- * Utilities
- */
-.float-right { float: right; }
-.float-left  { float: left;  }
-
-.loading-overlay {
-background: #eee url(loading2.gif) no-repeat scroll 50% 50%; opacity: .9;
-position: absolute; z-index: 1000;
+table,th,td
+{
+    border:1px solid black;
+    border-collapse: collapse;
 }
 
-#statusbar-wrapper {
-position: absolute; top: 15px; height: 30px; left: 0; right: 0;
-text-align: center;
+.matrix-cell{
+    height: 40px;
+    min-width: 80px;
+    max-width: 80px;
+    width: 80px;
+    text-align: center;
 }
 
-#statusbar {
-padding: 5px 30px; margin: 0 auto;
-background: #eee;
-border-radius: 3px;
--webkit-border-radius: 3px;
--moz-border-radius: 3px;
-}
-#statusbar.red { background: #faa; }
-#statusbar.green { background: #afa; }
-#statusbar.yellow { background: #ffa; }
-
-
-#body {
-position: absolute;
-top: 50px; bottom: 10px; right: 10px; left: 10px;
+.disabled-cell{
+    background: #222222;
 }
 
-#matrix-target {
-vertical-align:top;
-height: 62%; max-height: 62%; /*overflow: auto;*/
-padding-bottom: 5px; /*border: 1px solid black;*/
-position: relative;
-}
-#directory-target {
-overflow: hidden;
-vertical-align:top;
-height: 50%; max-height: 38%; /*overflow: auto;*/
-width: 100%;
-padding-top: 5px; /*border: 1px solid black;*/
-position: relative;
+.available-cell{
+    opacity: 0.35
 }
 
-
-/*
- * the Matrix
- */
-.matrix {
-font-family: Arial, Helvetica, sans-serif; font-size: 0.9em;
-border: 2px solid black;
-position: relative; top: 0; bottom: 0; right: 0; left: 0;
-height: 500px; width: 600px;
-overflow: auto;
+.occupied-cell{
 }
 
-.matrix-header {
-display: table; z-index: 99;
-position: relative;
-border-bottom: 2px solid #000;
-height: 40px;
-padding-right: 200px;
-}
-.matrix-corner-box {
-display: block; z-index: 100;
-position: relative; left: 0; width: 123px; top: 0; bottom: 0; height: 40px;
-border-right: 2px solid #000; background: #eee;
-}
-.matrix-column-header-box {
-display: block; overflow: hidden;
-position: relative; left: 0; right: 0; top: 0; height: 40px;
-background: #eee;
-}
-      .matrix-column-header-box tbody {
-	  position: relative; display: block;
-      }
-      .matrix-column-header-box tr {
-	  height: 40px;
-      }
-      .matrix-column-header-box td {
-	  border-right: 1px solid #666; font-size: smaller;
-      }
-
-.matrix-body {
-display: table;
-position: relative;
-height: 458px;
-margin-bottom: 200px;
-}
-.matrix-row-header-box {
-display: block; z-index: 98;
-position: relative; left: 0; width: 121px; height: 40px; top: 0; bottom: 0;
-border-right: 2px solid #000; border-bottom: 2px solid #000; background: #eee;
-text-align: center;
-font-size: small;
-}
-      .matrix-row-header-box td {
-	  width: 100%; max-width: none; min-width: none;
-	  border-bottom: 1px solid #666; font-size: smaller;
-      }
-      .matrix-row-header-box .tooltip_popup {
-          left: 121px;
-      }
-
-.matrix-cell-body {
-display: block; overflow: auto;
-position: relative; left: 125px; right: 0; top: 0; bottom: 0;
+.component-div {
+    overflow-y: scroll;
 }
 
-.matrix-body tr {
-height: 40px; vertical-align: middle;
+.garbage-div {
+    background: grey;
+    height: 40px;
 }
 
-
-.matrix-cell {
-width: 50px; max-width: 50px; min-width: 50px;
-margin: 0px; padding: 0 2px;
-vertical-align: middle; text-align: center;
-font-size: 0.9em;
-border-bottom: 1px solid #666;
-border-right: 1px solid #666;
-}
-.matrix .invalid-cell, .matrix .inactive { background-color: #ccc; }
-.matrix .data-cell.active { background-color: #cfc; }
-.matrix .data-cell.filled { background-color: #ccf; }
-.matrix .data-cell.unreviewed { background-color: #fcc; }
-
-.matrix .matrix-cell.non-sequential { border-right: 4px solid #666;}
-/*.matrix .non-sequential:last-child { border-right-width: 0px; }*/
-.matrix-cell-body .matrix-cell { border: 0px solid #666; border-width: 0px 1px 1px 0px; }
-
-
-.matrix-cell .tooltip {
-/*display: block; width: 100%; height: 100%;
-position: absolute; top:0; bottom:0; left:0; right:0;*/
-}
-
-/* DD_proxy */
-.class-dd-proxy {
-width: 50px; text-align: center;
-height: 50px; line-height: 50px;
-background: #ccc; border: 2px solid #999;
-opacity: .6;
-}
-.matrix .data-cell.active.dd-hover { background-color: #0f0; }
-.matrix .data-cell.dd-highlight { background-color: #6f6; }
-
-
-/*
- * the Directory
- */
-.directory-table-wrapper {
-position: relative;
-left: 0px;
-border-left: 2px solid black;
-border-right: 2px solid black;
-border-bottom: 2px solid black;
-height: 90%;
-overflow-y: scroll;
-overflow-x: hidden;
-}
-
-.directory {
-position: relative; height:85%; width: 100%;
-border-spacing: 0px; border-collapse: collapse;
-}
-.directory .header td { height: auto; }
-.directory span { float: left; padding-right: 15px; margin-right: 10px; }
-.directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
-.directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
-
-.directory tr { width: 100%; display: block; }
-.directory tr {
-border-bottom: 1px solid #999;	
-}
-
-.directory td {
-text-align: center; vertical-align: top;
-font-size: 11pt;
-padding: 10px;
-}
-
-.directory td + td { border-left: 1px dotted #666; }
-
-.directory tr.assigned {
-background-color: #cfc;
-}
-
-.directory thead {
-background-color: #eee; border-bottom: 1px solid black;
-position: relative;
-top: 0; height: 40px; left: 0; right: 0;
-}
-
-.directory tbody {
-overflow: auto;
-position: relative;
-top: 41px; bottom: 0; left: 0; right: 0;
-}
-
-.searchbox {
-border: 2px solid black;
-position: relative;
-left: 0px;
-height: 15%;
-overflow: hidden;
-
-}
-
-.searchbox input {
-width: 100% ;
-margin-bottom: 20px;
-}
-
-.garbage {
-width: 100%;
-height: 100%;
-background: grey;
-border: 1px solid black;
-margin-right: 200px;
-color: white;
-font-family: Arial, Helvetica, sans-serif;
-font-size: 0.8em;
-vertical-align: center;
-text-align: center;
-}
-
-.garbage.dd-highlight {
-background: yellow;
-}
-
-.garbage.dd-hover {
-background: red !important;
-}
-
-.unapproved {
-color:#ff0000; font-style:italic;
-}
-
-.td_length {
-min-width:50px;  max-width:50px;
-}
-
-.td_title {
-width:400px;
-}
-
-.td_teacher {
-min-width:150px; max-width:150px;
-}
-
-.td_id {
-min-width:70px; max-width:70px;
+.no-border {
+    border: 0px;
 }

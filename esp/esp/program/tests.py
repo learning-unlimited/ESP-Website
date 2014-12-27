@@ -30,33 +30,23 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@learningu.org
+  Email: web-team@lists.learningu.org
 """
 
-        
-from esp.accounting.models import LineItemType
-from esp.cal.models import EventType, Event
-from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
-from esp.qsd.models import QuasiStaticData
-from esp.resources.models import Resource, ResourceType
-from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
-from esp.web.models import NavBarCategory
+from esp.users.models import ESPUser, StudentInfo, Permission
+from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
+from esp.resources.models import ResourceType
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import User, Group
+import datetime, random, hashlib
+from django.test import LiveServerTestCase
+
 from django.test.client import Client
-from django import forms
-
-from esp.program.controllers.classreg import get_custom_fields
-from esp.program.controllers.lottery import LotteryAssignmentController
-from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
-from esp.program.forms import ProgramCreationForm
-from esp.program.modules.base import ProgramModuleObj
-from esp.program.setup import prepare_program, commit_program
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
-from datetime import datetime, timedelta
-from decimal import Decimal
-import hashlib
+from esp.program.controllers.lottery import LotteryAssignmentController
+from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+
 import numpy
 import random
 import re
@@ -64,6 +54,7 @@ import unicodedata
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
+        import random
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
@@ -229,6 +220,8 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
     
     def setUp(self):
+        from esp.users.models import ESPUser
+
         #create Groups for userroles
         user_role_setup()
 
@@ -249,6 +242,15 @@ class ProgramHappenTest(TestCase):
 
     def makeprogram(self):
         """ Test program creation through the web form. """
+        from esp.users.models import ESPUser
+        from esp.program.models import Program, ProgramModule, ClassCategories
+        from esp.program.modules.base import ProgramModuleObj
+        from esp.accounting.models import LineItemType
+        from decimal import Decimal
+        # Imports for the HttpRequest hack
+        from esp.program.views import newprogram
+        from django.http import HttpRequest
+        
         # Make stuff that a program needs
         ClassCategories.objects.create(symbol='X', category='Everything')
         ClassCategories.objects.create(symbol='N', category='Nothing')
@@ -311,6 +313,11 @@ class ProgramHappenTest(TestCase):
 
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
+        from esp.cal.models import EventType, Event
+        from esp.resources.models import Resource, ResourceType, ResourceAssignment
+        from esp.program.controllers.classreg import get_custom_fields
+        from django import forms
+        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
@@ -425,6 +432,10 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
+        from esp.users.models import ContactInfo, StudentInfo
+        from esp.program.models import RegistrationProfile, StudentRegistration
+        from datetime import datetime, timedelta
+
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
@@ -490,7 +501,26 @@ class ProgramFrameworkTest(TestCase):
     """
     
     def setUp(self, *args, **kwargs):
+        from esp.users.models import ESPUser
+        from esp.cal.models import Event, EventType
+        from esp.cal.models import install as cal_install
+        from esp.resources.models import Resource, ResourceType
+        # We manually cache the creation of resource types
+        # since the cache persists between tests, and the underlying database objects do not
+        # we clear it here
+        ResourceType._get_or_create_cache = {}
+
+        from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
+        from esp.program.setup import prepare_program, commit_program
+        from esp.program.forms import ProgramCreationForm
+        from esp.qsd.models import QuasiStaticData
+        from esp.web.models import NavBarCategory
+        from datetime import datetime, timedelta
+        from esp.program.modules.models import install as program_modules_install
+
         user_role_setup()
+        program_modules_install()
+        cal_install()
         
         #   Default parameters
         settings = {'num_timeslots': 3,
@@ -529,22 +559,19 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            name = u'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            name = u'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            name = u'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
+            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -581,7 +608,7 @@ class ProgramFrameworkTest(TestCase):
             raise Exception("Program form creation errors")
         
         temp_prog = pcf.save(commit=False)
-        (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
+        (perms, modules) = prepare_program(temp_prog, pcf.data)
         
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
@@ -655,42 +682,15 @@ class ProgramFrameworkTest(TestCase):
                         sec.assign_room(random.choice(vr))
                         #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
-    def add_user_profiles(self):
-        """Helper function to give each user a profile so they can register.
-
-        Does not get called by default, but subclasses can call it.
-        """
+    #   Helper function to give each student a profile so they can sign up for classes.
+    #   Does not get called by default, but subclasses can call it.
+    def add_student_profiles(self):
         for student in self.students:
             student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
-        for teacher in self.teachers:
-            teacher_teacherinfo = TeacherInfo(user=teacher)
-            teacher_teacherinfo.save()
-            digit = teacher.id % 10
-            phone = (u'%d' % digit) * 10
-            teacher_contactinfo = ContactInfo(
-                user=teacher,
-                first_name=teacher.first_name,
-                last_name=teacher.last_name,
-                e_mail=teacher.email,
-                phone_day=phone,
-                phone_cell=phone,
-            )
-            teacher_contactinfo.save()
-            teacher_regprofile = RegistrationProfile(
-                user=teacher,
-                program=self.program,
-                teacher_info=teacher_teacherinfo,
-                contact_user=teacher_contactinfo,
-                most_recent_profile=True,
-            )
-            teacher_regprofile.save()
-
-    # For backwards compatability.
-    add_student_profiles = add_user_profiles
-
+            
     #   Helper function to put the students in classes.
     #   Does not get called by default, but subclasses can call it.
     def classreg_students(self):
@@ -713,6 +713,9 @@ class ProgramFrameworkTest(TestCase):
     # Helper function to create another program in the past
     # Does not get called by default, but subclasses can call it
     def create_past_program(self):
+        from esp.program.models import ProgramModule
+        from esp.program.forms import ProgramCreationForm
+        from esp.program.setup import prepare_program, commit_program
         # Make a program
         prog_form_values = {
                 'term': '1111_Spring',
@@ -770,6 +773,11 @@ class ScheduleMapTest(ProgramFrameworkTest):
         properly reflected in their schedule map.
     """
     def runTest(self):
+        from esp.program.models import ScheduleMap, ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        
+        import random
+        
         def occupied_slots(map):
             result = []
             for key in map:
@@ -832,6 +840,7 @@ class BooleanLogicTest(TestCase):
         working correctly.
     """
     def runTest(self):
+        from esp.program.models import BooleanExpression
         #   Create a logic expression with default values
         exp, created = BooleanExpression.objects.get_or_create(label='bltestexp')
         a = exp.add_token('1')
@@ -863,6 +872,9 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
            between the results of these tests. 
     """
     def runTest(self):
+        from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+        from esp.program.modules.base import ProgramModuleObj
+        
         #   Initialize
         student = self.students[0]
         program = self.program
@@ -986,6 +998,10 @@ class DynamicCapacityTest(ProgramFrameworkTest):
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
+        from esp.program.models import ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
+    
         #   Make all default modules non-required
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj
@@ -1070,9 +1086,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
         self.priority_rts=[self.priority_rt]
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        scrmi.priority_limit = 1
-        scrmi.save()
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1141,7 +1154,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.save_assignments()
 
         #   Get stats
-        stats = lotteryController.compute_stats(display=False)
+        stats = lotteryController.compute_stats()
 
         #   Check stats for correctness
         #   - Some basic stats
@@ -1228,8 +1241,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
     
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
-        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')
-        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/3')
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
         self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         scrmi.priority_limit = 3

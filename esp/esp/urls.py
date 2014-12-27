@@ -73,6 +73,8 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
+urlpatterns += patterns('', ('^javascript_tests', 'esp.tests.views.javascript_tests'))
+
 # program stuff
 urlpatterns += patterns('',
                         (r'^',  include('esp.program.urls')),

@@ -16,125 +16,49 @@
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link id='sch_matrix_css' href='/media/default_styles/scheduling-matrix.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
+<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css">
 
 <!-- 3rd party -->
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
-<!--<script type='text/javascript' src='/media/scripts/class.min.js'></script>-->
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+
+
+<!--Scheduler-->
 <script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
 <script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
-<script type="text/javascript">    
-  var debug_on = false;  
-  var debug_log = function(message){
-      if (debug_on){
-          console.log(message);
-      }
-  };
-</script>
-<script type='text/javascript' src='/media/scripts/json_fetch.js'></script>
-<!-- app -->
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/ESP.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Util.js'></script>
 
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Scheduling.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Resources.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/DragDrop.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Widgets.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Directory.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
-<!-- ENDLIBS -->
-
-
-
-<!-- ENDSTYLE -->
-
-<!-- APP -->
-<!-- ENDAPP -->
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Timeslots.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ApiClient.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Helpers.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ChangelogFetcher.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Main.js"></script>
 
 </head>
 
 <body>
-<div id='statusbar-wrapper'>
-  <div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>
-  <span id='statusbar'>Loading...</span>
-</div>
-
-<div id='body'>
-<table>
+<table class="no-border">
   <tr>
-    <!-- MATRIX TARGET-->
-    <td width=200 id='matrix-target'>
-      <div class="matrix">
-	<div class="matrix-header">
-	  <table class="matrix-column-header-box">
-	    <tr class="matrix-row-body">
-	      <td class="matrix-corner-box">
-		<div class="matrix-corner-box">
-		  <div id="garbage-div" class="garbage ui-droppable">Drag here to unschedule</div>	
-		</div>
-	      </td>
-	      <!--times added by javascript here-->
-	    </tr>
-	  </table>
-	</div>
-	<div class="matrix-body">
-	  <table id="matrix-table">
-	    <!--grid added here-->
-	  </table>
-	</div>
-      </div>
+    <td class="no-border">
+      <div id="matrix-div" class="component-div"></div>
     </td>
-    <!-- DIRECTORY AND CLASS FILTER TARGET-->
-    <td width=200 id='directory-target'>
-      <div id="directory-accordion">
-	<h3><a href="#" id="directory_header">Class Directory</a></h3>
-	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
-	  <table class="directory">
-	    <thead><tr id="directory_table_header" class="header">
-	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
-	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
-	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
-	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
-	    </tr></thead>
-	    <tbody id="directory-table-body"></tbody>
-	    <!--classes get added here-->
-	  </table>
-	</div>
-	<h3><a href="#" id="filtering_header">Advanced Filter</a></h3>
-	<div id="searchbox" class="searchbox">
-	  <table>
-	    <tr><td>Title</td><td colspan="3"><input id="filter_Title"/></td></tr>
-	    <tr><td>ID</td><td colspan="3"><input id="filter_ID"/></td></tr>
-	    <tr><td>Teacher</td><td colspan="3"><input id="filter_Teacher"/></td></tr>
-	    <tr><td>Timeslot</td><td colspan="3"><input id="filter_Timeslot"/></td></tr>
-	    <tr>
-	      <td>Length</td>
-	      <td colspan="1"><input id="filter_Min-length"></td>
-	      <td align="center">to</td>
-	      <td colspan="1"><input id="filter_Max-length"></td>
-	    </tr>
-	    <tr>
-	      <td>Class size</td><td><input id="filter_Min-size"></td>
-	      <td align="center">to</td><td><input id="filter_Max-size"></td>
-	    </tr>
-            <tr>
-	      <td>Show unapproved classes</td>
-	      <td><input type="checkbox" id="filter_Status"></td>
-	      <td>Show already scheduled classes</td>
-	      <td><input type="checkbox" id="filter_Scheduled"></td>
-	    </tr>
-	  </table>
-	</div>
+    <td class="no-border">
+      <div id="directory-wrapper-div" class="component-div">
+	<div id="garbage-div" class="garbage-div"></div>
+	<div id="directory-div"></div>
       </div>
     </td>
   </tr>
 </table>
-</div>
+
 </body>
 </html>
