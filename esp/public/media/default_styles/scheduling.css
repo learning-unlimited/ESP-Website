@@ -17,10 +17,15 @@ table,th,td
 }
 
 .available-cell{
-    opacity: 0.35
+    opacity: 0.35;
 }
 
 .occupied-cell{
+}
+
+.highlighted-cell {
+    background-color: #32cd32 !important;
+    opacity: 1;
 }
 
 .component-div {

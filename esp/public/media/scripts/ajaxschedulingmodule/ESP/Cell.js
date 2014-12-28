@@ -7,7 +7,10 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.cellColors = new CellColors();
     this.room_name = room_name;
     this.timeslot_id = timeslot_id;
+    this.matrix = matrix;
     this.disabled = false; // for tests
+    
+    this.availableTimeslots = [];
 
     this.dragHelper = function(){
 	    var div = $j("<div/>");
@@ -34,7 +37,17 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    $j(this.el).tooltip({
 	        items: ".occupied-cell",
 	        content: this.tooltip.bind(this)
-	    })
+	    });
+
+        this.el.on("dragstart", function(evt) {
+            this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
+            this.highlightTimeslots(this.availableTimeslots);
+        }.bind(this));
+
+        this.el.on("dragstop", function(evt) {
+            this.unhighlightTimeslots(this.availableTimeslots);
+            this.availableTimeslots = [];
+        }.bind(this));
         
 	    if (new_section != null){
 	        this.addSection(new_section);
@@ -44,6 +57,34 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    }
 	    this.el.addClass("matrix-cell");
     }
+
+    /**
+     * Highlight the timeslots on the grid
+     */
+    this.highlightTimeslots = function(timeslots) {
+        console.log("highlighting");
+        $j.each(timeslots, function(j, timeslot) {
+            $j.each(this.matrix.rooms, function(k, room) {
+                var cell = this.matrix.getCell(room.id, timeslot);
+                if(!cell.section && !cell.disabled) {
+                    cell.el.addClass("highlighted-cell");
+                }
+            }.bind(this));
+        }.bind(this));
+    }
+
+    /**
+     * Unhighlight the cells that are currently highlighted
+     */
+    this.unhighlightTimeslots = function(timeslots) {
+        console.log("unhighlighting");
+        $j.each(timeslots, function(j, timeslot) {
+            $j.each(this.matrix.rooms, function(k, room) {
+                var cell = this.matrix.getCell(room.id, timeslot);
+                cell.el.removeClass("highlighted-cell");
+            }.bind(this));
+        }.bind(this));
+    };
 
     /**
      * Remove a section from the cell and all associated data

@@ -1,10 +1,11 @@
 /**
  * This is the directory of classes that has yet to be scheduled
  */
-function Directory(sections, el, schedule_assignments) {
+function Directory(sections, el, schedule_assignments, matrix) {
     this.sections = sections;
     this.el = el;
     this.schedule_assignments = schedule_assignments;
+    this.matrix = matrix;
 
     this.render = function(){
         
@@ -23,10 +24,10 @@ function Directory(sections, el, schedule_assignments) {
         // Create the directory table
 	    var table = $j("<table/>");
 	    $j.each(this.filtered_sections(), function(id, section){
-	        var row = new TableRow(section, $j("<tr/>"));
+	        var row = new TableRow(section, $j("<tr/>"), this);
 	        row.render();
 	        row.el.appendTo(table);
-	    })
+	    }.bind(this))
 	        table.appendTo(this.el);
     };
 
@@ -53,10 +54,12 @@ function Directory(sections, el, schedule_assignments) {
 /**
  * This is one row in the directory containing a section to be scheduled
  */
-function TableRow(section, el){
+function TableRow(section, el, directory){
     this.el = el;
     this.section = section;
-    this.cell = new Cell($j("<td/>"), section);
+    this.directory = directory;
+    
+    this.cell = new Cell($j("<td/>"), section, null, null, this.directory.matrix);
 
     this.render = function(){
 	    this.el[0].innerHTML = "<td>" + this.section.title + "</td>";

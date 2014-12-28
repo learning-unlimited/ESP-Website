@@ -6,7 +6,7 @@ function Scheduler(
     last_applied_index,
     update_interval
 ) {
-    this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments);
+
     this.matrix = new Matrix(
 	data.timeslots,
 	data.rooms,
@@ -17,6 +17,8 @@ function Scheduler(
 	garbageEl,
 	new ApiClient()
     );
+
+    this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments, this.matrix);
 
     this.changelogFetcher = new ChangelogFetcher(
 	this.matrix,
