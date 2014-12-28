@@ -105,19 +105,21 @@ function Matrix(
 	    if (!this.validateAssignment(section, room_name, schedule_timeslots)){
 	        return;
 	    }
-
+		this.scheduleSectionLocal(section_id, room_name, schedule_timeslots);
 	    this.api_client.schedule_section(
 	        section.id,
 	        schedule_timeslots,
 	        room_name, 
 	        function() {
-		        this.scheduleSectionLocal(section_id, room_name, schedule_timeslots);
+
 	        }.bind(this),
 	        function(msg) {
+                this.unscheduleSectionLocal(section_id);
 		        console.log(msg);
-	        } 
+	        }.bind(this)
 	    );
     }
+
 
     /**
      * Make the local changes associated with scheduling a class and update the display
@@ -155,18 +157,23 @@ function Matrix(
 	    $j("body").trigger("schedule-changed");
     }
 
+
     /**
      * Unschedule a section of a class
      */
     this.unscheduleSection = function(section_id){
+        var old_assignment = this.schedule_assignments[section_id];
+        var old_room_name = old_assignment.room_name;
+        var old_schedule_timeslots = old_assignment.timeslots;
+		this.unscheduleSectionLocal(section_id);        
 	    this.api_client.unschedule_section(
 	        section_id,
 	        function(){ 
-		        this.unscheduleSectionLocal(section_id);
 	        }.bind(this),
 	        function(msg){
+                this.scheduleSectionLocal(section_id, old_room_name, old_schedule_timeslots);
 		        console.log(msg);
-	        }
+	        }.bind(this)
 	    );
     };
 
