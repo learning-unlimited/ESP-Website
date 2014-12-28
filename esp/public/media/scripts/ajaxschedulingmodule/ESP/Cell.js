@@ -68,6 +68,7 @@ function Cell(el, section, room_name, timeslot_id) {
 	    this.el.addClass("occupied-cell");
 	    this.el.removeClass("available-cell");
 	    this.el.css("background-color", this.cellColors.color(section));
+        this.el.css("color", this.cellColors.textColor(section));
 	    this.el[0].innerHTML = section.emailcode;
 	    this.el.droppable("disable");
 	    this.el.draggable("enable");

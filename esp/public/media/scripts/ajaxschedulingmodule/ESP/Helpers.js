@@ -27,3 +27,13 @@ helpers_add_timeslots_order = function(timeslot_object){
 
     return timeslot_object;
 };
+
+/**
+ * Takes hex string of form #rrggbb and outputs an array with rgb values
+ */
+helpers_hex_string_to_color = function(hex_string) {
+    var color = [parseInt(hex_string.slice(1, 3), 16),
+                 parseInt(hex_string.slice(3, 5), 16),
+                 parseInt(hex_string.slice(5, 7), 16)];
+    return color;
+}
