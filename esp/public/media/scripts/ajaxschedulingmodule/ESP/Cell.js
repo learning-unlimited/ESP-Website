@@ -1,7 +1,7 @@
 /**
  * This is a cell that can have class sections assigned to it.
  */
-function Cell(el, section, room_name, timeslot_id) {
+function Cell(el, section, room_name, timeslot_id, matrix) {
     this.el = el;
 
     this.cellColors = new CellColors();

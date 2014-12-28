@@ -1,6 +1,7 @@
 function Matrix(
     timeslots,
     rooms,
+    teachers,
     schedule_assignments,
     sections,
     el,
@@ -12,6 +13,7 @@ function Matrix(
     this.el.id = "matrix-table";
 
     this.rooms = rooms;
+    this.teachers = teachers;
     this.schedule_assignments = schedule_assignments;
     this.sections = sections;
     this.timeslots = new Timeslots(timeslots);
@@ -42,6 +44,7 @@ function Matrix(
     this.init();
 
     // set up cells
+    var matrix = this;
     this.cells = function(){
         // cells has room names as keys and arrays of timeslots as values
 	    var cells = {};
@@ -51,7 +54,7 @@ function Matrix(
 	        $j.each(timeslots, function(timeslot_id_string, timeslot){
 		        var timeslot_id = parseInt(timeslot_id_string);
 		        if (room.availability.indexOf(timeslot_id) >= 0){
-		            cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id);
+		            cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id, matrix);
 		        } else {
 		            cells[room_name][i] = new DisabledCell($j("<td/>"))
 		        }
@@ -77,6 +80,14 @@ function Matrix(
 	    return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
     };
 
+    this.getAvailableTimeslotsForSection = function(section) {
+        var availabilities = [];
+        $j.each(section.teachers, function(index, teacher_id) {
+            availabilities.push(this.teachers[teacher_id].availability);
+        }.bind(this));
+        var availableTimeslots = helpersIntersection(availabilities, true);
+        return availableTimeslots;
+    };
     /**
      * Checks a section we want to schedule in room_name during schedule_timeslots
      * to make sure the room is available during that time and the length is nonzero.

@@ -10,6 +10,7 @@ function Scheduler(
     this.matrix = new Matrix(
 	data.timeslots,
 	data.rooms,
+    data.teachers,
 	data.schedule_assignments,
 	data.sections,
 	matrixEl,

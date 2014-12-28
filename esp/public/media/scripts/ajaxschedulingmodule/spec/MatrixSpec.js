@@ -5,6 +5,7 @@ describe("Matrix", function(){
 	m = new Matrix(
 	    time_fixture(),
 	    room_fixture(),
+        teacher_fixture(),
 	    schedule_assignments_fixture(),
 	    sections_fixture(),
 	    $j("<div/>"), $j("<div/>"),
@@ -16,31 +17,46 @@ describe("Matrix", function(){
 	expect(m.garbage_el[0]).toBeHtmlNode();
     });
 
-    it("should have times, rooms, and schedule assignments", function(){
-	expect(m.timeslots).toBeObject();
-	expect(m.rooms).toBeObject();
-	expect(m.schedule_assignments).toBeObject();
-	expect(m.sections).toBeObject();
+    it("should have times, rooms, teachers, and schedule assignments", function(){
+	    expect(m.timeslots).toBeObject();
+	    expect(m.rooms).toBeObject();
+        expect(m.teachers).toBeObject();
+	    expect(m.schedule_assignments).toBeObject();
+	    expect(m.sections).toBeObject();
     });
 
     describe("getCell", function(){
-	it("returns the html cell for the requested room and time", function(){
-	    expect(m.getCell("room-1", 1).section).toEqual(section_1());
-	    expect(m.getCell("room-1", 1).room_name).toEqual("room-1");
-	    expect(m.getCell("room-1", 1).timeslot_id).toEqual(1);
+	    it("returns the html cell for the requested room and time", function(){
+	        expect(m.getCell("room-1", 1).section).toEqual(section_1());
+	        expect(m.getCell("room-1", 1).room_name).toEqual("room-1");
+	        expect(m.getCell("room-1", 1).timeslot_id).toEqual(1);
 
-	    expect(m.getCell("room-1", 2).section).toEqual(section_1());
-	    expect(m.getCell("room-1", 2).room_name).toEqual("room-1");
-	    expect(m.getCell("room-1", 2).timeslot_id).toEqual(2);
+	        expect(m.getCell("room-1", 2).section).toEqual(section_1());
+	        expect(m.getCell("room-1", 2).room_name).toEqual("room-1");
+	        expect(m.getCell("room-1", 2).timeslot_id).toEqual(2);
 
-	    expect(m.getCell("room-2", 1).innerHTML).toEqual(null);
-	    expect(m.getCell("room-2", 1).room_name).toEqual("room-2");
-	    expect(m.getCell("room-1", 1).timeslot_id).toEqual(1);
+	        expect(m.getCell("room-2", 1).innerHTML).toEqual(null);
+	        expect(m.getCell("room-2", 1).room_name).toEqual("room-2");
+	        expect(m.getCell("room-1", 1).timeslot_id).toEqual(1);
 
-	    expect(m.getCell("room-2", 2).innerHTML).toEqual(null);
-	    expect(m.getCell("room-2", 2).room_name).toEqual("room-2");
-	    expect(m.getCell("room-1", 2).timeslot_id).toEqual(2);
-	});
+	        expect(m.getCell("room-2", 2).innerHTML).toEqual(null);
+	        expect(m.getCell("room-2", 2).room_name).toEqual("room-2");
+	        expect(m.getCell("room-1", 2).timeslot_id).toEqual(2);
+	    });
+    });
+
+    describe("getAvailableTimeslotsForSection", function() {
+        it("returns the rooms where all teachers have availability", function() {
+            section1 = m.sections[3329];
+            timeslots1 = m.getAvailableTimeslotsForSection(section1);
+            expect(timeslots1.length).toEqual(1);
+            expect(timeslots1[0]).toEqual(1);
+
+            section2 = m.sections[3538];
+            timeslots2 = m.getAvailableTimeslotsForSection(section2);
+            expect(timeslots2.length).toEqual(2);
+
+        });
     });
 
     describe("when a room doesn't exist for some times", function(){
@@ -51,6 +67,7 @@ describe("Matrix", function(){
 	    m = new Matrix(
 		time_fixture(),
 		modified_room_fixture,
+        room_fixture(),
 		schedule_assignments_fixture(),
 		sections_fixture(),
 		$j("<div/>"), $j("<div/>"),

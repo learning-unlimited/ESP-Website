@@ -17,4 +17,21 @@ describe("Helpers", function(){
             expect(color[2]).toEqual(51);
         });
     });
+
+    describe("helpersIntersection", function() {
+        it("returns the intersection of arrays", function() {
+            var arrays1 = [[1, 2, 3, 4],
+                           [1, 3],
+                           [1]];
+            var intersection1 = helpersIntersection(arrays1, true);
+            expect(intersection1.length).toEqual(1);
+            expect(intersection1[0]).toEqual(1);
+
+            var arrays2 = [[1, 5, 7, 9], 
+                           [2 , 3]];
+            var intersection2 = helpersIntersection(arrays2, true);
+            expect(intersection2.length).toEqual(0);
+        });
+    });
 });
+

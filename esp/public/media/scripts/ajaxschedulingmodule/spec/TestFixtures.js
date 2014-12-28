@@ -1,3 +1,18 @@
+function teacher_fixture() {
+    return {
+        1: {
+            first_name: "Alyssa P.",
+            last_name: "Hacker",
+            availability: [1]
+        },
+        2: {
+            first_name: "Ben",
+            last_name: "Bitdiddle",
+            availability: [1, 2]
+        },
+    };
+};
+
 function time_fixture() {
     return {
 	1: {
@@ -54,10 +69,12 @@ function time_fixture_out_of_order() {
 function room_fixture() {
     return {
 	"room-1": {
-	    availability: [1, 2]
+	    availability: [1, 2],
+        num_students: 23,
 	},
 	"room-2": {
-	    availability: [1, 2]
+	    availability: [1, 2],
+        num_students: 7,
 	}
     };
 };
@@ -105,7 +122,7 @@ function section_1() {
 	    num_students: 42, 
 	    grade_max: 12, 
 	    id: 3329, 
-	    teachers: [6460]
+	    teachers: [1, 2]
 	};
 };
 
@@ -124,7 +141,7 @@ function section_2() {
 	    num_students: 14, 
 	    grade_max: 12, 
 	    id: 3538, 
-	    teachers: [45225]
+	    teachers: [2]
 	};
 };
 

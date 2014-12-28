@@ -37,3 +37,33 @@ helpers_hex_string_to_color = function(hex_string) {
                  parseInt(hex_string.slice(5, 7), 16)];
     return color;
 }
+
+/**
+ * Gets the intersection of an array of arrays
+ */
+helpersIntersection = function(arrays, isInteger) {
+    var frequencies = {};
+    $j.each(arrays, function(index, array) {
+        $j.each(array, function(index, elt) {
+            if(frequencies.hasOwnProperty(elt)) {
+                frequencies[elt] += 1;
+            } else {
+                frequencies[elt] = 1;
+            }
+        });
+    });
+
+    var intersection = [];
+    $j.each(frequencies, function(elt, freq) {
+        if(freq == arrays.length) {
+            if(isInteger) {
+                intersection.push(parseInt(elt));
+            } else {
+                intersection.push(elt);
+            }
+        }
+    });
+    
+    return intersection;
+           
+};
