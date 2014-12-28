@@ -151,3 +151,12 @@ function sections_fixture() {
 	3538: section_2()
     };
 };
+
+function matrix_fixture() {
+    var modified_room_fixture = room_fixture()
+	modified_room_fixture["room-2"].availability = [2]
+	return new Matrix(time_fixture(), modified_room_fixture,
+                      room_fixture(), schedule_assignments_fixture(),
+		              sections_fixture(), $j("<div/>"), $j("<div/>"),
+		              new FakeApiClient());
+};

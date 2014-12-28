@@ -61,17 +61,7 @@ describe("Matrix", function(){
 
     describe("when a room doesn't exist for some times", function(){
 	beforeEach(function(){
-	    var modified_room_fixture = room_fixture()
-	    modified_room_fixture["room-2"].availability = [2]
-
-	    m = new Matrix(
-		time_fixture(),
-		modified_room_fixture,
-        room_fixture(),
-		schedule_assignments_fixture(),
-		sections_fixture(),
-		$j("<div/>"), $j("<div/>"),
-		new FakeApiClient());
+        m = matrix_fixture();
 	})
 
 	it("should have disabled cells around it", function(){

@@ -2,7 +2,8 @@ describe("Directory", function(){
     var d;
 
     beforeEach(function(){
-	d = new Directory(sections_fixture(), $j("<div/>"), empty_schedule_assignments_fixture());
+        m = matrix_fixture();
+	    d = new Directory(sections_fixture(), $j("<div/>"), empty_schedule_assignments_fixture(), m);
     });
 
     it("should have a list of sections and an el", function(){
@@ -17,8 +18,9 @@ describe("Directory", function(){
 
 	describe("when there are classes scheduled", function(){
 	    beforeEach(function(){
-		d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture());
-		d.render();
+            m = matrix_fixture();
+		    d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture(), m);
+		    d.render();
 	    });
 
 	    it("should not show them in the directory", function(){
@@ -59,7 +61,9 @@ describe("TableRow", function(){
     var tr;
 
     beforeEach(function(){
-	tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"));
+        m = matrix_fixture();
+		d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture(), m);
+	    tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"), d);
     })
 
     it("should have an el", function(){
