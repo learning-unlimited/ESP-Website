@@ -3,12 +3,14 @@ function teacher_fixture() {
         1: {
             first_name: "Alyssa P.",
             last_name: "Hacker",
-            availability: [1]
+            availability: [1],
+            sections: 3329, 
         },
         2: {
             first_name: "Ben",
             last_name: "Bitdiddle",
-            availability: [1, 2]
+            availability: [1, 2],
+            sections: 3538,
         },
     };
 };

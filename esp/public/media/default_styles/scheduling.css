@@ -23,8 +23,13 @@ table,th,td
 .occupied-cell{
 }
 
-.highlighted-cell {
+.teacher-available-cell {
     background-color: #32cd32 !important;
+    opacity: 1;
+}
+
+.teacher-teaching-cell {
+    background-color: yellow !important;
     opacity: 1;
 }
 

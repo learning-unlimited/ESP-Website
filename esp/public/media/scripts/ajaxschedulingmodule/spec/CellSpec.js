@@ -3,12 +3,19 @@ describe("Cell", function(){
     var section;
 
     beforeEach(function(){
-	c = new Cell($j("<td/>"), null, "1-115", 1);
-
-	section = {
-	    emailcode: "my-emailcode",
-	    length: 1.83
-	};
+        matrix = new Matrix(
+	        time_fixture(),
+	        room_fixture(),
+            teacher_fixture(),
+	        schedule_assignments_fixture(),
+	        sections_fixture(),
+	        $j("<div/>"), $j("<div/>"), $j("<div/>"),
+	        new FakeApiClient());
+	    c = new Cell($j("<td/>"), null, "1-115", 1, matrix);
+	    section = {
+	        emailcode: "my-emailcode",
+	        length: 1.83
+	    };
     });
 
     it("has an element with the matrix cell class", function(){
@@ -51,8 +58,9 @@ describe("Cell", function(){
 
 	it("contains the emailcode, title, length, and max students", function(){
 	    var tooltip = c.tooltip();
-	    expect(tooltip).toContain("Code: M3343s1");
-	    expect(tooltip).toContain("Title: Become a LaTeX Guru");
+	    expect(tooltip).toContain("M3343s1");
+        expect(tooltip).toContain("Ben Bitdiddle");
+	    expect(tooltip).toContain("Become a LaTeX Guru");
 	    expect(tooltip).toContain("Class size max: 15");
 	    expect(tooltip).toContain("Length: 2");
 	});

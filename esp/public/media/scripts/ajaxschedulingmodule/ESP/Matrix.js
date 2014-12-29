@@ -84,11 +84,27 @@ function Matrix(
 
     this.getAvailableTimeslotsForSection = function(section) {
         var availabilities = [];
+        var already_teaching = [];        
         $j.each(section.teachers, function(index, teacher_id) {
-            availabilities.push(this.teachers[teacher_id].availability);
+            var teacher = this.teachers[teacher_id];
+            var teacher_availabilities = teacher.availability.slice();
+            var sections = teacher.sections;
+            $j.each(sections, function(index, section_id) {
+                var assignment = this.schedule_assignments[section_id];
+                if(assignment && section_id != section.id) {
+                    $j.each(assignment.timeslots, function(index, timeslot_id) {
+                        var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                        if(availability_index >= 0) {
+                            teacher_availabilities.splice(availability_index, 1);
+                            already_teaching.push(timeslot_id);
+                        }
+                    }.bind(this));
+                }
+            }.bind(this));
+            availabilities.push(teacher_availabilities);
         }.bind(this));
         var availableTimeslots = helpersIntersection(availabilities, true);
-        return availableTimeslots;
+        return [availableTimeslots, already_teaching];
     };
 
     /**

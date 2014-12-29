@@ -49,12 +49,16 @@ describe("Matrix", function(){
         it("returns the rooms where all teachers have availability", function() {
             section1 = m.sections[3329];
             timeslots1 = m.getAvailableTimeslotsForSection(section1);
-            expect(timeslots1.length).toEqual(1);
-            expect(timeslots1[0]).toEqual(1);
+            // Test available timeslots
+            expect(timeslots1[0].length).toEqual(1);
+            expect(timeslots1[0][0]).toEqual(1);
+
+            // Test timeslots while teaching
+            expect(timeslots1[1].length).toEqual(0);
 
             section2 = m.sections[3538];
             timeslots2 = m.getAvailableTimeslotsForSection(section2);
-            expect(timeslots2.length).toEqual(2);
+            expect(timeslots2[0].length).toEqual(2);
 
         });
     });

@@ -59,29 +59,52 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     }
 
     /**
-     * Highlight the timeslots on the grid
+     * Highlight the timeslots on the grid.
+     *
+     * Takes in timeslots which is an array. The first element is an array of
+     * timeslots where all teachers are completely available. The second is an 
+     * array of timeslots where one or more teachers are teaching, but would be
+     * available otherwise.
      */
     this.highlightTimeslots = function(timeslots) {
-        $j.each(timeslots, function(j, timeslot) {
-            $j.each(this.matrix.rooms, function(k, room) {
-                var cell = this.matrix.getCell(room.id, timeslot);
-                if(!cell.section && !cell.disabled) {
-                    cell.el.addClass("highlighted-cell");
-                } 
+        /**
+         * Adds a class to all rooms with non-disabled cells in each
+         * timeslot in timeslots.
+         */
+        addClassToTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                $j.each(this.matrix.rooms, function(k, room) {
+                    var cell = this.matrix.getCell(room.id, timeslot);
+                    if(!cell.section && !cell.disabled) {
+                        cell.el.addClass(className);
+                    } 
+                }.bind(this));
             }.bind(this));
-        }.bind(this));
+        }.bind(this);
+
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        addClassToTimeslots(available_timeslots, "teacher-available-cell");
+        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
     }
 
     /**
      * Unhighlight the cells that are currently highlighted
      */
     this.unhighlightTimeslots = function(timeslots) {
-        $j.each(timeslots, function(j, timeslot) {
-            $j.each(this.matrix.rooms, function(k, room) {
-                var cell = this.matrix.getCell(room.id, timeslot);
-                cell.el.removeClass("highlighted-cell");
+        removeClassFromTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                $j.each(this.matrix.rooms, function(k, room) {
+                    var cell = this.matrix.getCell(room.id, timeslot);
+                    cell.el.removeClass(className);
+                }.bind(this));
             }.bind(this));
-        }.bind(this));
+        }.bind(this);
+
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell");
+        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
     };
 
     /**
