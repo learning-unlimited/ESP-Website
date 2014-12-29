@@ -150,7 +150,8 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	        "<b>" + this.section.emailcode + ": " + this.section.title + "</b>", 
             "Teachers: " + teachers,
 	        "Class size max: " + this.section.class_size_max,
-	        "Length: " + Math.ceil(this.section.length)
+	        "Length: " + Math.ceil(this.section.length),
+            "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
 	    ];
 	    return tooltip_parts.join("<br/>");
     };
