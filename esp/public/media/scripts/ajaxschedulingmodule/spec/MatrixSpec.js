@@ -80,19 +80,23 @@ describe("Matrix", function(){
 	    });
 	    
 	    it("returns false", function(){
-		expect(m.validateAssignment(section_2(), "room-2", [1,2])).toEqual(false);
+		    var validObj = m.validateAssignment(section_2(), "room-2", [1,2]);
+		    expect(validObj.valid).toEqual(false);
+            expect(validObj.reason).toEqual("Error: timeslotundefined already has a class in room-2.");
 	    });
 	});
 
 	describe("when the assignment is valid", function(){
 	    it("returns true", function(){
-		expect(m.validateAssignment(section_2(), "room-2", [1,2])).toEqual(true);
+		    expect(m.validateAssignment(section_2(), "room-2", [1,2]).valid).toEqual(true);
 	    });
 	});
 
 	describe("when the timeslots are null", function(){
 	    it("returns false", function(){
-		expect(m.validateAssignment(section_2(), "room-2", null)).toEqual(false);
+            var validObj = m.validateAssignment(section_2(), "room-2", null)
+		    expect(validObj.valid).toEqual(false);
+            expect(validObj.reason).toEqual('Error: Not scheduled during a timeblock');
 	    });
 	});
     });
@@ -101,7 +105,7 @@ describe("Matrix", function(){
 	describe("when validations return true", function(){
 	    it("calls out to the api", function() {
 		spyOn(m.api_client, 'schedule_section');
-		spyOn(m, 'validateAssignment').andReturn(true);
+		spyOn(m, 'validateAssignment').andReturn({valid: true});
 		m.scheduleSection(section_1().id, "room-2", 1);
 		expect(m.api_client.schedule_section).toHaveBeenCalled();
 		

@@ -94,6 +94,9 @@ function Matrix(
     /**
      * Checks a section we want to schedule in room_name during schedule_timeslots
      * to make sure the room is available during that time and the length is nonzero.
+     *
+     * Returns an object with property valid that is set to whether the assignment is valid
+     * and reason which contains a message if valid is false.
      */
     this.validateAssignment = function(section, room_name, schedule_timeslots){
         var result = {
