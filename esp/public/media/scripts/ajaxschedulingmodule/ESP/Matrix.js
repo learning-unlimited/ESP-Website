@@ -227,6 +227,17 @@ function Matrix(
         this.message_el.scrollTop(this.message_el[0].scrollHeight);
     };
 
+    /**
+     * Return the text of a room tooltip
+     */
+    this.tooltip = function(room) {
+        var tooltip_parts = [
+            "<b>" + room.text + "</b>",
+            "Capacity: " + room.num_students + " students",
+        ];
+        return tooltip_parts.join("</br>");
+    };
+
     // render
     this.render = function(){
 	    var table = $j("<table/>");
@@ -241,10 +252,16 @@ function Matrix(
 	    //Room headers
 	    var rows = {};	//table rows by room name
 	    $j.each(this.rooms, function(id, room){
-	        var row = $j("<tr><th>" + id + "</th></tr>");
+            var room_header = $j("<th>" + id + "</th>");
+            room_header.tooltip({
+                content: this.tooltip(room),
+                items: "th",
+            });
+	        var row = $j("<tr></tr>");
+            room_header.appendTo(row);
 	        rows[id] = row;
 	        row.appendTo(table);
-	    });
+	    }.bind(this));
 
 	    //populate cells
 	    var cells = this.cells;

@@ -117,9 +117,15 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * Create data for the tooltip
      */
     this.tooltip = function(){
-	    tooltip_parts = [
-	        "Code: " + this.section.emailcode,
-	        "Title: " + this.section.title,
+        var teacher_list = []
+        $j.each(this.section.teachers, function(index, teacher_id) {
+            var teacher = this.matrix.teachers[teacher_id]
+            teacher_list.push(teacher.first_name + " " + teacher.last_name);
+        }.bind(this));
+        var teachers = teacher_list.join(", ");
+	    var tooltip_parts = [
+	        "<b>" + this.section.emailcode + ": " + this.section.title + "</b>", 
+            "Teachers: " + teachers,
 	        "Class size max: " + this.section.class_size_max,
 	        "Length: " + Math.ceil(this.section.length)
 	    ];
