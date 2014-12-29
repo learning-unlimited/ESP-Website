@@ -48,13 +48,11 @@ function Matrix(
             var cell = $j(evt.currentTarget.parentElement).data("cell");
             if(this.currently_selected === cell) {
                 cell.unselect();
-                this.currently_selected = null;
             } else {
                 if(this.currently_selected) {
                     this.currently_selected.unselect();
                 }
                 cell.select();
-                this.currently_selected = cell;
             }
         }.bind(this)); 
     }

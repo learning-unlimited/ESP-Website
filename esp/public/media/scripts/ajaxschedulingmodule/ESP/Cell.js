@@ -42,9 +42,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         this.el.on("dragstart", function(evt) {
             if(this.matrix.currently_selected) {
                 this.matrix.currently_selected.unselect();
-                this.matrix.currently_selected = null;
-            } 
-
+            }
             this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
             this.highlightTimeslots(this.availableTimeslots);
 
@@ -121,13 +119,17 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.el.addClass("selected-section");
             this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
             this.highlightTimeslots(this.availableTimeslots);
+            this.matrix.currently_selected = this;
             
         }
     };
 
     this.unselect = function() {
-        this.el.removeClass("selected-section");
-        this.unhighlightTimeslots(this.availableTimeslots);
+        if(this.el.hasClass("selected-section")) {
+            this.el.removeClass("selected-section");
+            this.unhighlightTimeslots(this.availableTimeslots);
+            this.matrix.currently_selected = null;
+        }
     };
 
     /**

@@ -8,7 +8,7 @@ describe("Matrix", function(){
         teacher_fixture(),
 	    schedule_assignments_fixture(),
 	    sections_fixture(),
-	    $j("<div/>"), $j("<div/>"), $j("<div/>"),
+	    $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"),
 	    new FakeApiClient());
     });
 
@@ -80,7 +80,7 @@ describe("Matrix", function(){
     describe("validateAssignment", function(){
 	describe("when a class is already scheduled in a room", function(){
 	    beforeEach(function(){
-		m.scheduleSection(section_1().id, "room-2", 2);
+		    m.scheduleSection(section_1().id, "room-2", 2);
 	    });
 	    
 	    it("returns false", function(){

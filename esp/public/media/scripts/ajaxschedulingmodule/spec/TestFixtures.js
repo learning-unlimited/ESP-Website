@@ -73,10 +73,12 @@ function room_fixture() {
 	"room-1": {
 	    availability: [1, 2],
         num_students: 23,
+        id: "room-1"
 	},
 	"room-2": {
 	    availability: [1, 2],
         num_students: 7,
+        id: "room-2"
 	}
     };
 };

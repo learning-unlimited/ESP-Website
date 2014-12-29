@@ -9,7 +9,7 @@ describe("Cell", function(){
             teacher_fixture(),
 	        schedule_assignments_fixture(),
 	        sections_fixture(),
-	        $j("<div/>"), $j("<div/>"), $j("<div/>"),
+	        $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"),
 	        new FakeApiClient());
 	    c = new Cell($j("<td/>"), null, "1-115", 1, matrix);
 	    section = {
@@ -108,7 +108,7 @@ describe("Cell", function(){
 
 	it("adds the section to the element", function(){
 	    c.addSection(section);
-	    expect(c.el[0].innerHTML).toEqual(section.emailcode);
+	    expect(c.el[0].innerText).toEqual(section.emailcode);
 	});
 
 	it("adds styling to the el", function(){
@@ -180,4 +180,30 @@ describe("Cell", function(){
 	    expect(c.hasSection()).toBeFalse();
 	});
     });
+
+    describe("select", function() {
+        it("adds the class selected-section", function() {
+	        c.addSection(section_1());
+            c.select();
+	        expect(c.el.hasClass("selected-section")).toBeTrue();
+
+        });
+    });
+
+    describe("unselect", function() {
+        it("removes the class selected-section", function() {
+	        c.addSection(section_2());
+            c.select();
+            c.unselect();
+	        expect(c.el.hasClass("selected-section")).toBeFalse();
+        });
+
+        it("does nothing if class was not already selected", function() {
+	        c.addSection(section_2());
+            c.unselect();
+	        expect(c.el.hasClass("selected-section")).toBeFalse();
+        });
+        
+    });
+
 });
