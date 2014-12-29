@@ -7,11 +7,14 @@ function Matrix(
     el,
     garbage_el,
     message_el,
+    section_info_el,
     api_client
 ){ 
     this.el = el;
     this.garbage_el = garbage_el;
     this.message_el = message_el;
+    this.section_info_el = section_info_el;
+    this.currently_selected = null;
     this.el.id = "matrix-table";
 
     this.rooms = rooms;
@@ -41,6 +44,19 @@ function Matrix(
 	    this.garbage_el.droppable({
 	        drop: this.garbageDropHandler
 	    });
+        this.el.on("click", "td > a", function(evt, ui) {
+            var cell = $j(evt.currentTarget.parentElement).data("cell");
+            if(this.currently_selected === cell) {
+                cell.unselect();
+                this.currently_selected = null;
+            } else {
+                if(this.currently_selected) {
+                    this.currently_selected.unselect();
+                }
+                cell.select();
+                this.currently_selected = cell;
+            }
+        }.bind(this)); 
     }
 
     this.init();

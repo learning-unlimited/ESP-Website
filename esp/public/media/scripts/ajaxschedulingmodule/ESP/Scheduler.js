@@ -4,6 +4,7 @@ function Scheduler(
     matrixEl,
     garbageEl,
     messageEl,
+    sectionInfoEl,
     last_applied_index,
     update_interval
 ) {
@@ -17,6 +18,7 @@ function Scheduler(
 	    matrixEl,
 	    garbageEl,
         messageEl,
+        sectionInfoEl,
 	    new ApiClient()
     );
 

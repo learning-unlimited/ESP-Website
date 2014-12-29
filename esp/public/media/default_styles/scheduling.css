@@ -33,6 +33,19 @@ table,th,td
     opacity: 1;
 }
 
+td .selected-section {
+    outline: 1px solid yellow;
+}
+
+td > a {
+    text-decoration: none;
+    color: inherit;
+}
+
+td > a:hover {
+    text-decoration: underline;
+}
+
 .component-div {
     overflow-y: scroll;
 }
@@ -46,7 +59,10 @@ table,th,td
 #message-div {
     margin-top: 10px;
     height: 80px;
-    background-color: #d3d3d3;
+}
+
+#section-info-div {
+    display: none;
 }
 
 .no-border {

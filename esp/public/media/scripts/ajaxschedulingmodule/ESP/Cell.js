@@ -33,15 +33,21 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 		        //handled by matrix
 	        }
 	    });
-        
+
 	    $j(this.el).tooltip({
 	        items: ".occupied-cell",
 	        content: this.tooltip.bind(this)
 	    });
 
         this.el.on("dragstart", function(evt) {
+            if(this.matrix.currently_selected) {
+                this.matrix.currently_selected.unselect();
+                this.matrix.currently_selected = null;
+            } 
+
             this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
             this.highlightTimeslots(this.availableTimeslots);
+
         }.bind(this));
 
         this.el.on("dragstop", function(evt) {
@@ -108,6 +114,23 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     };
 
     /**
+     * Highlight a cell and show its info in the section-info panel.
+     */
+    this.select = function() {
+        if(this.el.hasClass("selectable-cell")) {
+            this.el.addClass("selected-section");
+            this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
+            this.highlightTimeslots(this.availableTimeslots);
+            
+        }
+    };
+
+    this.unselect = function() {
+        this.el.removeClass("selected-section");
+        this.unhighlightTimeslots(this.availableTimeslots);
+    };
+
+    /**
      * Remove a section from the cell and all associated data
      */
     this.removeSection = function(){
@@ -119,6 +142,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.el.droppable("enable");
 	    this.el.draggable("disable");
 	    this.el.removeClass("occupied-cell");
+        this.el.removeClass("selectable-cell");
     };
 
     /**
@@ -128,10 +152,11 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.section = section;
 	    this.el.data("section", section);
 	    this.el.addClass("occupied-cell");
+        this.el.addClass("selectable-cell");
 	    this.el.removeClass("available-cell");
 	    this.el.css("background-color", this.cellColors.color(section));
         this.el.css("color", this.cellColors.textColor(section));
-	    this.el[0].innerHTML = section.emailcode;
+	    this.el[0].innerHTML = "<a href='#'>" + section.emailcode + "</a>";
 	    this.el.droppable("disable");
 	    this.el.draggable("enable");
     };
