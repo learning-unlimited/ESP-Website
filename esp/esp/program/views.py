@@ -609,7 +609,7 @@ def submit_transaction(request):
 
         return HttpResponseRedirect(destination)
 
-    return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
+    return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
 @admin_required

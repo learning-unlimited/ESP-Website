@@ -45,7 +45,6 @@ from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting_core.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
