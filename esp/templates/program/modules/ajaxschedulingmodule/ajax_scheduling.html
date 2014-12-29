@@ -52,12 +52,15 @@
       <div id="matrix-div" class="component-div"></div>
     </td>
     <td class="no-border">
-      <div id="directory-wrapper-div" class="component-div">
+      <div id="directory-wrapper-div" class="component-div ui-widget">
 	    <div id="garbage-div" class="garbage-div">Unschedule class</div>
-        <div id="section-info-div" class="component-div ui-widget ui-widget-content ui-corner-all"></div>
+        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
         <div id="message-div" class="component-div ui-widget-content ui-corner-all">Welcome to the ajax scheduler!</div>
-        <h3>Classes to Schedule</h3>
-	    <div id="directory-div"></div> 
+        
+        <div id="directory" class="ui-widget">
+          <div id="directory-header" class="ui-widget-header"><h4>Classes to Schedule</h4></div>
+	      <div id="directory-div" class="ui-widget-content"></div> 
+        </div>
       </div>
     </td>
   </tr>

@@ -57,12 +57,24 @@ td > a:hover {
 }
 
 #message-div {
+    height: 150px;
     margin-top: 10px;
-    height: 80px;
+    margin-bottom: 10px;
 }
 
 #section-info-div {
-    display: none;
+    height: 150px;
+    font-size: 1em;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+button#unschedule {
+    font-size: .7em;
+}
+
+#directory-header {
+    text-align: center;
 }
 
 .no-border {
