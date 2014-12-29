@@ -38,6 +38,12 @@ table,th,td
     width: 80px;
 }
 
+#message-div {
+    margin-top: 10px;
+    height: 80px;
+    background-color: #d3d3d3;
+}
+
 .no-border {
     border: 0px;
 }

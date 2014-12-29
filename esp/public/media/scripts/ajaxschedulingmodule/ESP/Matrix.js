@@ -6,10 +6,12 @@ function Matrix(
     sections,
     el,
     garbage_el,
+    message_el,
     api_client
 ){ 
     this.el = el;
     this.garbage_el = garbage_el;
+    this.message_el = message_el;
     this.el.id = "matrix-table";
 
     this.rooms = rooms;
@@ -88,32 +90,42 @@ function Matrix(
         var availableTimeslots = helpersIntersection(availabilities, true);
         return availableTimeslots;
     };
+
     /**
      * Checks a section we want to schedule in room_name during schedule_timeslots
      * to make sure the room is available during that time and the length is nonzero.
      */
     this.validateAssignment = function(section, room_name, schedule_timeslots){
+        var result = {
+            valid: true,
+            reason: null,
+        }
 	    if (!schedule_timeslots){
-	        return false;
+            result.valid = false;
+            result.reason = "Error: Not scheduled during a timeblock";
+	        return result;
 	    }
 
 	    for(timeslot_index in schedule_timeslots){
 	        var timeslot_id = schedule_timeslots[timeslot_index];
 	        if (this.getCell(room_name, timeslot_id).section != null){
-		        return false;
+                result.valid = false;
+                result.reason = "Error: timeslot" +  this.timeslots[timeslot_id] + 
+                    " already has a class in " + room_name + "."
+		        return result;
 	        }
 	    }
-	    return true;
+	    return result;
     };
 
     /**
      * Schedule a section of a class into room_name starting with first_timeslot_id
      */
     this.scheduleSection = function(section_id, room_name, first_timeslot_id){
-	    section = this.sections[section_id]
-
-	    schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id);
-	    if (!this.validateAssignment(section, room_name, schedule_timeslots)){
+        var old_assignment = this.schedule_assignments[section_id];
+	    var section = this.sections[section_id]
+	    var schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id);
+	    if (!this.validateAssignment(section, room_name, schedule_timeslots).valid){
 	        return;
 	    }
 		this.scheduleSectionLocal(section_id, room_name, schedule_timeslots);
@@ -125,7 +137,8 @@ function Matrix(
 
 	        }.bind(this),
 	        function(msg) {
-                this.unscheduleSectionLocal(section_id);
+                this.scheduleSectionLocal(section_id, old_assignment.room_name, old_assignment.timeslots);
+                this.addMessage("Error: " + msg)
 		        console.log(msg);
 	        }.bind(this)
 	    );
@@ -183,6 +196,7 @@ function Matrix(
 	        }.bind(this),
 	        function(msg){
                 this.scheduleSectionLocal(section_id, old_room_name, old_schedule_timeslots);
+                this.addMessage("Error: " + msg);
 		        console.log(msg);
 	        }.bind(this)
 	    );
@@ -200,6 +214,14 @@ function Matrix(
      */
     this.clearCell = function(cell){
 	    cell.removeSection();
+    };
+
+    /**
+     * Append a line to the message div.
+     */
+    this.addMessage = function(msg) {
+        this.message_el.append( "<p>" + msg + "</p>");
+        this.message_el.scrollTop(this.message_el[0].scrollHeight);
     };
 
     // render

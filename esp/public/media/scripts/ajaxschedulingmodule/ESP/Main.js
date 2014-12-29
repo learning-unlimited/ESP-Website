@@ -25,6 +25,7 @@ json_fetch(['sections', 'timeslots', 'rooms', 'schedule_assignments'], function(
 	    $j("#directory-div"),
 	    $j("#matrix-div"),
 	    $j("#garbage-div"),
+        $j("#message-div"),
 	    last_applied_index,
 	    5000
     );

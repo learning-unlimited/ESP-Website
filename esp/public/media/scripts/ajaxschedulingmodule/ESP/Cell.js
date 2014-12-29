@@ -62,13 +62,12 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * Highlight the timeslots on the grid
      */
     this.highlightTimeslots = function(timeslots) {
-        console.log("highlighting");
         $j.each(timeslots, function(j, timeslot) {
             $j.each(this.matrix.rooms, function(k, room) {
                 var cell = this.matrix.getCell(room.id, timeslot);
                 if(!cell.section && !cell.disabled) {
                     cell.el.addClass("highlighted-cell");
-                }
+                } 
             }.bind(this));
         }.bind(this));
     }
@@ -77,7 +76,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * Unhighlight the cells that are currently highlighted
      */
     this.unhighlightTimeslots = function(timeslots) {
-        console.log("unhighlighting");
         $j.each(timeslots, function(j, timeslot) {
             $j.each(this.matrix.rooms, function(k, room) {
                 var cell = this.matrix.getCell(room.id, timeslot);

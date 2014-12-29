@@ -8,7 +8,7 @@ describe("Matrix", function(){
         teacher_fixture(),
 	    schedule_assignments_fixture(),
 	    sections_fixture(),
-	    $j("<div/>"), $j("<div/>"),
+	    $j("<div/>"), $j("<div/>"), $j("<div/>"),
 	    new FakeApiClient());
     });
 
