@@ -58,8 +58,8 @@ var QueryBuilder = React.createClass({
   },
 
   allFilterNames: function () {
-    return _.union(this.props.spec.filterNames,
-                   _.map(booleanFilters, 'name'));
+    return _.union(_.map(booleanFilters, 'name'),
+                   this.props.spec.filterNames);
   },
 
   allFilters: function () {
