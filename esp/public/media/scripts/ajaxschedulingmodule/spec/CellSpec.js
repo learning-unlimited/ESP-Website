@@ -121,17 +121,6 @@ describe("Cell", function(){
 
     });
 
-    describe("hasSection", function(){
-	it("returns true when the cell has a section", function(){
-	    c.addSection({ emailcode: "S1234s1"});
-	    expect(c.hasSection()).toBeTrue();
-	});
-
-	it("returns false when there is no section", function(){
-	    expect(c.hasSection()).toBeFalse();
-	});
-    });
-
     describe("select", function() {
         it("adds the class selected-section", function() {
             var s = section_1();

@@ -56,7 +56,6 @@ function Matrix(
             var cell = $j(evt.currentTarget).data("cell");
             if(this.sections.currentlySelected) {
                 this.sections.scheduleSection(this.sections.currentlySelected.section, cell.room_name, cell.timeslot_id);
-                this.sections.currentlySelected.unselect();
             }
         }.bind(this));
 
