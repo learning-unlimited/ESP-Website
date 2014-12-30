@@ -9,7 +9,6 @@ function Matrix(
     this.el = el;
     this.messagePanel = messagePanel;
     this.sectionInfoPanel = sectionInfoPanel;
-    this.currently_selected = null;
     this.el.id = "matrix-table";
 
     this.rooms = rooms;
@@ -44,20 +43,20 @@ function Matrix(
         // set up handlers
         this.el.on("click", "td > a", function(evt, ui) {
             var cell = $j(evt.currentTarget.parentElement).data("cell");
-            if(this.currently_selected === cell) {
+            if(this.sections.currentlySelected === cell) {
                 cell.unselect();
             } else {
-                if(this.currently_selected) {
-                    this.currently_selected.unselect();
+                if(this.sections.currentlySelected) {
+                    this.sections.currentlySelected.unselect();
                 }
                 cell.select();
             }
         }.bind(this)); 
         this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
             var cell = $j(evt.currentTarget).data("cell");
-            if(this.currently_selected) {
-                this.sections.scheduleSection(this.currently_selected.section, cell.room_name, cell.timeslot_id);
-                this.currently_selected.unselect();
+            if(this.sections.currentlySelected) {
+                this.sections.scheduleSection(this.sections.currentlySelected.section, cell.room_name, cell.timeslot_id);
+                this.sections.currentlySelected.unselect();
             }
         }.bind(this));
 

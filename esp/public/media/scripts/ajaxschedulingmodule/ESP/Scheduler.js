@@ -7,18 +7,18 @@ function Scheduler(
     last_applied_index,
     update_interval
 ) {
-
+    this.sections = new Sections(data.sections, data.teachers, data.schedule_assignments, new ApiClient()),
     this.messagePanel = new MessagePanel(messageEl, "Welcome to the Ajax Scheduler!");
     this.matrix = new Matrix(
 	    new Timeslots(data.timeslots),
 	    data.rooms,
-	    new Sections(data.sections, data.teachers, data.schedule_assignments, new ApiClient()),
+        this.sections,
 	    matrixEl,
         this.messagePanel,
-        new SectionInfoPanel(sectionInfoEl, data.teachers, this.messagePanel)
+        new SectionInfoPanel(sectionInfoEl, data.teachers, this.sections, this.messagePanel)
     );
 
-    this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments, this.matrix);
+    this.directory = new Directory(this.sections, directoryEl, data.schedule_assignments, this.matrix);
 
     this.changelogFetcher = new ChangelogFetcher(
 	this.matrix,

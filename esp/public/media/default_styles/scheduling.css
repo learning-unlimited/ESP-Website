@@ -39,7 +39,7 @@ td .selected-section {
 
 td > a {
     text-decoration: none;
-    color: inherit;
+    color: inherit !important;
 }
 
 td > a:hover {

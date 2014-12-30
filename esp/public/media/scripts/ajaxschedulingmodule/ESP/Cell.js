@@ -86,7 +86,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.el.addClass("selected-section");
             this.availableTimeslots = this.matrix.sections.getAvailableTimeslots(this.section);
             this.highlightTimeslots(this.availableTimeslots);
-            this.matrix.currently_selected = this;
+            this.matrix.sections.currentlySelected = this;
             this.matrix.sectionInfoPanel.displaySection(this.section);
         }
     };
@@ -95,7 +95,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         if(this.el.hasClass("selected-section")) {
             this.el.removeClass("selected-section");
             this.unhighlightTimeslots(this.availableTimeslots);
-            this.matrix.currently_selected = null;
+            this.matrix.sections.currentlySelected = null;
             this.matrix.sectionInfoPanel.hide();
         }
     };

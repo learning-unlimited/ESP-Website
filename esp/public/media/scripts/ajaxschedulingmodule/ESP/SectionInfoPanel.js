@@ -1,7 +1,8 @@
-function SectionInfoPanel(el, teachers, togglePanel) {
+function SectionInfoPanel(el, teachers, sections, togglePanel) {
     this.el = el;
     this.togglePanel = togglePanel; // The panel that should be hidden when the info panel is shown
     this.teachers = teachers;
+    this.sections = sections;
 
     /**
      * Hide the panel and show togglePanel if it exists.
@@ -36,12 +37,12 @@ function SectionInfoPanel(el, teachers, togglePanel) {
         unscheduleButton
             .button()
             .click(function(evt) {
-                this.matrix.unscheduleSection(section.id);
+                this.sections.unscheduleSection(section);
             }.bind(this));
         toolbar.append(unscheduleButton);
         return toolbar;
         
-    };
+    }.bind(this);
 
     var getContent = function(section) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");

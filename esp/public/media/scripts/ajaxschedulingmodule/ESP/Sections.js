@@ -2,6 +2,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
     this.sections_data = sections_data;
+    this.currentlySelected = null;
 
     this.init = function() {
         $j.each(sections_data, function(section_id, section) {
@@ -21,6 +22,20 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.getById = function(section_id) {
         return sections_data[section_id];
     };
+
+    /**
+     * Get the sections that are not yet scheduled
+     */
+    this.filtered_sections = function(){
+	    var returned_sections = [];
+        $j.each(this.sections_data, function(section_id, section) {
+	        if (this.scheduleAssignments[section.id] && this.scheduleAssignments[section.id].room_name == null){
+		        returned_sections.push(section);
+	        }
+	    }.bind(this));
+	    return returned_sections;
+    };
+
 
     this.getAvailableTimeslots = function(section) {
         var availabilities = [];
@@ -103,6 +118,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 	        var timeslot_id = old_assignment.timeslots[timeslot_index];
 	        var cell = this.matrix.getCell(old_assignment.room_name, timeslot_id);
 	        cell.removeSection();
+            if(this.currentlySelected === cell) {
+                cell.unselect();
+            }
 	    }
         
 	    this.scheduleAssignments[section.id] = {
