@@ -250,7 +250,6 @@ var SelectInput = React.createClass({
   asJSON: function () {
     var val = this.refs.select.getDOMNode().value;
     if (val == "") {
-      // TODO: allow optional fields
       this.setState({error: "Select an option!"});
       throw new BuildQueryError();
     } else {
@@ -402,13 +401,9 @@ var BooleanOp = React.createClass({
     this.setState({
       childKeys: childKeys,
     });
-    // TODO: if two of these updates get batched, the second one will get eaten
-    // by React.  This is probably okay if you don't click the add button too
-    // fast.
   },
 
   handleRemove: function (key) {
-    // TODO: same issue as handleAdd.
     this.setState({
       childKeys: _.without(this.state.childKeys, key),
     });
