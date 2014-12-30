@@ -276,6 +276,50 @@ var SelectInput = React.createClass({
   },
 });
 
+var OptionalInput = React.createClass({
+  propTypes: {
+    input: React.PropTypes.shape({
+      reactClass: React.PropTypes.string.isRequired,
+      name: React.PropTypes.string.isRequired,
+      inner: React.PropTypes.shape({
+        reactClass: React.PropTypes.string.isRequired,
+      }).isRequired,
+    }).isRequired,
+  },
+
+  getInitialState: function () {
+    return {show: false};
+  },
+
+  asJSON: function () {
+    if (this.state.show) {
+      return this.refs.inner.asJSON();
+    } else {
+      return null;
+    }
+  },
+
+  handleClick: function () {
+    this.setState({
+      show: !this.state.show,
+    });
+  },
+
+  render: function () {
+    var inner = null;
+    var name = this.props.input.name;
+    if (this.state.show) {
+      var innerClass = window[this.props.input.inner.reactClass];
+      inner = <innerClass ref="inner" input={this.props.input.inner} />;
+      name.replace(/show/, "hide")
+    }
+    return <span>
+      <button onClick={this.handleClick}>{this.props.input.name}</button>
+      {inner}
+    </span>;
+  },
+});
+
 var BooleanOp = React.createClass({
   propTypes: {
     op: React.PropTypes.string.isRequired,

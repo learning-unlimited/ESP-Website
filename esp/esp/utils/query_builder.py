@@ -176,3 +176,33 @@ class TrivialInput(object):
 
     def as_english(self, value):
         return ""
+
+
+class OptionalInput(object):
+    """An input that can show or hide another input.
+
+    `inner` should be the input that should be shown/hidden.
+    `name` should be the name to go on the button.
+    """
+    def __init__(self, inner, name="+"):
+        self.inner = inner
+        self.name = name
+
+    def spec(self):
+        return {
+            'reactClass': 'OptionalInput',
+            'name': self.name,
+            'inner': self.inner.spec(),
+        }
+
+    def as_q(self, value):
+        if value is None:
+            return Q()
+        else:
+            return self.inner.as_q(value)
+
+    def as_english(self, value):
+        if value is None:
+            return ""
+        else:
+            return self.inner.as_english(value)
