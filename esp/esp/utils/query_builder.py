@@ -125,8 +125,9 @@ class SearchFilter(object):
                       [i.as_q(v) for i, v in zip(self.inputs, value)])
 
     def as_english(self, value):
-        return self.title + " and ".join([i.as_english(v)
-                                          for i, v in zip(self.inputs, value)])
+        return self.title + " " + " and ".join(
+            filter(None, [i.as_english(v)
+                          for i, v in zip(self.inputs, value)]))
 
 
 class SelectInput(object):
@@ -158,7 +159,7 @@ class SelectInput(object):
 
     def as_english(self, value):
         if value in self.options:
-            return "with %s '%s'" % (self.options[value], self.english_name)
+            return "with %s '%s'" % (self.english_name, self.options[value])
         else:
             raise ESPError('Invalid choice %s for input %s'
                            % (value, self.field_name))
@@ -203,7 +204,6 @@ class OptionalInput(object):
             return self.inner.as_q(value)
 
     def as_english(self, value):
-        #TODO: this doesn't work so well
         if value is None:
             return ""
         else:
