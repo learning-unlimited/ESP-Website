@@ -1,3 +1,11 @@
+/**
+ * Interacts with the server's changelog to keep the scheduler in-sync with other browsers.
+ *
+ * @param matrix: The matrix to apply the changes to
+ * @param api_client: An API client which can interact with the server
+ * @param start_index: Where to start applying changes
+ *
+ */
 function ChangelogFetcher(matrix, api_client, start_index){
     this.api_client = api_client;
     this.matrix = matrix;
@@ -6,7 +14,9 @@ function ChangelogFetcher(matrix, api_client, start_index){
     this.last_applied_index = start_index;
 
     /**
-     * Poll for changes every interval ms.
+     * Poll for changes every interval milliseconds.
+     *
+     * @param interval: The time in milliseconds between polling the server
      */
     this.pollForChanges = function(interval){
 	    window.setInterval(this.getChanges.bind(this), interval);
@@ -27,6 +37,8 @@ function ChangelogFetcher(matrix, api_client, start_index){
 
     /**
      * Apply the changes locally
+     *
+     * @param data: the data to apply to the matrix
      */
     this.applyChangeLog = function(data){
 	    $j.each(data.changelog, function(id, change){

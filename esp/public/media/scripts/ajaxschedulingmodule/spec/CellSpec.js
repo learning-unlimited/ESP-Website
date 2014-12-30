@@ -66,58 +66,58 @@ describe("Cell", function(){
     });
 
     describe("adding a section", function(){
-	beforeEach(function(){
-	    c.removeSection();
-	});
+	    beforeEach(function(){
+	        c.removeSection();
+	    });
 
-	it("saves off the section", function(){
-	    c.addSection(section);
-	    expect(c.section).toEqual(section);
-	});
+	    it("saves off the section", function(){
+	        c.addSection(section);
+	        expect(c.section).toEqual(section);
+	    });
 
-	it("adds the section to the element", function(){
-	    c.addSection(section);
-	    expect(c.el[0].innerText).toEqual(section.emailcode);
-	});
+	    it("adds the section to the element", function(){
+	        c.addSection(section);
+	        expect(c.el[0].innerText).toEqual(section.emailcode);
+	    });
 
-	it("adds styling to the el", function(){
-	    c.addSection(section);
-	    expect(c.el.hasClass("occupied-cell")).toBeTrue();
-	    expect(c.el.hasClass("available-cell")).toBeFalse();
-	});
+	    it("adds styling to the el", function(){
+	        c.addSection(section);
+	        expect(c.el.hasClass("occupied-cell")).toBeTrue();
+	        expect(c.el.hasClass("available-cell")).toBeFalse();
+	    });
 
-	it("adds the section to the el data", function(){
-	    c.addSection(section);
-	    expect(c.el.data("section")).toEqual(section);
-	});
+	    it("adds the section to the el data", function(){
+	        c.addSection(section);
+	        expect(c.el.data("section")).toEqual(section);
+	    });
 
     });
 
     describe("removing a section", function(){
-	beforeEach(function(){
-	    c.addSection(section);
-	});
+	    beforeEach(function(){
+	        c.addSection(section);
+	    });
 
-	it("removes the section", function(){
-	    c.removeSection();
-	    expect(c.section).toBeNull();
-	});
+	    it("removes the section", function(){
+	        c.removeSection();
+	        expect(c.section).toBeNull();
+	    });
 
-	it("changes the el contents", function(){
-	    c.removeSection();
-	    expect(c.el[0].innerHTML).not.toMatch(section.emailcode);
-	});
+	    it("changes the el contents", function(){
+	        c.removeSection();
+	        expect(c.el[0].innerHTML).not.toMatch(section.emailcode);
+	    });
 
-	it("removes the section from the el data", function(){
-	    c.removeSection();
-	    expect(c.el.data("section")).not.toBeDefined();
-	});
+	    it("removes the section from the el data", function(){
+	        c.removeSection();
+	        expect(c.el.data("section")).not.toBeDefined();
+	    });
 
-	it("changes the cell styling", function(){
-	    c.removeSection();
-	    expect(c.el.hasClass("occupied-cell")).toBeFalse();
-	    expect(c.el.hasClass("available-cell")).toBeTrue();
-	});
+	    it("changes the cell styling", function(){
+	        c.removeSection();
+	        expect(c.el.hasClass("occupied-cell")).toBeFalse();
+	        expect(c.el.hasClass("available-cell")).toBeTrue();
+	    });
 
     });
 
