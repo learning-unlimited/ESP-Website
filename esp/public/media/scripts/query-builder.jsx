@@ -11,6 +11,10 @@ var booleanFilters = [
   },
 ]
 
+function BuildQueryError() {
+    this.name = "BuildQueryError";
+}
+
 // TODO: more docstrings
 /**
  * The root of the query builder.
@@ -33,12 +37,24 @@ var QueryBuilder = React.createClass({
     }).isRequired,
   },
 
-  asJson: function () {
-    // TODO
+  asJSON: function () {
+    return this.refs.queryNode.asJSON();
   },
 
   submit: function () {
-    // TODO
+    try {
+      console.log(this.asJSON());
+      // TODO
+    } catch (e) {
+      if (e.name != "BuildQueryError") {
+        alert("There was an error, recheck your query or poke web support.");
+        // If we didn't raise the error, rethrow it.
+        throw e;
+      } else {
+        alert("Your query contained an error.");
+        return;
+      }
+    }
   },
 
   allFilterNames: function () {
@@ -55,9 +71,10 @@ var QueryBuilder = React.createClass({
   render: function () {
     return <div className="query-builder">
       Find {this.props.spec.englishName} with&hellip;
-      <QueryNode filters={this.allFilters()}
+      <QueryNode ref="queryNode"
+                 filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
-      // TODO: submit button
+      <button onClick={this.submit}>Go</button>
     </div>;
   },
 });
@@ -77,7 +94,8 @@ var QueryNode = React.createClass({
 
   getInitialState: function () {
     return {
-      currentFilterName: null,
+      currentFilterName: "",
+      error: null,
     }
   },
 
@@ -85,16 +103,31 @@ var QueryNode = React.createClass({
     this.setState({currentFilterName: event.target.value});
   },
 
+  asJSON: function () {
+    if (!this.state.currentFilterName) {
+      this.setState({error: "select a filter!"});
+      throw new BuildQueryError();
+    } else {
+      this.setState({error: null});
+      return {
+        'filter': this.state.currentFilterName,
+        'negated': this.refs.filterSelector.refs.checkbox.getDOMNode().checked,
+        'values': this.refs.filter.asJSON(),
+      };
+    }
+  },
+
   render: function () {
     var filterBody = null;
     if (this.state.currentFilterName) {
       if (_.some(booleanFilters, {'name': this.state.currentFilterName})) {
-        filterBody = <BooleanOp op={this.state.currentFilterName}
+        filterBody = <BooleanOp ref="filter"
+                                op={this.state.currentFilterName}
                                 filterNames={this.props.filterNames}
                                 filters={this.props.filters} />;
       } else {
-        var currentFilterSpec = this.props.filters[this.state.currentFilterName];
-        filterBody = <Filter filter={currentFilterSpec} />;
+        var currentFilter = this.props.filters[this.state.currentFilterName];
+        filterBody = <Filter ref="filter" filter={currentFilter} />;
       }
     }
     var removeButton = null;
@@ -102,7 +135,9 @@ var QueryNode = React.createClass({
       removeButton = <button onClick={this.props.onRemove} >-</button>;
     }
     return <div>
-      <FilterSelector filterNames={this.props.filterNames}
+      <span className="error">{this.state.error}</span>
+      <FilterSelector ref="filterSelector"
+                      filterNames={this.props.filterNames}
                       filters={this.props.filters}
                       onChange={this.handleChange}
                       value={this.state.currentFilterName}/>
@@ -136,7 +171,7 @@ var FilterSelector = React.createClass({
         </option>;
       }.bind(this));
     return <span>
-      <input type="checkbox" />
+      <input type="checkbox" ref="checkbox"/>
       <select onChange={this.props.onChange} value={this.props.value}>
         <option value={null}></option>
         {options}
@@ -156,6 +191,13 @@ var Filter = React.createClass({
     }).isRequired,
   },
 
+  asJSON: function () {
+    return _.map(this.props.filter.inputs,
+                 function (input, i) {
+                   return this.refs[i].asJSON();
+                 }.bind(this));
+  },
+
   render: function () {
     var inputs = _.map(this.props.filter.inputs,
                        function (input, i) {
@@ -163,7 +205,7 @@ var Filter = React.createClass({
                          // string input.reactClass.  Doing so is
                          // *terrifyingly* easy.
                          var inputClass = window[input.reactClass];
-                         return <inputClass key={i} input={input} />;
+                         return <inputClass ref={i} key={i} input={input} />;
                        });
     return <span>
       {inputs}
@@ -176,6 +218,10 @@ var TrivialInput = React.createClass({
     input: React.PropTypes.shape({
       reactClass: React.PropTypes.string.isRequired,
     }).isRequired,
+  },
+
+  asJSON: function () {
+    return null;
   },
 
   render: function () {
@@ -197,18 +243,36 @@ var SelectInput = React.createClass({
     }).isRequired,
   },
 
+  getInitialState: function () {
+    return {error: null};
+  },
+
+  asJSON: function () {
+    var val = this.refs.select.getDOMNode().value;
+    if (val == "") {
+      // TODO: allow optional fields
+      this.setState({error: "Select an option!"});
+      throw new BuildQueryError();
+    } else {
+      this.setState({error: null});
+      return val;
+    }
+  },
+
   render: function () {
     var options = _.map(this.props.input.options,
                         function (option) {
-                          console.log(option);
-                          return <option key={option.name} name={option.name}>
+                          return <option key={option.name} value={option.name}>
                             {option.title}
                           </option>;
                         });
-    return <select>
-      <option value={null}></option>
-      {options}
-    </select>;
+    return <span>
+      <span className="error">{this.state.error}</span>
+      <select ref="select">
+        <option value={null}></option>
+        {options}
+      </select>
+    </span>;
   },
 });
 
@@ -234,7 +298,21 @@ var BooleanOp = React.createClass({
   getInitialState: function () {
     return {
       childKeys: [_.uniqueId()],
+      error: null,
     };
+  },
+
+  asJSON: function () {
+    if (!this.state.childKeys.length) {
+      this.setState({error: "No subqueries specified"});
+      throw new BuildQueryError();
+    } else {
+      this.setState({error: null});
+      return _.map(this.state.childKeys,
+                   function (key) {
+                     return this.refs[key].asJSON();
+                   }.bind(this));
+    }
   },
 
   handleAdd: function () {
@@ -260,14 +338,18 @@ var BooleanOp = React.createClass({
     var children = _.map(this.state.childKeys,
                          function (key) {
                            return <li key={key}>
-                             <QueryNode onRemove={this.handleRemove.bind(this, key)}
+                             <QueryNode ref={key}
+                                        onRemove={this.handleRemove.bind(this, key)}
                                         filterNames={this.props.filterNames}
                                         filters={this.props.filters} />
                            </li>;
                          }.bind(this));
-    return <ul>
-      {children}
-      <li><button onClick={this.handleAdd}>+</button></li>
-    </ul>;
+    return <div>
+      <span className="error">{this.state.error}</span>
+      <ul>
+        {children}
+        <li><button onClick={this.handleAdd}>+</button></li>
+      </ul>
+    </div>;
   },
 });
