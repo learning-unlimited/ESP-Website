@@ -36,14 +36,14 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 
 	    $j(this.el).tooltip({
 	        items: ".occupied-cell",
-	        content: this.tooltip.bind(this)
+	        content: this.tooltip.bind(this),
 	    });
 
         this.el.on("dragstart", function(evt) {
             if(this.matrix.currently_selected) {
                 this.matrix.currently_selected.unselect();
             }
-            this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
+            this.availableTimeslots = this.matrix.sections.getAvailableTimeslots(this.section);
             this.highlightTimeslots(this.availableTimeslots);
 
         }.bind(this));
@@ -117,7 +117,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.select = function() {
         if(this.el.hasClass("selectable-cell")) {
             this.el.addClass("selected-section");
-            this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
+            this.availableTimeslots = this.matrix.sections.getAvailableTimeslots(this.section);
             this.highlightTimeslots(this.availableTimeslots);
             this.matrix.currently_selected = this;
             this.matrix.sectionInfoPanel.displaySection(this.section);
@@ -133,14 +133,18 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         }
     };
 
-
-
-    this.hideInfoPanel = function(element, elementToReplace) {
-        element[0].innerHTML = "";
-        element.addClass("ui-helper-hidden");
-        if(elementToReplace) {
-            elementToReplace.show();
-        }
+    /**
+     * Create data for the tooltip
+     */
+    this.tooltip = function(){
+	    var tooltip_parts = [
+	        "<b>" + this.section.emailcode + ": " + this.section.title + "</b>", 
+            "Teachers: " + this.matrix.sections.getTeachersString(this.section),
+	        "Class size max: " + this.section.class_size_max,
+	        "Length: " + Math.ceil(this.section.length),
+            "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
+	    ];
+	    return tooltip_parts.join("<br/>");
     };
 
     /**
@@ -172,26 +176,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.el[0].innerHTML = "<a href='#'>" + section.emailcode + "</a>";
 	    this.el.droppable("disable");
 	    this.el.draggable("enable");
-    };
-
-    /**
-     * Create data for the tooltip
-     */
-    this.tooltip = function(){
-        var teacher_list = []
-        $j.each(this.section.teachers, function(index, teacher_id) {
-            var teacher = this.matrix.teachers[teacher_id]
-            teacher_list.push(teacher.first_name + " " + teacher.last_name);
-        }.bind(this));
-        var teachers = teacher_list.join(", ");
-	    var tooltip_parts = [
-	        "<b>" + this.section.emailcode + ": " + this.section.title + "</b>", 
-            "Teachers: " + teachers,
-	        "Class size max: " + this.section.class_size_max,
-	        "Length: " + Math.ceil(this.section.length),
-            "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
-	    ];
-	    return tooltip_parts.join("<br/>");
     };
 
     this.hasSection = function(){

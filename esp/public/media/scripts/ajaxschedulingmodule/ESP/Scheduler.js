@@ -11,11 +11,10 @@ function Scheduler(
 
     this.messagePanel = new MessagePanel(messageEl, "Welcome to the Ajax Scheduler!");
     this.matrix = new Matrix(
-	    data.timeslots,
+	    new Timeslots(data.timeslots),
 	    data.rooms,
         data.teachers,
-	    data.schedule_assignments,
-	    data.sections,
+	    new Sections(data.sections, data.teachers, data.schedule_assignments),
 	    matrixEl,
 	    garbageEl,
         this.messagePanel,

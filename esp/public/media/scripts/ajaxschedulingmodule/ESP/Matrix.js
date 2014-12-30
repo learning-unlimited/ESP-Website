@@ -2,7 +2,6 @@ function Matrix(
     timeslots,
     rooms,
     teachers,
-    schedule_assignments,
     sections,
     el,
     garbage_el,
@@ -19,9 +18,8 @@ function Matrix(
 
     this.rooms = rooms;
     this.teachers = teachers;
-    this.schedule_assignments = schedule_assignments;
     this.sections = sections;
-    this.timeslots = new Timeslots(timeslots);
+    this.timeslots = timeslots;
 
     this.api_client = api_client;
 
@@ -55,39 +53,42 @@ function Matrix(
                 cell.select();
             }
         }.bind(this)); 
-    }
+
+        // set up cells
+        var matrix = this;
+        this.cells = function(){
+            // cells has room names as keys and arrays of timeslots as values
+	        var cells = {};
+	        $j.each(rooms, function(room_name, room){
+	            cells[room_name] = [];
+	            i = 0;
+	            $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
+		            var timeslot_id = parseInt(timeslot_id_string);
+		            if (room.availability.indexOf(timeslot_id) >= 0){
+		                cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id, matrix);
+		            } else {
+		                cells[room_name][i] = new DisabledCell($j("<td/>"))
+		            }
+		            i = i + 1;
+	            });
+	        }.bind(this));
+            return cells;
+        }.bind(this)();
+    };
 
     this.init();
-
-    // set up cells
-    var matrix = this;
-    this.cells = function(){
-        // cells has room names as keys and arrays of timeslots as values
-	    var cells = {};
-	    $j.each(rooms, function(room_name, room){
-	        cells[room_name] = [];
-	        i = 0;
-	        $j.each(timeslots, function(timeslot_id_string, timeslot){
-		        var timeslot_id = parseInt(timeslot_id_string);
-		        if (room.availability.indexOf(timeslot_id) >= 0){
-		            cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id, matrix);
-		        } else {
-		            cells[room_name][i] = new DisabledCell($j("<td/>"))
-		        }
-		        i = i + 1;
-	        });
-	    });
-
+    
+    this.initSections = function() {
         // Associated already scheduled classes with rooms
-	    $j.each(schedule_assignments, function(class_id, assignment_data){
-	        $j.each(assignment_data.timeslots, function(j, timeslot_id){
-		        var class_emailcode = sections[class_id].emailcode;
-		        var timeslot_order = timeslots[timeslot_id].order;
-		        cells[assignment_data.room_name][timeslot_order].addSection(sections[class_id]);
-	        });
-	    });
-	    return cells;
-    }();
+	    $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
+	        $j.each(assignmentData.timeslots, function(j, timeslot_id){
+		        this.getCell(assignmentData.room_name, timeslot_id).addSection(sections.getById(class_id));
+	        }.bind(this));
+	    }.bind(this));
+    };
+
+
+
 
     /**
      * Gets the cell that represents room_name and timeslot_id
@@ -96,30 +97,6 @@ function Matrix(
 	    return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
     };
 
-    this.getAvailableTimeslotsForSection = function(section) {
-        var availabilities = [];
-        var already_teaching = [];        
-        $j.each(section.teachers, function(index, teacher_id) {
-            var teacher = this.teachers[teacher_id];
-            var teacher_availabilities = teacher.availability.slice();
-            var sections = teacher.sections;
-            $j.each(sections, function(index, section_id) {
-                var assignment = this.schedule_assignments[section_id];
-                if(assignment && section_id != section.id) {
-                    $j.each(assignment.timeslots, function(index, timeslot_id) {
-                        var availability_index = teacher_availabilities.indexOf(timeslot_id);
-                        if(availability_index >= 0) {
-                            teacher_availabilities.splice(availability_index, 1);
-                            already_teaching.push(timeslot_id);
-                        }
-                    }.bind(this));
-                }
-            }.bind(this));
-            availabilities.push(teacher_availabilities);
-        }.bind(this));
-        var availableTimeslots = helpersIntersection(availabilities, true);
-        return [availableTimeslots, already_teaching];
-    };
 
     /**
      * Checks a section we want to schedule in room_name during schedule_timeslots
@@ -155,8 +132,8 @@ function Matrix(
      * Schedule a section of a class into room_name starting with first_timeslot_id
      */
     this.scheduleSection = function(section_id, room_name, first_timeslot_id){
-        var old_assignment = this.schedule_assignments[section_id];
-	    var section = this.sections[section_id]
+        var old_assignment = this.sections.scheduleAssignments[section_id];
+	    var section = this.sections.getById(section_id);
 	    var schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id);
 	    if (!this.validateAssignment(section, room_name, schedule_timeslots).valid){
 	        return;
@@ -182,8 +159,8 @@ function Matrix(
      * Make the local changes associated with scheduling a class and update the display
      */
     this.scheduleSectionLocal = function(section_id, room_name, schedule_timeslots){
-	    var old_assignment = this.schedule_assignments[section_id];
-	    var section = this.sections[section_id];
+	    var old_assignment = this.sections.scheduleAssignments[section_id];
+	    var section = this.sections.getById(section_id);
 
 	    if(
 	        old_assignment.room_name == room_name &&
@@ -205,7 +182,7 @@ function Matrix(
 	        cell.removeSection();
 	    }
         
-	    this.schedule_assignments[section.id] = {
+	    this.sections.scheduleAssignments[section.id] = {
 	        room_name: room_name,
 	        timeslots: schedule_timeslots,
 	        id: section.id
@@ -219,7 +196,7 @@ function Matrix(
      * Unschedule a section of a class
      */
     this.unscheduleSection = function(section_id){
-        var old_assignment = this.schedule_assignments[section_id];
+        var old_assignment = this.sections.scheduleAssignments[section_id];
         var old_room_name = old_assignment.room_name;
         var old_schedule_timeslots = old_assignment.timeslots;
 		this.unscheduleSectionLocal(section_id);        
@@ -268,7 +245,7 @@ function Matrix(
 	    //Time headers
 	    var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
 	    $j("<th/>").appendTo(header_row);
-	    $j.each(timeslots, function(id, timeslot){
+	    $j.each(this.timeslots.timeslots, function(id, timeslot){
 	        $j("<th>" + timeslot.label + "</th>").appendTo(header_row);
 	    });
 
@@ -290,11 +267,14 @@ function Matrix(
 	    var cells = this.cells;
 	    $j.each(this.rooms, function(id, room){
 	        row = rows[id];
-	        for(i = 0; i < Object.keys(timeslots).length; i++){
+	        for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
 		        cells[id][i].el.appendTo(row);
 	        }
-	    });
+	    }.bind(this));
 	    table.appendTo(this.el);
     };
+
+    this.initSections();
+
 };
 
