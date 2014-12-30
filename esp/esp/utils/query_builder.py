@@ -21,7 +21,8 @@ class QueryBuilder(object):
     def spec(self):
         return {
             'englishName': self.english_name,
-            'filters': [f.spec() for f in self.filters]
+            'filterNames': [f.name for f in self.filters],
+            'filters': {f.name: f.spec() for f in self.filters},
         }
 
     def as_queryset(self, value):
@@ -76,6 +77,8 @@ class QueryBuilder(object):
 
     def render(self):
         context = {
+            # use a uid in case we ever want to have multiple QBs on the same
+            # page.
             'uid': random.randrange(0, 1 << 30),
             'json_spec': json.dumps(self.spec()),
         }
@@ -141,7 +144,8 @@ class SelectInput(object):
     def spec(self):
         return {
             'reactClass': 'SelectInput',
-            'options': self.options.items(),
+            'options': [{'name': k, 'title': v}
+                        for k, v in self.options.items()],
         }
 
     def as_q(self, value):
