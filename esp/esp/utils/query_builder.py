@@ -138,7 +138,7 @@ class SelectInput(object):
     """
     def __init__(self, field_name, options, english_name=None):
         self.field_name = field_name
-        self.options = options
+        self.options = {str(k): v for k, v in options.items()}
         self.english_name = english_name or field_name.replace('_', ' ')
 
     def spec(self):
