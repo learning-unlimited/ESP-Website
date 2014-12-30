@@ -3,7 +3,8 @@ describe("Directory", function(){
 
     beforeEach(function(){
         m = matrix_fixture();
-	    d = new Directory(sections_fixture(), $j("<div/>"), empty_schedule_assignments_fixture(), m);
+	    d = new Directory(m.sections,
+                          $j("<div/>"), empty_schedule_assignments_fixture(), m);
     });
 
     it("should have a list of sections and an el", function(){
@@ -19,7 +20,7 @@ describe("Directory", function(){
 	describe("when there are classes scheduled", function(){
 	    beforeEach(function(){
             m = matrix_fixture();
-		    d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture(), m);
+		    d = new Directory(m.sections, $j("<div/>"), schedule_assignments_fixture(), m);
 		    d.render();
 	    });
 
@@ -35,11 +36,9 @@ describe("Directory", function(){
 	it("should present a list of classes with emailcodes", function (){
 	    expect(d.el.children().length).toEqual(1);
 	    var table = d.el.children()[0];
-	    expect(table.rows.length).toEqual(2);
-	    expect(table.rows[0].innerHTML).toMatch("Fascinating Science Phenomena");
-	    expect(table.rows[0].innerHTML).toMatch("S3188s1");
-	    expect(table.rows[1].innerHTML).toMatch("Become a LaTeX Guru");
-	    expect(table.rows[1].innerHTML).toMatch("M3343s1");
+	    expect(table.rows.length).toEqual(1);
+	    expect(table.rows[0].innerHTML).toMatch("Become a LaTeX Guru");
+	    expect(table.rows[0].innerHTML).toMatch("M3343s1");
 	});
 
 	it("should be able to render twice without duplicating content", function(){
@@ -62,7 +61,7 @@ describe("TableRow", function(){
 
     beforeEach(function(){
         m = matrix_fixture();
-		d = new Directory(sections_fixture(), $j("<div/>"), schedule_assignments_fixture(), m);
+		d = new Directory(m.sections, $j("<div/>"), schedule_assignments_fixture(), m);
 	    tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"), d);
     })
 

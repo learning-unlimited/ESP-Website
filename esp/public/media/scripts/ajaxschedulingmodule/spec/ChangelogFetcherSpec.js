@@ -1,11 +1,11 @@
 describe("ChangelogFetcher", function() {
-    var c = new ChangelogFetcher(new FakeMatrix(), new FakeApiClient(), 32);
+    var c = new ChangelogFetcher(matrix_fixture(), new FakeApiClient(), 32);
 
     var changelog_entry = {
 	id: 3538,
 	index: 2,
 	room_name: "room-2",
-	timeslots: [ "1", "2" ],
+	timeslots: [ "2" ],
     };
 
     var unschedule_changelog_entry = {
@@ -48,23 +48,27 @@ describe("ChangelogFetcher", function() {
 
     describe("applyChangeLog", function(){
 	it("schedules the classes locally", function(){
-	    spyOn(c.matrix, "scheduleSectionLocal");
+	    spyOn(c.matrix.sections, "scheduleSectionLocal");
 	    c.applyChangeLog(changelog);
-	    expect(c.matrix.scheduleSectionLocal).toHaveBeenCalled();
+	    expect(c.matrix.sections.scheduleSectionLocal).toHaveBeenCalled();
 
-	    var args = c.matrix.scheduleSectionLocal.argsForCall[0];
-	    expect(args[0]).toEqual(section_2().id);
+	    var args = c.matrix.sections.scheduleSectionLocal.argsForCall[0];
+        var s2 = section_2();
+        s2.teacher_data = [teacher_fixture()[2]];
+	    expect(args[0]).toEqual(s2);
 	    expect(args[1]).toEqual("room-2");
-	    expect(args[2]).toEqual(["1", "2"]);
+	    expect(args[2]).toEqual(["2"]);
 	});
 
 	it("unschedules the classes locally", function(){
-	    spyOn(c.matrix, "unscheduleSectionLocal");
+	    spyOn(c.matrix.sections, "unscheduleSectionLocal");
 	    c.applyChangeLog(changelog);
-	    expect(c.matrix.unscheduleSectionLocal).toHaveBeenCalled();
+	    expect(c.matrix.sections.unscheduleSectionLocal).toHaveBeenCalled();
 
-	    var args = c.matrix.unscheduleSectionLocal.argsForCall[0];
-	    expect(args[0]).toEqual(section_1().id);
+	    var args = c.matrix.sections.unscheduleSectionLocal.argsForCall[0];
+        var s1 = section_1();
+        s1.teacher_data = [teacher_fixture()[1], teacher_fixture()[2]];
+	    expect(args[0]).toEqual(s1);
 	});
 
 	it("updates the last fetched number", function(){

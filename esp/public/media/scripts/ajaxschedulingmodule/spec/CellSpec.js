@@ -5,99 +5,64 @@ describe("Cell", function(){
     beforeEach(function(){
         var mp = new MessagePanel($j("<div>"), "Welcome to the Ajax Scheduler!");
         var sip = new SectionInfoPanel($j("<div>"), teacher_fixture(), mp);
-        matrix = new Matrix(
-	        time_fixture(),
-	        room_fixture(),
-            teacher_fixture(),
-	        schedule_assignments_fixture(),
-	        sections_fixture(),
-	        $j("<div/>"), $j("<div/>"), 
-            mp, 
-            sip,
-	        new FakeApiClient());
+        matrix = matrix_fixture();
 	    c = new Cell($j("<td/>"), null, "1-115", 1, matrix);
 	    section = {
 	        emailcode: "my-emailcode",
-	        length: 1.83
+	        length: 1.83,
 	    };
     });
 
     it("has an element with the matrix cell class", function(){
-	expect(c.el).toBeDefined();
-	expect(c.el.hasClass("matrix-cell")).toBeTrue();
+	    expect(c.el).toBeDefined();
+	    expect(c.el.hasClass("matrix-cell")).toBeTrue();
     });
 
     it("has a room attached as data on the el", function(){
-	expect(c.room_name).toEqual("1-115");
+	    expect(c.room_name).toEqual("1-115");
     });
 
     it("has a timeslot", function(){
-	expect(c.timeslot_id).toEqual(1);
+	    expect(c.timeslot_id).toEqual(1);
     });
 
     it("attaches itself to its el", function(){
-	expect($j(c.el).data("cell")).toEqual(c);
+	    expect($j(c.el).data("cell")).toEqual(c);
     });
 
-    describe("dragHelper", function(){
-	beforeEach(function(){
-	    c.addSection(section);
-	});
-
-	it("has the name of the section once for each hour of the class", function(){
-	    var helper = c.dragHelper()[0].innerHTML;
-	    expect(helper).toMatch("my-emailcode.*my-emailcode");
-	});
-
-	it("has one child for each hour", function(){
-	    var helper = c.dragHelper()[0];
-	    expect(helper.children.length).toEqual(2);
-	});
-    });
 
     describe("tooltip", function(){
-	beforeEach(function(){
-	    c.addSection(section_2());
-	});
+	    beforeEach(function(){
+            var s = section_2();
+            s.teacher_data = [teacher_fixture()[2]]
+	        c.addSection(s);
+	    });
 
-	it("contains the emailcode, title, length, and max students", function(){
-	    var tooltip = c.tooltip();
-	    expect(tooltip).toContain("M3343s1");
-        expect(tooltip).toContain("Ben Bitdiddle");
-	    expect(tooltip).toContain("Become a LaTeX Guru");
-	    expect(tooltip).toContain("Class size max: 15");
-	    expect(tooltip).toContain("Length: 2");
-	});
+	    it("contains the emailcode, title, length, and max students", function(){
+	        var tooltip = c.tooltip();
+	        expect(tooltip).toContain("M3343s1");
+            expect(tooltip).toContain("Ben Bitdiddle");
+	        expect(tooltip).toContain("Become a LaTeX Guru");
+	        expect(tooltip).toContain("Class size max: 15");
+	        expect(tooltip).toContain("Length: 2");
+	    });
     });
 
-    describe("init", function(){
-	it("makes the element draggable", function(){
-	    spyOn(c.el, 'draggable');
-	    c.init(section);
-	    expect(c.el.draggable).toHaveBeenCalled();
-	});
-
-	it("makes the element droppable", function(){
-	    spyOn(c.el, 'droppable');
-	    c.init(section);
-	    expect(c.el.droppable).toHaveBeenCalled();
-	});
 
 	describe("with a section", function(){
 	    it("has a section", function(){
-		spyOn(c, 'addSection');
-		c.init(section);
-		expect(c.addSection).toHaveBeenCalledWith(section);
+		    spyOn(c, 'addSection');
+		    c.init(section);
+		    expect(c.addSection).toHaveBeenCalledWith(section);
 	    });
 	});
 
 	describe("without a section", function(){
 	    it("calls removeSection", function(){
-		spyOn(c, 'removeSection');
-		c.init(null);
-		expect(c.removeSection).toHaveBeenCalled();
+		    spyOn(c, 'removeSection');
+		    c.init(null);
+		    expect(c.removeSection).toHaveBeenCalled();
 	    });
-	});
     });
 
     describe("adding a section", function(){
@@ -126,15 +91,6 @@ describe("Cell", function(){
 	    expect(c.el.data("section")).toEqual(section);
 	});
 
-	it("makes the el draggable", function(){
-	    c.addSection(section);
-	    expect(c.el.draggable("option", "disabled")).toBeFalse();
-	});
-
-	it("makes the el not droppable", function(){
-	    c.addSection(section);
-	    expect(c.el.droppable("option", "disabled")).toBeTrue();
-	});
     });
 
     describe("removing a section", function(){
@@ -163,15 +119,6 @@ describe("Cell", function(){
 	    expect(c.el.hasClass("available-cell")).toBeTrue();
 	});
 
-	it("makes the cell droppable", function(){
-	    c.removeSection();
-	    expect(c.el.droppable("option", "disabled")).toBeFalse();
-	});
-
-	it("makes the cell not draggable", function(){
-	    c.removeSection();
-	    expect(c.el.draggable("option", "disabled")).toBeTrue();
-	});
     });
 
     describe("hasSection", function(){
@@ -187,7 +134,9 @@ describe("Cell", function(){
 
     describe("select", function() {
         it("adds the class selected-section", function() {
-	        c.addSection(section_1());
+            var s = section_1();
+            s.teacher_data = [];
+	        c.addSection(s);
             c.select();
 	        expect(c.el.hasClass("selected-section")).toBeTrue();
 
@@ -196,7 +145,9 @@ describe("Cell", function(){
 
     describe("unselect", function() {
         it("removes the class selected-section", function() {
-	        c.addSection(section_2());
+            var s = section_2();
+            s.teacher_data = [];
+	        c.addSection(s);
             c.select();
             c.unselect();
 	        expect(c.el.hasClass("selected-section")).toBeFalse();

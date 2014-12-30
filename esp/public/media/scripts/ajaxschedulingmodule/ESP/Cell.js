@@ -151,7 +151,9 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 /**
  * This is a cell where a room is not available in that time block.
  */
-function DisabledCell(el) {
+function DisabledCell(el, room_name, timeslot_id) {
+    this.room_name = room_name;
+    this.timeslot_id = timeslot_id;
     this.el = el;
     this.disabled = true;
     this.init = function(new_section){

@@ -2,8 +2,10 @@ describe("SectionInfoPanel", function() {
     var sipToggle;
     var sipNoToggle;
     beforeEach(function() {
-        sipToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(), new MessagePanel($j("<div>"), "Initial Message"));
-        sipNoToggle = new SectionInfoPanel($j("<div>"), teacher_fixture());
+        var sections = new Sections(sections_fixture(), teacher_fixture(), 
+                                    schedule_assignments_fixture(), new FakeApiClient());
+        sipNoToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(), sections, null);
+        sipToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(),  sections, new MessagePanel($j("<div>"), "Initial Message"));
     });
 
     describe("hide", function() {
@@ -13,8 +15,6 @@ describe("SectionInfoPanel", function() {
         });
 
         it("should remove the ui-helper-hidden class from togglePanel if present", function() {
-            sipToggle.togglePanel.hide();
-            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeTrue();
             sipToggle.hide();
             expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeFalse();
 
@@ -28,8 +28,6 @@ describe("SectionInfoPanel", function() {
         });
 
         it("should add the ui-helper-hidden class from togglePanel if present", function() {
-            sipToggle.togglePanel.show();
-            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeFalse();
             sipToggle.show();
             expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeTrue();
 

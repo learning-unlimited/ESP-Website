@@ -32,7 +32,7 @@ function Matrix(
 		            if (room.availability.indexOf(timeslot_id) >= 0){
 		                cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id, matrix);
 		            } else {
-		                cells[room_name][i] = new DisabledCell($j("<td/>"))
+		                cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, timeslot_id)
 		            }
 		            i = i + 1;
 	            });

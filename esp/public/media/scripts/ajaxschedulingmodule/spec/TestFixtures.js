@@ -157,10 +157,17 @@ function sections_fixture() {
 };
 
 function matrix_fixture() {
-    var modified_room_fixture = room_fixture()
-	modified_room_fixture["room-2"].availability = [2]
-	return new Matrix(time_fixture(), modified_room_fixture,
-                      room_fixture(), schedule_assignments_fixture(),
-		              sections_fixture(), $j("<div/>"), $j("<div/>"),
-		              new FakeApiClient());
+    var modified_room_fixture = room_fixture();
+	modified_room_fixture["room-2"].availability = [2];
+    var mp = new MessagePanel($j("<div>"), "Welcome to the Ajax Scheduler!");
+    var sections = new Sections(sections_fixture(), teacher_fixture(), 
+                                schedule_assignments_fixture(), new FakeApiClient());
+    var sip = new SectionInfoPanel($j("<div>"), teacher_fixture(), sections, mp);
+    return new Matrix(
+	    new Timeslots(time_fixture()),
+	    modified_room_fixture,
+        sections,
+	    $j("<div/>"),
+        mp, 
+        sip);
 };
