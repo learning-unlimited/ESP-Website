@@ -69,7 +69,32 @@ function Matrix(
         // Associated already scheduled classes with rooms
 	    $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
 	        $j.each(assignmentData.timeslots, function(j, timeslot_id){
-		        this.getCell(assignmentData.room_name, timeslot_id).addSection(sections.getById(class_id));
+		        var cell = this.getCell(assignmentData.room_name, timeslot_id);
+                if(cell && !cell.disabled) {
+                    cell.addSection(sections.getById(class_id));
+                } else {
+                    if(!cell) {
+                        var errorMessage = "Error: Could not find cell with room "
+                            + assignmentData.room_name
+                            + " and timeslot with id "
+                            + timeslot_id
+                            + " to schedule section with id "
+                            + class_id;
+                        console.log(errorMessage);
+                        messagePanel.addMessage(errorMessage);
+                    }
+                    else {
+                        var errorMessage = "Error: Room "
+                            + assignmentData.room_name
+                            + " appears to be unavailable during timeslot with id "
+                            + timeslot_id
+                            + " but section with id "
+                            + class_id
+                            + " is scheduled there.";
+                        console.log(errorMessage);
+                        messagePanel.addMessage(errorMessage);
+                    }
+                }
 	        }.bind(this));
 	    }.bind(this));
     };
