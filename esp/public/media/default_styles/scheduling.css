@@ -50,11 +50,6 @@ td > a:hover {
     overflow-y: scroll;
 }
 
-.garbage-div {
-    background: grey;
-    height: 40px;
-    width: 80px;
-}
 
 #message-div {
     height: 150px;

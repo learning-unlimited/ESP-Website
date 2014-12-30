@@ -3,12 +3,10 @@ function Matrix(
     rooms,
     sections,
     el,
-    garbage_el,
     messagePanel,
     sectionInfoPanel
 ){ 
     this.el = el;
-    this.garbage_el = garbage_el;
     this.messagePanel = messagePanel;
     this.sectionInfoPanel = sectionInfoPanel;
     this.currently_selected = null;
@@ -21,37 +19,7 @@ function Matrix(
 
     this.timeslots = timeslots;
 
-    // Initialize handlers for droppable elements
-
-    // garbage stuff
-    this.garbageDropHandler = function(ev, ui){
-	    this.sections.unscheduleSection(this.sections.getById(ui.draggable.data("section")));
-    }.bind(this);
-
-    // set up drophandler
-    this.dropHandler = function(el, ui){
-	    var cell = $j(el.currentTarget).data("cell");
-	    var section = ui.draggable.data("section");
-	    this.sections.scheduleSection(section, cell.room_name, cell.timeslot_id);
-    }.bind(this);
-
     this.init = function(){
-	    this.el.on("drop", "td", this.dropHandler);
-	    this.garbage_el.droppable({
-	        drop: this.garbageDropHandler
-	    });
-        this.el.on("click", "td > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
-            if(this.currently_selected === cell) {
-                cell.unselect();
-            } else {
-                if(this.currently_selected) {
-                    this.currently_selected.unselect();
-                }
-                cell.select();
-            }
-        }.bind(this)); 
-
         // set up cells
         var matrix = this;
         this.cells = function(){
@@ -72,6 +40,28 @@ function Matrix(
 	        }.bind(this));
             return cells;
         }.bind(this)();
+
+        // set up handlers
+        this.el.on("click", "td > a", function(evt, ui) {
+            var cell = $j(evt.currentTarget.parentElement).data("cell");
+            if(this.currently_selected === cell) {
+                cell.unselect();
+            } else {
+                if(this.currently_selected) {
+                    this.currently_selected.unselect();
+                }
+                cell.select();
+            }
+        }.bind(this)); 
+        this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
+            var cell = $j(evt.currentTarget).data("cell");
+            if(this.currently_selected) {
+                this.sections.scheduleSection(this.currently_selected.section, cell.room_name, cell.timeslot_id);
+                this.currently_selected.unselect();
+            }
+        }.bind(this));
+
+
     };
 
     this.init();

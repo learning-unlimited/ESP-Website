@@ -12,47 +12,14 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     
     this.availableTimeslots = [];
 
-    this.dragHelper = function(){
-	    var div = $j("<div/>");
-	    var i;
-	    for (i = 0; i < this.section.length; i++){
-	        div.append(this.el.clone(false));
-	    }
-	    return div;
-    }.bind(this);
-
     this.init = function(new_section){
 	    this.el.data("cell", this);
-	    this.el.draggable({
-	        stack: ".matrix-cell",
-	        helper: this.dragHelper,
-	    });
-
-	    this.el.droppable({
-	        drop: function(ev, ui){
-		        //handled by matrix
-	        }
-	    });
 
 	    $j(this.el).tooltip({
 	        items: ".occupied-cell",
 	        content: this.tooltip.bind(this),
 	    });
 
-        this.el.on("dragstart", function(evt) {
-            if(this.matrix.currently_selected) {
-                this.matrix.currently_selected.unselect();
-            }
-            this.availableTimeslots = this.matrix.sections.getAvailableTimeslots(this.section);
-            this.highlightTimeslots(this.availableTimeslots);
-
-        }.bind(this));
-
-        this.el.on("dragstop", function(evt) {
-            this.unhighlightTimeslots(this.availableTimeslots);
-            this.availableTimeslots = [];
-        }.bind(this));
-        
 	    if (new_section != null){
 	        this.addSection(new_section);
 	    }
@@ -156,8 +123,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.el[0].innerHTML = "";
 	    this.el.addClass("available-cell");
 	    this.el.css("background-color", "#222222");
-	    this.el.droppable("enable");
-	    this.el.draggable("disable");
 	    this.el.removeClass("occupied-cell");
         this.el.removeClass("selectable-cell");
     };
@@ -174,8 +139,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.el.css("background-color", this.cellColors.color(section));
         this.el.css("color", this.cellColors.textColor(section));
 	    this.el[0].innerHTML = "<a href='#'>" + section.emailcode + "</a>";
-	    this.el.droppable("disable");
-	    this.el.draggable("enable");
     };
 
     this.hasSection = function(){

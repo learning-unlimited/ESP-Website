@@ -30,11 +30,11 @@ function ChangelogFetcher(matrix, api_client, start_index){
      */
     this.applyChangeLog = function(data){
 	    $j.each(data.changelog, function(id, change){
-	        var section_id = change.id;
+	        var section = matrix.sections.getById(change.id);
 	        if (change.timeslots.length == 0){
-		        this.matrix.sections.unscheduleSectionLocal(section_id);
+		        this.matrix.sections.unscheduleSectionLocal(section);
 	        } else {
-		        this.matrix.sections.scheduleSectionLocal(section_id, change.room_name, change.timeslots);
+		        this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
 	        }
 	        this.last_applied_index = change.index;
 	    }.bind(this));
