@@ -1,13 +1,11 @@
 function Matrix(
     timeslots,
     rooms,
-    teachers,
     sections,
     el,
     garbage_el,
     messagePanel,
-    sectionInfoPanel,
-    api_client
+    sectionInfoPanel
 ){ 
     this.el = el;
     this.garbage_el = garbage_el;
@@ -17,24 +15,24 @@ function Matrix(
     this.el.id = "matrix-table";
 
     this.rooms = rooms;
-    this.teachers = teachers;
-    this.sections = sections;
-    this.timeslots = timeslots;
 
-    this.api_client = api_client;
+    this.sections = sections;
+    this.sections.bindMatrix(this);
+
+    this.timeslots = timeslots;
 
     // Initialize handlers for droppable elements
 
     // garbage stuff
     this.garbageDropHandler = function(ev, ui){
-	    this.unscheduleSection(ui.draggable.data("section").id);
+	    this.sections.unscheduleSection(this.sections.getById(ui.draggable.data("section")));
     }.bind(this);
 
     // set up drophandler
     this.dropHandler = function(el, ui){
 	    var cell = $j(el.currentTarget).data("cell");
 	    var section = ui.draggable.data("section");
-	    this.scheduleSection(section.id, cell.room_name, cell.timeslot_id);
+	    this.sections.scheduleSection(section, cell.room_name, cell.timeslot_id);
     }.bind(this);
 
     this.init = function(){
@@ -88,8 +86,6 @@ function Matrix(
     };
 
 
-
-
     /**
      * Gets the cell that represents room_name and timeslot_id
      */
@@ -126,104 +122,6 @@ function Matrix(
 	        }
 	    }
 	    return result;
-    };
-
-    /**
-     * Schedule a section of a class into room_name starting with first_timeslot_id
-     */
-    this.scheduleSection = function(section_id, room_name, first_timeslot_id){
-        var old_assignment = this.sections.scheduleAssignments[section_id];
-	    var section = this.sections.getById(section_id);
-	    var schedule_timeslots = this.timeslots.get_timeslots_to_schedule_section(section, first_timeslot_id);
-	    if (!this.validateAssignment(section, room_name, schedule_timeslots).valid){
-	        return;
-	    }
-		this.scheduleSectionLocal(section_id, room_name, schedule_timeslots);
-	    this.api_client.schedule_section(
-	        section.id,
-	        schedule_timeslots,
-	        room_name, 
-	        function() {
-
-	        }.bind(this),
-	        function(msg) {
-                this.scheduleSectionLocal(section_id, old_assignment.room_name, old_assignment.timeslots);
-                this.messagePanel.addMessage("Error: " + msg)
-		        console.log(msg);
-	        }.bind(this)
-	    );
-    }
-
-
-    /**
-     * Make the local changes associated with scheduling a class and update the display
-     */
-    this.scheduleSectionLocal = function(section_id, room_name, schedule_timeslots){
-	    var old_assignment = this.sections.scheduleAssignments[section_id];
-	    var section = this.sections.getById(section_id);
-
-	    if(
-	        old_assignment.room_name == room_name &&
-	            JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
-	    ){
-	        return;
-	    }
-        
-        // Add section to cells
-	    for(timeslot_index in schedule_timeslots){
-	        var timeslot_id = schedule_timeslots[timeslot_index];
-	        this.getCell(room_name, timeslot_id).addSection(section);
-	    }
-
-	    // Unschedule from old place
-	    for (timeslot_index in old_assignment.timeslots) {
-	        var timeslot_id = old_assignment.timeslots[timeslot_index];
-	        var cell = this.getCell(old_assignment.room_name, timeslot_id);
-	        cell.removeSection();
-	    }
-        
-	    this.sections.scheduleAssignments[section.id] = {
-	        room_name: room_name,
-	        timeslots: schedule_timeslots,
-	        id: section.id
-	    };
-
-	    $j("body").trigger("schedule-changed");
-    }
-
-
-    /**
-     * Unschedule a section of a class
-     */
-    this.unscheduleSection = function(section_id){
-        var old_assignment = this.sections.scheduleAssignments[section_id];
-        var old_room_name = old_assignment.room_name;
-        var old_schedule_timeslots = old_assignment.timeslots;
-		this.unscheduleSectionLocal(section_id);        
-	    this.api_client.unschedule_section(
-	        section_id,
-	        function(){ 
-	        }.bind(this),
-	        function(msg){
-                this.scheduleSectionLocal(section_id, old_room_name, old_schedule_timeslots);
-                this.messagePanel.addMessage("Error: " + msg);
-		        console.log(msg);
-	        }.bind(this)
-	    );
-    };
-
-    /**
-     * Update the local interface to reflect unscheduling a class
-     */
-    this.unscheduleSectionLocal = function(section_id) {
-	    this.scheduleSectionLocal(section_id, null, [])
-    };
-
-    /**
-     * Remove a section from a cell
-     */
-    this.clearCell = function(cell){
-	    cell.removeSection();
     };
 
 

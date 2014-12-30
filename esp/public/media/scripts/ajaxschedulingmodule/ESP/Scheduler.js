@@ -13,13 +13,11 @@ function Scheduler(
     this.matrix = new Matrix(
 	    new Timeslots(data.timeslots),
 	    data.rooms,
-        data.teachers,
-	    new Sections(data.sections, data.teachers, data.schedule_assignments),
+	    new Sections(data.sections, data.teachers, data.schedule_assignments, new ApiClient()),
 	    matrixEl,
 	    garbageEl,
         this.messagePanel,
-        new SectionInfoPanel(sectionInfoEl, data.teachers, this.messagePanel),
-	    new ApiClient()
+        new SectionInfoPanel(sectionInfoEl, data.teachers, this.messagePanel)
     );
 
     this.directory = new Directory(data.sections, directoryEl, data.schedule_assignments, this.matrix);
