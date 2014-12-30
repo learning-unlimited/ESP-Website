@@ -3,13 +3,17 @@ describe("Cell", function(){
     var section;
 
     beforeEach(function(){
+        var mp = new MessagePanel($j("<div>"), "Welcome to the Ajax Scheduler!");
+        var sip = new SectionInfoPanel($j("<div>"), teacher_fixture(), mp);
         matrix = new Matrix(
 	        time_fixture(),
 	        room_fixture(),
             teacher_fixture(),
 	        schedule_assignments_fixture(),
 	        sections_fixture(),
-	        $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"),
+	        $j("<div/>"), $j("<div/>"), 
+            mp, 
+            sip,
 	        new FakeApiClient());
 	    c = new Cell($j("<td/>"), null, "1-115", 1, matrix);
 	    section = {

@@ -7,13 +7,13 @@ function Matrix(
     el,
     garbage_el,
     messagePanel,
-    section_info_el,
+    sectionInfoPanel,
     api_client
 ){ 
     this.el = el;
     this.garbage_el = garbage_el;
     this.messagePanel = messagePanel;
-    this.section_info_el = section_info_el;
+    this.sectionInfoPanel = sectionInfoPanel;
     this.currently_selected = null;
     this.el.id = "matrix-table";
 

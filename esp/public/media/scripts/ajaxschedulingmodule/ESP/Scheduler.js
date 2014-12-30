@@ -9,6 +9,7 @@ function Scheduler(
     update_interval
 ) {
 
+    this.messagePanel = new MessagePanel(messageEl, "Welcome to the Ajax Scheduler!");
     this.matrix = new Matrix(
 	    data.timeslots,
 	    data.rooms,
@@ -17,8 +18,8 @@ function Scheduler(
 	    data.sections,
 	    matrixEl,
 	    garbageEl,
-        new MessagePanel(messageEl, "Welcome to the Ajax Scheduler!"),
-        sectionInfoEl,
+        this.messagePanel,
+        new SectionInfoPanel(sectionInfoEl, data.teachers, this.messagePanel),
 	    new ApiClient()
     );
 

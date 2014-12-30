@@ -120,7 +120,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
             this.highlightTimeslots(this.availableTimeslots);
             this.matrix.currently_selected = this;
-            this.displayInfoOnPanel(this.matrix.section_info_el, this.matrix.messagePanel);
+            this.matrix.sectionInfoPanel.displaySection(this.section);
         }
     };
 
@@ -129,50 +129,11 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.el.removeClass("selected-section");
             this.unhighlightTimeslots(this.availableTimeslots);
             this.matrix.currently_selected = null;
-            this.hideInfoPanel(this.matrix.section_info_el, this.matrix.messagePanel);
+            this.matrix.sectionInfoPanel.hide();
         }
     };
 
-    /**
-     * Display info for a class and a toolbar. Optionally supply elementToReplace
-     * parameter and replace elementToReplace with element.
-     */
 
-    this.displayInfoOnPanel = function(element, elementToReplace) {
-        element.append("<div class='ui-widget-header'>Information for " + this.section.emailcode + "</div>")
-        var contentDiv = $j("<div class='ui-widget-content'></div>");
-        element.append(contentDiv);
-        var unscheduleButton = $j("<button id='unschedule'>Unschedule Section</button></br>");
-        unscheduleButton
-            .button()
-            .click(function(evt) {
-                this.matrix.unscheduleSection(this.section.id);
-            }.bind(this));
-        contentDiv.append(unscheduleButton);
-
-        // Make content
-        var teacher_list = []
-        $j.each(this.section.teachers, function(index, teacher_id) {
-            var teacher = this.matrix.teachers[teacher_id]
-            teacher_list.push(teacher.first_name + " " + teacher.last_name);
-        }.bind(this));
-        var teachers = teacher_list.join(", ");
-        
-        var content_parts = [
-            "Title: " + this.section.title,
-            "Teachers: " + teachers,
-            "Class size max: " + this.section.class_size_max,
-	        "Length: " + Math.ceil(this.section.length),
-            "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
-        ]
-
-        contentDiv.append(content_parts.join("</br>"));
-        element.removeClass("ui-helper-hidden");
-        if(elementToReplace) {
-            elementToReplace.hide();
-        }
-        
-    };
 
     this.hideInfoPanel = function(element, elementToReplace) {
         element[0].innerHTML = "";

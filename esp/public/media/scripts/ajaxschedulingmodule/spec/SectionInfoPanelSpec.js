@@ -1,0 +1,52 @@
+describe("SectionInfoPanel", function() {
+    var sipToggle;
+    var sipNoToggle;
+    beforeEach(function() {
+        sipToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(), new MessagePanel($j("<div>"), "Initial Message"));
+        sipNoToggle = new SectionInfoPanel($j("<div>"), teacher_fixture());
+    });
+
+    describe("hide", function() {
+        it("should add a ui-helper-hidden class", function() {
+            sipNoToggle.hide();
+            expect(sipNoToggle.el.hasClass("ui-helper-hidden")).toBeTrue();
+        });
+
+        it("should remove the ui-helper-hidden class from togglePanel if present", function() {
+            sipToggle.togglePanel.hide();
+            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeTrue();
+            sipToggle.hide();
+            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeFalse();
+
+        });
+    });
+    
+    describe("show", function() {
+        it("should remove a ui-helper-hidden class", function() {
+            sipNoToggle.show();
+            expect(sipNoToggle.el.hasClass("ui-helper-hidden")).toBeFalse();
+        });
+
+        it("should add the ui-helper-hidden class from togglePanel if present", function() {
+            sipToggle.togglePanel.show();
+            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeFalse();
+            sipToggle.show();
+            expect(sipToggle.togglePanel.el.hasClass("ui-helper-hidden")).toBeTrue();
+
+        });
+    });
+
+    describe("displaySection", function() {
+        it("should have the important information in it", function() {
+            sipNoToggle.displaySection(section_1());
+            expect(sipNoToggle.el[0].innerHTML).toContain("S3188s1");
+            expect(sipNoToggle.el[0].innerHTML).toContain("Fascinating Science Phenomena");
+            expect(sipNoToggle.el[0].innerHTML).toContain("Alyssa P. Hacker");
+            expect(sipNoToggle.el[0].innerHTML).toContain("Ben Bitdiddle");
+            expect(sipNoToggle.el[0].innerHTML).toContain("150");
+            expect(sipNoToggle.el[0].innerHTML).toContain("7-12");
+
+        });
+    });
+             
+});
