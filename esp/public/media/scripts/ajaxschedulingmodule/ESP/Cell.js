@@ -120,7 +120,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.availableTimeslots = this.matrix.getAvailableTimeslotsForSection(this.section);
             this.highlightTimeslots(this.availableTimeslots);
             this.matrix.currently_selected = this;
-            this.displayInfoOnPanel(this.matrix.section_info_el, this.matrix.message_el);
+            this.displayInfoOnPanel(this.matrix.section_info_el, this.matrix.messagePanel);
         }
     };
 
@@ -129,7 +129,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.el.removeClass("selected-section");
             this.unhighlightTimeslots(this.availableTimeslots);
             this.matrix.currently_selected = null;
-            this.hideInfoPanel(this.matrix.section_info_el, this.matrix.message_el);
+            this.hideInfoPanel(this.matrix.section_info_el, this.matrix.messagePanel);
         }
     };
 
@@ -169,7 +169,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         contentDiv.append(content_parts.join("</br>"));
         element.removeClass("ui-helper-hidden");
         if(elementToReplace) {
-            elementToReplace.addClass("ui-helper-hidden");
+            elementToReplace.hide();
         }
         
     };
@@ -178,7 +178,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         element[0].innerHTML = "";
         element.addClass("ui-helper-hidden");
         if(elementToReplace) {
-            elementToReplace.removeClass("ui-helper-hidden");
+            elementToReplace.show();
         }
     };
 

@@ -6,13 +6,13 @@ function Matrix(
     sections,
     el,
     garbage_el,
-    message_el,
+    messagePanel,
     section_info_el,
     api_client
 ){ 
     this.el = el;
     this.garbage_el = garbage_el;
-    this.message_el = message_el;
+    this.messagePanel = messagePanel;
     this.section_info_el = section_info_el;
     this.currently_selected = null;
     this.el.id = "matrix-table";
@@ -171,7 +171,7 @@ function Matrix(
 	        }.bind(this),
 	        function(msg) {
                 this.scheduleSectionLocal(section_id, old_assignment.room_name, old_assignment.timeslots);
-                this.addMessage("Error: " + msg)
+                this.messagePanel.addMessage("Error: " + msg)
 		        console.log(msg);
 	        }.bind(this)
 	    );
@@ -229,7 +229,7 @@ function Matrix(
 	        }.bind(this),
 	        function(msg){
                 this.scheduleSectionLocal(section_id, old_room_name, old_schedule_timeslots);
-                this.addMessage("Error: " + msg);
+                this.messagePanel.addMessage("Error: " + msg);
 		        console.log(msg);
 	        }.bind(this)
 	    );
@@ -249,13 +249,6 @@ function Matrix(
 	    cell.removeSection();
     };
 
-    /**
-     * Append a line to the message div.
-     */
-    this.addMessage = function(msg) {
-        this.message_el.append( "<p>" + msg + "</p>");
-        this.message_el.scrollTop(this.message_el[0].scrollHeight);
-    };
 
     /**
      * Return the text of a room tooltip

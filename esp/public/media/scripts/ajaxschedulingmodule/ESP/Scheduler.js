@@ -17,7 +17,7 @@ function Scheduler(
 	    data.sections,
 	    matrixEl,
 	    garbageEl,
-        messageEl,
+        new MessagePanel(messageEl, "Welcome to the Ajax Scheduler!"),
         sectionInfoEl,
 	    new ApiClient()
     );
