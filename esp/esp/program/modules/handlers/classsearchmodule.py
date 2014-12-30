@@ -9,6 +9,8 @@ from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, TrivialInput
 from esp.web.util import render_to_response
 
+# TODO: this won't work right without class flags enabled
+
 
 class ClassSearchModule(ProgramModuleObj):
     """Search for classes matching certain criteria."""
@@ -53,7 +55,7 @@ class ClassSearchModule(ProgramModuleObj):
         )
 
         return QueryBuilder(
-            model=ClassSubject,
+            base=ClassSubject.objects.filter(parent_program=self.program),
             english_name="classes",
             filters=[
                 flag_filter,

@@ -11,10 +11,10 @@ from esp.middleware import ESPError
 
 
 class QueryBuilder(object):
-    def __init__(self, model, filters, english_name=None):
-        self.model = model
+    def __init__(self, base, filters, english_name=None):
+        self.base = base
         self.english_name = (english_name or
-                             unicode(model._meta.verbose_name_plural))
+                             unicode(base.model._meta.verbose_name_plural))
         self.filters = filters
         self.filter_dict = {f.name: f for f in filters}
 
@@ -26,7 +26,6 @@ class QueryBuilder(object):
         }
 
     def as_queryset(self, value):
-        base = self.model.objects.all()
         if value['filter'] in ['and', 'or']:
             if value['filter'] == 'and':
                 op = operator.and_
@@ -34,7 +33,7 @@ class QueryBuilder(object):
                 op = operator.or_
             combined = reduce(op, map(self.as_queryset, value['values']))
             if value['negated']:
-                return base.exclude(pk__in=combined)
+                return self.base.exclude(pk__in=combined)
             else:
                 return combined
         elif value['filter'] in self.filter_dict:
@@ -43,9 +42,9 @@ class QueryBuilder(object):
             if value['negated'] ^ filter_obj.inverted:
                 # Due to https://code.djangoproject.com/ticket/14645, we have
                 # to write this query a little weirdly.
-                return base.exclude(id__in=base.filter(filter_q))
+                return self.base.exclude(id__in=self.base.filter(filter_q))
             else:
-                return base.filter(filter_q)
+                return self.base.filter(filter_q)
         else:
             raise ESPError('Invalid filter %s' % value.get('filter'))
 
