@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from esp.middleware import ESPError
 
 # TODO: finish docstrings once APIs are stable
+# TODO: cache .render()?
 
 
 class QueryBuilder(object):
