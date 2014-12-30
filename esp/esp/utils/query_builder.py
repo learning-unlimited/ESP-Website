@@ -120,7 +120,7 @@ class SearchFilter(object):
 
     def as_q(self, value):
         # AND together the Q objects from each input
-        return reduce(operator.bitand_,
+        return reduce(operator.and_,
                       [i.as_q(v) for i, v in zip(self.inputs, value)])
 
     def as_english(self, value):

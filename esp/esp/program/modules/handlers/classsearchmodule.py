@@ -81,7 +81,10 @@ class ClassSearchModule(ProgramModuleObj):
                 'flags', 'flags__flag_type', 'teachers', 'category',
                 'sections')
             english = query_builder.as_english(decoded)
-            context['queryset'] = queryset
-            context['english'] = english
+            context = {
+                'queryset': queryset,
+                'english': english,
+                'program': self.program,
+            }
             return render_to_response(self.baseDir()+'search_results.html',
                                       request, context)

@@ -43,8 +43,8 @@ var QueryBuilder = React.createClass({
 
   submit: function () {
     try {
-      console.log(this.asJSON());
-      // TODO
+      json = JSON.stringify(this.asJSON());
+      window.location.href = "?query=" + encodeURIComponent(json);
     } catch (e) {
       if (e.name != "BuildQueryError") {
         alert("There was an error, recheck your query or poke web support.");
