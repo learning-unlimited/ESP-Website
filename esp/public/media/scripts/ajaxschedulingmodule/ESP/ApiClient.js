@@ -1,6 +1,12 @@
 function ApiClient() {
     /**
      * Fetch the change log from the server
+     * 
+     * @param last_fetched_index: The previous index we retrieved from the server
+     * @param callback: If successful, this function will be called. Takes one param
+     *                  ajax_data which is the data that was fetched.
+     * @param: errorReporter: If server reports an error, this function will be called.
+     *                        Takes one param msg with an error message.
      */
     this.get_change_log = function(last_fetched_index, callback, errorReporter){
 	    $j.getJSON(
@@ -16,6 +22,13 @@ function ApiClient() {
 
     /**
      * Schedule a section on the server.
+     *
+     * @param section_id: The ID of the section to schedule
+     * @param timeslot_ids: A list of ids of all timeslots the class should be scheduled during.
+     * @param room_name: The name of the room (its ID).
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
      */
     this.schedule_section = function(section_id, timeslot_ids, room_name, callback, errorReporter){
 	    assignments = timeslot_ids.map(function(id) {
@@ -33,6 +46,11 @@ function ApiClient() {
 
     /**
      * Unschedule a section on the server.
+     *
+     * @param section_id: The ID of the section to schedule
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
      */
     this.unschedule_section = function(section_id, callback, errorReporter){
 	    var req = { 
@@ -45,6 +63,11 @@ function ApiClient() {
 
     /**
      * Send a request to the server
+     *
+     * @param req: The object to send to the server.
+     * @param callback: If successful, this function will be called. Takes no params.
+     * @param errorReporter: If server reports an error, this function will be called.
+     *                       Takes one param msg with an error message.
      */
     this.send_request = function(req, callback, errorReporter){
         $j.post('ajax_schedule_class', req, "json")
