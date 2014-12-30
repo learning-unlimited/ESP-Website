@@ -1,3 +1,4 @@
+import datetime
 import json
 import random
 import operator
@@ -93,7 +94,7 @@ class SearchFilter(object):
     `name` is the internal name; you'll probably be happier in your life if it
         doesn't have spaces.
     `inputs` is a list of inputs, which are instances of classes like
-        SelectInput and DateTimeInput.  Many filters will have only a single
+        SelectInput and DatetimeInput.  Many filters will have only a single
         input, but they can have multiple.  Each input should have the
         following methods:
           * name (a property or variable): must be distinct within each filter
@@ -202,7 +203,37 @@ class OptionalInput(object):
             return self.inner.as_q(value)
 
     def as_english(self, value):
+        #TODO: this doesn't work so well
         if value is None:
             return ""
         else:
             return self.inner.as_english(value)
+
+
+class DatetimeInput(object):
+    """An input for before, after, or exactly at a datetime."""
+    TIME_FMT = "%m/%d/%Y %H:%M"
+
+    def __init__(self, field_name, english_name=None):
+        self.field_name = field_name
+        self.english_name = english_name or field_name.replace('_', ' ')
+
+    def spec(self):
+        return {
+            'reactClass': 'DatetimeInput',
+            'name': self.english_name,
+        }
+
+    def as_q(self, value):
+        if value['comparison'] == 'before':
+            lookup = self.field_name + '__lt'
+        elif value['comparison'] == 'after':
+            lookup = self.field_name + '__gt'
+        else:
+            lookup = self.field_name
+        dt = datetime.datetime.strptime(value['datetime'], self.TIME_FMT)
+        return Q(**{lookup: dt})
+
+    def as_english(self, value):
+        return ' '.join([self.english_name, value['comparison'],
+                         value['datetime']])

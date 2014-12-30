@@ -320,6 +320,42 @@ var OptionalInput = React.createClass({
   },
 });
 
+var DatetimeInput = React.createClass({
+  propTypes: {
+    input: React.PropTypes.shape({
+      reactClass: React.PropTypes.string.isRequired,
+      name: React.PropTypes.string.isRequired,
+    }).isRequired,
+  },
+
+  asJSON: function () {
+    return {
+      comparison: this.refs.comparison.getDOMNode().value,
+      datetime: this.refs.datetime.getDOMNode().value,
+    };
+  },
+
+  componentDidMount: function () {
+    this.componentDidUpdate();
+  },
+
+  componentDidUpdate: function () {
+    $j(this.refs.datetime.getDOMNode()).datetimepicker();
+  },
+
+  render: function () {
+    return <span>
+      {this.props.input.name}
+      <select ref="comparison" defaultValue="before">
+        <option>before</option>
+        <option>after</option>
+        <option>exactly</option>
+      </select>
+      <input type="text" className="datetime-input" ref="datetime" />
+    </span>;
+  },
+});
+
 var BooleanOp = React.createClass({
   propTypes: {
     op: React.PropTypes.string.isRequired,
