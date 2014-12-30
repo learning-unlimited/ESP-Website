@@ -7,6 +7,7 @@ from esp.program.models.class_ import ClassSubject, STATUS_CHOICES_DICT
 from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, TrivialInput
+from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.web.util import render_to_response
 
 # TODO: this won't work right without class flags enabled
@@ -31,7 +32,6 @@ class ClassSearchModule(ProgramModuleObj):
             name='flag',
             title='the flag',
             inputs=[
-                # TODO: add datetime inputs
                 SelectInput(
                     field_name='flags__flag_type',
                     options={
@@ -39,6 +39,21 @@ class ClassSearchModule(ProgramModuleObj):
                         ClassFlagType.get_flag_types(program=self.program)},
                     english_name='type',
                 ),
+                OptionalInput(
+                    name='(show created time)',
+                    inner=DatetimeInput(
+                        field_name='flags__modified_time',
+                        english_name='modified',
+                    ),
+                ),
+                OptionalInput(
+                    name='(show created time)',
+                    inner=DatetimeInput(
+                        field_name='flags__created_time',
+                        english_name='created',
+                    ),
+                ),
+
             ])
         status_filter = SearchFilter(
             name='status',
