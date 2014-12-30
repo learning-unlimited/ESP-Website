@@ -3,11 +3,11 @@
 var booleanFilters = [
   {
     "name": "and",
-    "title": "all of the following...",
+    "title": "all of...",
   },
   {
     "name": "or",
-    "title": "some of the following...",
+    "title": "any of...",
   },
 ]
 

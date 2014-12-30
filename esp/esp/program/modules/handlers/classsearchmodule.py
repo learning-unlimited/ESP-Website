@@ -3,7 +3,7 @@ import json
 from django.db.models.query import Q
 
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
-from esp.program.models.class_ import ClassSubject
+from esp.program.models.class_ import ClassSubject, STATUS_CHOICES_DICT
 from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, TrivialInput
@@ -31,6 +31,7 @@ class ClassSearchModule(ProgramModuleObj):
             name='flag',
             title='the flag',
             inputs=[
+                # TODO: add datetime inputs
                 SelectInput(
                     field_name='flags__flag_type',
                     options={
@@ -39,7 +40,27 @@ class ClassSearchModule(ProgramModuleObj):
                     english_name='type',
                 ),
             ])
-
+        status_filter = SearchFilter(
+            name='status',
+            title='the status',
+            inputs=[
+                SelectInput(
+                    field_name='status',
+                    options=STATUS_CHOICES_DICT,
+                ),
+            ])
+        categories = list(self.program.class_categories.all())
+        if self.program.open_class_registration:
+            categories.append(self.program.open_class_category)
+        category_filter = SearchFilter(
+            name='category',
+            title='the category',
+            inputs=[
+                SelectInput(
+                    field_name='category',
+                    options={cat.id: cat.category for cat in categories},
+                ),
+            ])
         all_scheduled_filter = SearchFilter(
             name="all_scheduled",
             title="all sections scheduled",
@@ -59,6 +80,8 @@ class ClassSearchModule(ProgramModuleObj):
             english_name="classes",
             filters=[
                 flag_filter,
+                status_filter,
+                category_filter,
                 all_scheduled_filter,
                 some_scheduled_filter,
             ])
