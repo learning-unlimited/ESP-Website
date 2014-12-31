@@ -13,7 +13,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.apiClient = apiClient;
 
     // The section that is currently selected
-    this.currentlySelected = null;
+    this.selectedSection = null;
+    
+    this.availableTimeslots = [];
 
     /**
      * Populate the sections data with teacher info
@@ -61,6 +63,44 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             }
         }.bind(this));
         return returned_sections;
+    };
+
+    /**
+     * 
+     */
+    this.selectSection = function(section) {
+        if(this.selectedSection === section) {
+            this.unselectSection();
+            return;
+        }
+        var assignment = this.scheduleAssignments[section.id];
+        $j.each(assignment.timeslots, function(index, timeslot) {
+            var cell = this.matrix.getCell(assignment.room_name, timeslot);
+            cell.select();
+        }.bind(this));
+        this.unselectSection();
+        this.selectedSection = section;
+        this.matrix.sectionInfoPanel.displaySection(section);
+        this.availableTimeslots = this.getAvailableTimeslots(section);
+        this.matrix.highlightTimeslots(this.availableTimeslots);
+
+
+    };
+
+    this.unselectSection = function() {
+        if(!this.selectedSection) {
+            return;
+        }
+        var assignment = this.scheduleAssignments[this.selectedSection.id];
+        $j.each(assignment.timeslots, function(index, timeslot) {
+            var cell = this.matrix.getCell(assignment.room_name, timeslot);
+            cell.unselect();
+        }.bind(this));
+
+        this.selectedSection = null;
+        this.matrix.sectionInfoPanel.hide();
+        this.matrix.unhighlightTimeslots(this.availableTimeslots);
+
     };
 
     /**
@@ -176,10 +216,10 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 	        var timeslot_id = old_assignment.timeslots[timeslot_index];
 	        var cell = this.matrix.getCell(old_assignment.room_name, timeslot_id);
 	        cell.removeSection();
-            if(this.currentlySelected === cell) {
-                cell.unselect();
-            }
 	    }
+        if(this.selectedSection === section) {
+            this.unselectSection();
+        }
 
         // Update the array that keeps track of the assignments
 	    this.scheduleAssignments[section.id] = {

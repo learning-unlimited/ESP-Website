@@ -29,7 +29,6 @@ function Scheduler(
     this.messagePanel = new MessagePanel(messageEl, 
                                          "Welcome to the Ajax Scheduler!");
     this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl, 
-                                                 data.teachers, 
                                                  this.sections, 
                                                  this.messagePanel)
 

@@ -17,8 +17,6 @@
  * @prop availableTimeslots: The timeslots that should be highlighted for the selected cell.
  *                           //TODO: Move availableTimeslots to Sections
  *
- * @method highlightTimeslots(timeslots)
- * @method unhighlightTimeslots(timeslots)
  * @method select()
  * @method unselect()
  * @method addSection(section)
@@ -32,8 +30,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.timeslot_id = timeslot_id;
     this.matrix = matrix;
     this.disabled = false;
-    
-    this.availableTimeslots = [];
+
 
     /**
      * Initialize the cell
@@ -62,71 +59,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    this.el.addClass("matrix-cell");
     }
 
-    /**
-     * Highlight the timeslots on the grid.
-     *
-     * @param timeslots: A 2-d array. The first element is an array of
-     *                   timeslots where all teachers are completely available. 
-     *                   The second is an array of timeslots where one or more 
-     *                   teachers are teaching, but would be available otherwise.
-     */
-    //TODO: Move this to Matrix.js
-    this.highlightTimeslots = function(timeslots) {
-        /**
-         * Adds a class to all non-disabled cells corresponding to each
-         * timeslot in timeslots.
-         *
-         * @param timeslots: A 1-d array of tiemslot IDs
-         * @param className: The class to add to the cells
-         */
-        addClassToTimeslots = function(timeslots, className) {
-            $j.each(timeslots, function(j, timeslot) {
-                $j.each(this.matrix.rooms, function(k, room) {
-                    var cell = this.matrix.getCell(room.id, timeslot);
-                    if(!cell.section && !cell.disabled) {
-                        cell.el.addClass(className);
-                    } 
-                }.bind(this));
-            }.bind(this));
-        }.bind(this);
-
-        var available_timeslots = timeslots[0];
-        var teaching_timeslots = timeslots[1];
-        addClassToTimeslots(available_timeslots, "teacher-available-cell");
-        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-    }
-
-    /**
-     * Unhighlight the cells that are currently highlighted
-     *
-     * @param timeslots: A 2-d array. The first element is an array of
-     *                   timeslots where all teachers are completely available. 
-     *                   The second is an array of timeslots where one or more 
-     *                   teachers are teaching, but would be available otherwise.
-     */
-    //TODO: Move this to Matrix.js
-    this.unhighlightTimeslots = function(timeslots) {
-        /**
-         * Removes a class from all non-disabled cells corresponding to each
-         * timeslot in timeslots.
-         *
-         * @param timeslots: A 1-d array of tiemslot IDs
-         * @param className: The class to remove from the cells
-         */
-        removeClassFromTimeslots = function(timeslots, className) {
-            $j.each(timeslots, function(j, timeslot) {
-                $j.each(this.matrix.rooms, function(k, room) {
-                    var cell = this.matrix.getCell(room.id, timeslot);
-                    cell.el.removeClass(className);
-                }.bind(this));
-            }.bind(this));
-        }.bind(this);
-
-        var available_timeslots = timeslots[0];
-        var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell");
-        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
-    };
 
     /**
      * Highlight a cell and show its info in the section-info panel.
@@ -134,10 +66,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.select = function() {
         if(this.el.hasClass("selectable-cell")) {
             this.el.addClass("selected-section");
-            this.availableTimeslots = this.matrix.sections.getAvailableTimeslots(this.section);
-            this.highlightTimeslots(this.availableTimeslots);
-            this.matrix.sections.currentlySelected = this;
-            this.matrix.sectionInfoPanel.displaySection(this.section);
         }
     };
 
@@ -147,9 +75,6 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.unselect = function() {
         if(this.el.hasClass("selected-section")) {
             this.el.removeClass("selected-section");
-            this.unhighlightTimeslots(this.availableTimeslots);
-            this.matrix.sections.currentlySelected = null;
-            this.matrix.sectionInfoPanel.hide();
         }
     };
 

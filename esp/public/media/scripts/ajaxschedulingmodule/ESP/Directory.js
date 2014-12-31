@@ -46,14 +46,7 @@ function Directory(sections, el, schedule_assignments, matrix) {
         // set up handlers
         this.el.on("click", "td > a", function(evt, ui) {
             var cell = $j(evt.currentTarget.parentElement).data("cell");
-            if(this.sections.currentlySelected === cell) {
-                cell.unselect();
-            } else {
-                if(this.sections.currentlySelected) {
-                    this.sections.currentlySelected.unselect();
-                }
-                cell.select();
-            }
+            this.sections.selectSection(cell.section);
         }.bind(this)); 
 
         this.el.on("click", "td.teacher-available-cell", function(evt, ui) {

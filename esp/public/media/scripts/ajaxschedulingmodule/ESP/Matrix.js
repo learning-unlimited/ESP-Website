@@ -59,19 +59,12 @@ function Matrix(
         // set up handlers for selecting and scheduling classes
         this.el.on("click", "td > a", function(evt, ui) {
             var cell = $j(evt.currentTarget.parentElement).data("cell");
-            if(this.sections.currentlySelected === cell) {
-                cell.unselect();
-            } else {
-                if(this.sections.currentlySelected) {
-                    this.sections.currentlySelected.unselect();
-                }
-                cell.select();
-            }
+            this.sections.selectSection(cell.section);
         }.bind(this)); 
         this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
             var cell = $j(evt.currentTarget).data("cell");
-            if(this.sections.currentlySelected) {
-                this.sections.scheduleSection(this.sections.currentlySelected.section, 
+            if(this.sections.selectedSection) {
+                this.sections.scheduleSection(this.sections.selectedSection, 
                                               cell.room_name, cell.timeslot_id);
             }
         }.bind(this));
@@ -81,6 +74,72 @@ function Matrix(
 
     this.init();
     
+    /**
+     * Highlight the timeslots on the grid.
+     *
+     * @param timeslots: A 2-d array. The first element is an array of
+     *                   timeslots where all teachers are completely available. 
+     *                   The second is an array of timeslots where one or more 
+     *                   teachers are teaching, but would be available otherwise.
+     */
+    //TODO: Move this to Matrix.js
+    this.highlightTimeslots = function(timeslots) {
+        /**
+         * Adds a class to all non-disabled cells corresponding to each
+         * timeslot in timeslots.
+         *
+         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param className: The class to add to the cells
+         */
+        addClassToTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot);
+                    if(!cell.section && !cell.disabled) {
+                        cell.el.addClass(className);
+                    } 
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
+
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        addClassToTimeslots(available_timeslots, "teacher-available-cell");
+        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+    }
+
+    /**
+     * Unhighlight the cells that are currently highlighted
+     *
+     * @param timeslots: A 2-d array. The first element is an array of
+     *                   timeslots where all teachers are completely available. 
+     *                   The second is an array of timeslots where one or more 
+     *                   teachers are teaching, but would be available otherwise.
+     */
+    this.unhighlightTimeslots = function(timeslots) {
+        /**
+         * Removes a class from all non-disabled cells corresponding to each
+         * timeslot in timeslots.
+         *
+         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param className: The class to remove from the cells
+         */
+        removeClassFromTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot);
+                    cell.el.removeClass(className);
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
+
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell");
+        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+    };
+
+
     /**
      * Initialize the sections that have already been scheduled. Must be called at the end 
      * after all other initialization happens.

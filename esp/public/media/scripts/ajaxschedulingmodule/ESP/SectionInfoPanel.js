@@ -2,14 +2,12 @@
  * The panel to display information about a section.
  * 
  * @param el: The element to shape into the panel
- * @param teachers: The teacher data //TODO: Get rid of this (can use Sections object instead)
  * @param sections: The sections object of the scheduler
  * @param togglePanel: The panel to hide when this one is shown. May be null.
  */
-function SectionInfoPanel(el, teachers, sections, togglePanel) {
+function SectionInfoPanel(el, sections, togglePanel) {
     this.el = el;
     this.togglePanel = togglePanel; // The panel that should be hidden when the info panel is shown
-    this.teachers = teachers;
     this.sections = sections;
 
     /**
@@ -62,12 +60,7 @@ function SectionInfoPanel(el, teachers, sections, togglePanel) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
 
         // Make content
-        var teacher_list = []
-        $j.each(section.teachers, function(index, teacher_id) {
-            var teacher = this.teachers[teacher_id]
-            teacher_list.push(teacher.first_name + " " + teacher.last_name);
-        }.bind(this));
-        var teachers = teacher_list.join(", ");
+        var teachers = this.sections.getTeachersString(section);
         
         var content_parts = [
             "Title: " + section.title,
