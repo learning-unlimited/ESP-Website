@@ -267,6 +267,8 @@ var Filter = React.createClass({
 
 /**
  * An input which adds a fixed Q object to the filter.
+ *
+ * The output JSON data is null.
  */
 var TrivialInput = React.createClass({
   propTypes: {
@@ -292,6 +294,8 @@ var TrivialInput = React.createClass({
  *     `name`: a string or number representing the option.  Note: this may get
  *       coerced to a string by Javascript.
  *     `title`: the human-readable description of the option.
+ *
+ * The output JSON data is the `name` of the chosen option.
  */
 var SelectInput = React.createClass({
   propTypes: {
@@ -347,6 +351,9 @@ var SelectInput = React.createClass({
  *     input is shown, the word "show" in `name` will be changed to "hide".
  *   `inner`: another input specification object, for the input which might be
  *     used.
+ * 
+ * The output JSON data is null if the input was not used, and the value of the
+ * input otherwise.
  */
 var OptionalInput = React.createClass({
   propTypes: {
@@ -397,6 +404,10 @@ var OptionalInput = React.createClass({
  *
  * The input specification object should have the following additional key:
  *   `name`: the human-readable name describing the datetime.
+ *
+ * The output JSON data is an object with the following keys:
+ *   `comparison`: "before", "after", or "exactly".
+ *   `datetime`: the datetime in "%m/%d/%Y %H:%M" format.
  */
 var DatetimeInput = React.createClass({
   propTypes: {
