@@ -6,7 +6,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES_DICT
 from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
-from esp.utils.query_builder import SelectInput, TrivialInput
+from esp.utils.query_builder import SelectInput, TrivialInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.web.util import render_to_response
 
@@ -41,10 +41,6 @@ class ClassSearchModule(ProgramModuleObj):
                               field_name='flags__created_time',
                               english_name='created')),
         ])
-        status_filter = SearchFilter(
-            name='status', title='the status',
-            inputs=[SelectInput(field_name='status',
-                                options=STATUS_CHOICES_DICT)])
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
@@ -54,6 +50,17 @@ class ClassSearchModule(ProgramModuleObj):
             inputs=[SelectInput(field_name='category', options={
                 cat.id: cat.category for cat in categories})])
 
+        status_filter = SearchFilter(
+            name='status', title='the status',
+            inputs=[SelectInput(field_name='status',
+                                options=STATUS_CHOICES_DICT)])
+        title_filter = SearchFilter(
+            name='title', title='title containing',
+            inputs=[TextInput(field_name='title__contains', english_name='')])
+        username_filter = SearchFilter(
+            name='username', title='teacher username containing',
+            inputs=[TextInput(field_name='teachers__username__contains',
+                              english_name='')])
         all_scheduled_filter = SearchFilter(
             name="all_scheduled", title="all sections scheduled",
             # Exclude classes with sections with null meeting times
@@ -75,6 +82,8 @@ class ClassSearchModule(ProgramModuleObj):
                 category_filter,
                 all_scheduled_filter,
                 some_scheduled_filter,
+                title_filter,
+                username_filter,
             ])
 
     @main_call
