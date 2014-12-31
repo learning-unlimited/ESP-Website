@@ -29,18 +29,20 @@ class ClassSearchModule(ProgramModuleObj):
 
     def query_builder(self):
         flag_types = ClassFlagType.get_flag_types(program=self.program)
-        flag_filter = SearchFilter(name='flag', title='the flag', inputs=[
-            SelectInput(field_name='flags__flag_type', english_name='type',
-                        options={ft.id: ft.name for ft in flag_types}),
-            OptionalInput(name='(show modified time)',
+        flag_datetime_inputs = [
+            OptionalInput(name='(show %s time)' % t,
                           inner=DatetimeInput(
-                              field_name='flags__modified_time',
-                              english_name='modified')),
-            OptionalInput(name='(show created time)',
-                          inner=DatetimeInput(
-                              field_name='flags__created_time',
-                              english_name='created')),
-        ])
+                              field_name='flags__%s_time' % t,
+                              english_name=t))
+            for t in ['created', 'modified']]
+        flag_select_input = SelectInput(
+            field_name='flags__flag_type', english_name='type',
+            options={ft.id: ft.name for ft in flag_types})
+        flag_filter = SearchFilter(name='flag', title='the flag',
+                                   inputs=[flag_select_input] +
+                                   flag_datetime_inputs)
+        any_flag_filter = SearchFilter(name='any_flag', title='any flag',
+                                       inputs=flag_datetime_inputs)
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
@@ -78,6 +80,7 @@ class ClassSearchModule(ProgramModuleObj):
             english_name="classes",
             filters=[
                 flag_filter,
+                any_flag_filter,
                 status_filter,
                 category_filter,
                 all_scheduled_filter,
