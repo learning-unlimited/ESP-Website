@@ -15,12 +15,43 @@ function BuildQueryError() {
     this.name = "BuildQueryError";
 }
 
-// TODO: more docstrings
 /**
  * The root of the query builder.
  *
- * Should have a spec attribute, which contains the json spec for the query
- * builder (TODO: detail the various data interchange formats somewhere)
+ * Props:
+ *   `spec`: A specification describing the query builder.  This should have
+ *   the following keys:
+ *     `englishName`: the name of the thing being queried.
+ *     `filterNames`: a list of the internal names of the possible filters.
+ *     `filters`: an object with the elements of `filterNames` as keys.  The
+ *       values should be objects describing the filters.  They should have
+ *       the following keys:
+ *         `name`: the same as the name from `filterNames`
+ *         `title`: a human-readable name for the filter
+ *         `inputs`: an array of input objects, describing each input to the
+ *           filter.  Each must have a key `reactClass` which should be the
+ *           name of the React class that displays the input.  They may also
+ *           have more keys as specified by that class.
+ *
+ * Note that the boolean operations `and` and `or` need not be included in the
+ * list of filters.
+ *
+ * Each input React class must have a single Prop, `input`, which takes an
+ * object as described under `input` above.  In addition to the usual React
+ * methods, it must have a method `asJSON` which returns a value that will be
+ * passed through to the corresponding python class to be interpreted.  The
+ * method may alternately raise a BuildQueryError if the user's input is
+ * invalid, in which case it should show the invalid input.
+ *
+ * When the submit button is pressed, this generates a JSON object representing
+ * the query, and sends it to the current URL as the GET parameter `query`.
+ * The JSON is an object with the following keys:
+ *   `filter`: the name of the filter (or boolean operation).
+ *   `negated`: a boolean, true if the filter was negated.
+ *   `values`: an array of the values of the inputs in the filter.  These
+ *     objects are described in the documentation of each input class.  For
+ *     boolean operations, these will be other objects with the same structure
+ *     as the root.
  */
 var QueryBuilder = React.createClass({
   propTypes: {
@@ -41,6 +72,9 @@ var QueryBuilder = React.createClass({
     return this.refs.queryNode.asJSON();
   },
 
+  /**
+   * Handler to submit the query.
+   */
   submit: function () {
     try {
       json = JSON.stringify(this.asJSON());
@@ -79,6 +113,10 @@ var QueryBuilder = React.createClass({
   },
 });
 
+/**
+ * A single node of the query builder, containing a single filter or boolean
+ * operation.
+ */
 var QueryNode = React.createClass({
   propTypes: {
     filterNames: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
@@ -89,7 +127,9 @@ var QueryNode = React.createClass({
         reactClass: React.PropTypes.string.isRequired,
       })),
     })).isRequired,
-    onRemove: React.PropTypes.func, // leave this out to not allow removing the node (i.e. for the root)
+    // A handler to call if the node is removed.  Leave out onRemove to not
+    // allow removing the node (e.g. for the root).
+    onRemove: React.PropTypes.func,
   },
 
   getInitialState: function () {
@@ -147,6 +187,13 @@ var QueryNode = React.createClass({
   },
 });
 
+/**
+ * The drop-down to select a filter, and button to possibly negate it.
+ *
+ * Note that the value of the filter <select> is managed by React so that the
+ * interface can update appropriately, but the value of the negation checkbox
+ * is not.
+ */
 var FilterSelector = React.createClass({
   propTypes: {
     filterNames: React.PropTypes.arrayOf(React.PropTypes.string).isRequired,
@@ -157,7 +204,9 @@ var FilterSelector = React.createClass({
         reactClass: React.PropTypes.string.isRequired,
       })),
     })).isRequired,
+    // The callback for when the filter is changed.
     onChange: React.PropTypes.func.isRequired,
+    // The current chosen filter.
     value: React.PropTypes.string
   },
 
@@ -180,6 +229,9 @@ var FilterSelector = React.createClass({
   },
 });
 
+/**
+ * The body of a filter.
+ */
 var Filter = React.createClass({
   propTypes: {
     filter: React.PropTypes.shape({
@@ -213,6 +265,9 @@ var Filter = React.createClass({
   },
 });
 
+/**
+ * An input which adds a fixed Q object to the filter.
+ */
 var TrivialInput = React.createClass({
   propTypes: {
     input: React.PropTypes.shape({
@@ -229,6 +284,15 @@ var TrivialInput = React.createClass({
   },
 });
 
+/**
+ * An input reperesented by an HTML <select> with a fixed set of options.
+ *
+ * The input specification object should have the following extra key:
+ *   `options`: an array of objects, each of which has the following keys:
+ *     `name`: a string or number representing the option.  Note: this may get
+ *       coerced to a string by Javascript.
+ *     `title`: the human-readable description of the option.
+ */
 var SelectInput = React.createClass({
   propTypes: {
     input: React.PropTypes.shape({
@@ -275,6 +339,15 @@ var SelectInput = React.createClass({
   },
 });
 
+/**
+ * An input that can either use or not use another input.
+ *
+ * The input specification object should have the following additional keys:
+ *   `name`: the name of the optional input, to go on the button.  When the
+ *     input is shown, the word "show" in `name` will be changed to "hide".
+ *   `inner`: another input specification object, for the input which might be
+ *     used.
+ */
 var OptionalInput = React.createClass({
   propTypes: {
     input: React.PropTypes.shape({
@@ -319,6 +392,12 @@ var OptionalInput = React.createClass({
   },
 });
 
+/**
+ * An input for before, after, or exactly at a datetime.
+ *
+ * The input specification object should have the following additional key:
+ *   `name`: the human-readable name describing the datetime.
+ */
 var DatetimeInput = React.createClass({
   propTypes: {
     input: React.PropTypes.shape({
@@ -355,6 +434,13 @@ var DatetimeInput = React.createClass({
   },
 });
 
+/**
+ * A boolean operation.
+ *
+ * In addition to the filter specification to be passed around, BooleanOp takes
+ * the following additional Prop:
+ *   `op`: either "and" or "or".
+ */
 var BooleanOp = React.createClass({
   propTypes: {
     op: React.PropTypes.string.isRequired,
@@ -376,6 +462,9 @@ var BooleanOp = React.createClass({
 
   getInitialState: function () {
     return {
+      // Each child filter gets assigned a unique ID, so we and React can keep
+      // track of it.  this.state.childKeys contains the current set of such
+      // keys in use.
       childKeys: [_.uniqueId()],
       error: null,
     };
