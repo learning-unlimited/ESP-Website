@@ -1032,6 +1032,7 @@ class ClassSection(models.Model):
             for student, classreg in students:
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+                #   Here we render the template to include the username, and also whether the student is registered
                 msgtext = template.render(Context({'user': student, 'classreg': classreg}))
                 send_mail(email_title, msgtext, from_email, to_email)
 
