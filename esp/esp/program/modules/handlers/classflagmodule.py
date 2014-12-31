@@ -35,7 +35,8 @@ from django.db.models.query import Q
 from django.http import HttpResponseBadRequest, HttpResponse
 from django.http import HttpResponseRedirect
 
-from esp.program.modules.base import ProgramModuleObj, aux_call, needs_admin
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.base import main_call, aux_call, needs_admin
 from esp.web.util import render_to_response
 
 from esp.program.models import ClassFlag, ClassFlagType
@@ -77,7 +78,7 @@ class ClassFlagModule(ProgramModuleObj):
             descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag.""" % flag_type.name
         return descs
 
-    @aux_call
+    @main_call
     @needs_admin
     def classflags(self, request, tl, one, two, module, extra, prog):
         """Deprecated, use the ClassSearchModule instead."""
