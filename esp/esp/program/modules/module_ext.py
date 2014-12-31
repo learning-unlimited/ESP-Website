@@ -274,20 +274,6 @@ class ClassRegModuleInfo(models.Model):
     def getResources(self):
         resources = self.get_program().getResources()
         return [(str(x.id), x.name) for x in resources]
-   
-    def getResourceTypes(self, is_global=None):
-        #   Get a list of all resource types, excluding the fundamental ones.
-        base_types = self.get_program().getResourceTypes().filter(priority_default__gt=0)
-        
-        if is_global is True:
-            res_types = base_types.filter(program__isnull=True)
-        elif is_global is False:
-            res_types = base_types.filter(program__isnull=False)
-        else:
-            res_types = base_types
-            
-        return [(str(x.id), x.name) for x in res_types]
-
     
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
