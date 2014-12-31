@@ -56,7 +56,7 @@ class ClassSearchModule(ProgramModuleObj):
                                 options=STATUS_CHOICES_DICT)])
         title_filter = SearchFilter(
             name='title', title='title containing',
-            inputs=[TextInput(field_name='title__contains', english_name='')])
+            inputs=[TextInput(field_name='title__icontains', english_name='')])
         username_filter = SearchFilter(
             name='username', title='teacher username containing',
             inputs=[TextInput(field_name='teachers__username__contains',
