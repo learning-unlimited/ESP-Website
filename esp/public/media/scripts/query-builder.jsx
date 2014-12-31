@@ -108,7 +108,9 @@ var QueryBuilder = React.createClass({
       <QueryNode ref="queryNode"
                  filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
-      <button onClick={this.submit}>Go</button>
+      <button onClick={this.submit} className="qb-input btn btn-primary">
+        Go
+      </button>
     </div>;
   },
 });
@@ -177,9 +179,13 @@ var QueryNode = React.createClass({
     }
     var removeButton = null;
     if (this.props.onRemove) {
-      removeButton = <button onClick={this.props.onRemove} >-</button>;
+      removeButton = <button onClick={this.props.onRemove}
+                             className="qb-input btn btn-default">
+        -
+      </button>;
     }
     return <div>
+      {removeButton}
       <span className="error">{this.state.error}</span>
       <FilterSelector filterNames={this.props.filterNames}
                       filters={this.props.filters}
@@ -188,7 +194,6 @@ var QueryNode = React.createClass({
                       onToggle={this.handleToggle}
                       negated={this.state.negated} />
       {filterBody}
-      {removeButton}
     </div>;
   },
 });
@@ -403,7 +408,7 @@ var OptionalInput = React.createClass({
     if (this.state.show) {
       var innerClass = window[this.props.input.inner.reactClass];
       inner = <innerClass ref="inner" input={this.props.input.inner} />;
-      buttonClasses = buttonClasses + "active btn-primary"
+      buttonClasses = buttonClasses + "active btn-success"
     } else {
       buttonClasses = buttonClasses + "btn-default"
     }
@@ -567,9 +572,14 @@ var BooleanOp = React.createClass({
                          }.bind(this));
     return <div>
       <span className="error">{this.state.error}</span>
-      <ul>
+      <ul className="qb-ul">
         {children}
-        <li><button onClick={this.handleAdd}>+</button></li>
+        <li>
+          <button onClick={this.handleAdd}
+                  className="qb-input btn btn-default">
+            +
+          </button>
+        </li>
       </ul>
     </div>;
   },

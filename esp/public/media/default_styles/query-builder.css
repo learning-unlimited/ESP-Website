@@ -12,3 +12,7 @@ select.qb-datetime-select {
   max-width: 70px;
   margin-left: 5px;
 }
+
+ul.qb-ul {
+  list-style-type: none;
+}
