@@ -446,6 +446,34 @@ var DatetimeInput = React.createClass({
 });
 
 /**
+ * An input for arbitrary text.
+ *
+ * The input specification object may have the following additional key:
+ *   `name`: the human-readable name describing the text (optional)
+ *
+ * The output JSON data is the text entered.
+ */
+var TextInput = React.createClass({
+  propTypes: {
+    input: React.PropTypes.shape({
+      reactClass: React.PropTypes.string.isRequired,
+      name: React.PropTypes.string,
+    }).isRequired,
+  },
+
+  asJSON: function () {
+    return this.refs.input.getDOMNode().value;
+  },
+
+  render: function () {
+    return <span>
+      {this.props.input.name}
+      <input type="text" ref="input" />
+    </span>;
+  },
+});
+
+/**
  * A boolean operation.
  *
  * In addition to the filter specification to be passed around, BooleanOp takes

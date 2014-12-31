@@ -306,3 +306,29 @@ class DatetimeInput(object):
     def as_english(self, value):
         return ' '.join([self.english_name, value['comparison'],
                          value['datetime']])
+
+
+class TextInput(object):
+    """An input for arbitrary text.
+
+    Arguments:
+        `field_name`: the field (possibly including a lookup like __contains)
+            against which the text should be queried.
+        `english_name`: an English description of the field.  Defaults to
+            `field_name`.
+    """
+    def __init__(self, field_name, english_name=None):
+        self.field_name = field_name
+        self.english_name = english_name or field_name.replace('_', ' ')
+
+    def spec(self):
+        return {
+            'reactClass': 'TextInput',
+            'name': self.english_name,
+        }
+
+    def as_q(self, value):
+        return Q(**{self.field_name: value})
+
+    def as_english(self, value):
+        return ' '.join([self.english_name, value])
