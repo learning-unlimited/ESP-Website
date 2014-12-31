@@ -136,7 +136,12 @@ var QueryNode = React.createClass({
     return {
       currentFilterName: "",
       error: null,
+      negated: false,
     }
+  },
+
+  handleToggle: function () {
+    this.setState({negated: !this.state.negated});
   },
 
   handleChange: function (event) {
@@ -151,7 +156,7 @@ var QueryNode = React.createClass({
       this.setState({error: null});
       return {
         'filter': this.state.currentFilterName,
-        'negated': this.refs.filterSelector.refs.checkbox.getDOMNode().checked,
+        'negated': this.state.negated,
         'values': this.refs.filter.asJSON(),
       };
     }
@@ -176,11 +181,12 @@ var QueryNode = React.createClass({
     }
     return <div>
       <span className="error">{this.state.error}</span>
-      <FilterSelector ref="filterSelector"
-                      filterNames={this.props.filterNames}
+      <FilterSelector filterNames={this.props.filterNames}
                       filters={this.props.filters}
                       onChange={this.handleChange}
-                      value={this.state.currentFilterName}/>
+                      value={this.state.currentFilterName}
+                      onToggle={this.handleToggle}
+                      negated={this.state.negated} />
       {filterBody}
       {removeButton}
     </div>;
@@ -189,10 +195,6 @@ var QueryNode = React.createClass({
 
 /**
  * The drop-down to select a filter, and button to possibly negate it.
- *
- * Note that the value of the filter <select> is managed by React so that the
- * interface can update appropriately, but the value of the negation checkbox
- * is not.
  */
 var FilterSelector = React.createClass({
   propTypes: {
@@ -207,7 +209,11 @@ var FilterSelector = React.createClass({
     // The callback for when the filter is changed.
     onChange: React.PropTypes.func.isRequired,
     // The current chosen filter.
-    value: React.PropTypes.string
+    value: React.PropTypes.string,
+    // The callback to toggle negation.
+    onToggle: React.PropTypes.func.isRequired,
+    // Are we negated?
+    negated: React.PropTypes.bool.isRequired,
   },
 
   render: function () {
@@ -219,8 +225,16 @@ var FilterSelector = React.createClass({
           {filter.title}
         </option>;
       }.bind(this));
+    if (this.props.negated) {
+      var buttonClasses = "btn btn-danger active";
+    } else {
+      var buttonClasses = "btn btn-default";
+    }
     return <span>
-      <input type="checkbox" ref="checkbox"/>
+      <button onClick={this.props.onToggle}
+              className={buttonClasses}>
+        not
+      </button>
       <select onChange={this.props.onChange} value={this.props.value}>
         <option value={null}></option>
         {options}
