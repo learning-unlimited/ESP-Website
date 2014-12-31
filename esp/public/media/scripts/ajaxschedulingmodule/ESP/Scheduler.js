@@ -52,6 +52,24 @@ function Scheduler(
         last_applied_index
     );
 
+
+    // set up handlers for selecting and scheduling classes
+    $j("body").on("click", "td > a", function(evt, ui) {
+        var cell = $j(evt.currentTarget.parentElement).data("cell");
+        this.sections.selectSection(cell.section);
+    }.bind(this)); 
+    $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
+        var cell = $j(evt.currentTarget).data("cell");
+        if(this.sections.selectedSection) {
+            this.sections.scheduleSection(this.sections.selectedSection, 
+                                          cell.room_name, cell.timeslot_id);
+        }
+    }.bind(this));
+    $j("body").on("click", "td.disabled-cell", function(evt, ui) {
+        this.sections.unselectSection();
+    }.bind(this));
+
+
     // Render all the objects on the page
     this.render = function(){
         this.directory.render();

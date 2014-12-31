@@ -44,19 +44,6 @@ function Directory(sections, el, schedule_assignments, matrix) {
      */
     this.init = function(){
         // set up handlers
-        this.el.on("click", "td > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
-            this.sections.selectSection(cell.section);
-        }.bind(this)); 
-
-        this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
-            var cell = $j(evt.currentTarget).data("cell");
-            if(this.sections.currentlySelected) {
-                this.sections.scheduleSection(this.sections.currentlySelected.section, cell.room_name, cell.timeslot_id);
-            }
-        }.bind(this));
-
-
 	    $j("body").on("schedule-changed", this.render.bind(this));
     }
     this.init();
@@ -80,8 +67,8 @@ function TableRow(section, el, directory){
     this.section = section;
     this.directory = directory;
     
-    this.cell = new Cell($j("<td/>"), section, null, null, this.directory.matrix);
-
+    this.cell = new Cell($j("<td class='selectable-cell'/>"), section, null, null, this.directory.matrix);
+    this.section.directoryCell = this.cell;
     /**
      * Style el into a row
      */

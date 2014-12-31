@@ -56,20 +56,6 @@ function Matrix(
             return cells;
         }.bind(this)();
 
-        // set up handlers for selecting and scheduling classes
-        this.el.on("click", "td > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
-            this.sections.selectSection(cell.section);
-        }.bind(this)); 
-        this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
-            var cell = $j(evt.currentTarget).data("cell");
-            if(this.sections.selectedSection) {
-                this.sections.scheduleSection(this.sections.selectedSection, 
-                                              cell.room_name, cell.timeslot_id);
-            }
-        }.bind(this));
-
-
     };
 
     this.init();

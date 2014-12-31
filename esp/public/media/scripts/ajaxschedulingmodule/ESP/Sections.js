@@ -69,16 +69,24 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      * 
      */
     this.selectSection = function(section) {
-        if(this.selectedSection === section) {
-            this.unselectSection();
-            return;
+        if(this.selectedSection) {
+            if(this.selectedSection === section) {
+                this.unselectSection();
+                return;
+            } else {
+                this.unselectSection();
+            }
         }
+
         var assignment = this.scheduleAssignments[section.id];
-        $j.each(assignment.timeslots, function(index, timeslot) {
-            var cell = this.matrix.getCell(assignment.room_name, timeslot);
-            cell.select();
-        }.bind(this));
-        this.unselectSection();
+        if(assignment.room_name) {
+            $j.each(assignment.timeslots, function(index, timeslot) {
+                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                cell.select();
+            }.bind(this));
+        } else {
+            section.directoryCell.select();
+        }
         this.selectedSection = section;
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
@@ -92,10 +100,14 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             return;
         }
         var assignment = this.scheduleAssignments[this.selectedSection.id];
-        $j.each(assignment.timeslots, function(index, timeslot) {
-            var cell = this.matrix.getCell(assignment.room_name, timeslot);
-            cell.unselect();
-        }.bind(this));
+        if(assignment.room_name) {
+            $j.each(assignment.timeslots, function(index, timeslot) {
+                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                cell.unselect();
+            }.bind(this));
+        } else {
+            this.selectedSection.directoryCell.unselect();
+        }
 
         this.selectedSection = null;
         this.matrix.sectionInfoPanel.hide();
