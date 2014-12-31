@@ -226,16 +226,17 @@ var FilterSelector = React.createClass({
         </option>;
       }.bind(this));
     if (this.props.negated) {
-      var buttonClasses = "btn btn-danger active";
+      var buttonClasses = "qb-input btn btn-danger active";
     } else {
-      var buttonClasses = "btn btn-default";
+      var buttonClasses = "qb-input btn btn-default";
     }
     return <span>
       <button onClick={this.props.onToggle}
               className={buttonClasses}>
         not
       </button>
-      <select onChange={this.props.onChange} value={this.props.value}>
+      <select onChange={this.props.onChange} value={this.props.value}
+              className="qb-input">
         <option value={null}></option>
         {options}
       </select>
@@ -349,7 +350,7 @@ var SelectInput = React.createClass({
                         });
     return <span>
       <span className="error">{this.state.error}</span>
-      <select ref="select">
+      <select ref="select" className="qb-input">
         <option value={null}></option>
         {options}
       </select>
@@ -406,10 +407,13 @@ var OptionalInput = React.createClass({
       inner = <innerClass ref="inner" input={this.props.input.inner} />;
       name.replace(/show/, "hide")
     }
-    return <span>
-      <button onClick={this.handleClick}>{this.props.input.name}</button>
+    return <div>
+      <button onClick={this.handleClick}
+              className="qb-optional-button qb-input btn btn-default">
+        {name}
+      </button>
       {inner}
-    </span>;
+    </div>;
   },
 });
 
@@ -449,12 +453,13 @@ var DatetimeInput = React.createClass({
   render: function () {
     return <span>
       {this.props.input.name}
-      <select ref="comparison" defaultValue="before">
+      <select ref="comparison" defaultValue="before"
+              className="qb-input qb-datetime-select">
         <option>before</option>
         <option>after</option>
         <option>exactly</option>
       </select>
-      <input type="text" className="datetime-input" ref="datetime" />
+      <input type="text" className="datetime-input qb-input" ref="datetime" />
     </span>;
   },
 });
