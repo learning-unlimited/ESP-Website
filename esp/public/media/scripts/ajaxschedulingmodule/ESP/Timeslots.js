@@ -1,9 +1,16 @@
+/**
+ * Stores timeslot data and provides convenience methods
+ * 
+ * @param timeslots_data: The raw timeslot data
+ */
 function Timeslots(timeslots_data){
     // TODO: move helper to add timeslot order here
     this.timeslots = helpers_add_timeslots_order(timeslots_data);
 
     /**
      * Get a timeslot by its id
+     *
+     * @param id: the id of the timeslot to get
      */
     this.get_by_id = function(id){
 	    return this.timeslots[id];
@@ -11,6 +18,8 @@ function Timeslots(timeslots_data){
 
     /**
      * Get a timeslot by its rank in the day based on start time
+     * 
+     * @param order: get the order-th timeslot
      */
     this.get_by_order = function(order){
 	for (id in this.timeslots){
@@ -22,6 +31,9 @@ function Timeslots(timeslots_data){
 
     /**
      * Determine whether two timeslots occur on the same day.
+     *
+     * @param timeslot_1: first timeslot
+     * @param timeslot_2: second timeslot
      */
     this.on_same_day = function(timeslot_1, timeslot_2){
 	    return timeslot_1.end[2] == timeslot_2.start[2];
@@ -30,6 +42,9 @@ function Timeslots(timeslots_data){
     /**
      * Get the timeslots to schedule a section during given the first timeslot we wish
      * to schedule it for.
+     *
+     * @param section: The section to get timeslots for
+     * @param first_timeslot_id: The first timeslot to schedule the section in
      */
     this.get_timeslots_to_schedule_section = function(section, first_timeslot_id){
 	    var times = [first_timeslot_id];
@@ -39,7 +54,8 @@ function Timeslots(timeslots_data){
 	        next_timeslot = this.get_by_order(last_timeslot.order + 1);
             
 	        if (!this.on_same_day(last_timeslot, next_timeslot)){
-		        console.log("timeslot "+last_timeslot.id+" and timeslot "+ next_timeslot.id +" are on different days");
+		        console.log("timeslot " + last_timeslot.id + " and timeslot " + 
+                            next_timeslot.id +" are on different days");
 	            return null;
 	        }
 	        last_timeslot_id = next_timeslot.id;

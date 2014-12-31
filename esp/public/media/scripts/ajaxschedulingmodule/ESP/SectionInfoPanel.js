@@ -1,3 +1,11 @@
+/**
+ * The panel to display information about a section.
+ * 
+ * @param el: The element to shape into the panel
+ * @param teachers: The teacher data //TODO: Get rid of this (can use Sections object instead)
+ * @param sections: The sections object of the scheduler
+ * @param togglePanel: The panel to hide when this one is shown. May be null.
+ */
 function SectionInfoPanel(el, teachers, sections, togglePanel) {
     this.el = el;
     this.togglePanel = togglePanel; // The panel that should be hidden when the info panel is shown
@@ -24,13 +32,18 @@ function SectionInfoPanel(el, teachers, sections, togglePanel) {
         }
     };
 
+    /**
+     * Helper methods for getting the info for the section
+     */
 
+    // The header for the panel
     var getHeader = function(section) {
         var header = $j("<div class='ui-widget-header'>")
         header.append("Information for " + section.emailcode);
         return header;
     };
 
+    // The buttons available for this section
     var getToolbar = function(section) {
         var toolbar = $j("<div>");
         var unscheduleButton = $j("<button id='unschedule'>Unschedule Section</button></br>");
@@ -44,6 +57,7 @@ function SectionInfoPanel(el, teachers, sections, togglePanel) {
         
     }.bind(this);
 
+    // The content to put on the panel
     var getContent = function(section) {
         var contentDiv = $j("<div class='ui-widget-content'></div>");
 
@@ -69,7 +83,9 @@ function SectionInfoPanel(el, teachers, sections, togglePanel) {
     }.bind(this);
 
     /**
-     * Display info for a class.
+     * Display info for a section.
+     *
+     * @param section: the section to display on the panel
      */
     this.displaySection = function(section) {
         this.el[0].innerHTML = "";

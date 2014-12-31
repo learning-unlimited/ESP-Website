@@ -1,3 +1,13 @@
+/**
+ * The grid of cells that displays the schedule.
+ * 
+ * @param timeslots: A Timeslots object corresponding to times available for classes
+ * @param rooms: The rooms that are available for scheduling. Keys are ids values are room data.
+ * @param sections: A list of all sections for the program
+ * @param el: The element to morph into the matrix
+ * @param messsagePanel: The panel that can display messages and errors
+ * @param secionInfoPanel: The panel that displays section info
+ */
 function Matrix(
     timeslots,
     rooms,
@@ -7,22 +17,26 @@ function Matrix(
     sectionInfoPanel
 ){ 
     this.el = el;
-    this.messagePanel = messagePanel;
-    this.sectionInfoPanel = sectionInfoPanel;
     this.el.id = "matrix-table";
 
+    this.timeslots = timeslots;
     this.rooms = rooms;
 
     this.sections = sections;
     this.sections.bindMatrix(this);
 
-    this.timeslots = timeslots;
+    this.messagePanel = messagePanel;
+    this.sectionInfoPanel = sectionInfoPanel;
 
+    /**
+     * Initialize the matrix
+     */
     this.init = function(){
         // set up cells
         var matrix = this;
         this.cells = function(){
-            // cells has room names as keys and arrays of timeslots as values
+            // cells has room names as keys to the outer object and timeslots as keys to the
+            // inner object
 	        var cells = {};
 	        $j.each(rooms, function(room_name, room){
 	            cells[room_name] = [];
@@ -30,17 +44,19 @@ function Matrix(
 	            $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
 		            var timeslot_id = parseInt(timeslot_id_string);
 		            if (room.availability.indexOf(timeslot_id) >= 0){
-		                cells[room_name][i] = new Cell($j("<td/>"), null, room_name, timeslot_id, matrix);
+		                cells[room_name][i] = new Cell($j("<td/>"), null, room_name, 
+                                                       timeslot_id, matrix);
 		            } else {
-		                cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, timeslot_id)
+		                cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, 
+                                                               timeslot_id)
 		            }
 		            i = i + 1;
-	            });
+	            }.bind(this));
 	        }.bind(this));
             return cells;
         }.bind(this)();
 
-        // set up handlers
+        // set up handlers for selecting and scheduling classes
         this.el.on("click", "td > a", function(evt, ui) {
             var cell = $j(evt.currentTarget.parentElement).data("cell");
             if(this.sections.currentlySelected === cell) {
@@ -55,7 +71,8 @@ function Matrix(
         this.el.on("click", "td.teacher-available-cell", function(evt, ui) {
             var cell = $j(evt.currentTarget).data("cell");
             if(this.sections.currentlySelected) {
-                this.sections.scheduleSection(this.sections.currentlySelected.section, cell.room_name, cell.timeslot_id);
+                this.sections.scheduleSection(this.sections.currentlySelected.section, 
+                                              cell.room_name, cell.timeslot_id);
             }
         }.bind(this));
 
@@ -64,6 +81,10 @@ function Matrix(
 
     this.init();
     
+    /**
+     * Initialize the sections that have already been scheduled. Must be called at the end 
+     * after all other initialization happens.
+     */
     this.initSections = function() {
         // Associated already scheduled classes with rooms
 	    $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
@@ -100,7 +121,10 @@ function Matrix(
 
 
     /**
-     * Gets the cell that represents room_name and timeslot_id
+     * Gets the cell that represents room_name and timeslot_id.
+     * 
+     * @param room_name: The name of the room corresponding to the cell
+     * @param timeslot_id: The ID of the timeslot corresponding to the cell
      */
     this.getCell = function(room_name, timeslot_id){
 	    return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
@@ -113,18 +137,25 @@ function Matrix(
      *
      * Returns an object with property valid that is set to whether the assignment is valid
      * and reason which contains a message if valid is false.
+     *
+     * @param section: The section to validate.
+     * @param room_name: The name of the room we want to put the section into.
+     * @param schedule_timeslots: The array of timeslots we want to put the section into.
      */
     this.validateAssignment = function(section, room_name, schedule_timeslots){
         var result = {
             valid: true,
             reason: null,
         }
+        
+        // Check to make sure there are timeslots
 	    if (!schedule_timeslots){
             result.valid = false;
             result.reason = "Error: Not scheduled during a timeblock";
 	        return result;
 	    }
 
+        // Check to make sure all the cells are unoccupied
 	    for(timeslot_index in schedule_timeslots){
 	        var timeslot_id = schedule_timeslots[timeslot_index];
 	        if (this.getCell(room_name, timeslot_id).section != null){
@@ -134,12 +165,15 @@ function Matrix(
 		        return result;
 	        }
 	    }
+
 	    return result;
     };
 
 
     /**
-     * Return the text of a room tooltip
+     * Return the text of a room tooltip.
+     * 
+     * @param room: The room to get information about
      */
     this.tooltip = function(room) {
         var tooltip_parts = [
@@ -149,7 +183,9 @@ function Matrix(
         return tooltip_parts.join("</br>");
     };
 
-    // render
+    /**
+     * Render the matrix.
+     */
     this.render = function(){
 	    var table = $j("<table/>");
 
