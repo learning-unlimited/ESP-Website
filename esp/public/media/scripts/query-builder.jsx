@@ -394,23 +394,22 @@ var OptionalInput = React.createClass({
   },
 
   handleClick: function () {
-    this.setState({
-      show: !this.state.show,
-    });
+    this.setState({show: !this.state.show});
   },
 
   render: function () {
     var inner = null;
-    var name = this.props.input.name;
+    buttonClasses="qb-optional-button qb-input btn "
     if (this.state.show) {
       var innerClass = window[this.props.input.inner.reactClass];
       inner = <innerClass ref="inner" input={this.props.input.inner} />;
-      name.replace(/show/, "hide")
+      buttonClasses = buttonClasses + "active btn-primary"
+    } else {
+      buttonClasses = buttonClasses + "btn-default"
     }
     return <div>
-      <button onClick={this.handleClick}
-              className="qb-optional-button qb-input btn btn-default">
-        {name}
+      <button onClick={this.handleClick} className={buttonClasses}>
+        {this.props.input.name}
       </button>
       {inner}
     </div>;

@@ -245,9 +245,7 @@ class OptionalInput(object):
 
     Arguments:
         `inner`: the input that might be used.
-        `name`: the name to go on the button to turn it on and off.  When the
-            input is shown, the word "show" in `name` will be changed to
-            "hide".
+        `name`: the name to go on the button to turn it on and off.
     """
     def __init__(self, inner, name="+"):
         self.inner = inner
@@ -285,7 +283,9 @@ class DatetimeInput(object):
 
     def __init__(self, field_name, english_name=None):
         self.field_name = field_name
-        self.english_name = english_name or field_name.replace('_', ' ')
+        if english_name is None:
+            english_name = field_name.replace('_', ' ')
+        self.english_name = english_name
 
     def spec(self):
         return {

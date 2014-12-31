@@ -30,10 +30,8 @@ class ClassSearchModule(ProgramModuleObj):
     def query_builder(self):
         flag_types = ClassFlagType.get_flag_types(program=self.program)
         flag_datetime_inputs = [
-            OptionalInput(name='(show %s time)' % t,
-                          inner=DatetimeInput(
-                              field_name='flags__%s_time' % t,
-                              english_name=t))
+            OptionalInput(name=t, inner=DatetimeInput(
+                field_name='flags__%s_time' % t, english_name=''))
             for t in ['created', 'modified']]
         flag_select_input = SelectInput(
             field_name='flags__flag_type', english_name='type',
