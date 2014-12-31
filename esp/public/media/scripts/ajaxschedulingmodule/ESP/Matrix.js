@@ -27,6 +27,7 @@ function Matrix(
 
     this.messagePanel = messagePanel;
     this.sectionInfoPanel = sectionInfoPanel;
+    this.timeslotHeaders = {};
 
     /**
      * Initialize the matrix
@@ -79,6 +80,7 @@ function Matrix(
          */
         addClassToTimeslots = function(timeslots, className) {
             $j.each(timeslots, function(j, timeslot) {
+                this.timeslotHeaders[timeslot].addClass(className);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot);
                     if(!cell.section && !cell.disabled) {
@@ -112,6 +114,7 @@ function Matrix(
          */
         removeClassFromTimeslots = function(timeslots, className) {
             $j.each(timeslots, function(j, timeslot) {
+                this.timeslotHeaders[timeslot].removeClass(className);
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot);
                     cell.el.removeClass(className);
@@ -238,8 +241,10 @@ function Matrix(
 	    var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
 	    $j("<th/>").appendTo(header_row);
 	    $j.each(this.timeslots.timeslots, function(id, timeslot){
-	        $j("<th>" + timeslot.label + "</th>").appendTo(header_row);
-	    });
+            var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
+            this.timeslotHeaders[timeslot.id] = timeslotHeader;
+            timeslotHeader.appendTo(header_row);
+	    }.bind(this));
 
 	    //Room headers
 	    var rows = {};	//table rows by room name

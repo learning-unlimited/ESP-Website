@@ -25,12 +25,12 @@ table,th,td
 
 .teacher-available-cell {
     background-color: #32cd32 !important;
-    opacity: 1;
+    opacity: .9;
 }
 
 .teacher-teaching-cell {
     background-color: yellow !important;
-    opacity: 1;
+    opacity: .9;
 }
 
 td .selected-section {
