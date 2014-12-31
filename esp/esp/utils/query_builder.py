@@ -140,6 +140,11 @@ class SearchFilter(object):
                     English description of the given input.
             The types of values the latter two receive are specified in
             query-builder.jsx.
+
+    In order to design a new input type, one must write both a python class
+    (likely in this file) and a React class (likely in query-builder.jsx),
+    which generally have the same name, implementing the corresponding input
+    class APIs.
     """
     def __init__(self, name, title=None, inputs=None, inverted=False):
         self.name = name
