@@ -13,6 +13,19 @@ from esp.middleware import ESPError
 
 
 class QueryBuilder(object):
+    """A class to build complex queries.
+
+    QueryBuilder can be used to create an interface that allows users to build
+    complex queries.  This can then be used to generate a django QuerySet of
+    matching objects.
+
+    Arguments:
+        `base`: the base query to use, such as FooBar.objects.all().
+        `filters`: a list of SearchFilter objects representing the filters that
+            may be used.
+        `english_name`: the english name of the things to search, such as
+            "foobar".
+    """
     def __init__(self, base, filters, english_name=None):
         self.base = base
         self.english_name = (english_name or
@@ -21,6 +34,10 @@ class QueryBuilder(object):
         self.filter_dict = {f.name: f for f in filters}
 
     def spec(self):
+        """Return a specification of the QB to be passed to the client.
+
+        See query-builder.jsx for the format generated.
+        """
         return {
             'englishName': self.english_name,
             'filterNames': [f.name for f in self.filters],
@@ -28,6 +45,10 @@ class QueryBuilder(object):
         }
 
     def as_queryset(self, value):
+        """Given data returned by the client, return a QuerySet for the query.
+
+        The data returned will be in the format specified in query-builder.jsx.
+        """
         if value['filter'] in ['and', 'or']:
             if value['filter'] == 'and':
                 op = operator.and_
@@ -51,6 +72,10 @@ class QueryBuilder(object):
             raise ESPError('Invalid filter %s' % value.get('filter'))
 
     def as_english(self, value, root=True):
+        """Given data returned by the client, return an English description.
+
+        The data returned will be in the format specified in query-builder.jsx.
+        """
         if root:
             base = '%s with ' % self.english_name
         else:
@@ -77,6 +102,10 @@ class QueryBuilder(object):
             raise ESPError('Invalid filter %s' % value.get('filter'))
 
     def render(self):
+        """Render the QueryBuilder into HTML.
+
+        query-builder.jsx will need to be included in the page separately.
+        """
         context = {
             # use a uid in case we ever want to have multiple QBs on the same
             # page.
@@ -89,22 +118,28 @@ class QueryBuilder(object):
 class SearchFilter(object):
     """A filter that might appear in a query builder.
 
-    Each instance will be a particular filter type, such as a filter for flags.
+    Each instance will be a particular filter type, such as a filter for flags
+    (which might allow selecting the flag type, modified time, and so on).
 
-    `name` is the internal name; you'll probably be happier in your life if it
-        doesn't have spaces.
-    `inputs` is a list of inputs, which are instances of classes like
-        SelectInput and DatetimeInput.  Many filters will have only a single
-        input, but they can have multiple.  Each input should have the
-        following methods:
-          * name (a property or variable): must be distinct within each filter
-          * spec(self): return a dict with a key "reactClass" which can be
-            passed to the React class of that name to specify how to draw the
-            output.
-          * as_q(self, value): given the value of the input, return a Q object
-            that can be fed into the filter's QuerySet filter
-          * as_english(self, value): likewise, but return a vaguely English
-            description
+    Arguments:
+        `name`: the internal name, a string.
+        `title`: the human-readable name, a string.
+        `inverted`: True if the generated query should be inverted, as an
+            .exclude() by default rather than a .filter()
+        `inputs`: a list of inputs, which are instances of classes like
+            SelectInput and DatetimeInput.  Many filters will have only a
+            single input, but they can have multiple.  Each input should have
+            the following methods:
+                `spec`: return a spec to describe itself to the client, which
+                    should include a key 'reactClass' which has value the name
+                    of the corresponding React class.  See query-builder.jsx
+                    for details.
+                `as_q`: given data returned by the client, return the Q object
+                    the user has requested.
+                `as_english`: given data returned by the client, return an
+                    English description of the given input.
+            The types of values the latter two receive are specified in
+            query-builder.jsx.
     """
     def __init__(self, name, title=None, inputs=None, inverted=False):
         self.name = name
@@ -113,6 +148,10 @@ class SearchFilter(object):
         self.inverted = inverted
 
     def spec(self):
+        """Return a specification of the filter to be passed to the client.
+
+        See query-builder.jsx for the format generated.
+        """
         return {
             'name': self.name,
             'title': self.title,
@@ -120,23 +159,34 @@ class SearchFilter(object):
         }
 
     def as_q(self, value):
+        """Given data returned by the client, return a Q object for the filter.
+
+        The data returned will be in the format specified in query-builder.jsx.
+        """
         # AND together the Q objects from each input
         return reduce(operator.and_,
                       [i.as_q(v) for i, v in zip(self.inputs, value)])
 
     def as_english(self, value):
+        """Given data returned by the client, return an English description.
+
+        The data returned will be in the format specified in query-builder.jsx.
+        """
         return self.title + " " + " and ".join(
             filter(None, [i.as_english(v)
                           for i, v in zip(self.inputs, value)]))
 
 
 class SelectInput(object):
-    """An input represented by a HTML <select> with a fixed set of options.
+    """An input represented by an HTML <select> with a fixed set of options.
 
-    `name` should be the field that the input represents; it will be used in
-    the returned Q object.
-    `options` should be a dict of id -> user-friendly names of the options for
-    the select.
+    Arguments:
+        `field_name`: the field that the input represents; it will be used in
+            the returned Q object.
+        `options`: a dict of ids -> user-friendly names of the options for the
+            select.  The ids will be coerced to strings.
+        `english_name`: an English description of the input.  Defaults to
+            `field_name`.
     """
     def __init__(self, field_name, options, english_name=None):
         self.field_name = field_name
@@ -166,8 +216,13 @@ class SelectInput(object):
 
 
 class TrivialInput(object):
-    """An input which adds a fixed Q object to the query."""
-    def __init__(self, q):
+    """An input which adds a fixed Q object to the filter.
+
+    Arguments:
+        `q`: the Q object to be used.
+        `english_name`: a description of the Q object (often omitted).
+    """
+    def __init__(self, q, english_name=""):
         self.q = q
 
     def spec(self):
@@ -181,10 +236,13 @@ class TrivialInput(object):
 
 
 class OptionalInput(object):
-    """An input that can show or hide another input.
+    """An input that can either use or not use another input.
 
-    `inner` should be the input that should be shown/hidden.
-    `name` should be the name to go on the button.
+    Arguments:
+        `inner`: the input that might be used.
+        `name`: the name to go on the button to turn it on and off.  When the
+            input is shown, the word "show" in `name` will be changed to
+            "hide".
     """
     def __init__(self, inner, name="+"):
         self.inner = inner
@@ -211,7 +269,13 @@ class OptionalInput(object):
 
 
 class DatetimeInput(object):
-    """An input for before, after, or exactly at a datetime."""
+    """An input for before, after, or exactly at a datetime.
+
+    Arguments:
+        `field_name`: the DateTimeField to use.
+        `english_name`: an English description of the field.  Defaults to
+            `field_name`.
+    """
     TIME_FMT = "%m/%d/%Y %H:%M"
 
     def __init__(self, field_name, english_name=None):

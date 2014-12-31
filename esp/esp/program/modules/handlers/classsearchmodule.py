@@ -28,64 +28,40 @@ class ClassSearchModule(ProgramModuleObj):
         proxy = True
 
     def query_builder(self):
-        flag_filter = SearchFilter(
-            name='flag',
-            title='the flag',
-            inputs=[
-                SelectInput(
-                    field_name='flags__flag_type',
-                    options={
-                        ft.id: ft.name for ft in
-                        ClassFlagType.get_flag_types(program=self.program)},
-                    english_name='type',
-                ),
-                OptionalInput(
-                    name='(show created time)',
-                    inner=DatetimeInput(
-                        field_name='flags__modified_time',
-                        english_name='modified',
-                    ),
-                ),
-                OptionalInput(
-                    name='(show created time)',
-                    inner=DatetimeInput(
-                        field_name='flags__created_time',
-                        english_name='created',
-                    ),
-                ),
-
-            ])
+        flag_types = ClassFlagType.get_flag_types(program=self.program)
+        flag_filter = SearchFilter(name='flag', title='the flag', inputs=[
+            SelectInput(field_name='flags__flag_type', english_name='type',
+                        options={ft.id: ft.name for ft in flag_types}),
+            OptionalInput(name='(show modified time)',
+                          inner=DatetimeInput(
+                              field_name='flags__modified_time',
+                              english_name='modified')),
+            OptionalInput(name='(show created time)',
+                          inner=DatetimeInput(
+                              field_name='flags__created_time',
+                              english_name='created')),
+        ])
         status_filter = SearchFilter(
-            name='status',
-            title='the status',
-            inputs=[
-                SelectInput(
-                    field_name='status',
-                    options=STATUS_CHOICES_DICT,
-                ),
-            ])
+            name='status', title='the status',
+            inputs=[SelectInput(field_name='status',
+                                options=STATUS_CHOICES_DICT)])
+
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
             categories.append(self.program.open_class_category)
         category_filter = SearchFilter(
-            name='category',
-            title='the category',
-            inputs=[
-                SelectInput(
-                    field_name='category',
-                    options={cat.id: cat.category for cat in categories},
-                ),
-            ])
+            name='category', title='the category',
+            inputs=[SelectInput(field_name='category', options={
+                cat.id: cat.category for cat in categories})])
+
         all_scheduled_filter = SearchFilter(
-            name="all_scheduled",
-            title="all sections scheduled",
+            name="all_scheduled", title="all sections scheduled",
             # Exclude classes with sections with null meeting times
             inverted=True,
             inputs=[TrivialInput(Q(sections__meeting_times__isnull=True))],
         )
         some_scheduled_filter = SearchFilter(
-            name="some_scheduled",
-            title="some sections scheduled",
+            name="some_scheduled", title="some sections scheduled",
             # Get classes with sections with non-null meeting times
             inputs=[TrivialInput(Q(sections__meeting_times__isnull=False))],
         )
