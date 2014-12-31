@@ -50,7 +50,14 @@ function SectionInfoPanel(el, sections, togglePanel) {
             .click(function(evt) {
                 this.sections.unscheduleSection(section);
             }.bind(this));
+        
+	    var links =  $j(
+            "<a target='_blank' href='/manage/Splash/2014/manageclass/" + section.parent_class + 
+                "'>Manage</a>" + 
+                " <a target='_blank' href='/manage/Splash/2014/editclass/" + section.parent_class +
+                "'>Edit</a>");
         toolbar.append(unscheduleButton);
+        toolbar.append(links);
         return toolbar;
         
     }.bind(this);

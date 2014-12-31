@@ -73,7 +73,11 @@ function TableRow(section, el, directory){
      * Style el into a row
      */
     this.render = function(){
-	    this.el[0].innerHTML = "<td>" + this.section.title + "</td>";
+	    this.el[0].innerHTML = "<td>" + this.section.title + 
+            " <a target='_blank' href='/manage/Splash/2014/manageclass/" + 
+            this.section.parent_class + 
+            "'>Manage</a>" + " <a target='_blank' href='/manage/Splash/2014/editclass/" + 
+            this.section.parent_class + "'>Edit</a></td>";
 	    this.el.append(this.cell.el);
     };
 

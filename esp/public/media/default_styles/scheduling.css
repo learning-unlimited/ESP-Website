@@ -37,12 +37,12 @@ td .selected-section {
     outline: 1px solid yellow;
 }
 
-td > a {
+td.matrix-cell > a {
     text-decoration: none;
     color: inherit !important;
 }
 
-td > a:hover {
+td.matrix-cell > a:hover {
     text-decoration: underline;
 }
 
