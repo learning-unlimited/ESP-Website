@@ -9,13 +9,13 @@
  * @param secionInfoPanel: The panel that displays section info
  */
 function Matrix(
-    timeslots,
-    rooms,
-    sections,
-    el,
-    messagePanel,
-    sectionInfoPanel
-){ 
+        timeslots,
+        rooms,
+        sections,
+        el,
+        messagePanel,
+        sectionInfoPanel
+        ){ 
     this.el = el;
     this.el.id = "matrix-table";
 
@@ -38,29 +38,29 @@ function Matrix(
         this.cells = function(){
             // cells has room names as keys to the outer object and timeslots as keys to the
             // inner object
-	        var cells = {};
-	        $j.each(rooms, function(room_name, room){
-	            cells[room_name] = [];
-	            i = 0;
-	            $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
-		            var timeslot_id = parseInt(timeslot_id_string);
-		            if (room.availability.indexOf(timeslot_id) >= 0){
-		                cells[room_name][i] = new Cell($j("<td/>"), null, room_name, 
-                                                       timeslot_id, matrix);
-		            } else {
-		                cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, 
-                                                               timeslot_id)
-		            }
-		            i = i + 1;
-	            }.bind(this));
-	        }.bind(this));
+            var cells = {};
+            $j.each(rooms, function(room_name, room){
+                    cells[room_name] = [];
+                    i = 0;
+                    $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
+                        var timeslot_id = parseInt(timeslot_id_string);
+                        if (room.availability.indexOf(timeslot_id) >= 0){
+                        cells[room_name][i] = new Cell($j("<td/>"), null, room_name, 
+                            timeslot_id, matrix);
+                        } else {
+                        cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, 
+                            timeslot_id)
+                        }
+                        i = i + 1;
+                        }.bind(this));
+                    }.bind(this));
             return cells;
         }.bind(this)();
 
     };
 
     this.init();
-    
+
     /**
      * Highlight the timeslots on the grid.
      *
@@ -69,7 +69,6 @@ function Matrix(
      *                   The second is an array of timeslots where one or more 
      *                   teachers are teaching, but would be available otherwise.
      */
-    //TODO: Move this to Matrix.js
     this.highlightTimeslots = function(timeslots) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
@@ -80,14 +79,14 @@ function Matrix(
          */
         addClassToTimeslots = function(timeslots, className) {
             $j.each(timeslots, function(j, timeslot) {
-                this.timeslotHeaders[timeslot].addClass(className);
-                $j.each(this.rooms, function(k, room) {
-                    var cell = this.getCell(room.id, timeslot);
-                    if(!cell.section && !cell.disabled) {
+                    this.timeslotHeaders[timeslot].addClass(className);
+                    $j.each(this.rooms, function(k, room) {
+                        var cell = this.getCell(room.id, timeslot);
+                        if(!cell.section && !cell.disabled) {
                         cell.el.addClass(className);
-                    } 
-                }.bind(this));
-            }.bind(this));
+                        } 
+                        }.bind(this));
+                    }.bind(this));
         }.bind(this);
 
         var available_timeslots = timeslots[0];
@@ -114,12 +113,12 @@ function Matrix(
          */
         removeClassFromTimeslots = function(timeslots, className) {
             $j.each(timeslots, function(j, timeslot) {
-                this.timeslotHeaders[timeslot].removeClass(className);
-                $j.each(this.rooms, function(k, room) {
-                    var cell = this.getCell(room.id, timeslot);
-                    cell.el.removeClass(className);
-                }.bind(this));
-            }.bind(this));
+                    this.timeslotHeaders[timeslot].removeClass(className);
+                    $j.each(this.rooms, function(k, room) {
+                        var cell = this.getCell(room.id, timeslot);
+                        cell.el.removeClass(className);
+                        }.bind(this));
+                    }.bind(this));
         }.bind(this);
 
         var available_timeslots = timeslots[0];
@@ -135,36 +134,36 @@ function Matrix(
      */
     this.initSections = function() {
         // Associated already scheduled classes with rooms
-	    $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
-	        $j.each(assignmentData.timeslots, function(j, timeslot_id){
-		        var cell = this.getCell(assignmentData.room_name, timeslot_id);
-                if(cell && !cell.disabled) {
+        $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
+                $j.each(assignmentData.timeslots, function(j, timeslot_id){
+                    var cell = this.getCell(assignmentData.room_name, timeslot_id);
+                    if(cell && !cell.disabled) {
                     cell.addSection(sections.getById(class_id));
-                } else {
+                    } else {
                     if(!cell) {
-                        var errorMessage = "Error: Could not find cell with room "
-                            + assignmentData.room_name
-                            + " and timeslot with id "
-                            + timeslot_id
-                            + " to schedule section with id "
-                            + class_id;
-                        console.log(errorMessage);
-                        messagePanel.addMessage(errorMessage);
+                    var errorMessage = "Error: Could not find cell with room "
+                    + assignmentData.room_name
+                    + " and timeslot with id "
+                    + timeslot_id
+                    + " to schedule section with id "
+                    + class_id;
+                    console.log(errorMessage);
+                    messagePanel.addMessage(errorMessage);
                     }
                     else {
-                        var errorMessage = "Error: Room "
-                            + assignmentData.room_name
-                            + " appears to be unavailable during timeslot with id "
-                            + timeslot_id
-                            + " but section with id "
-                            + class_id
-                            + " is scheduled there.";
-                        console.log(errorMessage);
-                        messagePanel.addMessage(errorMessage);
+                    var errorMessage = "Error: Room "
+                    + assignmentData.room_name
+                    + " appears to be unavailable during timeslot with id "
+                    + timeslot_id
+                    + " but section with id "
+                    + class_id
+                    + " is scheduled there.";
+                    console.log(errorMessage);
+                    messagePanel.addMessage(errorMessage);
                     }
-                }
-	        }.bind(this));
-	    }.bind(this));
+                    }
+                }.bind(this));
+        }.bind(this));
     };
 
 
@@ -175,7 +174,7 @@ function Matrix(
      * @param timeslot_id: The ID of the timeslot corresponding to the cell
      */
     this.getCell = function(room_name, timeslot_id){
-	    return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
+        return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
     };
 
 
@@ -192,29 +191,29 @@ function Matrix(
      */
     this.validateAssignment = function(section, room_name, schedule_timeslots){
         var result = {
-            valid: true,
-            reason: null,
+valid: true,
+       reason: null,
         }
-        
+
         // Check to make sure there are timeslots
-	    if (!schedule_timeslots){
+        if (!schedule_timeslots){
             result.valid = false;
             result.reason = "Error: Not scheduled during a timeblock";
-	        return result;
-	    }
+            return result;
+        }
 
         // Check to make sure all the cells are unoccupied
-	    for(timeslot_index in schedule_timeslots){
-	        var timeslot_id = schedule_timeslots[timeslot_index];
-	        if (this.getCell(room_name, timeslot_id).section != null){
+        for(timeslot_index in schedule_timeslots){
+            var timeslot_id = schedule_timeslots[timeslot_index];
+            if (this.getCell(room_name, timeslot_id).section != null){
                 result.valid = false;
                 result.reason = "Error: timeslot" +  this.timeslots[timeslot_id] + 
                     " already has a class in " + room_name + "."
-		        return result;
-	        }
-	    }
+                    return result;
+            }
+        }
 
-	    return result;
+        return result;
     };
 
 
@@ -227,7 +226,7 @@ function Matrix(
         var tooltip_parts = [
             "<b>" + room.text + "</b>",
             "Capacity: " + room.num_students + " students",
-        ];
+            ];
         return tooltip_parts.join("</br>");
     };
 
@@ -235,40 +234,40 @@ function Matrix(
      * Render the matrix.
      */
     this.render = function(){
-	    var table = $j("<table/>");
+        var table = $j("<table/>");
 
-	    //Time headers
-	    var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
-	    $j("<th/>").appendTo(header_row);
-	    $j.each(this.timeslots.timeslots, function(id, timeslot){
-            var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
-            this.timeslotHeaders[timeslot.id] = timeslotHeader;
-            timeslotHeader.appendTo(header_row);
-	    }.bind(this));
+        //Time headers
+        var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
+        header_row.append($j("<th/>"));
+        $j.each(this.timeslots.timeslots, function(id, timeslot){
+                var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
+                this.timeslotHeaders[timeslot.id] = timeslotHeader;
+                timeslotHeader.appendTo(header_row);
+                }.bind(this));
 
-	    //Room headers
-	    var rows = {};	//table rows by room name
-	    $j.each(this.rooms, function(id, room){
+        //Room headers
+        var rows = {};	//table rows by room name
+        $j.each(this.rooms, function(id, room){
             var room_header = $j("<th>" + id + "</th>");
             room_header.tooltip({
                 content: this.tooltip(room),
                 items: "th",
             });
-	        var row = $j("<tr></tr>");
+            var row = $j("<tr></tr>");
             room_header.appendTo(row);
-	        rows[id] = row;
-	        row.appendTo(table);
-	    }.bind(this));
+            rows[id] = row;
+            row.appendTo(table);
+            }.bind(this));
 
-	    //populate cells
-	    var cells = this.cells;
-	    $j.each(this.rooms, function(id, room){
-	        row = rows[id];
-	        for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
-		        cells[id][i].el.appendTo(row);
-	        }
-	    }.bind(this));
-	    table.appendTo(this.el);
+        //populate cells
+        var cells = this.cells;
+        $j.each(this.rooms, function(id, room){
+            row = rows[id];
+            for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
+                cells[id][i].el.appendTo(row);
+            }
+        }.bind(this));
+        table.appendTo(this.el);
     };
 
     this.initSections();

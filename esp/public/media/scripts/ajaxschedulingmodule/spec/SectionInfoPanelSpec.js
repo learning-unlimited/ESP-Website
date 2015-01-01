@@ -1,11 +1,12 @@
 describe("SectionInfoPanel", function() {
     var sipToggle;
     var sipNoToggle;
+    var sections;
     beforeEach(function() {
-        var sections = new Sections(sections_fixture(), teacher_fixture(), 
-                                    schedule_assignments_fixture(), new FakeApiClient());
-        sipNoToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(), sections, null);
-        sipToggle = new SectionInfoPanel($j("<div>"), teacher_fixture(),  sections, new MessagePanel($j("<div>"), "Initial Message"));
+        sections = new Sections(section_fixture(), teacher_fixture(), 
+                                    schedule_assignment_fixture(), new FakeApiClient());
+        sipNoToggle = new SectionInfoPanel($j("<div>"), sections, null);
+        sipToggle = new SectionInfoPanel($j("<div>"), sections, new MessagePanel($j("<div>"), "Initial Message"));
     });
 
     describe("hide", function() {
@@ -36,13 +37,14 @@ describe("SectionInfoPanel", function() {
 
     describe("displaySection", function() {
         it("should have the important information in it", function() {
-            sipNoToggle.displaySection(section_1());
-            expect(sipNoToggle.el[0].innerHTML).toContain("S3188s1");
+            sipNoToggle.displaySection(sections.getById(1));
+            expect(sipNoToggle.el[0].innerHTML).toContain("S11s1");
             expect(sipNoToggle.el[0].innerHTML).toContain("Fascinating Science Phenomena");
             expect(sipNoToggle.el[0].innerHTML).toContain("Alyssa P. Hacker");
             expect(sipNoToggle.el[0].innerHTML).toContain("Ben Bitdiddle");
             expect(sipNoToggle.el[0].innerHTML).toContain("150");
-            expect(sipNoToggle.el[0].innerHTML).toContain("7-12");
+            expect(sipNoToggle.el[0].innerHTML).toContain("Length: 1");
+            expect(sipNoToggle.el[0].innerHTML).toContain("9-12");
 
         });
     });

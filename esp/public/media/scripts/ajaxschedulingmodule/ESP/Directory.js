@@ -17,25 +17,25 @@ function Directory(sections, el, schedule_assignments, matrix) {
      */
     this.render = function(){        
         // Remove old classes from the directory
-	    var oldChildren = this.el.children();
-	    $j.each(oldChildren, function(c){
-	        oldChildren[c].hidden = true;
-	    });
+        var oldChildren = this.el.children();
+        $j.each(oldChildren, function(c){
+                oldChildren[c].hidden = true;
+                });
 
-	    setTimeout(function(){
-	        $j.each(oldChildren, function(c){
-		        oldChildren[c].remove();
-	        });
-	    }.bind(this), 0);
+        setTimeout(function(){
+                $j.each(oldChildren, function(c){
+                    oldChildren[c].remove();
+                    });
+                }.bind(this), 0);
 
         // Create the directory table
-	    var table = $j("<table/>");
-	    $j.each(this.sections.filtered_sections(), function(id, section){
-	        var row = new TableRow(section, $j("<tr/>"), this);
-	        row.render();
-	        row.el.appendTo(table);
-	    }.bind(this))
-	        table.appendTo(this.el);
+        var table = $j("<table/>");
+        $j.each(this.sections.filtered_sections(), function(id, section){
+                var row = new TableRow(section, $j("<tr/>"), this);
+                row.render();
+                row.el.appendTo(table);
+                }.bind(this))
+        table.appendTo(this.el);
 
     };
 
@@ -44,7 +44,7 @@ function Directory(sections, el, schedule_assignments, matrix) {
      */
     this.init = function(){
         // set up handlers
-	    $j("body").on("schedule-changed", this.render.bind(this));
+        $j("body").on("schedule-changed", this.render.bind(this));
     }
     this.init();
 
@@ -66,33 +66,33 @@ function TableRow(section, el, directory){
     this.el = el;
     this.section = section;
     this.directory = directory;
-    
+
     this.cell = new Cell($j("<td class='selectable-cell'/>"), section, null, null, this.directory.matrix);
     this.section.directoryCell = this.cell;
     /**
      * Style el into a row
      */
     this.render = function(){
-	    this.el[0].innerHTML = "<td>" + this.section.title + 
+        this.el[0].innerHTML = "<td>" + this.section.title + 
             " <a target='_blank' href='/manage/Splash/2014/manageclass/" + 
             this.section.parent_class + 
             "'>Manage</a>" + " <a target='_blank' href='/manage/Splash/2014/editclass/" + 
             this.section.parent_class + "'>Edit</a></td>";
-	    this.el.append(this.cell.el);
+        this.el.append(this.cell.el);
     };
 
     /**
      * Hide the table row
      */
     this.hide = function(){
-	    this.el.css("display", "none");
+        this.el.css("display", "none");
     };
 
     /**
      * Show the table row
      */
     this.unHide = function(){
-	    this.el.css("display", "table-row");
+        this.el.css("display", "table-row");
     };
 }
 

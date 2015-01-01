@@ -72,7 +72,7 @@ function time_fixture() {
             short_description: "slot 1",
             start:  [2010, 4, 18, 10, 5, 0],
             end:  [2010, 4, 18, 10, 55, 0],
-            id: 1,
+            id: 7,
             order: 3,
         },
         5: {
@@ -80,7 +80,7 @@ function time_fixture() {
             short_description: "slot 2",
             start:  [2010, 4, 17, 11, 5, 0],
             end:  [2010, 4, 17, 11, 55, 0],
-            id: 2,
+            id: 5,
             order: 2,
         },
         3: {
@@ -88,7 +88,7 @@ function time_fixture() {
             short_description: "slot 1",
             start:  [2010, 4, 17, 10, 5, 0],
             end:  [2010, 4, 17, 10, 55, 0],
-            id: 2,
+            id: 3,
             order: 1,
         },
         11: {
@@ -96,7 +96,7 @@ function time_fixture() {
             short_description: "slot 4",
             start:  [2010, 4, 18, 11, 5, 0],
             end:  [2010, 4, 18, 11, 55, 0],
-            id: 2,
+            id: 11,
             order: 4,
         },
         13: {
@@ -104,7 +104,7 @@ function time_fixture() {
             short_description: "slot 5",
             start:  [2010, 4, 18, 12, 5, 0],
             end:  [2010, 4, 18, 12, 55, 0],
-            id: 2,
+            id: 13,
             order: 5,
         },
     };
@@ -156,99 +156,101 @@ function section_1() {
 };
 
 function section_1b() {
-	status: 10, 
-	category: 'S', 
-	parent_class: 11, 
-	emailcode: 'S11s2', 
-	index: 1, 
-	title: "Fascinating Science Phenomena", 
-	category_id: 1, 
-	class_size_max: 150, 
-	length: .83, 
-	grade_min: 9, 
-	num_students: 0, 
-	grade_max: 12, 
-	id: 2, 
-	teachers: [1, 2]
+    return {
+        status: 10, 
+        category: 'S', 
+        parent_class: 11, 
+        emailcode: 'S11s2', 
+        index: 1, 
+        title: "Fascinating Science Phenomena", 
+        category_id: 1, 
+        class_size_max: 150, 
+        length: .83, 
+        grade_min: 9, 
+        num_students: 0, 
+        grade_max: 12, 
+        id: 2, 
+        teachers: [1, 2]
+    };
 };
 
 function section_2() {
     return {
-	    status: 10, 
-	    category: 'A', 
-	    parent_class: 22, 
-	    emailcode: 'A22s1', 
-	    index: 2, 
-	    title: "Art History", 
-	    category_id: 2, 
-	    class_size_max: 75, 
-	    length: 1.83, 
-	    grade_min: 10, 
-	    num_students: 0, 
-	    grade_max: 11, 
-	    id: 3, 
-	    teachers: [4]
-	};
+        status: 10, 
+        category: 'A', 
+        parent_class: 22, 
+        emailcode: 'A22s1', 
+        index: 2, 
+        title: "Art History", 
+        category_id: 2, 
+        class_size_max: 75, 
+        length: 1.83, 
+        grade_min: 10, 
+        num_students: 0, 
+        grade_max: 11, 
+        id: 3, 
+        teachers: [4]
+    };
 };
 
 function section_3() {
     return {
-	    status: 10, 
-	    category: 'S', 
-	    parent_class: 33, 
-	    emailcode: 'S33s1', 
-	    index: 4,
-	    title: "Hands on Science", 
-	    category_id: 1, 
-	    class_size_max: 3, 
-	    length: 1.83, 
-	    grade_min: 9, 
-	    num_students: 0, 
-	    grade_max: 10, 
-	    id: 4, 
-	    teachers: [1]
-	};
+        status: 10, 
+        category: 'S', 
+        parent_class: 33, 
+        emailcode: 'S33s1', 
+        index: 4,
+        title: "Hands on Science", 
+        category_id: 1, 
+        class_size_max: 3, 
+        length: 1.83, 
+        grade_min: 9, 
+        num_students: 0, 
+        grade_max: 10, 
+        id: 4, 
+        teachers: [1]
+    };
 };
 
 function section_4() {
     return {
-	    status: 10, 
-	    category: 'A',
-	    parent_class: 44, 
-	    emailcode: 'A44s1', 
-	    index: 5, 
-	    title: "Drawing 101", 
-	    category_id: 2, 
-	    class_size_max: 50, 
-	    length: 1.83, 
-	    grade_min: 9, 
-	    num_students: 0, 
-	    grade_max: 12, 
-	    id: 5, 
-	    teachers: [3]
-	};
+        status: 10, 
+        category: 'A',
+        parent_class: 44, 
+        emailcode: 'A44s1', 
+        index: 5, 
+        title: "Drawing 101", 
+        category_id: 2, 
+        class_size_max: 50, 
+        length: 1.83, 
+        grade_min: 9, 
+        num_students: 0, 
+        grade_max: 12, 
+        id: 5, 
+        teachers: [3]
+    };
 };
 
 function section_5() {
     return {
-	    status: 10, 
-	    category: 'M', 
-	    parent_class: 55, 
-	    emailcode: 'M55s1', 
-	    index: 6, 
-	    title: "Representation Theory", 
-	    category_id: 3, 
-	    class_size_max: 25, 
-	    length: 1.83, 
-	    grade_min: 10, 
-	    num_students: 0, 
-	    grade_max: 12, 
-	    id: 6, 
-	    teachers: [1, 3]
-	};
+        status: 10, 
+        category: 'M', 
+        parent_class: 55, 
+        emailcode: 'M55s1', 
+        index: 6, 
+        title: "Representation Theory", 
+        category_id: 3, 
+        class_size_max: 25, 
+        length: 1.83, 
+        grade_min: 10, 
+        num_students: 0, 
+        grade_max: 12, 
+        id: 6, 
+        teachers: [1, 3]
+    };
 };
 
-function sections_fixture() {
+function section_fixture() {
     return {
         1: section_1(), 
         2: section_1b(),
@@ -260,7 +262,7 @@ function sections_fixture() {
 };
 
 
-function schedule_assignments_fixture() {
+function schedule_assignment_fixture() {
     return {
         1: {
             room_name: "room-1",
