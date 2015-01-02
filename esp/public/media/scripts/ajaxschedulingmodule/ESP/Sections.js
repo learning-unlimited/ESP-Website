@@ -66,7 +66,10 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     };
 
     /**
-     * 
+     * Select the cells associated with this section, put it on the section info
+     * panel, and highlight the available cells to place the section.
+     *
+     * @param section: The section to select 
      */
     this.selectSection = function(section) {
         if(this.selectedSection) {
@@ -95,6 +98,10 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
     };
 
+    /**
+     * Unselect the cells associated with the currently selected section, hide the section info
+     * panel, and unhighlight the available cells to place the section.
+     */ 
     this.unselectSection = function() {
         if(!this.selectedSection) {
             return;
