@@ -50,11 +50,11 @@ function SectionInfoPanel(el, sections, togglePanel) {
             .click(function(evt) {
                 this.sections.unscheduleSection(section);
             }.bind(this));
-        
+        var baseURL = this.sections.getBaseUrlString();
 	    var links =  $j(
-            "<a target='_blank' href='/manage/Splash/2014/manageclass/" + section.parent_class + 
+            "<a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class + 
                 "'>Manage</a>" + 
-                " <a target='_blank' href='/manage/Splash/2014/editclass/" + section.parent_class +
+                " <a target='_blank' href='" + baseURL + "editclass/" + section.parent_class +
                 "'>Edit</a>");
         toolbar.append(unscheduleButton);
         toolbar.append(links);

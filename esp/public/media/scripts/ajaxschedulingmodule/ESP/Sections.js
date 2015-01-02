@@ -287,6 +287,10 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     };
 
 
-
+    this.getBaseUrlString = function() {
+        var parser = document.createElement('a');
+        parser.href = document.URL;
+        return parser.pathname.slice(0, -("ajaxscheduling".length) - 1);
+    };
 
 }
