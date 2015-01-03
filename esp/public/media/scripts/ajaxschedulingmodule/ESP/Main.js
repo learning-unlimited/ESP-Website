@@ -1,6 +1,7 @@
 /**
  * The entry point for the scheduler
  */
+
 // For the changelog
 var last_applied_index = 0;
 $j.getJSON('ajax_schedule_last_changed', function(data, status) {
@@ -13,7 +14,7 @@ $j.getJSON('ajax_schedule_last_changed', function(data, status) {
 var resizeElements = function() {
         var window_height = window.innerHeight - 20;
         var window_width = window.innerWidth - 20;
-        $j("#directory-wrapper-div").height(window_height)
+        $j("#side-panel-wrapper").height(window_height)
         .width(window_width/4);
         $j("#matrix-div").height(window_height)
         .width(window_width*3/4);
@@ -27,11 +28,12 @@ var data = {};
 json_fetch(['sections', 'timeslots', 'rooms', 'schedule_assignments'], function(){
         console.log(data)
         resizeElements();
-        
+                
+        $j("div#side-panel").tabs();
         // Create a new Scheduler which does the rest
         var s = new Scheduler(
             data,
-            $j("#directory-div"),
+            $j("#directory"),
             $j("#matrix-div"),
             $j("#message-div"),
             $j("#section-info-div"),
