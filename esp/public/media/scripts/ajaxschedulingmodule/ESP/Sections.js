@@ -93,7 +93,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         this.selectedSection = section;
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
-        this.matrix.highlightTimeslots(this.availableTimeslots, section.length);
+        this.matrix.highlightTimeslots(this.availableTimeslots, section);
 
 
     };
@@ -227,12 +227,6 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             return;
         }
 
-        // Add section to cells
-        for(timeslot_index in schedule_timeslots){
-            var timeslot_id = schedule_timeslots[timeslot_index];
-            this.matrix.getCell(room_name, timeslot_id).addSection(section);
-        }
-
         // Unschedule from old place
         for (timeslot_index in old_assignment.timeslots) {
             var timeslot_id = old_assignment.timeslots[timeslot_index];
@@ -241,6 +235,13 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         }
         if(this.selectedSection === section) {
             this.unselectSection();
+        }
+
+
+        // Add section to cells
+        for(timeslot_index in schedule_timeslots){
+            var timeslot_id = schedule_timeslots[timeslot_index];
+            this.matrix.getCell(room_name, timeslot_id).addSection(section);
         }
 
         // Update the array that keeps track of the assignments

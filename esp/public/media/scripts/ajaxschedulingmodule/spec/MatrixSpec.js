@@ -17,40 +17,39 @@ describe("Matrix", function(){
 
         describe("highlightTimeslots", function() {
             it("adds the correct classes to the timeslots given for a single hour class", function() {
-                m.highlightTimeslots([[3], [5]], 1);
-                expect(m.getCell("room-1", 3).el.hasClass("teacher-available-cell")).toBe(false);
-                expect(m.getCell("room-1", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
+                m.highlightTimeslots([[5], [3]], m.sections.getById(2));
+                expect(m.getCell("room-1", 5).el.hasClass("teacher-available-cell")).toBe(true);
+                expect(m.getCell("room-1", 5).el.hasClass("teacher-teaching-cell")).toBe(false);
 
-                expect(m.getCell("room-2", 3).el.hasClass("teacher-available-cell")).toBe(true);
-                expect(m.getCell("room-2", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
-
-                expect(m.getCell("room-3", 3).el.hasClass("teacher-available-cell")).toBe(true);
-                expect(m.getCell("room-3", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
-
-                expect(m.getCell("room-1", 5).el.hasClass("teacher-available-cell")).toBe(false);
-                expect(m.getCell("room-1", 5).el.hasClass("teacher-teaching-cell")).toBe(true);
-
-                expect(m.getCell("room-2", 5).el.hasClass("teacher-available-cell")).toBe(false);
-                expect(m.getCell("room-2", 5).el.hasClass("teacher-teaching-cell")).toBe(true);
+                expect(m.getCell("room-2", 5).el.hasClass("teacher-available-cell")).toBe(true);
+                expect(m.getCell("room-2", 5).el.hasClass("teacher-teaching-cell")).toBe(false);
 
                 expect(m.getCell("room-3", 5).el.hasClass("teacher-available-cell")).toBe(false);
                 expect(m.getCell("room-3", 5).el.hasClass("teacher-teaching-cell")).toBe(false);
+
+                expect(m.getCell("room-1", 3).el.hasClass("teacher-available-cell")).toBe(false);
+                expect(m.getCell("room-1", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
+
+                expect(m.getCell("room-2", 3).el.hasClass("teacher-available-cell")).toBe(false);
+                expect(m.getCell("room-2", 3).el.hasClass("teacher-teaching-cell")).toBe(true);
+
+                expect(m.getCell("room-3", 3).el.hasClass("teacher-available-cell")).toBe(false);
+                expect(m.getCell("room-3", 3).el.hasClass("teacher-teaching-cell")).toBe(true);
 
                 expect(m.getCell("room-1", 7).el.hasClass("teacher-available-cell")).toBe(false);
                 expect(m.getCell("room-3", 11).el.hasClass("teacher-teaching-cell")).toBe(false);
             })
 
             it("adds a striped gradient for cells that are available, but can't be clicked", function() {
-                m.highlightTimeslots([[3, 5], []], 2);
-                expect(m.getCell("room-2", 5).el.hasClass("teacher-available-not-first-cell")).toBeTrue();
-                expect(m.getCell("room-3", 3).el.hasClass("teacher-available-not-first-cell")).toBeTrue();
+                m.highlightTimeslots([[11, 13], []], m.sections.getById(3));
+                expect(m.getCell("room-3", 13).el.hasClass("teacher-available-not-first-cell")).toBeTrue();
             });
         });
 
         describe("unhighlightTimeslots", function() {
                 it("removes the correct classes from the timeslots given", function() {
-                    m.highlightTimeslots([[3], [5]]);
-                    m.unhighlightTimeslots([[3], [5]]);
+                    m.highlightTimeslots([[5], [3]], m.sections.getById(2));
+                    m.unhighlightTimeslots([[5], [3]]);
 
                     expect(m.getCell("room-1", 3).el.hasClass("teacher-available-cell")).toBe(false);
                     expect(m.getCell("room-1", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
@@ -74,8 +73,8 @@ describe("Matrix", function(){
                     expect(m.getCell("room-3", 11).el.hasClass("teacher-teaching-cell")).toBe(false);
                 }); 
                 it("removes the striped gradient too", function() {
-                    m.highlightTimeslots([[3, 5], []], 2);
-                    m.unhighlightTimeslots([[3, 5], []], 2);
+                    m.highlightTimeslots([[11, 13], []], m.sections.getById(3));
+                    m.unhighlightTimeslots([[3, 5], []], m.sections.getById(3));
     
                     expect(m.getCell("room-2", 5).el.hasClass("teacher-available-not-first-cell")).toBeFalse();
                     expect(m.getCell("room-3", 3).el.hasClass("teacher-available-not-first-cell")).toBeFalse();
@@ -117,25 +116,25 @@ describe("Matrix", function(){
         describe("validateAssignment", function(){
                 describe("when a class is already scheduled in a room", function(){
                     beforeEach(function(){
-                        m.sections.scheduleSection(section_1b(), "room-1", 5);
+                        m.sections.scheduleSection(m.sections.getById(2), "room-1", 5);
                         });
 
                     it("returns false", function(){
-                        var validObj = m.validateAssignment(section_2(), "room-1", [3,5]);
+                        var validObj = m.validateAssignment(m.sections.getById(3), "room-1", [3,5]);
                         expect(validObj.valid).toEqual(false);
-                        expect(validObj.reason).toEqual("Error: timeslotundefined already has a class in room-1.");
+                        expect(validObj.reason).toEqual("Error: timeslot3 already has a class in room-1.");
                         }); 
                     });
 
                 describe("when the assignment is valid", function(){
                     it("returns true", function(){
-                        expect(m.validateAssignment(section_2(), "room-3", [11, 13]).valid).toEqual(true);
+                        expect(m.validateAssignment(m.sections.getById(3), "room-3", [11, 13]).valid).toEqual(true);
                         });
                     });
 
                 describe("when the timeslots are null", function(){
                     it("returns false", function(){
-                        var validObj = m.validateAssignment(section_2(), "room-2", null)
+                        var validObj = m.validateAssignment(m.sections.getById(3), "room-2", null)
                         expect(validObj.valid).toEqual(false);
                         expect(validObj.reason).toEqual('Error: Not scheduled during a timeblock');
                         });

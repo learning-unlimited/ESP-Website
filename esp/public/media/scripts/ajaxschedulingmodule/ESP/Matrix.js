@@ -69,7 +69,7 @@ function Matrix(
      *                   The second is an array of timeslots where one or more 
      *                   teachers are teaching, but would be available otherwise.
      */
-    this.highlightTimeslots = function(timeslots, sectionLength) {
+    this.highlightTimeslots = function(timeslots, section) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
@@ -88,30 +88,32 @@ function Matrix(
                         }.bind(this));
                     }.bind(this));
         }.bind(this);
-
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
-        if(sectionLength<=1) {
+        if(section.length<=1) {
             return;
         }
-        console.log(available_timeslots);
         $j.each(available_timeslots, function(j, timeslot_id) {
             var timeslot = this.timeslots.get_by_id(timeslot_id);
             $j.each(this.rooms, function(k, room) {
                 var cell = this.getCell(room.id, timeslot_id);
                 if(cell.el.hasClass("teacher-available-cell")) {
-                    for(var i=1; i<sectionLength; i++) {
+                    var scheduleTimeslots = [timeslot.id];
+                    var notEnoughSlots = false;
+                    for(var i=1; i<section.length; i++) {
                         var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
                         if(nextTimeslot) {
-                            var nextCell = this.getCell(room.id, nextTimeslot.id);
-                            if(nextCell.disabled || nextCell.section || 
-                                available_timeslots.indexOf(nextTimeslot.id) == -1) {
+                            scheduleTimeslots.push(nextTimeslot.id);
+                        } else {
+                            notEnoughSlots = true;
+                        }
+                    }                    
+                    if(notEnoughSlots || 
+                       !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
                                 cell.el.removeClass("teacher-available-cell");
                                 cell.el.addClass("teacher-available-not-first-cell");
-                            }
-                        }
                     }
                 }
             }.bind(this));
@@ -214,8 +216,8 @@ function Matrix(
      */
     this.validateAssignment = function(section, room_name, schedule_timeslots){
         var result = {
-valid: true,
-       reason: null,
+            valid: true,
+            reason: null,
         }
 
         // Check to make sure there are timeslots
@@ -224,13 +226,30 @@ valid: true,
             result.reason = "Error: Not scheduled during a timeblock";
             return result;
         }
+        
+        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var validateIndividualCell = function(index, cell) {
+            return !(cell.disabled || (cell.section && cell.section !== section) ||
+                    availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
+        };
 
-        // Check to make sure all the cells are unoccupied
+        // If there's only one section, the check is short
+        var firstCell = this.getCell(room_name, schedule_timeslots[0]);
+        if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
+            result.valid = false;
+            result.reason = "first cell is not valid"
+            return result;
+        }
+            
+        var firstTimeslot = this.timeslots.get_by_id(schedule_timeslots[0]);
+        // Check to make sure all the cells are available
         for(timeslot_index in schedule_timeslots){
-            var timeslot_id = schedule_timeslots[timeslot_index];
-            if (this.getCell(room_name, timeslot_id).section != null){
+            var timeslot = this.timeslots.get_by_id(schedule_timeslots[timeslot_index]);
+            var nextCell = this.getCell(room_name, timeslot.id);
+            if (!validateIndividualCell(timeslot_index, nextCell) || 
+                !this.timeslots.on_same_day(firstTimeslot, timeslot)){
                 result.valid = false;
-                result.reason = "Error: timeslot" +  this.timeslots[timeslot_id] + 
+                result.reason = "Error: timeslot" +  timeslot.id + 
                     " already has a class in " + room_name + "."
                     return result;
             }

@@ -178,7 +178,7 @@ describe("SectionsSpec", function() {
                         $j("body").on("schedule-changed", function(){
                             event_fired = true;
                             })
-                        sections.scheduleSection(sections.getById(3), "room-2", 3);
+                        sections.scheduleSection(sections.getById(3), "room-3", 11);
                         expect(event_fired).toBeTrue();
                         });
 
@@ -190,10 +190,8 @@ describe("SectionsSpec", function() {
 
         describe("unscheduleSectionLocal", function(){
                 it("removes the class from the matrix", function(){
-                    sections.scheduleSection(sections.getById(2), "room-2", 3);
-                    expect(matrix.getCell("room-2", 3).section).toEqual(sections.getById(2));
-                    sections.unscheduleSectionLocal(sections.getById(2));
-                    expect(matrix.getCell("room-2", 3).section).not.toEqual(sections.getById(2));
+                    sections.unscheduleSectionLocal(sections.getById(1));
+                    expect(matrix.getCell("room-2", 3).section).not.toEqual(sections.getById(1));
                     });
 
                 it("fires a schedule-changed event", function(){
