@@ -58,6 +58,11 @@ function Scheduler(
         var cell = $j(evt.currentTarget.parentElement).data("cell");
         this.sections.selectSection(cell.section);
     }.bind(this)); 
+ 
+    $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
+        this.sections.unscheduleAsGhost();
+    }.bind(this));
+
     $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
         var cell = $j(evt.currentTarget).data("cell");
         if(this.sections.selectedSection) {
@@ -65,10 +70,15 @@ function Scheduler(
                                           cell.room_name, cell.timeslot_id);
         }
     }.bind(this));
+
     $j("body").on("click", "td.disabled-cell", function(evt, ui) {
         this.sections.unselectSection();
     }.bind(this));
 
+   $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+        var cell = $j(evt.currentTarget).data("cell");
+        this.sections.scheduleAsGhost(cell.room_name, cell.timeslot_id);
+    }.bind(this));
 
     // Render all the objects on the page
     this.render = function(){

@@ -213,4 +213,24 @@ describe("SectionsSpec", function() {
         });
 
 
+        describe("scheduleAsGhost", function() {
+                it("displays the section as a ghost", function() {
+                    var section = sections.getById(3);
+                    console.log(sections);
+                    sections.selectSection(section);
+                    sections.scheduleAsGhost("room-3", 11);
+                    expect(matrix.getCell("room-3", 11).el.hasClass("ghost-section")).toBeTrue();
+                    expect(matrix.getCell("room-3", 13).el.hasClass("ghost-section")).toBeTrue();
+                });
+
+        });
+
+        describe("unscheduleAsGhost", function() {
+                it("removes section from all cells", function() {
+                    var section = sections.getById(3);
+                    sections.selectSection(section);    
+                    sections.scheduleAsGhost("room-3", 11);
+                    sections.unscheduleAsGhost(); 
+                });
+        });
 });

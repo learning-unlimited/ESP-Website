@@ -28,8 +28,8 @@ describe("Directory", function(){
                     var table = d.el.children()[0];
                     expect(table.rows.length).toEqual(4);
                     expect(table.rows[0].innerHTML).toMatch("Fascinating Science Phenomena");
-                    expect(table.rows[0].innerHTML).toMatch("/manageclass/");
-                    expect(table.rows[0].innerHTML).toMatch("/editclass/");
+                    expect(table.rows[0].innerHTML).toMatch("manageclass/");
+                    expect(table.rows[0].innerHTML).toMatch("editclass/");
                     });
                 });
 
@@ -90,8 +90,8 @@ describe("TableRow", function(){
 
                 it("has edit and manage links", function(){
                     tr.render();
-                    expect(tr.el[0].innerHTML).toContain("/editclass/");
-                    expect(tr.el[0].innerHTML).toContain("/manageclass/");
+                    expect(tr.el[0].innerHTML).toContain("editclass/");
+                    expect(tr.el[0].innerHTML).toContain("manageclass/");
                     });
                 });
 

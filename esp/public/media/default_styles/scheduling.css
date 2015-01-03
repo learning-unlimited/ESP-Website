@@ -10,6 +10,7 @@ table,th,td
     max-width: 80px;
     width: 80px;
     text-align: center;
+    background: #222222;
 }
 
 .disabled-cell{
@@ -23,13 +24,17 @@ table,th,td
 .occupied-cell{
 }
 
+.ghost-section {
+    opacity: .7 !important;
+}
+
 .teacher-available-cell {
-    background-color: #32cd32 !important;
+    background-color: #32cd32;
     opacity: .9;
 }
 
 .teacher-teaching-cell {
-    background-color: yellow !important;
+    background-color: yellow;
     opacity: .9;
 }
 

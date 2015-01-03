@@ -52,7 +52,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    if (new_section != null){
 	        this.addSection(new_section);
 	    }
-        // Otherwise call removeSection to apply the corret styling
+        // Otherwise call removeSection to apply the correct styling
 	    else{
 	        this.removeSection();
 	    }
@@ -131,8 +131,32 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         
         // Remove the styling for the section
 	    this.el[0].innerHTML = "";
-	    this.el.css("background-color", "#222222");
+        this.el.css("background-color", "");
+    };
 
+    /**
+     * Add a section as a ghost.
+     *
+     * @param section: The section to display.
+     */
+    this.addGhostSection = function(section) {
+        this.el.css("background-color", this.cellColors.color(section));
+        this.el.css("color", this.cellColors.textColor(section));
+        this.el.addClass("ghost-section");
+        this.el[0].innerHTML = section.emailcode;
+    };
+
+    /**
+     * Remove the ghost section and put back the original section if present.
+     */
+    this.removeGhostSection = function() {
+        this.el.removeClass("ghost-section");
+        if(this.section) {
+            this.addSection(this.section);
+        } else {
+            this.removeSection();
+        }
+        this.el.css("background-color", "");
     };
 
 

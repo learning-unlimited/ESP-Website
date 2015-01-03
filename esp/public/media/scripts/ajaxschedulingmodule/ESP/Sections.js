@@ -14,7 +14,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
     // The section that is currently selected
     this.selectedSection = null;
-    
+    this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
 
     /**
@@ -22,11 +22,11 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      */
     this.init = function() {
         $j.each(sections_data, function(section_id, section) {
-            section.teacher_data = []
-            $j.each(section.teachers, function(index, teacher_id) {
-                section.teacher_data.push(teacher_data[teacher_id]);
-            });
-        });
+                section.teacher_data = []
+                $j.each(section.teachers, function(index, teacher_id) {
+                    section.teacher_data.push(teacher_data[teacher_id]);
+                    });
+                });
     };
 
     this.init();
@@ -55,13 +55,13 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.filtered_sections = function(){
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
-            if (
-                this.scheduleAssignments[section.id] && 
-                this.scheduleAssignments[section.id].room_name == null
-            ){
+                if (
+                    this.scheduleAssignments[section.id] && 
+                    this.scheduleAssignments[section.id].room_name == null
+                   ){
                 returned_sections.push(section);
-            }
-        }.bind(this));
+                }
+                }.bind(this));
         return returned_sections;
     };
 
@@ -84,9 +84,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var assignment = this.scheduleAssignments[section.id];
         if(assignment.room_name) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                var cell = this.matrix.getCell(assignment.room_name, timeslot);
-                cell.select();
-            }.bind(this));
+                    var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                    cell.select();
+                    }.bind(this));
         } else {
             section.directoryCell.select();
         }
@@ -109,9 +109,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var assignment = this.scheduleAssignments[this.selectedSection.id];
         if(assignment.room_name) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                var cell = this.matrix.getCell(assignment.room_name, timeslot);
-                cell.unselect();
-            }.bind(this));
+                    var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                    cell.unselect();
+                    }.bind(this));
         } else {
             this.selectedSection.directoryCell.unselect();
         }
@@ -137,21 +137,21 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var availabilities = [];
         var already_teaching = [];        
         $j.each(section.teacher_data, function(index, teacher) {
-            var teacher_availabilities = teacher.availability.slice();
-            $j.each(teacher.sections, function(index, section_id) {
-                var assignment = this.scheduleAssignments[section_id];
-                if(assignment && section_id != section.id) {
+                var teacher_availabilities = teacher.availability.slice();
+                $j.each(teacher.sections, function(index, section_id) {
+                    var assignment = this.scheduleAssignments[section_id];
+                    if(assignment && section_id != section.id) {
                     $j.each(assignment.timeslots, function(index, timeslot_id) {
                         var availability_index = teacher_availabilities.indexOf(timeslot_id);
                         if(availability_index >= 0) {
-                            teacher_availabilities.splice(availability_index, 1);
-                            already_teaching.push(timeslot_id);
+                        teacher_availabilities.splice(availability_index, 1);
+                        already_teaching.push(timeslot_id);
                         }
+                        }.bind(this));
+                    }
                     }.bind(this));
-                }
-            }.bind(this));
-            availabilities.push(teacher_availabilities);
-        }.bind(this));
+                availabilities.push(teacher_availabilities);
+                }.bind(this));
         var availableTimeslots = helpersIntersection(availabilities, true);
         return [availableTimeslots, already_teaching];
     };
@@ -163,9 +163,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      */
     this.getTeachersString = function(section) {
         var teacher_list = []
-        $j.each(section.teacher_data, function(index, teacher) {
-            teacher_list.push(teacher.first_name + " " + teacher.last_name);
-        });
+            $j.each(section.teacher_data, function(index, teacher) {
+                    teacher_list.push(teacher.first_name + " " + teacher.last_name);
+                    });
         var teachers = teacher_list.join(", ");
         return teachers;
     };
@@ -180,29 +180,29 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.scheduleSection = function(section, room_name, first_timeslot_id){
         var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
-                                      get_timeslots_to_schedule_section(section, first_timeslot_id);
-        
+            get_timeslots_to_schedule_section(section, first_timeslot_id);
+
         // Make sure the assignment is valid
         if (!this.matrix.validateAssignment(section, room_name, schedule_timeslots).valid){
             return;
         }
-        
+
         // Optimistically schedule the section locally before hearing back from the server
         this.scheduleSectionLocal(section, room_name, schedule_timeslots);
         this.apiClient.schedule_section(
-            section.id,
-            schedule_timeslots,
-            room_name, 
-            function() {},
-            // If there's an error, reschedule the section in its old location
-	        function(msg) {
+                section.id,
+                schedule_timeslots,
+                room_name, 
+                function() {},
+                // If there's an error, reschedule the section in its old location
+                function(msg) {
                 this.scheduleSectionLocal(section, 
-                                          old_assignment.room_name, 
-                                          old_assignment.timeslots);
+                    old_assignment.room_name, 
+                    old_assignment.timeslots);
                 this.matrix.messagePanel.addMessage("Error: " + msg)
-		        console.log(msg);
-	        }.bind(this)
-	    );
+                console.log(msg);
+                }.bind(this)
+                );
     }
 
 
@@ -214,43 +214,67 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      * @param schedule_timeslots: The IDs of the timeslots to schedule the section in     *
      */
     this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
-	    var old_assignment = this.scheduleAssignments[section.id];
+        var old_assignment = this.scheduleAssignments[section.id];
 
         // Check to see if we need to make any changes
-	    if(
-	        old_assignment.room_name == room_name &&
-	            JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
-	    ){
-	        return;
-	    }
-        
-        // Add section to cells
-	    for(timeslot_index in schedule_timeslots){
-	        var timeslot_id = schedule_timeslots[timeslot_index];
-	        this.matrix.getCell(room_name, timeslot_id).addSection(section);
-	    }
+        if(
+                old_assignment.room_name == room_name &&
+                JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
+          ){
+            return;
+        }
 
-	    // Unschedule from old place
-	    for (timeslot_index in old_assignment.timeslots) {
-	        var timeslot_id = old_assignment.timeslots[timeslot_index];
-	        var cell = this.matrix.getCell(old_assignment.room_name, timeslot_id);
-	        cell.removeSection();
-	    }
+        // Add section to cells
+        for(timeslot_index in schedule_timeslots){
+            var timeslot_id = schedule_timeslots[timeslot_index];
+            this.matrix.getCell(room_name, timeslot_id).addSection(section);
+        }
+
+        // Unschedule from old place
+        for (timeslot_index in old_assignment.timeslots) {
+            var timeslot_id = old_assignment.timeslots[timeslot_index];
+            var cell = this.matrix.getCell(old_assignment.room_name, timeslot_id);
+            cell.removeSection();
+        }
         if(this.selectedSection === section) {
             this.unselectSection();
         }
 
         // Update the array that keeps track of the assignments
-	    this.scheduleAssignments[section.id] = {
-	        room_name: room_name,
-	        timeslots: schedule_timeslots,
-	        id: section.id
-	    };
+        this.scheduleAssignments[section.id] = {
+room_name: room_name,
+           timeslots: schedule_timeslots,
+           id: section.id
+        };
 
         // Trigger the event that tells the directory to update itself.
-	    $j("body").trigger("schedule-changed");
+        $j("body").trigger("schedule-changed");
     }
 
+    /**
+     * Make the selected section appear as a "ghost" on the schedule.
+     * 
+     * @param room_name: The room that the class would go in
+     * @param first_timeslot_id: The id of the first timeslot the class would go in
+     */
+    this.scheduleAsGhost = function(room_name, first_timeslot_id) {
+        var schedule_timeslots = this.matrix.timeslots.
+            get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        $j.each(schedule_timeslots, function(index, timeslot_id) {
+            this.matrix.getCell(room_name, timeslot_id).addGhostSection(this.selectedSection);
+        }.bind(this));
+        this.ghostScheduleAssignment = {'room_name': room_name, 'timeslots': schedule_timeslots};
+    };
+
+    /**
+     * Remove the ghost section from the schedule.
+     */
+    this.unscheduleAsGhost = function() {
+        $j.each(this.ghostScheduleAssignment.timeslots, function(index, timeslot_id) {
+            this.matrix.getCell(this.ghostScheduleAssignment.room_name, timeslot_id).removeGhostSection();
+        }.bind(this));
+        this.ghostScheduleAssignment = {};
+    };
 
     /**
      * Unschedule a section of a class.
@@ -263,18 +287,18 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var old_schedule_timeslots = old_assignment.timeslots;
 
         // Optimistically make local changes to unschedule the class
-		this.unscheduleSectionLocal(section);
-	    this.apiClient.unschedule_section(
-	        section.id,
-	        function(){ 
-	        },
-            // If the server returns an error, put the class back in its original spot
-	        function(msg){
+        this.unscheduleSectionLocal(section);
+        this.apiClient.unschedule_section(
+                section.id,
+                function(){ 
+                },
+                // If the server returns an error, put the class back in its original spot
+                function(msg){
                 this.scheduleSectionLocal(section, old_room_name, old_schedule_timeslots);
                 this.matrix.messagePanel.addMessage("Error: " + msg);
-		        console.log(msg);
-	        }.bind(this)
-	    );
+                console.log(msg);
+                }.bind(this)
+                );
     };
 
     /**
@@ -283,7 +307,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      * @param section: the section to unschedule
      */
     this.unscheduleSectionLocal = function(section) {
-	    this.scheduleSectionLocal(section, null, [])
+        this.scheduleSectionLocal(section, null, [])
     };
 
 
