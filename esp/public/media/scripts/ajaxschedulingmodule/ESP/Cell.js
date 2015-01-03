@@ -140,7 +140,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * @param section: The section to display.
      */
     this.addGhostSection = function(section) {
-        this.el.css("background-color", this.cellColors.color(section));
+        this.el.css("background", this.cellColors.color(section));
         this.el.css("color", this.cellColors.textColor(section));
         this.el.addClass("ghost-section");
         this.el[0].innerHTML = section.emailcode;
@@ -151,12 +151,12 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      */
     this.removeGhostSection = function() {
         this.el.removeClass("ghost-section");
+        this.el.css("background", "");
         if(this.section) {
             this.addSection(this.section);
         } else {
             this.removeSection();
         }
-        this.el.css("background-color", "");
     };
 
 

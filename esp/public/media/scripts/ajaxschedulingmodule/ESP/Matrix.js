@@ -69,7 +69,7 @@ function Matrix(
      *                   The second is an array of timeslots where one or more 
      *                   teachers are teaching, but would be available otherwise.
      */
-    this.highlightTimeslots = function(timeslots) {
+    this.highlightTimeslots = function(timeslots, sectionLength) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
@@ -93,6 +93,29 @@ function Matrix(
         var teaching_timeslots = timeslots[1];
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        if(sectionLength<=1) {
+            return;
+        }
+        console.log(available_timeslots);
+        $j.each(available_timeslots, function(j, timeslot_id) {
+            var timeslot = this.timeslots.get_by_id(timeslot_id);
+            $j.each(this.rooms, function(k, room) {
+                var cell = this.getCell(room.id, timeslot_id);
+                if(cell.el.hasClass("teacher-available-cell")) {
+                    for(var i=1; i<sectionLength; i++) {
+                        var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
+                        if(nextTimeslot) {
+                            var nextCell = this.getCell(room.id, nextTimeslot.id);
+                            if(nextCell.disabled || nextCell.section || 
+                                available_timeslots.indexOf(nextTimeslot.id) == -1) {
+                                cell.el.removeClass("teacher-available-cell");
+                                cell.el.addClass("teacher-available-not-first-cell");
+                            }
+                        }
+                    }
+                }
+            }.bind(this));
+        }.bind(this));
     }
 
     /**
@@ -123,7 +146,7 @@ function Matrix(
 
         var available_timeslots = timeslots[0];
         var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell");
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
         removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
     };
 

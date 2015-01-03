@@ -93,7 +93,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         this.selectedSection = section;
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
-        this.matrix.highlightTimeslots(this.availableTimeslots);
+        this.matrix.highlightTimeslots(this.availableTimeslots, section.length);
 
 
     };
@@ -138,6 +138,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var already_teaching = [];        
         $j.each(section.teacher_data, function(index, teacher) {
                 var teacher_availabilities = teacher.availability.slice();
+                teacher_availabilities = teacher_availabilities.filter(function(val) {
+                    return this.matrix.timeslots.get_by_id(val);
+                }.bind(this));
                 $j.each(teacher.sections, function(index, section_id) {
                     var assignment = this.scheduleAssignments[section_id];
                     if(assignment && section_id != section.id) {

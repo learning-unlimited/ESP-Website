@@ -38,6 +38,17 @@ table,th,td
     opacity: .9;
 }
 
+.teacher-available-not-first-cell {
+    background: repeating-linear-gradient(
+                45deg,
+                #32cd32,
+                #32cd32 15px,
+                #555555 15px,
+                #555555 20px
+    );
+    opacity: .9;
+}
+
 td .selected-section {
     outline: 1px solid yellow;
 }

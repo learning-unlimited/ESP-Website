@@ -179,7 +179,7 @@ describe("Cell", function(){
                 c.removeSection(section);
                 c.removeGhostSection();
                 expect(c.el[0].innerHTML).toEqual("");
-                expect($j(c.el[0]).css('background-color')).toEqual('rgb(34, 34, 34)');
+                expect($j(c.el[0]).css('background-color')).toEqual('');
             });
         });
         

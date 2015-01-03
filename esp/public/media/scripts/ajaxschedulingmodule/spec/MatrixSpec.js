@@ -16,8 +16,8 @@ describe("Matrix", function(){
             });
 
         describe("highlightTimeslots", function() {
-            it("adds the correct classes to the timeslots given", function() {
-                m.highlightTimeslots([[3], [5]]);
+            it("adds the correct classes to the timeslots given for a single hour class", function() {
+                m.highlightTimeslots([[3], [5]], 1);
                 expect(m.getCell("room-1", 3).el.hasClass("teacher-available-cell")).toBe(false);
                 expect(m.getCell("room-1", 3).el.hasClass("teacher-teaching-cell")).toBe(false);
 
@@ -39,6 +39,12 @@ describe("Matrix", function(){
                 expect(m.getCell("room-1", 7).el.hasClass("teacher-available-cell")).toBe(false);
                 expect(m.getCell("room-3", 11).el.hasClass("teacher-teaching-cell")).toBe(false);
             })
+
+            it("adds a striped gradient for cells that are available, but can't be clicked", function() {
+                m.highlightTimeslots([[3, 5], []], 2);
+                expect(m.getCell("room-2", 5).el.hasClass("teacher-available-not-first-cell")).toBeTrue();
+                expect(m.getCell("room-3", 3).el.hasClass("teacher-available-not-first-cell")).toBeTrue();
+            });
         });
 
         describe("unhighlightTimeslots", function() {
@@ -67,6 +73,13 @@ describe("Matrix", function(){
                     expect(m.getCell("room-1", 7).el.hasClass("teacher-available-cell")).toBe(false);
                     expect(m.getCell("room-3", 11).el.hasClass("teacher-teaching-cell")).toBe(false);
                 }); 
+                it("removes the striped gradient too", function() {
+                    m.highlightTimeslots([[3, 5], []], 2);
+                    m.unhighlightTimeslots([[3, 5], []], 2);
+    
+                    expect(m.getCell("room-2", 5).el.hasClass("teacher-available-not-first-cell")).toBeFalse();
+                    expect(m.getCell("room-3", 3).el.hasClass("teacher-available-not-first-cell")).toBeFalse();
+                });
         });
  
         describe("getCell", function(){

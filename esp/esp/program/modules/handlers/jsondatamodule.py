@@ -92,10 +92,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def rooms(prog):
         classrooms = prog.getResources().filter(res_type__name="Classroom")
         classrooms_grouped = defaultdict(list)
-
         for room in classrooms:
             classrooms_grouped[room.name].append(room)
-
         classrooms_dicts = [
             {
                 'id': room_id,
