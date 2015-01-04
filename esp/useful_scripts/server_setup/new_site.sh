@@ -8,15 +8,13 @@ GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 LOGDIR="/lu/logs"
 DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-MAILMAN_LIST_PASSWORD="oobleck"
-MAILMAN_ADMIN="price@kilentra.net"
 CRON_FILE="/etc/crontab"
 
 #CURDIR=`dirname $0`
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,apache,mailman,cron,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,apache,cron,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
@@ -39,7 +37,6 @@ do
     --db) MODE_DB=true;;
     --settings) MODE_SETTINGS=true;;
     --apache) MODE_APACHE=true;;
-    --mailman) MODE_MAILMAN=true;;
     --cron) MODE_CRON=true;;
      *) break;;
   esac
@@ -60,7 +57,6 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    --mailman:  Create a Mailman support list
     --cron:     Add appropriate entry to cron for comm panel e-mail sending
 "
     exit 0
@@ -363,21 +359,6 @@ then
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 
     echo "Database has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
-    read THROWAWAY
-fi
-
-# Mailman setup
-# To reset: remove list manually
-if [[ "$MODE_MAILMAN" || "$MODE_ALL" ]]
-then
-    newlist -q $SITENAME-websupport $ADMINEMAIL $MAILMAN_LIST_PASSWORD
-    add_members -r - granite-websupport <<EOF
-$ADMINEMAIL
-EOF
-    echo "Created Mailman list $SITENAME-websupport with initial member $ADMINEMAIL."
-    
-    echo "Support list has been created.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
