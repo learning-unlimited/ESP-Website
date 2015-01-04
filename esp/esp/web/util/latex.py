@@ -47,7 +47,7 @@ from django.http import HttpResponse
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 
-def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None):
+def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """ Render some tex source to latex. This will run the latex
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
@@ -67,20 +67,12 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None)
 
     context['MEDIA_ROOT'] = settings.MEDIA_ROOT
     context['file_type'] = filetype
-        
 
     rendered_source = t.render(context)
     
-    #   Autodetect landscape mode if 'landscape' is in the first 10 lines of output
-    top_lines = rendered_source.split('\n')[:10]
-    if landscape is None:
-        if 'landscape' in '\n'.join(top_lines):
-            landscape=True
-    
-    return gen_latex(rendered_source, filetype, landscape)
+    return gen_latex(rendered_source, filetype)
 
-
-def gen_latex(texcode, type='pdf', landscape=False, remove_files=False, stdout=PIPE, stderr=STDOUT):
+def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -95,10 +87,6 @@ def gen_latex(texcode, type='pdf', landscape=False, remove_files=False, stdout=P
         The others return the compilation of texcode into that format.
     :type type:
         `str`, element of ('tex', 'dvi', 'ps', 'log', 'svg', 'png')
-    :param landscape:
-        True if the output should be in landscape format, else False.
-    :type landscape:
-        `bool`
     :param remove_files:
         True if intermediate build files should be removed, else False.
     :type remove_files:
