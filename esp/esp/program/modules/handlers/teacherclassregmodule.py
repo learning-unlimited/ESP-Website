@@ -794,8 +794,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                            include_global=True)
                 else:
                     resource_types = prog.getResourceTypes(include_classroom=True)
-                    resource_types = list(resource_types)
-                    resource_types.reverse()
+                resource_types = list(resource_types)
+                resource_types.reverse()
             else:
                 # If we're not using static resource requests, then just
                 # hardcode some sane defaults
