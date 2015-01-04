@@ -22,7 +22,7 @@ then   # Script needs at least one command-line argument.
   echo "Usage: $0 -(option) [-(option) ...] [sitename]"
   echo "Type '$0 -h' for help."
   exit $E_OPTERR
-fi  
+fi
 
 eval set -- "$OPTSETTINGS"
 
@@ -112,7 +112,7 @@ echo "#!/bin/bash" > $BASEDIR/.espsettings
 
 # Collect settings
 # To manually reset: Remove '.espsettings' file in site directory
-while [[ ! -n $ESPHOSTNAME ]]; do 
+while [[ ! -n $ESPHOSTNAME ]]; do
     echo
     echo -n "Enter your site's hostname (without the http://) --> "
     read ESPHOSTNAME
@@ -146,7 +146,7 @@ echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
-    echo 
+    echo
     echo "Enter the hostname you will be using for e-mail"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
@@ -156,7 +156,7 @@ echo "Selected e-mail host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $ADMINEMAIL ]]; do
-    echo 
+    echo
     echo "Please enter the e-mail address of the initial site administrator"
     echo -n "  --> "
     read ADMINEMAIL
@@ -166,7 +166,7 @@ echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
 
 TIMEZONE_DEFAULT="America/New_York"
 while [[ ! -n $TIMEZONE ]]; do
-    echo 
+    echo
     echo "Please enter your group's time zone"
     echo -n "  (default $TIMEZONE_DEFAULT) --> "
     read TIMEZONE
@@ -254,7 +254,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -316,6 +316,9 @@ DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
 
+VARNISH_HOST = 'localhost'
+VARNISH_PORT = '80'
+
 from database_settings import *
 
 MIDDLEWARE_LOCAL = []
@@ -325,7 +328,7 @@ email_choices = (
     ('general', 'General Inquiries'),
     ('web',     'Web Site Problems'),
     )
-# Corresponding email addresses                                                                                                                                 
+# Corresponding email addresses
 email_addresses = {
     'general': '$GROUPEMAIL',
     'web':     '$GROUPEMAIL',
@@ -344,6 +347,13 @@ EOF
 
 fi
 
+ln -s $MEDIADIR/default_images $MEDIADIR/images/
+ln -s $MEDIADIR/default_styles $MEDIADIR/styles/
+
+mkdir $MEDIADIR/uploaded
+chmod -R 777 $MEDIADIR
+echo "Default images and styles have been symlinked."
+
 # Database setup
 # To reset: remove user and DB in SQL
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
@@ -352,15 +362,16 @@ then
     sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
     sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
     echo "Created a PostgreSQL login role and empty database."
-    
+
     echo "Django's manage.py scripts will now be used to initialize the"
     echo "$DBNAME database.  Please follow their directions."
 
-    cd $BASEDIR/esp/esp
+    cd $BASEDIR/esp
+    ./manage.py syncdb
     ./manage.py migrate
-    ./manage.py createsuperuser
+    ./manage.py collectstatic
     cd $CURDIR
-    
+
     #   Set initial Site (used in password recovery e-mail)
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 
@@ -375,7 +386,7 @@ if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
     cat >>$APACHE_CONF_FILE <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
-WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
+WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=1000
 <VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
     ServerAlias $SITENAME-orig.learningu.org
@@ -386,8 +397,12 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
     #   Caching - should use Squid if performance is really important
     # CacheEnable disk /
 
+    #   Redirect HTTP requests to HTTPS for security - uncomment to use
+    # Include /etc/apache2/sites-available/esp_sites/https_redirect.conf
+
     #   Static files
     Alias /media $BASEDIR/esp/public/media
+    Alias /static $BASEDIR/esp/public/static
     <Location /media>
         DAV on
         <LimitExcept GET HEAD OPTIONS PROPFIND>
@@ -412,7 +427,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 EOF
     /etc/init.d/apache2 reload
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -434,4 +449,6 @@ echo "  $SITENAME-orig.learningu.org -> $IP_ADDRESS"
 echo "  $SITENAME-backup.learningu.org -> $IP_ADDRESS"
 echo "You may also want to add some template overrides that establish"
 echo "the initial look and feel of the site."
+echo "Please also configure e-mail by adjusting the exim4 configuration as"
+echo "necessary."
 echo
