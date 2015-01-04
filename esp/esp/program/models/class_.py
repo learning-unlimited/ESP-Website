@@ -1013,7 +1013,7 @@ class ClassSection(models.Model):
         else:
             student_verbs = ['Enrolled']
 
-        email_ssis = email_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self])
+        email_ssis = include_lottery_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self])
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
@@ -1023,21 +1023,40 @@ class ClassSection(models.Model):
         email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
         ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
         if email_students:
+            context['classreg'] = False
+            context['email_ssis'] = email_ssis
+            ssi_email_content = render_to_string('email/class_cancellation.txt', context)
+            ssi_template = Template(ssi_email_content)
+            context['classreg'] = True
             email_content = render_to_string('email/class_cancellation.txt', context)
             template = Template(email_content)
             #   Send e-mail to each student
-            q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
-            ssi_students = ESPUser.objects.filter(q_ssi).exclude(id__in=self.students(student_verbs)).distinct()
-            students = [(i,True) for i in self.students(student_verbs)] + [(i,False) for i in ssi_students]
-            for student, classreg in students:
+            students = {}
+            if email_ssis:
+                q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
+                ssi_students = ESPUser.objects.filter(q_ssi).exclude(id__in=self.students(student_verbs)).distinct()
+                for student in ssi_students:
+                    students[student] = False
+            for student in self.students(student_verbs):
+                students[student] = True
+
+            for student in students:
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 #   Here we render the template to include the username, and also whether the student is registered
-                msgtext = template.render(Context({'user': student, 'classreg': classreg}))
-                send_mail(email_title, msgtext, from_email, to_email)
+                if students[student]:
+                    msgtext = template.render(Context({'user': student}))
+                    send_mail(email_title, msgtext, from_email, to_email)
+                else:
+                    msgtext = ssi_template.render(Context({'user': student}))
+                    send_mail(ssi_email_title, msgtext, from_email, to_email)
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
+        if email_ssis:
+            context['classreg'] = False
+            ssi_email_content = render_to_string('email/class_cancellation_body.txt', context)
+            email_content += '\n' + ssi_email_content
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
