@@ -160,7 +160,7 @@ def histogram(answer_list, format='html'):
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
     template_file = os.path.join(settings.TEMPLATE_DIRS[0],
-                                 'survey/histogram_base.eps')
+                                 'survey', 'histogram_base.eps')
 
     context['file_name'] = file_name # This guy depends on the SHA-1
     
