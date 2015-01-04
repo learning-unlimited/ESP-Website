@@ -239,6 +239,10 @@ then
             cp $CURDIR/$SITENAME.old/.espsettings $CURDIR/$SITENAME/
         fi
     fi
+
+    cd $BASEDIR
+    ./esp/make_virtualenv.sh
+
     echo "Git repository has been checked out.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
