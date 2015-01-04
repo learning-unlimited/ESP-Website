@@ -66,6 +66,9 @@ td.matrix-cell > a:hover {
     overflow-y: scroll;
 }
 
+input.numeric {
+    width: 40px;
+}
 
 #message-div {
     height: 150px;

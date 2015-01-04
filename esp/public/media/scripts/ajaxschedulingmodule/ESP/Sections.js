@@ -17,6 +17,38 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
 
+    // Set up filtering
+    this.filter = {
+        classLengthMin: {active: false, el: $j("input#section-filter-length-min")},
+        classLengthMax: {active: false, el: $j("input#section-filter-length-max")},
+        classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min")},
+        classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max")},
+    };
+    this.filter.classLengthMin.valid = function(a) {
+        return Math.ceil(a.length) >= this.filter.classLengthMin.val;
+    }.bind(this);
+    this.filter.classLengthMax.valid = function(a) {
+        return Math.ceil(a.length) <= this.filter.classLengthMax.val;
+    }.bind(this);
+    this.filter.classCapacityMin.valid = function(a) {
+        return a.class_size_max >= this.filter.classCapacityMin.val;
+    }.bind(this);
+    this.filter.classCapacityMax.valid = function(a) {
+        return a.class_size_max <= this.filter.classCapacityMax.val;
+    }.bind(this);
+
+    $j.each(this.filter, function(filterName, filterObject) {
+        filterObject.el.change(function() {
+            filterObject.val = parseInt($j.trim(filterObject.el.val()));
+            if(isNaN(filterObject.val)) {
+                filterObject.active = false;
+            } else {
+                filterObject.active = true;
+            }
+            $j("body").trigger("schedule-changed");
+        });
+    }.bind(this));
+    
     /**
      * Populate the sections data with teacher info
      */
@@ -55,13 +87,20 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.filtered_sections = function(){
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
-                if (
-                    this.scheduleAssignments[section.id] && 
-                    this.scheduleAssignments[section.id].room_name == null
-                   ){
-                returned_sections.push(section);
-                }
+            var sectionValid = true;
+            $j.each(this.filter, function(filterName, filterObject) {
+                if(filterObject.active && !filterObject.valid(section)) {
+                    sectionValid = false;
+                }      
                 }.bind(this));
+             if (
+                this.scheduleAssignments[section.id] && 
+                this.scheduleAssignments[section.id].room_name == null &&
+                sectionValid
+                ){
+                    returned_sections.push(section);
+                }
+            }.bind(this));
         return returned_sections;
     };
 
