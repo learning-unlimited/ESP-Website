@@ -81,12 +81,12 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
         `unicode`
     :param type:
         The type of file to generate.
-        Must be one of 'tex', 'dvi', 'ps', 'log', 'svg', or 'png'.
+        Must be one of 'pdf', 'tex', 'log', 'svg', or 'png'.
         'tex' returns texcode itself, without processing.
         'log' returns the log file from the execution of latex on texcode.
         The others return the compilation of texcode into that format.
     :type type:
-        `str`, element of ('tex', 'dvi', 'ps', 'log', 'svg', 'png')
+        `str`, element of ('pdf', 'tex', 'log', 'svg', 'png')
     :param remove_files:
         True if intermediate build files should be removed, else False.
     :type remove_files:
@@ -120,7 +120,7 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
     texfile.close()
     
 
-    file_types = ['pdf','dvi','ps','log','tex','svg','png']
+    file_types = ['pdf','log','tex','svg','png']
 
     # Get (sometimes-)necessary library files
     from django.conf import settings
@@ -137,12 +137,6 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
     if type == 'pdf':
         mime = 'application/pdf'
         call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
-
-    elif type == 'dvi':
-        raise NotImplementedError
-
-    elif type == 'ps':
-        raise NotImplementedError
 
     elif type == 'log':
         mime = 'text/plain'
