@@ -579,7 +579,7 @@ function setup_autocomplete()
                         var student = new_data[i];
                         var studentItem = {};
                         studentItem.value = student[0];
-                        studentItem.label = student[1] + " " + student[2] + " (" + student[0] + ")";
+                        studentItem.label = student[1] + ", " + student[2] + " (" + student[0] + ")";
                         studentItem.noProfile = !student[3];
                         
                         student_strings.push(studentItem);
