@@ -794,6 +794,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                            include_global=True)
                 else:
                     resource_types = prog.getResourceTypes(include_classroom=True)
+                    resource_types = list(resource_types)
+                    resource_types.reverse()
             else:
                 # If we're not using static resource requests, then just
                 # hardcode some sane defaults
@@ -805,10 +807,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 resource_type_labels = ['Classroom', 'A/V']
                 resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
-            # Now that we're done putting together multiple resource type sources, listify!
-            resource_types = list(resource_types)
-            resource_types.sort(key=lambda x: -x.priority_default)
+                # Now that we're done putting together multiple resource type sources, listify!
+                resource_types = list(resource_types)
+                resource_types.sort(key=lambda x: -x.priority_default)
 
             if newclass is not None:
                 current_data = newclass.__dict__

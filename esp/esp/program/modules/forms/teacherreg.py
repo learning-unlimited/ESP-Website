@@ -194,9 +194,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             hide_field( self.fields['requested_room'] )
             
         #   Hide resource fields since separate forms are now being used. - Michael P
-        resource_fields = ['requested_special_resources']
-        for field in resource_fields:
-            self.fields[field].widget = forms.HiddenInput()
+        #   Most have now been removed, but this one gets un-hidden by open classes.
+        self.fields['requested_special_resources'].widget = forms.HiddenInput()
         
         #   Add program-custom form components (for inlining additional questions without
         #   introducing a separate program module)
