@@ -275,13 +275,14 @@ SECRET_KEY = '$SECRET_KEY'
 DEFAULT_EMAIL_ADDRESSES = {
         'archive': 'learninguarchive@gmail.com',
         'bounces': 'learningubounces@gmail.com',
-        'support': '$SITENAME-websupport@learningu.org',
+        'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
         }
 ORGANIZATION_SHORT_NAME = '$GROUPNAME'
 INSTITUTION_NAME = '$INSTITUTION'
 EMAIL_HOST = '$EMAILHOST'
+EMAIL_HOST_SENDER = EMAIL_HOST
 
 # E-mail addresses for contact form
 email_choices = (
@@ -327,7 +328,7 @@ email_choices = (
 # Corresponding email addresses                                                                                                                                 
 email_addresses = {
     'general': '$GROUPEMAIL',
-    'web':     '$SITENAME-websupport@learningu.org',
+    'web':     '$GROUPEMAIL',
     }
 
 EOF
