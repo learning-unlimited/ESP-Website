@@ -8,7 +8,6 @@ GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
 GIT_BRANCH="stable/1.5.x"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 LOGDIR="/lu/logs"
-DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
 CRON_FILE="/etc/crontab"
 
 #CURDIR=`dirname $0`
@@ -403,17 +402,6 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=1000
     #   Static files
     Alias /media $BASEDIR/esp/public/media
     Alias /static $BASEDIR/esp/public/static
-    <Location /media>
-        DAV on
-        <LimitExcept GET HEAD OPTIONS PROPFIND>
-            AuthType Basic
-            AuthUserFile /lu/auth/dav_auth
-            AuthName "$INSTITUTION $GROUPNAME media files"
-            Require valid-user
-        </LimitExcept>
-        ExpiresActive on
-        ExpiresDefault "now plus 1 hour"
-    </Location>
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
