@@ -183,7 +183,7 @@ def histogram(answer_list, format='html'):
                          '-sDEVICE=png16m', '-R96',
                          '-sOutputFile=' + image_path, file_name])
     if format == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, png_filename)
+        return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
     if format == 'html':
         return '<img src="%s" />' % os.path.join('/media/' + HISTOGRAM_PATH +
                                                  png_filename)
