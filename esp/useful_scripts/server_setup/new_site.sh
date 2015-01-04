@@ -241,9 +241,11 @@ then
 
     cd $BASEDIR
     ./esp/make_virtualenv.sh
+    ./esp/update_deps.sh --prod
 
-    echo "Git repository has been checked out.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    echo "Git repository has been checked out, and dependencies have been installed"
+    echo "with Python libraries in a local virtualenv.  Please check them by looking"
+    echo -n "over the output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 
@@ -322,16 +324,7 @@ from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
-# E-mails for contact form
-email_choices = (
-    ('general', 'General Inquiries'),
-    ('web',     'Web Site Problems'),
-    )
-# Corresponding email addresses
-email_addresses = {
-    'general': '$GROUPEMAIL',
-    'web':     '$GROUPEMAIL',
-    }
+SECRET_KEY = '`${CURDIR}/random_password.sh`'
 
 EOF
 
@@ -346,10 +339,11 @@ EOF
 
 fi
 
-ln -s $MEDIADIR/default_images $MEDIADIR/images/
-ln -s $MEDIADIR/default_styles $MEDIADIR/styles/
+MEDIADIR=${BASEDIR}/esp/public/media
+ln -s $MEDIADIR/default_images $MEDIADIR/images
+ln -s $MEDIADIR/default_styles $MEDIADIR/styles
 
-mkdir $MEDIADIR/uploaded
+mkdir -p $MEDIADIR/uploaded
 chmod -R 777 $MEDIADIR
 echo "Default images and styles have been symlinked."
 
