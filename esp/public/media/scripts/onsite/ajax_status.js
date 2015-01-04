@@ -272,8 +272,6 @@ function update_checkboxes()
 
 function handle_schedule_response(new_data, text_status, jqxhr)
 {
-    console.log(new_data);
-    console.log(data.students);
     data.students[new_data.user].grade = new_data.user_grade
     //  Save the new schedule
     state.student_schedule = new_data.sections;
@@ -562,11 +560,6 @@ function autocomplete_select_item(event, ui)
     }
 }
 
-function students_success(new_data, text_status, jqxhr)
-{
-    console.log(new_data);
-}
-
 function setup_autocomplete()
 {
     var student_strings = [];
@@ -784,7 +777,7 @@ function update_category_filters()
 
         if (settings.categories_to_display.indexOf(id) == -1)
         {
-            console.log("Hiding category .section_category_" + id);
+            //  console.log("Hiding category .section_category_" + id);
             $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
     }
