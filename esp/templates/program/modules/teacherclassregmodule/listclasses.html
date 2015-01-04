@@ -25,7 +25,7 @@ You are welcome to use this page to view your classes' status and upload documen
 {% if can_edit %}
 However, you may edit classes that you have already created.
 {% endif %}
-{% if module.classRegInfo.director_email %}<br />
+{% if program.director_email %}<br />
 If you have any questions regarding the program, <br /> please email the 
 <a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
