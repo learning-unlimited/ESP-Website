@@ -4,7 +4,8 @@
 # Michael Price, December 2010
 
 # Parameters
-GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
+GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+GIT_BRANCH="stable/1.5.x"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 LOGDIR="/lu/logs"
 DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
@@ -220,7 +221,7 @@ then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
         cd $BASEDIR
         git stash
-        git pull origin main
+        git pull origin ${GIT_BRANCH}
         git stash apply
     else
         cd $CURDIR
