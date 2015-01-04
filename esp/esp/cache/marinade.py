@@ -69,7 +69,10 @@ def marinade_dish(arg):
     if isinstance(arg, list):
         return '[%s]' % ','.join([marinade_dish(item) for item in arg])
     if isinstance(arg, Model):
-        if not isinstance(arg, AnonymousUser) and arg.id is None:
+        # ESPUsers are also instances of AnonymousUser, but might not be
+        # anonymous.
+        if arg.id is None and (not isinstance(arg, AnonymousUser) or
+                               not arg.is_anonymous()):
             import random
             # TODO: Make this log something
             print "PASSING UNSAVED MODEL!!! ERROR!!! CACHING CODE SHOULD NOT BE ENABLED!!!"
