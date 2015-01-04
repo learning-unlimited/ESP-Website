@@ -454,6 +454,7 @@ function register_student(student_id, dialog)
                 } else {
                     $j('#not-registered-msg').hide();
                     $j('#noinfo-msg').show();
+                    $j("#dialog-confirm-button-register").button("disable");
                 }
             },
 
@@ -542,8 +543,10 @@ function autocomplete_select_item(event, ui)
     {
         if(ui.item.noProfile)
         {
-            var dialog = $j("#dialog-confirm")
-
+            var dialog = $j("#dialog-confirm");
+            $j("#not-registered-msg").show();
+            $j("#noinfo-msg").hide();
+            $j("#dialog-confirm-button-register").button("enable");
             dialog.data('student_id', student_id);
             dialog.dialog('open');
         }
@@ -1109,21 +1112,27 @@ $j(document).ready(function () {
     //  class changes grid will be displayed.
 
     var dialog = $j("#dialog-confirm").dialog({
-                      resizable: true,
-                      width: 450,
-                      height:250,
-                      modal: true,
-                      buttons: {
-                        "Register Account": function() {
-                          register_student($j(this).data('student_id'),$j(this));
-                        },
-                        Cancel: function() {
-                          $j(this).dialog( "close" );
-                        }
-                      }
-                    });
+        resizable: true,
+        width: 450,
+        height:250,
+        modal: true,
+        buttons: [{
+            id: "dialog-confirm-button-register",
+            text: "Register Account",
+            click: function() {
+                register_student($j(this).data('student_id'),$j(this));
+            }
+        },
+        {
+            id: "dialog-confirm-button-cancel",
+            text: "Cancel",
+            click: function() {
+                $j(this).dialog( "close" );
+            }
+        }]
+    });
 
-        dialog.dialog("close");
+    dialog.dialog("close");
 
     $j("#messages").html("Loading class and student data...");
     
