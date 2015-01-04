@@ -260,28 +260,28 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost)
         
         #   Check that selecting one of the "buy-one" extra items works
-        lit = LineItemType.objects.get(program=self.program, text='Item1')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked'})
+        lit1 = LineItemType.objects.get(program=self.program, text='Item1')
+        lit2 = LineItemType.objects.get(program=self.program, text='Item2')
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit1.id: 'checked', '%d-count' % lit2.id: '0'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 10)
         
         #   Check that selecting one or more than one of the "buy many" extra items works
-        lit = LineItemType.objects.get(program=self.program, text='Item2')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked', '%d-count' % lit.id: '1'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '1'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 5)
 
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked', '%d-count' % lit.id: '3'})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '3'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 15)
         
         #   Check that selecting an option for a "multiple choice" extra item works
-        lit = LineItemType.objects.get(program=self.program, text='Food')
-        lio = filter(lambda x: x[2] == 'Large', lit.options)[0]
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-option' % lit.id: str(lio[0])})
+        lit3 = LineItemType.objects.get(program=self.program, text='Food')
+        lio = filter(lambda x: x[2] == 'Large', lit3.options)[0]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0])})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
@@ -294,7 +294,7 @@ class StudentRegTest(ProgramFrameworkTest):
         fg.delete()
         
         #   Check that removing items on the form removes their cost for the student
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {})
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0'})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost)
