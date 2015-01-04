@@ -185,7 +185,7 @@ def histogram(answer_list, format='html'):
     if format == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, png_filename)
     if format == 'html':
-        return '<img src="%s" />' % os.path.join('/media/', HISTOGRAM_PATH,
+        return '<img src="%s" />' % os.path.join('/media/' + HISTOGRAM_PATH +
                                                  png_filename)
     
 @register.filter
