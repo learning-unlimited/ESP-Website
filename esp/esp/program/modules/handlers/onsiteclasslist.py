@@ -40,7 +40,12 @@ from datetime import datetime, timedelta
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+
+
+from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.program.models import RegistrationProfile
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
@@ -53,6 +58,7 @@ from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
+from esp.accounting.controllers import IndividualAccountingController
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -130,20 +136,60 @@ class OnSiteClassList(ProgramModuleObj):
             students_Q = students_Q | students_dict[student_type]
 
         students = ESPUser.objects.filter(students_Q)
+        program_students_ids = []
+
         data = [] 
         if search_query:
             #If user provided a search term then we want to expand search to the
             #entire student base
-            student_ids = students.values_list('id', flat=True).distinct()
+            
+            search_tokens = search_query.split(' ',1)
+            first_token = search_tokens[0]
 
-            students = ESPUser.objects.filter(Q(last_name__icontains=search_query) | \
-                               Q(first_name__icontains=search_query)) \
+            if len(search_tokens) == 1:
+                search_qset = Q(last_name__icontains=first_token) | Q(first_name__icontains=first_token)
+            else:
+                second_token = search_tokens[1]
+                search_qset = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
+                            (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token)) 
+            program_students_ids = set(students.values_list('id', flat=True).distinct())
+            students = ESPUser.objects.filter(search_qset)
+                              
+        students = students.values_list('id', 'last_name', 'first_name') \
+                              .distinct() \
+                              .order_by('last_name','first_name')
 
-        for student in students.values_list('id', 'last_name', 'first_name').distinct().order_by('last_name','first_name'):
-            data.append(list(student) + [ not search_query or student[0] in student_ids])
-       
-        sorted(data,key=lambda x: x[3])
-        simplejson.dump(data, resp)
+        if search_query:
+            students = students[:20]
+
+        for student in students:
+            has_profile = not search_query or student[0] in program_students_ids
+            data.append(list(student) + [has_profile])
+
+        simplejson.dump(sorted(data,key=lambda x: not x[3]), resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
+    def register_student(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+        program = self.program
+        success = False
+        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+
+        registration_profile = RegistrationProfile.getLastForProgram(student,
+                                                                program)
+        success = registration_profile.student_info is not None
+
+        if success:
+            registration_profile.save()
+
+            for extension in ['paid','Attended','medical','liability','OnSite']:
+                Record.createBit(extension, program, student)
+        
+            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+
+        simplejson.dump({'status':success}, resp)   
         return resp
     
     @aux_call
