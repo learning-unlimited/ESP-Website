@@ -391,8 +391,11 @@ WSGIDaemonProcess $SITENAME processes=4 threads=1 maximum-requests=1000
     #   Caching - should use Squid if performance is really important
     # CacheEnable disk /
 
-    #   Redirect HTTP requests to HTTPS for security - uncomment to use
-    # Include /etc/apache2/sites-available/esp_sites/https_redirect.conf
+    #   Redirect HTTP requests to HTTPS for security
+    RewriteEngine On
+    RewriteCond %{HTTP:X-Forwarded-Proto} !^https
+    RewriteCond %{REQUEST_URI} !^/media
+    RewriteRule ^(.*)$ https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
