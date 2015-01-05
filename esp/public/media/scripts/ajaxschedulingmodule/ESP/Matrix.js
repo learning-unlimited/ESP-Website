@@ -277,6 +277,7 @@ function Matrix(
      */
     this.render = function(){
         var table = $j("<table/>");
+        var colModal = [{width: 140, align: "center"}];
 
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
@@ -285,15 +286,16 @@ function Matrix(
                 var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
                 this.timeslotHeaders[timeslot.id] = timeslotHeader;
                 timeslotHeader.appendTo(header_row);
+                colModal.push({width: 80, align: 'center'});
                 }.bind(this));
-
+        console.log(table);
         //Room headers
         var rows = {};	//table rows by room name
         $j.each(this.rooms, function(id, room){
-            var room_header = $j("<th>" + id + "</th>");
+            var room_header = $j("<td>" + id + "</td>");
             room_header.tooltip({
                 content: this.tooltip(room),
-                items: "th",
+                items: "td",
             });
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
@@ -310,7 +312,9 @@ function Matrix(
             }
         }.bind(this));
         table.appendTo(this.el);
+        table.fxdHdrCol({fixedCols: 1, colModal: colModal, width: "100%", height: "100%"});
     };
+
 
     this.initSections();
 

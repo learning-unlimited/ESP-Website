@@ -87,6 +87,9 @@ input.numeric {
     margin-bottom: 10px;
 }
 
+th {
+    color: black;
+}
 button#unschedule {
     font-size: .7em;
 }
