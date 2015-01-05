@@ -380,7 +380,7 @@ if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
     cat >>$APACHE_CONF_FILE <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
-WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=1000
+WSGIDaemonProcess $SITENAME processes=4 threads=1 maximum-requests=1000
 <VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
     ServerAlias $SITENAME-orig.learningu.org
