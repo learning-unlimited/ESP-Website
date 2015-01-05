@@ -196,7 +196,7 @@ echo "DBUSER=\"$DBUSER\"" >> $BASEDIR/.espsettings
 
 if [[ ! -n $DBPASS ]]
 then
-    DBPASS=`$CURDIR/random_password.sh`
+    DBPASS=`openssl rand -base64 12`
     echo "Generated random password for database"
 else
     echo "Preserved saved database password"
@@ -324,7 +324,7 @@ from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
-SECRET_KEY = '`${CURDIR}/random_password.sh`'
+SECRET_KEY = '`openssl rand -base64 48`'
 
 EOF
 
