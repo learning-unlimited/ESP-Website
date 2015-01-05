@@ -943,6 +943,7 @@ are a teacher of the class"""
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
     program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(lambda: Event, lambda event: {'program': event.program})
 
     @cache_function
     def getYOG(self, program=None):
