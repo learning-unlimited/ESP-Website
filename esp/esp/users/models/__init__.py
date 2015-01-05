@@ -933,16 +933,13 @@ are a teacher of the class"""
         the first day of the program, and is used to calculate a
         student's effective grade for the program.
 
-        This can be overridden by the `schoolyear` tag.
+        This can be modified by setting the program tag
+        "increment_default_grade_levels", which increments the
+        program's effective school year.
         """
-        schoolyear = Tag.getProgramTag('schoolyear', program)
-        if schoolyear is not None:
-            # tag override
-            schoolyear = int(schoolyear)
-        else:
-            # "now" is actually whenever the program ran or will run
-            now = program.dates()[0]
-            schoolyear = ESPUser.current_schoolyear(now)
+        # "now" is actually whenever the program ran or will run
+        now = program.dates()[0]
+        schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
     program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
