@@ -61,12 +61,28 @@
 
         <div id="side-panel" class="ui-widget">
           <ul> 
-            <li><a href="#directory">Classes</a></li>
-            <li><a href="#filter">Filters</a></li>
+            <li><a href="#classes">Classes</a></li>
+            <li><a href="#filters">Filters</a></li>
           </ul>
           <div id="side-panel">
-                <div id="directory"></div>
-                <div id="filter">
+                <div id="classes">
+                    <div id="class-search">
+                        <form>
+                            <label for="class-search-text">Search:</label>
+                            <input id="class-search-text"
+                                   style="width: 8em;"></input>
+                            
+                            <label for="class-search-title" 
+                                   class="ui-helper-hidden"
+                                  >Search Type</label>
+                            <input type="radio" name="class-search-type" value="title" 
+                                   checked="checked">title</input>
+                            <input type="radio" name="class-search-type" value="emailcode">code</input>
+                        </form>
+                    </div>
+                    <div id="directory"></div>
+                </div>
+                <div id="filters">
                   <form>
                     <label for="section-filter-length"><b>Class Length</b></label></br>
                     <div id="section-filter-length">

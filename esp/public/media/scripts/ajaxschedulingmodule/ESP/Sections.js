@@ -49,6 +49,19 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         });
     }.bind(this));
     
+    // Set up search
+    this.searchObject = {active: false, text: "", type: $j("[name='class-search-type']").val()}
+    $j("#class-search-text, [name='class-search-type']").on("keyup change", function(evt) {
+        if(evt.currentTarget.id === "class-search-text") {
+            this.searchObject.active = evt.currentTarget.value.trim() !== "";
+            this.searchObject.text = evt.currentTarget.value;
+        } else {
+            this.searchObject.type = evt.currentTarget.value;
+        }
+        $j("body").trigger("schedule-changed");
+    }.bind(this));
+
+
     /**
      * Populate the sections data with teacher info
      */
@@ -88,10 +101,18 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
             var sectionValid = true;
+            if(this.searchObject.active) {
+                sectionValid = false
+            }
             $j.each(this.filter, function(filterName, filterObject) {
                 if(filterObject.active && !filterObject.valid(section)) {
                     sectionValid = false;
-                }      
+                }
+                if(this.searchObject.active) {
+                    if(section[this.searchObject.type].toLowerCase().search(this.searchObject.text.toLowerCase())>-1) {
+                        sectionValid = true;
+                    }
+                }
                 }.bind(this));
              if (
                 this.scheduleAssignments[section.id] && 

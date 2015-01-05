@@ -70,6 +70,10 @@ input.numeric {
     width: 40px;
 }
 
+#class-search {
+    margin-bottom: 20px;
+}
+
 #message-div {
     height: 150px;
     margin-top: 10px;
