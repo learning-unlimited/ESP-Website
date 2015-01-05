@@ -345,6 +345,7 @@ ln -s $MEDIADIR/default_styles $MEDIADIR/styles
 
 mkdir -p $MEDIADIR/uploaded
 chmod -R 777 $MEDIADIR
+mkdir -p /tmp/esptmp__${SITENAME}ESP
 chmod -R 777 /tmp/esptmp__${SITENAME}ESP
 echo "Default images and styles have been symlinked."
 
