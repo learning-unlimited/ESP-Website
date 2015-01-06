@@ -260,19 +260,6 @@ function Matrix(
 
 
     /**
-     * Return the text of a room tooltip.
-     * 
-     * @param room: The room to get information about
-     */
-    this.tooltip = function(room) {
-        var tooltip_parts = [
-            "<b>" + room.text + "</b>",
-            "Capacity: " + room.num_students + " students",
-            ];
-        return tooltip_parts.join("</br>");
-    };
-
-    /**
      * Render the matrix.
      */
     this.render = function(){
@@ -288,21 +275,14 @@ function Matrix(
                 timeslotHeader.appendTo(header_row);
                 colModal.push({width: 80, align: 'center'});
                 }.bind(this));
-        console.log(table);
         //Room headers
         var rows = {};	//table rows by room name
         $j.each(this.rooms, function(id, room){
-            var room_header = $j("<td>" + id + "</td>");
-            room_header.tooltip({
-                content: this.tooltip(room),
-                items: "td",
-            });
+            var room_header = $j("<td class='room'>" + id + "</td>");
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
             rows[id] = row;
-            row.appendTo(table);
             }.bind(this));
-
         //populate cells
         var cells = this.cells;
         $j.each(this.rooms, function(id, room){
@@ -310,12 +290,27 @@ function Matrix(
             for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
                 cells[id][i].el.appendTo(row);
             }
+            row.appendTo(table);
         }.bind(this));
         table.appendTo(this.el);
         table.fxdHdrCol({fixedCols: 1, colModal: colModal, width: "100%", height: "100%"});
+        
+        // Hack to make tooltips work
+        var that = this;
+        this.el.tooltip({
+            content: function() {
+                var room = that.rooms[$j(this)[0].innerText];
+                var tooltipParts = [
+                    "<b>" + room.text + "</b>",
+                    "Capacity: " + room.num_students + " students",
+                    ];
+                return tooltipParts.join("</br>");
+            },
+            items: ".ft_c td"
+        });
     };
 
-
+    
     this.initSections();
 
 };

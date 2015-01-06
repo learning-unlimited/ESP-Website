@@ -14,6 +14,9 @@ function generateFakeMatrix(){
                   $j("<div>"),
                   messagePanel,
                   sectionInfoPanel);
+    matrix.getTable = function() {
+        return this.el.find(".ft_scroller table")[0];
+    }
     matrix.render();
     return matrix;
 

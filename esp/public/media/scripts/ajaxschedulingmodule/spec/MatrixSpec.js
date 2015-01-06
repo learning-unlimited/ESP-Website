@@ -145,16 +145,16 @@ describe("Matrix", function(){
                 it("should have a row for each room", function(){
                     expect(m.el.children().length).toEqual(1);
                     var table = m.el.children()[0];
-                    expect(table.rows.length).toEqual(4);
+                    expect(m.getTable().rows.length).toEqual(4);
                     //TODO:  ordering should probably be deterministic, but I'm not sure how
-                    expect(table.rows[1].cells[0].innerHTML).toMatch("room-1");
-                    expect(table.rows[2].cells[0].innerHTML).toMatch("room-2");
+                    expect(m.getTable().rows[1].cells[0].innerHTML).toMatch("room-1");
+                    expect(m.getTable().rows[2].cells[0].innerHTML).toMatch("room-2");
                     })
 
                 it("should have a column each timeslot", function(){
                     var table = m.el.children()[0];
 
-                    var header = table.tHead;
+                    var header = m.getTable().tHead;
                     expect(header).toBeHtmlNode();
                     headers = header.rows[0].cells;
                     expect(headers.length).toEqual(6);
@@ -165,10 +165,10 @@ describe("Matrix", function(){
 
                 it("should have a cell for every timeslot/room combination", function(){
                         var table = m.el.children()[0];
-                        expect(table.rows[1].cells[1]).toBeDefined();
-                        expect(table.rows[1].cells[2]).toBeDefined();
-                        expect(table.rows[2].cells[1]).toBeDefined();
-                        expect(table.rows[2].cells[2]).toBeDefined();
+                        expect(m.getTable().rows[1].cells[1]).toBeDefined();
+                        expect(m.getTable().rows[1].cells[2]).toBeDefined();
+                        expect(m.getTable().rows[2].cells[1]).toBeDefined();
+                        expect(m.getTable().rows[2].cells[2]).toBeDefined();
                         });
 
                 it("should show already scheduled sections", function(){
@@ -177,11 +177,4 @@ describe("Matrix", function(){
                         });
         });
 
-    describe("tooltip", function() {
-        it("should display information about the room", function() {
-            var tooltip_text = m.tooltip(room_fixture()["room-1"]);
-            expect(tooltip_text).toContain("room-1");
-            expect(tooltip_text).toContain("23"); 
-        });
-    });
 });
