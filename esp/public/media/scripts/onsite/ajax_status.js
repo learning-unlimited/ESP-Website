@@ -791,11 +791,11 @@ function populate_classes()
     for (var i in data.catalog.categories)
     {
         var new_category = data.catalog.categories[i];
-        /*
         //  Skip "open class" category
-        if (new_category.id == open_class_category.id)
+        if (new_category.id == open_class_category.id) {
             continue;
-        */
+        }
+
         data.categories[new_category.id] = new_category;
         if (settings.categories_to_display.indexOf(new_category.id) == -1)
         {
