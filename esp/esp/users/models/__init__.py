@@ -403,20 +403,20 @@ class ESPUser(User, AnonymousUser):
                 return self.classsubject_set.filter(parent_program = program)
             else:
                 return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
-    getTaughtClassesFromProgram.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
-    getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
+    getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
+    getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         return self.classsubject_set.all()
-    getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
-    getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
 
 
     def getTaughtSections(self, program = None, include_rejected = False):
@@ -433,7 +433,7 @@ class ESPUser(User, AnonymousUser):
             return ClassSection.objects.filter(parent_class__in=classes)
         else:
             return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
-    getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
+    getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
@@ -445,7 +445,7 @@ class ESPUser(User, AnonymousUser):
         else:
             return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
-    getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
@@ -535,9 +535,9 @@ class ESPUser(User, AnonymousUser):
                  {'self':self, 'program':program, 'ignore_classes':True})
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
-    getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
-    getAvailableTimes.depend_on_m2m(lambda:Program, 'program_modules', lambda prog, pm: {'program': prog})
-    getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
+    getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_m2m('program.Program', 'program_modules', lambda prog, pm: {'program': prog})
+    getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
@@ -642,13 +642,10 @@ class ESPUser(User, AnonymousUser):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
-    def get_sr_model():
-        from esp.program.models import StudentRegistration
-        return StudentRegistration
     def get_tsid_function():
         from esp.program.models import ClassSection
         return ClassSection.timeslot_ids
-    getEnrolledSectionsFromProgram.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
+    getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     getEnrolledSectionsFromProgram.depend_on_cache(get_tsid_function, lambda self=wildcard, **kwargs: {})
 
     def getEnrolledSectionsAll(self):
@@ -664,7 +661,7 @@ class ESPUser(User, AnonymousUser):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
-    getFirstClassTime.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
@@ -710,20 +707,12 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, program):
         return Permission.user_has_perm(self, 'Student/OverrideFull', program)
 
-    #   This is needed for cache dependencies on financial aid functions
-    def get_finaid_model():
-        from esp.program.models import FinancialAidRequest
-        return FinancialAidRequest
-    def get_finaid_grant_model():
-        from esp.accounting.models import FinancialAidGrant
-        return FinancialAidGrant
-
     @cache_function
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
     #   Invalidate cache when any of the user's financial aid requests are changed
-    appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
-    appliedFinancialAid.depend_on_row(get_finaid_grant_model, lambda fr: {'self': fr.request.user})
+    appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
+    appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
 
     @cache_function
     def hasFinancialAid(self, program):
@@ -733,7 +722,7 @@ class ESPUser(User, AnonymousUser):
             return True
         else:
             return False
-    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+    hasFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
 
     def isOnsite(self, program=None):
         """Determine if the user is an authorized onsite user for the program.
@@ -933,8 +922,8 @@ are a teacher of the class"""
         schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
-    program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
-    program_schoolyear.__func__.depend_on_row(lambda: Event, lambda event: {'program': event.program})
+    program_schoolyear.__func__.depend_on_row(Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(Event, lambda event: {'program': event.program})
 
     @cache_function
     def getYOG(self, program=None, assume_student=False):
@@ -959,7 +948,7 @@ are a teacher of the class"""
                     return regProf.student_info.graduation_year
         return None
     getYOG.get_or_create_token(('self',))
-    getYOG.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
+    getYOG.depend_on_row(StudentInfo, lambda info: {'self': info.user})
 
     @cache_function
     def getGrade(self, program=None, assume_student=False):
