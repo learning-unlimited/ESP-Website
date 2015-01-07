@@ -498,7 +498,14 @@ class ArgCache(WithDelayableMethods):
             return
         if filter is None:
             filter = lambda **kwargs: True
+        # HACK: allow cached methods of models to be specified as strings
+        # "app.Model.method"
+        method_name = None
+        if isinstance(cache_obj, basestring):
+            cache_obj, method_name = cache_obj.rsplit(".", 1)
         def resolve_depend_on_cache(self, cache_obj):
+            if method_name is not None:
+                cache_obj = getattr(cache_obj, method_name)
             def delete_cb(sender, key_set, **kwargs):
                 if not filter(**key_set):
                     return None
