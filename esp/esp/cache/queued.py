@@ -36,6 +36,8 @@ def add_lazy_dependency(self, obj, operation):
             value = (self, operation)
             pending_lookups.setdefault(key, []).append(value)
     elif isinstance(obj, types.FunctionType):
+        import warnings
+        warnings.warn("Using lambdas to thunk dependencies is deprecated. Use strings instead.", DeprecationWarning, stacklevel=3)
         @delay_method
         def wrapped(self, obj):
             return operation(self, obj())
