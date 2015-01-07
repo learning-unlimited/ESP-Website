@@ -664,7 +664,7 @@ class ClassSection(models.Model):
         else:
             result = self.getResourceRequests()
         return result
-    unsatisfied_requests.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
+    unsatisfied_requests.depend_on_cache(scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()

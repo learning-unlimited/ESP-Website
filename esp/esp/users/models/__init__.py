@@ -642,11 +642,8 @@ class ESPUser(User, AnonymousUser):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
-    def get_tsid_function():
-        from esp.program.models import ClassSection
-        return ClassSection.timeslot_ids
     getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
-    getEnrolledSectionsFromProgram.depend_on_cache(get_tsid_function, lambda self=wildcard, **kwargs: {})
+    getEnrolledSectionsFromProgram.depend_on_cache('program.ClassSection.timeslot_ids', lambda self=wildcard, **kwargs: {})
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
