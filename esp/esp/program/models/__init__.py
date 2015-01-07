@@ -419,7 +419,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return capacities
     #   Clear this cache on any ClassSection capacity update... kind of brute force, but oh well.
     #   WARNING: Not sure if this usage is correct, can someone check?
-    capacity_by_section_id.depend_on_cache(lambda: ClassSection._get_capacity, lambda **kwargs: {})
+    capacity_by_section_id.depend_on_cache('program.ClassSection._get_capacity', lambda **kwargs: {})
 
     def checked_in_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
@@ -577,7 +577,7 @@ class Program(models.Model, CustomFormsLinkModel):
         isfull = ( students_count >= self.program_size_max )
 
         return isfull
-    isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
+    isFull.depend_on_cache('program.ClassSection.num_students', lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row('program.Program', lambda prog: {'self': prog})
     isFull.depend_on_row('users.Record', lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
@@ -929,7 +929,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
         else:
             return None
-    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
+    getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
     def getModuleViews(self, main_only=False, tl=None):
@@ -944,7 +944,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 for view in mod.views:
                     result[(tl, view)] = mod
         return result
-    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.

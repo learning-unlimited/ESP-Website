@@ -97,4 +97,4 @@ def class_options_row(cls):
     context['cls_sections'] = [prepare_section_dict(s) for s in cls.sections.all()]
 
     return context
-class_options_row.cached_function.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'cls': cs.parent_class})
+class_options_row.cached_function.depend_on_cache(ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'cls': cs.parent_class})

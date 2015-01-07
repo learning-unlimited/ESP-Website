@@ -182,7 +182,7 @@ class ProgramModuleObj(models.Model):
         raise Http404
         
     #   Program.getModules cache takes care of our dependencies
-    findModuleObject.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findModuleObject.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     findModuleObject = staticmethod(findModuleObject)
     
     #   The list of modules in a particular category (student reg, teacher reg)
@@ -197,7 +197,7 @@ class ProgramModuleObj(models.Model):
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
-    findCategoryModules.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
