@@ -17,7 +17,9 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     compact_classes: true,
-    categories_to_display: []
+    categories_to_display: [],
+    selected_categories: [],
+    is_initial: true,
 };
 
 /*  Ajax status flags
@@ -725,8 +727,23 @@ function toggle_categories() {
 
 }
 
+function extract_category_id(element_id) 
+{
+    return parseInt(element_id.split("_")[2]);
+}
+
 function render_category_options()
 {
+    var checkedCategories = [];
+    if(settings.is_initial) {
+        checkedCategories = settings.categories_to_display.slice();
+        settings.is_initial = false;
+    } else {
+        $j('#category_list input:checked').each(function() {
+            checkedCategories.push(extract_category_id($j(this).attr('id')));
+        });
+    }
+    
     //  Clear category select area
     top_div = $j("#category_list");
     top_div.html("");
@@ -738,17 +755,19 @@ function render_category_options()
         var new_li = $j("<div/>").addClass("category_item");
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
 
-        if (settings.categories_to_display.indexOf(id) != -1) {
-            new_checkbox.attr("checked", "checked");
+        if (checkedCategories.indexOf(id) != -1) {
+           new_checkbox.attr("checked", "checked");
         }
 
         new_checkbox.change(function (event) {
-            var target_id = parseInt(event.target.id.split("_")[2]);
+            var target_id = extract_category_id(event.target.id);
             var id_index = settings.categories_to_display.indexOf(target_id);
-            if (id_index == -1)
+            if (id_index == -1) {
                 settings.categories_to_display.push(target_id)
-            else
+            }
+            else {
                 settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
+            }
             update_category_filters();
         });
 
@@ -783,6 +802,7 @@ function populate_classes()
             settings.categories_to_display.push(new_category.id);
         }
     }
+
 
     //  Fill in timeslots (we need these)
     for (var i in data.catalog.timeslots)
