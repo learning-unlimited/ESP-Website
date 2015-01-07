@@ -428,7 +428,7 @@ class ArgCache(WithDelayableMethods):
         # Python/Django double-import)
         if self.locked:
             return
-        def resolve_depend_on_model(self, Model):
+        def resolve_depend_on_model(Model):
             if create_token:
                 self.get_or_create_token(token_list_for(key_set))
             def delete_cb(sender, **kwargs):
@@ -465,7 +465,7 @@ class ArgCache(WithDelayableMethods):
             # Make the token
             token = self.get_or_create_token((selector_str,))
 
-        def resolve_depend_on_row(self, Model):
+        def resolve_depend_on_row(Model):
             if Model is None:
                 raise ESPError("Attempting to depend on Model None... this is a pretty dumb thing to do.")
             def delete_cb(sender, instance, **kwargs):
@@ -503,7 +503,7 @@ class ArgCache(WithDelayableMethods):
         method_name = None
         if isinstance(cache_obj, basestring):
             cache_obj, method_name = cache_obj.rsplit(".", 1)
-        def resolve_depend_on_cache(self, cache_obj):
+        def resolve_depend_on_cache(cache_obj):
             if method_name is not None:
                 cache_obj = getattr(cache_obj, method_name)
             def delete_cb(sender, key_set, **kwargs):
@@ -536,7 +536,7 @@ class ArgCache(WithDelayableMethods):
         if filter is None:
             filter = lambda instance, object: True
 
-        def resolve_depend_on_m2m(self, Model):
+        def resolve_depend_on_m2m(Model):
             IntermediateModel = getattr(Model, m2m_field).through
             def change_cb(sender, instance, action, model, pk_set, **kwargs):
                 if action == "post_add":
