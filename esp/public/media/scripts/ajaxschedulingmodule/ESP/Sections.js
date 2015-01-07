@@ -19,10 +19,11 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
     // Set up filtering
     this.filter = {
-        classLengthMin: {active: false, el: $j("input#section-filter-length-min")},
-        classLengthMax: {active: false, el: $j("input#section-filter-length-max")},
-        classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min")},
-        classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max")},
+        classLengthMin: {active: false, el: $j("input#section-filter-length-min"), type: "number"},
+        classLengthMax: {active: false, el: $j("input#section-filter-length-max"), type: "number"},
+        classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min"), type: "number"},
+        classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max"), type: "number"},
+        classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
     };
     this.filter.classLengthMin.valid = function(a) {
         return Math.ceil(a.length) >= this.filter.classLengthMin.val;
@@ -36,11 +37,25 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.filter.classCapacityMax.valid = function(a) {
         return a.class_size_max <= this.filter.classCapacityMax.val;
     }.bind(this);
+    this.filter.classTeacher.valid = function(a) {
+        var result = false;
+        $j.each(a.teacher_data, function(index, teacher) {
+            if((teacher.first_name + teacher.last_name).toLowerCase().search(this.filter.classTeacher.val)>-1) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
         filterObject.el.change(function() {
-            filterObject.val = parseInt($j.trim(filterObject.el.val()));
-            if(isNaN(filterObject.val)) {
+            filterObject.val = filterObject.el.val().trim();
+            if(filterObject.type==="number") {
+                filterObject.val = parseInt(filterObject.val);
+            } else if(filterObject.type==="string") {
+                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+            }
+            if((filterObject.type==="number" && isNaN(filterObject.val)) || (filterObject.type==="string" && filterObject.val.trim()==="")) {
                 filterObject.active = false;
             } else {
                 filterObject.active = true;
@@ -102,15 +117,20 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         $j.each(this.sections_data, function(section_id, section) {
             var sectionValid = true;
             if(this.searchObject.active) {
-                sectionValid = false
+                sectionValid = false;
             }
             $j.each(this.filter, function(filterName, filterObject) {
                 if(filterObject.active && !filterObject.valid(section)) {
                     sectionValid = false;
+                } 
+                if(section.emailcode==="C8682s2"){
+                    console.log(sectionValid, filterObject.valid(section));
                 }
                 if(this.searchObject.active) {
+                    
                     if(section[this.searchObject.type].toLowerCase().search(this.searchObject.text.toLowerCase())>-1) {
                         sectionValid = true;
+                         
                     }
                 }
                 }.bind(this));
