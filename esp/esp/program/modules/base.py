@@ -331,7 +331,7 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def get_full_path(self, tl=None):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
-    get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
+    get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
     @classmethod
     def get_summary_path(cls, function):
