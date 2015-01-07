@@ -40,7 +40,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 
-from esp.cache.queued import WithDelayableMethods, add_lazy_dependency
+from esp.cache.queued import add_lazy_dependency
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import specifies_key, token_list_for
 from esp.cache.marinade import marinade_dish
@@ -144,7 +144,7 @@ __all__ = ['ArgCache']
 # more general tokens thing, which more-or-less depends on async caching
 
 
-class ArgCache(WithDelayableMethods):
+class ArgCache(object):
     """ Implements a cache that allows for selectively dropping bits of itself. """
 
     CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
