@@ -588,6 +588,10 @@ function render_table(display_mode, student_id)
             var section = data.sections[data.timeslots[ts_id].sections[i]];
             var parent_class = data.classes[section.class_id];
             
+            //  Hide walk-in seminars from display.
+            if (parent_class.category__id == open_class_category.id)
+                continue;
+            
             var new_div = $j("<div/>").addClass("section");
             new_div.addClass("section_category_" + parent_class.category__id);
             
@@ -791,10 +795,6 @@ function populate_classes()
     for (var i in data.catalog.categories)
     {
         var new_category = data.catalog.categories[i];
-        //  Skip "open class" category
-        if (new_category.id == open_class_category.id) {
-            continue;
-        }
 
         data.categories[new_category.id] = new_category;
         if (settings.categories_to_display.indexOf(new_category.id) == -1)
@@ -802,7 +802,6 @@ function populate_classes()
             settings.categories_to_display.push(new_category.id);
         }
     }
-
 
     //  Fill in timeslots (we need these)
     for (var i in data.catalog.timeslots)
@@ -820,8 +819,6 @@ function populate_classes()
     {
         var new_cls = data.catalog.classes[i];
         new_cls.teachers = new_cls.teacher_names;
-        //  This check would hide walk-in seminars
-        //  if (new_cls.category__id != open_class_category.id)
         data.classes[new_cls.id] = new_cls;
     }
     
@@ -895,7 +892,7 @@ function populate_rooms()
     for (var i in data.rooms)
     {
         data.sections[data.rooms[i][0]].rooms = data.rooms[i][1];
-        
+    
         //  Lower capacity to that of room if needed
         if (data.rooms[i][2] < data.sections[data.rooms[i][0]].capacity)
             data.sections[data.rooms[i][0]].capacity = data.rooms[i][2];
