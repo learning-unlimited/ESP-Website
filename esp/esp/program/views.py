@@ -32,12 +32,14 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from operator import __or__ as OR
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
+
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
@@ -266,102 +268,48 @@ def find_user(userstr):
     The string may be a user ID, username, or some permuation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
-    Will return something that evaluates to False iff no matching users are found.
+    Will return something that evaluates to False if no matching users are found.
+
+    returns: queryset containing ESPUser instances.
     """
-    # First, is this a User ID?
-    try:
-        found_user = ESPUser.objects.get(id=int(userstr))
-        return found_user
-    except ValueError:
-        pass # Well, that wasn't even an integer; can't be an ID
-    except ESPUser.DoesNotExist:
-        pass # Well, maybe it is an integer, but it's not a valid user ID.
 
-    # Second, is it a username?
-    try:
-        found_user = ESPUser.objects.get(username=userstr)
-        return found_user
-    except ESPUser.DoesNotExist:
-        pass # Well, not a username either.  Oh well.
 
-    # Third, try e-mail?
-    if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
-        found_users = ESPUser.objects.filter(email=userstr)
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
-        # else, not an e-mail either.  Oh well.
+    if not userstr:
+        return
 
-    # Maybe it's a name?
-    # Let's do some playing.
+    userstr_parts = userstr.strip().split(' ')
 
-    # Is it multipart?        
-    # If so, we don't know which parts got filed under first name and
-    # which under last name.
-    # So, try them all!
-    # First, try for an exact match (ie., all parts of the firstname, lastname pair are somewhere in the given string)
-    userstr_parts = userstr.split(' ')
-
-    # First, try single-part, since it's easier
+    # single search token, could be username, id or email
+    #worth noting that a username may be an integer or an email so we will just check them all
+    found_users = None
     if len(userstr_parts) == 1:
-        found_users = ESPUser.objects.filter(Q(first_name__iexact=userstr) | Q(last_name__iexact=userstr))
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
+        userstr = userstr_parts[0]
+        #try username?
+        user_q = Q(username=userstr)
+        #try pk
+        if userstr.isnumeric():
+            user_q = user_q | Q(id=userstr)
+        #try e-mail?
+        if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
+            user_q = user_q | Q(email=userstr)
 
-        found_users = ESPUser.objects.filter(Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
-        
-    q_list = []
-    for i in xrange(len(userstr_parts) + 1):
-        q_list.append( Q( first_name__iexact = ' '.join(userstr_parts[:i]), last_name__iexact = ' '.join(userstr_parts[i:]) ) )
+        user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+        found_users = ESPUser.objects.filter(user_q)
+    else:
+        q_list = []
+        for i in xrange(len(userstr_parts)):
+            q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
+        # Allow any of the above permutations
+        q = reduce(operator.or_, q_list)
+        found_users = ESPUser.objects.filter( q )
+      
+    #if the previous search attempt failed, try titles of courses a teacher has taught?
+    if not found_users.exists(): 
+        # lastly, 
+        found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
-    # Allow any of the above permutations
-    q = reduce(operator.or_, q_list)
-    found_users = ESPUser.objects.filter( q )
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-    # else, we found no one.  Oops.
+    return found_users
 
-    # Now, repeat the same thing, but with "contains" so we match some nicknames and whatnot
-    
-    q_list = []
-    for i in xrange(len(userstr_parts)):
-        q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
-    # Allow any of the above permutations
-    q = reduce(operator.or_, q_list)
-    found_users = ESPUser.objects.filter( q )
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-
-    # lastly, try titles of courses a teacher has taught?
-    found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-    
-    # else, we found no one.  Oops.
-
-    # Well, we fail.  Sorry.
-    return None
-
-def isiterable(i):
-    """ returns true iff i is iterable """
-    try:
-        for x in i:
-            return True
-    except TypeError:
-        return False
 
 @admin_required
 def usersearch(request):
@@ -375,15 +323,16 @@ def usersearch(request):
                                
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
+    num_users = found_users.count()
 
-    if not found_users:
+    if num_users == 1:
+        from urllib import urlencode
+        return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
+    elif num_users > 1:
+        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })   
+    else:
         raise ESPError("No user found by that name!", log=False)
 
-    if isiterable(found_users):
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
-    else:
-        from urllib import urlencode
-        return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
 
 @admin_required
 def userview(request):
