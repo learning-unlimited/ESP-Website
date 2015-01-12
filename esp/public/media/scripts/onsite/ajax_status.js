@@ -797,7 +797,7 @@ function populate_classes()
         var new_category = data.catalog.categories[i];
 
         data.categories[new_category.id] = new_category;
-        if (settings.categories_to_display.indexOf(new_category.id) == -1)
+        if (settings.is_initial && (settings.categories_to_display.indexOf(new_category.id) == -1))
         {
             settings.categories_to_display.push(new_category.id);
         }
