@@ -63,6 +63,7 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
+PROFILE_MAX_AGE_DAYS = 5
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
@@ -1301,22 +1302,30 @@ class RegistrationProfile(models.Model):
         super(RegistrationProfile, self).save(*args, **kwargs)
         
     @cache_function
-    def getLastForProgram(user, program):
+    def getLastForProgram(user, program, should_save_profile=False):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        if user.is_anonymous():
-            regProfList = RegistrationProfile.objects.none()
-        else:
-            regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
-        if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
-            regProf.program = program
-            if regProf.id is not None:
-                regProf.id = None
-                if (datetime.now() - regProf.last_ts).days <= 5:
-                    regProf.save()
-        else:
-            regProf = regProfList[0]
-        return regProf
+        
+        profile_list = RegistrationProfile.objects.none()
+        registration_profile = None
+
+        if not user.is_anonymous():    
+            profile_list = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
+        
+        if should_save_profile:
+            if len(profile_list) < 1:
+                registration_profile = RegistrationProfile.getLastProfile(user)
+                registration_profile.program = program
+
+                if registration_profile.id is not None:
+                    registration_profile.id = None
+                    if (datetime.now() - registration_profile.last_ts).days <= PROFILE_MAX_AGE_DAYS:
+                        registration_profile.save()
+            else:
+                registration_profile = profile_list[0]
+                
+        return registration_profile
+
+
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user})
@@ -1394,6 +1403,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastForProgram(user, program):
+
         bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts','-id')
 
         if bios.count() < 1:
