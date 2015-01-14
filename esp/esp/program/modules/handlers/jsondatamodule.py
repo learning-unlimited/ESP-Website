@@ -56,7 +56,8 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import Transfer
 
 from decimal import Decimal
 
@@ -762,6 +763,15 @@ teachers[key].filter(is_active = True).distinct().count()))
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
+        #   Add accounting stats
+        lt = ProgramAccountingController(prog).default_payments_lineitemtype()
+        payments = Transfer.objects.filter(line_item=lt)
+        accounting_data = {
+            'num_payments': payments.count(),
+            'total_payments': payments.aggregate(total=Sum('amount_dec'))['total'],
+        }
+        dictOut["stats"].append({"id": "accounting", "data": accounting_data})
+    
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
