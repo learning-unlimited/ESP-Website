@@ -54,6 +54,7 @@ class Command(NoArgsCommand):
         }
         default_options.update(options)
         options = default_options
+        call_command('clean_pyc', **options)
         call_command('syncdb', **options)
         call_command('migrate', **options)
         call_command('install', **options)
