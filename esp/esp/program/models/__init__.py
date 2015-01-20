@@ -784,6 +784,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
+    @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
@@ -801,7 +802,9 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
+        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
+    getResourceTypes.depend_on_model(lambda: ResourceType)
+    getResourceTypes.depend_on_model(lambda: Tag)
 
     def getResources(self):
         from esp.resources.models import Resource
@@ -1934,6 +1937,7 @@ def install():
     print "Installing esp.program initial data..."
     install_class()
 
-# The following are only so that we can refer to them in caching Program.getModules.
+# The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.resources.models import ResourceType
