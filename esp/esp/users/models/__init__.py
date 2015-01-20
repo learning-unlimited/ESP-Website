@@ -944,9 +944,10 @@ are a teacher of the class"""
         If program is given, use the registration profile from that
         program to look up the graduation year; otherwise, use the
         latest one.
+
+        assume_student will save us a database hit if the user is a student,
+        but cost us at least one and possibly several if they're not.
         """
-        # assume_student will save us a database hit if the user is a student,
-        # but cost us at least one and possibly several if they're not.
         if assume_student or self.isStudent():
             if program is None:
                 regProf = self.getLastProfile()
@@ -962,9 +963,15 @@ are a teacher of the class"""
 
     @cache_function
     def getGrade(self, program=None, assume_student=False):
-        # assume_student will save us a database hit if the user is a student,
-        # but cost us at least one and possibly several if they're not.  See
-        # ESPUser.getYOG above.
+        """Get the grade of this student.
+
+        Get the grade at the time of the program, or for the current school
+        year if program is None.
+
+        assume_student will save us a database hit if the user is a student,
+        but cost us at least one and possibly several if they're not.  See
+        ESPUser.getYOG.
+        """
         grade = 0
         yog = self.getYOG(program, assume_student)
         schoolyear = None
