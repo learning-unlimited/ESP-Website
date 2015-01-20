@@ -894,6 +894,12 @@ are a teacher of the class"""
 
     @staticmethod
     def current_schoolyear(now=None):
+        """
+        Get the school year for the current time or a given time.
+
+        School year NNNN is defined as the period between August
+        NNNN-1 and July NNNN.
+        """
         if now is None:
             now = date.today()
         curyear = now.year
@@ -911,20 +917,34 @@ are a teacher of the class"""
     @staticmethod
     @cache_function
     def program_schoolyear(program):
-        schoolyear = Tag.getProgramTag('schoolyear', program)
-        if schoolyear is not None:
-            # tag override
-            schoolyear = int(schoolyear)
-        else:
-            # "now" is actually whenever the program ran or will run
-            now = program.dates()[0]
-            schoolyear = ESPUser.current_schoolyear(now)
+        """
+        Get the school year for a given program.
+
+        This is determined by the current_schoolyear (see above) of
+        the first day of the program, and is used to calculate a
+        student's effective grade for the program.
+
+        This can be modified by setting the program tag
+        "increment_default_grade_levels", which increments the
+        program's effective school year.
+        """
+        # "now" is actually whenever the program ran or will run
+        now = program.dates()[0]
+        schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
     program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(lambda: Event, lambda event: {'program': event.program})
 
     @cache_function
     def getYOG(self, program=None, assume_student=False):
+        """
+        Get a student's year of graduation.
+
+        If program is given, use the registration profile from that
+        program to look up the graduation year; otherwise, use the
+        latest one.
+        """
         # assume_student will save us a database hit if the user is a student,
         # but cost us at least one and possibly several if they're not.
         if assume_student or self.isStudent():
@@ -932,7 +952,7 @@ are a teacher of the class"""
                 regProf = self.getLastProfile()
             else:
                 from esp.program.models import RegistrationProfile
-                regProf = RegistrationProfile.getLastForProgram(self,program)
+                regProf = RegistrationProfile.getLastForProgram(self, program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     return regProf.student_info.graduation_year

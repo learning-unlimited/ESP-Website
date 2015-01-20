@@ -1047,8 +1047,9 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def incrementGrade(self): 
         """
-        Increments the effective school year of the program.
+        Get the value of the "increment_default_grade_levels" tag.
 
+        This tag increments the effective school year of the program.
         Also affects how grade ranges for this program are displayed,
         to say "rising Xth grade" rather than just X.
 
