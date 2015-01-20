@@ -509,7 +509,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
         # lists['all_former_students'] as well.
         del lists['all_students']
-        yog_12 = ESPUser.YOGFromGrade(12)
+        yog_12 = ESPUser.YOGFromGrade(12, ESPUser.program_schoolyear(self))
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
@@ -1046,6 +1046,15 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
+        """
+        Get the value of the "increment_default_grade_levels" tag.
+
+        This tag increments the effective school year of the program.
+        Also affects how grade ranges for this program are displayed,
+        to say "rising Xth grade" rather than just X.
+
+        See ESPUser.program_schoolyear.
+        """
         return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     

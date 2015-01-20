@@ -893,12 +893,15 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
-    def current_schoolyear(program=None):
-        if program == None:
+    def current_schoolyear(now=None):
+        """
+        Get the school year for the current time or a given time.
+
+        School year NNNN is defined as the period between August
+        NNNN-1 and July NNNN.
+        """
+        if now is None:
             now = date.today()
-        else:
-            # "now" is actually whenever the program ran or will run
-            now = program.dates()[0]
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
@@ -911,25 +914,65 @@ are a teacher of the class"""
             schoolyear = curyear + 1
         return schoolyear
 
+    @staticmethod
     @cache_function
-    def getGrade(self, program = None):
-        grade = 0
+    def program_schoolyear(program):
+        """
+        Get the school year for a given program.
+
+        This is determined by the current_schoolyear (see above) of
+        the first day of the program, and is used to calculate a
+        student's effective grade for the program.
+
+        This can be modified by setting the program tag
+        "increment_default_grade_levels", which increments the
+        program's effective school year.
+        """
+        # "now" is actually whenever the program ran or will run
+        now = program.dates()[0]
+        schoolyear = ESPUser.current_schoolyear(now)
+        schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
+        return schoolyear
+    program_schoolyear.__func__.depend_on_row(lambda: Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(lambda: Event, lambda event: {'program': event.program})
+
+    @cache_function
+    def getYOG(self, program=None):
+        """
+        Get a student's year of graduation.
+
+        If program is given, use the registration profile from that
+        program to look up the graduation year; otherwise, use the
+        latest one.
+        """
         if self.isStudent():
             if program is None:
                 regProf = self.getLastProfile()
             else:
                 from esp.program.models import RegistrationProfile
-                regProf = RegistrationProfile.getLastForProgram(self,program)
+                regProf = RegistrationProfile.getLastForProgram(self, program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
-                    if program:
-                        grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
+                    return regProf.student_info.graduation_year
+        return None
+    getYOG.get_or_create_token(('self',))
+    getYOG.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
 
+    @cache_function
+    def getGrade(self, program=None):
+        grade = 0
+        yog = self.getYOG(program)
+        schoolyear = None
+        if program is not None:
+            schoolyear = ESPUser.program_schoolyear(program)
+        if yog is not None:
+            grade = ESPUser.gradeFromYOG(yog, schoolyear)
         return grade
     #   The cache will need to be cleared once per academic year.
-    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
-    getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
+    getGrade.get_or_create_token(('self',))
+    getGrade.get_or_create_token(('program',))
+    getGrade.depend_on_cache(getYOG, lambda self=wildcard, program=wildcard, **kwargs: {'self': self, 'program': program})
+    getGrade.depend_on_cache(program_schoolyear.__func__, lambda self=wildcard, **kwargs: {'program': self})
 
     @staticmethod
     def gradeFromYOG(yog, schoolyear=None):
@@ -942,8 +985,9 @@ are a teacher of the class"""
         return schoolyear + 12 - yog
 
     @staticmethod
-    def YOGFromGrade(grade):
-        schoolyear = ESPUser.current_schoolyear()
+    def YOGFromGrade(grade, schoolyear=None):
+        if schoolyear is None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             grade = int(grade)
         except:
