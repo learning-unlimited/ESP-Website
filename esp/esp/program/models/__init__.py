@@ -1316,7 +1316,7 @@ class RegistrationProfile(models.Model):
             regProfList = RegistrationProfile.objects.none()
         else:
             regProfList = (RegistrationProfile.objects
-                           .filter(user__exact=user,program__exact=program)
+                           .filter(user__exact=user, program__exact=program)
                            .select_related(
                                'user', 'program', 'contact_user',
                                'contact_guardian', 'contact_emergency',
