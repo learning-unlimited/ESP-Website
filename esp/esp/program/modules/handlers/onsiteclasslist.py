@@ -149,8 +149,9 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
-        simplejson.dump(list(data), resp)
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students', 'resourceassignment__resource__res_type__name')
+        data = [d for d in data if d[3] == 'Classroom']
+        simplejson.dump(data, resp)
         return resp
     
     @aux_call
