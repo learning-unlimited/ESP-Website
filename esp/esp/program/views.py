@@ -405,7 +405,7 @@ def userview(request):
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
-    change_grade_form.fields['graduation_year'].initial = ESPUser.YOGFromGrade(user.getGrade())
+    change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
     
     context = {
@@ -609,7 +609,7 @@ def submit_transaction(request):
 
         return HttpResponseRedirect(destination)
 
-    return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
+    return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
 @admin_required

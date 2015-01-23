@@ -1,5 +1,8 @@
+{% load latex %}
+{% autoescape off %}
 \begin{tabular}{ll}
 {\bf Course} & {\bf Teacher[s]} \\ \hline
-{% for cls in classlist %}{{ cls.title }} & {% for t in cls.teachers %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}\\
+{% for cls in classlist %}{{ cls.title|texescape }} & {{cls.parent_class.getTeacherNames|join:", "|texescape }}\\
 {% endfor %}
 \end{tabular}
+{% endautoescape %}

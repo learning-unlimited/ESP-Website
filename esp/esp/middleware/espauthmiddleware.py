@@ -97,6 +97,7 @@ class ESPAuthMiddleware(object):
                           'cur_retTitle': ret_title,
                           'cur_admin': espuser.isAdministrator() and '1' or '0',
                           'cur_qsd_bits': has_qsd_bits and '1' or '0',
+                          'cur_yog': espuser.getYOG(),
                           'cur_grade': espuser.getGrade(),
                           'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
                           }
@@ -113,7 +114,8 @@ class ESPAuthMiddleware(object):
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
                                          'cur_admin', 'cur_roles', 
-                                         'cur_grade', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
+                                         'cur_yog', 'cur_grade',
+                                         'cur_qsd_bits') if request.COOKIES.get(x, False)]
             
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)

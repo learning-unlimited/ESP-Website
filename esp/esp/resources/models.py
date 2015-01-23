@@ -261,9 +261,9 @@ class Resource(models.Model):
         return result
     
     def grouped_resources(self):
-        if self.res_group is None:
+        if self.res_group_id is None:
             return Resource.objects.filter(id=self.id)
-        return Resource.objects.filter(res_group=self.res_group)
+        return Resource.objects.filter(res_group=self.res_group_id)
     
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')

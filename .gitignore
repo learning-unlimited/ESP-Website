@@ -6,6 +6,7 @@ esp/esp/local_settings.py
 *#
 esp/public/media/subsection_images/*
 esp/public/media/latex/*
+esp/public/media/latex_media/letterhead.*
 esp/public/media/email_images/*
 esp/public/media/uploaded/*
 esp/public/media/styles
