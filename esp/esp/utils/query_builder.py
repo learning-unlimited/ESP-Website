@@ -8,9 +8,6 @@ from django.template.loader import render_to_string
 
 from esp.middleware import ESPError
 
-# TODO: finish docstrings once APIs are stable
-# TODO: cache .render()?
-
 
 class QueryBuilder(object):
     """A class to build complex queries.
@@ -189,13 +186,14 @@ class SelectInput(object):
         `field_name`: the field that the input represents; it will be used in
             the returned Q object.
         `options`: a dict of ids -> user-friendly names of the options for the
-            select.  The ids will be coerced to strings.
+            select.  The ids should be strings.
         `english_name`: an English description of the input.  Defaults to
             `field_name`.
     """
     def __init__(self, field_name, options, english_name=None):
         self.field_name = field_name
-        self.options = {str(k): v for k, v in options.items()}
+        self.options = options
+        # TODO: warn if option ids are not strings.
         self.english_name = english_name or field_name.replace('_', ' ')
 
     def spec(self):

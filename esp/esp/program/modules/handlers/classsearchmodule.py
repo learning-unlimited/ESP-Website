@@ -3,7 +3,7 @@ import json
 from django.db.models.query import Q
 
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
-from esp.program.models.class_ import ClassSubject, STATUS_CHOICES_DICT
+from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, TrivialInput, TextInput
@@ -35,7 +35,7 @@ class ClassSearchModule(ProgramModuleObj):
             for t in ['created', 'modified']]
         flag_select_input = SelectInput(
             field_name='flags__flag_type', english_name='type',
-            options={ft.id: ft.name for ft in flag_types})
+            options={str(ft.id): ft.name for ft in flag_types})
         flag_filter = SearchFilter(name='flag', title='the flag',
                                    inputs=[flag_select_input] +
                                    flag_datetime_inputs)
@@ -48,12 +48,12 @@ class ClassSearchModule(ProgramModuleObj):
         category_filter = SearchFilter(
             name='category', title='the category',
             inputs=[SelectInput(field_name='category', options={
-                cat.id: cat.category for cat in categories})])
+                str(cat.id): cat.category for cat in categories})])
 
         status_filter = SearchFilter(
             name='status', title='the status',
-            inputs=[SelectInput(field_name='status',
-                                options=STATUS_CHOICES_DICT)])
+            inputs=[SelectInput(field_name='status', options={
+                str(k): v for k, v in STATUS_CHOICES})])
         title_filter = SearchFilter(
             name='title', title='title containing',
             inputs=[TextInput(field_name='title__icontains', english_name='')])
