@@ -45,11 +45,13 @@ from django.contrib.contenttypes import generic
 from django.contrib.localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
 from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.db.models.query import QuerySet
 
+
+from esp.users.models import ESPUser, Permission
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
 from esp.cal.models import Event
@@ -65,6 +67,7 @@ from esp.qsdmedia.models import Media
 
 PROFILE_MAX_AGE_DAYS = 5
 
+
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
     parent_module_name = '.'.join(module_name.split('.')[:-1])
@@ -76,6 +79,7 @@ def get_model(module_name, model_name):
     except:
         pass
     return None
+
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -1304,9 +1308,13 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program, should_save_profile=False):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        
-        profile_list = RegistrationProfile.objects.none()
+        has_access = Permission.user_has_perm(user, '/Profile', program)
         registration_profile = None
+
+        if not has_access:
+            raise PermissionDenied()
+
+        profile_list = RegistrationProfile.objects.none()
 
         if not user.is_anonymous():    
             profile_list = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
