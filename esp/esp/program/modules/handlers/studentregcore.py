@@ -249,6 +249,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_deadline('/MainPage')
     def studentreg(self, request, tl, one, two, module, extra, prog):
         """ Display a student reg page """
+
         self.request = request
         
         context = {}

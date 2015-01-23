@@ -517,7 +517,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
         # lists['all_former_students'] as well.
         del lists['all_students']
-        yog_12 = ESPUser.YOGFromGrade(12)
+        yog_12 = ESPUser.YOGFromGrade(12, ESPUser.program_schoolyear(self))
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
@@ -792,6 +792,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return None
 
+    @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
@@ -809,7 +810,9 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
+        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
+    getResourceTypes.depend_on_model(lambda: ResourceType)
+    getResourceTypes.depend_on_model(lambda: Tag)
 
     def getResources(self):
         from esp.resources.models import Resource
@@ -1054,6 +1057,15 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
+        """
+        Get the value of the "increment_default_grade_levels" tag.
+
+        This tag increments the effective school year of the program.
+        Also affects how grade ranges for this program are displayed,
+        to say "rising Xth grade" rather than just X.
+
+        See ESPUser.program_schoolyear.
+        """
         return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
@@ -1309,9 +1321,8 @@ class RegistrationProfile(models.Model):
         super(RegistrationProfile, self).save(*args, **kwargs)
         
     @cache_function
-    def getLastForProgram(user, program, should_save_profile=False):
+    def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-
         has_access = Permission.user_has_perm(user, '/Profile', program)
         registration_profile = None
 
@@ -1321,20 +1332,26 @@ class RegistrationProfile(models.Model):
         profile_list = RegistrationProfile.objects.none()
         
 
-        if not user.is_anonymous():    
-            profile_list = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
+        if not user.is_anonymous():
+            profile_list = (RegistrationProfile.objects
+                           .filter(user__exact=user, program__exact=program)
+                           .select_related(
+                               'user', 'program', 'contact_user',
+                               'contact_guardian', 'contact_emergency',
+                               'student_info', 'teacher_info', 'guardian_info',
+                               'educator_info')
+                           .order_by('-last_ts','-id')[:1])
         
-        if should_save_profile:
-            if len(profile_list) < 1:
-                registration_profile = RegistrationProfile.getLastProfile(user)
-                registration_profile.program = program
+        if len(profile_list) < 1:
+            registration_profile = RegistrationProfile.getLastProfile(user)
+            registration_profile.program = program
 
-                if registration_profile.id is not None:
-                    registration_profile.id = None
-                    if (datetime.now() - registration_profile.last_ts).days <= PROFILE_MAX_AGE_DAYS:
-                        registration_profile.save()
-            else:
-                registration_profile = profile_list[0]
+            if registration_profile.id is not None:
+                registration_profile.id = None
+                if (datetime.now() - registration_profile.last_ts).days <= 5:
+                    registration_profile.save()
+        else:
+            registration_profile = profile_list[0]
                 
         return registration_profile
 
@@ -1948,6 +1965,7 @@ def install():
     print "Installing esp.program initial data..."
     install_class()
 
-# The following are only so that we can refer to them in caching Program.getModules.
+# The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.resources.models import ResourceType

@@ -6,7 +6,6 @@ from django.db import models
 
 from esp.accounting.controllers import GlobalAccountingController, ProgramAccountingController
 from esp.program.models import Program
-from esp.accounting_core.models import Transaction, LineItem
 
 class Migration(SchemaMigration):
 

@@ -135,7 +135,7 @@ def classchangerequest(request, tl, one, two):
     
     cur_grade = request.user.getGrade(prog)
     if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
-        return render_to_response(errorpage, request, {})
+        return render_to_response(errorpage, request, {'yog': request.user.getYOG(prog)})
 
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
