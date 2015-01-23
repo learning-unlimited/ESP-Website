@@ -945,7 +945,7 @@ are a teacher of the class"""
                     return regProf.student_info.graduation_year
         return None
     getYOG.get_or_create_token(('self',))
-    getYOG.depend_on_row(StudentInfo, lambda info: {'self': info.user})
+    getYOG.depend_on_row('users.StudentInfo', lambda info: {'self': info.user})
 
     @cache_function
     def getGrade(self, program=None, assume_student=False):
