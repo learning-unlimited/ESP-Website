@@ -227,6 +227,7 @@ class TrivialInput(object):
     """
     def __init__(self, q, english_name=""):
         self.q = q
+        self.english_name = english_name
 
     def spec(self):
         return {'reactClass': 'TrivialInput'}
@@ -235,7 +236,7 @@ class TrivialInput(object):
         return self.q
 
     def as_english(self, value):
-        return ""
+        return self.english_name
 
 
 class OptionalInput(object):
