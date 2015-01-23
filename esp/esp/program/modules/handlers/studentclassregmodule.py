@@ -38,7 +38,6 @@ from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
-from django.db.models.query import Q
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -145,23 +144,30 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     def students(self, QObject = False):
-        from django.db.models import Q
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        SubjPar = Q(studentsubjectinterest__subject__parent_program=self.program)
-        SubjUnexpired = nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
         
-        # Force Django to generate two subqueries without joining SRs to SSIs
-        sr_ids = ESPUser.objects.filter(Par & Unexpired).distinct().values('id')
-        ssi_ids = ESPUser.objects.filter(SubjPar & SubjUnexpired).distinct().values('id')
-        GoodReg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        # Force Django to generate two subqueries without joining SRs to SSIs,
+        # as efficiently as possible since it's still a big query.
+        sr_ids = StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=self.program
+        ).values('user').distinct()
+        ssi_ids = StudentSubjectInterest.valid_objects().filter(
+            subject__parent_program=self.program).values('user').distinct()
+        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
         
+        qobjects = {
+            'enrolled': Enrolled & Par & Unexpired,
+            'classreg': any_reg_q,
+        }
+
         if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(GoodReg)}
+            retVal = qobjects
         else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(GoodReg).distinct()}
+            retVal = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
         
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:

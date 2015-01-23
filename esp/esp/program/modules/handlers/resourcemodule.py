@@ -371,7 +371,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
         
-        context['resource_types'] = self.program.getResourceTypes().exclude(priority_default=0).order_by('priority_default')
+        context['resource_types'] = self.program.getResourceTypes()
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True
