@@ -439,7 +439,7 @@ class ProgramHappenTest(TestCase):
         thisyear = datetime.now().year
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10), dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
         
         # Student logs in and signs up for classes
@@ -661,7 +661,7 @@ class ProgramFrameworkTest(TestCase):
         Does not get called by default, but subclasses can call it.
         """
         for student in self.students:
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.program_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1079,7 +1079,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             # Give the student a starting grade
             startGrade = int(random.random() * 6) + 7
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade))
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1120,9 +1120,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
-
-            # Get their grade
-            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
