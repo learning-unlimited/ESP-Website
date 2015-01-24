@@ -135,7 +135,7 @@ def classchangerequest(request, tl, one, two):
     
     cur_grade = request.user.getGrade(prog)
     if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
-        return render_to_response(errorpage, request, {})
+        return render_to_response(errorpage, request, {'yog': request.user.getYOG(prog)})
 
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
@@ -241,11 +241,8 @@ def contact(request, section='esp'):
             logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
             
-            if len(form.cleaned_data['sender'].strip()) == 0:
-                email = 'esp@mit.edu'
-            else:
-                email = form.cleaned_data['sender']
-                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+            email = form.cleaned_data['sender']
+            usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
             if usernames and not form.cleaned_data['decline_password_recovery']:
                 m = 'password|account|log( ?)in'
@@ -259,11 +256,8 @@ def contact(request, section='esp'):
             if form.cleaned_data['cc_myself']:
                 to_email.append(email)
 
-            try:
-                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-            except KeyError:
-                to_email.append(fallback_address)
-
+            to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            
             if len(form.cleaned_data['name'].strip()) > 0:
                 email = '%s <%s>' % (form.cleaned_data['name'], email)
 

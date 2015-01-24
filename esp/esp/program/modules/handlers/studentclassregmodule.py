@@ -38,7 +38,6 @@ from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
-from django.db.models.query import Q
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -49,7 +48,7 @@ from django.core.cache import cache
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -145,17 +144,31 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     def students(self, QObject = False):
-        from django.db.models import Q
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         
-        if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
-        else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
+        # Force Django to generate two subqueries without joining SRs to SSIs,
+        # as efficiently as possible since it's still a big query.
+        sr_ids = StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=self.program
+        ).values('user').distinct()
+        ssi_ids = StudentSubjectInterest.valid_objects().filter(
+            subject__parent_program=self.program).values('user').distinct()
+        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        
+        qobjects = {
+            'enrolled': Enrolled & Par & Unexpired,
+            'classreg': any_reg_q,
+        }
 
+        if QObject:
+            retVal = qobjects
+        else:
+            retVal = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
+        
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -222,9 +235,6 @@ class StudentClassRegModule(ProgramModuleObj):
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        # Hack, to hide the Saturday night timeslots from grades 7-8
-        if not is_onsite and not user.getGrade() > 8:
-            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']

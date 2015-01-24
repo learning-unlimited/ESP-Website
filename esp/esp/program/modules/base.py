@@ -206,7 +206,7 @@ class ProgramModuleObj(models.Model):
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if tl != "manage" and tl != "json" and isinstance(moduleobj, CoreModule):
+        if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
             scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
@@ -637,7 +637,7 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {})
+            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
 
         return method(moduleObj, request, tl, *args, **kwargs)
     
