@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.qsd.models import QuasiStaticData, ESPQuotations
+from esp.qsd.models import QuasiStaticData
 import reversion
 from esp.utils.admin_user_search import default_user_search
 
@@ -46,5 +46,3 @@ class QuasiStaticDataAdmin(reversion.VersionAdmin):
     date_hierarchy = 'create_date'
 
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
-
-admin_site.register(ESPQuotations)

@@ -206,36 +206,3 @@ def qsd_cache_key(path, user=None,):
         return hashlib.md5('%s-%s' % (path, name, user.id)).hexdigest()
     else:
         return hashlib.md5('%s' % (path, ) ).hexdigest()
-
-
-class ESPQuotations(models.Model):
-    """ Quotation about ESP """
-
-    content = models.TextField()
-    display = models.BooleanField()
-    author  = models.CharField(max_length=64)
-    create_date = models.DateTimeField(default=datetime.now())
-
-    @staticmethod
-    def getQuotation():
-        import random
-        cutoff = .9
-        if random.random() > cutoff:
-            return None
-
-        current_pool = cache.get('esp_quotes')
-
-        if current_pool is None:
-            current_pool = list(ESPQuotations.objects.filter(display=True).order_by('?')[:5])
-            # Cache the current pool for a day
-            if len(current_pool) == 0:
-                return None
-
-            cache.set('esp_quotes', current_pool, 86400)
-
-        return random.choice(current_pool)
-
-        
-    class Meta:
-        verbose_name_plural = 'ESP Quotations'
-
