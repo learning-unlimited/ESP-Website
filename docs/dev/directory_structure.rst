@@ -24,7 +24,7 @@ This is not intended to be an exhaustive list, just a summary with some comments
     * ``urls.py``: Master URL routing table.
 
   * ``manage.py``: Runs django commands like ``./manage.py shell_plus``.
-  * ``public``: Served statically from the root of the website.  (So ``/esp/public/media/scripts/foo.js`` would be served at ``esp.mit.edu/media/scripts/foo.js``.)
-  * ``media``: Includes our javascript, CSS, images, etc.
+  * ``public``: Contains things that will be served statically.
+    * ``media``: Includes our javascript, CSS, images, etc.  Served statically at ``/media/``, so ``/esp/public/media/scripts/foo.js`` would be served at ``doma.in/media/scripts/foo.js``.
   * ``templates``: Contains our django templates, in a directory structure roughly mirroring that of ``/esp/esp``.
   * ``useful_scripts``: Contains various scripts intended to be run by devs, of varying usefulness, which may be site-specific, terribly-coded, completely broken, etc.

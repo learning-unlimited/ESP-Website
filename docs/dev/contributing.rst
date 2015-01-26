@@ -12,13 +12,18 @@ Remove ``--global`` if you don't want it to apply to other git repos on your com
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up
-  git config --global color.{ui,status,branch,diff,interactive} auto # makes various interfaces usefully colorful
+  git config --global color.{ui,status,branch,diff,interactive,grep} auto # makes various interfaces usefully colorful
   git config --global log.decorate true # shows branch information in `git log` by default
+  git config --global core.pager "less -R"
+  git config --global pager.{status,branch,diff,show,log} true
+  git config --global color.pager true
+  git config --global core.editor vim # or emacs, nano, your favorite text editor, etc.
+  git config --global grep.lineNumber true
 
 For normal, non-urgent features and bug fixes
 ---------------------------------------------
 
-The following workflow applies if you've already been added as a collaborator to the repository.  If not, you should fork it using the button on Github, add it as a remote, and replace all of the ``git push`` steps with ``git push <remote name>``.
+The following workflow applies if you've already been added as a collaborator to the repository.  If not, you should fork it using the button on Github, add it as a remote, and replace all of the ``git push``/``git push origin`` steps with ``git push remote-name``.
 
 From the directory ``/esp``: ::
 
@@ -31,13 +36,10 @@ From the directory ``/esp``: ::
 Write some code!
 Test your code!
 
-Look at what you’ve changed (``git status`` and/or ``git diff``) ::
-
-  git commit -a -m "Write a commit message here"
-
-Repeat a few times from “write some code!” if you want to make multiple commits.
+Look at what you’ve changed (``git status`` and/or ``git diff``), and then run ``git commit -a``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style).  Repeat a few times from “write some code!” if you want to make multiple commits.
 
 When you’re ready to make a pull request, or want other people to be able to pull your code: ::
+
   git push --set-upstream origin new-branch-name
 
 Now go to `<https://github.com/learning-unlimited/ESP-Website>`_. If you’re logged in, you should see a banner near the top suggesting that you make a pull request. Click the button, write up a summary of your pull request, and submit it.
