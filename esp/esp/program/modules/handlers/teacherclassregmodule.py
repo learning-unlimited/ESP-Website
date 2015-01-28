@@ -783,31 +783,33 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             errors = {}
             
-            resource_types = set([])
-            default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
-            if default_restypes:
-                resource_type_labels = json.loads(default_restypes)
-                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
             if static_resource_requests:
                 # With static resource requests, we need to display a form
                 # each available type --- there's no way to add the types
                 # that we didn't start out with
                 # Thus, if default_restype isn't set, we display everything
                 # potentially relevant
-                q_program = Q(program=self.program)
                 if Tag.getTag('allow_global_restypes'):
-                    q_program = q_program | Q(program__isnull=True)
-                resource_types = resource_types.union(set(ResourceType.objects.filter(q_program).order_by('-priority_default')))
+                    resource_types = prog.getResourceTypes(include_classroom=True,
+                                                           include_global=True)
+                else:
+                    resource_types = prog.getResourceTypes(include_classroom=True)
+                resource_types = list(resource_types)
+                resource_types.reverse()
             else:
                 # If we're not using static resource requests, then just
                 # hardcode some sane defaults
+                resource_types = set([])
+                default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
+                if default_restypes:
+                    resource_type_labels = json.loads(default_restypes)
+                    resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
+
                 resource_type_labels = ['Classroom', 'A/V']
                 resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
-            # Now that we're done putting together multiple resource type sources, listify!
-            resource_types = list(resource_types)
-            resource_types.sort(key=lambda x: -x.priority_default)
+                # Now that we're done putting together multiple resource type sources, listify!
+                resource_types = list(resource_types)
+                resource_types.sort(key=lambda x: -x.priority_default)
 
             if newclass is not None:
                 current_data = newclass.__dict__

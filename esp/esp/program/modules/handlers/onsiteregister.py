@@ -105,7 +105,7 @@ class OnSiteRegister(ProgramModuleObj):
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade'], ESPUser.program_schoolyear(self.program)))
 
                 try:
                     if isinstance(new_data['k12school'], K12School):
@@ -153,7 +153,7 @@ class OnSiteRegister(ProgramModuleObj):
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form, 'current_year':ESPUser.current_schoolyear()})
+	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
 
     class Meta:
         proxy = True

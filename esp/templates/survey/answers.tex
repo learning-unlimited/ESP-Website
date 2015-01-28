@@ -2,7 +2,7 @@
 {% load latex %}
 
 {% if q.question.question_type.is_countable %}
-    \begin{minipage}[b]{3in} {{ q.question.name }}: \\
+    \begin{minipage}[b]{3in} {{ q.question.name|texescape }}: \\
         (Numerical responses) \vspace*{0.5in}
 
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
@@ -18,7 +18,7 @@
     {% endif %} \\ \hline
 {% else %}
     \begin{minipage}{3in} 
-        {{ q.question.name }} \vspace*{0.5in} 
+        {{ q.question.name|texescape }} \vspace*{0.5in}
 
         \textbf{Number of responses:} {{ q.answers|length }}/{{ num_participants }} \\
     \end{minipage} &

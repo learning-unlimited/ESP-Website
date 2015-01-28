@@ -90,15 +90,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
-    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % settings.INSTITUTION_NAME )
 
-    global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
-                                                  choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
-                                                  help_text="Check all that apply. We can usually supply these common resources at your request. But if your class is truly uncommon, ESP may also have access to unusual rooms and supplies. These can be entered in the next section, 'Special Requests.'" )
-    resources        = forms.MultipleChoiceField( label='Other Resources',
-                                                  choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
                                                    help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
 
@@ -174,17 +168,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['optimal_class_size_range']
             del self.fields['allowable_class_size_ranges']
             
-        # global_resources: crmi.getResourceTypes(is_global=True)
-        self.fields['global_resources'].choices = crmi.getResourceTypes(is_global=True)
-        # resources: crmi.getResourceTypes(is_global=False)
-        resource_choices = crmi.getResourceTypes(is_global=False)
-        
         # decide whether to display certain fields
-        # resources
-        if len(resource_choices) > 0:
-            self.fields['resources'].choices = resource_choices
-        else:
-            self.fields['resources'].widget = forms.HiddenInput()
         
         # prereqs
         if not crmi.set_prereqs:
@@ -210,9 +194,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             hide_field( self.fields['requested_room'] )
             
         #   Hide resource fields since separate forms are now being used. - Michael P
-        resource_fields = ['has_own_space', 'global_resources', 'resources', 'requested_special_resources']
-        for field in resource_fields:
-            self.fields[field].widget = forms.HiddenInput()
+        #   Most have now been removed, but this one gets un-hidden by open classes.
+        self.fields['requested_special_resources'].widget = forms.HiddenInput()
         
         #   Add program-custom form components (for inlining additional questions without
         #   introducing a separate program module)
@@ -325,8 +308,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                   ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
-                  ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
-                  ('resources', '')]
+                  ('requested_room', '')]
         for field, default in fields:
             if field in self.fields:
                 self.fields[field].required = False
