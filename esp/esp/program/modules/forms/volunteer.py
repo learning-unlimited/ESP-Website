@@ -36,8 +36,8 @@ from django import forms
 from django.utils.safestring import mark_safe
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
-from esp.utils.widgets import DateTimeWidget, DateWidget
-from localflavor.us.forms import USPhoneNumberField
+from esp.utils.widgets import DateTimeWidget
+from esp.utils.forms import UKPhoneNumberField
 from esp.users.models import ESPUser, shirt_sizes, shirt_types
 from esp.tagdict.models import Tag
 from esp.program.models import Program
@@ -95,7 +95,7 @@ class VolunteerOfferForm(forms.Form):
 
     name = forms.CharField(max_length=80, label='Your Name')
     email = forms.EmailField(label='Email address')
-    phone = USPhoneNumberField(label='Phone number')
+    phone = UKPhoneNumberField(label='Phone number')
 
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
