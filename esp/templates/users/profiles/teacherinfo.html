@@ -16,7 +16,7 @@
 <div class="control-group">
 <label for="id_graduation_year" class="control-label">Graduation Year:</label>
 <div class="controls">
- {{ form.graduation_year }} 
+ {{ form.graduation_year }}
  <br /><div style="font-size: 0.8em">(Enter 'G' if you're a graduate student)</div>
  {% if form.graduation_year.errors %}
   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
@@ -25,20 +25,29 @@
 </div>
 
 <div class="control-group">
- <label for="id_major" class="control-label">Major/Department:</label>
+ <label for="id_school" class="control-label">Are you a graduate student or graduate alum?</label><br />
+ <div class="controls">
+ {{ form.is_graduate_student }} {% if form.is_graduate_student.errors %}
+   <br /><span class="form_error">{{ form.is_graduate_student.errors|join:", " }}</span>
+   {% endif %}
+</div>
+</div>
+
+<div class="control-group">
+ <label for="id_major" class="control-label">Subject:</label>
  <div class="controls">
  {{ form.major }} {% if form.major.errors %}
    <br /><span class="form_error">{{ form.major.errors|join:", " }}</span>
    {% endif %}
 </div>
-</div> 
+</div>
 
 {% if form.shirt_size %}
 
 {% inline_program_qsd_block program "teach:teacher_shirt_info" %}
 <div class="alert"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.</div>
 {% end_inline_program_qsd_block %}
- 
+
 <div class="control-group">
  <label for="id_shirt_size" class="control-label">Shirt size:</label>
  <div class="controls">
@@ -58,7 +67,7 @@
    <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
    {% endif %}
 </div>
-</div> 
+</div>
 
 {% endif %}
 
