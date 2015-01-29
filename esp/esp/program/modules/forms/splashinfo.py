@@ -33,32 +33,19 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.middleware import ESPError
-from esp.tagdict.models import Tag
 import simplejson as json
 
-"""
-The SplashInfoForm is customizable for different lunch options.
-The choices should be provided in a Tag, splashinfo_choices, which is in
-JSON format.  Example:
-    key = 'splashinfo_choices'
-    value = '{
-        "lunchsat": [["no", "No thanks; I will bring my own lunch"],
-                  ["chicken", "Yes, Chicken"],
-                  ["steak", "Yes, Steak"],
-                  ["spicy_thai", "Yes, Spicy Thai"],
-                  ["veggie", "Yes, Vegetarian"]],
-        "lunchsun": [["no", "No thanks; I will bring my own lunch"],
-                  ["cheese", "Yes, Cheese Pizza"],
-                  ["pepperoni", "Yes, Pepperoni Pizza"]],
-    }'
+from esp.accounting.models import LineItemType
 
-The interface (including directions, whether to exclude or rename days,
-and costs) should be controlled by overriding the template:
-    program/modules/splashinfomodule/splashinfo.html
-"""
+
 
 class SplashInfoForm(forms.Form):
+    """
+    The SplashInfoForm is customizable for different lunch options.
+    The interface (including directions, whether to exclude or rename days,
+    and costs) should be controlled by overriding the template:
+        program/modules/splashinfomodule/splashinfo.html
+    """
     #   The default choices are somewhat unappetizing...
     default_choices = [['no', 'No'], ['yes', 'Yes']]
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
@@ -72,41 +59,49 @@ class SplashInfoForm(forms.Form):
     def __init__(self, *args, **kwargs):
         #   Extract a program if one was provided
         if 'program' in kwargs:
-            program = kwargs['program']
+            self.program = kwargs['program']
             del kwargs['program']
         else:
-            program = None
-            
+            self.program = None
         #   Run default init function
         super(SplashInfoForm, self).__init__(*args, **kwargs)
-        
-        #   Set choices from Tag data (try to get program-specific choices if they exist)
-        tag_data = None
-        if program:
-            tag_data = Tag.getTag('splashinfo_choices', target=program)
-        if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
-        if tag_data:
-            tag_struct = json.loads(tag_data)
-            self.fields['lunchsat'].choices = tag_struct['lunchsat']
-            self.fields['lunchsun'].choices = tag_struct['lunchsun']
+        if self.program:
+            lunch_types = [('lunchsat', 'Saturday Lunch'), 
+                           ('lunchsun', 'Sunday Lunch'),
+                           ('siblingdiscount', 'Sibling Discount'),
+                          ]
+            for fieldname, line_item_text in lunch_types:
+                field = self.fields[fieldname]
+                field.choices = self._get_field_choices(fieldname, line_item_text)
 
-        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
-            del self.fields['siblingdiscount']
+                if not field.choices:
+                    del self.fields[fieldname]
+
+        if not self.fields.get('siblingdiscount'):
             del self.fields['siblingname']
 
-        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
-            del self.fields['lunchsat']
+    def _get_field_choices(self, fieldname, line_item_text):
+        lineitem_qset = LineItemType.objects.filter(program=self.program, text=line_item_text)
+        choices = []
 
-        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
-            del self.fields['lunchsun']
-    
+        if lineitem_qset.exists():
+            line_item_type = lineitem_qset[0]
+
+            for li in line_item_type.lineitemoptions_set.all():
+                label = '%s (+ $%s)'%(li.description, li.amount)
+                choices.append((li.id, label))
+
+        return choices
+
     def load(self, splashinfo):
+        #TODO - Load data from Transfer instance
         self.initial['lunchsat'] = splashinfo.lunchsat
         self.initial['lunchsun'] = splashinfo.lunchsun
         self.initial['siblingdiscount'] = splashinfo.siblingdiscount
         self.initial['siblingname'] = splashinfo.siblingname
 
     def save(self, splashinfo):
+        #TODO - Save data to Transfer instance
         if 'lunchsat' in self.cleaned_data:
             splashinfo.lunchsat = self.cleaned_data['lunchsat']
         if 'lunchsun' in self.cleaned_data:
@@ -117,4 +112,4 @@ class SplashInfoForm(forms.Form):
             splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
-        
+
