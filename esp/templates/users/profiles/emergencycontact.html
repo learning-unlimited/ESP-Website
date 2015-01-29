@@ -21,6 +21,7 @@ function copy_parent_info() {
   document.getElementById("id_emerg_e_mail").value = document.getElementById("id_guard_e_mail").value;
   document.getElementById("id_emerg_phone_cell").value = document.getElementById("id_guard_phone_cell").value;
   document.getElementById("id_emerg_address_street").value = document.getElementById("id_address_street").value;
+  document.getElementById("id_emerg_address_locality").value = document.getElementById("id_address_locality").value;
   document.getElementById("id_emerg_address_city").value = document.getElementById("id_address_city").value;
   document.getElementById("id_emerg_address_state").value = document.getElementById("id_address_state").value;
   document.getElementById("id_emerg_address_zip").value = document.getElementById("id_address_zip").value;
@@ -59,7 +60,7 @@ function copy_parent_info() {
 
 <div class="control-group">
     <label class="control-label" for="id_emerg_address_street">
-    <small><i>street</i></small>
+    <small><i>Number and Street</i></small>
     </label>
     <div class="controls">
     {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
@@ -69,8 +70,19 @@ function copy_parent_info() {
 </div>
 
 <div class="control-group">
+    <label class="control-label" for="id_emerg_address_locality">
+    <small><i>Locality</i></small>
+    </label>
+    <div class="controls">
+    {{ form.emerg_address_locality }} {% if form.emerg_address_locality.errors %}
+    <br /><span class="form_error">{{ form.emerg_address_locality.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
+
+<div class="control-group">
     <label class="control-label" for="id_emerg_address_city">
-    <small><i>city/state/zip</i></small>
+    <small><i>Town/County/Postcode</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
