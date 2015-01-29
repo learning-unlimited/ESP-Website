@@ -44,7 +44,7 @@ person_type = (
     ('Student', 'K-12 Student'),
     ('Parent',  'Parent/Guardian'),
     ('Teacher', 'Teacher for ESP'),
-    ('K-12 Educator', 'K-12 Educator'),
+    ('K-12 Educator', 'High-School Teacher / Secondary Educator'),
     ('Other',   'Other'),
     )
 
