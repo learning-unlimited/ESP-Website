@@ -391,7 +391,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
     from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % settings.INSTITUTION_NAME)
     school = SizedCharField(length=24, max_length=128, required=False)
-    major = SizedCharField(length=30, max_length=32, required=False)
+    major = SizedCharField(length=30, max_length=32, required=False, label='Subject')
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     full_legal_name = SizedCharField(length=24, max_length=128, required=False)
