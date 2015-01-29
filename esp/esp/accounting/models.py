@@ -1,4 +1,4 @@
-
+# coding: utf-8
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -94,7 +94,8 @@ class LineItemType(models.Model):
 
     def __unicode__(self):
         if self.amount_dec:
-            return u'%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+            return u'%s for %s (£%s)' % (self.text, self.program, self.amount_dec)
+
         else:
             return u'%s for %s' % (self.text, self.program)
 
@@ -114,7 +115,7 @@ class LineItemOptions(models.Model):
             return float(self.amount_dec)
 
     def __unicode__(self):
-        return u'%s ($%s)' % (self.description, self.amount_dec)
+        return u'%s (£%s)' % (self.description, self.amount_dec)
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
@@ -155,11 +156,11 @@ class FinancialAidGrant(models.Model):
 
     def __unicode__(self):
         if self.percent and self.amount_max_dec:
-            return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
+            return u'Grant %s (max £%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
         elif self.percent:
             return u'Grant %s (%d%% discount) at %s' % (self.user, self.percent, self.program)
         elif self.amount_max_dec:
-            return u'Grant %s (max $%s) at %s' % (self.user, self.amount_max_dec, self.program)
+            return u'Grant %s (max £%s) at %s' % (self.user, self.amount_max_dec, self.program)
         else:
             return u'Grant %s (no aid specified) at %s' % (self.user, self.program)
 
