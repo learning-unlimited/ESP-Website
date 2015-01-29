@@ -50,12 +50,12 @@ Payments:
 <tr>
 <td>
 <b>{{ payment.0.get_full_name }}</b> (ID: {{ payment.0.id }}) <br />
-${{ payment.2 }} billed; ${{ payment.3 }} owed
+£{{ payment.2 }} billed; £{{ payment.3 }} owed
 </td>
 <td>
 <ul>
 {% for transfer in payment.1 %}
-<li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}
+<li>£{{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}
 </div></li> <!-- div.( doc.getDoctypeStr ) -->
 {% endfor %}
 </ul>
