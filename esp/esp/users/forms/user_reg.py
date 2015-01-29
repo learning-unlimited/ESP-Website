@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+from esp.utils.forms import UKPhoneNumberField
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 
@@ -129,7 +129,7 @@ class EmailPrefForm(forms.Form):
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>")
     first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
     last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
-    sms_number = USPhoneNumberField(label='Cell Phone', required = False,
+    sms_number = UKPhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
     

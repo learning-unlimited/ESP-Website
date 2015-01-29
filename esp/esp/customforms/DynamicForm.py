@@ -7,7 +7,7 @@ from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
-from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
+from django.contrib.localflavor.us.forms import USStateField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.utils.forms import DummyField
