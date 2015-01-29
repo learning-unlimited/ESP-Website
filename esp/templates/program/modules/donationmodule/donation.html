@@ -57,7 +57,7 @@ $j(document).ready(function () {
                 </label>
                 {% for option in module.settings.donation_options %}
                 <label class="radio">
-                    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation %}checked {% endif %}/>${{ option }}
+                    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation %}checked {% endif %}/>£{{ option }}
                 </label>
                 {% endfor %}
             </div>

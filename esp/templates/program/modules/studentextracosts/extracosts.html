@@ -46,7 +46,7 @@ td>ul { list-style-type: none; padding: 0px }
     <td width="120px">
         {% if f.form.option %}{{ f.form.option }}{% else %}{{ f.form.cost }}{% endif %}
         {% if f.LineItem.negative_amount %}
-            <i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>
+            <i>£{{ f.LineItem.negative_amount|floatformat:2 }}</i>
             {% endif %}
 
         {# If num_options, radio buttons will be used for the field. In order to  #}
@@ -67,8 +67,8 @@ td>ul { list-style-type: none; padding: 0px }
 {% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}
 {% else %}<b>{{ f.LineItem.text }}</b>{% endif %}</td>
     <td>{% if f.LineItem.num_options %}{% with f.LineItem.options_cost_range as cost_range %}
-    {% if cost_range.0 == cost_range.1 %}${{ cost_range.0|floatformat:2 }}{% else %}${{ cost_range.0|floatformat:2 }}--{{ cost_range.1|floatformat:2 }}{% endif %}
-    {% endwith %}{% else %}${{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
+    {% if cost_range.0 == cost_range.1 %}£{{ cost_range.0|floatformat:2 }}{% else %}£{{ cost_range.0|floatformat:2 }}--{{ cost_range.1|floatformat:2 }}{% endif %}
+    {% endwith %}{% else %}£{{ f.LineItem.amount|floatformat:2 }}{% endif %}</td>
 </tr>
 {% endfor %}
 <tr>

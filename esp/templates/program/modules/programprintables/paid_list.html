@@ -49,7 +49,7 @@ td, th {
 {% if single_select %}{% else %} <td>{{ lineitem.line_item.text }}</td>{% endif %}
 {% if hide_paid %}{% else %} <td>{% if lineitem.executed %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
- <td>${{ lineitem.amount|floatformat:2 }}</td>
+ <td>£{{ lineitem.amount|floatformat:2 }}</td>
 {% endif %}
 </tr>
 {% endfor %}

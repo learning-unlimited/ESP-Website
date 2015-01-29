@@ -1,3 +1,4 @@
+# coding: utf-8
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -1414,7 +1415,7 @@ class FinancialAidRequest(models.Model):
 
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
-    household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
+    household_income = models.CharField(verbose_name = u'Approximately what is your household income (round to the nearest £10,000)?', null=True, blank=True,
                         max_length=12)
 
     extra_explaination = models.TextField(verbose_name = 'Please describe in detail your financial situation this year', null=True, blank=True)
