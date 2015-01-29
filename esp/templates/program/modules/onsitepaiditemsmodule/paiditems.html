@@ -28,7 +28,7 @@ Here is a list of the items that were reserved online for {{student.name}}:
 {% for item in requireditems %}
 <tr>
 <td>{{ item.line_item.text }}</td>
-<td>${{ item.amount_dec }}</td>
+<td>£{{ item.amount_dec }}</td>
 </tr>
 {% endfor %}
 <tr>
@@ -38,7 +38,7 @@ Here is a list of the items that were reserved online for {{student.name}}:
 {% for item in reserveditems %}
 <tr>
 <td>{{ item.line_item.text }}</td>
-<td>${{ item.amount_dec }}</td>
+<td>£{{ item.amount_dec }}</td>
 </tr>
 {% endfor %}
 <tr>
@@ -46,15 +46,15 @@ Here is a list of the items that were reserved online for {{student.name}}:
 </tr>
 <tr>
 <td>Total:</td>
-<td>${{ amount_requested|floatformat:2 }}</td>
+<td>£{{ amount_requested|floatformat:2 }}</td>
 </tr>
 <tr>
 <td>Financial aid:</td>
-<td>${{ amount_finaid|floatformat:2 }}</td>
+<td>£{{ amount_finaid|floatformat:2 }}</td>
 </tr>
 <tr>
 <td>Amount due:</td>
-<td>${{ amount_due|floatformat:2 }}</td>
+<td>£{{ amount_due|floatformat:2 }}</td>
 </tr>
 </table>
 

@@ -12,30 +12,30 @@
     {% for item in itemizedcosts %}
     <tr>
         <td>{{ item.line_item.text }}</td>
-        <td>${{ item.amount|floatformat:2 }}</td>
+        <td>£{{ item.amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
     {% if sibling_discount %}
     <tr>
         <td>Sibling Discount</td>
-        <td>-${{ sibling_discount|floatformat:2 }}</td>
+        <td>-£{{ sibling_discount|floatformat:2 }}</td>
     </tr>
     {% endif %}
     {% if financial_aid %}
     <tr>
         <td>Financial Aid Grant</td>
-        <td>-${{ financial_aid|floatformat:2 }}</td>
+        <td>-£{{ financial_aid|floatformat:2 }}</td>
     </tr>
     {% endif %}
     {% if amount_paid %}
     <tr>
         <td>Amount Paid (so far)</td>
-        <td>-${{ amount_paid|floatformat:2 }}</td>
+        <td>-£{{ amount_paid|floatformat:2 }}</td>
     </tr>
     {% endif %}
     <tr>
         <td align="right"><b>Total:</b></td>
-        <td>${{ itemizedcosttotal|floatformat:2 }}</td>
+        <td>£{{ itemizedcosttotal|floatformat:2 }}</td>
     </tr>
 </table>
 </div>

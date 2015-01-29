@@ -53,7 +53,7 @@ body { font-family: georgia; }
    <td>{{forloop.counter}}</td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">{{ student.paid }}</div></td>
-   <td>${{ student.amount_due|floatformat:2 }}</td>
+   <td>£{{ student.amount_due|floatformat:2 }}</td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">&nbsp;</div></td>
    <td>{{ student.finaid }}</td>

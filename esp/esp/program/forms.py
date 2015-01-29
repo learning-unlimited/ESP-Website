@@ -1,4 +1,4 @@
-
+# coding: utf-8
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -58,7 +58,7 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
+    base_cost         = forms.IntegerField( label = u'Cost of Program Admission £', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
     program_modules   = forms.MultipleChoiceField(

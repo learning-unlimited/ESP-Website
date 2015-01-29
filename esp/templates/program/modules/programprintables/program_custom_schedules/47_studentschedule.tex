@@ -50,7 +50,7 @@
 \multicolumn{2}{|p{1.25in}|}
 { Admission: \${% if student.has_financial_aid %}0{% else %}20{% endif %} } & 
 \multicolumn{1}{|p{1.25in}|}
-{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}£{{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
 \hline
 \end{tabular}
 %%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%
@@ -58,7 +58,7 @@
 {% comment %}
 \begin{tabular}{ c }
 Total Amount Owed: \\
-\fbox{\textbf{ \${{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
+\fbox{\textbf{ £{{ student.itemizedcosttotal|floatformat:"-2" }} } } \\
 \end{tabular}
 
 \vspace{0.3cm}
@@ -83,7 +83,7 @@ Additional items: \\
 \vspace{0.2cm}
 \begin{tabular} { | c | }
 {% for item in student.paid_online %} \hline
-\textbf{ Paid Online: \${{ item.amount|floatformat:"-2" }} } \\ 
+\textbf{ Paid Online: £{{ item.amount|floatformat:"-2" }} } \\ 
 {% endfor %}\hline
 \end{tabular}
 {% endif %}
@@ -160,7 +160,7 @@ There will be walk-in classes happening from 1:15-4:30 in Lobby 13 (where you ch
 \end{pspicture} \\
 \vspace{0pt} \\
 {{ student.name }} ({{ student.id }}) \\
-Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
+Amount Owed: £{{ student.itemizedcosttotal|floatformat:"-2" }}
 \end{minipage}
 &
 
@@ -170,7 +170,7 @@ Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
 \multirow{3}{1in}{\centering \textbf{\small Amount \\ Due:} \\ 
 \vspace{0.05cm}
 \textbf{\large  \${% ifequal student.id 50335 %}5{% else %}{% with student.itemizedcosttotal|floatformat:"-2" as amt_owed %}{% ifequal amt_owed "40" %}20{% else %}{% ifequal amt_owed|cut:"-" "5" %}0{% else %}{{ amt_owed }}{% endifequal %}{% endifequal %}{% endwith %}{% endifequal %} }} & \multicolumn{2}{|p{1.5in}|}
-%%% \textbf{\large  \${{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
+%%% \textbf{\large  £{{ student.itemizedcosttotal|floatformat:"-2" }} }} & \multicolumn{2}{|p{1.5in}|}
 { {% if student.saturday_lunch %} Saturday Lunch (\${% if student.has_financial_aid %}0{% else %}5{% endif %}) {% endif %} } \\
 \cline{2-3}
 & \multicolumn{2}{|p{1.5in}|}
@@ -187,7 +187,7 @@ Amount Owed: \${{ student.itemizedcosttotal|floatformat:"-2" }}
 \multicolumn{2}{|p{1.25in}|}
 { Admission: \${% if student.has_financial_aid %}0{% else %}20{% endif %} } & 
 \multicolumn{1}{|p{1.25in}|}
-{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}\${{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
+{ \textbf { {% if student.paid_online %}{\small Paid Online:} {% for item in student.paid_online %}£{{ item.amount|floatformat:"-2" }}{% endfor %}{% endif %} } } \\
 \hline
 \end{tabular}
 %%% HARDCODED IN FOR SPLASH 2009 -- remove afterwards - rye %%%%

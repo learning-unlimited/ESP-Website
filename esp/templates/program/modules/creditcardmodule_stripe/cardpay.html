@@ -37,8 +37,8 @@ function update_donation_on_page() {
 		dataType: "json",
     });
     var total_amount = base_amount + (donation_set ? donation_amount : 0.0);
-    $j("#donation_amount_display").html("$" + donation_amount.toFixed(2));
-    $j("#total_amount_display").html("$" + total_amount.toFixed(2));
+    $j("#donation_amount_display").html("£" + donation_amount.toFixed(2));
+    $j("#total_amount_display").html("£" + total_amount.toFixed(2));
     $j("#id_totalcost_cents").val(Math.round(total_amount * 100));
     if (donation_set)
         $j("#donation_line_item").show();
@@ -96,7 +96,7 @@ Check here to support <a href="http://www.learningu.org/about" target="_blank">L
 <b>Donation amount:</b>
 {% for option in module.settings.donation_options %}
 <label class="radio">
-    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>${{ option }}
+    <input type="radio" name="amount_donation" id="amount_donation_{{ forloop.counter }}" value="{{ option }}" {% if option == amount_donation or forloop.first and not has_donation %}checked {% endif %}/>£{{ option }}
 </label>
 {% endfor %}
 </div></div>
