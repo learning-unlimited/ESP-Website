@@ -6,4 +6,6 @@
 ./manage.py migrate --fake
 ./manage.py migrate --fake program 0002
 ./manage.py migrate --fake qsd 0002
+./manage.py migrate users 0002
+./manage.py migrate --fake users 0003
 ./manage.py migrate

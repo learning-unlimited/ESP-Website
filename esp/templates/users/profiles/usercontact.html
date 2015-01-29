@@ -42,7 +42,7 @@
 
 <div class="control-group">
     <label class="control-label" for="id_address_street">
-    <small><i>street</i></small>
+    <small><i>Number and Street</i></small>
     </label>
     <div class="controls">
     {{ form.address_street }} {% if form.address_street.errors %}
@@ -52,8 +52,19 @@
 </div>
 
 <div class="control-group">
+    <label class="control-label" for="id_address_locality">
+    <small><i>Locality</i></small>
+    </label>
+    <div class="controls">
+    {{ form.address_locality }} {% if form.address_locality.errors %}
+    <br /><span class="form_error">{{ form.address_locality.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
+
+<div class="control-group">
     <label class="control-label" for="id_address_city">
-    <small><i>city/state/zip</i></small>
+    <small><i>Town/County/Postcode</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.address_city }} {% if form.address_city.errors %}
