@@ -41,17 +41,15 @@ function Matrix(
             var cells = {};
             $j.each(rooms, function(room_name, room){
                     cells[room_name] = [];
-                    i = 0;
                     $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
                         var timeslot_id = parseInt(timeslot_id_string);
                         if (room.availability.indexOf(timeslot_id) >= 0){
-                        cells[room_name][i] = new Cell($j("<td/>"), null, room_name, 
+                        cells[room_name][timeslot.order] = new Cell($j("<td/>"), null, room_name,
                             timeslot_id, matrix);
                         } else {
-                        cells[room_name][i] = new DisabledCell($j("<td/>"), room_name, 
+                        cells[room_name][timeslot.order] = new DisabledCell($j("<td/>"), room_name,
                             timeslot_id)
                         }
-                        i = i + 1;
                         }.bind(this));
                     }.bind(this));
             return cells;
