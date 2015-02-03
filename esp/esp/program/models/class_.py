@@ -235,7 +235,7 @@ class ClassManager(Manager):
         if order_args_override:
             order_args = order_args_override
         else:
-            order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
+            order_args = ['category__symbol', 'category__category', 'sections__meeting_times__start', '_num_students', 'id']
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
