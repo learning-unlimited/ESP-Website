@@ -49,7 +49,7 @@ def scheduling_matrix_row(room, program):
                 'room_associated_resources': [ar.res_type.name for ar in room.associated_resources()],
                 'room_sequence': [matrix_td(elt) for elt in room.schedule_sequence(program)]
             }
-scheduling_matrix_row.cached_function.depend_on_row(lambda: Resource, lambda r: {'room': r})
+scheduling_matrix_row.cached_function.depend_on_row('resources.Resource', lambda r: {'room': r})
             
 @cache_inclusion_tag(register, 'inclusion/program/class_options.html')
 def class_options_row(cls):
@@ -97,4 +97,4 @@ def class_options_row(cls):
     context['cls_sections'] = [prepare_section_dict(s) for s in cls.sections.all()]
 
     return context
-class_options_row.cached_function.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'cls': cs.parent_class})
+class_options_row.cached_function.depend_on_cache(ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'cls': cs.parent_class})

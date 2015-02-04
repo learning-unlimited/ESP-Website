@@ -82,8 +82,8 @@ class OnSiteClassList(ProgramModuleObj):
         sect['teachers'] = ', '.join([t.name() for t in list(sec.teachers)])
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
-    section_data.depend_on_model(lambda: ResourceAssignment)
-    section_data.depend_on_cache(lambda: ClassSubject.get_teachers, lambda **kwargs: {})
+    section_data.depend_on_model('resources.ResourceAssignment')
+    section_data.depend_on_cache(ClassSubject.get_teachers, lambda **kwargs: {})
     section_data=staticmethod(section_data)
 
     """ Warning: for performance reasons, these views are not abstracted away from
