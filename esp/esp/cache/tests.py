@@ -3,7 +3,7 @@ from django.test import TestCase
 
 import unittest
 
-from esp.cache import registry
+from esp.cache import registry, queued
 from esp.cache.function import cache_function
 from esp.cache.key_set import wildcard
 
@@ -105,6 +105,17 @@ class CacheTests(TestCase):
         hashtag2 = HashTag.objects.create(pk=2, label='#news')
         article1.hashtags.add(hashtag2)
         article2.hashtags.add(hashtag1)
+
+    def test_caches_loaded(self):
+        """
+        Rudimentary test that the loading mechanism works as expected.
+        """
+        # pending lookups should be empty once everything is loaded
+        self.assertEqual(queued.pending_lookups, {})
+
+        # we should test that signals are connected properly, but this
+        # is hard to do directly. hope that if there is a problem with
+        # that part, it ought to trip the other tests anyway.
 
     def test_cached(self):
         """
