@@ -157,7 +157,26 @@ class ProgramModuleObj(models.Model):
             if isinstance(module, CoreModule):
                  return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.get_main_view(tl)
 
-    def goToCore(self, tl):
+    def goToCore(self, tl, check_deadline=False):
+        """Redirect the user to the appropriate core module.
+        
+        If the check_deadline argument is set, and the deadline for that core
+        module is not open, redirect to a generic "thank you for submitting"
+        page instead.  This is useful if we want to be able to have that page
+        open even if the rest of registration is not.
+        """
+        # If the user will not be able to get to the main page, we may want to
+        # redirect them to a generic "thank you for submitting" page instead.
+        # This is a bit of a hack, but it seems like a useful one.
+        if check_deadline and tl in ('teach', 'learn'):
+            # I'm so sorry for using get_current_request but I don't want to
+            # rethread all the control flow to get request in the call to
+            # PM.goToCore...
+            request = get_current_request()
+            perm = {'teach': 'Teacher', 'learn': 'Student'}[tl] + '/MainPage'
+            if not Permission.user_has_perm(request.user, perm,
+                                            program=request.program):
+                return HttpResponseRedirect('/thanks/')
         return HttpResponseRedirect(self.getCoreURL(tl))
 
     def getQForUser(self, QRestriction):

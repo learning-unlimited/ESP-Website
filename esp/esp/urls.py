@@ -126,6 +126,8 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
 #    (r'^contact/submit\.html$', 'contact_submit'),
 
+    # Generic "thank you for submitting" page
+    (r'^thanks/$', 'thanks'),
 
     # Program stuff
     (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
