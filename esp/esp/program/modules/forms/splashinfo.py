@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -36,7 +36,13 @@ from django import forms
 import simplejson as json
 
 from esp.accounting.models import LineItemType
+from esp.accounting.controllers import IndividualAccountingController
 
+
+LUNCH_SATURDAY = 'lunchsat'
+LUNCH_SUNDAY = 'lunchsun'
+DISCOUNT_SIBLING = 'siblingdiscount'
+SIBLING_NAME = 'siblingname'
 
 
 class SplashInfoForm(forms.Form):
@@ -64,11 +70,13 @@ class SplashInfoForm(forms.Form):
         else:
             self.program = None
         #   Run default init function
+
         super(SplashInfoForm, self).__init__(*args, **kwargs)
+
         if self.program:
-            lunch_types = [('lunchsat', 'Saturday Lunch'), 
-                           ('lunchsun', 'Sunday Lunch'),
-                           ('siblingdiscount', 'Sibling Discount'),
+            lunch_types = [(LUNCH_SATURDAY, 'Saturday Lunch'), 
+                           (LUNCH_SUNDAY, 'Sunday Lunch'),
+                           (DISCOUNT_SIBLING, 'Sibling Discount'),
                           ]
             for fieldname, line_item_text in lunch_types:
                 field = self.fields[fieldname]
@@ -77,8 +85,8 @@ class SplashInfoForm(forms.Form):
                 if not field.choices:
                     del self.fields[fieldname]
 
-        if not self.fields.get('siblingdiscount'):
-            del self.fields['siblingname']
+        if not self.fields.get(DISCOUNT_SIBLING):
+            del self.fields[SIBLING_NAME]
 
     def _get_field_choices(self, fieldname, line_item_text):
         lineitem_qset = LineItemType.objects.filter(program=self.program, text=line_item_text)
@@ -94,22 +102,24 @@ class SplashInfoForm(forms.Form):
         return choices
 
     def load(self, splashinfo):
-        #TODO - Load data from Transfer instance
-        self.initial['lunchsat'] = splashinfo.lunchsat
-        self.initial['lunchsun'] = splashinfo.lunchsun
-        self.initial['siblingdiscount'] = splashinfo.siblingdiscount
-        self.initial['siblingname'] = splashinfo.siblingname
+        self.initial[LUNCH_SATURDAY] = splashinfo.lunchsat
+        self.initial[LUNCH_SUNDAY] = splashinfo.lunchsun
+        self.initial[DISCOUNT_SIBLING] = splashinfo.siblingdiscount
+        self.initial[SIBLING_NAME] = splashinfo.siblingname
 
     def save(self, splashinfo):
-        #TODO - Save data to Transfer instance
-        if 'lunchsat' in self.cleaned_data:
-            splashinfo.lunchsat = self.cleaned_data['lunchsat']
-        if 'lunchsun' in self.cleaned_data:
-            splashinfo.lunchsun = self.cleaned_data['lunchsun']
-        if 'siblingdiscount' in self.cleaned_data:
-            splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
-        if 'siblingname' in self.cleaned_data:
-            splashinfo.siblingname = self.cleaned_data['siblingname']
+        if LUNCH_SATURDAY in self.cleaned_data:
+            splashinfo.lunchsat = self.cleaned_data[LUNCH_SATURDAY]
+
+        if LUNCH_SUNDAY in self.cleaned_data:
+            splashinfo.lunchsun = self.cleaned_data[LUNCH_SUNDAY]
+
+        if DISCOUNT_SIBLING in self.cleaned_data:
+            splashinfo.siblingdiscount = eval(self.cleaned_data[DISCOUNT_SIBLING])
+
+        if SIBLING_NAME in self.cleaned_data:
+            splashinfo.siblingname = self.cleaned_data[SIBLING_NAME]
+
         splashinfo.submitted = True
         splashinfo.save()
 
