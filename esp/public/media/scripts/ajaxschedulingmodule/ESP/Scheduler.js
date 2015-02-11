@@ -19,8 +19,29 @@ function Scheduler(
     update_interval
 ) {
     // Set up all the data and objects
+
+    // Populate data with resources
+    $j.each(data.rooms, function(index, room) {
+        room.resources = [];
+        $j.each(room.associated_resources, function(index, resource_id) {
+            room.resources.push(data.resource_types[resource_id]);
+        });
+    });
+
+    $j.each(data.sections, function(index, section) {
+        requests = section.resource_requests[section.id];
+        if(requests) {
+            $j.each(requests, function(index, resource_array) {
+                resource_array[0] = data.resource_types[resource_array[0]];
+            });
+        }
+
+    });
+
     this.timeslots = new Timeslots(data.timeslots);
+    
     this.rooms = data.rooms;
+
     this.sections = new Sections(data.sections, 
                                  data.teachers, 
                                  data.schedule_assignments, 
