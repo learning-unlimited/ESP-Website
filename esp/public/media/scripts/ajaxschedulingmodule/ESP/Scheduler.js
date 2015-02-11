@@ -34,7 +34,11 @@ function Scheduler(
             $j.each(requests, function(index, resource_array) {
                 resource_array[0] = data.resource_types[resource_array[0]];
             });
+        } else {
+            section.resource_requests = {};
+            section.resource_requests[section.id] = [];
         }
+        
 
     });
 

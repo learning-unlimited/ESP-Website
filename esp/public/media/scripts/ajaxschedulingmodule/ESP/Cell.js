@@ -91,6 +91,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	        "Class size max: " + this.section.class_size_max,
 	        "Length: " + Math.ceil(this.section.length),
             "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
+            "Resource Requests: </br>" + this.matrix.sections.getResourceString(this.section),
 	    ];
 	    return tooltip_parts.join("<br/>");
     };

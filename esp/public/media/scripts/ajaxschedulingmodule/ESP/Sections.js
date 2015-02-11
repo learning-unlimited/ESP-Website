@@ -253,6 +253,15 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         return teachers;
     };
 
+    this.getResourceString = function(section) {
+        var resource_names = [];
+        $j.each(section.resource_requests[section.id], function(index, resource_array) {
+            resource_names.push("<li>" + resource_array[0].name + ": " + resource_array[1] + "</li>");
+        });
+        return "<ul>" + resource_names.join(" ") + "</ul>";
+
+    };
+
     /**
      * Schedule a section of a class.
      * 

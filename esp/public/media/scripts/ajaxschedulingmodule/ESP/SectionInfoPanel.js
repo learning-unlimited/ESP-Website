@@ -68,6 +68,7 @@ function SectionInfoPanel(el, sections, togglePanel) {
 
         // Make content
         var teachers = this.sections.getTeachersString(section);
+        var resources = this.sections.getResourceString(section);
         
         var content_parts = [
             "Title: " + section.title,
@@ -75,6 +76,7 @@ function SectionInfoPanel(el, sections, togglePanel) {
             "Class size max: " + section.class_size_max,
 	        "Length: " + Math.ceil(section.length),
             "Grades: " + section.grade_min + "-" + section.grade_max,
+            "Resource Requests: " + resources,
         ]
 
         contentDiv.append(content_parts.join("</br>"));
