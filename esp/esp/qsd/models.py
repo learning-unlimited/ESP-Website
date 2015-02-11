@@ -59,7 +59,7 @@ class QSDManager(FileDBManager):
             return self.filter(url=url).select_related().latest('create_date')
         except QuasiStaticData.DoesNotExist:
             return None
-    get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     @cache_function
     def get_by_url_else_init(self, url, defaults={}):
@@ -84,7 +84,7 @@ class QSDManager(FileDBManager):
             content = '\n'.join(content)
             qsd_obj.content = content
         return qsd_obj
-    get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url_else_init.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     def __str__(self):
         return "QSDManager()"
@@ -160,7 +160,7 @@ class QuasiStaticData(models.Model):
     @cache_function
     def html(self):
         return markdown(self.content)
-    html.depend_on_row(lambda:QuasiStaticData, 'self')
+    html.depend_on_row('qsd.QuasiStaticData', 'self')
 
     @staticmethod
     def prog_qsd_url(prog, name):

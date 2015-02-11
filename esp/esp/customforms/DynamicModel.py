@@ -83,7 +83,7 @@ class DynamicModelHandler:
         """
         self.fields = Field.objects.filter(form=form).values_list('id', 'field_type')
         return self.fields
-    _getFieldsForForm.depend_on_row(lambda: Field, lambda field: {'form': field.form})        
+    _getFieldsForForm.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     
     def _getModelField(self, field_type):
         """

@@ -15,4 +15,4 @@ def get_user(user_id):
     if not ESPUser:
         from esp.users.models import ESPUser
     return ESPUser.objects.get(id=user_id)
-get_user.depend_on_row(lambda: User, lambda user: {'user_id': user.id})
+get_user.depend_on_row(User, lambda user: {'user_id': user.id})

@@ -469,10 +469,10 @@ class FormHandler:
             else:
                 field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
-    _getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})
-    _getFormMetadata.depend_on_row(lambda: Attribute, lambda attr: {'form': attr.field.form})
-    _getFormMetadata.depend_on_row(lambda: Section, lambda section: {'form': section.page.form})
-    _getFormMetadata.depend_on_row(lambda: Page, lambda page: {'form': page.form})    
+    _getFormMetadata.depend_on_row('customforms.Field', lambda field: {'form': field.form})
+    _getFormMetadata.depend_on_row('customforms.Attribute', lambda attr: {'form': attr.field.form})
+    _getFormMetadata.depend_on_row('customforms.Section', lambda section: {'form': section.page.form})
+    _getFormMetadata.depend_on_row('customforms.Page', lambda page: {'form': page.form})
         
     def _getHandlers(self):
         """
@@ -685,7 +685,7 @@ class FormHandler:
         response_data['answers'].extend(responses)                                    
                     
         return response_data
-    # getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})
+    # getResponseData.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     
     def getResponseExcel(self):
         """
