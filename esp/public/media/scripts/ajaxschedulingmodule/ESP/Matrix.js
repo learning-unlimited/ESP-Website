@@ -275,7 +275,10 @@ function Matrix(
                 }.bind(this));
         //Room headers
         var rows = {};	//table rows by room name
+        var room_ids = Object.keys(this.rooms);
+        room_ids.sort();
         $j.each(this.rooms, function(id, room){
+            room = this.rooms[id];
             var room_header = $j("<td class='room'>" + id + "</td>");
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
@@ -283,10 +286,10 @@ function Matrix(
             }.bind(this));
         //populate cells
         var cells = this.cells;
-        $j.each(this.rooms, function(id, room){
-            row = rows[id];
+        $j.each(room_ids, function(index, room_id){
+            row = rows[room_id];
             for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
-                cells[id][i].el.appendTo(row);
+                cells[room_id][i].el.appendTo(row);
             }
             row.appendTo(table);
         }.bind(this));
@@ -298,9 +301,14 @@ function Matrix(
         this.el.tooltip({
             content: function() {
                 var room = that.rooms[$j(this)[0].innerText];
+                var resource_names = [];
+                $j.each(room.resources, function(index, resource) {
+                    resource_names.push(resource.name);
+                });
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
+                    "Resources: " + "<ul><li>"+ resource_names.join("</li><li>") + "</li></ul>",
                     ];
                 return tooltipParts.join("</br>");
             },
