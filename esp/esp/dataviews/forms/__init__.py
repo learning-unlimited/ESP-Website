@@ -1,5 +1,5 @@
 from django.forms import *
-from django.contrib.formtools.wizard import FormWizard
+from django.contrib.formtools.wizard.views import SessionWizardView
 from django.template.context import RequestContext
 from dataviews import useful_models as all_usefull_models
 from dataviews import * 
@@ -20,7 +20,7 @@ query_term_symbols = {'exact': '[case-sensitive] ==', 'iexact': 'case-insensitiv
 class ModeForm(Form):
     mode = ChoiceField(choices=([('', 'Choose a mode. Note: there is currently only one mode.')]+[(i+1, modes[i]) for i in range(len(modes))]), required=True)
 
-class DataViewsWizard(FormWizard):
+class DataViewsWizard(SessionWizardView):
     
     mode = 0
     first_form = ModeForm
