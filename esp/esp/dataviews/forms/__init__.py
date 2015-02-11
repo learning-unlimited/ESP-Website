@@ -56,22 +56,19 @@ class DataViewsWizard(SessionWizardView):
         if not step:
             return [u'Select the type of output you would like to generate.']
 
-    def setExtraContext(self, step=0):
-        self.extra_context['title'] = u'%s - DataViews Mode %02d' % (self.title(step), self.mode)
-        self.extra_context['instructions'] = self.instructions(step)
+    def get_context_data(self, form, **kwargs):
+        # get context data to be passed to the respective templates
+        context = super(DataViewsWizard, self).get_context_data(form=form, **kwargs)
+        context['title'] = u'%s - DataViews Mode %02d' % (self.title(step), self.mode)
+        context['instructions'] = self.instructions(step)
+        return context
 
-    def __init__(self, initial=None):
-        super(DataViewsWizard, self).__init__(form_list=[self.first_form] *
-                                              self.steps, initial=initial)
-        self.setExtraContext()
+    def get_template_names(self):
+        step = int(self.steps.current)
 
-    @method_decorator(admin_required)
-    def __call__(self, request, *args, **kwargs):
-        return super(DataViewsWizard, self).__call__(request, *args, **kwargs)
-
-    def get_template(self, step):
         def format_for_mode(s):
             return s % {'mode': self.mode, 'step': step + 1}
+
         return map(format_for_mode, ('dataviews/forms_%(mode)02d/%(step)02d_wizard.html',
                                      'dataviews/forms_%(mode)02d/wizard.html',
                                      'dataviews/forms/%(step)02d_wizard.html',
@@ -80,5 +77,8 @@ class DataViewsWizard(SessionWizardView):
     def done(self, request, form_list):
         return HttpResponseRedirect('/dataviews/mode%02d/'% int(form_list[0].cleaned_data['mode']))
 
-    def process_step(self, request, form, step):
-        self.setExtraContext(step + 1)
+    @method_decorator(admin_required)
+    def dispatch(self, *args, **kwargs):
+        return super(DataViewsWizard, self).dispatch(*args, **kwargs)
+
+    
