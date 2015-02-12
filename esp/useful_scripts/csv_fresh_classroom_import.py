@@ -29,7 +29,7 @@ RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
 PROJECTOR = RESOURCE_TYPES.get(name__icontains="projector")
 SPEAKERS = RESOURCE_TYPES.get(name__icontains="speaker")
 MOVEABLE = RESOURCE_TYPES.get(name__icontains="moveable")
-TABLES = RESOURCE_TYPES.get(name__icontains="table")
+TABLES = RESOURCE_TYPES.get(name__icontains="large")
 BOARDS = RESOURCE_TYPES.get(name__icontains="board")
 
 sched_filename = os.path.expanduser(raw_input("Full path to CSV file from schedules: "))
@@ -38,7 +38,7 @@ sched_reader = csv.reader(sched_csvfile)
 
 furnish_filename = os.path.expanduser(raw_input("Full path to CSV file with furnishings: "))
 furnish_csvfile = open(furnish_filename, "r")
-furnish_reader = csv.reader(furnish_filename)
+furnish_reader = csv.reader(furnish_csvfile)
 
 rooms_dict = {}
 
