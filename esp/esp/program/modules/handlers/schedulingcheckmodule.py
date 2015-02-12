@@ -124,6 +124,7 @@ class SchedulingCheckRunner:
 
           #things that we'll calculate lazilly
           self.listed_sections = False
+          self.listed_nonwalkins = False
           self.calculated_classes_missing_resources = False
           self.d_categories = []
           self.d_grades = []
@@ -199,11 +200,16 @@ class SchedulingCheckRunner:
           return d
 
      #memoize the list of all class sections in this program
-     def _all_class_sections(self):
-          if self.listed_sections:
+     def _all_class_sections(self, include_walkins=True):
+          if include_walkins and self.listed_sections:
                return self.all_sections
+          elif (include_walkins == False) and self.listed_nonwalkins:
+               return self.all_nonwalkins
           else:
                qs = self.p.sections()
+               if include_walkins == False:
+                    #filter out walkins
+                    qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
                #filter out non-approved classes
                qs = qs.exclude(status__lte=0)
                qs = qs.exclude(resourceassignment__isnull=True)
@@ -211,28 +217,15 @@ class SchedulingCheckRunner:
                qs = qs.exclude(parent_class__category__category=u'Lunch')
                qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
                qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
-               self.all_sections = list(qs)
-               self.listed_sections = True
-               return self.all_sections
+               if include_walkins:
+                    self.all_sections = list(qs)
+                    self.listed_sections = True
+                    return self.all_sections
+               else:
+                    self.all_nonwalkins = list(qs)
+                    self.listed_nonwalkins = true
+                    return self.all_nonwalkins
           
-     #memoize the list of non-walkin class sections in this program
-     def _all_nonwalkin_sections(self):
-          if self.listed_sections:
-               return self.all_sections
-          else:
-               qs = self.p.sections()
-               #filter out walkins
-               qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
-               #filter out non-approved classes
-               qs = qs.exclude(status__lte=0)
-               qs = qs.exclude(resourceassignment__isnull=True)
-               #filter out lunch
-               qs = qs.exclude(parent_class__category__category=u'Lunch')
-               qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
-               qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
-               self.all_sections = list(qs)
-               self.listed_sections = True
-               return self.all_sections
 
 
      #################################################
@@ -260,7 +253,7 @@ class SchedulingCheckRunner:
 
      def classes_which_cover_lunch(self):
           l = []
-          for s in self._all_nonwalkin_sections():
+          for s in self._all_class_sections(include_walkins=False):
                mt =  s.get_meeting_times()
                for lunch in self.lunch_blocks:
                     if len(lunch) == 0:
@@ -285,7 +278,7 @@ class SchedulingCheckRunner:
      def multiple_classes_same_room_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
           l = []
-          for s in self._all_nonwalkin_sections():
+          for s in self._all_class_sections(include_walkins=False):
                mt =  s.get_meeting_times()
                rooms = s.classrooms()
                for t in mt:
@@ -298,7 +291,7 @@ class SchedulingCheckRunner:
 
      def middle_school_evening_classes(self):
           hso = set(self.high_school_blocks)
-          sections = self._all_nonwalkin_sections()
+          sections = self._all_class_sections(include_walkins=False)
           #only middle school allowing classes
           sections = filter(lambda x: x.parent_class.grade_min < 9, sections)          
           #only classes in evening timeblocks
@@ -309,7 +302,7 @@ class SchedulingCheckRunner:
 
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
-          for s in self._all_nonwalkin_sections():
+          for s in self._all_class_sections(include_walkins=False):
                r = s.classrooms()
                if len(r) > 0:
                     room = r[0]
@@ -367,7 +360,7 @@ class SchedulingCheckRunner:
           #populating it with data
           d_classes = self._timeslot_dict(slot=class_category_dict)
           d_capacity = self._timeslot_dict(slot=class_category_dict)
-          for s in self._all_nonwalkin_sections():
+          for s in self._all_class_sections(include_walkins=False):
                mt =  s.get_meeting_times()
                for t in mt:
                     #   Handle classes not in program's list of class categories
@@ -407,7 +400,7 @@ class SchedulingCheckRunner:
           #populating it with data
           d_classes = self._timeslot_dict(slot=grade_dict)
           d_capacity = self._timeslot_dict(slot=grade_dict)
-          for s in self._all_nonwalkin_sections():
+          for s in self._all_class_sections(include_walkins=False):
                cls = s.parent_class 
                mt =  s.get_meeting_times()
                for t in mt:
