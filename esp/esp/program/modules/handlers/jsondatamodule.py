@@ -105,7 +105,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             } for room_id in classrooms_grouped.keys() ]
 
         return {'rooms': classrooms_dicts}
-    rooms.method.cached_function.depend_on_model(lambda: Resource)
+    rooms.method.cached_function.depend_on_model('resources.Resource')
 
     @aux_call
     @json_response()
@@ -665,7 +665,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
         
         return {'message_requests': data}
-    message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()

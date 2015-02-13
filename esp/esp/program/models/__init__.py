@@ -325,10 +325,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
-    def _SAQ():
-        from esp.program.models.app_ import StudentAppQuestion
-        return StudentAppQuestion
-    isUsingStudentApps.depend_on_model(_SAQ)
+    isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
 
     @cache_function
     def checkitems_all_cached(self):
@@ -336,7 +333,7 @@ class Program(models.Model, CustomFormsLinkModel):
         the number of classes in the program.  Minimize the number of these
         calls that actually hit the db. """
         return self.checkitems.all()
-    checkitems_all_cached.depend_on_row(lambda:ProgramCheckItem, lambda item: {'self': item.program})
+    checkitems_all_cached.depend_on_row('program.ProgramCheckItem', lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
@@ -419,7 +416,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return capacities
     #   Clear this cache on any ClassSection capacity update... kind of brute force, but oh well.
     #   WARNING: Not sure if this usage is correct, can someone check?
-    capacity_by_section_id.depend_on_cache(lambda: ClassSection._get_capacity, lambda **kwargs: {})
+    capacity_by_section_id.depend_on_cache('program.ClassSection._get_capacity', lambda **kwargs: {})
 
     def checked_in_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
@@ -475,7 +472,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     if tmpdict is not None:
                         desc.update(tmpdict)
         return desc
-    getListDescriptions.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+    getListDescriptions.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
@@ -577,14 +574,14 @@ class Program(models.Model, CustomFormsLinkModel):
         isfull = ( students_count >= self.program_size_max )
 
         return isfull
-    isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
-    isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
+    isFull.depend_on_cache('program.ClassSection.num_students', lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
+    isFull.depend_on_row('program.Program', lambda prog: {'self': prog})
+    isFull.depend_on_row('users.Record', lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
     @cache_function
     def open_class_registration(self):
         return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
-    open_class_registration.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.get_program()})
+    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.get_program()})
     open_class_registration = property(open_class_registration)
 
     @cache_function
@@ -607,21 +604,15 @@ class Program(models.Model, CustomFormsLinkModel):
         if cc is None:
             cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
         return cc
-    open_class_category.depend_on_model(lambda: Tag)
-    open_class_category.depend_on_model(lambda: ClassCategories)
+    open_class_category.depend_on_model('tagdict.Tag')
+    open_class_category.depend_on_model('program.ClassCategories')
     open_class_category = property(open_class_category)
 
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
-    def get_sc_model():
-        from esp.program.models import ScheduleConstraint
-        return ScheduleConstraint
-    def get_bt_model():
-        from esp.program.models import BooleanToken
-        return BooleanToken    
-    getScheduleConstraints.depend_on_model(get_sc_model)
-    getScheduleConstraints.depend_on_model(get_bt_model)
+    getScheduleConstraints.depend_on_model('program.ScheduleConstraint')
+    getScheduleConstraints.depend_on_model('program.BooleanToken')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -684,10 +675,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ans = [result[key] for key in key_list]
 
         return ans
-    def get_resource_model():
-        from esp.resources.models import Resource
-        return Resource
-    groupedClassrooms.depend_on_row(get_resource_model, lambda res: {'self': res.event.parent_program()})
+    groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
         
     def addClassroom(self, classroom_form):
@@ -711,7 +699,7 @@ class Program(models.Model, CustomFormsLinkModel):
             retVal = [-1]
         retVal = list(retVal)
         return retVal
-    class_ids_implied.depend_on_row(lambda: ClassImplication, lambda ci: {'self': ci.cls.parent_program})
+    class_ids_implied.depend_on_row('program.ClassImplication', lambda ci: {'self': ci.cls.parent_program})
 
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
@@ -743,7 +731,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return list(self.getTimeSlots(exclude_types=[]))
         else:
             return list(self.getTimeSlots())
-    getTimeSlotList.depend_on_model(lambda: Event)
+    getTimeSlotList.depend_on_model('cal.Event')
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -800,8 +788,8 @@ class Program(models.Model, CustomFormsLinkModel):
             Q_filters = Q(program=self)
         
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
-    getResourceTypes.depend_on_model(lambda: ResourceType)
-    getResourceTypes.depend_on_model(lambda: Tag)
+    getResourceTypes.depend_on_model('resources.ResourceType')
+    getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
         from esp.resources.models import Resource
@@ -897,13 +885,13 @@ class Program(models.Model, CustomFormsLinkModel):
 
         modules.sort(cmpModules)
         return modules
-    getModules_cached.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    getModules_cached.depend_on_model(lambda: ProgramModule)
-    getModules_cached.depend_on_row(lambda: ProgramModuleObj, lambda mod: {'self': mod.program})
+    getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
+    getModules_cached.depend_on_model('program.ProgramModule')
+    getModules_cached.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
-    getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -921,10 +909,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def hasModule(self, name):
         """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
         return self.program_modules.filter(handler=name).exists()
-    hasModule.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    hasModule.depend_on_model(lambda: ProgramModule)
-    hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
-    hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+    hasModule.depend_on_row('program.Program', lambda prog: {'self': prog})
+    hasModule.depend_on_model('program.ProgramModule')
+    hasModule.depend_on_row('modules.ProgramModuleObj', lambda module: {'self': module.program})
+    hasModule.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     @cache_function
     def getModule(self, name):
@@ -938,7 +926,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
         else:
             return None
-    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
+    getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
     def getModuleViews(self, main_only=False, tl=None):
@@ -953,7 +941,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 for view in mod.views:
                     result[(tl, view)] = mod
         return result
-    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
@@ -1007,7 +995,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         self._getColor = retVal
         return retVal
-    getColor.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.module.program})
+    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.module.program})
     
     def visibleEnrollments(self):
         """
@@ -1041,8 +1029,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
     #   Update cache whenever a class is approved or a teacher changes their profile
-    getShirtInfo.depend_on_row(lambda: ClassSubject, lambda cls: {'self': cls.parent_program})
-    getShirtInfo.depend_on_model(lambda: TeacherInfo) 
+    getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    getShirtInfo.depend_on_model('users.TeacherInfo')
 
     @cache_function
     def incrementGrade(self): 
@@ -1056,7 +1044,7 @@ class Program(models.Model, CustomFormsLinkModel):
         See ESPUser.program_schoolyear.
         """
         return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
-    incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
+    incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
         studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
@@ -1088,12 +1076,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
         return prog_inst
-    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
-    def program_selector(node):
-        if node.program_set.all().count() == 1:
-            return {'program': node.program_set.all()[0]}
-        return {}
-    by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
+    by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
 
     def _sibling_discount_get(self):
@@ -1289,7 +1272,7 @@ class RegistrationProfile(models.Model):
         regProf.user = ESPUser(user)
 
         return regProf
-    getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     def confirmStudentReg(self, user):
@@ -1335,7 +1318,7 @@ class RegistrationProfile(models.Model):
         return regProf
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
-    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
@@ -1520,7 +1503,7 @@ class BooleanToken(models.Model):
     @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
-    subclass_instance.depend_on_row(lambda:BooleanToken, lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.BooleanToken', lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
@@ -1584,7 +1567,7 @@ class BooleanExpression(models.Model):
     @cache_function
     def get_stack(self):
         return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
-    get_stack.depend_on_row(lambda: BooleanToken, lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.BooleanToken', lambda token: {'self': token.exp})
         
     def reset(self):
         self.booleantoken_set.all().delete()
@@ -1878,7 +1861,7 @@ class RegistrationType(models.Model):
     def get_cached(name, category):
         rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})
         return rt
-    get_cached.depend_on_model(lambda: RegistrationType)
+    get_cached.depend_on_model('program.RegistrationType')
     get_cached = staticmethod(get_cached)
 
     @cache_function
@@ -1895,7 +1878,7 @@ class RegistrationType(models.Model):
         for item in RegistrationType.objects.all():
             result[item.name] = item
         return result
-    get_map.depend_on_model(lambda: RegistrationType)
+    get_map.depend_on_model('program.RegistrationType')
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
