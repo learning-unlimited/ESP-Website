@@ -61,11 +61,6 @@ class AjaxForeignKeyFieldBase:
 
 $j("#id_%(fn)s").val("%(init_val)s");
 $j("#id_%(fn)s_data").val("%(data)s");
-$j("#id_%(fn)s").change(function () {
-    //  Clear current result and copy value to shadow field whenever text changes
-    $j("#id_%(fn)s_data").val(null);
-    $j("#id_%(shadow_field)s").val($j("#id_%(fn)s").val());
-});
 $j("#id_%(fn)s").autocomplete({
     source: function(request, response) {
         $j.ajax({
@@ -92,6 +87,10 @@ $j("#id_%(fn)s").autocomplete({
     select: function(event, ui) {
         $j("#id_%(fn)s_data").val(ui.item.id);
         %(shadow_field_javascript)s
+    },
+    change: function(event, ui) {
+        $j("#id_%(fn)s_data").val(ui.item ? ui.item.id : null);
+        $j("#id_%(shadow_field)s").val($j("#id_%(fn)s").val());
     }
 });
 
