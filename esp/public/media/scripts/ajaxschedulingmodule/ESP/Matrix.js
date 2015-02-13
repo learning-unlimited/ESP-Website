@@ -267,12 +267,13 @@ function Matrix(
         //Time headers
         var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
         header_row.append($j("<th/>"));
-        $j.each(this.timeslots.timeslots, function(id, timeslot){
+        $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
                 var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
                 this.timeslotHeaders[timeslot.id] = timeslotHeader;
                 timeslotHeader.appendTo(header_row);
                 colModal.push({width: 80, align: 'center'});
                 }.bind(this));
+        console.log(header_row);
         //Room headers
         var rows = {};	//table rows by room name
         var room_ids = Object.keys(this.rooms);
@@ -288,7 +289,7 @@ function Matrix(
         var cells = this.cells;
         $j.each(room_ids, function(index, room_id){
             row = rows[room_id];
-            for(i = 0; i < Object.keys(this.timeslots.timeslots).length; i++){
+            for(i = 0; i < this.timeslots.timeslots_sorted.length; i++){
                 cells[room_id][i].el.appendTo(row);
             }
             row.appendTo(table);

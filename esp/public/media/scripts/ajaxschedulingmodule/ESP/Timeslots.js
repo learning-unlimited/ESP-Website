@@ -5,7 +5,10 @@
  */
 function Timeslots(timeslots_data){
     // TODO: move helper to add timeslot order here
-    this.timeslots = helpers_add_timeslots_order(timeslots_data);
+    this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
+    this.timeslots = timeslots_data; 
+
+    console.log(this.timeslots_sorted);
 
     /**
      * Get a timeslot by its id

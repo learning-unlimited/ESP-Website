@@ -25,7 +25,7 @@ helpers_add_timeslots_order = function(timeslot_object){
         timeslot_object[t.id].order = i;
     }
 
-    return timeslot_object;
+    return sorted_timeslot_array;
 };
 
 /**
