@@ -223,7 +223,7 @@ class SchedulingCheckRunner:
                     return self.all_sections
                else:
                     self.all_nonwalkins = list(qs)
-                    self.listed_nonwalkins = true
+                    self.listed_nonwalkins = True
                     return self.all_nonwalkins
           
 
