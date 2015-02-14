@@ -259,7 +259,6 @@ function Matrix(
                 && schedule_timeslots.indexOf(parseInt(lunch_slot)) < 0) {
                 scheduled_over_lunch = false;
             }
-            console.log(scheduled_over_lunch);
         }.bind(this));
         if(scheduled_over_lunch) {
             result.valid = false;
@@ -326,7 +325,10 @@ function Matrix(
                     ];
                 return tooltipParts.join("</br>");
             },
-            items: ".ft_c td"
+            items: ".ft_c td",
+            track: true,
+            show: {duration: 100},
+            hide: {duration: 100},
         });
     };
 

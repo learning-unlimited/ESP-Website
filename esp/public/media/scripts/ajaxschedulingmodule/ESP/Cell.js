@@ -46,6 +46,9 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	    $j(this.el).tooltip({
 	        items: ".occupied-cell",
 	        content: this.tooltip.bind(this),
+            show: {duration: 100},
+            hide: {duration: 100},
+            track: true,
 	    });
 
         // If the cell is initialized with a section, add it.
@@ -91,8 +94,15 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 	        "Class size max: " + this.section.class_size_max,
 	        "Length: " + Math.ceil(this.section.length),
             "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
-            "Resource Requests: </br>" + this.matrix.sections.getResourceString(this.section),
+            "Resource Requests:" + this.matrix.sections.getResourceString(this.section),
+            "Flags: " + this.section.flags,
 	    ];
+        if(this.section.comments) {
+            tooltip_parts.push("Comments: " + this.section.comments);
+        }
+        if(this.section.special_requests && this.section.special_requests.length > 0) {
+            tooltip_parts.push("Room Requests: " + this.section.special_requests);
+        }
 	    return tooltip_parts.join("<br/>");
     };
 

@@ -17,6 +17,13 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
 
+    // Set up keyboard shortcut for unscheduling
+    $j("body").keydown(function(evt) {
+        if(evt.keyCode == 85) { // u is pressed
+            this.unscheduleSection(this.selectedSection);
+        }
+    }.bind(this));
+
     // Set up filtering
     this.filter = {
         classLengthMin: {active: false, el: $j("input#section-filter-length-min"), type: "number"},
