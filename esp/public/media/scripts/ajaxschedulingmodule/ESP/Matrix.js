@@ -320,7 +320,7 @@ function Matrix(
         var that = this;
         this.el.tooltip({
             content: function() {
-                var room = that.rooms[$j(this)[0].innerText];
+                var room = that.rooms[$j(this)[0].innerHTML];
                 var resource_names = [];
                 $j.each(room.resources, function(index, resource) {
                     resource_names.push(resource.name);
