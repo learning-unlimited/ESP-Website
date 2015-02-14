@@ -79,6 +79,29 @@ function Scheduler(
     );
 
 
+    // Set up keyboard shortcut for unscheduling
+    $j("body").keydown(function(evt) {
+        console.log(evt);
+        if(evt.keyCode == 46) { // delete is pressed
+            this.sections.unscheduleSection(this.sections.selectedSection);
+        } else if(evt.keyCode == 27) { // escape is pressed
+            this.sections.unselectSection()
+        } else if(evt.keyCode == 112) { // F1 is pressed
+            evt.preventDefault();
+            $j("#side-panel").tabs({active: 0});
+        } else if(evt.keyCode == 113) { // F3 is pressed
+            evt.preventDefault();
+            $j("#side-panel").tabs({active: 1});
+        }
+    }.bind(this));
+
+    $j('body').keyup(function(evt) {
+        if(evt.keyCode == 191) { // '/' is pressed
+            $j("#class-search-text").focus();
+        }
+    });
+
+
     // set up handlers for selecting and scheduling classes
     $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
         var cell = $j(evt.currentTarget.parentElement).data("cell");
