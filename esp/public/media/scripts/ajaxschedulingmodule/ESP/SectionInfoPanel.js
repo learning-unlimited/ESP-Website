@@ -77,7 +77,15 @@ function SectionInfoPanel(el, sections, togglePanel) {
 	        "Length: " + Math.ceil(section.length),
             "Grades: " + section.grade_min + "-" + section.grade_max,
             "Resource Requests: " + resources,
+            "Flags: " + section.flags,
         ]
+        if(section.comments) {
+            content_parts.push("Comments: " + section.comments);
+        }
+        if(section.special_requests && section.special_requests.length > 0) {
+            content_parts.push("Room Requests: " + section.special_requests);
+        }
+	
 
         contentDiv.append(content_parts.join("</br>"));
 
