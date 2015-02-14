@@ -3,12 +3,12 @@
  * 
  * @param timeslots_data: The raw timeslot data
  */
-function Timeslots(timeslots_data){
+function Timeslots(timeslots_data, lunch_timeslots){
     // TODO: move helper to add timeslot order here
     this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
     this.timeslots = timeslots_data; 
+    this.lunch_timeslots = lunch_timeslots;
 
-    console.log(this.timeslots_sorted);
 
     /**
      * Get a timeslot by its id

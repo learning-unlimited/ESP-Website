@@ -25,7 +25,8 @@ window.onresize = resizeElements;
 
 // Fetch the data from the server
 var data = {};
-json_fetch(['sections_admin', 'timeslots', 'rooms', 'schedule_assignments', "resource_types"], function(){
+json_get('lunch_timeslots', {}, function(lunch_timeslots) {
+    json_fetch(['sections_admin', 'lunch_timeslots', 'timeslots', 'rooms', 'schedule_assignments', "resource_types"], function(){
         console.log(data)
         resizeElements();
                 
@@ -41,5 +42,6 @@ json_fetch(['sections_admin', 'timeslots', 'rooms', 'schedule_assignments', "res
             5000
             );
         s.render();
-}, 
-    data);
+    }, data);
+    data['lunch_timeslots'] = Object.keys(lunch_timeslots['timeslots']);
+    }, function() {});

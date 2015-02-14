@@ -42,7 +42,8 @@ function Scheduler(
 
     });
 
-    this.timeslots = new Timeslots(data.timeslots);
+    this.lunch_timeslots = data.lunch_timeslots;
+    this.timeslots = new Timeslots(data.timeslots, this.lunch_timeslots);
     
     this.rooms = data.rooms;
 

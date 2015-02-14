@@ -252,7 +252,21 @@ function Matrix(
                     return result;
             }
         }
-
+        
+        var scheduled_over_lunch = true;
+        $j.each(this.timeslots.lunch_timeslots, function(lunch_index, lunch_slot) {
+            if(this.timeslots.on_same_day(this.timeslots.get_by_id(lunch_slot), this.timeslots.get_by_id(schedule_timeslots[0])) 
+                && schedule_timeslots.indexOf(parseInt(lunch_slot)) < 0) {
+                scheduled_over_lunch = false;
+            }
+            console.log(scheduled_over_lunch);
+        }.bind(this));
+        if(scheduled_over_lunch) {
+            result.valid = false;
+            result.reason = "scheduled over lunch";
+            console.log("over lunch");
+            return result;
+        }
         return result;
     };
 
@@ -273,7 +287,6 @@ function Matrix(
                 timeslotHeader.appendTo(header_row);
                 colModal.push({width: 80, align: 'center'});
                 }.bind(this));
-        console.log(header_row);
         //Room headers
         var rows = {};	//table rows by room name
         var room_ids = Object.keys(this.rooms);
