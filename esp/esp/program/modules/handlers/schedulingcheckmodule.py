@@ -360,7 +360,7 @@ class SchedulingCheckRunner:
           #populating it with data
           d_classes = self._timeslot_dict(slot=class_category_dict)
           d_capacity = self._timeslot_dict(slot=class_category_dict)
-          for s in self._all_class_sections(include_walkins=False):
+          for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                for t in mt:
                     #   Handle classes not in program's list of class categories
