@@ -252,12 +252,19 @@ function Matrix(
                     return result;
             }
         }
-        
-        var scheduled_over_lunch = true;
-        $j.each(this.timeslots.lunch_timeslots, function(lunch_index, lunch_slot) {
-            if(this.timeslots.on_same_day(this.timeslots.get_by_id(lunch_slot), this.timeslots.get_by_id(schedule_timeslots[0])) 
-                && schedule_timeslots.indexOf(parseInt(lunch_slot)) < 0) {
-                scheduled_over_lunch = false;
+        var scheduled_over_lunch = false;
+        $j.each(this.timeslots.lunch_timeslots, function(day, lunch_slots) {
+            if(this.timeslots.on_same_day(lunch_slots[0], this.timeslots.get_by_id(schedule_timeslots[0]))) {
+               var count = 0;
+               $j.each(lunch_slots, function(index, lunch_slot) {
+                    if(schedule_timeslots.indexOf(lunch_slot.id) > -1) {
+                        count++;
+                    }
+                });
+                console.log(count);
+                if(count == lunch_slots.length) {
+                    scheduled_over_lunch = true;
+                }
             }
         }.bind(this));
         if(scheduled_over_lunch) {

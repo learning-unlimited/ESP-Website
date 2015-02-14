@@ -97,6 +97,7 @@ function Scheduler(
 
     $j('body').keyup(function(evt) {
         if(evt.keyCode == 191) { // '/' is pressed
+            $j("#side-panel").tabs({active: 0});
             $j("#class-search-text").focus();
         }
     });
