@@ -1040,16 +1040,20 @@ class ClassSection(models.Model):
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 #   Here we render the template to include the username, and also whether the student is registered
-                    context['classreg'] = students_to_email[student]
-                    context['user'] = student
-                    msgtext = render_to_string('email/class_cancellation.txt', context)
+                context['classreg'] = students_to_email[student]
+                context['user'] = student
+                msgtext = render_to_string('email/class_cancellation.txt', context)
                 if students_to_email[student]:
                     send_mail(email_title, msgtext, from_email, to_email)
                 else:
                     send_mail(ssi_email_title, msgtext, from_email, to_email)
 
         #   Send e-mail to administrators as well
+        context['classreg'] = True
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
+        if email_ssis:
+            context['classreg'] = False
+            email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
