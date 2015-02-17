@@ -46,6 +46,7 @@ class DataViewsWizard(SessionWizardView):
 
     mode = 0
     first_form = ModeForm
+    form_list = [ModeForm]
     steps = 1
 
     def title(self, step=0):
@@ -59,22 +60,22 @@ class DataViewsWizard(SessionWizardView):
     def get_context_data(self, form, **kwargs):
         # get context data to be passed to the respective templates
         context = super(DataViewsWizard, self).get_context_data(form=form, **kwargs)
-        context['title'] = u'%s - DataViews Mode %02d' % (self.title(step), self.mode)
-        context['instructions'] = self.instructions(step)
+        context['title'] = u'%s - DataViews Mode %02d' % (self.title(int(self.steps.current)), self.mode)
+        context['instructions'] = self.instructions(self.steps.current)
         return context
 
     def get_template_names(self):
         step = int(self.steps.current)
 
         def format_for_mode(s):
-            return s % {'mode': self.mode, 'step': step + 1}
+            return s % {'mode': self.mode, 'step': int(self.steps.current) + 1}
 
         return map(format_for_mode, ('dataviews/forms_%(mode)02d/%(step)02d_wizard.html',
                                      'dataviews/forms_%(mode)02d/wizard.html',
                                      'dataviews/forms/%(step)02d_wizard.html',
                                      'dataviews/forms/wizard.html'))
 
-    def done(self, request, form_list):
+    def done(self, form_list, **kwargs):
         return HttpResponseRedirect('/dataviews/mode%02d/'% int(form_list[0].cleaned_data['mode']))
 
     @method_decorator(admin_required)

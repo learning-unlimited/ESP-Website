@@ -24,8 +24,9 @@ function showInstructions() {
 <h1 class='title'>{{ title }}</h1>
 {% endblock %}
 {% block form_step %}
-<p>Step {{ step }} of {{ step_count }}</p>
+<p>Step {{ wizard.steps.step }} of {{ wizard.steps.count }}</p>
 {% endblock %}
+
 {% block form_instructions %}
 <div class='instructions' style="outline: thin solid black; padding: 3px; margin-bottom: 10px">
 <h3 class='instructions'>Instructions: <input type='button' name='instructions-button' id='id_instructions-button' value='Show' onclick="showInstructions();return 0;" /></h3>
@@ -39,12 +40,15 @@ function showInstructions() {
 {% endblock %}
 {% endblock %}
 {% block form %}
-<form action="." method="post" id="id_{{ step }}-form">
+<form action="." method="post" id="id_{{ wizard.steps.step }}-form">
+{% csrf_token %}
+{{ wizard.management_form }}
+
 {% block form_begin %}{% endblock %}
-{% block form_div %}<div id="id_{{ step0 }}-form_div">{% endblock %}
+{% block form_div %}<div id="id_{{ wizard.steps.step0 }}-form_div">{% endblock %}
 {% block form_as %}{{ form.as_p }}{% endblock %}
 </div>
-<input type="hidden" name="{{ step_field }}" value="{{ step0 }}" />
+<input type="hidden" name="{{ step_field }}" value="{{ wizard.steps.step0 }}" />
 {{ previous_fields|safe }}
 {% block form_end %}{% endblock %}
 <input type="submit" />
