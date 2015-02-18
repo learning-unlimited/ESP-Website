@@ -280,20 +280,21 @@ u'All rows except the first (you have to display something!) can be left blank, 
         book.save(response)
         return response
     
-    def parse_params(self, request, *args, **kwargs):
-        self.num_conditions = int(request.POST.get('%s-num_conditions' % self.prefix_for_step(0), 3))
-        self.num_columns = int(request.POST.get('%s-num_columns' % self.prefix_for_step(2), 3))
-        self.base_model = request.POST.get('%s-model' % self.prefix_for_step(0), None)
+    def process_step(self, form): 
+        super(ModeWizard, self).process_step(form)
+        self.num_conditions = int(self.request.POST.get('%s-num_conditions' % str(0), 3))
+        self.num_columns = int(self.request.POST.get('%s-num_columns' % str(2), 3))
+        self.base_model = self.request.POST.get('%s-model' % str(0), None)
         if self.base_model: 
             self.base_model = globals()[self.base_model]
         self.form_list[0] = headingconditionsform_factory(self.num_conditions)
         self.form_list[2] = displaycolumnsform_factory(base_model = self.base_model, num_columns = self.num_columns)
     
-    def process_step(self, request, form, step): 
-        super(ModeWizard, self).process_step(request, form, step)
-        form0 = self.get_form(0, request.POST)
-        if not form0.is_valid():
-            return self.render_revalidation_failure(request, 0, form0)
+        step = int(self.steps.current)
+        
+        if not form.is_valid():
+            return self.render_revalidation_failure(self.request, 0, form)
+
         if not step: 
             paths = []
             for i in range(self.num_conditions):

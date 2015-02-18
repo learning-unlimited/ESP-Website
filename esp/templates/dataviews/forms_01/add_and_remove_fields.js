@@ -49,18 +49,21 @@ function deleteField(p)
 
 function addField(type)
 {
-    form = document.getElementById("id_{{ step0 }}-form_div");
-    toCopy = form.getElementsByTagName("P")[1]
+    form = document.getElementById("id_{{ wizard.steps.step0 }}-form_div");
+    console.log(form.getElementsByTagName("p"));
+    toCopy = form.getElementsByTagName("p")[0]
+
+
     var i = 0;
     for (i = 0; i < 3; ++i) {
         form.appendChild(toCopy.cloneNode(true));
         toCopy = toCopy.nextSibling
     }
-    allP = form.getElementsByTagName("P");
+    allP = form.getElementsByTagName("p");
     newP = allP[allP.length - 1];
     deleteField(newP);
-    num_fields = 1 + parseInt(document.getElementById("id_{{ step0 }}-num_"+type.substring(0, type.length-1)+"s").value);
-    document.getElementById("id_{{ step0 }}-num_"+type.substring(0, type.length-1)+"s").value = num_fields;
+    num_fields = 1 + parseInt(document.getElementById("id_{{ wizard.steps.step0 }}-num_"+type.substring(0, type.length-1)+"s").value);
+    document.getElementById("id_{{ wizard.steps.step0 }}-num_"+type.substring(0, type.length-1)+"s").value = num_fields;
     var i = 0;
     for (i = 0; i < newP.childNodes.length; ++i) {
         if (newP.childNodes[i].tagName == "SELECT" || (newP.childNodes[i].tagName == "INPUT" && p.childNodes[i].type == "text")) {

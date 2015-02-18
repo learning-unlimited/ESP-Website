@@ -6,11 +6,16 @@ from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
 
 def wizard_view(request):
-    return DataViewsWizard()(request)
+    return DataViewsWizard.as_view(request)
+
 
 def mode_view(request, mode, **kwargs): 
     form = 'forms_%02d' % int(mode)
-    return getattr(__import__('dataviews.forms', globals(), locals(), [form], -1), form).ModeWizard(**kwargs)(request)
+    form_module = __import__('dataviews.forms', globals(), locals(), [form], -1)
+    form_class = getattr(form_module, form)
+
+    return form_class.ModeWizard.as_view()(request, **kwargs)
+
 
 def doc_view(request, model_name): 
     context = defaultdict(list)
