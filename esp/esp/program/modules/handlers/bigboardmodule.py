@@ -63,16 +63,21 @@ class BigBoardModule(ProgramModuleObj):
         ]
         # Drop the first and last 10 times, because those are usually
         # special snowflakes or admins and really aren't worth getting excited
-        # about.  Then round start down and end up to the nearest day.
-        start = min([times[10:-10][0] for desc, times in timess])
-        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-        end = max([times[10:-10][-1] for desc, times in timess])
-        end = end.replace(hour=0, minute=0, second=0, microsecond=0)
-        end += datetime.timedelta(1)
-        end = min(end, datetime.datetime.now())
-        graph_data = [{"description": desc,
-                       "data": BigBoardModule.chunk_times(times, start, end)}
-                      for desc, times in timess]
+        # about.  Then round start down and end up to the nearest day.  If
+        # there aren't many registrations, don't bother with the graph.
+        if any(len(times) < 25 for desc, times in timess):
+            graph_data = []
+            start = None
+        else:
+            start = min([times[10:-10][0] for desc, times in timess])
+            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = max([times[10:-10][-1] for desc, times in timess])
+            end = end.replace(hour=0, minute=0, second=0, microsecond=0)
+            end += datetime.timedelta(1)
+            end = min(end, datetime.datetime.now())
+            graph_data = [{"description": desc,
+                           "data": BigBoardModule.chunk_times(times, start, end)}
+                          for desc, times in timess]
 
         context = {
             "numbers": numbers,

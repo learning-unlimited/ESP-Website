@@ -70,7 +70,7 @@ class NavBarCategory(models.Model):
         #   If all else fails, make something up.
         return NavBarCategory.default()
 
-    from_request.depend_on_model(lambda: NavBarCategory) 
+    from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
     
     @classmethod
