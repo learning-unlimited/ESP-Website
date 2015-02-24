@@ -28,6 +28,8 @@ Thanks,
 Miriam and Taylor
 Spark 2015 Directors
 '''
+# TODO: Consider changing this to something non-class-dependent so that the
+# emails thread together for admins!
 section_template = '%(email_code)s: room %(room)s (capacity %(room_cap)s)'
 
 from_address = 'spark@mit.edu'
