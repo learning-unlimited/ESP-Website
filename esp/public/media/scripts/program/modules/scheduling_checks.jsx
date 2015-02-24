@@ -71,13 +71,13 @@ var SchedulingCheck = React.createClass({
 
   render: function () {
     var body;
-    if (!this.state.open) {
+    if (this.state.failed) {
+      body = <div className="placeholder">
+        (loaded {this.state.timestamp}, loading failed ☹)
+      </div>;
+    } else if (!this.state.open) {
       body = <div className="placeholder">
         (loaded {this.state.timestamp}, click title to open)
-      </div>;
-    } else if (this.state.failed) {
-      body = <div className="placeholder">
-        loaded {this.state.timestamp}, loading failed :(
       </div>;
     } else if (!this.state.data) {
       body = <div className="placeholder">loading...</div>;
