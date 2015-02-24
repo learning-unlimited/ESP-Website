@@ -35,6 +35,8 @@ extra_headers = {
     'Sender': 'server@esp.mit.edu',
 }
 
+exclude_class_ids = set([9258, 9316, 9340, 9241])
+
 def listify(l):
     """Convert a list [a,b,c] to text "a, b, and c" or similar."""
     l = list(l)
@@ -49,10 +51,18 @@ def listify(l):
         return ', '.join(l)
 
 for c in program.classes():
+    if c.id in exclude_class_ids:
+        continue
     section_texts = []
     for s in c.sections.all():
+        # if the class is scheduled in a room
         if (s.classrooms().exists()
-                and s.capacity < s._get_room_capacity()
+                # if the difference is <= 3, don't bother
+                and s.capacity + 3 < s._get_room_capacity()
+                # if the class is already big enough that it won't fill, don't
+                # bother.  (This number could be higher for Splash.)  This also
+                # filters out walk-ins, but we could do that separately if we
+                # increased it above 200.
                 and s.capacity < 150):
             section_texts.append(section_template % {
                 'email_code': s.emailcode(),
