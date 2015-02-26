@@ -33,8 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import types
-
 from django.core.cache import cache
 from django.dispatch import Signal
 from django.db.models import signals
@@ -42,7 +40,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 
-from esp.cache.queued import WithDelayableMethods, delay_method
+from esp.cache.queued import add_lazy_dependency
 from esp.cache.token import Token, SingleEntryToken
 from esp.cache.key_set import specifies_key, token_list_for
 from esp.cache.marinade import marinade_dish
@@ -146,15 +144,7 @@ __all__ = ['ArgCache']
 # more general tokens thing, which more-or-less depends on async caching
 
 
-# XXX: This system cannot thunk functions!!!  We should do some other silly
-# thing, but I really don't want the syntax complicated.
-def handle_thunk(obj):
-    """ If obj is a function (thunk), return result; otherwise return obj. """
-    if isinstance(obj, types.FunctionType):
-        return obj()
-    return obj
-
-class ArgCache(WithDelayableMethods):
+class ArgCache(object):
     """ Implements a cache that allows for selectively dropping bits of itself. """
 
     CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
@@ -421,7 +411,6 @@ class ArgCache(WithDelayableMethods):
                 return False
         return arg_list
 
-    @delay_method
     def depend_on_model(self, Model, key_set={}, create_token=True):
         """
         Dump parts of this cache when anything in the Model changes.
@@ -439,16 +428,16 @@ class ArgCache(WithDelayableMethods):
         # Python/Django double-import)
         if self.locked:
             return
-        Model = handle_thunk(Model)
-        if create_token:
-            self.get_or_create_token(token_list_for(key_set))
-        def delete_cb(sender, **kwargs):
-            self.delete_key_sets(key_set)
-        signals.post_save.connect(delete_cb, sender=Model, weak=False)
-        signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
+        def resolve_depend_on_model(Model):
+            if create_token:
+                self.get_or_create_token(token_list_for(key_set))
+            def delete_cb(sender, **kwargs):
+                self.delete_key_sets(key_set)
+            signals.post_save.connect(delete_cb, sender=Model, weak=False)
+            signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
+        add_lazy_dependency(self, Model, resolve_depend_on_model)
     depend_on_model.alters_data = True
 
-    @delay_method
     def depend_on_row(self, Model, selector, filter=None):
         """
         Depend on a row of a Model when a row of this Model changes.
@@ -467,9 +456,6 @@ class ArgCache(WithDelayableMethods):
         # Python/Django double-import)
         if self.locked:
             return
-        Model = handle_thunk(Model)
-        if Model is None:
-            raise ESPError("Attempting to depend on Model None... this is a pretty dumb thing to do.")
         if filter is None:
             filter = lambda instance: True
         if isinstance(selector, str):
@@ -479,17 +465,20 @@ class ArgCache(WithDelayableMethods):
             # Make the token
             token = self.get_or_create_token((selector_str,))
 
-        def delete_cb(sender, instance, **kwargs):
-            if not filter(instance):
-                return None
-            new_key_set = selector(instance)
-            if new_key_set is not None:
-                self.delete_key_sets(new_key_set)
-        signals.post_save.connect(delete_cb, sender=Model, weak=False)
-        signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
+        def resolve_depend_on_row(Model):
+            if Model is None:
+                raise ESPError("Attempting to depend on Model None... this is a pretty dumb thing to do.")
+            def delete_cb(sender, instance, **kwargs):
+                if not filter(instance):
+                    return None
+                new_key_set = selector(instance)
+                if new_key_set is not None:
+                    self.delete_key_sets(new_key_set)
+            signals.post_save.connect(delete_cb, sender=Model, weak=False)
+            signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
+        add_lazy_dependency(self, Model, resolve_depend_on_row)
     depend_on_row.alters_data = True
 
-    @delay_method
     def depend_on_cache(self, cache_obj, mapping_func, filter=None):
         """
         Depend on another cache, cache_obj, using mapping_func.
@@ -507,20 +496,27 @@ class ArgCache(WithDelayableMethods):
         # Python/Django double-import)
         if self.locked:
             return
-        cache_obj = handle_thunk(cache_obj)
         if filter is None:
             filter = lambda **kwargs: True
-        def delete_cb(sender, key_set, **kwargs):
-            if not filter(**key_set):
-                return None
-            new_key_set = mapping_func(**key_set)
-            if new_key_set is not None:
-                self.delete_key_sets(new_key_set)
-        # TODO: Handle timeouts and take the min of a timeout
-        cache_obj.connect(delete_cb)
+        # HACK: allow cached methods of models to be specified as strings
+        # "app.Model.method"
+        method_name = None
+        if isinstance(cache_obj, basestring):
+            cache_obj, method_name = cache_obj.rsplit(".", 1)
+        def resolve_depend_on_cache(cache_obj):
+            if method_name is not None:
+                cache_obj = getattr(cache_obj, method_name)
+            def delete_cb(sender, key_set, **kwargs):
+                if not filter(**key_set):
+                    return None
+                new_key_set = mapping_func(**key_set)
+                if new_key_set is not None:
+                    self.delete_key_sets(new_key_set)
+            # TODO: Handle timeouts and take the min of a timeout
+            cache_obj.connect(delete_cb)
+        add_lazy_dependency(self, cache_obj, resolve_depend_on_cache)
     depend_on_cache.alters_data = True
 
-    @delay_method
     def depend_on_m2m(self, Model, m2m_field, add_func, rem_func=None, filter=None):
         """
         Depend on an m2m relation, field m2m_field of model Model, using
@@ -539,31 +535,32 @@ class ArgCache(WithDelayableMethods):
             rem_func = add_func
         if filter is None:
             filter = lambda instance, object: True
-        Model = handle_thunk(Model)
-        IntermediateModel = getattr(Model, m2m_field).through
 
-        def change_cb(sender, instance, action, model, pk_set, **kwargs):
-            if action == "post_add":
-                objects = model.objects.filter(pk__in=pk_set)
-                selector = add_func
-            elif action == "pre_remove":
-                objects = model.objects.filter(pk__in=pk_set)
-                selector = rem_func
-            elif action == "pre_clear":
-                objects = model.objects.all()
-                selector = rem_func
-            else:
-                return
-            if isinstance(instance, Model):
-                for object in objects:
-                    do_delete(instance, object, selector, filter)
-            else: # reversed m2m; switch instance and object
-                for object in objects:
-                    do_delete(object, instance, selector, filter)
-        def do_delete(instance, object, selector, filter):
-            if not filter(instance, object):
-                return None
-            new_key_set = selector(instance, object)
-            if new_key_set is not None:
-                self.delete_key_sets(new_key_set)
-        signals.m2m_changed.connect(change_cb, sender=IntermediateModel, weak=False)
+        def resolve_depend_on_m2m(Model):
+            IntermediateModel = getattr(Model, m2m_field).through
+            def change_cb(sender, instance, action, model, pk_set, **kwargs):
+                if action == "post_add":
+                    objects = model.objects.filter(pk__in=pk_set)
+                    selector = add_func
+                elif action == "pre_remove":
+                    objects = model.objects.filter(pk__in=pk_set)
+                    selector = rem_func
+                elif action == "pre_clear":
+                    objects = model.objects.all()
+                    selector = rem_func
+                else:
+                    return
+                if isinstance(instance, Model):
+                    for object in objects:
+                        do_delete(instance, object, selector, filter)
+                else: # reversed m2m; switch instance and object
+                    for object in objects:
+                        do_delete(object, instance, selector, filter)
+            def do_delete(instance, object, selector, filter):
+                if not filter(instance, object):
+                    return None
+                new_key_set = selector(instance, object)
+                if new_key_set is not None:
+                    self.delete_key_sets(new_key_set)
+            signals.m2m_changed.connect(change_cb, sender=IntermediateModel, weak=False)
+        add_lazy_dependency(self, Model, resolve_depend_on_m2m)

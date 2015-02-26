@@ -240,7 +240,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @cache_function
     def printer_names():
         return Printer.objects.all().values_list('name', flat=True)
-    printer_names.depend_on_model(lambda: Printer)
+    printer_names.depend_on_model('utils.Printer')
     printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
 
     @main_call

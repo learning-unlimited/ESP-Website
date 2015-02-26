@@ -51,7 +51,7 @@ class EventType(models.Model):
         """ A cached function for getting EventTypes that we know must exist
         if someone has run install() """
         return EventType.objects.get(description=desc)
-    get_from_desc.depend_on_model(lambda: EventType)
+    get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
 class Event(models.Model):

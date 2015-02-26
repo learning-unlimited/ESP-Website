@@ -3,11 +3,6 @@
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
-{% endblock %}
-
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
@@ -23,7 +18,6 @@ var open_class_registration = {{ open_class_registration }};
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/class_popups.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <!--
 <script type="text/javascript">
   $j.getScript("/media/scripts/jquery-ui-1.8.17.custom.min.js", function(){

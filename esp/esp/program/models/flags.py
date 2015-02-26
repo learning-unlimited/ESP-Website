@@ -79,8 +79,8 @@ class ClassFlagType(models.Model):
         if dashboard:
             base = base.filter(show_in_dashboard=True)
         return base
-    get_flag_types.depend_on_model(lambda: ClassFlagType)
-    get_flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
+    get_flag_types.depend_on_model('program.ClassFlagType')
+    get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)
 
 class ClassFlag(models.Model):

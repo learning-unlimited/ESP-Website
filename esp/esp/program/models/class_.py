@@ -305,10 +305,10 @@ class ClassManager(Manager):
                                  # they show up for all instances.
             
         return classes
-    catalog_cached.depend_on_model(lambda: ClassSubject)
-    catalog_cached.depend_on_model(lambda: ClassSection)
-    catalog_cached.depend_on_model(lambda: Media)
-    catalog_cached.depend_on_model(lambda: Tag)
+    catalog_cached.depend_on_model('program.ClassSubject')
+    catalog_cached.depend_on_model('program.ClassSection')
+    catalog_cached.depend_on_model('qsdmedia.Media')
+    catalog_cached.depend_on_model('tagdict.Tag')
 
     #perhaps make it program-specific?
     @staticmethod
@@ -318,7 +318,7 @@ class ClassManager(Manager):
             parts[-1] == "index" and \
             parts[0] == "learn" and \
             "Classes" in parts
-    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+    catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
 
@@ -404,7 +404,7 @@ class ClassSection(models.Model):
     @cache_function
     def get_meeting_times(self):
         return self.meeting_times.all()
-    get_meeting_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    get_meeting_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
@@ -469,17 +469,14 @@ class ClassSection(models.Model):
         else:
             return int(ans)
 
-    _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
-    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
-    _get_capacity.depend_on_model(lambda:ClassSubject)
-    _get_capacity.depend_on_model(lambda: Resource)
-    _get_capacity.depend_on_row(lambda:ClassSection, 'self')
-    _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
-    _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
-    def __get_studentclassregmoduleinfo():
-        from esp.program.modules.module_ext import StudentClassRegModuleInfo
-        return StudentClassRegModuleInfo
-    _get_capacity.depend_on_model(__get_studentclassregmoduleinfo)
+    _get_capacity.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row('program.ClassSection', lambda r: {'self': r})
+    _get_capacity.depend_on_model('program.ClassSubject')
+    _get_capacity.depend_on_model('resources.Resource')
+    _get_capacity.depend_on_row('program.ClassSection', 'self')
+    _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
+    _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
+    _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
 
        
     capacity = property(_get_capacity)
@@ -510,7 +507,7 @@ class ClassSection(models.Model):
     @cache_function
     def checklist_progress_all_cached(self):
         return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSection, 'checklist_progress', lambda cs, cp: {'self': cs})
+    checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
         return self.resourceassignment_set.all()
@@ -622,7 +619,7 @@ class ClassSection(models.Model):
             return False
         else:
             return True
-    sufficient_length.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    sufficient_length.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     
     
     def extend_timeblock(self, event, merged=True):
@@ -654,10 +651,10 @@ class ClassSection(models.Model):
         else:
             retVal = 'Happy'
         return retVal
-    scheduling_status.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
-    scheduling_status.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
-    scheduling_status.depend_on_row(lambda: ResourceRequest, lambda rr: {'self': rr.target})
-    scheduling_status.depend_on_row(lambda: ResourceAssignment, lambda ra: {'self': ra.target})
+    scheduling_status.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
+    scheduling_status.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    scheduling_status.depend_on_row('resources.ResourceRequest', lambda rr: {'self': rr.target})
+    scheduling_status.depend_on_row('resources.ResourceAssignment', lambda ra: {'self': ra.target})
     
     @cache_function
     def unsatisfied_requests(self):
@@ -667,7 +664,7 @@ class ClassSection(models.Model):
         else:
             result = self.getResourceRequests()
         return result
-    unsatisfied_requests.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
+    unsatisfied_requests.depend_on_cache(scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -814,9 +811,9 @@ class ClassSection(models.Model):
 
         return viable_list
         
-    viable_rooms.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
-    viable_rooms.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
-    viable_rooms.depend_on_model(lambda: Resource)
+    viable_rooms.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
+    viable_rooms.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    viable_rooms.depend_on_model('resources.Resource')
     
     def clearRooms(self):
         self.classroomassignments().delete()
@@ -849,7 +846,7 @@ class ClassSection(models.Model):
     @cache_function
     def timeslot_ids(self):
         return self.meeting_times.all().values_list('id', flat=True)
-    timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
+    timeslot_ids.depend_on_m2m('program.ClassSection', 'meeting_times', lambda instance, object: {'self': instance})
 
     def cannotRemove(self, user):
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -975,7 +972,7 @@ class ClassSection(models.Model):
             if len(result[result_key]) == 0:
                 del result[result_key]
         return result
-    students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    students_dict.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
     
     def students_prereg(self):
         return self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct()
@@ -989,7 +986,7 @@ class ClassSection(models.Model):
     @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
-    num_students_prereg.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    num_students_prereg.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def num_students(self, verbs=['Enrolled']):
@@ -998,12 +995,12 @@ class ClassSection(models.Model):
                 self._count_students = self.students(verbs).count()
             return self._count_students
         return self.students(verbs).count()
-    num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def count_enrolled_students(self):
         return self.num_students(use_cache=False)
-    count_enrolled_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
@@ -1147,7 +1144,7 @@ class ClassSection(models.Model):
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         return txtTimes
-    friendly_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    friendly_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
     
     def friendly_times_with_date(self, raw=False):
         return self.friendly_times(raw=raw, include_date=True)
@@ -1322,7 +1319,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
-    get_allowable_class_size_ranges.depend_on_m2m(lambda:ClassSubject, 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
+    get_allowable_class_size_ranges.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
 
     def get_sections(self):
         if not hasattr(self, "_sections") or self._sections is None:
@@ -1406,8 +1403,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             result = self.default_section()
 
         return result
-    get_section.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs.parent_class})
-    get_section.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
+    get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
@@ -1460,7 +1457,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     @cache_function
     def checklist_progress_all_cached(self):
         return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSubject, 'checklist_progress', lambda cs, cp: {'self': cs})
+    checklist_progress_all_cached.depend_on_m2m('program.ClassSubject', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def friendly_times(self):
         collapsed_times = []
@@ -1485,7 +1482,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return self._teachers
         
         return self.teachers.all()
-    get_teachers.depend_on_m2m(lambda: ClassSubject, 'teachers', lambda subj, event: {'self': subj})
+    get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
     
     def students_dict(self):
         result = PropertyDict({})
@@ -1594,7 +1591,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             capacity_factor = 0.75
         return capacity_factor
-    get_capacity_factor.depend_on_row(lambda: Tag, lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+    get_capacity_factor.depend_on_row('tagdict.Tag', lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
     get_capacity_factor = staticmethod(get_capacity_factor)
 
     def is_nearly_full(self, capacity_factor = None):
@@ -1803,7 +1800,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         """ Return the first three documents associated
         with a class, for previewing. """
         return self.documents.all()[:3]
-    docs_summary.depend_on_model(lambda: Media)
+    docs_summary.depend_on_model('qsdmedia.Media')
 
     def getUrlBase(self):
         """ Gets the base url of this class """
