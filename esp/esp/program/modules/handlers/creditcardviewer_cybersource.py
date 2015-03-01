@@ -67,15 +67,14 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
             payment_table.append((student, iac.get_transfers(), iac.amount_requested(), iac.amount_due()))
 
         #   Also fetch summary information about the payments
-        lt = pac.default_payments_lineitemtype()
-        payments = Transfer.objects.filter(line_item=lt)
+        (num_payments, total_payment) = pac.payments_summary()
 
         context = {
             'program': prog,
             'payment_table': payment_table,
             'num_students': len(student_list),
-            'num_payments': payments.count(),
-            'total_payment': payments.aggregate(total=Sum('amount_dec'))['total'],
+            'num_payments': num_payments,
+            'total_payment': total_payment,
         }
         
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)

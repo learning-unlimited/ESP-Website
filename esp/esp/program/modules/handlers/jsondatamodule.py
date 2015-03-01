@@ -764,11 +764,11 @@ teachers[key].filter(is_active = True).distinct().count()))
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
         #   Add accounting stats
-        lt = ProgramAccountingController(prog).default_payments_lineitemtype()
-        payments = Transfer.objects.filter(line_item=lt)
+        pac = ProgramAccountingController(prog)
+        (num_payments, total_payment) = pac.payments_summary()
         accounting_data = {
-            'num_payments': payments.count(),
-            'total_payments': payments.aggregate(total=Sum('amount_dec'))['total'],
+            'num_payments': num_payments,
+            'total_payments': total_payment,
         }
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
     
