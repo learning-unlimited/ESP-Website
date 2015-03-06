@@ -73,7 +73,6 @@ var state = {
     display_mode: "status",
     student_id: null,
     student_schedule: null,
-    last_event: null
 };
 
 /*  Ajax handler functions
@@ -128,23 +127,10 @@ function handle_students(new_data, text_status, jqxhr)
         handle_completed();
 }
 
-function handle_compact_classes()
-{
-    var div = $j('div[id=compact-classes-body]');
-    var val = settings.compact_classes;
-    //  This line would make the entire class description appear inline
-    //  instead of just the title.
-    //  div.toggleClass( "compact-classes" , val);
-}
-
-//  I wonder why this variable is necessary...
-var last_settings_event;
 function handle_settings_change(event)
 {
-    last_settings_event = event;
     setup_settings();
     render_table(state.display_mode, state.student_id);
-    handle_compact_classes();
     update_checkboxes();
 }
 
@@ -318,11 +304,8 @@ function set_current_student(student_id)
     }
 }
 
-var last_conflict_event = null;
 function check_conflicts(event)
 {
-    last_conflict_event = event;
-    
     var event_info = event.target.id.split("_");
     var section_id = event_info[1];
     var student_id = event_info[2];
@@ -499,10 +482,8 @@ function handle_checkbox(event)
     }
 }
 
-var last_select_event = null;
 function autocomplete_select_item(event, ui)
 {
-    last_select_event = [event, ui];
     event.preventDefault();
     var student_id = ui.item.value;
     
@@ -555,7 +536,6 @@ function clear_table()
 /*  This function turns the data structure populated by handle_completed() (below)
     into a table displaying the enrollment and check-in status of all sections. 
     Additional features are controlled by display_mode and student_id.  */
-var last_hover_event = null;
 function render_table(display_mode, student_id)
 {
     render_category_options();
@@ -675,9 +655,6 @@ function render_status_table()
     add_message("To view/change classes for a student, begin typing their name or ID number into the box below; then click on an entry, or use the arrow keys and Enter to select a student.");
 }
 
-/*  This function turns the data structure populated by handle_completed()
-    
-*/
 function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
@@ -686,9 +663,6 @@ function render_classchange_table(student_id)
     add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
 
 }
-
-/*  This function populates the linked data structures once all components have arrived.
-*/
 
 function update_category_filters()
 {   
@@ -760,6 +734,9 @@ function render_category_options()
     //initialize select all/none
     $j('.category_selector').click(toggle_categories);
 }
+
+/*  This function populates the linked data structures once all components have arrived.
+*/
 
 function populate_classes()
 {
@@ -966,11 +943,6 @@ function handle_completed()
     populate_checkins();
     populate_counts();
 
-    //  This line would set catalog_received, counts_received, etc. to false.
-    //  At the very least it needs to be done immediately before refreshing the full table.
-    //  reset_status();
-    
-    //  $j("#messages").html("");
     //  console.log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
