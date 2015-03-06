@@ -377,7 +377,7 @@ class OnSiteClassList(ProgramModuleObj):
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
-    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name=None):
+    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name='classlist.html'):
         """ Display a list of all classes that still have space in them """
 
         #   Allow options to be supplied as an argument to the view function, in lieu
@@ -448,7 +448,7 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, context)
+        return render_to_response(self.baseDir()+template_name, request, context)
 
     @main_call
     @needs_onsite
