@@ -203,7 +203,7 @@ class SelectInput(object):
                            % (value, self.field_name))
 
 
-class TrivialInput(object):
+class ConstantInput(object):
     """An input which adds a fixed Q object to the filter.
 
     Arguments:
@@ -215,7 +215,7 @@ class TrivialInput(object):
         self.english_name = english_name
 
     def spec(self):
-        return {'reactClass': 'TrivialInput'}
+        return {'reactClass': 'ConstantInput'}
 
     def as_q(self, value):
         return self.q

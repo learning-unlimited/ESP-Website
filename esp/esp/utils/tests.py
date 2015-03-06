@@ -258,12 +258,12 @@ class QueryBuilderTest(DjangoTestCase):
             'named', 'named', [query_builder.TextInput('name')])
         has_ever_printed_filter = query_builder.SearchFilter(
             'has ever printed', 'has ever printed',
-            [query_builder.TrivialInput(
+            [query_builder.ConstantInput(
                 Q(printrequest__time_executed__isnull=False),
                 'has ever printed')])
         always_works_filter = query_builder.SearchFilter(
             'always works', 'always works',
-            [query_builder.TrivialInput(
+            [query_builder.ConstantInput(
                 Q(printrequest__time_executed__isnull=True),
                 'always works')], inverted=True)
         print_query_builder = query_builder.QueryBuilder(
@@ -390,7 +390,7 @@ class QueryBuilderTest(DjangoTestCase):
     def test_search_filter(self):
         select_input = query_builder.SelectInput(
             "a_db_field", {str(i): "option %s" % i for i in range(10)})
-        trivial_input = query_builder.TrivialInput(Q(a="b"))
+        trivial_input = query_builder.ConstantInput(Q(a="b"))
 
         search_filter_1 = query_builder.SearchFilter(
             "instance", "the instance", [select_input, trivial_input])
@@ -431,8 +431,8 @@ class QueryBuilderTest(DjangoTestCase):
             select_input.as_english('10000')
 
     def test_trivial_input(self):
-        trivial_input = query_builder.TrivialInput(Q(a="b"), "a trivial input")
-        self.assertEqual(trivial_input.spec(), {'reactClass': 'TrivialInput'})
+        trivial_input = query_builder.ConstantInput(Q(a="b"), "a trivial input")
+        self.assertEqual(trivial_input.spec(), {'reactClass': 'ConstantInput'})
         self.assertEqual(str(trivial_input.as_q(None)), str(Q(a="b")))
         self.assertEqual(trivial_input.as_english(None), "a trivial input")
 

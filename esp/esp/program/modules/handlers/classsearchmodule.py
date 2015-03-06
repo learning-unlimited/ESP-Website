@@ -6,7 +6,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
-from esp.utils.query_builder import SelectInput, TrivialInput, TextInput
+from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
 from esp.web.util import render_to_response
 
@@ -65,12 +65,12 @@ class ClassSearchModule(ProgramModuleObj):
             name="all_scheduled", title="all sections scheduled",
             # Exclude classes with sections with null meeting times
             inverted=True,
-            inputs=[TrivialInput(Q(sections__meeting_times__isnull=True))],
+            inputs=[ConstantInput(Q(sections__meeting_times__isnull=True))],
         )
         some_scheduled_filter = SearchFilter(
             name="some_scheduled", title="some sections scheduled",
             # Get classes with sections with non-null meeting times
-            inputs=[TrivialInput(Q(sections__meeting_times__isnull=False))],
+            inputs=[ConstantInput(Q(sections__meeting_times__isnull=False))],
         )
 
         return QueryBuilder(

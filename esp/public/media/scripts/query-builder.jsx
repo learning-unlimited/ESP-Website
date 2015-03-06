@@ -290,7 +290,7 @@ var Filter = React.createClass({
  *
  * The output JSON data is null.
  */
-var TrivialInput = React.createClass({
+var ConstantInput = React.createClass({
   propTypes: {
     input: React.PropTypes.shape({
       reactClass: React.PropTypes.string.isRequired,
