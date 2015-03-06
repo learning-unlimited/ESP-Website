@@ -23,8 +23,10 @@ class QueryBuilder(object):
     """
     def __init__(self, base, filters, english_name=None):
         self.base = base
-        self.english_name = (english_name or
-                             unicode(base.model._meta.verbose_name_plural))
+        if english_name is None:
+            self.english_name = unicode(base.model._meta.verbose_name_plural)
+        else:
+            self.english_name = english_name
         self.filters = filters
         self.filter_dict = {f.name: f for f in filters}
 
@@ -130,7 +132,10 @@ class SearchFilter(object):
     """
     def __init__(self, name, title=None, inputs=None, inverted=False):
         self.name = name
-        self.title = title or self.name
+        if title is None:
+            self.title = name
+        else:
+            self.title = title
         self.inputs = inputs or []
         self.inverted = inverted
 
@@ -179,7 +184,10 @@ class SelectInput(object):
         self.field_name = field_name
         self.options = options
         # TODO: warn if option ids are not strings.
-        self.english_name = english_name or field_name.replace('_', ' ')
+        if english_name is None:
+            self.english_name = field_name.replace('_', ' ')
+        else:
+            self.english_name = english_name
 
     def spec(self):
         return {
@@ -303,7 +311,10 @@ class TextInput(object):
     """
     def __init__(self, field_name, english_name=None):
         self.field_name = field_name
-        self.english_name = english_name or field_name.replace('_', ' ')
+        if english_name is None:
+            self.english_name = field_name.replace('_', ' ')
+        else:
+            self.english_name = english_name
 
     def spec(self):
         return {
