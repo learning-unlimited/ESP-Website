@@ -95,7 +95,7 @@ class ClassSearchModule(ProgramModuleObj):
         if data is None:
             # Display a blank query builder
             context = {
-                'query_builder': query_builder.render(),
+                'query_builder': query_builder,
                 'program': self.program,
             }
             return render_to_response(self.baseDir()+'query_builder.html',

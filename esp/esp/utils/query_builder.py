@@ -1,10 +1,7 @@
 import datetime
-import json
-import random
 import operator
 
 from django.db.models.query import Q
-from django.template.loader import render_to_string
 
 from esp.middleware import ESPError
 
@@ -14,7 +11,8 @@ class QueryBuilder(object):
 
     QueryBuilder can be used to create an interface that allows users to build
     complex queries.  This can then be used to generate a django QuerySet of
-    matching objects.
+    matching objects.  The recommended way of including it in a page is with
+    the render_query_builder template tag.
 
     Arguments:
         `base`: the base query to use, such as FooBar.objects.all().
@@ -97,19 +95,6 @@ class QueryBuilder(object):
             return base + filter_obj.as_english(value['values'])
         else:
             raise ESPError('Invalid filter %s' % value.get('filter'))
-
-    def render(self):
-        """Render the QueryBuilder into HTML.
-
-        query-builder.jsx will need to be included in the page separately.
-        """
-        context = {
-            # use a uid in case we ever want to have multiple QBs on the same
-            # page.
-            'uid': random.randrange(0, 1 << 30),
-            'json_spec': json.dumps(self.spec()),
-        }
-        return render_to_string("utils/query_builder.html", context)
 
 
 class SearchFilter(object):

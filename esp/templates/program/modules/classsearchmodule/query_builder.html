@@ -17,5 +17,6 @@
 {% block content %}
 <h1>Search Classes for {{ program.niceName }}</h1>
 
-{{ query_builder|safe }}
+{% load query_builder %}
+{% render_query_builder query_builder %}
 {% endblock %}
