@@ -16,7 +16,7 @@ var settings = {
     show_full_classes: true,
     override_full: false,
     disable_grade_filter: false,
-    compact_classes: true,
+    show_class_titles: false,
     categories_to_display: []
 };
 
@@ -139,7 +139,7 @@ function setup_settings()
     $j("#hide_full_control").unbind("change");
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
-    $j("#compact_classes").unbind("change");
+    $j("#show_class_titles").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
 
@@ -148,14 +148,14 @@ function setup_settings()
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
-    settings.compact_classes = $j("#compact_classes").prop("checked");
+    settings.show_class_titles = $j("#show_class_titles").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
-    $j("#compact_classes").change(handle_settings_change);
+    $j("#show_class_titles").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
 }
@@ -600,7 +600,7 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
             // Show the class title if we're not in compact mode
-            if (!settings.compact_classes)
+            if (settings.show_class_titles)
             {
                 new_div.append($j("<div/>").addClass("title").html(section.title));
             }
