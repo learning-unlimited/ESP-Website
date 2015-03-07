@@ -17,9 +17,7 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     compact_classes: true,
-    categories_to_display: [],
-    selected_categories: [],
-    is_initial: true,
+    categories_to_display: {}
 };
 
 /*  Ajax status flags
@@ -703,7 +701,7 @@ function update_category_filters()
     {
         var id = parseInt(id_str);
 
-        if (settings.categories_to_display.indexOf(id) == -1)
+        if (!settings.categories_to_display[id])
         {
             console.log("Hiding category .section_category_" + id);
             $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
@@ -714,15 +712,8 @@ function update_category_filters()
 function toggle_categories() {
     var showAll = $j(this).prop("id") == "category_show_all";
 
-    if(showAll) {
-        settings.categories_to_display.length = 0;
-
-        for(var key in data.categories) {
-            settings.categories_to_display.push(parseInt(key));
-        }
-
-    } else {
-        settings.categories_to_display = [];
+    for(var key in data.categories) {
+        settings.categories_to_display[parseInt(key)] = showAll;
     }
     
     $j("#category_list :checkbox").not(".category_selector")
@@ -738,16 +729,6 @@ function extract_category_id(element_id)
 
 function render_category_options()
 {
-    var checkedCategories = [];
-    if(settings.is_initial) {
-        checkedCategories = settings.categories_to_display.slice();
-        settings.is_initial = false;
-    } else {
-        $j('#category_list input:checked').each(function() {
-            checkedCategories.push(extract_category_id($j(this).attr('id')));
-        });
-    }
-    
     //  Clear category select area
     top_div = $j("#category_list");
     top_div.html("");
@@ -759,19 +740,13 @@ function render_category_options()
         var new_li = $j("<div/>").addClass("category_item");
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
 
-        if (checkedCategories.indexOf(id) != -1) {
-           new_checkbox.attr("checked", "checked");
+        if (settings.categories_to_display[id]) {
+            new_checkbox.attr("checked", "checked");
         }
 
         new_checkbox.change(function (event) {
             var target_id = extract_category_id(event.target.id);
-            var id_index = settings.categories_to_display.indexOf(target_id);
-            if (id_index == -1) {
-                settings.categories_to_display.push(target_id)
-            }
-            else {
-                settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
-            }
+            settings.categories_to_display[target_id] = !settings.categories_to_display[target_id];
             update_category_filters();
         });
 
@@ -797,9 +772,9 @@ function populate_classes()
         var new_category = data.catalog.categories[i];
 
         data.categories[new_category.id] = new_category;
-        if (settings.is_initial && (settings.categories_to_display.indexOf(new_category.id) == -1))
+        if (settings.categories_to_display[new_category.id] === undefined)
         {
-            settings.categories_to_display.push(new_category.id);
+            settings.categories_to_display[new_category.id] = true;
         }
     }
 
