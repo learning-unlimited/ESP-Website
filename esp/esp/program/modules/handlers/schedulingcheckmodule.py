@@ -280,7 +280,7 @@ class SchedulingCheckRunner:
           l = []
           for s in self._all_class_sections(include_walkins=False):
                mt =  s.get_meeting_times()
-               rooms = s.classrooms()
+               rooms = s.locations.all()
                for t in mt:
                     for r in rooms:
                          if not r in d[t]:
@@ -303,12 +303,14 @@ class SchedulingCheckRunner:
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
           for s in self._all_class_sections(include_walkins=False):
-               r = s.classrooms()
+               r = s.locations.all()
                if len(r) > 0:
                     room = r[0]
                     cls = s.parent_class
-                    if room.num_students < lower_reporting_ratio*cls.class_size_max or room.num_students > upper_reporting_ratio*cls.class_size_max:
-                         l.append({"Section": str(s), "Class Max": cls.class_size_max, "Room Max": room.num_students})
+                    if room.capacity < lower_reporting_ratio*cls.class_size_max or room.capacity > upper_reporting_ratio*cls.class_size_max:
+                         l.append({"Section": str(s),
+                                   "Class Max": cls.class_size_max,
+                                   "Room Max": room.capacity})
           return self.formatter.format_table(l, {'headings': ["Section", "Class Max", "Room Max"]})
 
      def hungry_teachers(self, ignore_open_classes=True):
@@ -446,7 +448,7 @@ class SchedulingCheckRunner:
          for s in self._all_class_sections():
              meeting_times = s.get_meeting_times()
              first_hour = meeting_times[0] if meeting_times else None
-             classrooms = s.classrooms()
+             classrooms = s.locations.all()
              classroom = classrooms[0] if classrooms else None
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
@@ -576,20 +578,23 @@ class SchedulingCheckRunner:
          HEADINGS = ["Class Section", "Unfulfilled Request", "Current Room"]
          mismatches = []
 
-         for type_regex, matching_rooms in DEFAULT_CONFIG.iteritems():
+         for type_regex, matching_rooms in config.iteritems():
              resource_requests = ResourceRequest.objects.filter(
                  res_type__program=self.p, desired_value__iregex=type_regex)
+             resource_requests = resource_requests.select_related(
+                 'target').prefetch_related('target__locations')
 
              for rr in resource_requests:
+                 rooms = rr.target.locations.all()
                  if all(room.id in matching_rooms or
                         re.match(type_regex, room.name, re.IGNORECASE)
-                        for room in rr.target.classrooms()):
+                        for room in rooms):
                      continue
 
                  mismatches.append({
                          HEADINGS[0]: rr.target,
                          HEADINGS[1]: rr.desired_value,
-                         HEADINGS[2]: rr.target.classrooms()[0].name
+                         HEADINGS[2]: rooms[0].name
                          })
 
          return self.formatter.format_table(mismatches,

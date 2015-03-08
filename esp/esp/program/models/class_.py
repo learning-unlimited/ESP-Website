@@ -536,12 +536,6 @@ class ClassSection(models.Model):
         ta_restype = ResourceType.get_or_create('Teacher Availability')
         return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
-    def classrooms(self):
-        """ Returns the list of classroom resources assigned to this class."""
-
-        ra_list = self.classroomassignments().values_list('resource', flat=True)
-        return Resource.objects.filter(id__in=ra_list)
-
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
         if self.meeting_times.count() > 0:
@@ -634,31 +628,23 @@ class ClassSection(models.Model):
             return event_list
     
     @cache_function
-    def scheduling_status(self):
-        #   Return a little string that tells you what's up with the resource assignments.
-        if not self.sufficient_length():
-            retVal = 'Needs time'
-        elif self.classrooms().count() < 1:
-            retVal = 'Needs room'
-        elif self.unsatisfied_requests().count() > 0:
-            retVal = 'Needs resources'
-        else:
-            retVal = 'Happy'
-        return retVal
-    scheduling_status.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
-    scheduling_status.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
-    scheduling_status.depend_on_row('resources.ResourceRequest', lambda rr: {'self': rr.target})
-    scheduling_status.depend_on_row('resources.ResourceAssignment', lambda ra: {'self': ra.target})
-    
-    @cache_function
     def unsatisfied_requests(self):
-        if self.classrooms().count() > 0:
-            primary_room = self.classrooms()[0]
-            result = primary_room.satisfies_requests(self)[1]
+        rooms = self.locations.all()
+        reqs = self.getResourceRequests()
+        if rooms:
+            primary_room = rooms[0]
+            furnishings = Resource.objects.filter(
+                res_group__location=primary_room,
+                event__program=self.parent_class.parent_program)
+            furnishing_res_types = set(furn.res_type_id for furn in furnishings)
+            return [req for req in reqs
+                    if req.res_type_id not in furnishing_res_types]
         else:
-            result = self.getResourceRequests()
-        return result
-    unsatisfied_requests.depend_on_cache(scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
+            return reqs
+    unsatisfied_requests.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
+    unsatisfied_requests.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    unsatisfied_requests.depend_on_row('resources.ResourceRequest', lambda rr: {'self': rr.target})
+    unsatisfied_requests.depend_on_row('resources.ResourceAssignment', lambda ra: {'self': ra.target})
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -680,29 +666,19 @@ class ClassSection(models.Model):
         event_list = self.extend_timeblock(first_event, merged=False)
         self.assign_meeting_times(event_list)
 
-    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
+    def assign_room(self, base_room):
         """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
         status = True
         errors = []
         
-        if clear_others:
-            self.clearRooms()
-        
-        if compromise is False:
-            #   Check that the room satisfies all needs of the class.
-            result = base_room.satisfies_requests(self)
-            if result[0] is False:
-                status = False
-                errors.append( u'Room %s lacks some resources that %s needs (or is too small), and you opted not to compromise.' % (base_room.name, self.emailcode()) )
-        
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
         
         for i, r in enumerate(rooms_to_assign):
-            result = self.assignClassRoom(r, lock)
+            result = self.assignClassRoom(r)
             if not result:
                 status = False
                 occupiers_str = ''
@@ -711,10 +687,9 @@ class ClassSection(models.Model):
                     occupiers_str = u' by %s during %s' % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
                 errors.append( u'Room %s is occupied%s.' % ( base_room.name, occupiers_str ) )
                 # If we don't allow partial fulfillment, undo and quit.
-                if not allow_partial:
-                    for r2 in rooms_to_assign[:i]:
-                        r2.clear_assignments()
-                    break
+                for r2 in rooms_to_assign[:i]:
+                    r2.clear_assignments()
+                break
             
         return (status, errors)
     

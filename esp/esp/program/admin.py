@@ -211,7 +211,7 @@ class StudentSubjectInterestAdmin(admin.ModelAdmin):
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
-    return "; ".join(list(set([x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()])))
+    return "; ".join(list(set([x.name +': ' +  str(x.capacity) + " students" for x in obj.locations.all()])))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):

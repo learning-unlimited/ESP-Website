@@ -67,6 +67,10 @@ class Location(models.Model):
         help_text="Notes on this classroom that will appear on students'"
         "schedules.")
 
+    def __unicode__(self):
+        return '%s (capacity %s)' % (self.name, self.capacity)
+    
+
 
 #####################################################
 #   Old resource stuff that has not yet been removed
@@ -263,28 +267,7 @@ class Resource(models.Model):
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
-    
-    def satisfies_requests(self, req_class):
-        #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
-        #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
 
-        result = [True, []]
-        request_list = req_class.getResourceRequests()
-        furnishings = self.associated_resources()
-        id_list = []
-
-        for req in request_list:
-            if furnishings.filter(res_type=req.res_type).count() < 1:
-                result[0] = False
-                id_list.append(req.id)
-        
-        result[1] = ResourceRequest.objects.filter(id__in=id_list)
-
-        if self.num_students < req_class.num_students():
-            result[0] = False
-        
-        return result
-    
     def grouped_resources(self):
         if self.res_group_id is None:
             return Resource.objects.filter(id=self.id)

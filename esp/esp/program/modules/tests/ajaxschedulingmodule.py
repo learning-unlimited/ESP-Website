@@ -150,12 +150,12 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         # Return values should be success on the first one and failure on the second.
         self.failUnless(s1.assign_room(rooms[0])[0] == True, "Received negative response when scheduling first class.")
-        self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "Failed to schedule first class.")
+        self.failUnless(set(s1.locations.all()) == set(rooms[:2]), "Failed to schedule first class.")
         self.failUnless(s2.assign_room(rooms[0])[0] == False, "Failed to detect conflict with first class.")
 
         # Check that the second attempt did not take.
-        self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")
-        self.failUnless(not s2.classrooms().exists(), "Second class should not have any classrooms assigned.")
+        self.failUnless(set(s1.locations.all()) == set(rooms[:2]), "First class's schedule modified.")
+        self.failUnless(not s2.locations.exists(), "Second class should not have any classrooms assigned.")
 
 
     def testWebAPI(self):
