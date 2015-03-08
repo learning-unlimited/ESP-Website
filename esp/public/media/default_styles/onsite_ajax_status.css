@@ -4,11 +4,12 @@ body {
 
 #side_area {
     position: fixed;
+    top: 0;
     left: 0;
     height: 100%;
     width: 240px;
     background-color: #FFFFFF;
-    z-index: 50;
+    z-index: 20;
     overflow: auto;
 }
 
@@ -238,7 +239,6 @@ span {
 
 .tooltip {
     position: relative; /*this is the key*/
-    z-index: 24;
     color: #000000 !important;
     text-decoration: none !important;
 }
