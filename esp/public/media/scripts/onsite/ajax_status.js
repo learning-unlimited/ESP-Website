@@ -17,6 +17,8 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     show_class_titles: false,
+    show_closed_reg: false,
+    hide_past_time_blocks: false,
     categories_to_display: []
 };
 
