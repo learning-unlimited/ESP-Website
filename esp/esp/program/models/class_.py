@@ -525,10 +525,6 @@ class ClassSection(models.Model):
         for rr in self.getResourceRequests():
             rr.delete()
     
-    def classroomassignments(self):
-        cls_restype = ResourceType.get_or_create('Classroom')
-        return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
-    
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
 
@@ -771,7 +767,7 @@ class ClassSection(models.Model):
     viable_rooms.depend_on_model('resources.Resource')
     
     def clearRooms(self):
-        self.classroomassignments().delete()
+        self.locations.clear()
             
     def clearFloatingResources(self):
         self.resourceassignments().delete()

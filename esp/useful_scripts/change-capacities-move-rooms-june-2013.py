@@ -37,8 +37,8 @@ def makeChanges(filename,override=False):
 
     for cls,sec,capacity,room in secs:
         if room is not "":
-            cas = sec.classroomassignments()
-            print "Removing %s from %s" % (sec.emailcode(), ', '.join([x.resource.name for x in cas]))
+            cas = sec.locations.all()
+            print "Removing %s from %s" % (sec.emailcode(), ', '.join([x.name for x in cas]))
             cas.delete()
 
     for cls,sec,capacity,room in secs:

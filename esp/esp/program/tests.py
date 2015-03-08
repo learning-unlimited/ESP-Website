@@ -1028,7 +1028,7 @@ class MeetingTimesTest(ProgramFrameworkTest):
         
         #   Make sure it is not scheduled
         section.meeting_times.clear()
-        section.classroomassignments().delete()
+        section.locations.clear()
         self.assertSetEquals(section.get_meeting_times(), [])
         
         #   Assign a meeting times

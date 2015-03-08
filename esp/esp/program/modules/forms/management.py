@@ -140,7 +140,7 @@ class SectionManageForm(ManagementForm):
                 c.assign_to_section(sec, override=True)
         rooms = Resource.objects.filter(name__in=self.cleaned_data['room'])
         if rooms.count() > 0:
-            sec.classroomassignments().delete()
+            sec.locations.clear()
             for r in rooms:
                 sec.assign_room(r)
         sec.checklist_progress.clear()
