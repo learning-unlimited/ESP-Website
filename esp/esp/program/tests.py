@@ -433,7 +433,7 @@ class ProgramHappenTest(TestCase):
         self.classsubject.accept()
         sec = self.classsubject.sections.all()[0]
         sec.meeting_times.add(self.timeslot)
-        sec.assignClassRoom(self.classroom)
+        sec.locations.add(self.classroom)
         
         # shortcut student profile creation -- presumably we're also testing this elsewhere
         thisyear = datetime.now().year

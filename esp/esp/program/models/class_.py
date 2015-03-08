@@ -511,6 +511,7 @@ class ClassSection(models.Model):
     checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
+        # TODO: check callers of this to make sure they don't expect classrooms
         return self.resourceassignment_set.all()
 
     def getResources(self):
@@ -519,15 +520,19 @@ class ClassSection(models.Model):
         return [a.resource for a in assignment_list]
     
     def getResourceRequests(self):
+        # TODO: check callers of this to make sure they don't expect classrooms
         return ResourceRequest.objects.filter(target=self)
     
     def clearResourceRequests(self):
+        # TODO: check callers of this to make sure they don't expect classrooms
         for rr in self.getResourceRequests():
             rr.delete()
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
 
+        # TODO: simplify, since classrooms won't be in
+        # resources/resourceassignments
         cls_restype = ResourceType.get_or_create('Classroom')
         ta_restype = ResourceType.get_or_create('Teacher Availability')
         return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
@@ -664,6 +669,7 @@ class ClassSection(models.Model):
 
     def assign_room(self, base_room):
         """ Assign the classroom given, at the times needed by this class. """
+        # TODO: update this
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
         status = True
@@ -674,7 +680,7 @@ class ClassSection(models.Model):
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
         
         for i, r in enumerate(rooms_to_assign):
-            result = self.assignClassRoom(r)
+            result = self.locations.add(r)
             if not result:
                 status = False
                 occupiers_str = ''
@@ -738,7 +744,7 @@ class ClassSection(models.Model):
     def viable_rooms(self):
         """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
         Resources matching the first time block of the class will be returned. """
-        
+        # TODO: update this
         def room_satisfies_times(room, times):
             room_times = room.matching_times()
             satisfaction = True
@@ -772,20 +778,9 @@ class ClassSection(models.Model):
     def clearFloatingResources(self):
         self.resourceassignments().delete()
 
-    def assignClassRoom(self, classroom, lock_level=0):
-        #   Assign an individual resource to this class.
-        if classroom.is_taken():
-            return False
-        else:
-            new_assignment = ResourceAssignment()
-            new_assignment.resource = classroom
-            new_assignment.target = self
-            new_assignment.lock_level = lock_level
-            new_assignment.save()
-            return True
-
     """ These two functions make it easier to set whether a section is fair game
         for adjustment by automatic scheduling. """
+    # TODO: figure out what to do about these.
 
     def lock_schedule(self, lock_level=1):
         self.resourceassignment_set.all().update(lock_level=lock_level)
@@ -1387,8 +1382,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def add_section(self, duration=None, status=None):
         """ Add a ClassSection belonging to this class. Can be run multiple times. """
         
-        section_index = self.sections.count() + 1
-        
         if duration is None:
             duration = self.duration
         if status is None:
@@ -1530,10 +1523,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             self._studentapps_count = self.studentappquestion_set.count()
             
         return self._studentapps_count
-        
-        
-    def cache_time(self):
-        return 99999
     
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
@@ -1646,6 +1635,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return True
     
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
+        # TODO: check that this won't expect classrooms
         return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
