@@ -187,9 +187,10 @@ function print_schedule()
     result = $j.ajax({
         url: printing_url,
         data: student_data,
-        async: false
+        success: function (data, text_status, jqxhr) {
+            add_message(data.message);
+        }
     });
-    add_message(JSON.parse(result.responseText).message);
 }
 
 function add_message(msg, cls)
@@ -199,6 +200,12 @@ function add_message(msg, cls)
     else
         $j("#messages").append($j("<div/>").addClass(cls).html(msg));
     $j("#messages").prop("scrollTop", $j("#messages").prop("scrollHeight"));
+}
+
+function disable_checkboxes()
+{
+    $j(".classchange_checkbox").attr("disabled", "disabled");
+    $j(".classchange_checkbox").unbind("change");
 }
 
 function update_checkboxes()
@@ -249,6 +256,7 @@ function update_checkboxes()
             section_col.prepend(section_elem);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
+            studentcheckbox.unbind("change");
             studentcheckbox.change(handle_checkbox);
         }
     }
@@ -356,9 +364,28 @@ function clear_conflicts(event)
     delete data.conflicts[event.target.id];
 }
 
+function lock_schedule() {
+    if (state.schedule_locked) {
+        // Couldn't acquire the lock.
+        return false;
+    }
+    state.schedule_locked = true;
+    return true;
+}
+
+function unlock_schedule() {
+    state.schedule_locked = false;
+}
+
 //  Add a student to a class
 function add_student(student_id, section_id, size_override)
 {
+    if (!lock_schedule()) {
+        console.log("Warning: schedule locked, refusing to add section " + section_id);
+        return;
+    }
+    disable_checkboxes();
+
     if (state.student_id != student_id)
     {
         //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
@@ -382,14 +409,20 @@ function add_student(student_id, section_id, size_override)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
-        async: false,
-        success: handle_schedule_response
+        success: handle_schedule_response,
+        complete: [update_checkboxes, unlock_schedule]
     });
 }
 
 //  Remove a student from a class
 function remove_student(student_id, section_id)
 {
+    if (!lock_schedule()) {
+        console.log("Warning: schedule locked, refusing to remove section " + section_id);
+        return;
+    }
+    disable_checkboxes();
+
     if (state.student_id != student_id)
     {
         //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
@@ -411,8 +444,8 @@ function remove_student(student_id, section_id)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
-        async: false,
-        success: handle_schedule_response
+        success: handle_schedule_response,
+        complete: [update_checkboxes, unlock_schedule]
     });
 }
 
