@@ -679,7 +679,7 @@ function render_table(display_mode, student_id)
         var div_name = "timeslot_" + ts_id;
         var ts_div = $j("#" + div_name);
         
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(timeSlotHeader));
+        ts_div.append($j("<div/>").addClass("timeslot_header timeslot_top").html(timeSlotHeader));
         var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
@@ -1116,6 +1116,37 @@ function refresh_counts() {
 
 $j(document).scroll(function(){
     $j("#student_selector_area").css("left", window.scrollX);
+});
+
+$j(document).scroll(function () {
+    // make timeslots stick to the top
+    $j(".timeslot_top").each(function () {
+        var scroll_top = window.scrollY;
+        var top = $j(this).offset().top;
+        var original_top = $j(this).data("original_top");
+        if (original_top === undefined) {
+            // non-sticky state
+            if (scroll_top > top) {
+                // change to sticky state
+                $j(this).data("original_top", top);
+                $j(this).offset({top: scroll_top});
+                $j(this).css({'z-index': 10});
+            }
+        }
+        else {
+            // sticky state
+            if (scroll_top < original_top) {
+                // change to non-sticky state
+                $j(this).removeData("original_top");
+                $j(this).offset({top: original_top});
+                $j(this).css({'z-index': 'auto'});
+            }
+            else {
+                // stay in sticky state
+                $j(this).offset({top: scroll_top});
+            }
+        }
+    });
 });
 
 $j(document).ready(function () {
