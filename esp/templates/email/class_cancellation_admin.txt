@@ -1,5 +1,11 @@
 -- Notice to directors --
-Class Section {{ sec.emailcode }} has been cancelled.  {% if email_students %}{{ num_students }} students have been sent the following e-mail.{% else %}Students were not e-mailed.{% endif %}  All students have been removed from the class.
+Class Section {{ sec.emailcode }} has been cancelled.  {% if email_students %}{{ num_students }} students have been sent the following email.{% else %}Students were not emailed.{% endif %} All students have been removed from the class.
 -------------------------
 
 {% include "email/class_cancellation_body.txt" %}
+{% if email_ssis %}
+
+Additionally, all students with a StudentSubjectInterest were emailed the email below.
+-------------------------
+
+{% endif %}

@@ -776,7 +776,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
         
         #  Otherwise this will be a 404
         return None

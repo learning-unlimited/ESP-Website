@@ -360,8 +360,8 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
-    is_available.depend_on_row(lambda:ResourceAssignment, lambda instance: {'self': instance.resource})
-    is_available.depend_on_row(lambda:Event, lambda instance: {'timeslot': instance})
+    is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
+    is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
     
     def is_taken(self, QObjects=False):
         if QObjects:

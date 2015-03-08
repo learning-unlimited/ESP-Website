@@ -59,22 +59,17 @@ class AjaxForeignKeyFieldBase:
 <script type="text/javascript">
 <!--
 
-$j("#id_%s").val("%s");
-$j("#id_%s_data").val("%s");
-$j("#id_%s").change(function () {
-    //  Clear current result and copy value to shadow field whenever text changes
-    $j("#id_%s_data").val(null);
-    $j("#id_%s").val($j("#id_%s").val());
-});
-$j("#id_%s").autocomplete({
+$j("#id_%(fn)s").val("%(init_val)s");
+$j("#id_%(fn)s_data").val("%(data)s");
+$j("#id_%(fn)s").autocomplete({
     source: function(request, response) {
         $j.ajax({
             url: "/admin/ajax_autocomplete/",
             dataType: "json",
             data: {
-                model_module: "%s",
-                model_name: "%s",
-                ajax_func: "%s",
+                model_module: "%(model_module)s",
+                model_name: "%(model_name)s",
+                ajax_func: "%(ajax_func)s",
                 ajax_data: request.term
             },
             success: function(data) {
@@ -90,17 +85,23 @@ $j("#id_%s").autocomplete({
         });
     },
     select: function(event, ui) {
-        $j("#id_%s_data").val(ui.item.id);
-        %s
+        $j("#id_%(fn)s_data").val(ui.item.id);
+        %(shadow_field_javascript)s
+    },
+    change: function(event, ui) {
+        $j("#id_%(fn)s_data").val(ui.item ? ui.item.id : null);
+        $j("#id_%(shadow_field)s").val($j("#id_%(fn)s").val());
     }
 });
 
 
 //-->
 </script>""" % \
-         (fn, addslashes(init_val), fn, data, fn, fn, self.shadow_field, fn, fn,
-          model_module, model_name, self.ajax_func or 'ajax_autocomplete',
-          fn, shadow_field_javascript)
+         dict(fn=fn, init_val=addslashes(init_val), data=data,
+              shadow_field=self.shadow_field,
+              model_module=model_module, model_name=model_name,
+              ajax_func=(self.ajax_func or 'ajax_autocomplete'),
+              shadow_field_javascript=shadow_field_javascript)
 
         html = """
 <input type="text" id="id_%s" name="%s_raw" value="%s" class="span6" />
