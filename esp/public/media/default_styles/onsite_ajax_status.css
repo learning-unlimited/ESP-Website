@@ -99,6 +99,12 @@ table.narrow {
     border: 0px;
 }
 
+.section_conflict_hidden {
+    visibility: hidden;
+    height: 0px;
+    border: 0px;
+}
+
 #student_selector_area {
     height: 100px;
 }

@@ -19,6 +19,7 @@ var settings = {
     show_class_titles: false,
     show_closed_reg: false,
     hide_past_time_blocks: false,
+    hide_conflicting: false,
     categories_to_display: []
 };
 
@@ -144,6 +145,7 @@ function setup_settings()
     $j("#show_class_titles").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
+    $j("#hide_conflicting").unbind("change");
 
 
     //  Apply settings
@@ -153,6 +155,7 @@ function setup_settings()
     settings.show_class_titles = $j("#show_class_titles").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
+    settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
@@ -160,6 +163,7 @@ function setup_settings()
     $j("#show_class_titles").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
+    $j("#hide_conflicting").change(handle_settings_change);
 }
 
 /*  Event handlers  */
@@ -244,12 +248,16 @@ function update_checkboxes()
             }
         }
     }
-    
+
+    // Find the classes that the student is enrolled in,
+    // highlight them and bring them to the top.
+    var occupied_timeslots = {};
     for (var i in state.student_schedule)
     {
         var section = data.sections[state.student_schedule[i]];
         for (var j in section.timeslots)
         {
+            occupied_timeslots[section.timeslots[j]] = section.id;
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
             var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
             section_elem.addClass("student_enrolled");
@@ -260,6 +268,28 @@ function update_checkboxes()
             studentcheckbox.removeAttr("disabled");
             studentcheckbox.unbind("change");
             studentcheckbox.change(handle_checkbox);
+        }
+    }
+
+    if (settings.hide_conflicting)
+    {
+        // For each timeslot where the student is enrolled in a class,
+        // hide the other classes that overlap with that timeslot.
+        $j(".section").removeClass("section_conflict_hidden");
+        for (var ts_id in occupied_timeslots)
+        {
+            for (var i in data.timeslots[ts_id].sections)
+            {
+                var section = data.sections[data.timeslots[ts_id].sections[i]];
+                if (occupied_timeslots[ts_id] == section.id)
+                    continue;
+
+                for (var j in section.timeslots)
+                {
+                    var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
+                    section_elem.addClass("section_conflict_hidden");
+                }
+            }
         }
     }
 
