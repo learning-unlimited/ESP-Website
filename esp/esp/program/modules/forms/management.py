@@ -121,7 +121,7 @@ class SectionManageForm(ManagementForm):
             prefix+'secid': sec.id,
             prefix+'class_size': sec.max_class_capacity,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
-        ir = sec.initial_rooms()
+        ir = sec.locations.all()
         self.initial[prefix+'room'] = [r.name for r in ir]
         self.initial[prefix+'resources'] = [r.resource.name for r in sec.resourceassignments()]
         return self.initial

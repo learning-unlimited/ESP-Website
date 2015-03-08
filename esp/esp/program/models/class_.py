@@ -422,13 +422,13 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
-    def _get_room_capacity(self, rooms = None):
-        if rooms == None:
-            rooms = self.initial_rooms()
+    def _get_room_capacity(self, rooms):
+        """Get the room capacity of the class.
 
-        rc = 0
-        for r in rooms:
-            rc += r.num_students
+        rooms should be `self.locations.all()`; it's passed in because the
+        caller likely already has it, so we save the extra DB hit.
+        """
+        rc = sum(r.capacity for r in rooms)
 
         options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if options.apply_multiplier_to_room_cap:
@@ -438,14 +438,12 @@ class ClassSection(models.Model):
 
     @cache_function
     def _get_capacity(self, ignore_changes=False):
-        ans = None
-        rooms = self.initial_rooms()
+        rooms = self.locations.all()
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
             if len(rooms) == 0:
-                if not ans:
-                    ans = self.parent_class.class_size_max
+                ans = self.parent_class.class_size_max
             else:
                 ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
@@ -516,6 +514,7 @@ class ClassSection(models.Model):
         return self.resourceassignment_set.all()
 
     def getResources(self):
+        # TODO: check callers of this to make sure they don't expect classrooms
         assignment_list = self.getResourceAssignments()
         return [a.resource for a in assignment_list]
     
@@ -543,18 +542,10 @@ class ClassSection(models.Model):
         ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
-    def initial_rooms(self):
-        meeting_times = self.get_meeting_times()
-        if len(meeting_times) > 0:
-            initial_time = min(meeting_times, key=lambda event: event.start)
-            return self.classrooms().filter(event=initial_time).order_by('id')
-        else:
-            return Resource.objects.none()
-
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
         if self.meeting_times.count() > 0:
-            return [x.name for x in self.initial_rooms()]
+            return [x.name for x in self.locations.all()]
         else:
             return []
    
@@ -678,31 +669,17 @@ class ClassSection(models.Model):
         self.meeting_times.clear()
     
     def assign_start_time(self, first_event):
-        """ Get enough events following the first one until you have the class duration covered.
-        Then add them. """
-
-        #   This means we have to clear the classrooms.
-        #   But we will try to re-assign the same room at the new times if it is available.
-        current_rooms = self.initial_rooms()
-        
+        """Assign a class to a given start time, and remove it from rooms."""
+        # Previously this tried to reassign the class to the same room if
+        # possible, but as far as I can tell that was broken, and that all
+        # remaining uses of it were in places where the class did not yet have
+        # a room.  So I didn't bother updating it to new resources, and instead
+        # just removed that functionality.  --benkraft
         self.clearRooms()
         self.clearFloatingResources()
-        
         event_list = self.extend_timeblock(first_event, merged=False)
         self.assign_meeting_times(event_list)
-        
-        #   Check to see if the desired rooms are available at the new times
-        availability = True
-        for e in event_list:
-            for room in current_rooms:
-                if not room.is_available(e):
-                    availability = False
-                    
-        #   If the desired rooms are available, assign them.  (If not, no big deal.)
-        if availability:
-            for room in current_rooms:
-                self.assign_room(room)
-    
+
     def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
@@ -1113,13 +1090,6 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def room_capacity(self):
-        ir = self.initial_rooms()
-        if ir.count() == 0:
-            return 0
-        else:
-            return reduce(lambda x,y: x+y, [r.num_students for r in ir])
-            
     def isFull(self, ignore_changes=False):
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):
             return False

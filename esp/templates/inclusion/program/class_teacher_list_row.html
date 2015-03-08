@@ -103,7 +103,31 @@
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
+  <td class="clsmiddle" valign="top" colspan="4">
+    Room:
+    {% if sec.locations.all %}
+      {% for r in sec.locations.all %}
+        {{ r.name }}{% if not forloop.last %}, {% endif %}
+      {% endfor %}
+    {% else %}
+      Unassigned
+    {% endif %}
+    <br />
+    Time:
+    {% if sec.friendly_times|length_is:0 %}
+      Unassigned
+    {% else %}
+      {% if friendly_times_with_date %}
+        {% for f in sec.friendly_times_with_date %}
+          {{ f }}
+        {% endfor %}
+      {% else %}
+        {% for f in sec.friendly_times %}
+          {{ f }}
+        {% endfor %}
+      {% endif %}
+    {% endif %}
+  </td>
   <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
     <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) 
   </td>

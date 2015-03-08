@@ -398,8 +398,8 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
-            qs_one = one.initial_rooms()
-            qs_other = other.initial_rooms()
+            qs_one = one.locations.all()
+            qs_other = other.locations.all()
             cmp0 = 0
             
             if qs_one.count() > 0 and qs_other.count() > 0:
@@ -1011,6 +1011,7 @@ Volunteer schedule for %s:
         from esp.cal.models import Event
         
         classes = list(self.program.sections().filter(status=10, parent_class__status=10))
+        classes = classes.prefetch_related('locations')
 
         context = {}
         classes.sort()
@@ -1019,12 +1020,12 @@ Volunteer schedule for %s:
         scheditems = []
 
         for cls in classes:
-            for room in cls.initial_rooms():
+            for room in cls.locations.all():
                 for event_group in Event.collapse(list(cls.meeting_times.all())):
                     update_dict = {'room': room.name,
                                    'cls': cls,
                                    'timeblock': event_group}
-                    if rooms.has_key(room.name):
+                    if room.name in rooms:
                         rooms[room.name].append(update_dict)
                     else:
                         rooms[room.name] = [update_dict]

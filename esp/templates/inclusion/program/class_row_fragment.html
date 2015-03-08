@@ -16,7 +16,7 @@
             {{ sec.num_students }} / {{ sec.capacity }}
         </td>
         <td>
-            {% for room in sec.initial_rooms %}
+            {% for room in sec.locations.all %}
                 {{ room.name }}{% if not forloop.last %}, {% endif %}
             {% endfor %}
         </td>

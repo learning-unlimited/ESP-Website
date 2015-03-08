@@ -653,7 +653,6 @@ class ProgramFrameworkTest(TestCase):
                     vr = sec.viable_rooms()
                     if len(vr) > 0:
                         sec.assign_room(random.choice(vr))
-                        #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
     def add_user_profiles(self):
         """Helper function to give each user a profile so they can register.

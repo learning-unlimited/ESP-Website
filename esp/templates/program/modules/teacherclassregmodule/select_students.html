@@ -42,7 +42,7 @@ Student list (with school) sorted by registration status
 <p>
 <b>About your class:</b>
 <ul>
-<li><b>Room</b>: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+<li><b>Room</b>: {% if sec.locations.all %}{% for r in sec.locations.all %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
 <li><b>Time</b>: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}
 <li><b>Capacity</b>: {{ sec.num_students }} / {{ sec.capacity }} students
 {% if has_app_module %}

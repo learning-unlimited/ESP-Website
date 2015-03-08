@@ -64,7 +64,7 @@ If you have any questions or would like to switch classes, please go to the prog
    {% autoescape off %}
    <tr>
      <td><div class="clip" >{{ cls.friendly_times|join:"<br />" }}</div></td>
-     <td><div class="clip" >{% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</div></td>
+     <td><div class="clip" >{% if not cls.locations.exists %}N/A{% else %}{{ cls.prettyrooms|join:"<br />" }}{% endif %}</div></td>
      <td><div class="clip" >{{ cls.emailcode}}: {{ cls.title }}</div></td>
      {% if onsiteregform %}{% else %}<td><div class="clip">{{ cls.parent_class.getTeacherNames|join:", " }}</div></td>{% endif %}
    </tr>

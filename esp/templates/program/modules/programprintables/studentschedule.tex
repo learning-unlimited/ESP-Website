@@ -60,7 +60,7 @@
   {% ifequal cls.event_type.description "Class" %}
   \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{c|}{[NO CLASS]}
   {% else %}
-  \multicolumn{1}{|c|}{ {{ cls.time_blocks.0.start|date:"f" }} -- {{ cls.time_blocks.0.end|date:"f A" }} } & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|truncatewords:5|texescape }}
+  \multicolumn{1}{|c|}{ {{ cls.time_blocks.0.start|date:"f" }} -- {{ cls.time_blocks.0.end|date:"f A" }} } & {% if not cls.locations.exists %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|truncatewords:5|texescape }}
   {% endifequal %}
 {% endifequal %}
 \\ 

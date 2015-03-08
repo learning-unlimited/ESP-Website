@@ -136,7 +136,7 @@ If you have any questions or would like to switch classes, please go to {% comme
 \hline
 \textbf{Time} & \textbf{Room} & \textbf{Class} {% comment %}& \textbf{Teacher(s)} {% endcomment %}\\
 {% for cls in student.classes %}\hline
-{{ cls.friendly_times|join:", " }} & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }}{% comment %} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }}{% endcomment %} \\ 
+{{ cls.friendly_times|join:", " }} & {% if not cls.locations.exists %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }} : {{ cls.title|texescape }}{% comment %} & {{ cls.parent_class.getTeacherNames|join:", "|texescape }}{% endcomment %} \\ 
 {% endfor %}\hline
 \end{tabularx}
 
