@@ -562,10 +562,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             into a hidden field). 
         """
 
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', prog, )
-
         #   Construct a formset from post data
-        resource_formset = ResourceRequestFormSet(request.POST, prefix='request', static_resource_requests=static_resource_requests, )
+        resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
         validity = resource_formset.is_valid()
         form_dicts = [x.__dict__ for x in resource_formset.forms]
         
@@ -590,7 +588,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 new_types = [x['resource_type'] for x in new_data]
             
             #   Instantiate a new formset having the additional form
-            new_formset = ResourceRequestFormSet(initial=new_data, resource_type=new_types, prefix='request', static_resource_requests=static_resource_requests, )
+            new_formset = ResourceRequestFormSet(initial=new_data, resource_type=new_types, prefix='request')
         else:
             #   Otherwise, just send back the original form
             new_formset = resource_formset
@@ -742,8 +740,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context = {'module': self}
         
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
-
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
                 return self.goToCore(tl)
@@ -781,35 +777,18 @@ class TeacherClassRegModule(ProgramModuleObj):
                 restype_formset = e.restype_formset
 
         else:
-            errors = {}
-            
-            if static_resource_requests:
-                # With static resource requests, we need to display a form
-                # each available type --- there's no way to add the types
-                # that we didn't start out with
-                # Thus, if default_restype isn't set, we display everything
-                # potentially relevant
-                if Tag.getTag('allow_global_restypes'):
-                    resource_types = prog.getResourceTypes(include_classroom=True,
-                                                           include_global=True)
-                else:
-                    resource_types = prog.getResourceTypes(include_classroom=True)
-                resource_types = list(resource_types)
-                resource_types.reverse()
+            # With static resource requests, we need to display a form
+            # each available type --- there's no way to add the types
+            # that we didn't start out with
+            # Thus, if default_restype isn't set, we display everything
+            # potentially relevant
+            if Tag.getTag('allow_global_restypes'):
+                resource_types = prog.getResourceTypes(include_classroom=True,
+                                                       include_global=True)
             else:
-                # If we're not using static resource requests, then just
-                # hardcode some sane defaults
-                resource_types = set([])
-                default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
-                if default_restypes:
-                    resource_type_labels = json.loads(default_restypes)
-                    resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
-                resource_type_labels = ['Classroom', 'A/V']
-                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-                # Now that we're done putting together multiple resource type sources, listify!
-                resource_types = list(resource_types)
-                resource_types.sort(key=lambda x: -x.priority_default)
+                resource_types = prog.getResourceTypes(include_classroom=True)
+            resource_types = list(resource_types)
+            resource_types.reverse()
 
             if newclass is not None:
                 current_data = newclass.__dict__
@@ -864,29 +843,19 @@ class TeacherClassRegModule(ProgramModuleObj):
                 #   Todo...
                 ds = newclass.default_section()
                 class_requests = ResourceRequest.objects.filter(target=ds)
-                if static_resource_requests:
-                    #   Program the multiple-checkbox forms if static requests are used.
-                    resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests)
-                    initial_requests = {}
-                    for x in class_requests:
-                        if x.res_type.name not in initial_requests:
-                            initial_requests[x.res_type.name]  = []
-                        initial_requests[x.res_type.name].append(x.desired_value)
-                    for form in resource_formset.forms:
-                        field = form.fields['desired_value']
-                        if field.label in initial_requests:
-                            field.initial = initial_requests[field.label]
-                            if form.resource_type.only_one and len(field.initial):
-                                field.initial = field.initial[0]
-                else:
-                    #   With dynamic requests each form uses radio buttons, so there's a one-to-one correspondence
-                    #   between forms and requests.
-                    resource_formset = ResourceRequestFormSet(
-                        initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests],
-                        resource_type=[x.res_type for x in class_requests],
-                        prefix='request',
-                        static_resource_requests=static_resource_requests,
-                    )
+                #   Program the multiple-checkbox forms if static requests are used.
+                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
+                initial_requests = {}
+                for x in class_requests:
+                    if x.res_type.name not in initial_requests:
+                        initial_requests[x.res_type.name]  = []
+                    initial_requests[x.res_type.name].append(x.desired_value)
+                for form in resource_formset.forms:
+                    field = form.fields['desired_value']
+                    if field.label in initial_requests:
+                        field.initial = initial_requests[field.label]
+                        if form.resource_type.only_one and len(field.initial):
+                            field.initial = field.initial[0]
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
             else:
@@ -896,7 +865,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     reg_form = TeacherOpenClassRegForm(self)
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
-                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests, )
+                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['tl'] = 'teach'
@@ -906,7 +875,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
-        context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:
