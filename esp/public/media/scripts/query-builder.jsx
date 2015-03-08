@@ -488,7 +488,7 @@ var TextInput = React.createClass({
   render: function () {
     return <span>
       {this.props.input.name}
-      <input type="text" ref="input" />
+      <input type="text" ref="input" className="qb-input" />
     </span>;
   },
 });
