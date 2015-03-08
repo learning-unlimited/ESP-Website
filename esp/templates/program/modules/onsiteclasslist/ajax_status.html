@@ -26,13 +26,17 @@
 
 <body>
 
-<p align="center">
+<div id="side_area">
+<input id="hide_sidebar" type="button" value="<< Hide sidebar"/>
+<input id="show_sidebar" type="button" value=">>"/>
 <table>
 <tr>
 <td>
     <div id="messages">
     </div>
 </td>
+</tr>
+<tr>
 <td>
     <div id="category_controls">
         <b>Categories to display</b>
@@ -44,6 +48,8 @@
         </div>
     </div>
 </td>
+</tr>
+<tr>
 <td>
     <div id="settings_controls">
     <!-- make sure to update onsite/ajax_status.js when changing this -->
@@ -58,9 +64,9 @@
 </td>
 </tr>
 </table>
-</p>
+</div>
 
-<p>
+<div id="main_area">
 <div id="student_selector_area" class="ui-widget">Select a student:
 <input type="text" id="student_selector"/> 
 <input id="schedule_print" class="control_button" type="button" value="Print schedule"/>
@@ -81,6 +87,7 @@
     <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
 </tr>
 </table>
+</div>
 </div>
 
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>

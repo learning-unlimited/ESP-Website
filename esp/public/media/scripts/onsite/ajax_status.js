@@ -166,6 +166,24 @@ function setup_settings()
     $j("#hide_conflicting").change(handle_settings_change);
 }
 
+function hide_sidebar()
+{
+    $j("#side_area").addClass("sidebar_hidden");
+    $j("#main_area").addClass("sidebar_hidden");
+}
+
+function show_sidebar()
+{
+    $j("#side_area").removeClass("sidebar_hidden");
+    $j("#main_area").removeClass("sidebar_hidden");
+}
+
+function setup_sidebar()
+{
+    $j("#hide_sidebar").click(hide_sidebar);
+    $j("#show_sidebar").click(show_sidebar);
+}
+
 /*  Event handlers  */
 
 function show_loading_box()
@@ -1070,6 +1088,7 @@ $j(document).ready(function () {
     $j("#messages").html("Loading class and student data...");
     
     setup_settings();
+    setup_sidebar();
     fetch_all();
     
     //  Update enrollment counts and list of students once per minute.
