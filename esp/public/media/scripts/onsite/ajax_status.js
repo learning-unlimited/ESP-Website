@@ -20,6 +20,7 @@ var settings = {
     show_closed_reg: false,
     hide_past_time_blocks: false,
     hide_conflicting: false,
+    search_term: "",
     categories_to_display: []
 };
 
@@ -182,6 +183,42 @@ function setup_sidebar()
 {
     $j("#hide_sidebar").click(hide_sidebar);
     $j("#show_sidebar").click(show_sidebar);
+}
+
+function update_search_filter()
+{
+    // unhide all classes first
+    $j(".section").removeClass("section_search_hidden");
+    for (var section_id in data.sections)
+    {
+        var section = data.sections[section_id];
+
+        // check if the class matches the search
+        var section_key = section.emailcode + ": " + section.title;
+        if (section_key.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1)
+            continue;
+
+        // no match; hide the class
+        for (var j in section.timeslots)
+        {
+            var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
+            section_elem.addClass("section_search_hidden");
+        }
+    }
+    // unhide enrolled classes
+    $j(".student_enrolled").removeClass("section_search_hidden");
+}
+
+function handle_search(event)
+{
+    settings.search_term = $j("#class_search").val();
+    update_search_filter();
+}
+
+function setup_search()
+{
+    settings.search_term = $j("#class_search").val();
+    $j("#class_search").keyup(handle_search);
 }
 
 /*  Event handlers  */
@@ -728,6 +765,7 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    update_search_filter();
     update_category_filters(); // show/hide classes by category
 }
     
@@ -1089,6 +1127,7 @@ $j(document).ready(function () {
     
     setup_settings();
     setup_sidebar();
+    setup_search();
     fetch_all();
     
     //  Update enrollment counts and list of students once per minute.

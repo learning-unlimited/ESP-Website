@@ -138,6 +138,12 @@ table.narrow {
     border: 0px;
 }
 
+.section_search_hidden {
+    visibility: hidden;
+    height: 0px;
+    border: 0px;
+}
+
 .section_category_hidden {
     visibility: hidden;
     height: 0px;
@@ -175,7 +181,7 @@ span {
     font-style: italic;
 }
 
-#messages, #category_controls, #settings_controls {
+#messages, #category_controls, #settings_controls, #class_search_controls {
     text-align: left;
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;
