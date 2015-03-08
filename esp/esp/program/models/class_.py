@@ -70,7 +70,8 @@ from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
-from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
+from esp.resources.models import Resource, ResourceRequest, ResourceAssignment
+from esp.resources.models import ResourceType, Location
 from esp.cache                   import cache_function
 from esp.cache.key_set           import wildcard
 from esp.utils.derivedfield      import DerivedField
@@ -337,6 +338,8 @@ class ClassSection(models.Model):
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
+
+    locations = models.ManyToManyField(Location, blank=True)
 
     @classmethod
     def ajax_autocomplete(cls, data):

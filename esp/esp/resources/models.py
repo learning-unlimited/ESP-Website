@@ -47,9 +47,30 @@ from django.core.cache import cache
 
 import pickle
 
-########################################
-#   New resource stuff (Michael P)
-########################################
+
+#####################
+# New resource stuff
+#####################
+
+class Location(models.Model):
+    """A place a class might be held, such as a classroom."""
+    name = models.CharField(
+        max_length=100, help_text='The name or room number')
+    capacity = models.IntegerField(
+        help_text='The number of students the location can accommodate')
+    admin_notes = models.TextField(
+        help_text='Notes on this classroom visible only to admins')
+    teacher_notes = models.TextField(
+        help_text="Notes on this classroom that will appear on teachers'"
+        "schedules.")
+    student_notes = models.TextField(
+        help_text="Notes on this classroom that will appear on students'"
+        "schedules.")
+
+
+#####################################################
+#   Old resource stuff that has not yet been removed
+#####################################################
 
 """
 Models (see more below):
@@ -164,6 +185,10 @@ class ResourceRequest(models.Model):
 
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
+
+    # While in transition, we will need to associate the old ResourceGroup with
+    # the new Location.
+    location = models.ForeignKey(Location, null=True)
 
     def __unicode__(self):
         return 'Resource group %d' % (self.id,)

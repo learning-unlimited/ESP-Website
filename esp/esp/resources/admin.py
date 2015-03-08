@@ -33,9 +33,12 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+import reversion
+
 from esp.admin import admin_site
 
-from esp.resources.models import ResourceType, ResourceRequest, Resource, ResourceAssignment
+from esp.resources.models import ResourceType, ResourceRequest, Resource
+from esp.resources.models import ResourceAssignment, Location
 
 class ResourceTypeAdmin(admin.ModelAdmin):
     def rt_choices(self, obj):
@@ -67,7 +70,13 @@ class ResourceAssignmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'resource', 'target')
     search_fields = ('=id', 'resource__name', 'target__parent_class__title')
 
+
+class LocationAdmin(reversion.VersionAdmin):
+    search_fields = ['name', 'admin_notes', 'teacher_notes', 'student_notes']
+    list_display = ['name', 'capacity', 'admin_notes']
+
 admin_site.register(ResourceType, ResourceTypeAdmin)
 admin_site.register(ResourceRequest, ResourceRequestAdmin)
 admin_site.register(Resource, ResourceAdmin)
 admin_site.register(ResourceAssignment, ResourceAssignmentAdmin)
+admin_site.register(Location, LocationAdmin)
