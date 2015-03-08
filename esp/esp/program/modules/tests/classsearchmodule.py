@@ -1,5 +1,7 @@
 import json
 
+from django.template import Template, Context
+
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
@@ -21,7 +23,10 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
         make_user_admin(self.admin)
 
     def test_can_render(self):
-        rendered = self.qb.render()
+        rendered = Template("""
+            {% load query_builder %}
+            {% render_query_builder qb %}
+        """).render(Context({'qb': self.qb}))
         self.assertIn("sections scheduled", rendered)
         self.assertIn("the status", rendered)
 

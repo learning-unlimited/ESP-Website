@@ -17,7 +17,7 @@ import reversion
 import unittest
 
 from django.db.models.query import Q
-from django.template import loader, Context, TemplateDoesNotExist
+from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
 
 from esp.middleware import ESPError_Log
@@ -385,8 +385,13 @@ class QueryBuilderTest(DjangoTestCase):
             ).get(),
             slow_printer)
 
-            
-            
+        rendered = Template("""
+            {% load query_builder %}
+            {% render_query_builder qb %}
+        """).render(Context({'qb': print_query_builder}))
+        self.assertIn("has ever printed", rendered)
+        self.assertIn("always works", rendered)
+
     def test_search_filter(self):
         select_input = query_builder.SelectInput(
             "a_db_field", {str(i): "option %s" % i for i in range(10)})
