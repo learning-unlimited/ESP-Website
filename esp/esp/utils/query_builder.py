@@ -74,7 +74,7 @@ class QueryBuilder(object):
         The data returned will be in the format specified in query-builder.jsx.
         """
         if root:
-            base = '%s with ' % self.english_name
+            base = '%s ' % self.english_name
         else:
             base = ''
         if value['filter'] in ['and', 'or']:
@@ -93,7 +93,9 @@ class QueryBuilder(object):
         elif value['filter'] in self.filter_dict:
             filter_obj = self.filter_dict[value['filter']]
             if value['negated']:
-                base = base + 'not '
+                base = base + 'without '
+            else:
+                base = base + 'with '
             return base + filter_obj.as_english(value['values'])
         else:
             raise ESPError('Invalid filter %s' % value.get('filter'))

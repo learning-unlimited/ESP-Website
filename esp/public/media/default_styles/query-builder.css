@@ -4,6 +4,10 @@ select.qb-input, input.qb-input, button.qb-input {
   margin-left: 0px;
 }
 
+select.qb-negate {
+  max-width: 70px;
+}
+
 button.qb-optional-button {
   margin-left: 40px;
 }

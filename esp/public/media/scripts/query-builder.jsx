@@ -103,7 +103,7 @@ var QueryBuilder = React.createClass({
 
   render: function () {
     return <div className="query-builder">
-      Find {this.props.spec.englishName} with&hellip;
+      Find {this.props.spec.englishName}&hellip;
       <QueryNode ref="queryNode"
                  filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
@@ -141,8 +141,8 @@ var QueryNode = React.createClass({
     }
   },
 
-  handleToggle: function () {
-    this.setState({negated: !this.state.negated});
+  handleToggle: function (event) {
+    this.setState({negated: event.target.value == "without"});
   },
 
   handleChange: function (event) {
@@ -229,16 +229,14 @@ var FilterSelector = React.createClass({
           {filter.title}
         </option>;
       }.bind(this));
-    if (this.props.negated) {
-      var buttonClasses = "qb-input btn btn-danger active";
-    } else {
-      var buttonClasses = "qb-input btn btn-default";
-    }
     return <span>
-      <button onClick={this.props.onToggle}
-              className={buttonClasses}>
-        not
-      </button>
+      <select onClick={this.props.onToggle}
+              value={this.props.negated ? "without" : "with"}
+              className="qb-input qb-negate"
+              >
+        <option value="with">with</option>
+        <option value="without">without</option>
+      </select>
       <select onChange={this.props.onChange} value={this.props.value}
               className="qb-input">
         <option value={null}></option>
