@@ -207,7 +207,13 @@ class SelectInput(object):
 
     def as_english(self, value):
         if value in self.options:
-            return "with %s '%s'" % (self.english_name, self.options[value])
+            if self.english_name:
+                return "with %s '%s'" % (
+                    self.english_name, self.options[value])
+            else:
+                # If there's no english name, it's probably taken care of in
+                # the filter name, so suppress the "with" as well.
+                return "'%s'" % self.options[value]
         else:
             raise ESPError('Invalid choice %s for input %s'
                            % (value, self.field_name))

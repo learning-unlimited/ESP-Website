@@ -47,12 +47,13 @@ class ClassSearchModule(ProgramModuleObj):
             categories.append(self.program.open_class_category)
         category_filter = SearchFilter(
             name='category', title='the category',
-            inputs=[SelectInput(field_name='category', options={
-                str(cat.id): cat.category for cat in categories})])
+            inputs=[SelectInput(field_name='category', english_name='',
+                                options={str(cat.id): cat.category
+                                         for cat in categories})])
 
         status_filter = SearchFilter(
             name='status', title='the status',
-            inputs=[SelectInput(field_name='status', options={
+            inputs=[SelectInput(field_name='status', english_name='', options={
                 str(k): v for k, v in STATUS_CHOICES})])
         title_filter = SearchFilter(
             name='title', title='title containing',
