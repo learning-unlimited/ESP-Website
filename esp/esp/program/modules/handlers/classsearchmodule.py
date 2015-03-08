@@ -77,14 +77,14 @@ class ClassSearchModule(ProgramModuleObj):
             base=ClassSubject.objects.filter(parent_program=self.program),
             english_name="classes",
             filters=[
-                flag_filter,
-                any_flag_filter,
                 status_filter,
                 category_filter,
-                all_scheduled_filter,
-                some_scheduled_filter,
                 title_filter,
                 username_filter,
+                flag_filter,
+                any_flag_filter,
+                all_scheduled_filter,
+                some_scheduled_filter,
             ])
 
     @main_call
