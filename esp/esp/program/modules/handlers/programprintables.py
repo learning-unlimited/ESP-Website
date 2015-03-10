@@ -899,6 +899,20 @@ Volunteer schedule for %s:
             # now we sort them by time/title
             classes.sort()
 
+            #get the student's last class on each day
+            last_classes = []
+            days = {}
+            for cls in classes:
+                date = cls.end_time().end.date().isocalendar()
+                if date in days:
+                    days[date].append(cls)
+                else:
+                    days[date]=[cls]
+
+            for day,day_classes in days.items():
+                last_classes.append(day_classes[-1])
+            last_classes.sort()
+
             if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
@@ -944,6 +958,7 @@ Volunteer schedule for %s:
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
             student.classes = classes
+            student.last_classes = last_classes
             
         context['students'] = students
         context['program'] = prog
