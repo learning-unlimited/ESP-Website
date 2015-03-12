@@ -243,7 +243,7 @@ function update_checkboxes()
             {
 		      studentcheckbox.attr("disabled", "disabled");
             } 
-            else if (data.classes[section.class_id].category__id = open_class_category.id)
+            else if (data.classes[section.class_id].category__id == open_class_category.id)
             {
                 studentcheckbox.attr("disabled", "disabled");
             }
