@@ -16,7 +16,11 @@ var settings = {
     show_full_classes: true,
     override_full: false,
     disable_grade_filter: false,
-    compact_classes: true,
+    show_class_titles: false,
+    show_closed_reg: false,
+    hide_past_time_blocks: false,
+    hide_conflicting: false,
+    search_term: "",
     categories_to_display: []
 };
 
@@ -73,7 +77,6 @@ var state = {
     display_mode: "status",
     student_id: null,
     student_schedule: null,
-    last_event: null
 };
 
 /*  Ajax handler functions
@@ -128,23 +131,10 @@ function handle_students(new_data, text_status, jqxhr)
         handle_completed();
 }
 
-function handle_compact_classes()
-{
-    var div = $j('div[id=compact-classes-body]');
-    var val = settings.compact_classes;
-    //  This line would make the entire class description appear inline
-    //  instead of just the title.
-    //  div.toggleClass( "compact-classes" , val);
-}
-
-//  I wonder why this variable is necessary...
-var last_settings_event;
 function handle_settings_change(event)
 {
-    last_settings_event = event;
     setup_settings();
     render_table(state.display_mode, state.student_id);
-    handle_compact_classes();
     update_checkboxes();
 }
 
@@ -153,25 +143,82 @@ function setup_settings()
     $j("#hide_full_control").unbind("change");
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
-    $j("#compact_classes").unbind("change");
+    $j("#show_class_titles").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
+    $j("#hide_conflicting").unbind("change");
 
 
     //  Apply settings
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
-    settings.compact_classes = $j("#compact_classes").prop("checked");
+    settings.show_class_titles = $j("#show_class_titles").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
+    settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
 
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
-    $j("#compact_classes").change(handle_settings_change);
+    $j("#show_class_titles").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
+    $j("#hide_conflicting").change(handle_settings_change);
+}
+
+function hide_sidebar()
+{
+    $j("#side_area").addClass("sidebar_hidden");
+    $j("#main_area").addClass("sidebar_hidden");
+}
+
+function show_sidebar()
+{
+    $j("#side_area").removeClass("sidebar_hidden");
+    $j("#main_area").removeClass("sidebar_hidden");
+}
+
+function setup_sidebar()
+{
+    $j("#hide_sidebar").click(hide_sidebar);
+    $j("#show_sidebar").click(show_sidebar);
+}
+
+function update_search_filter()
+{
+    // unhide all classes first
+    $j(".section").removeClass("section_search_hidden");
+    for (var section_id in data.sections)
+    {
+        var section = data.sections[section_id];
+
+        // check if the class matches the search
+        var section_key = section.emailcode + ": " + section.title;
+        if (section_key.toLowerCase().indexOf(settings.search_term.toLowerCase()) != -1)
+            continue;
+
+        // no match; hide the class
+        for (var j in section.timeslots)
+        {
+            var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
+            section_elem.addClass("section_search_hidden");
+        }
+    }
+    // unhide enrolled classes
+    $j(".student_enrolled").removeClass("section_search_hidden");
+}
+
+function handle_search(event)
+{
+    settings.search_term = $j("#class_search").val();
+    update_search_filter();
+}
+
+function setup_search()
+{
+    settings.search_term = $j("#class_search").val();
+    $j("#class_search").keyup(handle_search);
 }
 
 /*  Event handlers  */
@@ -201,9 +248,10 @@ function print_schedule()
     result = $j.ajax({
         url: printing_url,
         data: student_data,
-        async: false
+        success: function (data, text_status, jqxhr) {
+            add_message(data.message);
+        }
     });
-    add_message(JSON.parse(result.responseText).message);
 }
 
 function add_message(msg, cls)
@@ -213,6 +261,12 @@ function add_message(msg, cls)
     else
         $j("#messages").append($j("<div/>").addClass(cls).html(msg));
     $j("#messages").prop("scrollTop", $j("#messages").prop("scrollHeight"));
+}
+
+function disable_checkboxes()
+{
+    $j(".classchange_checkbox").attr("disabled", "disabled");
+    $j(".classchange_checkbox").unbind("change");
 }
 
 function update_checkboxes()
@@ -249,12 +303,16 @@ function update_checkboxes()
             }
         }
     }
-    
+
+    // Find the classes that the student is enrolled in,
+    // highlight them and bring them to the top.
+    var occupied_timeslots = {};
     for (var i in state.student_schedule)
     {
         var section = data.sections[state.student_schedule[i]];
         for (var j in section.timeslots)
         {
+            occupied_timeslots[section.timeslots[j]] = section.id;
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
             var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
             section_elem.addClass("student_enrolled");
@@ -263,7 +321,30 @@ function update_checkboxes()
             section_col.prepend(section_elem);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
+            studentcheckbox.unbind("change");
             studentcheckbox.change(handle_checkbox);
+        }
+    }
+
+    if (settings.hide_conflicting)
+    {
+        // For each timeslot where the student is enrolled in a class,
+        // hide the other classes that overlap with that timeslot.
+        $j(".section").removeClass("section_conflict_hidden");
+        for (var ts_id in occupied_timeslots)
+        {
+            for (var i in data.timeslots[ts_id].sections)
+            {
+                var section = data.sections[data.timeslots[ts_id].sections[i]];
+                if (occupied_timeslots[ts_id] == section.id)
+                    continue;
+
+                for (var j in section.timeslots)
+                {
+                    var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
+                    section_elem.addClass("section_conflict_hidden");
+                }
+            }
         }
     }
 
@@ -318,11 +399,8 @@ function set_current_student(student_id)
     }
 }
 
-var last_conflict_event = null;
 function check_conflicts(event)
 {
-    last_conflict_event = event;
-    
     var event_info = event.target.id.split("_");
     var section_id = event_info[1];
     var student_id = event_info[2];
@@ -373,9 +451,28 @@ function clear_conflicts(event)
     delete data.conflicts[event.target.id];
 }
 
+function lock_schedule() {
+    if (state.schedule_locked) {
+        // Couldn't acquire the lock.
+        return false;
+    }
+    state.schedule_locked = true;
+    return true;
+}
+
+function unlock_schedule() {
+    state.schedule_locked = false;
+}
+
 //  Add a student to a class
 function add_student(student_id, section_id, size_override)
 {
+    if (!lock_schedule()) {
+        console.log("Warning: schedule locked, refusing to add section " + section_id);
+        return;
+    }
+    disable_checkboxes();
+
     if (state.student_id != student_id)
     {
         //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
@@ -399,14 +496,20 @@ function add_student(student_id, section_id, size_override)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
-        async: false,
-        success: handle_schedule_response
+        success: handle_schedule_response,
+        complete: [update_checkboxes, unlock_schedule]
     });
 }
 
 //  Remove a student from a class
 function remove_student(student_id, section_id)
 {
+    if (!lock_schedule()) {
+        console.log("Warning: schedule locked, refusing to remove section " + section_id);
+        return;
+    }
+    disable_checkboxes();
+
     if (state.student_id != student_id)
     {
         //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
@@ -428,8 +531,8 @@ function remove_student(student_id, section_id)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
-        async: false,
-        success: handle_schedule_response
+        success: handle_schedule_response,
+        complete: [update_checkboxes, unlock_schedule]
     });
 }
 
@@ -499,10 +602,8 @@ function handle_checkbox(event)
     }
 }
 
-var last_select_event = null;
 function autocomplete_select_item(event, ui)
 {
-    last_select_event = [event, ui];
     event.preventDefault();
     var student_id = ui.item.value;
     
@@ -555,7 +656,6 @@ function clear_table()
 /*  This function turns the data structure populated by handle_completed() (below)
     into a table displaying the enrollment and check-in status of all sections. 
     Additional features are controlled by display_mode and student_id.  */
-var last_hover_event = null;
 function render_table(display_mode, student_id)
 {
     render_category_options();
@@ -579,7 +679,7 @@ function render_table(display_mode, student_id)
         var div_name = "timeslot_" + ts_id;
         var ts_div = $j("#" + div_name);
         
-        ts_div.append($j("<div/>").addClass("timeslot_header").html(timeSlotHeader));
+        ts_div.append($j("<div/>").addClass("timeslot_header timeslot_top").html(timeSlotHeader));
         var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
@@ -620,7 +720,7 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
             // Show the class title if we're not in compact mode
-            if (!settings.compact_classes)
+            if (settings.show_class_titles)
             {
                 new_div.append($j("<div/>").addClass("title").html(section.title));
             }
@@ -632,6 +732,10 @@ function render_table(display_mode, student_id)
             var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
             if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
             tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
+            var first_timeslot = section.timeslots[0];
+            var last_timeslot = section.timeslots[section.timeslots.length-1];
+            var friendly_times = data.timeslots[first_timeslot].label.split("--")[0] + "--" + data.timeslots[last_timeslot].label.split("--")[1] + " (" + section.timeslots.length + " hour)"; // TODO: more reliable way to compute this?
+            tooltip_div.append($j("<div/>").html(friendly_times));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
             tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(class_data.class_info));
@@ -665,6 +769,7 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    update_search_filter();
     update_category_filters(); // show/hide classes by category
 }
     
@@ -675,9 +780,6 @@ function render_status_table()
     add_message("To view/change classes for a student, begin typing their name or ID number into the box below; then click on an entry, or use the arrow keys and Enter to select a student.");
 }
 
-/*  This function turns the data structure populated by handle_completed()
-    
-*/
 function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
@@ -686,9 +788,6 @@ function render_classchange_table(student_id)
     add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
 
 }
-
-/*  This function populates the linked data structures once all components have arrived.
-*/
 
 function update_category_filters()
 {   
@@ -760,6 +859,9 @@ function render_category_options()
     //initialize select all/none
     $j('.category_selector').click(toggle_categories);
 }
+
+/*  This function populates the linked data structures once all components have arrived.
+*/
 
 function populate_classes()
 {
@@ -966,11 +1068,6 @@ function handle_completed()
     populate_checkins();
     populate_counts();
 
-    //  This line would set catalog_received, counts_received, etc. to false.
-    //  At the very least it needs to be done immediately before refreshing the full table.
-    //  reset_status();
-    
-    //  $j("#messages").html("");
     //  console.log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
@@ -1025,6 +1122,37 @@ $j(document).scroll(function(){
     $j("#student_selector_area").css("left", window.scrollX);
 });
 
+$j(document).scroll(function () {
+    // make timeslots stick to the top
+    $j(".timeslot_top").each(function () {
+        var scroll_top = window.scrollY;
+        var top = $j(this).offset().top;
+        var original_top = $j(this).data("original_top");
+        if (original_top === undefined) {
+            // non-sticky state
+            if (scroll_top > top) {
+                // change to sticky state
+                $j(this).data("original_top", top);
+                $j(this).offset({top: scroll_top});
+                $j(this).css({'z-index': 10});
+            }
+        }
+        else {
+            // sticky state
+            if (scroll_top < original_top) {
+                // change to non-sticky state
+                $j(this).removeData("original_top");
+                $j(this).offset({top: original_top});
+                $j(this).css({'z-index': 'auto'});
+            }
+            else {
+                // stay in sticky state
+                $j(this).offset({top: scroll_top});
+            }
+        }
+    });
+});
+
 $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
@@ -1033,6 +1161,8 @@ $j(document).ready(function () {
     $j("#messages").html("Loading class and student data...");
     
     setup_settings();
+    setup_sidebar();
+    setup_search();
     fetch_all();
     
     //  Update enrollment counts and list of students once per minute.
