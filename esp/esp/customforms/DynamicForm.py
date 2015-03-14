@@ -650,10 +650,7 @@ class FormHandler:
             elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label'], ftype])
 
-        users = ESPUser.objects.filter(id__in=map(lambda response: response['user_id'], responses)).distinct()
-        users_dict = {}
-        for user in users:
-            users_dict[user.id] = user
+        users = ESPUser.objects.in_bulk(map(lambda response: response['user_id'], responses))
 
         # Now let's set up the responses
         for response in responses:
@@ -661,7 +658,7 @@ class FormHandler:
             
             # Add in user if form is not anonymous
             if not form.anonymous:
-                user = users_dict[response['user_id']]
+                user = users[response['user_id']]
                 response['user_id'] = unicode(response['user_id'])
                 response['user_display'] = user.name()
                 response['user_email'] = user.email
