@@ -88,8 +88,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
         Serves the two-phase student reg page. This page includes instructions
         for registration, and links to the phase1/phase2 sub-pages.
         """
-        assert False
-
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
