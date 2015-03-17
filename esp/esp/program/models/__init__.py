@@ -64,12 +64,14 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
+
 PROFILE_MAX_AGE_DAYS = 5
 
+
 class ProgramAccessError(ESPError_Log):
-        def __init__(self, msg):
-            self.msg = msg
-            super(ProfileNotFoundException, self).__init__(msg)
+    def __init__(self, msg):
+        self.msg = msg
+        super(ProgramAccessError, self).__init__(msg)
 
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
@@ -83,6 +85,7 @@ def get_model(module_name, model_name):
     except:
         pass
     return None
+
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -1324,13 +1327,11 @@ class RegistrationProfile(models.Model):
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
         has_access = Permission.user_has_perm(user, '/Profile', program)
-        registration_profile = None
 
         if not has_access:
             raise ProgramAccessError('The user does not have access to this program')
 
         profile_list = RegistrationProfile.objects.none()
-        
 
         if not user.is_anonymous():
             profile_list = (RegistrationProfile.objects
@@ -1348,7 +1349,7 @@ class RegistrationProfile(models.Model):
 
             if registration_profile.id is not None:
                 registration_profile.id = None
-                if (datetime.now() - registration_profile.last_ts).days <= 5:
+                if (datetime.now() - registration_profile.last_ts).days <= PROFILE_MAX_AGE_DAYS:
                     registration_profile.save()
         else:
             registration_profile = profile_list[0]
