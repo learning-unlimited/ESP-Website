@@ -2223,6 +2223,7 @@ class Permission(ExpirableModel):
             ("Student/MainPage", "Registration mainpage"),
             ("Student/Confirm", "Confirm registration"),
             ("Student/Cancel", "Cancel registration"),
+            ("Student/Removal", "Remove class registrations after registration closes"),
             ("Student/Payment", "Pay for a program"),
             ("Student/Profile", "Set profile info"),
             ("Student/Survey", "Access to survey"),
