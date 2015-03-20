@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap, meets_deadline
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.users.models            import Record
 from esp.cal.models              import Event
@@ -75,7 +75,7 @@ class StudentLunchSelectionForm(forms.Form):
         result = False
 
         #   Clear existing lunch periods for this day
-        for section in self.user.getEnrolledSections(self.program):
+        for section in self.user.getSections(self.program):
             if section.parent_class.category.category == 'Lunch':
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
@@ -120,6 +120,7 @@ class StudentLunchSelection(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_cap
+    @meets_deadline('/Classes')
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user
