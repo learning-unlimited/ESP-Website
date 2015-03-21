@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
 
-get_id_re = re.compile('.*\D(\d+)\D')
+get_id_re = re.compile('.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 
