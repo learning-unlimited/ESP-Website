@@ -164,7 +164,7 @@ urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
-    url(r'^__debug__/', include(debug_toolbar.urls)),
+    (r'^__debug__/', include(debug_toolbar.urls)),
 )
 
 urlpatterns += patterns('esp.formstack.views',
