@@ -890,13 +890,13 @@ class Program(models.Model, CustomFormsLinkModel):
 
         modules.sort(cmpModules)
         return modules
-    getModules_base.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    getModules_base.depend_on_model(lambda: ProgramModule)
-    getModules_base.depend_on_row(lambda: ProgramModuleObj, lambda mod: {'self': mod.program})
+    getModules_base.depend_on_row('program.Program', lambda prog: {'self': prog})
+    getModules_base.depend_on_model('program.ProgramModule')
+    getModules_base.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
-    getModules_base.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_base.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_base.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
+    getModules_base.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
 
     def getModules_cached(self, tl=None):
         """ Take the cached ProgramModuleObj list returned by getModules_base
@@ -951,7 +951,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 for view in mod.views:
                     result[(tl, view)] = mod.toBaseClass()
         return result
-    getModuleViews_cached.depend_on_cache(lambda: Program.getModules_base, lambda **kwargs: {})
+    getModuleViews_cached.depend_on_cache('program.Program.getModules_base', lambda **kwargs: {})
     
     def getModuleViews(self, main_only=False, tl=None):
         view_dict = self.getModuleViews_cached(main_only, tl)
