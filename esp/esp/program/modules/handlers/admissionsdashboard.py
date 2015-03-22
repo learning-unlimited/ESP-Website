@@ -39,7 +39,7 @@ from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
 
 from django.http import HttpResponse
-from django.utils import simplejson as json
+import json
 
 class AdmissionsDashboard(ProgramModuleObj):
     """
