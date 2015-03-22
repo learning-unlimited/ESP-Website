@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.models import FinancialAidRequest
@@ -185,7 +185,9 @@ class StudentRegTest(ProgramFrameworkTest):
         
         #   Apply for financial aid
         self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        response = self.client.get('/learn/%s/finaid' % self.program.url)
+        response = self.client.get(
+                    '/learn/%s/finaid' % self.program.url,
+                    **{'wsgi.url_scheme': 'https'})
         self.assertEqual(response.status_code, 200)
         
         form_settings = {
@@ -278,7 +280,8 @@ class StudentRegTest(ProgramFrameworkTest):
         
         #   Check that selecting an option for a "multiple choice" extra item works
         lit = LineItemType.objects.get(program=self.program, text='Food')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-cost' % lit.id: '7.00'})
+        lio = filter(lambda x: x[2] == 'Large', lit.options)[0]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-option' % lit.id: str(lio[0])})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)

@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import time
@@ -54,7 +54,6 @@ class DBReceipt(models.Model):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 
-REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -91,9 +90,6 @@ class StudentClassRegModuleInfo(models.Model):
     visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
     #   Meeting times visibility
     visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
-    
-    #   Show classes that have not yet been scheduled?
-    show_unscheduled_classes = models.BooleanField(default=True, help_text='Uncheck this box to prevent people from seeing classes in the catalog before they have been scheduled.')
     
     #   Customize buttons
     #   - Labels
@@ -142,8 +138,6 @@ class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
-    display_times        = models.BooleanField(blank=True, default=False)
-    times_selectmultiple = models.BooleanField(blank=True, default=False)
     
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')
@@ -154,10 +148,6 @@ class ClassRegModuleInfo(models.Model):
     class_size_step      = models.IntegerField(blank=True, null=True, help_text='The interval for class capacity choices.')
     class_other_sizes    = models.CommaSeparatedIntegerField(blank=True, null=True, max_length=100, help_text='Force the addition of these options to teachers\' choices of class size.  (Enter a comma-separated list of integers.)')
     
-    director_email       = models.EmailField(blank=True, null=True)
-    class_durations      = models.CharField(max_length=128, blank=True, null=True)
-    teacher_class_noedit = models.DateTimeField(blank=True, null=True, help_text='Teachers will not be able to edit their classes after this time.')
-    
     #   Allowed numbers of sections and meeting days
     allowed_sections     = models.CommaSeparatedIntegerField(max_length=100, blank=True,
         help_text='Allow this many independent sections of a class (comma separated list of integers). Leave blank to allow arbitrarily many.')
@@ -165,7 +155,6 @@ class ClassRegModuleInfo(models.Model):
         help_text='Possibilities for the number of days that a class could meet (comma separated list of integers). Leave blank if this is not a relevant choice for the teachers.')
     
     num_teacher_questions = models.PositiveIntegerField(default=1, blank=True, null=True, help_text='The maximum number of application questions that can be specified for each class.')
-    num_class_choices    = models.PositiveIntegerField(default=1, blank=True, null=True)
     
     #   An HTML color code for the program.  All classes will appear in some variant
     #   of this color in the catalog and registration pages.  If null, the default
@@ -245,7 +234,7 @@ class ClassRegModuleInfo(models.Model):
 
     def getClassSizes(self):
         #   Default values
-        min_size = 0
+        min_size = 5
         max_size = 30
         size_step = 1
         other_sizes = range(40, 210, 10)
@@ -285,112 +274,9 @@ class ClassRegModuleInfo(models.Model):
     def getResources(self):
         resources = self.get_program().getResources()
         return [(str(x.id), x.name) for x in resources]
-   
-    def getResourceTypes(self, is_global=None):
-        #   Get a list of all resource types, excluding the fundamental ones.
-        base_types = self.get_program().getResourceTypes().filter(priority_default__gt=0)
-        
-        if is_global is True:
-            res_types = base_types.filter(program__isnull=True)
-        elif is_global is False:
-            res_types = base_types.filter(program__isnull=False)
-        else:
-            res_types = base_types
-            
-        return [(str(x.id), x.name) for x in res_types]
-
     
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
-
-class RemoteProfile(models.Model):
-    from esp.users.models import User
-    from esp.program.models import Program
-    from esp.cal.models import Event
-
-    user      = AjaxForeignKey(ESPUser,blank=True, null=True)
-    program   = models.ForeignKey(Program,blank=True, null=True)
-    volunteer = models.BooleanField(default = False)
-    need_bus  = models.BooleanField(default = False)
-    bus_runs  = models.ManyToManyField(DataTree,
-                                       related_name="bus_teachers",
-                                       blank=True)
-    volunteer_times = models.ManyToManyField(Event,
-                                             related_name='teacher_volunteer_set',
-                                             blank=True)
-
-    
-    def __unicode__(self):
-        return 'Remote participation info for teacher %s in %s' % \
-                 (str(self.user), str(self.program))      
-
-    class Admin:
-        pass
-
-class SATPrepTeacherModuleInfo(models.Model):
-    from esp.users.models import User
-    from esp.program.models import Program
-
-    """ Module that links a user with a program and has SATPrep teacher info"""
-    SAT_SUBJECTS = (
-        ('M', 'Math'),
-        ('V', 'Verbal'),
-        ('W', 'Writing')
-        )
-        
-    SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    #   This is the unanimous decision of the ESP office, as of 9:30pm Thursday Feb 20, 2009.
-    #   Old category labels are kept commented below.   -Michael P
-    SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme', 'G': 'SQL'}
-    #   SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme'}
-    #    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
-    #   SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
-    #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
-    #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
-
-    sat_math = models.PositiveIntegerField(blank=True, null=True)
-    sat_writ = models.PositiveIntegerField(blank=True, null=True)
-    sat_verb = models.PositiveIntegerField(blank=True, null=True)
-
-    mitid    = models.PositiveIntegerField(blank=True, null=True)
-
-    subject  = models.CharField(max_length=32, choices = SAT_SUBJECTS)
-
-    user     = AjaxForeignKey(ESPUser,blank=True, null=True)
-    program  = models.ForeignKey(Program,blank=True, null=True)
-    section  = models.CharField(max_length=5)
-   
-    def __unicode__(self):
-        return 'SATPrep Information for teacher %s in %s' % \
-                 (str(self.user), str(self.program))
-
-    class Meta:
-        unique_together = ('user', 'program')
-    
-    def get_subject_display(self):
-        if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:
-            return SATPrepTeacherModuleInfo.SUBJECT_DICT[self.subject]
-        else:
-            return 'Unknown'
-        
-    def get_section_display(self):
-        if self.section in SATPrepTeacherModuleInfo.SECTION_DICT:
-            return SATPrepTeacherModuleInfo.SECTION_DICT[self.section]
-        else:
-            return 'Unknown'
-        
-    @staticmethod
-    def subjects():
-        return SATPrepTeacherModuleInfo.SAT_SUBJECTS
-
-""" Model for settings that control the First Data credit card module. """
-class CreditCardSettings(models.Model):
-    module = models.ForeignKey(ProgramModuleObj)
-    store_id = models.CharField(max_length=80, default='')
-    host_payment_form = models.BooleanField(default=False)
-    post_url = models.CharField(max_length=255, default='')
-    offer_donation = models.BooleanField(default=False)
-    invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
 
 class AJAXChangeLogEntry(models.Model):
 
@@ -492,3 +378,5 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
+
+from esp.application.models import FormstackAppSettings

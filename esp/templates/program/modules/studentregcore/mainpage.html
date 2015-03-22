@@ -39,12 +39,13 @@
 {% endif %}
 {% endif %}
 {% load render_qsd %}
-{% inline_program_qsd_block program "registration_steps" %}    <p>
+{% inline_program_qsd_block program "registration_steps" %}
+<p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
-    </p>
+</p>
 {% end_inline_program_qsd_block %}
 
 {% render_inline_program_qsd program "learn:studentregheader" %}

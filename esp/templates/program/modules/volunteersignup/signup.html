@@ -7,6 +7,43 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}    
 
+{% block xtrajs %}
+<script type="text/javascript">
+function confirm_cancellation() {
+    $j("input[name=clear_requests]").val("True");
+    $j("#confirm_cancellation_dialog").dialog("close");
+    $j("#volunteer_shift_form").submit();
+}
+
+function decline_cancellation() {
+    $j("#confirm_cancellation_dialog").dialog("close");
+}
+
+$j(document).ready(function () {
+    $j("#confirm_cancellation_dialog").dialog({
+        autoOpen: false,
+        buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
+    });
+    $j("#volunteer_form_submit").click(function (event) {   
+        //  Check if the user has previous requests and is asking to clear all of them
+        var checkboxes_checked = $j("input[name=requests]:checked");
+        if (($j("input[name=has_previous_requests]").val() == "True") &&
+            (checkboxes_checked.size() == 0)) {
+            //  If so, prevent the form from being submitted - we want a confirmation
+            event.preventDefault();
+            
+            //  Show the confirmation dialog
+            $j("#confirm_cancellation_dialog").dialog("open");
+        }
+        else {
+            //  They are not cancelling all shifts; submit the form normally
+            $j("#volunteer_shift_form").submit();
+        }
+    });
+});
+</script>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}
@@ -21,9 +58,17 @@ Thank you, {{ complete_name }}, for volunteering! You will receive reminder emai
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_complete" %}
 {% endif %}
+{% if cancelled %}
+<h3>Volunteer Shifts Cancelled</h3>
+<p>
+The directors have been notified that you are no longer able to volunteer at {{ program.name }}.
+</p>
+{% load render_qsd %}
+{% render_inline_program_qsd program "volunteer_cancelled" %}
+{% endif %}
 
 <div id="program_form">
-<form method="POST" action="{{ request.path }}">
+<form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
 <center>
 <table width="500">
 <tr>
@@ -39,10 +84,11 @@ Thank you, {{ complete_name }}, for volunteering! You will receive reminder emai
 {% endif %}
     {{ form }}
 <tr>   
-    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+    <td colspan="2" align="center"><input id="volunteer_form_submit" type="submit" value="Submit" /></td>
 </tr>
 </table>
 </center>
 </form>
 </div>
+<div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
 {% endblock %}

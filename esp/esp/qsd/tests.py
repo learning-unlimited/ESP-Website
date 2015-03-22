@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -54,73 +54,93 @@ class QSDCorrectnessTest(TestCase):
         new_admin.set_password('password')
         new_admin.save()
         new_admin.makeRole('Administrator')
+        new_student, created = ESPUser.objects.get_or_create(username='qsd_student')
+        new_student.set_password('password')
+        new_student.save()
+        self.users = [None, (new_admin, 'password'), (new_student, 'password')]
         self.author = new_admin
     
     def testInlineCorrectness(self):
         
-        self.client.logout()
+        for user in self.users:
+            if user is None:
+                self.client.logout()
+            else:
+                self.client.logout()
+                self.client.login(username=user[0], password=user[1])
         
-        #   Create an inline QSD
-        qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.url = 'learn/bar'
-        qsd_rec_new.name = "learn:bar"
-        qsd_rec_new.author = self.author
-        qsd_rec_new.nav_category = NavBarCategory.default()
-        qsd_rec_new.content = "Inline Testing 123"
-        qsd_rec_new.title = "Test QSD page"
-        qsd_rec_new.description = ""
-        qsd_rec_new.keywords = ""
-        qsd_rec_new.save()
-        
-        #   Render a template that uses the inline_qsd template tag
-        template_data = """
-            {% load render_qsd %}
-            {% render_inline_qsd "learn/bar" %}
-        """
-        template = Template(template_data)
-        response_content = template.render(Context({}))
-        self.assertTrue("Inline Testing 123" in response_content)
-        
-        #   Update the template and check again
-        qsd_rec_new.content = "Inline Testing 456"
-        qsd_rec_new.save()
-        response_content = template.render(Context({}))
-        self.assertTrue("Inline Testing 456" in response_content)
-        
-        response_content = template.render(Context({}))
-        self.assertTrue("Inline Testing 456" in response_content)
+            #   Create an inline QSD
+            qsd_rec_new = QuasiStaticData()
+            qsd_rec_new.url = 'learn/bar'
+            qsd_rec_new.name = "learn:bar"
+            qsd_rec_new.author = self.author
+            qsd_rec_new.nav_category = NavBarCategory.default()
+            qsd_rec_new.content = "Inline Testing 123"
+            qsd_rec_new.title = "Test QSD page"
+            qsd_rec_new.description = ""
+            qsd_rec_new.keywords = ""
+            qsd_rec_new.save()
+
+            #   Render a template that uses the inline_qsd template tag
+            template_data = """
+                {% load render_qsd %}
+                {% render_inline_qsd "learn/bar" %}
+            """
+            template = Template(template_data)
+            response_content = template.render(Context({}))
+            self.assertTrue("Inline Testing 123" in response_content)
+            
+            #   Update the template and check again
+            qsd_rec_new.content = "Inline Testing 456"
+            qsd_rec_new.save()
+            response_content = template.render(Context({}))
+            self.assertTrue("Inline Testing 456" in response_content)
+            
+            response_content = template.render(Context({}))
+            self.assertTrue("Inline Testing 456" in response_content)
+
+            #   Delete it so we can start again
+            qsd_rec_new.delete()
         
     def testPageCorrectness(self):
         
-        self.client.logout()
+        for user in self.users:
+            if user is None:
+                self.client.logout()
+            else:
+                self.client.logout()
+                self.client.login(username=user[0], password=user[1])
         
-        #   Check that QSD with desired URL does not exist
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 404)
-        
-        #   Create QSD with desired URL
-        qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.url = 'learn/foo'
-        qsd_rec_new.name = "learn:foo"
-        qsd_rec_new.author = self.author
-        qsd_rec_new.nav_category = NavBarCategory.default()
-        qsd_rec_new.content = "Testing 123"
-        qsd_rec_new.title = "Test QSD page"
-        qsd_rec_new.description = ""
-        qsd_rec_new.keywords = ""
-        qsd_rec_new.save()
-        
-        #   Check that page now exists and has proper content
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('Testing 123' in response.content)
-        
-        #   Edit QSD and check that page content has updated
-        qsd_rec_new.content = "Testing 456"
-        qsd_rec_new.save()
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('Testing 456' in response.content)
+            #   Check that QSD with desired URL does not exist
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 404)
+            
+            #   Create QSD with desired URL
+            qsd_rec_new = QuasiStaticData()
+            qsd_rec_new.url = 'learn/foo'
+            qsd_rec_new.name = "learn:foo"
+            qsd_rec_new.author = self.author
+            qsd_rec_new.nav_category = NavBarCategory.default()
+            qsd_rec_new.content = "Testing 123"
+            qsd_rec_new.title = "Test QSD page"
+            qsd_rec_new.description = ""
+            qsd_rec_new.keywords = ""
+            qsd_rec_new.save()
+            
+            #   Check that page now exists and has proper content
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue('Testing 123' in response.content)
+            
+            #   Edit QSD and check that page content has updated
+            qsd_rec_new.content = "Testing 456"
+            qsd_rec_new.save()
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue('Testing 456' in response.content)
+
+            #   Delete the new QSD so we can start again.
+            qsd_rec_new.delete()
         
         
     

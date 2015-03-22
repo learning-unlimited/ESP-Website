@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import json
@@ -38,7 +38,6 @@ from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
-from django.db.models.query import Q
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -47,8 +46,9 @@ from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -126,7 +126,7 @@ def json_encode(obj):
 
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+class StudentClassRegModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return [ {
@@ -138,23 +138,37 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "required": True,
             }]
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return {'scrmi': module_ext.StudentClassRegModuleInfo}
 
 
     def students(self, QObject = False):
-        from django.db.models import Q
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         
-        if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
-        else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
+        # Force Django to generate two subqueries without joining SRs to SSIs,
+        # as efficiently as possible since it's still a big query.
+        sr_ids = StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=self.program
+        ).values('user').distinct()
+        ssi_ids = StudentSubjectInterest.valid_objects().filter(
+            subject__parent_program=self.program).values('user').distinct()
+        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        
+        qobjects = {
+            'enrolled': Enrolled & Par & Unexpired,
+            'classreg': any_reg_q,
+        }
 
+        if QObject:
+            retVal = qobjects
+        else:
+            retVal = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
+        
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -221,9 +235,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        # Hack, to hide the Saturday night timeslots from grades 7-8
-        if not is_onsite and not user.getGrade() > 8:
-            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -258,7 +269,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -269,9 +279,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
+                doesnt_have_enrollment = not any(sec['section'].is_enrolled
+                                                 for sec in cls_list)
+                schedule.append((timeslot, cls_list, blockCount + 1,
+                                 doesnt_have_enrollment))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
+                schedule.append((timeslot, [], blockCount + 1, False))
 
             prevTimeSlot = timeslot
                 
@@ -365,7 +378,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
-            raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
+            raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
         # Can we register for more than one class yet?
         if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
@@ -390,14 +403,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         datestring = ' later today'
                     else:
                         datestring = d.strftime(' on %B %d')
-                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
+                raise ESPError("Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring), log=False)
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.enforce_max)
+            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.enforce_max) or section.cannotAdd(request.user, self.enforce_max)
+            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -430,12 +443,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     for sec in auto_classes:
                         sec.unpreregister_student(request.user, prereg_verb = prereg_verb)
                     if blocked_class is not None:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error), log=False)
                     else:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error)
+                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error), log=False)
                     
         if error and not request.user.onsite_local:
-            raise ESPError(False), error
+            raise ESPError(error, log=False)
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
@@ -444,7 +457,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 r = Record.objects.create(user=request.user, program=prog, event="reg_confirmed")
             return True
         else:
-            raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'    
+            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
     
     @aux_call
     @needs_student
@@ -494,7 +507,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         try:
             extra = int(extra)
         except:
-            raise ESPError(False), 'Please use the link at the main registration page.'
+            raise ESPError('Please use the link at the main registration page.', log=False)
         user = ESPUser(request.user)        
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
@@ -676,7 +689,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
                 return module.coursecatalog(request, tl, one, two, module, extra, prog)
-        raise ESPError(False)('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.')
+        raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
     @needs_student
@@ -723,7 +736,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
         if isinstance(result, basestring):
-            raise ESPError(False), result
+            raise ESPError(result, log=False)
         else:
             return self.goToCore(tl)
 
@@ -755,6 +768,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             return []
 
+    @aux_call
+    def openclasses(self, request, tl, one, two, module, extra, prog):
+        """ A publicly viewable version of the onsite class list. 
+            Should be revisited in the future, as this was a temporary
+            hack created for Stanford Splash in fall 2013. """
+
+        module = prog.getModule('OnSiteClassList')
+        if module:
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
+        
+        #  Otherwise this will be a 404
+        return None
+
     class Meta:
-        abstract = True
+        proxy = True
 

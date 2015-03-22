@@ -1,9 +1,9 @@
 import esp.web.util.globaltags
 from django.contrib.sites.models import Site
-from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 
 from esp.program.models import Program
+from esp.users.models import ESPUser
 from esp.web.views.navBar import makeNavBar
 
 def media_url(request): 
@@ -13,7 +13,6 @@ def espuserified_request(request):
     return {'request': request, 'user': None, 'messages': None, 'perms': None}
 
 def esp_user(request):
-    from esp.users.models import ESPUser
     return {'user': lambda: request.user}
 
 def email_settings(request):
@@ -30,6 +29,15 @@ def program(request):
         if Program.objects.filter(url=program_url).count() == 1:
             return {'program': Program.objects.get(url=program_url)}
     return {}
+
+def schoolyear(request):
+    path_parts = request.path.lstrip('/').split('/')
+    if len(path_parts) > 3:
+        program_url = '/'.join(path_parts[1:3])
+        if Program.objects.filter(url=program_url).count() == 1:
+            program = Program.objects.get(url=program_url)
+            return {'schoolyear': ESPUser.program_schoolyear(program)}
+    return {'schoolyear': ESPUser.current_schoolyear()}
 
 def index_backgrounds(request):
     #if request.path.strip() == '':

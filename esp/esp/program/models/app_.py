@@ -29,13 +29,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
 
-from django.contrib.auth.models import User
 from django.db import models
 from django import forms
 
@@ -85,7 +84,7 @@ class BaseAppElement:
         #   Enlarge text fields to a reasonable size (dangit Django).
         for field in self._field_names:
             django_field = get_field_by_name(field)
-            if type(django_field) == models.TextField:
+            if isinstance(django_field, models.TextField):
                 form_class.base_fields[field].widget = forms.Textarea(attrs={'cols': 80, 'rows': 8})
                 form_class.base_fields[field].required = False
         
@@ -149,7 +148,7 @@ class StudentAppResponse(BaseAppElement, models.Model):
     
     def __unicode__(self):
         return 'Response to %s: %s...' % (self.question.question, self.response[:80])
-    
+
     class Meta:
         app_label = 'program'
         db_table = 'program_studentappresponse'

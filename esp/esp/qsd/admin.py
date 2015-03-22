@@ -30,18 +30,19 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.qsd.models import QuasiStaticData, ESPQuotations
+from esp.qsd.models import QuasiStaticData
 import reversion
+from esp.utils.admin_user_search import default_user_search
 
 class QuasiStaticDataAdmin(reversion.VersionAdmin):
-    search_fields = ['title','name','keywords','description','url']
-    list_display = ['nav_category', 'title', 'url', 'disabled']
+    search_fields = default_user_search('author') + ['title','name','keywords','description','url']
+    list_display = ['nav_category', 'title', 'url', 'disabled', 'create_date', 'author']
+    list_filter = ['nav_category',]
+    date_hierarchy = 'create_date'
 
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
-
-admin_site.register(ESPQuotations)

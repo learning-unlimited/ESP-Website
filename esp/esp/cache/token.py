@@ -30,17 +30,15 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import random
 
 from django.core.cache import cache
-from django.db.models import signals
-from django.dispatch import Signal
 
 from esp.cache.marinade import marinade_dish
-from esp.cache.key_set import has_wildcard, wildcard, specifies_key
+from esp.cache.key_set import has_wildcard, specifies_key
 from esp.middleware import ESPError
 
 __all__ = ['Token', 'ExternalToken']
@@ -116,7 +114,7 @@ class Token(object):
         """ Given a filtered set of arguments, deletes things. """
         # Check if this is a single item...
         if has_wildcard(filt):
-            raise ESPError(), "Tried to delete an argument set with a wildcard."
+            raise ESPError("Tried to delete an argument set with a wildcard.")
         self.cache.delete(self.key_filt(filt))
         # Send the signal...
         if send_signal:

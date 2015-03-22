@@ -1,0 +1,20 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Financial Aid Application{% endblock %}
+{% block content_title %}{{program.niceName}} Financial Aid Application{% endblock %}
+
+{% block content %}
+<h1>{{ program.nicename }} Financial Aid Application</h1>
+
+{% load render_qsd %}
+{% render_inline_program_qsd program "learn:finaidapp" %}
+
+<form method="post" action="{{form.info.url}}">
+    <input type="hidden" name="form" value="{{form.id}}" />
+    <input type="hidden" name="viewkey" value="{{form.info.viewkey}}" />
+    <input type="hidden" name="field{{user_id_field}}" value="{{user_id}}" />
+    <input type="hidden" name="field{{username_field}}" value="{{username}}" />
+    <input type="submit" value="Continue" />
+</form>
+
+{% endblock %}

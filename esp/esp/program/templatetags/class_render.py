@@ -2,7 +2,6 @@ from django import template
 from django.template.loader import render_to_string
 from esp.web.util.template import cache_inclusion_tag
 from esp.cache import cache_function
-from esp.users.models import ESPUser
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
@@ -40,9 +39,9 @@ render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lam
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.owner}, lambda media: isinstance(media.owner, ClassSubject))
-render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
-render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
-render_class_core.cached_function.depend_on_model(lambda: Tag)
+render_class_core.cached_function.depend_on_model('modules.StudentClassRegModuleInfo')
+render_class_core.cached_function.depend_on_model('modules.ClassRegModuleInfo')
+render_class_core.cached_function.depend_on_model('tagdict.Tag')
 
 def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     if not prog:
@@ -80,11 +79,19 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
-render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'cls': reg.section.parent_class, 'user': reg.user})
+render_class.cached_function.get_or_create_token(('cls',))
+# We need to depend on not only the user's StudentRegistrations for this
+# section, but in fact on their StudentRegistrations for all sections, because
+# of things like lunch constraints -- a change made in another block could
+# affect whether you can add a class in this one.  So we depend on all SRs for
+# this user.
+render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
+render_class.cached_function.get_or_create_token(('user',))
 
 @cache_function
 def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_to_string('inclusion/program/class_catalog.html', render_class_helper(cls))
+render_class_direct.get_or_create_token(('cls',))
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=None):
@@ -95,17 +102,10 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
     else:
         section = None
 
-    #   Add ajax_addclass to prereg_url if registering from catalog is allowed
-    ajax_prereg_url = None
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
 
     #   Ensure cached catalog shows buttons and fillslots don't
-    # NOTE: I believe that this is deprecated; it isn't referred to anywhere. 
-    # Which means that scrmi.register_from_catalog is currently useless.
-    # This should be fixed. -jmoldow 11/06/2011
-    if scrmi.register_from_catalog and not timeslot:
-        ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     prereg_url = None
     if not (crmi.open_class_registration and cls.category == cls.parent_program.open_class_category):
@@ -120,7 +120,6 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'section':    section,
             'user':       user,
             'prereg_url': prereg_url,
-            'ajax_prereg_url': ajax_prereg_url,
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class,

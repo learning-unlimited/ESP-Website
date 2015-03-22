@@ -2,5 +2,5 @@ from django.conf.urls import *
 
 urlpatterns = patterns('',
                         (r'^view_all/?$', 'esp.cache.views.view_all'),
-                        (r'^varnish_purge$', 'esp.cache.views.varnish_purge'),
+                        (r'^flush/([0-9]+)/?$', 'esp.cache.views.flush')
                         )

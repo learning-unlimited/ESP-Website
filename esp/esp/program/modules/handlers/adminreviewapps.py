@@ -31,7 +31,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
@@ -77,10 +77,10 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError(False), 'You cannot edit class "%s"' % cls
+            raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
@@ -124,7 +124,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = ESPUser.objects.get(id = request.GET.get('student',''))
         except:
-            raise ESPError(False), 'Student or class not found.'
+            raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
@@ -142,7 +142,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = ESPUser.objects.get(id = request.GET.get('student',''))
         except:
-            raise ESPError(False), 'Student or class not found.'
+            raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
@@ -162,7 +162,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
         
         student = request.GET.get('student',None)
         if not student:
@@ -171,17 +171,17 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             student = ESPUser.objects.get(id = student)
         except ESPUser.DoesNotExist:
-            raise ESPError(False), 'Cannot find student, %s' % student
+            raise ESPError('Cannot find student, %s' % student, log=False)
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:
-            raise ESPError(False), 'Student not a student of this class.'
+            raise ESPError('Student not a student of this class.', log=False)
         
         try:
             student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
             assert False, student.studentapplication_set.all()[0].__dict__
-            raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
+            raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
         
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
 
@@ -203,7 +203,7 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
+        schedule = u"""
 Student schedule for %s:
 
  Time               | Class                   | Room""" % student.name()
@@ -218,12 +218,12 @@ Student schedule for %s:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = 'N/A'
+                rooms = u'N/A'
             else:
-                rooms = ", ".join(rooms)
+                rooms = u", ".join(rooms)
                 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
+            schedule += u"""
+%s|%s|%s""" % (u",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
                
@@ -231,5 +231,5 @@ Student schedule for %s:
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

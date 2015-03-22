@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from datetime import datetime
 import hashlib
@@ -59,7 +59,7 @@ class QSDManager(FileDBManager):
             return self.filter(url=url).select_related().latest('create_date')
         except QuasiStaticData.DoesNotExist:
             return None
-    get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     @cache_function
     def get_by_url_else_init(self, url, defaults={}):
@@ -71,8 +71,20 @@ class QSDManager(FileDBManager):
         qsd_obj = self.get_by_url(url)
         if qsd_obj is None:
             qsd_obj = QuasiStaticData(url=url, **defaults)
+            # Because of the way templates are usually written, there will
+            # often be unintended whitespace at the beginnings of lines of the
+            # default content of an inline QSD. Usually a line starts with some
+            # template indentation before the actual content. However, Markdown
+            # will interpret this as a code block.  To avoid this, we assume
+            # that the default content will never purposely use Markdown code
+            # blocks, and we strip this unintended space.
+            content = unicode(qsd_obj.content.lstrip())
+            content = content.split('\n')
+            content = map(unicode.lstrip, content)
+            content = '\n'.join(content)
+            qsd_obj.content = content
         return qsd_obj
-    get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url_else_init.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     def __str__(self):
         return "QSDManager()"
@@ -96,8 +108,8 @@ class QuasiStaticData(models.Model):
     
     nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
-    create_date = models.DateTimeField(default=datetime.now, editable=False)
-    author = AjaxForeignKey(ESPUser)
+    create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
+    author = AjaxForeignKey(ESPUser, verbose_name="last modifed by") #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -148,7 +160,7 @@ class QuasiStaticData(models.Model):
     @cache_function
     def html(self):
         return markdown(self.content)
-    html.depend_on_row(lambda:QuasiStaticData, 'self')
+    html.depend_on_row('qsd.QuasiStaticData', 'self')
 
     @staticmethod
     def prog_qsd_url(prog, name):
@@ -194,36 +206,3 @@ def qsd_cache_key(path, user=None,):
         return hashlib.md5('%s-%s' % (path, name, user.id)).hexdigest()
     else:
         return hashlib.md5('%s' % (path, ) ).hexdigest()
-
-
-class ESPQuotations(models.Model):
-    """ Quotation about ESP """
-
-    content = models.TextField()
-    display = models.BooleanField()
-    author  = models.CharField(max_length=64)
-    create_date = models.DateTimeField(default=datetime.now())
-
-    @staticmethod
-    def getQuotation():
-        import random
-        cutoff = .9
-        if random.random() > cutoff:
-            return None
-
-        current_pool = cache.get('esp_quotes')
-
-        if current_pool is None:
-            current_pool = list(ESPQuotations.objects.filter(display=True).order_by('?')[:5])
-            # Cache the current pool for a day
-            if len(current_pool) == 0:
-                return None
-
-            cache.set('esp_quotes', current_pool, 86400)
-
-        return random.choice(current_pool)
-
-        
-    class Meta:
-        verbose_name_plural = 'ESP Quotations'
-

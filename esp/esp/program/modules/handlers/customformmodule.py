@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 
@@ -85,7 +85,7 @@ class CustomFormModule(ProgramModuleObj):
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError(False), 'Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl
+            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl, log=False)
         
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request
@@ -122,5 +122,5 @@ class CustomFormModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
     
     class Meta:
-        abstract = True
+        proxy = True
 

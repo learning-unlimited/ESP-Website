@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
@@ -123,7 +123,7 @@ class SchedulingModule(ProgramModuleObj):
                             new_room = Resource.objects.get(id=int(new_dict[key]))
                             (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
-                                raise ESPError(False), 'Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors)
+                                raise ESPError('Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors), log=False)
 
         def count(fn, lst):
             return reduce(lambda count, item: fn(item) and count + 1 or count, lst, 0)
@@ -208,5 +208,5 @@ class SchedulingModule(ProgramModuleObj):
         
 
     class Meta:
-        abstract = True
+        proxy = True
 

@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
@@ -66,10 +66,10 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError(False), 'You cannot edit class "%s"' % cls
+            raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
@@ -187,10 +187,10 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError(False), 'You cannot edit class "%s"' % cls
+            raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
         student = request.GET.get('student',None)
         if not student:
@@ -199,17 +199,17 @@ class TeacherReviewApps(ProgramModuleObj):
         try:
             student = ESPUser(User.objects.get(id = int(student)))
         except ESPUser.DoesNotExist:
-            raise ESPError(False), 'Cannot find student, %s' % student
+            raise ESPError('Cannot find student, %s' % student, log=False)
 
         not_registered = not StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student).exists()
         if not_registered:
-            raise ESPError(False), 'Student not a student of this class.'
+            raise ESPError('Student not a student of this class.', log=False)
 
         try:
             student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
-            raise ESPError(False), 'Error: Student did not start an application.'
+            raise ESPError('Error: Student did not start an application.', log=False)
 
         student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
@@ -255,5 +255,5 @@ class TeacherReviewApps(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

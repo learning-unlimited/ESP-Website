@@ -30,13 +30,15 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
+from collections import defaultdict
+
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.tagdict.models          import Tag
 from esp.tagdict.decorators      import require_tag
@@ -54,7 +56,7 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
 from datetime                    import timedelta
-from esp.mailman                 import add_list_member
+from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.util           import ErrorDict
@@ -62,7 +64,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 import json
 from copy import deepcopy
 
-class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
+class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
@@ -76,18 +78,19 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "inline_template": "listclasses.html",
             }
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return {'crmi': module_ext.ClassRegModuleInfo}
 
 
     def prepare(self, context={}):
-        """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
-            since everything else can be gotten from hooks. """
+        """ prepare returns the context for the main teacherreg page. """
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
-        context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self # ...
+        context['can_create'] = self.any_reg_is_open()
+        context['can_create_class'] = self.class_reg_is_open()
+        context['can_create_open_class'] = self.open_class_reg_is_open()
+        context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
@@ -192,11 +195,33 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if len(extension) > 0:
             return tmpModule.deadline_met(extension)
         else:
-            return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
+            return (self.any_reg_is_open()
+                    or tmpModule.deadline_met('/Classes/Edit'))
+
+    def class_reg_is_open(self):
+        return self.deadline_met('/Classes/Create/Class')
+
+    def open_class_reg_is_open(self):
+        return (self.crmi.open_class_registration
+                and self.deadline_met('/Classes/Create/OpenClass'))
+
+    reg_is_open_methods = defaultdict(
+        (lambda: (lambda self: False)),
+        {
+            'Class': class_reg_is_open,
+            'OpenClass': open_class_reg_is_open,
+        },
+    )
+
+    def reg_is_open(self, reg_type='Class'):
+        return self.reg_is_open_methods[reg_type](self)
+
+    def any_reg_is_open(self):
+        return any(map(self.reg_is_open, self.reg_is_open_methods.keys()))
 
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
-                if cls.parent_program.id == self.program.id ]
+                if cls.parent_program_id == self.program.id ]
 
     @aux_call
     @needs_teacher
@@ -205,7 +230,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         section = ClassSection.objects.filter(id=extra)
         if section.count() != 1:
-            raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
+            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section[0], 'cls': section[0]})
 
@@ -216,7 +241,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         cls = ClassSubject.objects.filter(id=extra)
         if cls.count() != 1:
-            raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
+            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls[0]})
         
@@ -229,7 +254,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             sec = ClassSection.objects.filter(id=extra)[0]
         except:
-            raise ESPError(False), 'Class section not found.  If you came from a link on our site, please notify the webmasters.'
+            raise ESPError('Class section not found.  If you came from a link on our site, please notify the webmasters.', log=False)
         
         students_list = sec.students_prereg()
         
@@ -272,17 +297,55 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                 found = True
                             else:
                                 reg.expire()
-                            #   result_strs.append('Expired: %s' % bit)
+
                         if not found:
                             new_reg = StudentRegistration(user=student, relationship=rel, section=sec)
                             new_reg.save()
                         
         #   Jazz up this information a little
+        #Not having much luck with query count/performance when selecting related parent_class and parent_class__category
+        #Creating a lookup dict instead to strip out duplicate ClassSubject instances
+
+        student_regs = StudentRegistration.valid_objects().filter(user__in=students_list) \
+                       .order_by('start_date').select_related('section','user','relationship')
+        student_regs = student_regs.filter(section__parent_class__parent_program=self.program)
+
+        student_sections_dict = defaultdict(set)
+        student_reg_dict = defaultdict(set)
+
+        #need a unique set of parent_class ids
+        #creating lookup dicts to avoid hitting database(was not solved with 
+        #select_related or prefecth_related
+        parent_class_id_set= set()
+        sections = set()
+        for reg in student_regs:
+            student_sections_dict[reg.user].add(reg.section)
+            display_name = reg.relationship.displayName or reg.relationship.name
+            sections.add(reg.section)
+            parent_class_id_set.add(reg.section.parent_class_id)
+            student_reg_dict['%i_%i'%(reg.user.id,reg.section.id,)].add(display_name)
+
+        subjects = ClassSubject.objects.filter(id__in=parent_class_id_set).select_related('category')
+        subject_categories_dict = dict([(s.id, (s,s.category)) for s in subjects])
+
         for student in students_list:
-            student.bits = sec.getRegVerbs(student)
+            student.bits = student_reg_dict['%i_%i'%(student.id,sec.id,)]
+            #this is a bit of a problem because it produces the side affect of application
+            #creation if not found
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, sec2.getRegVerbs(student)) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            student.other_classes = []
+            for section in student_sections_dict[student]:
+                parent_class,category = subject_categories_dict.get(section.parent_class_id)
+                regtypes = student_reg_dict['%i_%i'%(student.id,section.id,)]
+
+                section_row = (section,
+                               regtypes,
+                               parent_class,
+                               category
+                               )
+                student.other_classes.append(section_row)
             preregs = sec.getRegistrations(student).exclude(relationship__name__in=['Enrolled', 'Rejected'])
+           
             if preregs.count() != 0:
                student.added_class = preregs[0].start_date
             if 'Enrolled' in student.bits:
@@ -291,6 +354,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.rejected = True
 
         #   Detect if there is an application module
+
         from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
         has_app_module = False
         for module in prog.getModules():
@@ -409,7 +473,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
-            add_list_member("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
+            add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
 
         op = ''
         if request.POST.has_key('op'):
@@ -585,17 +649,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             int(extra)
         except: 
-            raise ESPError(False), "Invalid integer for class ID!"
+            raise ESPError("Invalid integer for class ID!", log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -604,30 +668,35 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @main_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
-            return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
+            action = 'create'
+            if request.POST.has_key('category'):
+                category = request.POST['category']
+                if category.isdigit() and int(category) == int(self.program.open_class_category.id):
+                    action = 'createopenclass'
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
         if not request.GET.has_key('cls'):
-            raise ESPError(False), "No class specified!"
+            raise ESPError("No class specified!", log=False)
         
         # Select the class
         cls_id = request.GET['cls']
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
         if len(classes) != 1:
-            raise ESPError(False)
+            raise ESPError("Something weird happened, more than one class found matching this ID.", log=False)
         cls = classes[0]
 
         # Select the correct action
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -636,7 +705,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @meets_deadline('/Classes/Create/Class')
     def copyclasses(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
@@ -646,7 +715,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Classes/Create')
+    @user_passes_test(
+        open_class_reg_is_open,
+        (
+            'the deadline Teacher/Classes/Create/OpenClass '
+            'or the setting ClassRegModuleInfo.open_class_registration were'
+        ),
+    )
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
 
@@ -708,31 +783,33 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             errors = {}
             
-            resource_types = set([])
-            default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
-            if default_restypes:
-                resource_type_labels = json.loads(default_restypes)
-                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
             if static_resource_requests:
                 # With static resource requests, we need to display a form
                 # each available type --- there's no way to add the types
                 # that we didn't start out with
                 # Thus, if default_restype isn't set, we display everything
                 # potentially relevant
-                q_program = Q(program=self.program)
                 if Tag.getTag('allow_global_restypes'):
-                    q_program = q_program | Q(program__isnull=True)
-                resource_types = resource_types.union(set(ResourceType.objects.filter(q_program).order_by('-priority_default')))
+                    resource_types = prog.getResourceTypes(include_classroom=True,
+                                                           include_global=True)
+                else:
+                    resource_types = prog.getResourceTypes(include_classroom=True)
+                resource_types = list(resource_types)
+                resource_types.reverse()
             else:
                 # If we're not using static resource requests, then just
                 # hardcode some sane defaults
+                resource_types = set([])
+                default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
+                if default_restypes:
+                    resource_type_labels = json.loads(default_restypes)
+                    resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
+
                 resource_type_labels = ['Classroom', 'A/V']
                 resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
-            # Now that we're done putting together multiple resource type sources, listify!
-            resource_types = list(resource_types)
-            resource_types.sort(key=lambda x: -x.priority_default)
+                # Now that we're done putting together multiple resource type sources, listify!
+                resource_types = list(resource_types)
+                resource_types.sort(key=lambda x: -x.priority_default)
 
             if newclass is not None:
                 current_data = newclass.__dict__
@@ -743,7 +820,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
@@ -843,8 +920,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['addoredit'] = 'Edit'
 
         context['classes'] = {
-            0: {'type': 'class', 'link': 'makeaclass'}, 
-            1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
+            0: {
+                'type': 'class',
+                'link': 'makeaclass',
+                'reg_open': self.class_reg_is_open(),
+            },
+            1: {
+                'type': self.program.open_class_category.category,
+                'link': 'makeopenclass',
+                'reg_open': self.open_class_reg_is_open(),
+            }
         }
         if action == 'create' or action == 'edit':
             context['isopenclass'] = 0
@@ -854,11 +939,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
-        
+        context['qsd_name'] = 'classedit_' + context['classtype']
+
         context['manage'] = False
         if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or 
-            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage')) and request.user.isAdministrator():
+            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage') or
+            (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
             context['manage'] = True
+            if self.program.program_modules.filter(handler='ClassFlagModule').exists():
+                context['show_flags'] = True
+                context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         
         return render_to_response(self.baseDir() + 'classedit.html', request, context)
 
@@ -942,5 +1032,5 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return 'No classes.'
 
     class Meta:
-        abstract = True
+        proxy = True
 

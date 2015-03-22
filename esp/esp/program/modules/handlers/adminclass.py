@@ -30,14 +30,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
+from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
 from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
@@ -161,15 +161,15 @@ class AdminClass(ProgramModuleObj):
         """ Set the review status of a class """
         if request.method == 'POST':
             if not (request.POST.has_key('class_id') and request.POST.has_key('review_status')):
-                raise ESPError(), "Error: missing data on request"
+                raise ESPError("Error: missing data on request")
 
             class_id = request.POST['class_id']
             try:
                 class_subject = ClassSubject.objects.get(pk=class_id)
             except MultipleObjectsReturned:
-                raise ESPError(), "Error: multiple classes selected"
+                raise ESPError("Error: multiple classes selected")
             except DoesNotExist:
-                raise ESPError(), "Error: no classes found with id "+str(class_id)
+                raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']
 
@@ -188,7 +188,7 @@ class AdminClass(ProgramModuleObj):
             elif review_status == 'REJECT':
                 class_subject.reject()
             else:
-                raise ESPError(), "Error: invalid review status"
+                raise ESPError("Error: invalid review status")
             class_subject.save()
 
         return HttpResponse('')
@@ -201,7 +201,7 @@ class AdminClass(ProgramModuleObj):
         
         if request.method == 'POST':
             if not( request.POST.has_key('class_id') and request.POST.has_key('ids_to_enter') ):
-                raise ESPError(), "Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again."
+                raise ESPError("Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again.")
 
             usernames = []
             ids = []
@@ -290,7 +290,7 @@ class AdminClass(ProgramModuleObj):
                     s.delete()
                     return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
                 except:
-                    raise ESPError(False), 'Unable to delete a section.  The section requested was: %s' % request.GET['sec_id']
+                    raise ESPError('Unable to delete a section.  The section requested was: %s' % request.GET['sec_id'], log=False)
         else:
             section_id = int(request.GET['sec_id'])
             section = ClassSection.objects.get(id=section_id)
@@ -313,7 +313,7 @@ class AdminClass(ProgramModuleObj):
         cls, found = self.getClass(request,extra)
         sections = cls.sections.all().order_by('id')
         if not found:
-            return ESPError(False), 'Unable to find the requested class.'
+            return ESPError('Unable to find the requested class.', log=False)
         context = {}
         
         if cls.isCancelled():
@@ -397,6 +397,10 @@ class AdminClass(ProgramModuleObj):
         for section in sections:
             context['errors'] += consistency_checker.check_expected_duration(section)
             context['errors'] += consistency_checker.check_resource_consistency(section)
+
+        if self.program.program_modules.filter(handler='ClassFlagModule').exists():
+            context['show_flags'] = True
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
             
         context['class'] = cls
         context['sections'] = sections
@@ -620,11 +624,16 @@ class AdminClass(ProgramModuleObj):
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
+
+        if cls.category == self.program.open_class_category:
+            action = 'editopenclass'
+        else:
+            action = 'edit'
         
         module_list = prog.getModules()
         for mod in module_list:
             if isinstance(mod, TeacherClassRegModule):
-                return mod.makeaclass_logic(request,  tl, one, two, module, extra, prog, cls, action='edit')
+                return mod.makeaclass_logic(request,  tl, one, two, module, extra, prog, cls, action=action)
 
     @aux_call
     @needs_admin
@@ -635,40 +644,6 @@ class AdminClass(ProgramModuleObj):
         
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
 
-    @aux_call
-    @needs_admin
-    def bulkapproval(self, request, tl, one, two, module, extra, prog):
-        """
-        Allow admins to approve classes en masse by entering a list of
-        ClassSubject ids separated by newlines.
-        """
-        
-        if request.POST.has_key('clslist'):
-            clsids = request.POST['clslist'].split('\n')
-            clsids = [id.strip() for id in clsids if id.strip() != ""]
-            # Ignore the class category symbols. We don't need to read them,
-            # and half the time people are probably going to get them wrong.
-            clsids = [''.join(c for c in id if c in '0123456789') for id in clsids]
-
-            cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
-            cls_subjects.update(status=10)
-
-            cls_sections = ClassSection.objects.filter(parent_class__in=cls_subjects)
-            cls_sections.update(status=10)
-
-            context = {}
-            context['updated_classes'] = cls_subjects
-
-            cls_id_strings = set([str(cls.id) for cls in cls_subjects])
-            context['failed_ids'] = [id for id in clsids if not (id in cls_id_strings)]
-            context['num_failures'] = len(context['failed_ids'])
-
-            return render_to_response(self.baseDir()+"approval_success.html", request, context)
-
-
-        return render_to_response(self.baseDir()+"mass_approve_form.html", request, {})
-
-
     class Meta:
-        abstract = True
+        proxy = True
 

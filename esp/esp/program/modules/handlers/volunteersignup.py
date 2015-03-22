@@ -30,13 +30,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
-from esp.users.models import ESPUser, AnonymousUser
+from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
@@ -57,10 +57,13 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             form = VolunteerOfferForm(request.POST, program=prog)
             if form.is_valid():
                 offers = form.save()
-                context['complete'] = True
-                context['complete_name'] = offers[0].name
-                context['complete_email'] = offers[0].email
-                context['complete_phone'] = offers[0].phone
+                if len(offers) > 0:
+                    context['complete'] = True
+                    context['complete_name'] = offers[0].name
+                    context['complete_email'] = offers[0].email
+                    context['complete_phone'] = offers[0].phone
+                else:
+                    context['cancelled'] = True
                 form = VolunteerOfferForm(program=prog)
         else:
             form = VolunteerOfferForm(program=prog)
@@ -103,5 +106,5 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         return base_dict
 
     class Meta:
-        abstract = True
+        proxy = True
 

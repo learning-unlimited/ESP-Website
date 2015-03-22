@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
@@ -92,7 +92,7 @@ class NameTagModule(ProgramModuleObj):
 
         # Default to students
         if 'type' not in request.POST:
-            raise ESPError(log=False), "You need to select the TYPE of Name Tag to print. (students,teachers,etc)"
+            raise ESPError("You need to select the TYPE of Name Tag to print. (students,teachers,etc)", log=False)
         idtype = request.POST['type']
 
         users = []
@@ -187,5 +187,5 @@ class NameTagModule(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

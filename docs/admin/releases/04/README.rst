@@ -39,7 +39,8 @@ on your configuration.  More details can be found at
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The page at /manage/[program url]/check_availability allows you to see a
+If you add the "Check Teacher Availability" module for your program, the
+page at /manage/[program url]/check_availability will allow you to see a
 teacher's availability for that program. It shows all of the program's
 timeslots in order, and colors each one based on the teacher's status. Gray
 indicates unavailable, blue indicates available, black indicates available and
@@ -95,6 +96,36 @@ resources, not enough time) and teachers (scheduling conflicts, admins
 teaching, back-to-back classes in different rooms).  We recently added the
 check for "hungry teachers" (those who are teaching during lunch), and
 corrected some errors in the diagnostic output.
+
+Class flags
+~~~~~~~~~~~
+
+This is a new feature for tracking the review of classes.  The idea is that you
+can create various types of class flags, like "needs safety review" or
+"description has been proofread", and then get a list of classes with (or
+without) some set of flags.
+
+To set up class flags, first add some flag types from the admin panel at
+/admin/program/classflagtype/, then add them to your program by choosing your
+program in /admin/program/program/ and scrolling to the bottom of the page.
+(There is also a place to add them at program creation.) Now you can add and
+view class flags from the edit class or manage class pages.  To create a list
+of classes with(out) some flag, go to the manage page for the program, and in
+the complete list of modules, choose "Manage class flags".
+
+This is still a work in progress; everything should work fine, but if there are
+more interfaces you would like to see, let the web team know!
+
+Emailing Program Guardians From the Communications Panel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The communications panel can now send mail to the listed guardian and emergency
+contact email address for students. On the first screen of the commpanel
+(/manage/<program>/<instance>/commpanel), after you select that you are
+emailing students, you can select which combination of students, guardians, and
+emergency contacts you wish to address. On the next screen, you can narrow down
+your query (for example, for all students who are enrolled in the program).
+When you send the message, it will go to the types of contacts (students and/or
+guardians and/or emergency contacts) that you specified.
 
 Accounting System
 ~~~~~~~~~~~~~~~~~
@@ -171,6 +202,51 @@ esp-webmasters@mit.edu for aid and suggested security considerations.
 
 AJAX Scheduler upgrades
 ~~~~~~~~~~~~~~~~~~~~~~~
+
+Numerous improvements have been made to the AJAX class scheduler. These are
+outlined below.
+
+- Two-column user interface: this increases the vertical space so that more
+rooms are displayed, and the frames are resizable.
+
+- Changelog: a changelog of scheduled classes is stored in the database. This
+is used to facilitate periodic incremental updates on the client-side interface
+of the scheduling matrix (currently every ten seconds). Synchronization between
+multiple users works decently.
+
+- Filtering: several filtering modes exist now that can be used to filter the
+list of classes. This is accessible from the right-hand-side frame.
+
+Two-phase student registration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is a new mode of student registration which functions much like the lottery
+(in the back-end) but has a new front-end interface.  In the first step,
+students are asked to "star" the classes they are interested in, using a
+searchable interactive catalog.  In the second step, students can select which
+classes to mark as "priority" and which to mark as "interested" for each time
+slot.
+
+To make use of this module, enable Two-Phase Student Registration from the admin
+panel. This module will replace the student registration landing page (the page
+with the checkboxes) until it is disabled. This is something we would ideally
+fix in a future release, but for now the recommended workflow is to enable the
+module for the Two-Phase portion of registration, then disable it and allow
+students to land at the normal landing page to complete registration and change
+classes after the lottery has been run.
+
+Full documentation can be found in the program modules docs:
+`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
+
+Markdown Version Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Markdown, the software package that we used to render the quasi-static content,
+has been upgraded to the latest version, 2.3.1
+(`<https://pypi.python.org/pypi/Markdown/2.3.1>`_). This may have affected the
+visual appearance of your existing pages. Please double-check your web-content
+throughout the site to ensure that it appears correctly. The documentation for
+Markdown syntax is at `<http://daringfireball.net/projects/markdown/syntax>`_.
 
 Teacher training creation and sign-up
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -272,6 +348,17 @@ now be downloaded with the original filename again. These changes are
 transparent to users -- the old /download/file_hash URL's still work and the
 new URL's are displayed on documents pages.
 
+Grade change requests
+~~~~~~~~~~~~~~~~~~~~~
+
+Students can now request to have their current grade changed through the
+website, by filling out the new grade and a reason that it needs to be changed.
+The page to do this is /myesp/grade_change_request.
+After the student confirms the change, an email will be sent to the admin
+contact address notifying that the change was requested. An admin page exists
+where admins can approve the requests (after which an email will be sent to the
+student notifying them of the approval).
+
 Minor feature additions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -303,6 +390,24 @@ Minor feature additions
 - The "User list generator" program module now uses the newer interface that
   was provided for the comm panel in the last stable release.
 
+- Mass emails (i.e., emails sent from the communication panel) will now be
+  resent if the first attempt fails, and failure reports will be sent to the
+  director email. Some other stability changes made too.
+
+- The dashboard now shows some new statistics: the "Categories" section now
+  includes the number of class-hours per category, and there is a new "Grades"
+  section that shows the number of students per grade enrolled in at least one
+  class and number of subjects and sections available to the students in that
+  grade.
+
+- You can now filter for students in particular grades using the comm panel.
+  The grade filtering options will show up at the bottom of the list (below
+  "States" and "School") on step 3 when you are creating a list of students.
+  You will also see an option to filter teachers by graduation year.
+
+- Credit card transaction refunds are now easier to accomplish as the credit
+card transaction ID is now stored in the transaction model.
+
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -315,3 +420,11 @@ or with the DEBUG_TOOLBAR setting in local_settings.py.  There are more
 configuration options defined in django_settings.py.  For more information see
 `<http://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
 
+virtualenv (developers only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The code has been modified to utilize a virtual environment for Python files.
+The virtualenv is a requirement for external scripts, and it is recommended
+that web servers running ESP-Website now be configured to also utilize the
+virtual environment. A script is included to automatically do the configuration
+(specifically, make_virtualenv.sh).

@@ -16,8 +16,6 @@ function assignRoom(clsid){
 var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
-
-
 function show_loading_class_popup() {
   class_desc_popup
     .dialog('option', 'title', 'Loading')
@@ -51,6 +49,12 @@ function getStatusDetails(statusCode) {
     return {text: "Approved", action: "ACCEPT", classes: ['approved']};
   else //statusCode < 0
     return {text: "Unapproved", action: "", classes: ['unapproved']};
+}
+
+function make_attrib_para(field, content) {
+    return $j("<p></p>")
+        .append("<b>"+field+":</b>")
+        .append($j("<div/>").text(content));
 }
 
 function fill_class_popup(clsid, classes_data) {
@@ -93,21 +97,22 @@ function fill_class_popup(clsid, classes_data) {
         }
       }])
     .html('')
-    .append("<p><b>Status:</b> " + status_string + "</p>")
-    .append("<p><b>Teachers:</b> " + class_info.teacher_names + "</p>")
-    .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
+    .append(make_attrib_para("Status", status_string))
+    .append(make_attrib_para("Teachers", class_info.teacher_names))
+    .append(make_attrib_para("Sections", class_info.sections.length))
     .append(sections_list)
-    .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
-    .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
-    .append("<p><b>Location:</b> " + class_info.location + "</p>")
-    .append("<p><b>Grade Range:</b> " + class_info.grade_range + "</p>")
-    .append("<p><b>Category:</b> " + class_info.category + "</p>")
-    //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
-    .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
-    .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
-    .append("<p><b>Requests:</b> " + class_info.special_requests + "</p>")
-    .append("<p><b>Planned Purchases:</b> " + class_info.purchases + "</p>")
-    .append("<p><b>Comments:</b> " + class_info.comments + "</p>")
+    .append(make_attrib_para("Max Size", class_info.class_size_max))
+    .append(make_attrib_para("Duration", class_info.duration))
+    .append(make_attrib_para("Location", class_info.location))
+    .append(make_attrib_para("Grade Range", class_info.grade_range))
+    .append(make_attrib_para("Category", class_info.category))
+    //.append("<p>Difficulty: " + class_info.difficulty))
+    .append(make_attrib_para("Prereqs", class_info.prereqs))
+    // Ensure the class description gets HTML-escaped
+    .append(make_attrib_para("Description", class_info.class_info))
+    .append(make_attrib_para("Requests", class_info.special_requests))
+    .append(make_attrib_para("Planned Purchases", class_info.purchases))
+    .append(make_attrib_para("Comments", class_info.comments))
     .attr('clsid', clsid);
 }
 
@@ -182,20 +187,15 @@ function fillClasses(data)
     $j("#classes_anchor").html('');
 
     // Now loop through and render each class row
-    for (var i in classes) {
-    	var cls = classes[i];
-    	$j("#classes_anchor").append(createClassRow(cls));
+    for (var i in classes)
+    {
+	var cls = classes[i];
+	$j("#classes_anchor").append(createClassRow(cls));
     }
     
     //  Save the data for later if we need it
     classes_global = classes;
     sections_global = sections;
-    
-    $j('.submit-link').click(function(e){
-        e.preventDefault();
-        $j(this).closest('form').submit();
-     });
-
 }
 
 function createClassRow(clsObj)
@@ -214,7 +214,7 @@ function createClassRow(clsObj)
       {{ section_links }} \
       </span> \
     </td> \
-    <td class='clsleft classname' style='font-size: 60%; font-style: italic;'> \
+    <td class='clsleft classname' style='font-style: italic'> \
       <span title='Teacher Names'> \
         {{ teacher_names }} \
       </span> \
@@ -223,21 +223,14 @@ function createClassRow(clsObj)
  \
     <td class='clsmiddle'> \
        <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit='return deleteClass();'> \
-          <a href='#' \
-              class='abutton submit-link' style='white-space: nowrap;'> \
-              Delete \
-          </a> \
+         <input class='button' type='submit' value='Delete' /> \
        </form> \
     </td> \
     <td class='clsmiddle'> \
-       <form method='post' action='/teach/{{ program.getUrlBase }}/editclass/{{ cls.id }}'> \
-         <input type='hidden' name='command' value='edit_class_{{ cls.id }}'> \
-         <input type='hidden' name='manage' value='manage'> \
-         <a href='#' \
-              class='abutton submit-link' style='white-space: nowrap;'> \
-              Edit \
-          </a> \
-       </form> \
+      <a href='/manage/{{ program.getUrlBase }}/editclass/{{ cls.id }}' title='Edit {{ cls.title }}' \
+       class='abutton' style='white-space: nowrap;'> \
+        Edit \
+      </a> \
     </td> \
     <td class='clsmiddle'> \
       <a href='/manage/{{ program.getUrlBase }}/manageclass/{{ cls.id }}' title='Manage {{ cls.title }}' \
@@ -258,7 +251,7 @@ function createClassRow(clsObj)
     teacher_list = $j.map(teacher_list, function(val, index) {
 	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
     });
-    var teacher_list_string = "( " + teacher_list.join(", ") + " )";
+    var teacher_list_string = teacher_list.join(", ");
 
     var section_link_list = "";
     for (var i = 0; i < clsObj.sections.length; i++)
@@ -330,4 +323,3 @@ function setup_sort_control()
     $j("#dashboard_sort_control").change(handle_sort_control);
     handle_sort_control();
 }
-

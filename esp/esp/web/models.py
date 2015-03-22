@@ -30,14 +30,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db import models
 from django.db.models.query import Q
 
 from esp.datatree.models import DataTree
 from esp.db.fields import AjaxForeignKey
-from esp.program.models import Program
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
@@ -71,14 +70,15 @@ class NavBarCategory(models.Model):
         #   If all else fails, make something up.
         return NavBarCategory.default()
 
-    from_request.depend_on_model(lambda: NavBarCategory) 
+    from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
     
     @classmethod
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
         if not hasattr(cls, '_default'):
-
+            if not cls.objects.exists():
+                install()
             cls._default = cls.objects.all().order_by('id')[0]
         return cls._default
     
@@ -117,9 +117,9 @@ class NavBarEntry(models.Model):
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
-    defaults = {
-        'long_explanation': 'The default category, to which new nav bars and QSD pages get assigned.',
-        'include_auto_links': False,
-    }
-    NavBarCategory.objects.get_or_create(name='default', defaults=defaults)
-
+    print "Installing esp.web initial data..."
+    if not NavBarCategory.objects.filter(name='default').exists():
+        NavBarCategory.objects.create(
+            name='default',
+            long_explanation='The default category, to which new nav bars and QSD pages get assigned.',
+        )

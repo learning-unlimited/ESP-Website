@@ -4,7 +4,7 @@
 Teachers:{% for teacher in teachers %}
 
 {{ teacher.teacher.get_full_name }} <{{ teacher.teacher.email }}>
-{% if not teacher.from_here %}    *** This teacher is not from this university. ***
+{% if not teacher.from_here %}    *** This teacher is not currently enrolled at this university. ***
     Teacher's school/employer: {{ teacher.college }}{% endif %}{% if not teacher.taught_programs %}    *** This teacher is a first-time teacher. ***
 {% else %}    Programs this teacher has taught in: {{ teacher.taught_programs }}{% endif %}{% endfor %}
 
@@ -33,8 +33,6 @@ Optimal class size: {{ class_size_optimal }}
 {% if optimal_class_size_range %}Optimal class size range: {{ optimal_class_size_range }}{% endif %}
 {% if allowable_class_size_ranges %}Allowable class size ranges: {% for cls_size in allowable_class_size_ranges %}{{ cls_size.range_min }}-{{ cls_size.range_max }}, {% endfor %}{% endif %}
 
-Have own space? {{ has_own_space }}
-
 Room request: {{ requested_room }}
 
 Equipment/resource requests:{% for res in global_resources %}
@@ -47,11 +45,7 @@ Planned purchases:
 {{ purchase_requests }}
 
 Comments to Director:
-{% ifequal has_own_space "True" %}*** Notice ***
-The teacher has specified that they will provide their own space for this class.  Please contact them for the size and resources the space provides (if they have not specified below) and create the appropriate resources for scheduling.
-**************
-
-{% endifequal %}{{ message_for_directors }}
+{{ message_for_directors }}
 
 ---------------------------------
 {% if admin %}If you have reviewed all of this information and would like to approve the class, click here: 

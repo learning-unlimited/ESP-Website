@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarcodeCheckinForm
@@ -192,7 +192,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     except ValueError:
                         results['not_found'].append(code)
                     if len(result) > 1:
-                        raise ESPError(False), "Something weird happened, there are two students with ID %s." % code
+                        raise ESPError("Something weird happened, there are two students with ID %s." % code, log=False)
                     elif len(result) == 0:
                         results['not_found'].append(code)
                     else:
@@ -240,5 +240,5 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

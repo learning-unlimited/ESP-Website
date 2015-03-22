@@ -1,4 +1,3 @@
-import hashlib
 import logging
 import random
 import urllib
@@ -21,9 +20,7 @@ from django.utils.decorators import method_decorator
 from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
-from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
@@ -142,7 +139,7 @@ When there are already accounts with this email address (depending on some tags)
 
         #form is valid, and not caring about multiple accounts
         email = urllib.quote(form.cleaned_data['email'])
-        return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+email)
+        return HttpResponseRedirect(reverse('esp.users.views.user_registration_phase2')+'?email='+email)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
                                   request,
@@ -180,12 +177,12 @@ def user_registration_phase2(request):
         return user_registration_validate(request)
 
     if not Tag.getBooleanTag("ask_about_duplicate_accounts",default=False):
-        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
+        return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
 
     try:
         email = urllib.unquote(request.GET['email'])
     except MultiValueDictKeyError:
-        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
+        return HttpResponseRedirect(reverse("esp.users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email})
     return render_to_response('registration/newuser.html',
                               request, {'form':form, 'email':email})
@@ -193,18 +190,18 @@ def user_registration_phase2(request):
 
 def activate_account(request):
     if not 'username' in request.GET or not 'key' in request.GET:
-        raise ESPError(False), "Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     try:
         u = ESPUser.objects.get(username = request.GET['username'])
     except:
-        raise ESPError(False), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     if u.is_active:
-        raise ESPError(False), 'The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.'
+        raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.', log=False)
 
     if not u.password.endswith("_%s" % request.GET['key']):
-        raise ESPError(False), "Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     u.password = u.password[:-(len("_%s" % request.GET['key']))]
     u.is_active = True
@@ -250,6 +247,7 @@ class GradeChangeRequestView(CreateView):
     def form_valid(self, form):
         change_request = form.save(commit=False)
         change_request.requesting_student = self.request.user
+        change_request.grade_before_request = self.request.user.getGrade()
         change_request.save()
         messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
         

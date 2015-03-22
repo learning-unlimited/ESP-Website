@@ -1,7 +1,7 @@
 from django.forms import *
 from django.contrib.formtools.wizard.views import SessionWizardView
-from dataviews import useful_models as all_usefull_models
-from dataviews import *
+from esp.dataviews import useful_models as all_usefull_models
+from esp.dataviews import *
 from django.http import HttpResponseRedirect
 from django.utils.decorators import method_decorator
 

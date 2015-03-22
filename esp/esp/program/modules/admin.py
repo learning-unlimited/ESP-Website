@@ -30,12 +30,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, CreditCardSettings
+from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.program.modules.base import ProgramModuleObj
 
 class Admin_DBReceipt(admin.ModelAdmin):
@@ -43,15 +43,23 @@ class Admin_DBReceipt(admin.ModelAdmin):
         'action',
         'program',
     )
+    list_filter = ('action', 'program')
 admin_site.register(DBReceipt, Admin_DBReceipt)
 
 class SCRMIAdmin(admin.ModelAdmin):
-    pass
+    def program(obj):
+        return obj.module.program
+    list_display = ('module', program)
+    list_filter = ('module__program',)
+    search_fields = ('module__program__name',)
 admin_site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class CRMIAdmin(admin.ModelAdmin):
-    exclude = ['display_times']
-    pass
+    def program(obj):
+        return obj.module.program
+    list_display = ('module', program)
+    list_filter = ('module__program',)
+    search_fields = ('module__program__name',)
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):
@@ -65,5 +73,3 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     list_filter = ('program', 'module')
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
-
-admin_site.register(CreditCardSettings)

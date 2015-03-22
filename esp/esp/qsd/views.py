@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
@@ -50,7 +50,7 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.cache.varnish import purge_page
+from esp.varnish import purge_page
 
 from django.conf import settings
 
@@ -108,7 +108,9 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)  
+                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
+                response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
+                return response
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -175,7 +177,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError(False), "You don't have permission to edit this page."
+            raise ESPError("You don't have permission to edit this page.", log=False)
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {

@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.http                 import Http404
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_account
@@ -75,7 +75,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
-            raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
 
     @aux_call
     # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
@@ -133,5 +133,5 @@ class TeacherPreviewModule(ProgramModuleObj):
         return False
 
     class Meta:
-        abstract = True
+        proxy = True
 

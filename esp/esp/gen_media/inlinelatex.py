@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.middleware import ESPError
@@ -92,9 +92,9 @@ class InlineLatex(GenImageBase):
         elif self.style == 'DISPLAY':
             math_style = '$$'
         else:
-            raise ESPError(False), 'Unknown display style'
+            raise ESPError('Unknown display style', log=False)
 
-        tex = r"\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} " +\
+        tex = r"\documentclass[fleqn]{article} \usepackage{amssymb,amsmath,esint} " +\
               r"\usepackage[latin1]{inputenc} \begin{document} " + \
               r" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}" % \
               (math_style, self.content, math_style)
@@ -107,8 +107,8 @@ class InlineLatex(GenImageBase):
 
         if os.system('cd %s && %s -interaction=nonstopmode -halt-on-error %s > %s' % \
                 (TMP, COMMANDS['latex'], tmppath, NULL_FILE)) is not 0:
-            raise ESPError(False), 'latex compilation failed.'
+            raise ESPError('latex compilation failed.', log=False)
 
         if os.system( '%s -q -T tight -bg %s -D %s -o %s %s.dvi > %s' % \
                 (COMMANDS['dvipng'], LATEX_BG, self.dpi, self.local_path, tmppath, NULL_FILE)) is not 0:
-            raise ESPError(False), 'dvipng failed.'
+            raise ESPError('dvipng failed.', log=False)

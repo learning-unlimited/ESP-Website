@@ -29,20 +29,21 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import copy
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
 import json
 
 from django.conf import settings
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
 from localflavor.us.models import PhoneNumberField
+from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -59,6 +60,7 @@ from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from esp.utils.expirable_model import ExpirableModel
+from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 
@@ -158,7 +160,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return 'Program Module: %s' % self.admin_title
+        return u'Program Module: %s' % self.admin_title
     
     
 class ArchiveClass(models.Model):
@@ -246,8 +248,7 @@ class ArchiveClass(models.Model):
     def getForUser(user):
         """ Get a list of archive classes for a specific user. """
         from django.db.models.query import Q
-        Q_ClassTeacher = Q(teacher__icontains = (user.first_name + ' ' + user.last_name)) |\
-               Q(teacher_ids__icontains = ('|%s|' % user.id))
+        Q_ClassTeacher = Q(teacher_ids__icontains = ('|%s|' % user.id))
         Q_ClassStudent = Q(student_ids__icontains = ('|%s|' % user.id))
         #   We want to only show archive classes for teachers.  At least for now.
         Q_Class = Q_ClassTeacher #  | Q_ClassStudent
@@ -282,13 +283,26 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField() # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail from ESP-Website (except class cancellations) will be sent to this address instead') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead')
+    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
-    program_modules = models.ManyToManyField(ProgramModule)
+    program_modules = models.ManyToManyField(ProgramModule,
+                         help_text='The set of enabled program functionalities. See ' +
+                         '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
+                         'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories')
-    
+
+    #so we don't have to delete old ones and don't end up with
+    # 3 seemingly-identical flags in the same program.
+    flag_types = models.ManyToManyField('ClassFlagType',
+                    blank=True,
+                    help_text=format_lazy(
+                    'The set of flags that can be used ' +
+                    'to tag classes for this program. ' +
+                    'Add flag types in <a href="%s">the admin panel</a>.',
+                    urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
+
     documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     class Meta:
@@ -314,10 +328,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
-    def _SAQ():
-        from esp.program.models.app_ import StudentAppQuestion
-        return StudentAppQuestion
-    isUsingStudentApps.depend_on_model(_SAQ)
+    isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
 
     @cache_function
     def checkitems_all_cached(self):
@@ -325,7 +336,7 @@ class Program(models.Model, CustomFormsLinkModel):
         the number of classes in the program.  Minimize the number of these
         calls that actually hit the db. """
         return self.checkitems.all()
-    checkitems_all_cached.depend_on_row(lambda:ProgramCheckItem, lambda item: {'self': item.program})
+    checkitems_all_cached.depend_on_row('program.ProgramCheckItem', lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
@@ -366,16 +377,16 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = self.getModules(user)
         for module in modules:
             retVal = module.get_msg_vars(user, key)
-            if retVal is not None and len(str(retVal).strip()) > 0:
+            if retVal is not None and retVal.strip():
                 return retVal
 
-        return ''
+        return u''
     
     @staticmethod
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
-            users = {}
+            users = OrderedDict()
             for module in modules:
                 tmpusers = getattr(module, method_name)(QObjects)
                 if tmpusers is not None:
@@ -408,7 +419,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return capacities
     #   Clear this cache on any ClassSection capacity update... kind of brute force, but oh well.
     #   WARNING: Not sure if this usage is correct, can someone check?
-    capacity_by_section_id.depend_on_cache(lambda: ClassSection._get_capacity, lambda **kwargs: {})
+    capacity_by_section_id.depend_on_cache('program.ClassSection._get_capacity', lambda **kwargs: {})
 
     def checked_in_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
@@ -464,7 +475,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     if tmpdict is not None:
                         desc.update(tmpdict)
         return desc
-    getListDescriptions.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+    getListDescriptions.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
@@ -495,7 +506,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # We can restore this one later if someone really needs it. As it is, I wouldn't mind killing
         # lists['all_former_students'] as well.
         del lists['all_students']
-        yog_12 = ESPUser.YOGFromGrade(12)
+        yog_12 = ESPUser.YOGFromGrade(12, ESPUser.program_schoolyear(self))
         # This technically has a bug because of copy-on-write, but the other code has it too, and
         # our copy-on-write system isn't good enough yet to make checking duplicates feasible
         lists['all_current_students'] = {'description': 'Current students in all of ESP',
@@ -566,11 +577,17 @@ class Program(models.Model, CustomFormsLinkModel):
         isfull = ( students_count >= self.program_size_max )
 
         return isfull
-    isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
-    isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
+    isFull.depend_on_cache('program.ClassSection.num_students', lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
+    isFull.depend_on_row('program.Program', lambda prog: {'self': prog})
+    isFull.depend_on_row('users.Record', lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
-    @property
+    @cache_function
+    def open_class_registration(self):
+        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
+    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.get_program()})
+    open_class_registration = property(open_class_registration)
+
+    @cache_function
     def open_class_category(self):
         """Return the name of the open class category, as determined by the program tag.
 
@@ -590,18 +607,15 @@ class Program(models.Model, CustomFormsLinkModel):
         if cc is None:
             cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
         return cc
+    open_class_category.depend_on_model('tagdict.Tag')
+    open_class_category.depend_on_model('program.ClassCategories')
+    open_class_category = property(open_class_category)
 
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
-    def get_sc_model():
-        from esp.program.models import ScheduleConstraint
-        return ScheduleConstraint
-    def get_bt_model():
-        from esp.program.models import BooleanToken
-        return BooleanToken    
-    getScheduleConstraints.depend_on_model(get_sc_model)
-    getScheduleConstraints.depend_on_model(get_bt_model)
+    getScheduleConstraints.depend_on_model('program.ScheduleConstraint')
+    getScheduleConstraints.depend_on_model('program.BooleanToken')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -664,10 +678,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ans = [result[key] for key in key_list]
 
         return ans
-    def get_resource_model():
-        from esp.resources.models import Resource
-        return Resource
-    groupedClassrooms.depend_on_row(get_resource_model, lambda res: {'self': res.event.parent_program()})
+    groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
         
     def addClassroom(self, classroom_form):
@@ -691,7 +702,7 @@ class Program(models.Model, CustomFormsLinkModel):
             retVal = [-1]
         retVal = list(retVal)
         return retVal
-    class_ids_implied.depend_on_row(lambda: ClassImplication, lambda ci: {'self': ci.cls.parent_program})
+    class_ids_implied.depend_on_row('program.ClassImplication', lambda ci: {'self': ci.cls.parent_program})
 
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
@@ -723,7 +734,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return list(self.getTimeSlots(exclude_types=[]))
         else:
             return list(self.getTimeSlots())
-    getTimeSlotList.depend_on_model(lambda: Event)
+    getTimeSlotList.depend_on_model('cal.Event')
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -751,16 +762,17 @@ class Program(models.Model, CustomFormsLinkModel):
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
-                        return '%s' % d1.strftime('%b. %d, %Y')
+                        return u'%s' % d1.strftime('%b. %d, %Y').decode('utf-8')
                     else:
-                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                        return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%d, %Y').decode('utf-8'))
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                    return u'%s - %s' % (d1.strftime('%b. %d').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
             else:
-                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+                return u'%s - %s' % (d1.strftime('%b. %d, %Y').decode('utf-8'), d2.strftime('%b. %d, %Y').decode('utf-8'))
         else:
             return None
 
+    @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
@@ -778,7 +790,9 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
+        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
+    getResourceTypes.depend_on_model('resources.ResourceType')
+    getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
         from esp.resources.models import Resource
@@ -810,9 +824,9 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
         
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        info_list = ClassRegModuleInfo.objects.filter(module__program=self)
-        if info_list.count() == 1 and type(info_list[0].class_max_duration) == int:
-            max_seconds = info_list[0].class_max_duration * 60
+        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        if crmi and crmi.class_max_duration is not None:
+            max_seconds = crmi.class_max_duration * 60
         else:
             max_seconds = None
 
@@ -902,6 +916,29 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
 
     @cache_function
+    def hasModule(self, name):
+        """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
+        return self.program_modules.filter(handler=name).exists()
+    hasModule.depend_on_row('program.Program', lambda prog: {'self': prog})
+    hasModule.depend_on_model('program.ProgramModule')
+    hasModule.depend_on_row('modules.ProgramModuleObj', lambda module: {'self': module.program})
+    hasModule.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
+
+    @cache_function
+    def getModule(self, name):
+        """ Returns the specified module for this program if it is enabled.
+            'name' should be a module name like 'AvailabilityModule'. """
+
+        if self.hasModule(name):
+            #   Sometimes there are multiple modules with the same handler.
+            #   This function is not choosy, since the return value
+            #   is typically used just to access a view function.
+            return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
+        else:
+            return None
+    getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
+
+    @cache_function
     def getModuleViews_cached(self, main_only=False, tl=None):
         modules = self.getModules_cached(tl)
         result = {}
@@ -939,7 +976,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._moduleExtension[key]
         
         ext_cls = None
-        if type(ext_name_or_cls) == str or type(ext_name_or_cls) == unicode:
+        if isinstance(ext_name_or_cls, basestring):
             mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
             ext_cls = getattr(mod, ext_name_or_cls)
         else:
@@ -967,16 +1004,14 @@ class Program(models.Model, CustomFormsLinkModel):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        modinfo = self.getModuleExtension(ClassRegModuleInfo)
         retVal = None
-        if mod.count() == 1:
-            modinfo = mod[0].classregmoduleinfo_set.all()
-            if modinfo.count() == 1:
-                retVal = modinfo[0].color_code
+        if modinfo:
+            retVal = modinfo.color_code
 
         self._getColor = retVal
         return retVal
-    getColor.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.module.program})
+    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.module.program})
     
     def visibleEnrollments(self):
         """
@@ -1010,27 +1045,26 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
     #   Update cache whenever a class is approved or a teacher changes their profile
-    getShirtInfo.depend_on_row(lambda: ClassSubject, lambda cls: {'self': cls.parent_program})
-    getShirtInfo.depend_on_model(lambda: TeacherInfo) 
-
-    def archive(self):
-        archived_classes = []
-        #   I think we should delete resources and user bits, but I'm afraid to.
-        #   So, just archive all of the classes.
-        for c in self.classes():
-            archived_classes.append(c.archive())
-            print 'Archived: %s' % c.title()
-        
-        return archived_classes
+    getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    getShirtInfo.depend_on_model('users.TeacherInfo')
 
     @cache_function
     def incrementGrade(self): 
+        """
+        Get the value of the "increment_default_grade_levels" tag.
+
+        This tag increments the effective school year of the program.
+        Also affects how grade ranges for this program are displayed,
+        to say "rising Xth grade" rather than just X.
+
+        See ESPUser.program_schoolyear.
+        """
         return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
-    incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
+    incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
         studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
-        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+        if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else: 
             return 1
@@ -1058,12 +1092,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
         return prog_inst
-    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
-    def program_selector(node):
-        if node.program_set.all().count() == 1:
-            return {'program': node.program_set.all()[0]}
-        return {}
-    by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
+    by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
 
     def _sibling_discount_get(self):
@@ -1120,7 +1149,7 @@ class SplashInfo(models.Model):
         db_table = 'program_splashinfo'
 
     def __unicode__(self):
-        return 'Lunch/sibling info for %s at %s' % (self.student, self.program)
+        return u'Lunch/sibling info for %s at %s' % (self.student, self.program)
 
     @staticmethod
     def hasForUser(user, program=None):
@@ -1153,9 +1182,9 @@ class SplashInfo(models.Model):
             tag_struct = json.loads(tag_data)
             for item in tag_struct[attr_name]:
                 if item[0] == getattr(self, attr_name):
-                    return item[1]
+                    return item[1].decode('utf-8')
                     
-        return 'N/A'
+        return u'N/A'
     
     def pretty_satlunch(self):
         return self.pretty_version('lunchsat')
@@ -1189,12 +1218,12 @@ class SplashInfo(models.Model):
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
 
-        if self.lunchsat == 'no':
+        if not self.lunchsat or self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
         elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
-        if self.lunchsun == 'no':
+        if not self.lunchsun or self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
         elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
@@ -1259,7 +1288,7 @@ class RegistrationProfile(models.Model):
         regProf.user = ESPUser(user)
 
         return regProf
-    getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
+    getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
     def confirmStudentReg(self, user):
@@ -1270,7 +1299,7 @@ class RegistrationProfile(models.Model):
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
-        raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
+        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1282,10 +1311,17 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        if isinstance(user, AnonymousUser):
+        if user.is_anonymous():
             regProfList = RegistrationProfile.objects.none()
         else:
-            regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
+            regProfList = (RegistrationProfile.objects
+                           .filter(user__exact=user, program__exact=program)
+                           .select_related(
+                               'user', 'program', 'contact_user',
+                               'contact_guardian', 'contact_emergency',
+                               'student_info', 'teacher_info', 'guardian_info',
+                               'educator_info')
+                           .order_by('-last_ts','-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
             regProf.program = program
@@ -1298,14 +1334,14 @@ class RegistrationProfile(models.Model):
         return regProf
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
-    getLastForProgram.depend_on_row(lambda: RegistrationProfile, lambda rp: {'user': rp.user})
+    getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram = staticmethod(getLastForProgram)
             
     def __unicode__(self):
         if self.program_id == None:
-            return '<Registration for %s>' % unicode(self.user)
+            return u'<Registration for %s>' % unicode(self.user)
         if self.user is not None:
-            return '<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
+            return u'<Registration for %s in %s>' % (unicode(self.user), unicode(self.program))
 
 
     def updateForm(self, form_data, specificInfo = None):
@@ -1344,6 +1380,7 @@ class TeacherBio(models.Model):
     picture_height = models.IntegerField(blank=True, null=True)
     picture_width  = models.IntegerField(blank=True, null=True)
     last_ts = models.DateTimeField(auto_now = True)    
+    hidden = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -1414,22 +1451,22 @@ class FinancialAidRequest(models.Model):
     def __unicode__(self):
         """ Represent this as a string. """
         if self.reduced_lunch:
-            reducedlunch = "(Free Lunch)"
+            reducedlunch = u"(Free Lunch)"
         else:
-            reducedlunch = ''
+            reducedlunch = u''
             
         explanation = self.extra_explaination
         if explanation is None:
-            explanation = ''
+            explanation = u''
         elif len(explanation) > 40:
-            explanation = explanation[:40] + "..."
+            explanation = explanation[:40] + u"..."
 
 
-        string = "%s (%s@%s) for %s (%s, %s) %s"%\
+        string = u"%s (%s@%s) for %s (%s, %s) %s"%\
                  (ESPUser(self.user).name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
-            string = "Finished: [" + string + "]"
+            string = u"Finished: [" + string + u"]"
 
         return string
         
@@ -1477,12 +1514,12 @@ class BooleanToken(models.Model):
     expr = property(get_expr)
 
     def __unicode__(self):
-        return '[%d] %s' % (self.seq, self.text)
+        return u'[%d] %s' % (self.seq, self.text)
 
     @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
-    subclass_instance.depend_on_row(lambda:BooleanToken, lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.BooleanToken', lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
@@ -1538,7 +1575,7 @@ class BooleanExpression(models.Model):
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
-        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
+        return u'(%d tokens) %s' % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
@@ -1546,14 +1583,14 @@ class BooleanExpression(models.Model):
     @cache_function
     def get_stack(self):
         return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
-    get_stack.depend_on_row(lambda: BooleanToken, lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.BooleanToken', lambda token: {'self': token.exp})
         
     def reset(self):
         self.booleantoken_set.all().delete()
 
     def add_token(self, token_or_value, seq=None, duplicate=True):
         my_stack = self.get_stack()
-        if type(token_or_value) == str:
+        if isinstance(token_or_value, basestring):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
@@ -1589,7 +1626,7 @@ class ScheduleMap:
         schedule change.
     """
     def __init__(self, user, program):
-        if type(user) is not ESPUser:
+        if not isinstance(user, ESPUser):
             user = ESPUser(user)
         self.program = program
         self.user = user
@@ -1621,7 +1658,7 @@ class ScheduleMap:
         return 'ScheduleMap_%s' % hashlib.md5(pickle.dumps(self)).hexdigest()[:8]
         
     def __unicode__(self):
-        return '%s' % self.map
+        return u'%s' % self.map
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested: 
@@ -1648,7 +1685,7 @@ class ScheduleConstraint(models.Model):
         app_label = 'program'
     
     def __unicode__(self):
-        return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
+        return u'%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
@@ -1661,7 +1698,7 @@ class ScheduleConstraint(models.Model):
                 if recursive:
                     #   Try using the execution hook for arbitrary code... and running again to see if it helped.
                     (fail_result, data) = self.handle_failure()
-                    if type(fail_result) == ScheduleMap:
+                    if isinstance(fail_result, ScheduleMap):
                         self.schedule_map = fail_result
                     #   raise AjaxError('ScheduleConstraint says %s' % data)
                     return self.evaluate(self.schedule_map, recursive=False)
@@ -1679,7 +1716,7 @@ class ScheduleConstraint(models.Model):
             result = _f(self.schedule_map)
             return result
         except Exception, inst:
-            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
         return (None, None)
@@ -1840,7 +1877,7 @@ class RegistrationType(models.Model):
     def get_cached(name, category):
         rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})
         return rt
-    get_cached.depend_on_model(lambda: RegistrationType)
+    get_cached.depend_on_model('program.RegistrationType')
     get_cached = staticmethod(get_cached)
 
     @cache_function
@@ -1848,7 +1885,7 @@ class RegistrationType(models.Model):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
             if not isinstance(category, str):
-                raise ESPError(True), 'Need to supply category to RegistrationType.get_map() when passing include arguments'
+                raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
         
@@ -1857,11 +1894,11 @@ class RegistrationType(models.Model):
         for item in RegistrationType.objects.all():
             result[item.name] = item
         return result
-    get_map.depend_on_model(lambda: RegistrationType)
+    get_map.depend_on_model('program.RegistrationType')
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        if self.displayName is not None and self.displayName != "":
+        if self.displayName is not None and self.displayName != u"":
             return self.displayName
         else:
             return self.name
@@ -1896,7 +1933,14 @@ class StudentSubjectInterest(ExpirableModel):
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
+from esp.program.models.flags import *
 
-# The following are only so that we can refer to them in caching Program.getModules.
+def install():
+    from esp.program.models.class_ import install as install_class
+    print "Installing esp.program initial data..."
+    install_class()
+
+# The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.resources.models import ResourceType

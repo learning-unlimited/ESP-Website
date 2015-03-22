@@ -6,7 +6,7 @@ from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
 
-from customforms.models import *
+from esp.customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
@@ -85,14 +85,20 @@ def onSubmit(request):
     if request.is_ajax():
         if request.method == 'POST':
             metadata = json.loads(request.raw_post_data)
-            
             fields = []
-            
+
+        # truncating field lengths to the character limits specified
+        title = metadata['title'][0:Form._meta.get_field_by_name('title')[0].max_length]
+        link_type = metadata['link_type'][0:Form._meta.get_field_by_name('link_type')[0].max_length]
+        perms = metadata['perms'][0:Form._meta.get_field_by_name('perms')[0].max_length]
+        success_message = metadata['success_message'][0:Form._meta.get_field_by_name('success_message')[0].max_length]
+        success_url = metadata['success_url'][0:Form._meta.get_field_by_name('success_url')[0].max_length]
+
         # Creating form
-        form = Form.objects.create(title=metadata['title'], 
-            description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], 
-            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
-            success_message=metadata['success_message'], success_url=metadata['success_url']
+        form = Form.objects.create(title=title, 
+            description=metadata['desc'], created_by=request.user, link_type=link_type, 
+            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=perms,
+            success_message=success_message, success_url=success_url
             )
         
         # Inserting pages
@@ -154,7 +160,7 @@ def onModify(request):
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:
-                raise ESPError(False), 'Form %s not found' % metadata['form_id']
+                raise ESPError('Form %s not found' % metadata['form_id'], log=False)
             dmh = DMH(form=form)
             link_models_list = []     # Stores a cache of link models that should not be removed
             
@@ -262,14 +268,13 @@ def viewForm(request, form_id):
     """
     try:
         form_id = int(form_id)
-    except ValueError:
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
         raise Http404
-        
-    form = Form.objects.get(pk=form_id)
     
     perm, error_text = hasPerm(request.user, form)
     if not perm:
-        return render_to_response('customforms/error.html', request, {'error_text': error_text})    
+        return render_to_response('customforms/error.html', request, {'error_text': error_text})
     fh = FormHandler(form=form, request=request, user=request.user)
     
     return fh.get_wizard_view()    
@@ -298,7 +303,7 @@ def viewResponse(request, form_id):
         except ValueError:
             raise Http404
         form = Form.objects.get(id=form_id)
-        return render_to_response('customforms/view_results.html', {'form': form})
+        return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
         return HttpResponseRedirect('/')
         

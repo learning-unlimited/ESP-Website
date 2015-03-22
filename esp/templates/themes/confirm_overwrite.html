@@ -1,0 +1,48 @@
+{% extends "main.html" %}
+{% block title %}Theme Selector{% endblock %}
+{% block content %}
+
+<h1>Themes - File Customizations</h1>
+<h2>Current theme: {{ theme_name }} </h2>
+
+<p>
+We have detected differences between the image and script files provided by the theme, and the files on the server.  This may be because the theme has been updated and/or you customized the files on the server.  For each of the files below, please confirm whether you would like to overwrite the current file with the new one.
+</p>
+
+<form id="confirm_overwrite_form" method="POST" action="/themes/confirm_overwrite/">
+<input type="hidden" name="confirm_overwrite" value="1" />
+<input type="hidden" name="action" value="select" />
+<input type="hidden" name="orig_view" value="{{ orig_view }}" />
+<input type="hidden" name="theme" value="{{ theme_name }}" />
+<ul>
+{% for diff in differences %}
+    <li>File: {{ diff.filename }} <br />
+        New size: {{ diff.source_size|filesizeformat }} <br />
+        Current size: {{ diff.dest_size|filesizeformat }} <br />
+        <a href="{{ diff.dest_url }}">View current version</a> <br />
+        <div class="radio">
+        <label>
+            <input type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_keep_{{ forloop.counter0 }}" value="keep" checked />
+            Keep the current file
+        </label>
+        </div>
+        <div class="radio">
+        <label>
+            <input type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_overwrite_{{ forloop.counter0 }}" value="overwrite" />
+            Overwrite the current file with the new file
+        </label>
+        </div>
+    </li>
+{% endfor %}
+</ul>
+
+<p>
+<br />
+<br />
+<center>
+<button class="btn btn-large btn-block btn-primary" type="submit">Confirm</button>
+</center>
+</form>
+</p>
+
+{% endblock %}

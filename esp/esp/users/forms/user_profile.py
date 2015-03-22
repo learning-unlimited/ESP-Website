@@ -8,7 +8,6 @@ from esp.utils.defaultclass import defaultclass
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
-import re
 import json
 from localflavor.us.forms import USPhoneNumberField
 

@@ -8,9 +8,12 @@ import numpy
 from esp.utils.query_utils import nest_Q
 
 from esp.program.modules.base import CoreModule, ProgramModuleObj
-from esp.program.modules.models import install
 
 from esp.accounting.controllers import BaseAccountingController, GlobalAccountingController, IndividualAccountingController
+from esp.customforms.DynamicForm import BaseCustomForm, CustomFormHandler, FormStorage, ComboForm, FormHandler
+from esp.customforms.DynamicModel import DynamicModelHandler, DMH
+from esp.customforms.linkfields import CustomFormsLinkModel, CustomFormsCache
+from esp.program.controllers.classchange import ClassChangeController
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.consistency import ConsistencyChecker

@@ -1,13 +1,11 @@
 {% extends "inclusion/program/class_teacher_list_row.html" %}
 
 {% block cls_title %}
-  <td class="clsleft classname bordertop2" colspan="5">
     <span title="{{cls}}">
       {{ cls.parent_program.niceName }} -- 
       {{ cls|truncatewords:6 }}
       <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
     </span>
-  </td>
 {% endblock %}
 
 {% block cls_row_1_buttons %}
@@ -16,18 +14,19 @@
        title="Import {{ cls }}">Import</a>
   </td>
 
-  <td class="clsright bordertop2">
+  <td class="clsmiddle bordertop2">
     {% if cls.got_index_qsd %}
     <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
        title="{{ cls }}...">Visit web page</a>
     {% endif %}
   </td>
+  <td class="clsright bordertop2" colspan="2">&nbsp;</td>
 {% endblock %}
 
-{% block cls_row_2_buttons %}{% endblock %}
+{% block cls_row_2_buttons %}&nbsp;{% endblock %}
 
-{% block cls_row_3_buttons %}{% endblock %}
+{% block cls_row_3_buttons %}&nbsp;{% endblock %}
 
-{% block cls_row_4_buttons %}{% endblock %}
+{% block cls_row_4_buttons %}&nbsp;{% endblock %}
 
-{% block cls_row_5_buttons %}{% endblock %}
+{% block cls_row_5_buttons %}&nbsp;{% endblock %}

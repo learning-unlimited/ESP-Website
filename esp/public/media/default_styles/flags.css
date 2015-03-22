@@ -1,0 +1,73 @@
+button.fqb-delete {
+    float: right;
+}
+
+select.fqb-type {
+    width: 10em;
+}
+
+.fqb-flag-details {
+    padding-left: 7em;
+}
+
+.fqb-flag-detail-select {
+    width: 6em;
+}
+
+.datetime-input {
+    width: 12em;
+}
+
+.bad-node {
+    border: 1px solid #ff0000;
+}
+
+#content th {
+    padding-top: 0;
+    padding-right: 20px;
+}
+
+.fqr-class {
+    margin: 5px;
+    border: 1px solid lightgray;
+}
+
+.fqr-class-header {
+    font-size: 1.2em;
+}
+
+.fqr-class-header.accepted {
+    background: #def7c6;
+}
+
+.fqr-class-header.unreviewed {
+    background: #c6def7;
+}
+
+.fqr-class-header.rejected {
+    background: #f7c6de;
+}
+
+.fqr-class-flags {
+    padding: 1px 0px
+}
+
+.flag-name {
+    margin: 1px;
+}
+
+.flag-detail table, .flag-detail form {
+    padding-left: 3em;
+    width: 100%;
+}
+
+.class-flag-list {
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+input.flag-submit-new {
+    margin-left: auto;
+    margin-right: 0px;
+}

@@ -30,15 +30,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django import forms
+from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
+from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -75,7 +77,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
+    class_size_max = forms.ChoiceField( label='Maximum Number of Students',
+                                        choices=[(0, 0)],
+                                        widget=BlankSelectWidget(),
+                                        validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
@@ -85,15 +90,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
-    has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % settings.INSTITUTION_NAME )
 
-    global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
-                                                  choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
-                                                  help_text="Check all that apply. We can usually supply these common resources at your request. But if your class is truly uncommon, ESP may also have access to unusual rooms and supplies. These can be entered in the next section, 'Special Requests.'" )
-    resources        = forms.MultipleChoiceField( label='Other Resources',
-                                                  choices=[], widget=forms.CheckboxSelectMultiple(), required=False )
     requested_special_resources = forms.CharField( label='Special Requests', widget=forms.Textarea(), required=False,
                                                    help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
 
@@ -117,16 +116,21 @@ class TeacherClassRegForm(FormWithRequiredCss):
                 hide_field(field, default=field.choices[0][0])
         
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
+
+        if isinstance(module, ClassRegModuleInfo):
+            crmi = module
+        else:
+            crmi = module.crmi
         
-        prog = module.get_program()
+        prog = crmi.get_program()
         
-        section_numbers = module.allowed_sections_actual
+        section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
         
-        class_sizes = module.getClassSizes()
+        class_sizes = crmi.getClassSizes()
         class_sizes = zip(class_sizes, class_sizes)
         
-        class_grades = module.getClassGrades()
+        class_grades = crmi.getClassGrades()
         class_grades = zip(class_grades, class_grades)
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
@@ -137,25 +141,25 @@ class TeacherClassRegForm(FormWithRequiredCss):
         hide_choice_if_useless( self.fields['num_sections'] )
         # category: program.class_categories.all()
         self.fields['category'].choices = [ (x.id, x.category) for x in prog.class_categories.all() ]
-        # grade_min, grade_max: module.getClassGrades
+        # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if module.use_class_size_max:
-            # class_size_max: module.getClassSizes
+        if crmi.use_class_size_max:
+            # class_size_max: crmi.getClassSizes
             self.fields['class_size_max'].choices = class_sizes
         else:
             del self.fields['class_size_max']
 
         if Tag.getTag('use_class_size_optimal', default=False):
-            if not module.use_class_size_optimal:
+            if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 
-            if module.use_optimal_class_size_range:
+            if crmi.use_optimal_class_size_range:
                 self.fields['optimal_class_size_range'].choices = class_ranges
             else:
                 del self.fields['optimal_class_size_range']
 
-            if module.use_allowable_class_size_ranges:
+            if crmi.use_allowable_class_size_ranges:
                 self.fields['allowable_class_size_ranges'].choices = class_ranges
             else:
                 del self.fields['allowable_class_size_ranges']
@@ -164,45 +168,34 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['optimal_class_size_range']
             del self.fields['allowable_class_size_ranges']
             
-        # global_resources: module.getResourceTypes(is_global=True)
-        self.fields['global_resources'].choices = module.getResourceTypes(is_global=True)
-        # resources: module.getResourceTypes(is_global=False)
-        resource_choices = module.getResourceTypes(is_global=False)
-        
         # decide whether to display certain fields
-        # resources
-        if len(resource_choices) > 0:
-            self.fields['resources'].choices = resource_choices
-        else:
-            self.fields['resources'].widget = forms.HiddenInput()
         
         # prereqs
-        if not module.set_prereqs:
+        if not crmi.set_prereqs:
             self.fields['prereqs'].widget = forms.HiddenInput()
         
         # allow_lateness
-        if not module.allow_lateness:
+        if not crmi.allow_lateness:
             self.fields['allow_lateness'].widget = forms.HiddenInput()
             self.fields['allow_lateness'].initial = 'False'
 
-        self.fields['duration'].choices = sorted(module.getDurations())
+        self.fields['duration'].choices = sorted(crmi.getDurations())
         hide_choice_if_useless( self.fields['duration'] )
         
         # session_count
-        if module.session_counts:
-            session_count_choices = module.session_counts_ints
+        if crmi.session_counts:
+            session_count_choices = crmi.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
         
         # requested_room
-        if not module.ask_for_room:
+        if not crmi.ask_for_room:
             hide_field( self.fields['requested_room'] )
             
         #   Hide resource fields since separate forms are now being used. - Michael P
-        resource_fields = ['has_own_space', 'global_resources', 'resources', 'requested_special_resources']
-        for field in resource_fields:
-            self.fields[field].widget = forms.HiddenInput()
+        #   Most have now been removed, but this one gets un-hidden by open classes.
+        self.fields['requested_special_resources'].widget = forms.HiddenInput()
         
         #   Add program-custom form components (for inlining additional questions without
         #   introducing a separate program module)
@@ -315,8 +308,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                   ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
-                  ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
-                  ('resources', '')]
+                  ('requested_room', '')]
         for field, default in fields:
             if field in self.fields:
                 self.fields[field].required = False

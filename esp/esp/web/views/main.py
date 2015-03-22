@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
@@ -46,8 +46,6 @@ from urllib import quote
 
 from Cookie import SimpleCookie
 
-#from icalendar import Calendar, Event as CalEvent, UTC
-
 import datetime
 import re
 import json
@@ -55,7 +53,6 @@ import json
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
 from esp.web.views.navBar import makeNavBar
-from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
@@ -63,7 +60,6 @@ from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.utils.query_utils import nest_Q
 
-from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
 from django.conf import settings
@@ -90,14 +86,6 @@ def home(request):
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
     context = {'navbar_list': makeNavBar('', nav_category)}
     return render_to_response('index.html', request, context)
-
-@vary_on_headers('Cookie')
-def myesp(request, module):
-	""" Return page handled by myESP (generally, a user-specific page) """
-	if myesp_handlers.has_key(module):
-		return myesp_handlers[module](request, module)
-
-	return render_to_response('users/construction', request, {})
 
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
@@ -148,7 +136,7 @@ def classchangerequest(request, tl, one, two):
     
     cur_grade = request.user.getGrade(prog)
     if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
-        return render_to_response(errorpage, request, {})
+        return render_to_response(errorpage, request, {'yog': request.user.getYOG(prog)})
 
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
@@ -159,7 +147,7 @@ def classchangerequest(request, tl, one, two):
     from esp.utils.scheduling import getRankInClass
 
     timeslots = prog.getTimeSlots()
-    sections = prog.sections().filter(status=10)
+    sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
     
     enrollments = {}
     for timeslot in timeslots:
@@ -209,7 +197,6 @@ def classchangerequest(request, tl, one, two):
                 if not section: 
                     continue
                 r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
-                r.end_date = datetime(9999, 1, 1, 0, 0, 0, 0)
                 r.save()
                 
             return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
@@ -255,11 +242,8 @@ def contact(request, section='esp'):
             logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
             
-            if len(form.cleaned_data['sender'].strip()) == 0:
-                email = 'esp@mit.edu'
-            else:
-                email = form.cleaned_data['sender']
-                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+            email = form.cleaned_data['sender']
+            usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
             if usernames and not form.cleaned_data['decline_password_recovery']:
                 m = 'password|account|log( ?)in'
@@ -273,11 +257,8 @@ def contact(request, section='esp'):
             if form.cleaned_data['cc_myself']:
                 to_email.append(email)
 
-            try:
-                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-            except KeyError:
-                to_email.append(fallback_address)
-
+            to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            
             if len(form.cleaned_data['name'].strip()) > 0:
                 email = '%s <%s>' % (form.cleaned_data['name'], email)
 

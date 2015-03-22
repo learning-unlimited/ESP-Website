@@ -1,6 +1,6 @@
 from django.conf.urls import *
-from dataviews.views import wizard_view, mode_view, doc_view, path_view
-from dataviews import useful_models
+from esp.dataviews.views import wizard_view, mode_view, doc_view, path_view
+from esp.dataviews import useful_models
 from dataviews.forms import ModeForm, DataViewsWizard
 
 useful_models_text = r'|'.join([useful_model.__name__ for useful_model in useful_models])

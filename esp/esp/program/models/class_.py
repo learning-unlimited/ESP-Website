@@ -29,27 +29,29 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import datetime
+from datetime import timedelta
 import time
 from collections import defaultdict
 
 # django Util
+from django.conf import settings
 from django.db import models
-from django.db.models import get_model
 from django.db.models.query import Q
 from django.db.models import signals
-from django.core.cache import cache
+from django.db.models.manager import Manager
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
+
 
 # ESP Util
-from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.fields import JSONField
@@ -57,25 +59,21 @@ from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
-# django models
-from django.contrib.auth.models import User
-
 # ESP models
-from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
+from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
-from esp.users.models import ESPUser, Permission, UserAvailability
-from esp.middleware              import ESPError
-from esp.program.models          import Program, StudentRegistration, RegistrationType
-from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
-from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
+from esp.users.models import ESPUser, Permission
+from esp.program.models import Program
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
+from esp.program.models import ScheduleMap, ScheduleConstraint
+from esp.program.models import ArchiveClass
+from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from esp.cache                   import cache_function
 from esp.cache.key_set           import wildcard
 from esp.utils.derivedfield      import DerivedField
-
-from esp.users.models import ESPUser
 
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -83,9 +81,33 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
-class ClassSizeRange(models.Model):
-    from esp.program.models import Program
+CANCELLED = -20
+REJECTED = -10
+UNREVIEWED = 0
+HIDDEN = 5
+ACCEPTED = 10
 
+STATUS_CHOICES = (
+        (CANCELLED, "cancelled"),
+        (REJECTED, "rejected"),
+        (UNREVIEWED, "unreviewed"),
+        (HIDDEN, "accepted but hidden"),
+        (ACCEPTED, "accepted"),
+        )
+
+STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
+
+OPEN = 0
+CLOSED = 10
+
+REGISTRATION_CHOICES = (
+            (OPEN, "open"),
+            (CLOSED, "closed"),
+            )
+
+
+
+class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
     range_max = models.IntegerField(null=False)
     program   = models.ForeignKey(Program, blank=True, null=True)
@@ -105,17 +127,15 @@ class ClassSizeRange(models.Model):
             return cls.objects.filter(program=prog)
 
     def range_str(self):
-        return "%d-%d" %(self.range_min, self.range_max)
+        return u"%d-%d" %(self.range_min, self.range_max)
 
     def __unicode__(self):
-        return "Class Size Range: " + self.range_str()
+        return u"Class Size Range: " + self.range_str()
 
     class Meta:
         app_label='program'
 
 class ProgramCheckItem(models.Model):
-    from esp.program.models import Program
-    
     program = models.ForeignKey(Program, related_name='checkitems')
     title   = models.CharField(max_length=512)
     seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
@@ -131,22 +151,22 @@ class ProgramCheckItem(models.Model):
         super(ProgramCheckItem, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return '%s for "%s"' % (self.title, str(self.program).strip())
+        return u'%s for "%s"' % (self.title, unicode(self.program).strip())
 
     class Meta:
         ordering = ('seq',)
         app_label = 'program'
         db_table = 'program_programcheckitem'
 
-class ClassManager(ProcedureManager):
+class ClassManager(Manager):
     def __repr__(self):
-        return "ClassManager()"
+        return u"ClassManager()"
     
     def approved(self, return_q_obj=False):
         if return_q_obj:
-            return Q(status = 10)
+            return Q(status = ACCEPTED)
         
-        return self.filter(status = 10)
+        return self.filter(status = ACCEPTED)
 
     def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
         # Try getting the catalog straight from cache
@@ -266,7 +286,7 @@ class ClassManager(ProcedureManager):
             teachers = ESPUser.objects.filter(classsubject__isnull=False)
 
         teachers_by_id = {}
-        for t in teachers:            
+        for t in teachers: 
             teachers_by_id[t.id] = t
 
         # Now, to combine all of the above
@@ -285,10 +305,10 @@ class ClassManager(ProcedureManager):
                                  # they show up for all instances.
             
         return classes
-    catalog_cached.depend_on_model(lambda: ClassSubject)
-    catalog_cached.depend_on_model(lambda: ClassSection)
-    catalog_cached.depend_on_model(lambda: Media)
-    catalog_cached.depend_on_model(lambda: Tag)
+    catalog_cached.depend_on_model('program.ClassSubject')
+    catalog_cached.depend_on_model('program.ClassSection')
+    catalog_cached.depend_on_model('qsdmedia.Media')
+    catalog_cached.depend_on_model('tagdict.Tag')
 
     #perhaps make it program-specific?
     @staticmethod
@@ -298,7 +318,7 @@ class ClassManager(ProcedureManager):
             parts[-1] == "index" and \
             parts[0] == "learn" and \
             "Classes" in parts
-    catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
+    catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
 
@@ -307,8 +327,8 @@ class ClassSection(models.Model):
     parallel sections for a course being taught more than once at Splash or Spark. """
     
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
-    status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
-    registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
+    status = models.IntegerField(choices=STATUS_CHOICES, default=UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
+    registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
@@ -384,7 +404,7 @@ class ClassSection(models.Model):
     @cache_function
     def get_meeting_times(self):
         return self.meeting_times.all()
-    get_meeting_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    get_meeting_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
@@ -438,7 +458,7 @@ class ClassSection(models.Model):
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
                 ans = self._get_room_capacity(rooms)
-            else: 
+            else:
                 ans = 0
             
         options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -449,17 +469,14 @@ class ClassSection(models.Model):
         else:
             return int(ans)
 
-    _get_capacity.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
-    _get_capacity.depend_on_row(lambda:ClassSection, lambda r: {'self': r})
-    _get_capacity.depend_on_model(lambda:ClassSubject)
-    _get_capacity.depend_on_model(lambda: Resource)
-    _get_capacity.depend_on_row(lambda:ClassSection, 'self')
-    _get_capacity.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
-    _get_capacity.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
-    def __get_studentclassregmoduleinfo():
-        from esp.program.modules.module_ext import StudentClassRegModuleInfo
-        return StudentClassRegModuleInfo
-    _get_capacity.depend_on_model(__get_studentclassregmoduleinfo)
+    _get_capacity.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
+    _get_capacity.depend_on_row('program.ClassSection', lambda r: {'self': r})
+    _get_capacity.depend_on_model('program.ClassSubject')
+    _get_capacity.depend_on_model('resources.Resource')
+    _get_capacity.depend_on_row('program.ClassSection', 'self')
+    _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
+    _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
+    _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
 
        
     capacity = property(_get_capacity)
@@ -468,7 +485,7 @@ class ClassSection(models.Model):
         return self.parent_class.title
 
     def __unicode__(self):
-        return '%s: %s' % (self.emailcode(), self.title())
+        return u'%s: %s' % (self.emailcode(), self.title())
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
@@ -490,18 +507,16 @@ class ClassSection(models.Model):
     @cache_function
     def checklist_progress_all_cached(self):
         return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSection, 'checklist_progress', lambda cs, cp: {'self': cs})
+    checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
-        from esp.resources.models import ResourceAssignment
-        return ResourceAssignment.objects.filter(target=self)
+        return self.resourceassignment_set.all()
 
     def getResources(self):
         assignment_list = self.getResourceAssignments()
         return [a.resource for a in assignment_list]
     
     def getResourceRequests(self):
-        from esp.resources.models import ResourceRequest
         return ResourceRequest.objects.filter(target=self)
     
     def clearResourceRequests(self):
@@ -509,27 +524,23 @@ class ClassSection(models.Model):
             rr.delete()
     
     def classroomassignments(self):
-        from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
         return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
 
-        from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
         ta_restype = ResourceType.get_or_create('Teacher Availability')
         return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
     
     def classrooms(self):
         """ Returns the list of classroom resources assigned to this class."""
-        from esp.resources.models import Resource
 
         ra_list = self.classroomassignments().values_list('resource', flat=True)
         return Resource.objects.filter(id__in=ra_list)
 
     def initial_rooms(self):
-        from esp.resources.models import Resource
         meeting_times = self.get_meeting_times()
         if len(meeting_times) > 0:
             initial_time = min(meeting_times, key=lambda event: event.start)
@@ -545,7 +556,7 @@ class ClassSection(models.Model):
             return []
    
     def emailcode(self):
-        return self.parent_class.emailcode() + 's' + str(self.index())
+        return self.parent_class.emailcode() + u's' + unicode(self.index())
    
     def starts_soon(self):
         #   Return true if the class's start time is less than 50 minutes after the current time
@@ -556,7 +567,6 @@ class ClassSection(models.Model):
         else:
             st = first_block.start
             
-
         if st is None:
             return False
         else:
@@ -567,7 +577,6 @@ class ClassSection(models.Model):
                 return False
             
     def already_passed(self):
-        from datetime import timedelta
         start_time = self.start_time()
         if start_time is None:
             return True
@@ -591,7 +600,7 @@ class ClassSection(models.Model):
         if s:
             return s.short_time()
         else:
-            return 'N/A'
+            return u'N/A'
 
     #   Scheduling helper functions
 
@@ -610,7 +619,7 @@ class ClassSection(models.Model):
             return False
         else:
             return True
-    sufficient_length.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    sufficient_length.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     
     
     def extend_timeblock(self, event, merged=True):
@@ -642,10 +651,10 @@ class ClassSection(models.Model):
         else:
             retVal = 'Happy'
         return retVal
-    scheduling_status.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
-    scheduling_status.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
-    scheduling_status.depend_on_row(lambda: ResourceRequest, lambda rr: {'self': rr.target})
-    scheduling_status.depend_on_row(lambda: ResourceAssignment, lambda ra: {'self': ra.target})
+    scheduling_status.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
+    scheduling_status.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    scheduling_status.depend_on_row('resources.ResourceRequest', lambda rr: {'self': rr.target})
+    scheduling_status.depend_on_row('resources.ResourceAssignment', lambda ra: {'self': ra.target})
     
     @cache_function
     def unsatisfied_requests(self):
@@ -655,7 +664,7 @@ class ClassSection(models.Model):
         else:
             result = self.getResourceRequests()
         return result
-    unsatisfied_requests.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
+    unsatisfied_requests.depend_on_cache(scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -778,9 +787,6 @@ class ClassSection(models.Model):
     def viable_rooms(self):
         """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
         Resources matching the first time block of the class will be returned. """
-        from django.core.cache import cache
-        from esp.resources.models import ResourceType, Resource
-        import operator
         
         def room_satisfies_times(room, times):
             room_times = room.matching_times()
@@ -794,7 +800,7 @@ class ClassSection(models.Model):
         if not self.sufficient_length():
             return []
         
-        #   Start with all rooms the program has.  
+        #   Start with all rooms the program has.
         #   Filter the ones that are available at all times needed by the class.
         filter_qs = []
         ordered_times = self.meeting_times.order_by('start')
@@ -805,9 +811,9 @@ class ClassSection(models.Model):
 
         return viable_list
         
-    viable_rooms.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
-    viable_rooms.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
-    viable_rooms.depend_on_model(lambda: Resource)
+    viable_rooms.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
+    viable_rooms.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    viable_rooms.depend_on_model('resources.Resource')
     
     def clearRooms(self):
         self.classroomassignments().delete()
@@ -817,8 +823,6 @@ class ClassSection(models.Model):
 
     def assignClassRoom(self, classroom, lock_level=0):
         #   Assign an individual resource to this class.
-        from esp.resources.models import ResourceAssignment
-        
         if classroom.is_taken():
             return False
         else:
@@ -842,7 +846,7 @@ class ClassSection(models.Model):
     @cache_function
     def timeslot_ids(self):
         return self.meeting_times.all().values_list('id', flat=True)
-    timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
+    timeslot_ids.depend_on_m2m('program.ClassSection', 'meeting_times', lambda instance, object: {'self': instance})
 
     def cannotRemove(self, user):
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -851,7 +855,7 @@ class ClassSection(models.Model):
             sm.remove_section(self)
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=False):
-                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+                    return u"You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False):
@@ -875,7 +879,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
+                    return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
@@ -893,31 +897,30 @@ class ClassSection(models.Model):
         my_timeslots = self.timeslot_ids()
         for sec in section_list:
             if sec.parent_class == self.parent_class:
-                return 'You are already signed up for a section of this class!'
+                return u'You are already signed up for a section of this class!'
             if hasattr(sec, '_timeslot_ids'):
                 timeslot_ids = sec._timeslot_ids
             else:
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    return 'This section conflicts with your schedule--check out the other sections!'
+                    return u'This section conflicts with your schedule--check out the other sections!'
                     
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
-            return 'Registration for this section is not currently open.'
+            return u'Registration for this section is not currently open.'
 
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
             if priority > scrmi.priority_limit:
-                return 'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
+                return u'You are only allowed to select up to %s top classes' % (scrmi.priority_limit)
 
         # this user *can* add this class!
         return False
 
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
-        from esp.users.models import ESPUser
         user = ESPUser(teacher)
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
@@ -941,10 +944,10 @@ class ClassSection(models.Model):
             available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
             for e in meeting_times:
                 if e not in available:
-                    return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                    return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
             conflicts = self.conflicts(t, meeting_times)
             if conflicts:
-                return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+                return u"The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
             # Fallback in case we couldn't come up with details
         return False
 
@@ -959,7 +962,6 @@ class ClassSection(models.Model):
          ...
         }
         """
-        from esp.program.models import RegistrationType
         now = datetime.datetime.now()
         
         rmap = RegistrationType.get_map()
@@ -970,7 +972,7 @@ class ClassSection(models.Model):
             if len(result[result_key]) == 0:
                 del result[result_key]
         return result
-    students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    students_dict.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
     
     def students_prereg(self):
         return self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct()
@@ -984,7 +986,7 @@ class ClassSection(models.Model):
     @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
-    num_students_prereg.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    num_students_prereg.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def num_students(self, verbs=['Enrolled']):
@@ -993,43 +995,62 @@ class ClassSection(models.Model):
                 self._count_students = self.students(verbs).count()
             return self._count_students
         return self.students(verbs).count()
-    num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def count_enrolled_students(self):
         return self.num_students(use_cache=False)
-    count_enrolled_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
     def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=True):
-        from django.conf import settings
-        from django.contrib.sites.models import Site
-        from esp.dbmail.models import send_mail
-
         if include_lottery_students:
             student_verbs = ['Enrolled', 'Interested', 'Priority/1']
         else:
             student_verbs = ['Enrolled']
+
+        email_ssis = include_lottery_students and all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self])
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students(student_verbs)
+        context['email_ssis'] = email_ssis
+
         email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
+        ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
+
         if email_students:
-            email_content = render_to_string('email/class_cancellation.txt', context)
-            template = Template(email_content)
             #   Send e-mail to each student
+            students_to_email = {}
+            if email_ssis:
+                q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
+                ssi_students = ESPUser.objects.filter(q_ssi).exclude(id__in=self.students(student_verbs)).distinct()
+                for student in ssi_students:
+                    students_to_email[student] = False
             for student in self.students(student_verbs):
+                students_to_email[student] = True
+
+            for student in students_to_email:
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
-                msgtext = template.render(Context({'user': student}))
-                send_mail(email_title, msgtext, from_email, to_email)
+                #   Here we render the template to include the username, and also whether the student is registered
+                context['classreg'] = students_to_email[student]
+                context['user'] = student
+                msgtext = render_to_string('email/class_cancellation.txt', context)
+                if students_to_email[student]:
+                    send_mail(email_title, msgtext, from_email, to_email)
+                else:
+                    send_mail(ssi_email_title, msgtext, from_email, to_email)
 
         #   Send e-mail to administrators as well
+        context['classreg'] = True
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
+        if email_ssis:
+            context['classreg'] = False
+            email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
@@ -1041,17 +1062,25 @@ class ClassSection(models.Model):
             self.clearRooms()
             self.meeting_times.clear()
 
-        self.status = -20
+        self.status = CANCELLED
         self.save()
 
     def clearStudents(self):
-        from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
         qs = StudentRegistration.valid_objects(now).filter(section=self)
+        for reg in qs:
+            signals.pre_save.send(sender=StudentRegistration, instance=reg)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
             signals.post_save.send(sender=StudentRegistration, instance=reg)
+        if all([sec.isCancelled() for sec in self.parent_class.get_sections() if sec!=self]):
+            qs_ssi = StudentSubjectInterest.valid_objects(now).filter(subject=self.parent_class)
+            for ssi in qs_ssi:
+                signals.pre_save.send(sender=StudentSubjectInterest, instance=ssi)
+            qs_ssi.update(end_date=now)
+            for ssi in qs_ssi:
+                signals.post_save.send(sender=StudentSubjectInterest, instance=ssi)
 
     @staticmethod
     def idcmp(one, other):
@@ -1086,7 +1115,7 @@ class ClassSection(models.Model):
         if ir.count() == 0:
             return 0
         else:
-            return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
+            return reduce(lambda x,y: x+y, [r.num_students for r in ir])
             
     def isFull(self, ignore_changes=False):
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):
@@ -1098,7 +1127,7 @@ class ClassSection(models.Model):
         return self.friendly_times(raw=True)
 
     @cache_function
-    def friendly_times(self, raw=False, include_date=False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
+    def friendly_times(self, raw=False, include_date=False):
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -1109,8 +1138,13 @@ class ClassSection(models.Model):
            ['11:00am--1:00pm']
         for instance.
         """
-        from esp.cal.models import Event
-        from esp.resources.models import ResourceAssignment, ResourceType, Resource
+        # if include_date is True, display the date as well (e.g., display
+        # "Sun, July 10" instead of just "Sun"
+        include_date = include_date or Tag.getBooleanTag(
+            key='friendly_times_with_date',
+            program=self.parent_program,
+            default=False,
+        )
             
         txtTimes = []
         eventList = []
@@ -1119,7 +1153,7 @@ class ClassSection(models.Model):
         """
         classroom_type = ResourceType.get_or_create('Classroom')
         resources = Resource.objects.filter(resourceassignment__target=self).filter(res_type=classroom_type)
-        events = [r.event for r in resources] 
+        events = [r.event for r in resources]
         """
         if hasattr(self, "_events"):
             events = list(self._events)
@@ -1133,23 +1167,22 @@ class ClassSection(models.Model):
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         return txtTimes
-    friendly_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    friendly_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
     
-    def friendly_times_with_date(self, raw=False): 
+    def friendly_times_with_date(self, raw=False):
         return self.friendly_times(raw=raw, include_date=True)
     
-    def isAccepted(self): return self.status == 10
-    def isReviewed(self): return self.status != 0
-    def isRejected(self): return self.status == -10
-    def isCancelled(self): return self.status == -20
-    isCanceled = isCancelled   
-    def isRegOpen(self): return self.registration_status == 0
-    def isRegClosed(self): return self.registration_status == 10
+    def isAccepted(self): return self.status == ACCEPTED
+    def isReviewed(self): return self.status != UNREVIEWED
+    def isRejected(self): return self.status == REJECTED
+    def isCancelled(self): return self.status == CANCELLED
+    isCanceled = isCancelled
+    def isRegOpen(self): return self.registration_status == OPEN
+    def isRegClosed(self): return self.registration_status == CLOSED
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
-        from esp.program.models import StudentRegistration
         if user == None:
             return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
@@ -1157,18 +1190,18 @@ class ClassSection(models.Model):
 
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of reg-types that a student has on this class. """
+        qs = self.getRegistrations(user).select_related('relationship')
         if not allowed_verbs:
-            return [v.relationship for v in self.getRegistrations(user).distinct()]
+            return [v.relationship for v in qs.distinct()]
         else:
-            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
+            return [v.relationship for v in qs.filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of
         #   RegistrationType to match (if you want to use it)
-        
+
         from esp.program.models.app_ import StudentAppQuestion
-        from esp.program.models import StudentRegistration
-        
+
         now = datetime.datetime.now()
         
         #   Stop all active or pending registrations
@@ -1200,11 +1233,7 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
-    
-    from esp.program.models import StudentRegistration, RegistrationType
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
-        StudentRegistration, RegistrationType = self.StudentRegistration, self.RegistrationType
-
         if prereg_verb == None:
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi and scrmi.use_priority:
@@ -1248,8 +1277,8 @@ class ClassSection(models.Model):
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
-                add_list_member(list_name, user.email)
-            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
+                add_list_member(list_name, user)
+            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user)
 
             return True
         else:
@@ -1258,9 +1287,9 @@ class ClassSection(models.Model):
 
     def prettyDuration(self):
         if self.duration is None:
-            return 'N/A'
+            return u'N/A'
 
-        return '%s:%02d' % \
+        return u'%s:%02d' % \
                (int(self.duration),
             int((self.duration - int(self.duration)) * 60))
 
@@ -1275,8 +1304,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     #customforms info
     form_link_name='Course'	
 
-    from esp.program.models import Program
-    
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     title = models.TextField()
     parent_program = models.ForeignKey(Program)
@@ -1308,16 +1335,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     objects = ClassManager()
 
-    #   Backwards compatibility with Class database format.
-    #   Please don't use. :)
-    status = models.IntegerField(default=0)   
+    status = models.IntegerField(choices = STATUS_CHOICES, default=UNREVIEWED)
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
     
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
-    get_allowable_class_size_ranges.depend_on_m2m(lambda:ClassSubject, 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
+    get_allowable_class_size_ranges.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
 
     def get_sections(self):
         if not hasattr(self, "_sections") or self._sections is None:
@@ -1341,19 +1366,19 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     def prettyDuration(self):
         if len(self.get_sections()) <= 0:
-            return "N/A"
+            return u"N/A"
         else:
             return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
         if len(self.get_sections()) <= 0:
-            return "N/A"
+            return u"N/A"
         else:
             rooms = []
         
             for subj in self.get_sections():
             	rooms.extend(subj.prettyrooms())
-       	    
+ 
             return rooms
 
     def ascii_info(self):
@@ -1401,8 +1426,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             result = self.default_section()
 
         return result
-    get_section.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs.parent_class})
-    get_section.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
+    get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
@@ -1436,13 +1461,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
         return new_section
 
-    def add_default_section(self, duration=0.0, status=0):
+    def add_default_section(self, duration=0.0, status=UNREVIEWED):
         """ Make sure this class has a section associated with it.  This should be called
         at least once on every class.  Afterwards, additional sections can be created using
         add_section. """
         
         #   Support migration from currently existing classes.
-        if self.status != 0:
+        if self.status != UNREVIEWED:
             status = self.status
         if self.duration is not None and self.duration > 0:
             duration = self.duration
@@ -1455,7 +1480,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     @cache_function
     def checklist_progress_all_cached(self):
         return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSubject, 'checklist_progress', lambda cs, cp: {'self': cs})
+    checklist_progress_all_cached.depend_on_m2m('program.ClassSubject', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def friendly_times(self):
         collapsed_times = []
@@ -1467,8 +1492,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         blocks = []
         
         for s in self.get_sections():
-            rooms = ", ".join(s.prettyrooms())
-            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+            rooms = u", ".join(s.prettyrooms())
+            blocks += [(x + u" in " + rooms) for x in s.friendly_times()]
 
         return blocks
 
@@ -1480,7 +1505,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return self._teachers
         
         return self.teachers.all()
-    get_teachers.depend_on_m2m(lambda: ClassSubject, 'teachers', lambda subj, event: {'self': subj})
+    get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
     
     def students_dict(self):
         result = PropertyDict({})
@@ -1520,7 +1545,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         The ``emailcode`` is defined as 'first letter of category' + id.
         """
-        return self.category.symbol+str(self.id)
+        return self.category.symbol+unicode(self.id)
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
@@ -1537,10 +1562,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
     def __unicode__(self):
-        if self.title != "":
-            return "%s: %s" % (self.id, self.title)
+        if self.title != u"":
+            return u"%s: %s" % (self.id, self.title)
         else:
-            return "%s: (none)" % self.id
+            return u"%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
         if self.num_students() > 0 and not adminoverride:
@@ -1568,7 +1593,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
+        return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1589,7 +1614,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             capacity_factor = 0.75
         return capacity_factor
-    get_capacity_factor.depend_on_row(lambda: Tag, lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+    get_capacity_factor.depend_on_row('tagdict.Tag', lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
     get_capacity_factor = staticmethod(get_capacity_factor)
 
     def is_nearly_full(self, capacity_factor = None):
@@ -1620,18 +1645,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cannotAdd(self, user, checkFull=True, which_section=None):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
-            return 'You are not a student!'
+            return u'You are not a student!'
         
         blocked_student_types = Tag.getTag("blocked_student_types", target=self)
         if blocked_student_types and not (set(user.getUserTypes()) & set(blocked_student_types.split(","))):
-            return "Cannot accept more users of your account type!"
+            return u"Cannot accept more users of your account type!"
         
         if not self.isAccepted():
-            return 'This class is not accepted.'
+            return u'This class is not accepted.'
 
 #        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
         if checkFull and self.parent_program.isFull() and not ESPUser(user).canRegToFullProgram(self.parent_program):
-            return 'This program cannot accept any more students!  Please try again in its next session.'
+            return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
@@ -1641,7 +1666,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if user.getGrade(self.parent_program) < self.grade_min or \
                    user.getGrade(self.parent_program) > self.grade_max:
                 if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
-                    return 'You are not in the requested grade range for this class.'
+                    return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
@@ -1649,7 +1674,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):
-                return 'You are already signed up for a section of this class!'
+                return u'You are already signed up for a section of this class!'
         
         if which_section:
             sections = [which_section]
@@ -1666,7 +1691,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
-        return 'This class conflicts with your schedule!'
+        return u'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
         self.teachers.add(user)
@@ -1677,11 +1702,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return True
     
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
-        from esp.resources.models import ResourceRequest
         return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
-        from datetime import timedelta
         user = ESPUser(teacher)
         
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
@@ -1716,9 +1739,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
 
     def isAccepted(self): return self.status > 0
-    def isReviewed(self): return self.status != 0
-    def isRejected(self): return self.status == -10
-    def isCancelled(self): return self.status == -20
+    def isReviewed(self): return self.status != UNREVIEWED
+    def isRejected(self): return self.status == REJECTED
+    def isCancelled(self): return self.status == CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
     
     def isRegOpen(self):
@@ -1744,15 +1767,15 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.isAccepted():
             return False # already accepted
 
-        self.status = 10
+        self.status = ACCEPTED
         # I do not understand the following line, but it saves us from "Cannot convert float to Decimal".
         # Also seen in /esp/program/modules/forms/management.py -ageng 2008-11-01
         #self.duration = Decimal(str(self.duration))
         self.save()
         #   Accept any unreviewed sections.
         for sec in self.sections.all():
-            if sec.status == 0:
-                sec.status = 10
+            if sec.status == UNREVIEWED:
+                sec.status = ACCEPTED
                 sec.save()
 
         if not show_message:
@@ -1772,23 +1795,23 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def propose(self):
         """ Mark this class as just `proposed' """
-        self.status = 0
+        self.status = UNREVIEWED
         self.save()
 
     def reject(self):
         """ Mark this class as rejected; also kicks out students from each section. """
         for sec in self.sections.all():
-            sec.status = -10
+            sec.status = REJECTED
             sec.save()
         self.clearStudents()
-        self.status = -10
+        self.status = REJECTED
         self.save()
 
     def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
             sec.cancel(email_students, include_lottery_students, explanation, unschedule)
-        self.status = -20
+        self.status = CANCELLED
         self.save()
         
     def clearStudents(self):
@@ -1800,7 +1823,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         """ Return the first three documents associated
         with a class, for previewing. """
         return self.documents.all()[:3]
-    docs_summary.depend_on_model(lambda: Media)
+    docs_summary.depend_on_model('qsdmedia.Media')
 
     def getUrlBase(self):
         """ Gets the base url of this class """
@@ -1808,7 +1831,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def getRegistrations(self, user=None):
         """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
-        from esp.program.models import StudentRegistration
         if user == None:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:
@@ -1847,8 +1869,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             s.unpreregister_student(user)
 
     def getArchiveClass(self):
-        from esp.program.models import ArchiveClass
-        
         result = ArchiveClass.objects.filter(original_id=self.id)
         if result.count() > 0:
             return result[0]
@@ -1875,28 +1895,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.save()
         
         return result
-        
-    def archive(self, delete=False):
-        """ Archive a class to reduce the size of the database. """
-        from esp.resources.models import ResourceRequest, ResourceAssignment
-        from esp.users.models.userbits import UserBit
-        
-        #   Ensure that the class has been saved in the archive.
-        archived_class = self.getArchiveClass()
-        
-        #   Delete user bits and resource stuff associated with the class.
-        #   (Currently leaving ResourceAssignments alone so that schedules can be viewed.)
-        if delete:
-            UserBit.objects.filter(qsc=self.anchor).delete()
-            ResourceRequest.objects.filter(target_subj=self).delete()
-            #   ResourceAssignment.objects.filter(target_subj=self).delete()
-            for s in self.sections.all():
-                ResourceRequest.objects.filter(target=s).delete()
-                #   ResourceAssignment.objects.filter(target=s).delete()
-        
-        #   This function leaves the actual ClassSubject object, its ClassSections,
-        #   and the QSD pages alone.
-        return archived_class
 
     @staticmethod
     def catalog_sort(one, other):
@@ -1956,12 +1954,11 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
-        if self.status < 0:
+        if self.status < UNREVIEWED: #ie, all rejected or cancelled classes.
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
                 if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
-                    from esp.mailman import remove_list_member
                     mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)
@@ -1997,7 +1994,7 @@ class ClassImplication(models.Model):
         pass
     
     def __unicode__(self):
-        return 'Implications for %s' % self.cls
+        return u'Implications for %s' % self.cls
     
     def _and(lst):
         """ True iff all elements in lst are true """
@@ -2087,6 +2084,7 @@ sections_in_program_by_id.depend_on_model(ClassSubject)
 
 def install():
     """ Initialize the default class categories. """
+    print "Installing esp.program.class initial data..."
     category_dict = {
         'S': 'Science',
         'M': 'Math & Computer Science',
@@ -2096,8 +2094,6 @@ def install():
         'X': 'Miscellaneous',
     }
     
-    for key in category_dict:
-        cat = ClassCategories()
-        cat.symbol = key
-        cat.category = category_dict[key]
-        cat.save()
+    if not ClassCategories.objects.exists():
+        for key in category_dict:
+            ClassCategories.objects.create(symbol=key, category=category_dict[key])

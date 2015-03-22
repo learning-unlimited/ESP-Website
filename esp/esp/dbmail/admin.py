@@ -30,32 +30,39 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.contrib import admin
 from esp.admin import admin_site
 
 from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
-
+from esp.utils.admin_user_search import default_user_search
 
 class MessageVarsAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'messagerequest','provider_name')
+    list_filter = ('provider_name',)
+    search_fields = ('messagerequest__subject',)
 admin_site.register(MessageVars, MessageVarsAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
     list_display = ('description', 'regex')
-    pass
 admin_site.register(EmailList, EmailListAdmin)
     
 class PlainRedirectAdmin(admin.ModelAdmin):
     list_display = ('original', 'destination')
-    pass
+    search_fields = ('original', 'destination')
 admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
 class MessageRequestAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('subject', 'creator', 'sender', 'recipients', 'processed_by')
+    list_filter = ('processed_by',)
+    search_fields = default_user_search('creator') + ['subject', 'sender']
+    date_hierarchy = 'processed_by'
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'send_from', 'send_to', 'subject', 'sent')
+    search_fields = ('=id', 'send_from', 'send_to', 'subject')
+    date_hierarchy = 'sent'
+    list_filter = ('send_from',)
 admin_site.register(TextOfEmail, TextOfEmailAdmin)

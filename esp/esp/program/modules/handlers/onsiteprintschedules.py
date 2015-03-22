@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.http      import HttpResponse
 from esp.users.views  import search_for_user
@@ -84,19 +84,6 @@ class OnsitePrintSchedules(ProgramModuleObj):
             # No response if no users
             return HttpResponse('')
 
-    def studentschedule(self, request, *args, **kwargs):
-        request.GET = {'extra': str(285), 'op':'usersearch',
-                       'userid': str(request.user.id) }
-
-        module = [module for module in self.program.getModules('manage')
-                  if type(module) == ProgramPrintables        ][0]
-
-        module.user = request.user
-        module.program = self.program
-#        return module.studentschedules(request, *args, **kwargs)
-        return ProgramPrintables.get_student_schedules(request, [request.user], self.program, onsite=True)
-        
-
     class Meta:
-        abstract = True
+        proxy = True
 

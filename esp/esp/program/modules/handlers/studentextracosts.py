@@ -29,21 +29,22 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
+from collections import OrderedDict
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser
+from esp.users.models    import ESPUser, Record
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting_core.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
@@ -58,13 +59,13 @@ class MultiCostItem(forms.Form):
     count = forms.IntegerField(max_value=10, min_value=0)
 
 class MultiSelectCostItem(forms.Form):
-    cost = forms.ChoiceField(required=False, label='', widget=forms.RadioSelect, choices=[])
+    option = forms.ChoiceField(required=False, label='', widget=forms.RadioSelect, choices=[])
     def __init__(self, *args, **kwargs):
         choices = kwargs.pop('choices')
         required = kwargs.pop('required')
         super(MultiSelectCostItem, self).__init__(*args, **kwargs)
-        self.fields['cost'].choices = choices
-        self.fields['cost'].required = required
+        self.fields['option'].choices = choices
+        self.fields['option'].required = required
 
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
@@ -78,6 +79,10 @@ class StudentExtraCosts(ProgramModuleObj):
             "seq": 30
             }
 
+    def __init__(self, *args, **kwargs):
+        super(StudentExtraCosts, self).__init__(*args, **kwargs)
+        self.event = "extra_costs_done"
+
     def have_paid(self):
         iac = IndividualAccountingController(self.program, get_current_request().user)
         return (iac.amount_due() <= 0)
@@ -86,29 +91,41 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for i in pac.get_lineitemtypes(optional_only=True):
-            student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
+        for line_item_type in pac.get_lineitemtypes(optional_only=True):
+            student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
+            for option in line_item_type.options:
+                (option_id, option_amount, option_description) = option
+                key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
+                student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
         return student_desc
 
     def students(self, QObject = False):
         """ Return the useful lists of students for the Extra Costs module. """
 
-        student_lists = {}
+        student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
         
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
-                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(transfer__line_item = i))
+                students = pac.all_students_Q(lineitemtype_id=i.id)
+                student_lists['extracosts_%d' % i.id] = students
             else:
-                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(transfer__line_item = i).distinct()
+                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                student_lists['extracosts_%d' % i.id] = students
+            for option in i.options:
+                key = 'extracosts_%d_%d' % (i.id, option[0])
+                filter_qobject = Q(transfer__option=option[0])
+                if QObject:
+                    student_lists[key] = students & filter_qobject
+                else:
+                    student_lists[key] = students.filter(filter_qobject).distinct()
 
         return student_lists
 
     def isCompleted(self):
-        iac = IndividualAccountingController(self.program, get_current_request().user)
-        return (len(iac.get_preferences()) > 0)
+        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
     @needs_student
@@ -121,7 +138,7 @@ class StudentExtraCosts(ProgramModuleObj):
         Right now it doesn't.
         """
         if self.have_paid():
-            raise ESPError(False), "You've already paid for this program; you can't pay again!"
+            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
         iac = IndividualAccountingController(self.program, get_current_request().user)
@@ -148,7 +165,7 @@ class StudentExtraCosts(ProgramModuleObj):
                            if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
-                                                     choices=x.options_str,
+                                                     choices=x.option_choices,
                                                      required=(x.required)) }
                              for x in multiselect_list ]
 
@@ -162,13 +179,13 @@ class StudentExtraCosts(ProgramModuleObj):
                 if form.is_valid():
                     if isinstance(form, CostItem):
                         if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount))
+                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
                     elif isinstance(form, MultiCostItem):
                         if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount))
+                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount, None))
                     elif isinstance(form, MultiSelectCostItem):
-                        if form.cleaned_data['cost']:
-                            form_prefs.append((lineitem_type.text, 1, Decimal(form.cleaned_data['cost'])))
+                        if form.cleaned_data['option']:
+                            form_prefs.append((lineitem_type.text, 1, None, int(form.cleaned_data['option'])))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
@@ -186,14 +203,15 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Redirect to main student reg page if all data was recorded properly
             #   (otherwise, the code below will reload the page)
             if forms_all_valid:
+                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
 
         count_map = {}
         for lineitem_type in iac.get_lineitemtypes(optional_only=True):
-            count_map[lineitem_type.text] = [lineitem_type.id, 0, None]
+            count_map[lineitem_type.text] = [lineitem_type.id, 0, None, None]
         for item in iac.get_preferences():
-            count_map[item[0]][1] = item[1]
-            count_map[item[0]][2] = item[2]
+            for i in range(1, 4):
+                count_map[item[0]][i] = item[i]
         forms = [ { 'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
                     'LineItem': x }
                   for x in costs_list ] + \
@@ -201,8 +219,8 @@ class StudentExtraCosts(ProgramModuleObj):
                       'LineItem': x }
                     for x in multicosts_list ] + \
                     [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
-                                                     initial={'cost': (('%.2f' % count_map[x.text][2]) if count_map[x.text][2] else None)},
-                                                     choices=x.options_str,
+                                                     initial={'option': count_map[x.text][3]},
+                                                     choices=x.option_choices,
                                                      required=(x.required)),
                         'LineItem': x }
                       for x in multiselect_list ]
@@ -213,5 +231,5 @@ class StudentExtraCosts(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

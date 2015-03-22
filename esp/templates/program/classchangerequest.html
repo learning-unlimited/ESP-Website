@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load render_qsd %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
@@ -20,7 +21,9 @@ None
 {% endfor %}
 </ol>
 <h3>Class Change Request Form</h3>
+{% inline_program_qsd_block program "classchangerequest" %}
 <p>You can request a change into any class without application questions, or into any application question class that you originally applied for, and were accepted to.</p>
+{% end_inline_program_qsd_block %}
 <form action="classchangerequest" method="post">
 {{ form.as_p }}
 {% if user.isStudent %}

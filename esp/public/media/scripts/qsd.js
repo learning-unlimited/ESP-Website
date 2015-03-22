@@ -39,6 +39,7 @@ function qsd_send_command(qsd_url, edit_id, postdata)
             if (data)
             {
                 qsd_inline_update(qsd_url, edit_id, data);
+                window.location.reload(true); // bust the cache
             }
         }
         else
@@ -50,7 +51,7 @@ function qsd_send_command(qsd_url, edit_id, postdata)
         alert(jquery_status + ": " + http_status + "\n" + request.responseText);
     });
 
-    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrf_token()});
+    $j.post("/varnish/purge_page", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrf_token()});
 }
 
 function qsd_inline_upload(qsd_url, edit_id)

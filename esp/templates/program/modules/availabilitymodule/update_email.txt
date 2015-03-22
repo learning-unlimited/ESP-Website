@@ -1,7 +1,10 @@
-To all it may concern,
+Hi {{ teacher.name }},
 
-On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, teacher {{ teacher.name }} updated their availability for {{ program.niceName }}.  {% if timeslots|length_is:0 %}They have specified that they are not available for any of the time slots, and will need to add some available times before they can register to teach.{% else %}They are now available at:{% for slot in timeslots %}
+On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, you updated your availability for {{ program.niceName }}.  {% if timeslots|length_is:0 %}You have specified that you are not available for any of the time slots, and will need to add some available times before you can register to teach.{% else %}You are now available at:{% for slot in timeslots %}
 * {{ slot.start|date:"l M d" }}, {{ slot.short_time }}{% endfor %}{% endif %}
+
+If this is incorrect, or if your availability changes, you can edit it at <http://{{ DEFAULT_HOST }}/teach/{{ program.url }}/availability> at any time before teacher registration closes. Be sure to register all of your classes before the deadline!
+
 {% if note %}
 Additional comments: {{ note }}{% endif %}
 

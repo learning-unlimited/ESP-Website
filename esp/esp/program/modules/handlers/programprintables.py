@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules import module_ext
@@ -47,7 +47,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.conf import settings
-from django.template.loader import select_template, render_to_string
+from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
@@ -138,19 +138,19 @@ class ProgramPrintables(ProgramModuleObj):
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
-        if request.GET.has_key('first_sort'):
+        if request.GET.get('first_sort', ''):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
             sort_name_list.append( request.GET['first_sort'] )
         else:
             sort_list.append( cmp_fn["category"] )
 
-        if request.GET.has_key('second_sort'):
+        if request.GET.get('second_sort', ''):
             sort_list.append( cmp_fn[request.GET['second_sort']] )
             sort_name_list.append( request.GET['second_sort'] )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
-        if request.GET.has_key('third_sort'):
+        if request.GET.get('third_sort', ''):
             sort_list.append( cmp_fn[request.GET['third_sort']] )
             sort_name_list.append( request.GET['third_sort'] )
         else:
@@ -177,7 +177,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except:
-                raise ESPError(), 'Could not get the class object.'
+                raise ESPError('Could not get the class object.')
 
             cls_dict = {}
             for cur_cls in classes:
@@ -202,7 +202,7 @@ class ProgramPrintables(ProgramModuleObj):
                         clsids[i+1] = tmp
                         found       = True
             else:
-                raise ESPError(), 'Received invalid operation for class list.'
+                raise ESPError('Received invalid operation for class list.')
 
             classes = []
 
@@ -252,13 +252,14 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
 
-        #   There is a first_sort option which can be set to 'category' or 'timeblock'.
-        first_sort = request.GET.get('first_sort', 'category')
-
         #   Perform sorting based on specified order rules
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
+        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
+        for i in xrange(len(sort_order)):
+            if sort_order[i] == 'timeblock':
+                sort_order[i] = 'meeting_times__start'
         classes = classes.order_by(*sort_order)
 
         #   Filter out classes that are not scheduled
@@ -289,8 +290,10 @@ class ProgramPrintables(ProgramModuleObj):
             group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['group_name'] = group_name
 
-        #   Hack for timeblock sorting
-        if first_sort == 'timeblock':
+        #   Hack for timeblock sorting (sorting by category is the default)
+        template_name = 'catalog_category.tex'
+        if sort_order[0] == 'meeting_times__start':
+            template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes: 
                 sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (request.GET.has_key('open') and x.isFull()))
@@ -300,7 +303,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
-        return render_to_latex(self.baseDir()+'catalog_%s.tex' % first_sort, context, extra)
+        return render_to_latex(self.baseDir()+template_name, context, extra)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
@@ -714,13 +717,13 @@ class ProgramPrintables(ProgramModuleObj):
             #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
         elif key == 'student_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Student')
+            return ProgramPrintables.getSchedule(self.program, user, u'Student')
         elif key == 'student_schedule_norooms':
-            return ProgramPrintables.getSchedule(self.program, user, 'Student', room_numbers=False)
+            return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
         elif key == 'volunteer_schedule':
-            return ProgramPrintables.getSchedule(self.program, user, 'Volunteer')
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -728,7 +731,7 @@ class ProgramPrintables(ProgramModuleObj):
         elif key == 'transcript_latex':
             return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
-        return ''
+        return u''
 
     @staticmethod
     def get_student_classlist(program, student):
@@ -778,49 +781,49 @@ class ProgramPrintables(ProgramModuleObj):
         
         if schedule_type is None:
             if user.isStudent():
-                schedule_type = 'Student'
+                schedule_type = u'Student'
             elif user.isTeacher():
-                schedule_type = 'Teacher'
+                schedule_type = u'Teacher'
             elif user.isVolunteer():
-                schedule_type = 'Volunteer'
+                schedule_type = u'Volunteer'
             
-        schedule = ''
-        if schedule_type in ['Student', 'Teacher']:
+        schedule = u''
+        if schedule_type in [u'Student', u'Teacher']:
             if room_numbers:
-                schedule = """
+                schedule = u"""
     %s schedule for %s:
 
      Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
             else:
-                schedule = """
+                schedule = u"""
     %s schedule for %s:
 
      Time                   | Class                                  \n""" % (schedule_type, user.name())
-            schedule += '------------------------+---------------------------------------------------\n'
-            if schedule_type == 'Student':
+            schedule += u'------------------------+---------------------------------------------------\n'
+            if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
-            elif schedule_type == 'Teacher':
+            elif schedule_type == u'Teacher':
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
             for cls in classes:
                 rooms = cls.prettyrooms()
                 if len(rooms) == 0:
-                    rooms = ' N/A'
+                    rooms = u' N/A'
                 else:
-                    rooms = ' ' + ", ".join(rooms)
+                    rooms = u' ' + u", ".join(rooms)
                 if room_numbers:
-                    schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                    schedule += u'%s|%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40), rooms)
                 else:
-                    schedule += '%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40))
+                    schedule += u'%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40))
                 
-        elif schedule_type == 'Volunteer':
-            schedule = """
+        elif schedule_type == u'Volunteer':
+            schedule = u"""
 Volunteer schedule for %s:
 
  Time                   | Shift                                  \n""" % (user.name())
-            schedule += '------------------------+----------------------------------------\n'
+            schedule += u'------------------------+----------------------------------------\n'
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += ' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
+                schedule += u' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
 
         return schedule
 
@@ -963,8 +966,7 @@ Volunteer schedule for %s:
             return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
-            return render_to_latex(schedule_template, context, file_type)
+            return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin
@@ -1509,5 +1511,5 @@ Volunteer schedule for %s:
         return response
 
     class Meta:
-        abstract = True
+        proxy = True
 

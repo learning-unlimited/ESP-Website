@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django import forms
@@ -42,3 +42,4 @@ class BioEditForm(forms.Form):
     slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
     bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
     picture = ResizeImageField(required = False, size = (300,300))
+    hidden = forms.BooleanField(required = False)

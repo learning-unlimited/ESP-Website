@@ -29,9 +29,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
-import os
+
 from django.conf.urls import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
@@ -40,7 +40,7 @@ from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
-import debug_toolbar.urls
+import debug_toolbar
 
 autodiscover(admin_site)
 
@@ -63,21 +63,14 @@ urlpatterns += patterns('',
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
                         )
-urlpatterns += patterns('',
-(r'^admin', RedirectView.as_view(url='/admin/')),)
 
-#   Short term views
+# Adds missing trailing slash to any admin urls that haven't been matched yet.
 urlpatterns += patterns('',
-                        (r'^', include('esp.shortterm.urls'),),
-                        )
-
+(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
                         (r'^error_reporter', 'error_reporter'),
-                        (r'^web$', 'home'), # index
-                        (r'^esp_web', 'home'), # index
-                        (r'.php$', 'home'), # index
                         (r'^$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
@@ -102,7 +95,8 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls'),)
+                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^varnish/', include('esp.varnish.urls'))
                         )
 
 urlpatterns += patterns('esp.qsd.views',
@@ -148,7 +142,6 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
     # Event-generation
     # Needs to get fixed (axiak)
@@ -170,10 +163,15 @@ urlpatterns += patterns('esp.qsdmedia.views',
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
 
-urlpatterns += debug_toolbar.urls.urlpatterns
+urlpatterns += patterns('',
+    url(r'^__debug__/', include(debug_toolbar.urls)),
+)
 
 urlpatterns += patterns('esp.formstack.views',
     (r'^medicalsyncapi$', 'medicalsyncapi'),)
+
+urlpatterns += patterns('esp.formstack.views',
+    (r'^formstack_webhook/?$', 'formstack_webhook'),)
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),

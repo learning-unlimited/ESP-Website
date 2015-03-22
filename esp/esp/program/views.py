@@ -30,18 +30,19 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
+from operator import __or__ as OR
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
+
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
-from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
@@ -53,15 +54,13 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
-from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
+from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -88,7 +87,7 @@ def lottery_student_reg(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -105,7 +104,7 @@ def lottery_student_reg_simple(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -269,102 +268,48 @@ def find_user(userstr):
     The string may be a user ID, username, or some permuation of the user's real name.
     Will return a list of users if the string is not a username and more than one
     name approximately matches.
-    Will return something that evaluates to False iff no matching users are found.
+    Will return something that evaluates to False if no matching users are found.
+
+    returns: queryset containing ESPUser instances.
     """
-    # First, is this a User ID?
-    try:
-        found_user = ESPUser.objects.get(id=int(userstr))
-        return found_user
-    except ValueError:
-        pass # Well, that wasn't even an integer; can't be an ID
-    except ESPUser.DoesNotExist:
-        pass # Well, maybe it is an integer, but it's not a valid user ID.
 
-    # Second, is it a username?
-    try:
-        found_user = ESPUser.objects.get(username=userstr)
-        return found_user
-    except ESPUser.DoesNotExist:
-        pass # Well, not a username either.  Oh well.
 
-    # Third, try e-mail?
-    if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
-        found_users = ESPUser.objects.filter(email=userstr)
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
-        # else, not an e-mail either.  Oh well.
+    if not userstr:
+        return
 
-    # Maybe it's a name?
-    # Let's do some playing.
+    userstr_parts = userstr.strip().split(' ')
 
-    # Is it multipart?        
-    # If so, we don't know which parts got filed under first name and
-    # which under last name.
-    # So, try them all!
-    # First, try for an exact match (ie., all parts of the firstname, lastname pair are somewhere in the given string)
-    userstr_parts = userstr.split(' ')
-
-    # First, try single-part, since it's easier
+    # single search token, could be username, id or email
+    #worth noting that a username may be an integer or an email so we will just check them all
+    found_users = None
     if len(userstr_parts) == 1:
-        found_users = ESPUser.objects.filter(Q(first_name__iexact=userstr) | Q(last_name__iexact=userstr))
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
+        userstr = userstr_parts[0]
+        #try username?
+        user_q = Q(username=userstr)
+        #try pk
+        if userstr.isnumeric():
+            user_q = user_q | Q(id=userstr)
+        #try e-mail?
+        if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
+            user_q = user_q | Q(email=userstr)
 
-        found_users = ESPUser.objects.filter(Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        if len(found_users) == 1:
-            return found_users[0]
-        elif len(found_users) > 1:
-            return found_users
-        
-    q_list = []
-    for i in xrange(len(userstr_parts) + 1):
-        q_list.append( Q( first_name__iexact = ' '.join(userstr_parts[:i]), last_name__iexact = ' '.join(userstr_parts[i:]) ) )
+        user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+        found_users = ESPUser.objects.filter(user_q)
+    else:
+        q_list = []
+        for i in xrange(len(userstr_parts)):
+            q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
+        # Allow any of the above permutations
+        q = reduce(operator.or_, q_list)
+        found_users = ESPUser.objects.filter( q )
+      
+    #if the previous search attempt failed, try titles of courses a teacher has taught?
+    if not found_users.exists(): 
+        # lastly, 
+        found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
-    # Allow any of the above permutations
-    q = reduce(operator.or_, q_list)
-    found_users = ESPUser.objects.filter( q )
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-    # else, we found no one.  Oops.
+    return found_users
 
-    # Now, repeat the same thing, but with "contains" so we match some nicknames and whatnot
-    
-    q_list = []
-    for i in xrange(len(userstr_parts)):
-        q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
-    # Allow any of the above permutations
-    q = reduce(operator.or_, q_list)
-    found_users = ESPUser.objects.filter( q )
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-
-    # lastly, try titles of courses a teacher has taught?
-    found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-    
-    # else, we found no one.  Oops.
-
-    # Well, we fail.  Sorry.
-    return None
-
-def isiterable(i):
-    """ returns true iff i is iterable """
-    try:
-        for x in i:
-            return True
-    except TypeError:
-        return False
 
 @admin_required
 def usersearch(request):
@@ -374,19 +319,20 @@ def usersearch(request):
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
     if not request.GET.has_key('userstr'):
-        raise ESPError(False), "You didn't specify a user to search for!"
+        raise ESPError("You didn't specify a user to search for!", log=False)
                                
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
+    num_users = found_users.count()
 
-    if not found_users:
-        raise ESPError(False), "No user found by that name!"
-
-    if isiterable(found_users):
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
-    else:
+    if num_users == 1:
         from urllib import urlencode
-        return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
+        return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
+    elif num_users > 1:
+        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })   
+    else:
+        raise ESPError("No user found by that name!", log=False)
+
 
 @admin_required
 def userview(request):
@@ -394,7 +340,7 @@ def userview(request):
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
     except:
-        raise ESPError(False), "Sorry, can't find anyone with that username."
+        raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -408,7 +354,7 @@ def userview(request):
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
-    change_grade_form.fields['graduation_year'].initial = ESPUser.YOGFromGrade(user.getGrade())
+    change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
     
     context = {
@@ -422,6 +368,29 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
+
+
+def deactivate_user(request):
+    return activate_or_deactivate_user(request, activate=False)
+
+def activate_user(request):
+    return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def activate_or_deactivate_user(request, activate):
+    """Linked from the userview page."""
+    if request.method != 'POST' or 'user_id' not in request.POST:
+        return HttpResponseBadRequest('')
+    else:
+        users = ESPUser.objects.filter(id=request.POST['user_id'])
+        if users.count() != 1:
+            return HttpResponseBadRequest('')
+        else:
+            user = users[0]
+            user.is_active = activate
+            user.save()
+            return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
+
 
 @admin_required
 def manage_programs(request):
@@ -451,11 +420,6 @@ def newprogram(request):
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
         '''
         
-        template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
-
-        # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
-        #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
-
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
@@ -516,13 +480,13 @@ def newprogram(request):
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
                 if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
-                    add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-                    add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             
 
             return HttpResponseRedirect(manage_url)
         else:
-            raise ESPError(False), "Improper form data submitted."
+            raise ESPError("Improper form data submitted.", log=False)
           
 
     #   If the form has been submitted, process it.
@@ -554,12 +518,12 @@ def newprogram(request):
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
     
-    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT":
+    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT" and request.POST["decision"] != "ERROR":
 
         #   Figure out which user and program the payment are for.
-        post_identifier = request.POST.get('merchantDefinedData1', '')
+        post_identifier = request.POST['req_merchant_defined_data1']
+        post_amount = Decimal(request.POST['req_amount'])
         iac = IndividualAccountingController.from_identifier(post_identifier)
-        post_amount = Decimal(request.POST.get('orderAmount', '0.0'))
 
         #   Warn for possible duplicate payments
         prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
@@ -576,11 +540,11 @@ def submit_transaction(request):
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
                   """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
-                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), request) , \
+                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('req_bill_to_surname', '--'), request.POST.get('req_bill_to_forename', '--'), request) , \
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount)
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('transaction_id', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
@@ -594,7 +558,7 @@ def submit_transaction(request):
 
         return HttpResponseRedirect(destination)
 
-    return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
+    return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
 @admin_required

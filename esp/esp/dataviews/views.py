@@ -1,7 +1,7 @@
 # Create your views here.
 from esp.web.util.main import render_to_response
-from dataviews import * 
-from dataviews.forms import ModeForm, DataViewsWizard
+from esp.dataviews import *
+from esp.dataviews.forms import ModeForm, DataViewsWizard
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
 

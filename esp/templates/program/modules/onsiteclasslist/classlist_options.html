@@ -1,0 +1,52 @@
+{% extends "main.html" %}
+
+{% block title %}Onsite Class List for {{ prog.niceName }}{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+<h1>Onsite Class List for {{ prog.niceName }}</h1>
+
+<div id="program_form">
+<p>Please select which classes you would like to display:</p>
+<ul>
+<li>By default, you will see all classes that it is possible to change into: those that have not yet started (or started in the last few minutes).  However, you can select a different range of time slots.</li>
+<li>By default, classes are sorted by category and start time.  This can also be changed.</li>
+</ul>
+
+<form method="GET" action="{{ request.path }}">
+
+<label for="start">Starting timeslot</label>
+<select name="start">
+    <option value="-1">Automatically update (default)</option>{% for timeslot in prog.getTimeSlots %}
+    <option value="{{ timeslot.id }}">{{ timeslot.short_description }}</option>{% endfor %}
+</select>
+
+<label for="end">Ending timeslot</label>
+<select name="end">
+    <option value="-1">Last timeslot in program (default)</option>{% for timeslot in prog.getTimeSlots %}
+    <option value="{{ timeslot.id }}">{{ timeslot.short_description }}</option>{% endfor %}
+</select>
+
+<label for="refresh">Refresh time (seconds):</label>
+<input type="text" name="refresh" value="120" />
+
+<label for="scrollspeed">Scroll speed (scale factor relative to default):</label>
+<input type="text" name="scrollspeed" value="1" />
+
+<label for="sorting">Sort ordering of classes:</label>
+<select name="sorting">
+    <option value="by_time">By time, then category (default)</option>
+    <option value="">By category, then time</option>
+    <option value="unsorted">By ID only</option>
+</select>
+
+<br />
+<button type="submit" class="btn btn-primary">Go to Class List</button>
+
+</form>
+
+</div>
+
+{% endblock %}

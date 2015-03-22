@@ -1,12 +1,16 @@
-
-  <table cellpadding="2" cellspacing="0" width="100%">
+<table cellpadding="2" cellspacing="0" width="100%" style="table-layout: fixed;"> 
+            <tr>
+            <td width="15%">&nbsp;</td>
+            <td width="75%">&nbsp;</td>
+            <td width="10%">&nbsp;</td>
+            </tr>
     <tr>
-        <th>All Open Classes</th>
+        <th colspan="4">All Open Classes - Currently {{ current_time }}</th>
     </tr>
-    <tr><td>
     {% for class in classes %}
+        {% if class.category.category != "Lunch" %}
         {% if not class.isFull %}
-        {% if not class.already_passed %}
+         {% if use_categories %}
             {% ifchanged %}
                 </td></tr>
                <tr><th class="start_time">{{ class.begin_time }}</th></tr>
@@ -17,8 +21,13 @@
                <tr><th class="category">{{ class.category.category }}</th></tr>
                <tr><td>
             {% endifchanged %}
-            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} (Grades {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})<br /></div>
-        {% endif %}
+         {% endif %}
+            <tr>
+            <td width="15%"><div class="hideextra"><span class="classitem"style="color: #00CC00;">{% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></div></td>
+            <td width="75%"><div class="hideextra"><span class="classitem"><b>{{ class.emailcode }}</b>: {{ class.title }}</span></div></td>
+            <td width="10%"><div class="hideextra"><span class="classitem"style="color: #CC0000;">Grades {{ class.parent_class.grade_min }}--{{ class.parent_class.grade_max }}</span></div> </td>
+            </tr>
         {% endif %} 
+        {% endif %}
     {% endfor %}
-    </table>
+</table>

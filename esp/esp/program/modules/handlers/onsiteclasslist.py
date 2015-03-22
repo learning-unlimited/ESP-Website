@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import json
@@ -42,7 +42,7 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.web.util import render_to_response
 from esp.cal.models import Event
@@ -52,7 +52,7 @@ from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
-
+from esp.tagdict.models import Tag
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -82,8 +82,8 @@ class OnSiteClassList(ProgramModuleObj):
         sect['teachers'] = ', '.join([t.name() for t in list(sec.teachers)])
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
-    section_data.depend_on_model(lambda: ResourceAssignment)
-    section_data.depend_on_cache(lambda: ClassSubject.get_teachers, lambda **kwargs: {})
+    section_data.depend_on_model('resources.ResourceAssignment')
+    section_data.depend_on_cache(ClassSubject.get_teachers, lambda **kwargs: {})
     section_data=staticmethod(section_data)
 
     """ Warning: for performance reasons, these views are not abstracted away from
@@ -99,10 +99,11 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
-            'timeslots': list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label')),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
         json.dump(data, resp)
+
         return resp
     
     @aux_call
@@ -117,16 +118,6 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        grade_query = """
-SELECT (12 + %d - "users_studentinfo"."graduation_year")
-FROM "users_studentinfo", "program_registrationprofile"
-WHERE
-    "program_registrationprofile"."most_recent_profile" = true
-AND	"program_registrationprofile"."student_info_id" = "users_studentinfo"."id"
-AND	"users_studentinfo"."user_id" = "auth_user"."id"
-ORDER BY program_registrationprofile.id DESC
-LIMIT 1
-        """ % ESPUser.current_schoolyear()
         #   Try to ensure we don't miss anyone
         students_dict = self.program.students(QObjects=True)
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
@@ -134,7 +125,7 @@ LIMIT 1
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
-        data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        data = students.values_list('id', 'last_name', 'first_name').distinct()
         json.dump(list(data), resp)
         return resp
     
@@ -166,12 +157,13 @@ LIMIT 1
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        result = {'user': None, 'sections': [], 'messages': []}
+        result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
         except:
             result['messages'].append('Error: no user specified.')
         if result['user']:
+            result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         json.dump(result, resp)
         return resp
@@ -378,27 +370,56 @@ LIMIT 1
     @aux_call
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
+        return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
+
+    @aux_call
+    @needs_student
+    def classlist_public(self, request, tl, one, two, module, extra, prog):
+        return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
+
+    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name='classlist.html'):
         """ Display a list of all classes that still have space in them """
+
+        #   Allow options to be supplied as an argument to the view function, in lieu
+        #   of request.GET (used by the public view just above)
+        if options is None:
+            options = request.GET.copy()
+
+            #   Display options-selection page if this page is requested with no GET variables
+            if len(options.keys()) == 0:
+                return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
+
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}
         for key_option in defaults.keys():
-            if request.GET.has_key(key_option):
-                context[key_option] = request.GET[key_option]
+            if options.has_key(key_option):
+                context[key_option] = options[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
         time_now = datetime.now()
 
-        if 'start' in request.GET:
-            curtime = Event.objects.filter(id=request.GET['start'])
+        start_id = int(options.get('start', -1))
+        if start_id != -1:
+            curtime = Event.objects.filter(id=start_id)
         else:
             window_start = time_now + timedelta(-1, 85200)
             curtime = Event.objects.filter(start__gte=window_start).order_by('start')
 
-        if 'end' in request.GET:
-            endtime = Event.objects.filter(id=request.GET['end'])
+        end_id = int(options.get('end', -1))
+        if end_id != -1:
+            endtime = Event.objects.filter(id=end_id)
         else:
             endtime = None
+
+        sort_spec = options.get('sorting', None)
+        if sort_spec is None:
+            sort_spec = extra
+
+        #   Enforce a maximum refresh speed to avoid server overload.
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        if int(context['refresh']) < min_refresh:
+            context['refresh'] = min_refresh
 
         if curtime:
             curtime = curtime[0]
@@ -413,21 +434,21 @@ LIMIT 1
                      status=10, parent_class__status=10,
                      begin_time__gte=curtime.start
                      )
-            if extra == 'unsorted':
+            if sort_spec == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
-            elif extra == 'by_time':
+            elif sort_spec == 'by_time':
                 classes = classes.order_by('begin_time', 'parent_class__category', 'id').distinct()
             else:
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
         
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
 
-        if extra == 'unsorted':
+        if sort_spec == 'unsorted':
             context['use_categories'] = False
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, context)
+        return render_to_response(self.baseDir()+template_name, request, context)
 
     @main_call
     @needs_onsite
@@ -453,5 +474,5 @@ LIMIT 1
         
 
     class Meta:
-        abstract = True
+        proxy = True
 

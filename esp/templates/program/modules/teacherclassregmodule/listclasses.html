@@ -25,7 +25,7 @@ You are welcome to use this page to view your classes' status and upload documen
 {% if can_edit %}
 However, you may edit classes that you have already created.
 {% endif %}
-{% if module.classRegInfo.director_email %}<br />
+{% if program.director_email %}<br />
 If you have any questions regarding the program, <br /> please email the 
 <a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
@@ -47,9 +47,9 @@ If you have any questions regarding the program, <br /> please email the
     </th>
   </tr>
   <tr>
-    <td colspan="6">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
+    <td colspan="7">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
    </tr>
-  {% if teacherclsmodule.noclasses %}
+  {% if crmi.noclasses %}
   <tr>
     <td class="clsleft classname">
       <em>(None available)</em>
@@ -66,7 +66,8 @@ If you have any questions regarding the program, <br /> please email the
 
    {% if can_create %}
    <tr>
-   <td colspan="6" class="clsleft bordertop2"><b>Registration form:</b>
+   <td colspan="7" class="clsleft bordertop2"><b>Registration form:</b>
+     {% if can_create_class %}
      <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
        Add a new class for {{ program.niceName }}!
      </a>
@@ -76,7 +77,8 @@ If you have any questions regarding the program, <br /> please email the
        Teach a class from a previous program for {{ program.niceName }}!
      </a>
      {% endif %}
-     {% if teacherclsmodule.open_class_registration %}<br />
+     {% endif %}
+     {% if can_create_open_class %}<br />
      <a href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
        Add a new {{ open_class_category }} for {{ program.niceName }}!
      </a> {% endif %}

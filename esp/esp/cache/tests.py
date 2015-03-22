@@ -3,8 +3,8 @@ from django.test import TestCase
 
 import unittest
 
-from esp.cache import registry
-from esp.cache.argcache import cache_function
+from esp.cache import registry, queued
+from esp.cache.function import cache_function
 from esp.cache.key_set import wildcard
 
 # hack the cache loader so we can define more caches
@@ -33,12 +33,12 @@ class Article(models.Model):
     @cache_function
     def num_comments(self):
         return self.comments.count()
-    num_comments.depend_on_row(lambda: Comment, lambda comment: {'self': comment.article})
+    num_comments.depend_on_row('cache.Comment', lambda comment: {'self': comment.article})
 
     @cache_function
     def num_comments_with_dummy(self, dummy):
         return self.comments.count()
-    num_comments_with_dummy.depend_on_row(lambda: Comment, lambda comment: {'self': comment.article})
+    num_comments_with_dummy.depend_on_row('cache.Comment', lambda comment: {'self': comment.article})
 
     def __unicode__(self):
         return self.headline
@@ -53,7 +53,7 @@ class Reporter(models.Model):
     @cache_function
     def full_name(self):
         return self.first_name + ' ' + self.last_name
-    full_name.depend_on_row(lambda: Reporter, lambda reporter: {'self': reporter})
+    full_name.depend_on_row('cache.Reporter', lambda reporter: {'self': reporter})
 
     @cache_function
     def top_article(self):
@@ -105,6 +105,17 @@ class CacheTests(TestCase):
         hashtag2 = HashTag.objects.create(pk=2, label='#news')
         article1.hashtags.add(hashtag2)
         article2.hashtags.add(hashtag1)
+
+    def test_caches_loaded(self):
+        """
+        Rudimentary test that the loading mechanism works as expected.
+        """
+        # pending lookups should be empty once everything is loaded
+        self.assertEqual(queued.pending_lookups, {})
+
+        # we should test that signals are connected properly, but this
+        # is hard to do directly. hope that if there is a problem with
+        # that part, it ought to trip the other tests anyway.
 
     def test_cached(self):
         """
@@ -440,6 +451,27 @@ class CacheTests(TestCase):
         with self.assertNumQueries(0):
             with_hashtag1_again = reporter.articles_with_hashtag(hashtag1.label)
         self.assertEqual(with_hashtag1_again, with_hashtag1_new)
+
+        # removing a hashtag should also invalidate
+        article2.hashtags.remove(hashtag2)
+        with self.assertNumQueries(1):
+            with_hashtag2_removed = reporter.articles_with_hashtag(hashtag2.label)
+        self.assertEqual(set(with_hashtag2_removed), set(with_hashtag2))
+        self.assertEqual(len(with_hashtag2_removed), len(with_hashtag2))
+
+        with self.assertNumQueries(0):
+            with_hashtag1_again = reporter.articles_with_hashtag(hashtag1.label)
+        self.assertEqual(with_hashtag1_again, with_hashtag1_new)
+
+        # as should clearing
+        hashtag1.articles.clear()
+        with self.assertNumQueries(1):
+            with_hashtag1_removed = reporter.articles_with_hashtag(hashtag1.label)
+        self.assertEqual(set(with_hashtag1_removed), set())
+
+        with self.assertNumQueries(0):
+            with_hashtag2_again = reporter.articles_with_hashtag(hashtag2.label)
+        self.assertEqual(with_hashtag2_again, with_hashtag2_removed)
 
     def test_depend_on_model(self):
         """

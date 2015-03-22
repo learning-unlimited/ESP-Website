@@ -30,12 +30,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
+from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
 from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
@@ -48,10 +48,10 @@ from esp.web.util.main import render_to_response
 from django.db.models.query import Q
 
 @login_required
-def myesp_passwd(request, module):
+def myesp_passwd(request):
         """ Change password """
         if request.user.username == 'onsite':
-                raise ESPError(False), "Sorry, you're not allowed to change the password of this user. It's special."
+                raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
 
         if request.method == "POST":
                 form = UserPasswdForm(user=request.user, data=request.POST)
@@ -72,18 +72,18 @@ def myesp_passwd(request, module):
                                                     'Success': False})
 
 @login_required
-def myesp_switchback(request, module):
+def myesp_switchback(request):
 	user = request.user
 	user = ESPUser(user)
 	user.updateOnsite(request)
 
 	if not user.other_user:
-		raise ESPError(False), 'You were not another user!'
+		raise ESPError('You were not another user!', log=False)
 
 	return HttpResponseRedirect(user.switch_back(request))
 
 @login_required
-def edit_profile(request, module):
+def edit_profile(request):
 
     curUser = ESPUser(request.user)
 
@@ -236,13 +236,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     return render_to_response('users/profile.html', request, context)
 
 @login_required
-def myesp_onsite(request, module):
+def myesp_onsite(request):
 	
 	user = ESPUser(request.user)
 	if not user.isOnsite():
-		raise ESPError(False), 'You are not a valid on-site user, please go away.'
+		raise ESPError('You are not a valid on-site user, please go away.', log=False)
 	
-	progs = Permission.program_by_perms(user,"Onsite")
+	progs = Permission.program_by_perm(user,"Onsite")
 
         # Order them decreasing by id
         # - Currently reverse the list in Python, otherwise fbap's cache is ignored
@@ -253,13 +253,5 @@ def myesp_onsite(request, module):
 	if len(progs) == 1:
 		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
 	else:
-		navnode = GetNode('Q/Web/myesp')
 		return render_to_response('program/pickonsite.html', request, {'progs': progs})
-
-myesp_handlers = {
-		   'switchback': myesp_switchback,
-		   'onsite': myesp_onsite,
-		   'passwd': myesp_passwd,
-		   'profile': edit_profile
-		   }
 

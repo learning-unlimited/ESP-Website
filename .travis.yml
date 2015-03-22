@@ -5,11 +5,11 @@ services:
   - memcached
 env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
-  - sudo apt-get update
+  - sudo apt-get update -qq
 install: 
-  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres)
+  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres) -qq
   - esp/packages_base_manual_install.sh
-  - pip install -r esp/requirements.txt --use-mirrors
+  - pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
   - ln -s `pwd`/esp/public/media/default_images esp/public/media/images
@@ -18,7 +18,5 @@ before_script:
   - psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
 script: 
   - cd esp
-  - ./manage.py collectstatic --noinput
+  - ./manage.py collectstatic --noinput -v 0
   - ./manage.py test
-notifications:
-  email: false  # disable emails until we configure the tests

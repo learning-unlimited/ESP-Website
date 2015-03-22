@@ -1,31 +1,35 @@
-__author__    = "MIT ESP"
+__author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
-__license__   = "GPL v.2"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2013 MIT ESP
+Copyright (c) 2013 by the individual contributors
+  (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-Contact Us:
-ESP Web Group
-MIT Educational Studies Program,
-84 Massachusetts Ave W20-467, Cambridge, MA 02139
-Phone: 617-253-4882
-Email: web@esp.mit.edu
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@learningu.org
 """
 
 import datetime
@@ -90,12 +94,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # mappings for each timeslot.
         priority_regs = StudentRegistration.valid_objects().filter(
             user=request.user, relationship__name__startswith='Priority')
-        priority_regs = priority_regs.values(
-            'relationship__displayName', 'section', 'section__parent_class__title')
+        priority_regs = priority_regs.select_related(
+            'relationship', 'section', 'section__parent_class')
         for student_reg in priority_regs:
-            rel = student_reg['relationship__displayName']
-            title = student_reg['section__parent_class__title']
-            sec = ClassSection.objects.get(pk=student_reg['section'])
+            rel = student_reg.relationship
+            title = student_reg.section.parent_class.title
+            sec = student_reg.section
             times = sec.meeting_times.all().order_by('start')
             if times.count() == 0:
                 continue
@@ -293,10 +297,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
         context['priorities'] = []
-        for i in range(1, prog.priorityLimit()+1):
-            priority_name = 'Priority/' + str(i)
-            priority = RegistrationType.objects.get(name=priority_name)
-            context['priorities'].append((i, priority.displayName))
+        for rel_index in range(1, prog.priorityLimit()+1):
+            rel_name = 'Priority/%s' % rel_index
+            rel, created = RegistrationType.objects.get_or_create(
+                name=rel_name, category='student')
+            context['priorities'].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
@@ -319,8 +324,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priorities = data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
-            rel, created = RegistrationType.objects.get_or_create(
-                name=rel_name)
+            rel = RegistrationType.objects.get(name=rel_name, category='student')
 
             # Pull up any registrations that exist (including expired ones)
             srs = StudentRegistration.objects.annotate(
@@ -375,4 +379,4 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return self.goToCore(tl)
 
     class Meta:
-        abstract = True
+        proxy = True

@@ -30,16 +30,17 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.web.util        import render_to_response, secure_required
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, User
 from django.db.models.query       import Q
 from django.template.loader import get_template
+from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
 from esp.accounting.controllers import IndividualAccountingController
 from esp.tagdict.models import Tag
@@ -86,22 +87,8 @@ class FinancialAidAppModule(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/Finaid')
+    @method_decorator(secure_required)
     def finaid(self,request, tl, one, two, module, extra, prog):
-        """
-        Student financial aid requests.
-        This template will redirect the person to an HTTPS address 
-        if the appropriate tag is set.
-        """
-        if Tag.getTag('finaid_directions_step'):
-            return render_to_response(self.baseDir()+'aid_direct.html',
-                                      {})
-        else:
-            return self.finaid_app(request, tl, one, two, module, extra, prog)
-
-    @aux_call
-    @needs_student
-    @meets_deadline('/Finaid')
-    def finaid_app(self,request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.
         """
@@ -128,7 +115,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False
                 else:
-                    raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
+                    raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
                 
                 app.save()
 
@@ -193,4 +180,4 @@ This request can be (re)viewed at:
 
 
     class Meta:
-        abstract = True
+        proxy = True

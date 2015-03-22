@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 ################################################################################
@@ -84,8 +84,10 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@lists.learningu.org'),
+    ('LU Web Team','serverlog@learningu.org'),
 )
+
+GRAPPELLI_ADMIN_TITLE = "ESP administration"
 
 #############################
 # Default database settings #
@@ -117,7 +119,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
     'bounces': 'learningubounces@gmail.com',
-    'support': 'websupport@lists.learningu.org',
+    'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
     'treasury': 'esp-credit-cards@mit.edu',
@@ -166,15 +168,13 @@ MIDDLEWARE_GLOBAL = [
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
-   #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
-   #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
+    (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
@@ -205,17 +205,14 @@ INSTALLED_APPS = (
     'esp.program.modules',
     'esp.dbmail',
     'esp.cal',
-    'esp.lib',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.resources',
     'esp.gen_media',
-    'esp.dblog',
     'esp.survey',
     'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
-    'esp.shortterm',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
@@ -224,8 +221,8 @@ INSTALLED_APPS = (
     'esp.seltests',
     'esp.dataviews',
     'esp.themes',
+    'esp.varnish',
     'django_extensions',
-    'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
@@ -234,6 +231,11 @@ INSTALLED_APPS = (
     'bootstrapform',
     'django_nose',
     'esp.formstack',
+    'esp.application',
+
+    # TODO(jmoldow): Remove after stable release, after last migration to
+    # remove tables has been run.
+    'esp.shortterm',
 )
 
 import os
@@ -258,6 +260,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.preload_images',
                                'esp.context_processors.email_settings',
                                'esp.context_processors.program',
+                               'esp.context_processors.schoolyear',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',
@@ -308,59 +311,57 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+# allow configuration of additional Javascript to be placed on website
+# configuration should include <script></script> tags
+ADDITIONAL_TEMPLATE_SCRIPTS = ''
+
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
-DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.cache.CacheDebugPanel',
-    'debug_toolbar.panels.headers.HeaderDebugPanel',
-    'debug_toolbar.panels.logger.LoggingPanel',
-    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-    'debug_toolbar.panels.signals.SignalDebugPanel',
-    'debug_toolbar.panels.sql.SQLDebugPanel',
-    'debug_toolbar.panels.template.TemplateDebugPanel',
-    'debug_toolbar.panels.timer.TimerDebugPanel',
-    'debug_toolbar.panels.version.VersionDebugPanel',
+DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
-    # The profiling panel causes every request to be computed twice, slowing
-    # down the page load by a factor of over 2x and giving incorrect results
-    # for the sql panel. So by default, we will not include it, but can add it
-    # back to the list at request time via the ESPDebugToolbarMiddleware and
-    # DEBUG_TOOLBAR_CONFIG['CONDITIONAL_PANELS'].
-    # 'debug_toolbar.panels.profiling.ProfilingDebugPanel',
+DEBUG_TOOLBAR_PANELS = (
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
 )
 
 def custom_show_toolbar(request):
-    from esp.middleware.espdebugtoolbarmiddleware import ESPDebugToolbarMiddleware
+    from esp.middleware.debugtoolbar.middleware import ESPDebugToolbarMiddleware
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
-def conditional_panels(request):
-    """
-    Adds new debug_toolbar panels to DEBUG_TOOLBAR_PANELS conditionally based
-    on the request.
-    """
-    from django.conf import settings
-    new_panels = []
-
-    if request.GET.get('debug_toolbar_profiling', None) == 't':
-        # Add the profiling panel if it is requested in the query params.
-        new_panels.append('debug_toolbar.panels.profiling.ProfilingDebugPanel')
-
-    settings.DEBUG_TOOLBAR_PANELS = tuple(list(settings.DEBUG_TOOLBAR_PANELS) + new_panels)
-
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
-    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'DISABLE_PANELS': set([
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    ]),
+    'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
-        'esp.cache.signals.m2m_added',
-        'esp.cache.signals.m2m_removed',
     ],
-    'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
-    'TAG': 'div',
+    'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'CONDITIONAL_PANELS': conditional_panels,
+    'RENDER_PANELS': None,
+    'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
+}
+
+# Settings for Stripe credit card payments (can be overridden in
+# local_settings.py).  Global settings are used to define site-wide defaults,
+# but the keys can be overridden in the 'stripe_settings' Tag object to direct
+# payments to different accounts, either on a global or per-program basis.
+STRIPE_CONFIG = {
+    'secret_key': '',
+    'publishable_key': '',
 }
 
 #   Allow Filebrowser to edit anything under media/
@@ -375,4 +376,14 @@ SHELL_PLUS_POST_IMPORTS = (
 #   Set test runner to behave like pre-1.6 versions of Django
 #   Exclude apps from testing
 TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
-TEST_EXCLUDE = ('django', 'grappelli')
+TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
+
+SKIP_SOUTH_TESTS = True
+SOUTH_TESTS_MIGRATE = False
+SOUTH_AUTO_FREEZE_APP = True
+SOUTH_USE_PYC = False
+
+#   Twilio configuration - should be completed in local_settings.py
+TWILIO_ACCOUNT_SID = None
+TWILIO_AUTH_TOKEN = None
+TWILIO_ACCOUNT_NUMBERS = None

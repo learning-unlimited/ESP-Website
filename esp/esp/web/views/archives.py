@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.users.models import ContactInfo, ESPUser
 from esp.datatree.models import *
@@ -173,7 +173,7 @@ def archive_classes(request, category, options, sortorder = None):
     """
     
     #    Sort the results by the specified order
-    if type(sortorder) is not list or len(sortorder) < 1:
+    if (not isinstance(sortorder, list)) or len(sortorder) < 1:
         sortorder = ['year', 'category', 'program', 'title', 'teacher', 'description']
 
     sortorder.reverse()
