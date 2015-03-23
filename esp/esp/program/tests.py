@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-        
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -493,7 +492,7 @@ class ProgramHappenTest(TestCase):
         sec.assignClassRoom(self.classroom)
         
         # shortcut student profile creation -- presumably we're also testing this elsewhere
-        thisyear = ESPUser.current_schoolyear(self.prog)
+        thisyear = ESPUser.program_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
         prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
