@@ -84,7 +84,7 @@ def onSubmit(request):
     
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
+            metadata = json.loads(request.body)
             fields = []
 
         # truncating field lengths to the character limits specified
