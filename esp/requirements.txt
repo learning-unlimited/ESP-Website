@@ -3,7 +3,7 @@ pillow==2.2.1
 South==0.8.4
 argparse==1.2.1
 cssutils==0.9.10
-django-extensions==1.2.5
+django-extensions==1.5.1
 django-form-utils==0.3.1
 django-reversion==1.8.0
 django-selenium==0.9.6
