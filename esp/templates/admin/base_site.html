@@ -35,6 +35,6 @@ ul.ui-autocomplete li
 
 {% block userlinks %}
 {{ block.super }}
-<li><a href="{% url filebrowser:fb_browse %}">{% trans 'FileBrowser' %}</a></li>
-<li><a href="{% url esp.themes.views.landing %}">{% trans 'Theme settings' %}</a></li>
+<li><a href="{% url 'filebrowser:fb_browse' %}">{% trans 'FileBrowser' %}</a></li>
+<li><a href="{% url 'esp.themes.views.landing' %}">{% trans 'Theme settings' %}</a></li>
 {% endblock userlinks %}
