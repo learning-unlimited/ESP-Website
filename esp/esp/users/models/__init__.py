@@ -40,7 +40,7 @@ import simplejson as json
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
-from django.contrib.auth.models import User, AnonymousUser, Group
+from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
 from django.contrib.localflavor.us.forms import USStateSelect
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.sites.models import Site
@@ -126,7 +126,7 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(Manager):
+class ESPUserManager(UserManager):
     pass
 
 def get_studentreg_model():
