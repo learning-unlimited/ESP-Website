@@ -47,10 +47,10 @@ def dump_all_caches():
         c.delete_all()
 
 def _finalize_caches():
-    for c in all_caches:
-        c.run_all_delayed()
-        if settings.CACHE_DEBUG:
-            print "Initialized cache", c.pretty_name
+    from esp.cache.queued import do_all_pending
+    do_all_pending()
+    if settings.CACHE_DEBUG:
+        print "Initialized caches"
 
 _caches_locked = False
 def caches_locked():

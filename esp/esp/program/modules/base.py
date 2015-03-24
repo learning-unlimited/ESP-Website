@@ -182,7 +182,7 @@ class ProgramModuleObj(models.Model):
         raise Http404
         
     #   Program.getModules cache takes care of our dependencies
-    findModuleObject.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findModuleObject.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     findModuleObject = staticmethod(findModuleObject)
     
     #   The list of modules in a particular category (student reg, teacher reg)
@@ -197,7 +197,7 @@ class ProgramModuleObj(models.Model):
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
-    findCategoryModules.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
@@ -331,7 +331,7 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def get_full_path(self, tl=None):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
-    get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
+    get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
     @classmethod
     def get_summary_path(cls, function):
@@ -637,7 +637,7 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {})
+            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
 
         return method(moduleObj, request, tl, *args, **kwargs)
     

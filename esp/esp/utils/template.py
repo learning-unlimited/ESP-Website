@@ -67,7 +67,7 @@ class Loader(BaseLoader):
     def get_template_hash(template_name):
         contents = Loader.get_override_contents(template_name)
         return hashlib.md5(contents.encode("utf-8")).hexdigest()
-    get_template_hash.depend_on_model(lambda: TemplateOverride)
+    get_template_hash.depend_on_model('utils.TemplateOverride')
     get_template_hash = staticmethod(get_template_hash)
 
     @staticmethod

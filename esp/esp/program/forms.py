@@ -110,8 +110,6 @@ class ProgramCreationForm(BetterModelForm):
             value.append(json_module.id)
         return value
 
-    # use field grouping
-    #as_table = grouped_as_table
 
     class Meta:
         fieldsets = [

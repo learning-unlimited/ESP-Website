@@ -44,11 +44,16 @@
     <script type="text/javascript" src="/media/scripts/common.js"></script>
     {% endblock jquery %}
 
-    <script type="text/javascript" src="//fb.me/react-0.11.2.js"></script>
-    <script type="text/javascript" src="//fb.me/JSXTransformer-0.11.2.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/react.js"></script>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/JSXTransformer.js"></script>
 
     {% block js1 %}
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+    {% if schoolyear %}
+    <script type="text/javascript">
+      esp_user['cur_grade'] = {{schoolyear}} + 12 - esp_user['cur_yog'];
+    </script>
+    {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     

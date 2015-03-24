@@ -102,12 +102,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
         return {'rooms': classrooms_dicts}
-    rooms.method.cached_function.depend_on_model(lambda: Resource)
+    rooms.method.cached_function.depend_on_model('resources.Resource')
 
     @aux_call
     @json_response()
@@ -595,7 +595,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
         
         return {'message_requests': data}
-    message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()
@@ -679,7 +679,9 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
         curclasses = ClassSection.prefetch_catalog_data(
-            ClassSection.objects.filter(parent_class__parent_program = prog))
+            ClassSection.objects
+            .filter(parent_class__parent_program=prog)
+            .select_related('parent_class', 'parent_class__category'))
 
         ## Is it really faster to do this logic in Python?
         ## It'd be even faster to just write a raw SQL query to do it.
@@ -735,7 +737,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         for g in grades:
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
+            grade_students = filter(
+                lambda x: x.getGrade(prog, assume_student=True)==g,
+                students['enrolled'])
             grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
         dictOut["stats"].append({"id": "grades", "data": grades_annotated})
 
