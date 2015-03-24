@@ -230,7 +230,7 @@ var FilterSelector = React.createClass({
         </option>;
       }.bind(this));
     return <span>
-      <select onClick={this.props.onToggle}
+      <select onChange={this.props.onToggle}
               value={this.props.negated ? "without" : "with"}
               className="qb-input qb-negate"
               >
