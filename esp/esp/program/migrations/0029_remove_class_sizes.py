@@ -413,7 +413,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ContactInfo'},
             'address_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'address_postal': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'address_state': ('localflavor.us.models.USStateField', [], {'max_length': '2', 'null': 'True', 'blank': 'True'}),
+            'address_state': ('localflavor.us.models.USStateField', [], {}),
             'address_street': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'e_mail': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
