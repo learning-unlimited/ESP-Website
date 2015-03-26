@@ -41,7 +41,7 @@ class ClassCreationController(object):
         self.program = prog
         self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
@@ -58,7 +58,7 @@ class ClassCreationController(object):
 
         return cls
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
         
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)

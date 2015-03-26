@@ -246,7 +246,9 @@ for app in ('django_evolution', 'django_command_extensions'):
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
-SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+ATOMIC_REQUESTS = True
 
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.

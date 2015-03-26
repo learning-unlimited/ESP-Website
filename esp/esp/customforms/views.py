@@ -78,7 +78,7 @@ def getPerms(request):
     return HttpResponse(status=400)                                        
 
 @user_passes_test(test_func)
-@transaction.commit_on_success
+@transaction.atomic
 def onSubmit(request):
     #Stores form metadata in the database.
     
@@ -149,7 +149,7 @@ def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
 @user_passes_test(test_func)
-@transaction.commit_on_success        
+@transaction.atomic        
 def onModify(request):
     """
     Handles form modifications

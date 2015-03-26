@@ -45,7 +45,7 @@ from django.conf import settings
 
 import os
 
-@transaction.autocommit
+@transaction.atomic
 def process_messages(debug=False):
     """ Go through all unprocessed messages and process them. """
     
@@ -74,7 +74,7 @@ def process_messages(debug=False):
             message.save()
     return list(messages)
 
-@transaction.autocommit
+@transaction.atomic
 def send_email_requests(debug=False):
     """ Go through all email requests that aren't sent and send them. """
 

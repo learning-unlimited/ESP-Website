@@ -267,7 +267,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         submissions = settings.form().submissions(use_cache=False)
 
         # parse submitted data and make model instances
-        with transaction.commit_on_success():
+        with transaction.atomic():
             apps = []
             for submission in submissions:
                 try:
