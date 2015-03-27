@@ -191,7 +191,7 @@ class ResourceGroup(models.Model):
 
     # While in transition, we will need to associate the old ResourceGroup with
     # the new Location.
-    location = models.ForeignKey(Location, null=True)
+    location = models.ForeignKey(Location, null=True, blank=True)
 
     def __unicode__(self):
         return 'Resource group %d' % (self.id,)
