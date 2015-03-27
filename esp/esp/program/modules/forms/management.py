@@ -2,7 +2,7 @@
 from django import forms
 
 from esp.cal.models import Event
-from esp.resources.models import ResourceType, Resource
+from esp.resources.models import Location
 from esp.program.models import ProgramCheckItem
 
 from esp.program.models.class_ import ClassSubject, ClassSection
@@ -130,26 +130,25 @@ class SectionManageForm(ManagementForm):
         sec.status = self.cleaned_data['status']
         if self.cleaned_data['reg_status']:
             sec.registration_status = self.cleaned_data['reg_status']
-        sec.meeting_times.clear()
-        for mi in self.cleaned_data['times']:
-            ts = Event.objects.get(id=mi)
-            ct = ResourceType.get_or_create('Classroom')
-            sec.meeting_times.add(ts)
-            cr = Resource.objects.filter(res_type__id=ct.id, event__id=ts.id, name__in=self.cleaned_data['room'])
-            for c in cr:
-                c.assign_to_section(sec, override=True)
-        rooms = Resource.objects.filter(name__in=self.cleaned_data['room'])
-        if rooms.count() > 0:
-            sec.locations.clear()
-            for r in rooms:
-                sec.assign_room(r)
+
+        sec.meeting_times = Event.objects.filter(
+            id__in=self.cleaned_data['times'])
+        # TODO(benkraft): previously this would remove any other assignments of
+        # the room(s) at the same times.  I'm not sure whether that's the right
+        # behavior; this at the moment doesn't; it only clears the class's
+        # locations.
+        sec.locations = Location.objects.filter(
+            name__in=self.cleaned_data['room'])
+
         sec.checklist_progress.clear()
         for ci in self.cleaned_data['progress']:
             cpl = ProgramCheckItem.objects.get(id=ci)
             sec.checklist_progress.add(cpl)
+
         for r in self.cleaned_data['resources']:
             for ts in sec.meeting_times.all():
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
+
         sec.max_class_capacity = self.cleaned_data['class_size']
         sec.save()
 

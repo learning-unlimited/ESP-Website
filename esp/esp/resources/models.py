@@ -279,18 +279,8 @@ class Resource(models.Model):
         else:
             return self.res_group.resource_set.exclude(
                 id=self.id, res_type__name='Classroom')
-    
-    #   Modified to handle assigning rooms to both classes and their individual sections.
-    #   Resource assignments are always handled at the section level now. 
-    #   The assign_to_class function is copied for backwards compatibility.
-    
-    def assign_to_subject(self, new_class, check_constraint=True):
-        for sec in new_class.sections.all():
-            self.assign_to_section(sec, check_constraint)
-        
-    def assign_to_section(self, section, check_constraint=True, override=False):
-        if override:
-            self.clear_assignments()
+
+    def assign_to_section(self, section):
         if self.is_available():
             new_ra = ResourceAssignment()
             new_ra.resource = self
@@ -298,8 +288,6 @@ class Resource(models.Model):
             new_ra.save()
         else:
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
-        
-    assign_to_class = assign_to_section
         
     def clear_assignments(self, program=None):
         self.assignments().delete()
