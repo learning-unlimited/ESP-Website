@@ -268,13 +268,12 @@ class Resource(models.Model):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
 
-    def grouped_resources(self):
-        if self.res_group_id is None:
-            return Resource.objects.filter(id=self.id)
-        return Resource.objects.filter(res_group=self.res_group_id)
-    
     def associated_resources(self):
-        return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
+        if self.res_group_id is None:
+            return Resource.objects.none()
+        else:
+            return self.res_group.resource_set.exclude(
+                id=self.id, res_type__name='Classroom')
     
     #   Modified to handle assigning rooms to both classes and their individual sections.
     #   Resource assignments are always handled at the section level now. 
@@ -301,7 +300,8 @@ class Resource(models.Model):
         self.assignments().delete()
 
     def assignments(self):
-        return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
+        return ResourceAssignment.objects.filter(
+            resource__res_group__resource=self)
     
     def schedule_sequence(self, program):
         """ Returns a list of strings, which are the status of the room (and its identical
