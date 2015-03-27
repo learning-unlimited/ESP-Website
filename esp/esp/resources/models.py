@@ -70,6 +70,11 @@ class Location(models.Model):
     def __unicode__(self):
         return '%s (capacity %s)' % (self.name, self.capacity)
     
+    # TODO(benkraft): change this to be the actually correct thing once we kill
+    # resource groups fully.  Also, at that point, make it into something that
+    # can be prefetched.
+    def associated_resources(self):
+        return Resource.objects.filter(res_group__location=self)
 
 
 #####################################################
