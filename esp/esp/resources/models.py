@@ -58,12 +58,12 @@ class Location(models.Model):
         max_length=100, help_text='The name or room number')
     capacity = models.IntegerField(
         help_text='The number of students the location can accommodate')
-    admin_notes = models.TextField(
+    admin_notes = models.TextField(blank=True,
         help_text='Notes on this classroom visible only to admins')
-    teacher_notes = models.TextField(
+    teacher_notes = models.TextField(blank=True,
         help_text="Notes on this classroom that will appear on teachers'"
         "schedules.")
-    student_notes = models.TextField(
+    student_notes = models.TextField(blank=True,
         help_text="Notes on this classroom that will appear on students'"
         "schedules.")
 
