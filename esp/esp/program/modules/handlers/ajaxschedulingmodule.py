@@ -479,17 +479,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         
     @aux_call
     @needs_admin
-    def securityschedule(self, request, tl, one, two, module, extra, prog):
-        """ Display a list of classes (by classroom) for each timeblock in a program """
-        events = Event.objects.filter(program=prog).order_by('start')
-        events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
-
-        context = { 'events': events_ctxt }
-
-        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
-            
-    @aux_call
-    @needs_admin
     def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):
         """ A view that you can use to remove schedule assignments for all class
             sections below a certain lock level.

@@ -119,7 +119,6 @@ class SchedulingCheckRunner:
           self.p = program
           self.formatter = formatter
 
-          self.high_school_blocks = self._get_high_school_only()
           self.lunch_blocks = self._getLunchByDay()
 
           #things that we'll calculate lazilly
@@ -146,16 +145,6 @@ class SchedulingCheckRunner:
             lunch_by_day[dates.index(d)].append(ts)
         return lunch_by_day
 
-     def _get_high_school_only(self):
-          """  Returns a list of blocks which start after 7 PM.  At MIT, these blocks are high school
-          only.  So this is a pretty MIT-Centric function.
-          """
-          l = []
-          for ts in self.p.getTimeSlots():
-               if ts.start.hour >= 19:
-                    l.append(ts)
-          return l
-
      def run_diagnostics(self, diagnostics=None):
           if diagnostics is None:
                diagnostics = self.all_diagnostics
@@ -165,7 +154,6 @@ class SchedulingCheckRunner:
      # Update this to add a scheduling check.
      all_diagnostics = [
           ('lunch_blocks_setup', 'Lunch blocks'),
-          ('high_school_only_setup', 'High school only blocks'),
           ('incompletely_scheduled_classes', 'Classes not completely scheduled'),
           ('wrong_classroom_type', 'Classes in wrong classroom type'),
           ('classes_missing_resources', 'Unfulfilled resource requests'),
@@ -175,7 +163,6 @@ class SchedulingCheckRunner:
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
-          ('middle_school_evening_classes', 'Classes with only middle school students during the high school only block'),
           ('classes_by_category', 'Number of classes in each block by category'),
           ('capacity_by_category', 'Total capacity in each block by category'),
           ('classes_by_grade', 'Number of classes in each block by grade'),
@@ -237,9 +224,6 @@ class SchedulingCheckRunner:
          lunch_block_strings = [[str(l) for l in lunch_block_list] for lunch_block_list in self.lunch_blocks]
          return self.formatter.format_list(lunch_block_strings)
 
-     def high_school_only_setup(self):
-         return self.formatter.format_list(self.high_school_blocks)
-
      def incompletely_scheduled_classes(self):
           problem_classes = []
           for s in self._all_class_sections():
@@ -288,17 +272,6 @@ class SchedulingCheckRunner:
                          else:
                               l.append({"Timeslot": t, "Room":r, "Section 1":s, "Section2":d[t][r]})
           return self.formatter.format_table(l, {"headings": ["Room", "Timeslot", "Section 1", "Section 2"]})
-
-     def middle_school_evening_classes(self):
-          hso = set(self.high_school_blocks)
-          sections = self._all_class_sections(include_walkins=False)
-          #only middle school allowing classes
-          sections = filter(lambda x: x.parent_class.grade_min < 9, sections)          
-          #only classes in evening timeblocks
-          sections = filter(lambda x: len(set(x.get_meeting_times()) & hso) > 0, sections )
-
-          middle_school_only = filter(lambda x: x.parent_class.grade_max < 9, sections)
-          return self.formatter.format_list(middle_school_only)
 
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
