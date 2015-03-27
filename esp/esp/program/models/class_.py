@@ -36,6 +36,7 @@ import datetime
 from datetime import timedelta
 import time
 from collections import defaultdict
+import operator
 
 # django Util
 from django.conf import settings
@@ -744,37 +745,21 @@ class ClassSection(models.Model):
 
         return viable_list
 
-    @cache_function
     def viable_rooms(self):
-        """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
-        Resources matching the first time block of the class will be returned. """
-        # TODO: update this
-        def room_satisfies_times(room, times):
-            room_times = room.matching_times()
-            satisfaction = True
-            for t in times:
-                if t not in room_times:
-                    satisfaction = False
-            return satisfaction
-        
+        """Returns a list of available Locations for the class."""
         #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
         if not self.sufficient_length():
             return []
-        
-        #   Start with all rooms the program has.
-        #   Filter the ones that are available at all times needed by the class.
-        filter_qs = []
-        ordered_times = self.meeting_times.order_by('start')
-        first_time = ordered_times[0]
-        possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
-        
-        viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
 
-        return viable_list
-        
-    viable_rooms.depend_on_row('program.ClassSection', lambda cs: {'self': cs})
-    viable_rooms.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
-    viable_rooms.depend_on_model('resources.Resource')
+        availability_q = reduce(operator.and_,
+                                [Q(event=e) for e in self.meeting_times.all()])
+        # Rooms which exist at all the given times
+        available_rooms = Location.objects.filter(availability_q)
+        # And don't have any sections scheduled overlappingly
+        available_rooms = available_rooms.exclude(
+            classsection__meeting_times__in=self.meeting_times.all())
+
+        return available_rooms
     
     def clearRooms(self):
         self.locations.clear()
