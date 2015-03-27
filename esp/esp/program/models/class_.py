@@ -667,32 +667,36 @@ class ClassSection(models.Model):
         event_list = self.extend_timeblock(first_event, merged=False)
         self.assign_meeting_times(event_list)
 
-    def assign_room(self, base_room):
+    def assign_room(self, room):
         """ Assign the classroom given, at the times needed by this class. """
-        # TODO: update this
-        rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
-        
         status = True
         errors = []
         
-        if rooms_to_assign.count() != self.meeting_times.count():
+        unavail_times = self.meeting_times.exclude(available_locations=room)
+        if unavail_times.exists():
             status = False
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
-        
-        for i, r in enumerate(rooms_to_assign):
-            result = self.locations.add(r)
-            if not result:
-                status = False
-                occupiers_str = ''
-                occupiers_set = r.assignments()
-                if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
-                    occupiers_str = u' by %s during %s' % ((occupiers_set[0].target or occupiers_set[0].target_subj).emailcode(), r.event.pretty_time())
-                errors.append( u'Room %s is occupied%s.' % ( base_room.name, occupiers_str ) )
-                # If we don't allow partial fulfillment, undo and quit.
-                for r2 in rooms_to_assign[:i]:
-                    r2.clear_assignments()
-                break
-            
+
+        meeting_times = self.meeting_times.all()
+
+        conflicts = ClassSection.objects.exclude(id=self.id)
+        conflicts = conflicts.filter(
+            meeting_times__in=meeting_times, locations=room)
+
+        if conflicts:
+            status = False
+            for conflict in conflicts:
+                # TODO(benkraft): this is vaguely inefficient in a few ways,
+                # although I'm not sure I care -- the number of conflicts
+                # should be small.  It also only shows the first timeslot of
+                # overlap with each class, but I think that's fine.
+                conflict_time = conflict.meeting_times.filter(
+                    id__in=self.meeting_times.all()).order_by('start_time')[0]
+                errors.append(u'Room %s is occupied by %s during %s.' % (
+                    room.name, conflict.emailcode(), conflict_time))
+        else:
+            self.locations.add(room)
+
         return (status, errors)
     
     def viable_times(self, ignore_classes=False):

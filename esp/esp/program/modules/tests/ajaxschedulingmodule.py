@@ -134,6 +134,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.emptySchedule()
 
         # Fetch three consecutive vacancies in one room.
+        # TODO(benkraft): fix this to use new rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.failUnless(rooms.count() >= 3, "Not enough timeslots to run this test.")
 

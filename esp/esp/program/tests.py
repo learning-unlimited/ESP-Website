@@ -609,6 +609,7 @@ class ProgramFrameworkTest(TestCase):
         self.timeslots = self.program.getTimeSlots()
         for i in range(settings['num_rooms']):
             for ts in self.timeslots:
+                # TODO(benkraft): fix this to use new rooms
                 res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
         self.rooms = self.program.getClassrooms()
                    
