@@ -272,6 +272,7 @@ class Resource(models.Model):
 
 
     def identical_resources(self):
+        # TODO: update this
         res_list = Resource.objects.filter(name=self.name)
         return res_list
 
@@ -291,16 +292,15 @@ class Resource(models.Model):
         else:
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
         
-    def clear_assignments(self, program=None):
-        self.assignments().delete()
-
     def assignments(self):
+        # TODO: update this
         return ResourceAssignment.objects.filter(
             resource__res_group__resource=self)
     
     def schedule_sequence(self, program):
         """ Returns a list of strings, which are the status of the room (and its identical
         companions) at each time block belonging to the program. """
+        # TODO: update this
 
         sequence = []
         event_list = list(program.getTimeSlots())
