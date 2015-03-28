@@ -77,6 +77,29 @@ class Location(models.Model):
     def associated_resources(self):
         return Resource.objects.filter(res_group__location=self)
 
+    def merge_with(self, other):
+        """Merge this location with another.
+
+        This can be used when there are two locations that represent the same
+        room, to deduplicate.  The other location will be deleted, and all
+        related objects will be pointed at this one.
+        """
+        # prevent the circular import
+        from esp.program.models import ClassSection
+        # running this with self == other would basically just delete the
+        # Location, so let's not do that.
+        assert self.id != other.id
+        ResourceGroup.objects.filter(location=other).update(location=self)
+        for sec in ClassSection.objects.filter(locations=other):
+            sec.locations.add(self)
+            sec.locations.remove(other)
+        for event in Event.objects.filter(available_locations=other):
+            event.available_locations.add(self)
+            event.available_locations.remove(other)
+        other.delete()
+
+
+
 
 #####################################################
 #   Old resource stuff that has not yet been removed
