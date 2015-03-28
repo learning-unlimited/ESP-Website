@@ -32,24 +32,19 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
+from esp.program.models import ClassSubject, ClassSection, ProgramCheckItem, ClassFlagType
 from esp.users.models import ESPUser, User
-from esp.datatree.models import *
-from esp.cal.models              import Event
+from esp.resources.models import Location
 
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
-from django import forms
+from django.db import models
 from django.http import HttpResponseRedirect, HttpResponse
-from django.utils.datastructures import MultiValueDict
-from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from esp.middleware import ESPError
 from django.db.models.query import Q
 from esp.program.controllers.classreg import ClassCreationController
@@ -82,7 +77,11 @@ class AdminClass(ProgramModuleObj):
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
-            room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
+            room_choices = list(Location.objects
+                                .filter(event__program=self.program)
+                                .values_list('id', 'name')
+                                .distinct()
+                                .order_by('name'))
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'progress':
             return self.program.checkitems.all().values_list('id', 'title')
@@ -166,9 +165,9 @@ class AdminClass(ProgramModuleObj):
             class_id = request.POST['class_id']
             try:
                 class_subject = ClassSubject.objects.get(pk=class_id)
-            except MultipleObjectsReturned:
+            except models.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
-            except DoesNotExist:
+            except models.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']

@@ -115,14 +115,15 @@ class SectionManageForm(ManagementForm):
             super(SectionManageForm, self).__init__(*args, **kwargs)
 
     def load_data(self, sec, prefix=''):
-        self.initial = {prefix+'status': sec.status,
+        self.initial = {
+            prefix+'status': sec.status,
             prefix+'reg_status': sec.registration_status,
             prefix+'progress': sec.checklist_progress.all().values_list('id', flat=True),
             prefix+'secid': sec.id,
             prefix+'class_size': sec.max_class_capacity,
-            prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
-        ir = sec.locations.all()
-        self.initial[prefix+'room'] = [r.name for r in ir]
+            prefix+'times': [ts.id for ts in sec.meeting_times.all()],
+            prefix+'room': [loc.id for loc in sec.locations.all()],
+        }
         self.initial[prefix+'resources'] = [r.resource.name for r in sec.resourceassignments()]
         return self.initial
 
@@ -138,7 +139,7 @@ class SectionManageForm(ManagementForm):
         # behavior; this at the moment doesn't; it only clears the class's
         # locations.
         sec.locations = Location.objects.filter(
-            name__in=self.cleaned_data['room'])
+            id__in=self.cleaned_data['room'])
 
         sec.checklist_progress.clear()
         for ci in self.cleaned_data['progress']:
