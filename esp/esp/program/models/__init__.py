@@ -622,6 +622,7 @@ class Program(models.Model, CustomFormsLinkModel):
             (e.g. between scheduling some sections manually and running
             automatic scheduling).
         """
+        # TODO(benkraft): figure out what to do about this
         from esp.resources.models import ResourceAssignment
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
@@ -629,24 +630,12 @@ class Program(models.Model, CustomFormsLinkModel):
         return Record.objects.filter(event="reg_confirmed",user=espuser,
                                      program=self).exists()
     
-    """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
-    "Classrooms."  So, if you try to call the old functions (which have no point anymore), then 
-    you'll get an error and you'll notice that you need to change the call and its associated
-    code.               -Michael P
-    
-    """
     def getClassrooms(self, timeslot=None):
-        #   Returns the resources themselves.  See the function below for grouped-by-room.
-        from esp.resources.models import ResourceType
-        
+        # TODO: maybe remove, or remove timeslot != None
         if timeslot is not None:
-            return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
+            return Location.objects.filter(event__program=self)
         else:
-            return self.getResources().filter(res_type=ResourceType.get_or_create('Classroom')).order_by('event').select_related()
-    
-    def getAvailableClassrooms(self, timeslot):
-        #   Filters down classrooms to those that are not taken.
-        return filter(lambda x: x.is_available(), self.getClassrooms(timeslot))
+            return timeslot.available_locations()
     
     def collapsed_dict(self, resources):
         result = {}
@@ -668,6 +657,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def groupedClassrooms(self):
+        # TODO: update this
 
         classrooms = self.getClassrooms()
         
@@ -795,18 +785,15 @@ class Program(models.Model, CustomFormsLinkModel):
     getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
+        # TODO: check callers
         from esp.resources.models import Resource
         return Resource.objects.filter(event__program=self)
     
     def getFloatingResources(self, timeslot=None, queryset=False):
-        from esp.resources.models import ResourceType
-        #   Don't include classrooms and teachers in the floating resources.
-        exclude_types = [ResourceType.get_or_create('Classroom')]
-        
         if timeslot is not None:
-            res_list = self.getResources().filter(event=timeslot, is_unique=True).exclude(res_type__in=exclude_types)
+            res_list = self.getResources().filter(event=timeslot, is_unique=True)
         else:
-            res_list = self.getResources().filter(is_unique=True).exclude(res_type__in=exclude_types)
+            res_list = self.getResources().filter(is_unique=True)
             
         if queryset:
             return res_list

@@ -41,6 +41,7 @@ class ResourceController(object):
     This is merely a framework, and most functionality will be added
     in the future when the resources schema is revised.
     """
+    # TODO: update variously
 
     def __init__(self, program, *args, **kwargs):
         self.program = program
