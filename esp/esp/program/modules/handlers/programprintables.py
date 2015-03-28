@@ -678,7 +678,7 @@ class ProgramPrintables(ProgramModuleObj):
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
+                    and cls.locations.all().exists()
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()            
@@ -1009,8 +1009,8 @@ Volunteer schedule for %s:
         """ generate class room rosters"""
         from esp.cal.models import Event
         
-        classes = list(self.program.sections().filter(status=10, parent_class__status=10))
-        classes = classes.prefetch_related('locations')
+        classes = self.program.sections().filter(status=10, parent_class__status=10)
+        classes = list(classes.prefetch_related('locations'))
 
         context = {}
         classes.sort()
@@ -1504,6 +1504,8 @@ Volunteer schedule for %s:
         response = HttpResponse(mimetype="text/csv")
         write_csv = csv.writer(response)
         
+        # TODO(benkraft): update this, and figure out how to handle the
+        # autoscheduler
         data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
         for row in data:
             write_csv.writerow(row)
