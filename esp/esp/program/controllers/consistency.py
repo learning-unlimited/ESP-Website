@@ -57,14 +57,6 @@ class ConsistencyChecker(object):
             result.append(str(section.emailcode()) + ' has expected duration ' + str(expected_duration) + ', actual duration ' + str(actual_duration))
         return result
 
-    def check_resource_consistency(self, section):
-        result = []
-        resource_events = [x.event for x in section.getResources()]
-        meeting_time_events = section.get_meeting_times()
-        if sorted(resource_events) != sorted(meeting_time_events):
-            result.append(str(section.emailcode()) + ' has resource events: ' + ', '.join([str(x) for x in resource_events]) + ' and meeting_time events: ' + ', '.join([str(x) for x in meeting_time_events]))
-        return result
-        
     def check_teacher_conflict(self, teacher):
         result = []
         sections_taught = list(teacher.getTaughtSectionsFromProgram(self.program)) # I don't trust the QuerySet to iterate in the same order for both loops.
@@ -103,7 +95,6 @@ class ConsistencyChecker(object):
         results = []
         for section in self.sections:
             results += self.check_expected_duration(section)
-            results += self.check_resource_consistency(section)
         for teacher in self.teachers:
             results += self.check_teacher_conflict(teacher)
         results += self.check_resource_conflicts()

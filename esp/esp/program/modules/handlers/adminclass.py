@@ -395,7 +395,6 @@ class AdminClass(ProgramModuleObj):
             context['errors'] += consistency_checker.check_teacher_conflict(teacher)
         for section in sections:
             context['errors'] += consistency_checker.check_expected_duration(section)
-            context['errors'] += consistency_checker.check_resource_consistency(section)
 
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True
