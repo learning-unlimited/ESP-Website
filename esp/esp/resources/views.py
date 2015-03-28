@@ -32,5 +32,15 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-# Create your views here.
+from esp.users.models import admin_required
+from esp.web.util.main import render_to_response
 
+
+@admin_required
+def main(request):
+    return render_to_response('resources/mainpage.html', request, {})
+
+
+@admin_required
+def locations(request):
+    return render_to_response('resources/locations.html', request, {})

@@ -93,6 +93,10 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
+                        (r'^manage/resources/', include('esp.resources.urls')),
+                        )
+
+urlpatterns += patterns('',
                         (r'^cache/', include('esp.cache.urls')),
                         (r'^varnish/', include('esp.varnish.urls'))
                         )
