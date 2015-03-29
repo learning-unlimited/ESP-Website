@@ -1,8 +1,8 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Class Flags for {{ program.niceName}}{% endblock %}
+{% block title %}Search Classes for {{ program.niceName}}{% endblock %}
 
-{% block subsection_name %}Class Flag Management{% endblock %}
+{% block subsection_name %}Class Search{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -17,10 +17,10 @@
 
 {% block content %}
 
-<h1>Manage Class Flags for {{ program.niceName }}</h1>
+<h1>Search Classes for {{ program.niceName }}</h1>
 
 <p>
-You asked for classes with {{english}}; {{queryset|length}} of {{program.classsubject_set.count}} classes fit that query.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
+You asked for {{english}}; {{queryset|length}} of {{program.classsubject_set.count}} classes fit that query.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
 <div class="flag-query-results" id="program_form">
@@ -45,7 +45,7 @@ You asked for classes with {{english}}; {{queryset|length}} of {{program.classsu
                 <button class="add-flag btn btn-default">add flag</button>
             </div>
             <div class="fqr-class-detail" style="display: none;">
-                {% include "program/modules/classflagmodule/class_detail.html" %}
+                {% include "program/modules/classsearchmodule/class_detail.html" %}
             </div>
             <div class="fqr-class-flags-detail">
                 {% for flag in class.flags.all %}
