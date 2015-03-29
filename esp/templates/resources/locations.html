@@ -1,11 +1,56 @@
 {% extends "main.html" %}
 
+{% block stylesheets %}
+  {{block.super}}
+  <link rel="stylesheet" href="/media/styles/location-forms.css" type="text/css" />
+{% endblock %}
+
 {% block title %}Manage Locations{% endblock %}
 
 {% block content %}
 
 <p>
+<a href="..">Return to Resource Management</a>
+</p>
+
+<p>
 This page allows editing the database of classrooms used by all programs.
 </p>
+
+<form method="post" action="">
+  {{ formset.management_form }}
+  <table class="location-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Capacity</th>
+        <th>Admin notes</th>
+        <th>Teacher notes</th>
+        <th>Student notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for form in formset %}
+        <tr class="{% if form.errors %}has-error{% endif %}">
+          {{form.id}}
+          {% for field in form.visible_fields %}
+            <td>
+              {{field}}
+              {% if field.errors %}<br/>{{field.errors}}{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% if form.non_field_errors %}
+          <tr>
+            <td colspan="5">
+              {{form.non_field_errors}}
+            </td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+  <input type="submit" class="btn" />
+</form>
 
 {% endblock %}

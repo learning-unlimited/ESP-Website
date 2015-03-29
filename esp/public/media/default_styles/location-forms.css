@@ -1,0 +1,12 @@
+.location-table input {
+  width: 70px;
+}
+
+.location-table textarea {
+  width: 150px;
+  height: 4.3em;
+}
+
+.location-table .has-error {
+  border: 1px solid red;
+}

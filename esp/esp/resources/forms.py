@@ -36,8 +36,19 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.forms.formsets import formset_factory
-from esp.resources.models import ResourceType, ResourceRequest
-from esp.tagdict.models import Tag
+from django.forms.models import modelformset_factory
+from esp.resources.models import ResourceType, Location
+
+# New resources forms
+
+
+class LocationFormSet(modelformset_factory(Location)):
+    def __init__(self, *args, **kwargs):
+        super(LocationFormSet, self).__init__(*args, **kwargs)
+        self.queryset = Location.objects.order_by('name')
+
+# Old resources forms
+
 
 class IDBasedModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):

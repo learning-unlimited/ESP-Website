@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.users.models import admin_required
 from esp.web.util.main import render_to_response
+from esp.resources.forms import LocationFormSet
 
 
 @admin_required
@@ -43,4 +44,11 @@ def main(request):
 
 @admin_required
 def locations(request):
-    return render_to_response('resources/locations.html', request, {})
+    if request.method == 'POST':
+        formset = LocationFormSet(request.POST)
+        if formset.is_valid():
+            formset.save()
+    else:
+        formset = LocationFormSet()
+    context = {'formset': formset}
+    return render_to_response('resources/locations.html', request, context)
