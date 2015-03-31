@@ -94,7 +94,7 @@ class InlineLatex(GenImageBase):
         else:
             raise ESPError('Unknown display style', log=False)
 
-        tex = r"\documentclass[fleqn]{article} \usepackage{amssymb,amsmath} " +\
+        tex = r"\documentclass[fleqn]{article} \usepackage{amssymb,amsmath,esint} " +\
               r"\usepackage[latin1]{inputenc} \begin{document} " + \
               r" \thispagestyle{empty} \mathindent0cm \parindent0cm %s%s%s \end{document}" % \
               (math_style, self.content, math_style)

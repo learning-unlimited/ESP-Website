@@ -72,7 +72,10 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             t.clearAvailableTimes(self.program)
 
     def forceAvailability(self):
-        self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
+        for teacher in self.teachers:
+            for ts in self.program.getTimeSlots():
+                teacher.addAvailableTime(self.program, ts)
+
 
     def clearScheduleAvailability(self):
         self.emptySchedule()
@@ -154,46 +157,6 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")
         self.failUnless(not s2.classrooms().exists(), "Second class should not have any classrooms assigned.")
 
-    def testForceAvailability(self):
-        """Test the 'force_availability' view."""
-
-        # force_availability is really a schedulingmodule view.
-        # Either we should move this test to the scheduling module's tests,
-        # or we should move this page to the AJAX scheduling module.
-        # It was just too easy to include the test here meanwhile.
-        self.emptySchedule()
-        self.loginAdmin()
-
-        # The setup:
-        # Teacher 0 is teaching in the first two timeslots.
-        # Teacher 1 is available the first two timeslots and has no classes scheduled.
-        # Teacher 2 hasn't filled out their availability.
-
-        # Set availability.
-        timeslots = self.program.getTimeSlots().order_by('start')
-        teachers = list(self.teachers)
-        for t in teachers[:2]:
-            t.addAvailableTime(self.program, timeslots[0])
-            t.addAvailableTime(self.program, timeslots[1])
-        # Schedule one class
-        teachers[0].getTaughtSections(self.program)[0].assign_meeting_times(timeslots[:2])
-        # Check the current state of availability.
-        self.failUnless(all([
-                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(timeslots[:2]),
-                set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
-                set(teachers[2].getAvailableTimes(self.program)) == set(),
-                set(teachers[0].getAvailableTimes(self.program)) == set(),
-            ]), "Unexpected availability state.")
-
-        # Force availability
-        self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
-        # Check the state of availability again
-        self.failUnless(all([
-                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(timeslots[:2]),
-                set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
-                set(teachers[2].getAvailableTimes(self.program)) == set(timeslots),
-                set(teachers[0].getAvailableTimes(self.program)) == set(),
-            ]), "Unexpected availability state.")
 
     def testWebAPI(self):
         """Schedule classes using the ajax_schedule_class view."""

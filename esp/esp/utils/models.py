@@ -91,5 +91,3 @@ class PrintRequest(models.Model):
     user = AjaxForeignKey(ESPUser)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
-
-from esp.utils import get_user

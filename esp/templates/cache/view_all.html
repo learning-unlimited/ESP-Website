@@ -15,15 +15,15 @@
 {% block content %}
 
 <div id="program_form">
-<table class="sortable">
+<table class="sortable" style="table-layout: fixed; width: 100%; word-wrap: break-word;">
 <thead>
 <tr>
-<th>Cache</th><th>Hits</th><th>Misses</th>
+<th style="width: 70%;">Cache</th><th>Hits</th><th>Misses</th><th></th>
 </tr>
 </thead>
 <tbody>
 {% for cache in caches %}
-<tr><td>{{ cache.pretty_name }}</td> <td>{{ cache.hit_count }}</td> <td>{{ cache.miss_count }}</td></tr>
+<tr><td>{{ cache.pretty_name }}</td> <td>{{ cache.hit_count }}</td> <td>{{ cache.miss_count }}</td> <td>[<a href="/cache/flush/{{ forloop.counter0 }}">Flush</a>]</td></tr>
 {% endfor %}
 </tbody>
 </table>

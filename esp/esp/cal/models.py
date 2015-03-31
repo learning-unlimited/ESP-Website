@@ -51,7 +51,7 @@ class EventType(models.Model):
         """ A cached function for getting EventTypes that we know must exist
         if someone has run install() """
         return EventType.objects.get(description=desc)
-    get_from_desc.depend_on_model(lambda: EventType)
+    get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
 class Event(models.Model):
@@ -203,16 +203,6 @@ class Event(models.Model):
             return cmp(self.start, other.start)
         except:
             return 0
-        
-class EmailReminder(models.Model):
-    """ A reminder, associated with an Event, that is to be sent by e-mail """
-    event = models.ForeignKey(Event)
-    email = models.ForeignKey('dbmail.MessageRequest')
-    date_to_send = models.DateTimeField()
-    sent = models.BooleanField(default=True)
-
-    def __unicode__(self):
-        return unicode(self.event) + u': ' + unicode(self.email)
 
 def install():
     """

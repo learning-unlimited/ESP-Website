@@ -3,11 +3,6 @@
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
-{% endblock %}
-
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
@@ -24,7 +19,6 @@ var priority_limit = {{ prog.priorityLimit }};
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/student_reg.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <!--
 <script type="text/javascript">
   $j.getScriptWithCaching("/media/scripts/jquery-ui-1.8.17.custom.min.js", function(){
