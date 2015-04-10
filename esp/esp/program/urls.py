@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import *
+""
 
 urlpatterns = patterns('',
                        # manage stuff
@@ -6,7 +7,7 @@ urlpatterns = patterns('',
                        (r'^manage/newprogram/?$', 'esp.program.views.newprogram'),
                        (r'^manage/submit_transaction/?$', 'esp.program.views.submit_transaction'),
                        (r'^manage/pages/?$', 'esp.program.views.manage_pages'),
-                       (r'^manage/userview/?$', 'esp.program.views.userview'),
+                       url(r'^manage/userview/?$', 'esp.program.views.userview', name='userview'),
                        (r'^manage/deactivate_user/?$', 'esp.program.views.deactivate_user'),
                        (r'^manage/activate_user/?$', 'esp.program.views.activate_user'),
                        (r'^manage/usersearch/?$', 'esp.program.views.usersearch'),                       

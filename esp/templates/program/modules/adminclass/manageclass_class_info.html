@@ -1,6 +1,12 @@
 <tr>
     <th class="smaller">Teachers:</th>
-    <td>{{ class.getTeacherNames|join:", " }}<br />
+    <td>
+     {% for teacher in class.get_teachers %}
+        <a href="{{teacher.get_absolute_url}}">{{ teacher }}</a>{% if not forloop.last %}, {% endif %}
+     {% endfor %}
+   
+
+    <br />
     <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
     Edit Teacher List </a>
     </td>

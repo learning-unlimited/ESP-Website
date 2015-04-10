@@ -176,6 +176,12 @@ class ESPUser(User, AnonymousUser):
 
         self.create_membership_methods()
 
+    def __unicode__(self):
+        return self.get_full_name() or self.username
+
+    def get_absolute_url(self):
+        return '{0}?username={1}'.format(resolvers.reverse('userview'), self.username)
+      
     @classmethod
     def create_membership_methods(cls):
         """
@@ -252,7 +258,7 @@ class ESPUser(User, AnonymousUser):
         return self.__olduser
 
     def name(self):
-        return u'%s %s' % (self.first_name, self.last_name)
+        return self.get_full_name()
 
     def get_email_sendto_address_pair(self):
         """
