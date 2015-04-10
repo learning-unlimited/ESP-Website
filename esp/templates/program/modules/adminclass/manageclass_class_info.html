@@ -1,11 +1,10 @@
+{% load userlist %}
+
+
 <tr>
     <th class="smaller">Teachers:</th>
     <td>
-     {% for teacher in class.get_teachers %}
-        <a href="{{teacher.get_absolute_url}}">{{ teacher }}</a>{% if not forloop.last %}, {% endif %}
-     {% endfor %}
-   
-
+    {{class.get_teachers|userlist:','}}
     <br />
     <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
     Edit Teacher List </a>

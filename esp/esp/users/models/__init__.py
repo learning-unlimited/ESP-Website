@@ -180,7 +180,7 @@ class ESPUser(User, AnonymousUser):
         return self.get_full_name() or self.username
 
     def get_absolute_url(self):
-        return '{0}?username={1}'.format(resolvers.reverse('userview'), self.username)
+        return '{0}?username={1}'.format(urlresolvers.reverse('userview'), self.username)
       
     @classmethod
     def create_membership_methods(cls):
