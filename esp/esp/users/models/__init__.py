@@ -798,10 +798,12 @@ class ESPUser(User, AnonymousUser):
     isAdministrator.get_or_create_token(('program',))
     isAdministrator.depend_on_row('users.ESPUser', lambda user: {'self': user})
     isAdministrator.depend_on_m2m('users.ESPUser', 'groups', lambda user, group: {'self': user})
-    # if the permission has null role, expire all caches, otherwise expire only
-    # the one for the relevant user.
+    # if the permission has null user and non-null group, expire all caches,
+    # otherwise expire only the one for the relevant user.
     isAdministrator.depend_on_row('users.Permission', lambda perm:
-                                  {'self': perm.user} if perm.role is None
+                                  {'self': perm.user}
+                                  if perm.user is not None
+                                  or perm.role is None
                                   else {'self': wildcard})
     isAdmin = isAdministrator
 
