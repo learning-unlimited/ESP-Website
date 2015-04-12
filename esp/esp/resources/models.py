@@ -153,7 +153,7 @@ class ResourceRequest(models.Model):
     
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
     
     def __unicode__(self):
@@ -176,7 +176,7 @@ class Resource(models.Model):
     res_type, attach to a user if necessary. """
     
     name = models.CharField(max_length=80)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     num_students = models.IntegerField(blank=True, default=-1)
     # do not use group_id, use res_group instead
     # group_id can be removed with a future migration after all sites
@@ -261,9 +261,9 @@ class Resource(models.Model):
         return result
     
     def grouped_resources(self):
-        if self.res_group is None:
+        if self.res_group_id is None:
             return Resource.objects.filter(id=self.id)
-        return Resource.objects.filter(res_group=self.res_group)
+        return Resource.objects.filter(res_group=self.res_group_id)
     
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
@@ -360,8 +360,8 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
-    is_available.depend_on_row(lambda:ResourceAssignment, lambda instance: {'self': instance.resource})
-    is_available.depend_on_row(lambda:Event, lambda instance: {'timeslot': instance})
+    is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
+    is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
     
     def is_taken(self, QObjects=False):
         if QObjects:

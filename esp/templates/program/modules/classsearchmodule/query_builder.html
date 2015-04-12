@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+
+{% block title %}Search Classes for {{ program.niceName }}{% endblock %}
+
+{% block subsection_name %}Class Search{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/query-builder.css"/>
+{% endblock %}
+
+{% block xtrajs %}
+  <script type="text/jsx" src="/media/scripts/query-builder.jsx"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Search Classes for {{ program.niceName }}</h1>
+
+{% load query_builder %}
+{% render_query_builder query_builder %}
+{% endblock %}

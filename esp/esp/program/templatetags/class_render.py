@@ -39,9 +39,9 @@ render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lam
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.owner}, lambda media: isinstance(media.owner, ClassSubject))
-render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
-render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
-render_class_core.cached_function.depend_on_model(lambda: Tag)
+render_class_core.cached_function.depend_on_model('modules.StudentClassRegModuleInfo')
+render_class_core.cached_function.depend_on_model('modules.ClassRegModuleInfo')
+render_class_core.cached_function.depend_on_model('tagdict.Tag')
 
 def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     if not prog:
@@ -85,7 +85,7 @@ render_class.cached_function.get_or_create_token(('cls',))
 # of things like lunch constraints -- a change made in another block could
 # affect whether you can add a class in this one.  So we depend on all SRs for
 # this user.
-render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
+render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class.cached_function.get_or_create_token(('user',))
 
 @cache_function
