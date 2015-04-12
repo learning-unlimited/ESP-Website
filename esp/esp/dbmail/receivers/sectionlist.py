@@ -76,6 +76,7 @@ class SectionList(BaseHandler):
                     settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
                     cls.parent_program.director_email,
                 ],
+                'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
             })
             if DEBUG: print "Settings applied..."
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
@@ -87,6 +88,7 @@ class SectionList(BaseHandler):
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
             apply_list_settings(list_name, {'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
+            apply_list_settings(list_name, {'subject_prefix': "[%s]" % (cls.parent_program.niceName(),)})
 
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, cls.parent_program.director_email)

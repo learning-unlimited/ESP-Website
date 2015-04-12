@@ -29,6 +29,7 @@ var SchedulingCheck = React.createClass({
     return {
       open: false,
       failed: false,
+      timestamp: "never",
     };
   },
 
@@ -43,6 +44,11 @@ var SchedulingCheck = React.createClass({
     }
   },
 
+  timestamp: function () {
+      var now = new Date();
+      return now.toLocaleTimeString();
+  },
+
   loadData: function () {
     // remove any existing data, so we see a loading thing again
     this.setState({data: undefined});
@@ -52,24 +58,34 @@ var SchedulingCheck = React.createClass({
       this.setState({
         data: data,
         failed: false,
+        timestamp: this.timestamp(),
       });
     }.bind(this))  
     .fail(function (data) {
-      this.setState({failed: true});
+      this.setState({
+        failed: true,
+        timestamp: this.timestamp(),
+      });
     }.bind(this));
   },
 
   render: function () {
     var body;
-    if (!this.state.open) {
-      body = <div className="placeholder">(click title to open)</div>;
-    } else if (this.state.failed) {
-      body = <div className="placeholder">loading failed :(</div>;
+    if (this.state.failed) {
+      body = <div className="placeholder">
+        (loaded {this.state.timestamp}, loading failed ☹)
+      </div>;
+    } else if (!this.state.open) {
+      body = <div className="placeholder">
+        (loaded {this.state.timestamp}, click title to open)
+      </div>;
     } else if (!this.state.data) {
       body = <div className="placeholder">loading...</div>;
     } else {
       body = <div>
-        <div className="placeholder">(click title to close)</div>
+        <div className="placeholder">
+          (loaded {this.state.timestamp}, click title to close)
+        </div>
         <div className="data" dangerouslySetInnerHTML={{__html: this.state.data}} />
       </div>;
     }

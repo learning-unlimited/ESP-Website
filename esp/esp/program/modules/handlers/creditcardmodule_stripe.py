@@ -210,6 +210,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         context = {'postdata': request.POST.copy()}
 
+        group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+
         iac = IndividualAccountingController(self.program, request.user)
 
         #   Set Stripe key based on settings.  Also require the API version
@@ -260,7 +262,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         amount=amount_cents_post,
                         currency="usd",
                         card=request.POST['stripeToken'],
-                        description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+                        description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },

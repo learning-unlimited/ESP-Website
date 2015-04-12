@@ -47,7 +47,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.conf import settings
-from django.template.loader import select_template, render_to_string
+from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
@@ -966,8 +966,7 @@ Volunteer schedule for %s:
             return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
-            return render_to_latex(schedule_template, context, file_type)
+            return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
     @aux_call
     @needs_admin
