@@ -794,9 +794,15 @@ class ESPUser(User, AnonymousUser):
                         quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
         ).exists()
+    isAdministrator.get_or_create_token(('self',))
+    isAdministrator.get_or_create_token(('program',))
     isAdministrator.depend_on_row('users.ESPUser', lambda user: {'self': user})
     isAdministrator.depend_on_m2m('users.ESPUser', 'groups', lambda user, group: {'self': user})
-    isAdministrator.depend_on_m2m('users.Permission', lambda perm: {'self': perm.user})
+    # if the permission has null role, expire all caches, otherwise expire only
+    # the one for the relevant user.
+    isAdministrator.depend_on_row('users.Permission', lambda perm:
+                                  {'self': perm.user} if perm.role is None
+                                  else {'self': wildcard})
     isAdmin = isAdministrator
 
     @cache_function
