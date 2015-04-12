@@ -79,6 +79,10 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
                                             'contact_emergency__first_name', 'contact_emergency__last_name']
     list_filter = ('program', )
     date_hierarchy = 'last_ts'
+
+    def lookup_allowed(self, key, value):
+        return True
+
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
