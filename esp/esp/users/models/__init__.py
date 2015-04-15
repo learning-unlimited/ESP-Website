@@ -915,7 +915,11 @@ are a teacher of the class"""
         program's effective school year.
         """
         # "now" is actually whenever the program ran or will run
-        now = program.dates()[0]
+        dates = program.dates()
+        if len(dates) >= 1:
+            now = dates[0]
+        else:
+            now = None
         schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
