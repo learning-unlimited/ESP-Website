@@ -1,10 +1,11 @@
+{% load userlist %}
 {% for timeslot in timeslots %}
     <tr>
         <td>{{ timeslot.start|date:"D, M j f A" }}</td>
         <td>{{ timeslot.end|date:"f A" }}</td>
         <td>
             {% if timeslot.teachers %}
-                {{ timeslot.teachers|join:",<br />" }}
+                {{timeslot.teachers|userlist:',<br />'}}
             {% else %}
                 <em>(None)</em>
             {% endif %}

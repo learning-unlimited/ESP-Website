@@ -195,7 +195,7 @@ class TeacherEventsModule(ProgramModuleObj):
         training_times = self.getTimes('training')
         
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.entriesBySlot( ts ) ]
+            ts.teachers = [ x.user for x in self.entriesBySlot( ts ) ]
         
         context['prog'] = prog
         context['interview_times'] = interview_times
