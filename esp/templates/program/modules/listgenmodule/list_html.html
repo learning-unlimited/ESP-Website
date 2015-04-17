@@ -50,7 +50,7 @@ body { font-family: georgia; }
     </tr>
     {% for user in list.users %}
         <tr>
-        <td>{{ forloop.counter }}</td>
+        <td><a href="{{ user.get_absolute_url }}">{{ forloop.counter }}</a></td>
         {% for field in user.fields %}
             <td>{{ field }}</td>
         {% endfor %}
