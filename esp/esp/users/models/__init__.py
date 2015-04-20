@@ -129,10 +129,6 @@ class UserAvailability(models.Model):
 class ESPUserManager(Manager):
     pass
 
-def get_studentreg_model():
-    from esp.program.models import StudentRegistration
-    return StudentRegistration
-
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
