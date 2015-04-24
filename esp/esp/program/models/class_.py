@@ -588,6 +588,18 @@ class ClassSection(models.Model):
             if time_passed > timedelta(0):
                 return True
         return False
+
+    def start_time_prefetchable(self):
+        """Like self.start_time(), but can be prefetched.
+
+        If self.meeting_times.all() has been prefetched, this will not hit the
+        DB.
+        """
+        mts = self.meeting_times.all()
+        if mts:
+            return min(mt.start for mt in mts)
+        else:
+            return None
    
     def start_time(self):
         if self.meeting_times.count() > 0:
@@ -1087,6 +1099,11 @@ class ClassSection(models.Model):
         return cmp(one.id, other.id)
 
     def __cmp__(self, other):
+        # Warning: this hits the DB around four times per comparison, i.e.,
+        # O(n log n) times for a list.  Consider using prefetch_related and
+        # then sorting with the key self.start_time_prefetched(), which will
+        # hit the DB only once at the start, and compute the start time of each
+        # class only once.
         selfevent = self.firstBlockEvent()
         otherevent = other.firstBlockEvent()
 
