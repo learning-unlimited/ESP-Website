@@ -907,7 +907,8 @@ Volunteer schedule for %s:
             classes_by_student[user_id].append(classes_by_id[cls_id])
 
         for user_id in classes_by_student:
-            # Sort the classes.
+            # Sort the classes.  We don't want to use __cmp__ because it will
+            # not take advantage of our prefetching of meeting_times.
             classes_by_student[user_id].sort(
                 key=lambda cls: (cls.start_time_prefetchable(), cls.title()))
 
