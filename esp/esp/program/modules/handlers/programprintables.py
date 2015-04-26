@@ -896,7 +896,7 @@ Volunteer schedule for %s:
             studentregistration__relationship__name='Enrolled',
             parent_class__parent_program=prog,
             status=ACCEPTED,
-            meeting_times__isnull=False)
+            meeting_times__isnull=False).distinct()
         all_classes = all_classes.select_related('parent_class')
         all_classes = all_classes.prefetch_related('meeting_times')
         classes_by_id = {cls.id: cls for cls in all_classes}
