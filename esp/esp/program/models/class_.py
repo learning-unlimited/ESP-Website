@@ -590,10 +590,11 @@ class ClassSection(models.Model):
         return False
 
     def start_time_prefetchable(self):
-        """Like self.start_time(), but can be prefetched.
+        """Like self.start_time().start, but can be prefetched.
 
-        If self.meeting_times.all() has been prefetched, this will not hit the
-        DB.
+        Gets the start time of a class.  If self.meeting_times.all() has been
+        prefetched, this will not hit the DB.  If it has not been prefetched,
+        this will not help.
         """
         mts = self.meeting_times.all()
         if mts:
