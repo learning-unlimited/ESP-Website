@@ -907,7 +907,7 @@ Volunteer schedule for %s:
             classes_by_student[user_id].append(classes_by_id[cls_id])
 
         for user_id in classes_by_student:
-            # Sort the classes.  We don't want to use 
+            # Sort the classes.
             classes_by_student[user_id].sort(
                 key=lambda cls: (cls.start_time_prefetchable(), cls.title()))
 
