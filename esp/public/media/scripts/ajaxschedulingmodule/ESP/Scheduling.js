@@ -300,7 +300,7 @@ ESP.Scheduling = function(){
 				    return (res ? (res.text + ": " + text) : null);
 				}) : "(none)",
 			    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
-			    'Grades:': s.grade_min ? (s.grade_min + "-" + s.grade_max) : "(n/a)",
+			    'Years:': s.grade_min ? (s.grade_min + "-" + s.grade_max) : "(n/a)",
 			    "Prereq's:": s.prereqs,
 			    'Comments:': s.comments
 			};

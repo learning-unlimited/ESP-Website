@@ -25,7 +25,7 @@
             <tr>
             <td width="15%"><div class="hideextra"><span class="classitem"style="color: #00CC00;">{% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></div></td>
             <td width="75%"><div class="hideextra"><span class="classitem"><b>{{ class.emailcode }}</b>: {{ class.title }}</span></div></td>
-            <td width="10%"><div class="hideextra"><span class="classitem"style="color: #CC0000;">Grades {{ class.parent_class.grade_min }}--{{ class.parent_class.grade_max }}</span></div> </td>
+            <td width="10%"><div class="hideextra"><span class="classitem"style="color: #CC0000;">Years {{ class.parent_class.grade_min }}--{{ class.parent_class.grade_max }}</span></div> </td>
             </tr>
         {% endif %} 
         {% endif %}

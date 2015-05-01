@@ -23,7 +23,7 @@
             {% if not forloop.last %}, {% endif %}
             {% endfor %}
         </td>
-	<td>Grades: {% if cls_high_school_only %}<font color="blue">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls_high_school_only %}</font>{% endif %}</td>
+	<td>Years: {% if cls_high_school_only %}<font color="blue">{% endif %}{{ cls.grade_min }}-{{ cls.grade_max }}{% if cls_high_school_only %}</font>{% endif %}</td>
         <td>
             <input type="hidden" id="cls-{{ cls_id }}-dirty" name="cls-{{ cls_id }}-dirty" value="False" />
             <input class="fancybutton" type="submit" value="Alter" />
