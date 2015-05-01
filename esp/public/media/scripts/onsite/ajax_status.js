@@ -751,7 +751,7 @@ function render_table(display_mode, student_id)
             new_div.addClass("tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
             var class_data = data.classes[section.class_id];
-            var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
+            var short_data = section.title + " - Years " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
             if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
             tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
             // TODO: more reliable way to compute friendly_times?
