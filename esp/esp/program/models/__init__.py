@@ -111,31 +111,6 @@ class ProgramModule(models.Model):
         """ Return a human-readable name that identifies this Program Module """
         return self.admin_title
 
-    def getSummaryCalls(self):
-        """
-        Returns a list of the summary view functions for the specified module
-
-        Only returns functions that are both listed in summary_calls,
-        and that are valid functions for this class.
-
-        Returns an empty list if no calls are found.
-        """
-        callNames = this.summary_calls.split(',')
-
-        calls = []
-        myClass = this.getPythonClass()
-
-             
-
-        for i in callNames:
-            try:
-                calls.append(getattr(myClass, i))
-            except:
-                pass
-
-        return calls
-
-
     def getPythonClass(self):
         """
         Gets the Python class that's associated with this ProgramModule database record
