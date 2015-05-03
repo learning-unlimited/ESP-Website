@@ -102,6 +102,6 @@ def install(model=None):
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
-    updateModules(table_data, overwriteExisting=True, deleteExtra=True, model=model)
+    updateModules(table_data, deleteExtra=True, model=model)
     
 from esp.program.modules.module_ext import *
