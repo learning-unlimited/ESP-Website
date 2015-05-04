@@ -99,6 +99,8 @@ class SurveyManagement(ProgramModuleObj):
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
 
+    survey = surveys
+
     class Meta:
         proxy = True
 
