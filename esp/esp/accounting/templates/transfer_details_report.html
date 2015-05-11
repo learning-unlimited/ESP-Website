@@ -1,0 +1,109 @@
+{% extends "elements/html" %}
+{% load i18n %}
+
+{% block stylesheets %}
+    <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>
+    <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    {% block jquery_ui_stylesheet_version %}
+    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+    {% endblock jquery_ui_stylesheet_version %}
+{% endblock %}
+{% block body %}
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/css/bootstrap-datepicker.css" />
+
+<div class="container">
+<div class="row">
+	<div class="span10">
+    <div class="navbar">
+      <div class="navbar-inner">
+        <form method="GET" action="." class="form-horizontal pull-left">
+        <div class="controls form-inline">
+              <label for="id_program">Program</label>
+              {{form.program}}
+              <label for="id_from_date">From</label>
+              {{form.from_date}}
+              <label for="id_to_date">To</label>
+              {{form.to_date}}
+               <button type="submit" class="btn btn-success show-transfers">Show</button>
+          </div>
+      
+    </form>
+      </div>
+    </div>
+		
+	</div>
+</div>
+<div class="row">
+	<div class="span10">
+		{% block content %}
+    {% for section in report_model %}
+        <div class="panel panel-default">
+          <div class="panel-heading">
+              <h4>
+                  {{ section.program }}
+              </h4>
+          </div>
+          <div class="panel-body">
+              {% if section.transfers %}
+              <table class="table table">
+                  <thead>
+                      <tr>
+                        <th>
+                            # Transfer
+                        </th>
+                        <th>
+                            Transfer Date
+                        </th>
+                        <th>
+                            Type
+                        </th>
+                        <th>
+                            Amount
+                        </th>
+                      </tr>
+                  </thead>
+                <tbody>
+                  {% for transfer in section.transfers %}
+                        <tr>
+                            <td>
+                                <b>{{ transfer.id }}</b>
+                            </td>
+                            <td>
+                                {{ transfer.timestamp|date:"m/d/Y" }}
+                            </td>
+                            <td>
+                                {{ transfer.line_item.text }}
+                            </td>
+                            <td>
+                                {% if transfer.line_item.text == 'Student payment' %}-{% endif %}
+                                {{ transfer.amount_dec }}
+                            </td>
+                        </tr>
+                  {% endfor %}
+                  </tbody>
+              </table>
+                     <div class="text-right col-md-3 col-md-offset-8">
+                        Total owed: {{ section.total_owed }}
+                        <br />
+                        Total paid: {{ section.total_paid }}
+                        <br />
+                        <b>Balance:</b> {{ section.balance }}
+                    </div>
+              {% else %}
+                  No transfers found for the selected period
+                {% endif %}
+          </div>
+        </div>
+    {% endfor %}
+{% endblock %}
+	</div>
+
+</div>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/js/bootstrap-datepicker.js"></script>
+<script>
+  $j('#id_from_date').datepicker();
+  $j('#id_to_date').datepicker();
+</script>
+</div>
+
+{% endblock body %}

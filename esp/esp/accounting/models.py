@@ -45,7 +45,7 @@ from decimal import Decimal
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, related_name='line_item_types')
     required = models.BooleanField(default=False)
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
@@ -202,7 +202,7 @@ class Account(models.Model):
                 target_name = target.name
                 target_title = target.description_title
             
-            transfers_in_context.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
+            transfers_in_context.append({'amount': transfer['amount'], 'tarclasget_type': 'source', 'target_name': target_name, 'target_title': target_title})
             
         for transfer in transfers_out:
             target_name = "none"
@@ -223,10 +223,11 @@ class Account(models.Model):
     class Meta:
         unique_together = ('name',)
 
+
 class Transfer(models.Model):
     source = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_source', help_text='Source account; where the money is coming from.  Leave blank if this is a payment from outside.')
     destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='transfers')
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)

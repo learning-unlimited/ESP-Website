@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 """
 
 from django.conf.urls.defaults import *
-from esp.accounting.views import summary
+from esp.accounting.views import summary, TransferDetailsReport
 
 urlpatterns = patterns('esp.accounting',
     (r'^$', summary),
+    url(r'^transfer_details/(?P<username>[^\.]+)', TransferDetailsReport.as_view(), name='transfer_details_report'),
 )
