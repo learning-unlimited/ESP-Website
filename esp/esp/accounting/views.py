@@ -33,25 +33,23 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from collections import OrderedDict
-from esp.accounting.models import Account
-from esp.web.util.main import render_to_response
-from esp.users.models import admin_required
-
 from datetime import datetime, time
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q, Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, TemplateView
 from django.views.generic.base import TemplateView
-from django.http import HttpResponse
-from django.core.exceptions import ObjectDoesNotExist
-from django.shortcuts import get_object_or_404
-from django.db.models import Sum
+from django.utils.decorators import method_decorator
 
-from django.db.models import Q
+from esp.accounting.models import Account, LineItemType
+from esp.program.models import Program
+
+from esp.users.models import admin_required, ESPUser
+from esp.web.util.main import render_to_response
 
 from forms import TransferDetailsReportForm
-from esp.program.models import Program
-from esp.users.models import ESPUser
-from esp.program.models import Program
-from esp.accounting.models import *
 
 
 @admin_required
@@ -62,6 +60,10 @@ def summary(request):
 
 
 class ReportSection(object):
+    """
+    Represents a specific section of the report i.e. for a specified program.
+    Performs basic summary calculations.
+    """
     def __init__(self, program, transfers):
         self.program = program
         self.transfers = transfers.filter(line_item__program=program)
@@ -79,12 +81,18 @@ class ReportSection(object):
 
 
 class TransferDetailsReportModel(object):
-    def __init__(self, user, program, start_date=None, end_date=None):
+    """
+    Represents the data to be displayed in the report. Implements underlying
+    data filtering logic. For convenience, can be iterated, in order to 
+    generate corresponding sections.
+    """
+
+    def __init__(self, user, program, from_date=None, to_date=None):
         self.sections = []
         self.user = user
         self.program = program
-        self.start_date = start_date
-        self.end_date = end_date
+        self.from_date = from_date
+        self.to_date = to_date
 
         line_items = LineItemType.objects.filter(transfer__user=self.user)
         self.user_programs = Program.objects.filter(line_item_types__in=line_items).distinct()
@@ -96,13 +104,13 @@ class TransferDetailsReportModel(object):
 
         transfer_qs = transfer_qs.filter(line_item__program__in=list(self.user_programs))
 
-        if start_date:
-            transfer_qs = transfer_qs.filter(timestamp__gte=start_date)
+        if from_date:
+            transfer_qs = transfer_qs.filter(timestamp__gte=from_date)
 
-        if end_date:
-            transfer_qs = transfer_qs.filter(timestamp_lte=end_date)
+        if to_date:
+            transfer_qs = transfer_qs.filter(timestamp__lte=to_date)
 
-        program_transfers = []
+        transfer_qs = transfer_qs.order_by('-timestamp')
         for program in self.user_programs:
             self.sections.append(ReportSection(program, transfer_qs))
 
@@ -128,15 +136,24 @@ class TransferDetailsReport(TemplateView):
         user_programs = Program.objects.filter(line_item_types__in=line_items).distinct()
         form = TransferDetailsReportForm(self.request.GET, user_programs=user_programs)
 
+
         if form.is_valid():
             context['report_model'] = TransferDetailsReportModel(self.user,
                                           form.cleaned_data.get('program'),
-                                          form.cleaned_data.get('start_date'),
-                                          form.cleaned_data.get('end_date')
+                                          form.cleaned_data.get('from_date'),
+                                          form.cleaned_data.get('to_date')
                                        )
+            context['from_date'] = form.cleaned_data.get('from_date')
+            context['to_date'] = form.cleaned_data.get('to_date')
+
+        context['user'] = self.user
 
         context['form'] = form
        
         return context
+
+    @method_decorator(admin_required)
+    def dispatch(self, *args, **kwargs):
+        return super(TransferDetailsReport, self).dispatch(*args, **kwargs)
 
 
