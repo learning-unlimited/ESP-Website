@@ -1259,10 +1259,6 @@ class RegistrationProfile(models.Model):
         if records.count() == 0:
             record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
 
-    def cancelStudentRegConfirmation(self, user):
-        """ Cancel the registration confirmation for the specified student """
-        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
-        
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
