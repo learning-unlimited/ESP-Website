@@ -46,6 +46,7 @@
 
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/react.js"></script>
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/JSXTransformer.js"></script>
+    <script type="text/javascript" src="/media/scripts/lodash.compat.min.js"></script>
 
     {% block js1 %}
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>

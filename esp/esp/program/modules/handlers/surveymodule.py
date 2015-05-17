@@ -116,6 +116,8 @@ class SurveyModule(ProgramModuleObj):
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
 
+    surveys = survey
+
     class Meta:
         proxy = True
 

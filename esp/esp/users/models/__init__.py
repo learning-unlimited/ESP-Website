@@ -769,6 +769,7 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
+    @cache_function
     def isAdministrator(self, program=None):
         """Determine if the user is an admin for the program.
 
@@ -789,6 +790,17 @@ class ESPUser(User, AnonymousUser):
                         quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
         ).exists()
+    isAdministrator.get_or_create_token(('self',))
+    isAdministrator.get_or_create_token(('program',))
+    isAdministrator.depend_on_row('users.ESPUser', lambda user: {'self': user})
+    isAdministrator.depend_on_m2m('users.ESPUser', 'groups', lambda user, group: {'self': user})
+    # if the permission has null user and non-null group, expire all caches,
+    # otherwise expire only the one for the relevant user.
+    isAdministrator.depend_on_row('users.Permission', lambda perm:
+                                  {'self': perm.user}
+                                  if perm.user is not None
+                                  or perm.role is None
+                                  else {'self': wildcard})
     isAdmin = isAdministrator
 
     @cache_function
@@ -911,7 +923,11 @@ are a teacher of the class"""
         program's effective school year.
         """
         # "now" is actually whenever the program ran or will run
-        now = program.dates()[0]
+        dates = program.dates()
+        if len(dates) >= 1:
+            now = dates[0]
+        else:
+            now = None
         schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
