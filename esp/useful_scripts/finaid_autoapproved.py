@@ -2,12 +2,9 @@
 #
 # Display Auto-Approved Financial Aid Requests
 # 
-# Displays financial aid requests where the student has reported that they
-# receive free or reduced-price lunch so that these students can be
-# contacted after the initial email batch has been sent. Sorted by date,
-# descending. Make sure to update PROGRAM_ID before running.
-#
-# This script should be run from the manage.py shell
+# Displays financial aid requests that have been approved or autoapproved,
+# sorted by date, so that students can be emailed easily.  Make sure to update
+# PROGRAM_ID before running.
 #
 
 from script_setup import *
