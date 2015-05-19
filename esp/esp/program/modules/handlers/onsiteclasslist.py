@@ -61,17 +61,12 @@ def hsl_to_rgb(hue, saturation, lightness=0.5):
 class OnSiteClassList(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return [ {
-            "admin_title": "Show All Classes at Onsite Registration",
-            "link_title": "List of All Classes",
-            "module_type": "onsite",
-            "seq": 31,
-            }, {
+        return {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
-            } ]
+            }
 
     @cache_function
     def section_data(sec):
