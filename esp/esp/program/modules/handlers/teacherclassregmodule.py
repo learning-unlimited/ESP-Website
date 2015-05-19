@@ -39,6 +39,7 @@ from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
