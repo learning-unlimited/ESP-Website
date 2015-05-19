@@ -365,10 +365,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog):
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
- 
+        else:
+            # TODO: determine if anything still relies on the legacy format.
+            # merge the legacy format with the current format, just in case
+            sections = self.lottery_preferences_usepriority(request, prog)['sections']
+            sections_legacy = self.lottery_preferences_legacy(request, prog)['sections']
+            sections_merged = []
+            for item, item_legacy in zip(sections, sections_legacy):
+                assert item['id'] == item_legacy['id']
+                item_merged = dict(item_legacy.items() + item.items())
+                sections_merged.append(item_merged)
+            return {'sections': sections_merged}
+
+    def lottery_preferences_legacy(self, request, prog):
+        # DEPRECATED: see comments in lottery_preferences method
         sections = list(prog.sections().values('id'))
         sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
         sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
