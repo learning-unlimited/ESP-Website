@@ -220,7 +220,6 @@ INSTALLED_APPS = (
     'esp.cache_loader',
     'esp.tagdict',
     'esp.seltests',
-    'esp.dataviews',
     'esp.themes',
     'esp.varnish',
     'django_extensions',
