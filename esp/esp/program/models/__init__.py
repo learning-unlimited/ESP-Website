@@ -252,7 +252,6 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
     
-    anchor = AjaxForeignKey(DataTree, unique=True, blank=True, null=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     url = models.CharField(max_length=80)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()

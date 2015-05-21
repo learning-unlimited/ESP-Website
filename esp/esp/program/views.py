@@ -416,8 +416,8 @@ def newprogram(request):
         template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
         '''
         As Program Name should be new for each new program created then it is better to not to show old program names in input box .
-        template_prog["term"] = tprogram.anchor.name
-        template_prog["term_friendly"] = tprogram.anchor.friendly_name
+        template_prog["term"] = tprogram.program_instance()
+        template_prog["term_friendly"] = tprogram.niceName()
         '''
         
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))

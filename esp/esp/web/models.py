@@ -40,7 +40,6 @@ from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField()
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')

@@ -544,7 +544,7 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        #   Because the timeslot has an anchor, the program is unnecessary.
+        #   Because the timeslot has a program, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
             role = Group.objects.get_or_create(name='Teacher')[0]

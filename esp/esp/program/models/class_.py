@@ -326,7 +326,6 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES, default=UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
     registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
@@ -1322,7 +1321,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     #customforms info
     form_link_name='Course'	
 
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     title = models.TextField()
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
@@ -1855,7 +1853,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
 
     def getRegVerbs(self, user):
-        """ Get the list of verbs that a student has within this class's anchor. """
+        """ Get the list of verbs that a student has within this class. """
         return self.getRegistrations(user).values_list('relationship__name', flat=True)
 
     def preregister_student(self, user, overridefull=False, automatic=False):

@@ -226,7 +226,7 @@ class FormstackStudentProgramAppManager(models.Manager):
                 return None
             except ValueError:
                 cls_title = val.strip()
-                clses = program.classes().filter(anchor__friendly_name=cls_title)
+                clses = program.classes().filter(title=cls_title)
                 if clses:
                     return clses[0]
                 else:

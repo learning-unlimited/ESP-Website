@@ -50,7 +50,6 @@ root_file_path = "uploaded"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True) # Relevant node in the tree
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
