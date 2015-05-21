@@ -37,7 +37,6 @@ from operator import __or__ as OR
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 
 from django.core.mail import send_mail

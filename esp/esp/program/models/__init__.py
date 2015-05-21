@@ -54,7 +54,6 @@ from esp.cache import cache_function
 from esp.cache.key_set import wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag

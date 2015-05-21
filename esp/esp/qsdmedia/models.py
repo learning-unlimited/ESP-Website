@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 
-from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 import os.path

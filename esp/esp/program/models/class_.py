@@ -60,7 +60,6 @@ from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
 # ESP models
-from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData

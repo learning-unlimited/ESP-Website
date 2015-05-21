@@ -37,7 +37,6 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 
