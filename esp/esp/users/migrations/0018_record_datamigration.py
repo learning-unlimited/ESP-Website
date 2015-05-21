@@ -3,7 +3,7 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import Program
-from esp.users.models import UserBit, Record, ESPUser
+from esp.users.models import Record, ESPUser
 
 import datetime
 

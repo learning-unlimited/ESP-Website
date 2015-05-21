@@ -3,7 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from esp.users.models import UserBit, Permission, ESPUser
+from esp.users.models import Permission, ESPUser
 from esp.program.models import Program
 from django.contrib.auth.models import Group
 

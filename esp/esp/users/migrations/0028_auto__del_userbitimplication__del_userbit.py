@@ -1,45 +1,56 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
-from esp.users.models import ESPUser
-from esp.users.models import install_groups
-from django.contrib.auth.models import Group
 
-class Migration(DataMigration):
+
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # First, create a Group for every verb name
-        role_verbs = orm['datatree.DataTree'].objects.filter(parent__uri="V/Flags/UserRole")
-        role_names = list(role_verbs.values_list('name', flat=True).distinct())
-        install_groups(role_names)
+        # Deleting model 'UserBitImplication'
+        db.delete_table('users_userbitimplication')
 
-        # Cache the groups so we don't have to keep fetching them from the DB.
-        groups = dict([(g.name, g) for g in Group.objects.all()])
+        # Removing M2M table for field created_bits on 'UserBitImplication'
+        db.delete_table(db.shorten_name('users_userbitimplication_created_bits'))
 
-        # Now, for all user roles applied to users, add those users to the appropriate Group
-        # Do this in batched inserts: for each role, filter for all users with
-        # that role, and add them all at once to the Group.
-        role_bits = orm.UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(enddate__gte=datetime.datetime.now())
-        for role_name in role_names:
-            user_ids = list(role_bits.filter(verb__name=role_name).values_list('user', flat=True).distinct())
-            groups[role_name].user_set.add(*user_ids)
+        # Deleting model 'UserBit'
+        db.delete_table('users_userbit')
 
-        # Adds Administrators who might not have had the UserRole.
-        # The enddate filter is to prevent the migration from adding
-        # Administrators with an Administer privilege that is set to expire,
-        # since membership in the Administrator group has no expiration.
-        # Instead, an Administer privilege should be given in a later migration.
-        admin_role = groups["Administrator"]
-        admin_bits = orm.UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__gte=datetime.datetime(3000,1,1))
-        admin_ids = list(admin_bits.values_list('user', flat=True).distinct())
-        admin_role.user_set.add(*admin_ids)
 
     def backwards(self, orm):
-        "Write your backwards methods here."
-        for user in orm.ESPUser.objects.all():
-            user.groups.clear()
+        # Adding model 'UserBitImplication'
+        db.create_table('users_userbitimplication', (
+            ('qsc_implied', self.gf('django.db.models.fields.related.ForeignKey')(related_name='qsc_implied', null=True, to=orm['datatree.DataTree'], blank=True)),
+            ('verb_implied', self.gf('django.db.models.fields.related.ForeignKey')(related_name='verb_implied', null=True, to=orm['datatree.DataTree'], blank=True)),
+            ('recursive', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('verb_original', self.gf('django.db.models.fields.related.ForeignKey')(related_name='verb_original', null=True, to=orm['datatree.DataTree'], blank=True)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('qsc_original', self.gf('django.db.models.fields.related.ForeignKey')(related_name='qsc_original', null=True, to=orm['datatree.DataTree'], blank=True)),
+        ))
+        db.send_create_signal('users', ['UserBitImplication'])
+
+        # Adding M2M table for field created_bits on 'UserBitImplication'
+        m2m_table_name = db.shorten_name('users_userbitimplication_created_bits')
+        db.create_table(m2m_table_name, (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('userbitimplication', models.ForeignKey(orm['users.userbitimplication'], null=False)),
+            ('userbit', models.ForeignKey(orm['users.userbit'], null=False))
+        ))
+        db.create_unique(m2m_table_name, ['userbitimplication_id', 'userbit_id'])
+
+        # Adding model 'UserBit'
+        db.create_table('users_userbit', (
+            ('qsc', self.gf('django.db.models.fields.related.ForeignKey')(related_name='userbit_qsc', to=orm['datatree.DataTree'])),
+            ('startdate', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, blank=True)),
+            ('verb', self.gf('django.db.models.fields.related.ForeignKey')(related_name='userbit_verb', to=orm['datatree.DataTree'])),
+            ('enddate', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(9999, 1, 1, 0, 0), blank=True)),
+            ('recursive', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['auth.User'], null=True, blank=True)),
+        ))
+        db.send_create_signal('users', ['UserBit'])
+
 
     models = {
         'auth.group': {
@@ -73,12 +84,13 @@ class Migration(DataMigration):
         },
         'cal.event': {
             'Meta': {'object_name': 'Event'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'description': ('django.db.models.fields.TextField', [], {}),
             'end': ('django.db.models.fields.DateTimeField', [], {}),
             'event_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.EventType']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
             'priority': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
             'short_description': ('django.db.models.fields.TextField', [], {}),
             'start': ('django.db.models.fields.DateTimeField', [], {})
         },
@@ -114,11 +126,22 @@ class Migration(DataMigration):
             'seq': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'symbol': ('django.db.models.fields.CharField', [], {'default': "'?'", 'max_length': '1'})
         },
+        'program.classflagtype': {
+            'Meta': {'ordering': "['seq']", 'object_name': 'ClassFlagType'},
+            'color': ('django.db.models.fields.CharField', [], {'max_length': '20', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
+            'seq': ('django.db.models.fields.SmallIntegerField', [], {'default': '0'}),
+            'show_in_dashboard': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'show_in_scheduler': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
+        },
         'program.program': {
             'Meta': {'object_name': 'Program'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'unique': 'True'}),
             'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']", 'symmetrical': 'False'}),
+            'director_cc_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
+            'director_confidential_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
             'director_email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
+            'flag_types': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassFlagType']", 'symmetrical': 'False', 'blank': 'True'}),
             'grade_max': ('django.db.models.fields.IntegerField', [], {}),
             'grade_min': ('django.db.models.fields.IntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -138,6 +161,20 @@ class Migration(DataMigration):
             'module_type': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'seq': ('django.db.models.fields.IntegerField', [], {})
+        },
+        'qsdmedia.media': {
+            'Meta': {'object_name': 'Media'},
+            'file_extension': ('django.db.models.fields.TextField', [], {'max_length': '16', 'null': 'True', 'blank': 'True'}),
+            'file_name': ('django.db.models.fields.TextField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'format': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'friendly_name': ('django.db.models.fields.TextField', [], {}),
+            'hashed_name': ('django.db.models.fields.TextField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'mime_type': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'owner_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'owner_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']", 'null': 'True', 'blank': 'True'}),
+            'size': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'target_file': ('django.db.models.fields.files.FileField', [], {'max_length': '100'})
         },
         'users.contactinfo': {
             'Meta': {'object_name': 'ContactInfo'},
@@ -177,13 +214,23 @@ class Migration(DataMigration):
             'sms_number': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'sms_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
-        'users.espuser': {
-            'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
-        },
         'users.espuser_profile': {
             'Meta': {'object_name': 'ESPUser_Profile'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'unique': 'True'})
+        },
+        'users.gradechangerequest': {
+            'Meta': {'ordering': "['-acknowledged_time', '-created']", 'object_name': 'GradeChangeRequest'},
+            'acknowledged_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
+            'acknowledged_time': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
+            'approved': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
+            'claimed_grade': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'grade_before_request': ('django.db.models.fields.PositiveIntegerField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
+            'reason': ('django.db.models.fields.TextField', [], {}),
+            'requesting_student': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'requesting_student_set'", 'to': "orm['auth.User']"})
         },
         'users.guardianinfo': {
             'Meta': {'object_name': 'GuardianInfo'},
@@ -209,6 +256,16 @@ class Migration(DataMigration):
             'recover_key': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
+        'users.permission': {
+            'Meta': {'object_name': 'Permission'},
+            'end_date': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'permission_type': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
+            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.Group']", 'null': 'True', 'blank': 'True'}),
+            'start_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'blank': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
+        },
         'users.persistentqueryfilter': {
             'Meta': {'object_name': 'PersistentQueryFilter'},
             'create_ts': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
@@ -230,6 +287,7 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'StudentInfo'},
             'dob': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'food_preference': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'gender': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'graduation_year': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'heard_about': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -268,28 +326,8 @@ class Migration(DataMigration):
             'event': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.Event']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'priority': ('django.db.models.fields.DecimalField', [], {'default': "'1.0'", 'max_digits': '3', 'decimal_places': '2'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
+            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.Group']"}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
-        },
-        'users.userbit': {
-            'Meta': {'object_name': 'UserBit'},
-            'enddate': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(9999, 1, 1, 0, 0)', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'qsc': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'userbit_qsc'", 'to': "orm['datatree.DataTree']"}),
-            'recursive': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'startdate': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
-            'verb': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'userbit_verb'", 'to': "orm['datatree.DataTree']"})
-        },
-        'users.userbitimplication': {
-            'Meta': {'object_name': 'UserBitImplication'},
-            'created_bits': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['users.UserBit']", 'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'qsc_implied': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'qsc_implied'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'qsc_original': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'qsc_original'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'recursive': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
-            'verb_implied': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'verb_implied'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'verb_original': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'verb_original'", 'null': 'True', 'to': "orm['datatree.DataTree']"})
         },
         'users.userforwarder': {
             'Meta': {'object_name': 'UserForwarder'},
@@ -313,4 +351,4 @@ class Migration(DataMigration):
         }
     }
 
-    complete_apps = ['users']
+    complete_apps = ['datatree', 'users']

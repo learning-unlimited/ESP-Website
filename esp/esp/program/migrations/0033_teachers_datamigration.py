@@ -4,14 +4,13 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import ClassSubject
-from esp.users.models import UserBit
 from django.core.cache import cache
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         #   Use only currently valid UserBits
-        bits=UserBit.valid_objects().filter(verb__uri="V/Flags/Registration/Teacher")
+        bits=orm['users.UserBit'].valid_objects().filter(verb__uri="V/Flags/Registration/Teacher")
         #   Keep track of pairs copied so far so we don't duplicate
         pairs_so_far = set()
         i=0
