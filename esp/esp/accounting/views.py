@@ -67,17 +67,18 @@ class ReportSection(object):
     def __init__(self, program, transfers):
         self.program = program
         self.transfers = transfers.filter(line_item__program=program)
-        
+
         line_item_type_q = Q(line_item__text__iexact='Student payment')
         sum_query = Sum('amount_dec')
         self.total_owed_result = self.transfers.filter(~line_item_type_q) \
-                                    .aggregate(sum_query)
+                                     .aggregate(sum_query)
+
         self.total_paid_result = self.transfers.filter(line_item_type_q) \
-                                    .aggregate(sum_query)
+                                     .aggregate(sum_query)
 
         self.total_owed = self.total_owed_result['amount_dec__sum'] or 0
         self.total_paid = self.total_paid_result['amount_dec__sum'] or 0
-        self.balance =  float(self.total_owed) - float(self.total_paid)
+        self.balance = float(self.total_owed) - float(self.total_paid)
 
 
 class TransferDetailsReportModel(object):
@@ -95,7 +96,8 @@ class TransferDetailsReportModel(object):
         self.to_date = to_date
 
         line_items = LineItemType.objects.filter(transfer__user=self.user)
-        self.user_programs = Program.objects.filter(line_item_types__in=line_items).distinct()
+        self.user_programs = Program.objects.filter(line_item_types__in=line_items) \
+                                            .distinct()
 
         transfer_qs = self.user.transfers.all()
 
@@ -134,8 +136,9 @@ class TransferDetailsReport(TemplateView):
         context = super(TransferDetailsReport, self).get_context_data(**kwargs)
         line_items = LineItemType.objects.filter(transfer__user=self.user)
         user_programs = Program.objects.filter(line_item_types__in=line_items).distinct()
-        form = TransferDetailsReportForm(self.request.GET, user_programs=user_programs)
 
+        form_initial = self.request.GET
+        form = TransferDetailsReportForm(form_initial, user_programs=user_programs)
 
         if form.is_valid():
             context['report_model'] = TransferDetailsReportModel(self.user,
@@ -147,7 +150,6 @@ class TransferDetailsReport(TemplateView):
             context['to_date'] = form.cleaned_data.get('to_date')
 
         context['user'] = self.user
-
         context['form'] = form
        
         return context
