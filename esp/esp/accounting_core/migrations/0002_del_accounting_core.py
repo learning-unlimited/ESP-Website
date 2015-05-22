@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("accounting_docs", "0001_initial"),
+    )
+
     def forwards(self, orm):
         # Deleting model 'LineItemType'
         db.delete_table('accounting_core_lineitemtype')

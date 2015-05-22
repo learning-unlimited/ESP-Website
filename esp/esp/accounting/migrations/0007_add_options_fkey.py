@@ -6,7 +6,9 @@ from django.db import models
 
 
 class Migration(SchemaMigration):
-
+    depends_on = (
+        ("accounting_core", "0001_initial"),
+    )
     def forwards(self, orm):
         # Adding field 'Transfer.options'
         db.add_column('accounting_transfer', 'option',
