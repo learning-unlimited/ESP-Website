@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("program", "0046_delete_anchors"),
+    )
+
     def forwards(self, orm):
         # Removing unique constraint on 'DataTree', fields ['name', 'parent']
         try:
