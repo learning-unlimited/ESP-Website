@@ -4,7 +4,6 @@ import os.path
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-from esp.datatree.models import install as datatree_install
 from django.conf import settings
 
 
