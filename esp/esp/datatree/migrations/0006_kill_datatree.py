@@ -8,7 +8,13 @@ from django.db import models
 class Migration(SchemaMigration):
 
     depends_on = (
+        ("accounting_core", "0002_del_accounting_core"),
+        ("miniblog", "0003_remove_anchor"),
+        ("modules", "0029_module_ext_unused_model_removal"),
         ("program", "0046_delete_anchors"),
+        ("qsdmedia", "0008_auto__del_field_media_anchor"),
+        ("survey", "0004_anchor_replacement_3"),
+        ("web", "0006_auto__del_field_navbarentry_path"),
     )
 
     def forwards(self, orm):
