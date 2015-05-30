@@ -7,31 +7,33 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
-    depends_on = (
-        ("datatree", "0004_change_fns_yet_again"),
-    )
-
     def forwards(self, orm):
+        # Deleting field 'ClassSection.anchor'
+        db.delete_column('program_classsection', 'anchor_id')
 
-        # Changing field 'ClassSection.anchor'
-        db.alter_column('program_classsection', 'anchor_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True))
+        # Deleting field 'Program.anchor'
+        db.delete_column('program_program', 'anchor_id')
 
-        # Changing field 'Program.anchor'
-        db.alter_column('program_program', 'anchor_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], unique=True, null=True))
+        # Deleting field 'ClassSubject.anchor'
+        db.delete_column('program_class', 'anchor_id')
 
-        # Changing field 'ClassSubject.anchor'
-        db.alter_column('program_class', 'anchor_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True))
 
     def backwards(self, orm):
+        # Adding field 'ClassSection.anchor'
+        db.add_column('program_classsection', 'anchor',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True, blank=True),
+                      keep_default=False)
 
-        # User chose to not deal with backwards NULL issues for 'ClassSection.anchor'
-        raise RuntimeError("Cannot reverse this migration. 'ClassSection.anchor' and its values cannot be restored.")
+        # Adding field 'Program.anchor'
+        db.add_column('program_program', 'anchor',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], unique=True, null=True, blank=True),
+                      keep_default=False)
 
-        # User chose to not deal with backwards NULL issues for 'Program.anchor'
-        raise RuntimeError("Cannot reverse this migration. 'Program.anchor' and its values cannot be restored.")
+        # Adding field 'ClassSubject.anchor'
+        db.add_column('program_class', 'anchor',
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True, blank=True),
+                      keep_default=False)
 
-        # User chose to not deal with backwards NULL issues for 'ClassSubject.anchor'
-        raise RuntimeError("Cannot reverse this migration. 'ClassSubject.anchor' and its values cannot be restored.")
 
     models = {
         'auth.group': {
@@ -134,6 +136,26 @@ class Migration(SchemaMigration):
             'seq': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'symbol': ('django.db.models.fields.CharField', [], {'default': "'?'", 'max_length': '1'})
         },
+        'program.classflag': {
+            'Meta': {'ordering': "['flag_type']", 'object_name': 'ClassFlag'},
+            'comment': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'created_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'classflags_created'", 'to': "orm['auth.User']"}),
+            'created_time': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'flag_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassFlagType']"}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'modified_by': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'classflags_modified'", 'to': "orm['auth.User']"}),
+            'modified_time': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'subject': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'flags'", 'to': "orm['program.ClassSubject']"})
+        },
+        'program.classflagtype': {
+            'Meta': {'ordering': "['seq']", 'object_name': 'ClassFlagType'},
+            'color': ('django.db.models.fields.CharField', [], {'max_length': '20', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
+            'seq': ('django.db.models.fields.SmallIntegerField', [], {'default': '0'}),
+            'show_in_dashboard': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'show_in_scheduler': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
+        },
         'program.classimplication': {
             'Meta': {'object_name': 'ClassImplication', 'db_table': "'program_classimplications'"},
             'cls': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSubject']", 'null': 'True'}),
@@ -146,7 +168,6 @@ class Migration(SchemaMigration):
         },
         'program.classsection': {
             'Meta': {'ordering': "['id']", 'object_name': 'ClassSection'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'null': 'True', 'blank': 'True'}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'duration': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
             'enrolled_students': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
@@ -169,7 +190,6 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ClassSubject', 'db_table': "'program_class'"},
             'allow_lateness': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allowable_class_size_ranges': ('django.db.models.fields.related.ManyToManyField', [], {'blank': 'True', 'related_name': "'classsubject_allowedsizes'", 'null': 'True', 'symmetrical': 'False', 'to': "orm['program.ClassSizeRange']"}),
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'null': 'True', 'blank': 'True'}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'cls'", 'to': "orm['program.ClassCategories']"}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'class_info': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -210,9 +230,11 @@ class Migration(SchemaMigration):
         },
         'program.program': {
             'Meta': {'object_name': 'Program'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']", 'symmetrical': 'False'}),
+            'director_cc_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
+            'director_confidential_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
             'director_email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
+            'flag_types': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassFlagType']", 'symmetrical': 'False', 'blank': 'True'}),
             'grade_max': ('django.db.models.fields.IntegerField', [], {}),
             'grade_min': ('django.db.models.fields.IntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -250,7 +272,7 @@ class Migration(SchemaMigration):
             'emailverifycode': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'guardian_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_guardian'", 'null': 'True', 'to': "orm['users.GuardianInfo']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 8, 15, 0, 0)'}),
+            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2015, 5, 20, 0, 0)'}),
             'most_recent_profile': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'old_text_reminder': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'db_column': "'text_reminder'", 'blank': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
@@ -343,16 +365,25 @@ class Migration(SchemaMigration):
         },
         'program.studentregistration': {
             'Meta': {'object_name': 'StudentRegistration'},
-            'end_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(9999, 1, 1, 0, 0)'}),
+            'end_date': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'relationship': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.RegistrationType']"}),
             'section': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSection']"}),
-            'start_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'start_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'blank': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
+        },
+        'program.studentsubjectinterest': {
+            'Meta': {'object_name': 'StudentSubjectInterest'},
+            'end_date': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'start_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'null': 'True', 'blank': 'True'}),
+            'subject': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSubject']"}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'program.teacherbio': {
             'Meta': {'object_name': 'TeacherBio'},
             'bio': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'hidden': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_ts': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'picture': ('django.db.models.fields.files.ImageField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
@@ -381,6 +412,20 @@ class Migration(SchemaMigration):
             'num_volunteers': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
             'timeslot': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.Event']"})
+        },
+        'qsdmedia.media': {
+            'Meta': {'object_name': 'Media'},
+            'file_extension': ('django.db.models.fields.TextField', [], {'max_length': '16', 'null': 'True', 'blank': 'True'}),
+            'file_name': ('django.db.models.fields.TextField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'format': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'friendly_name': ('django.db.models.fields.TextField', [], {}),
+            'hashed_name': ('django.db.models.fields.TextField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'mime_type': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'owner_id': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'owner_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']", 'null': 'True', 'blank': 'True'}),
+            'size': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'target_file': ('django.db.models.fields.files.FileField', [], {'max_length': '100'})
         },
         'users.contactinfo': {
             'Meta': {'object_name': 'ContactInfo'},
@@ -431,6 +476,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'StudentInfo'},
             'dob': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'food_preference': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'gender': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'graduation_year': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
             'heard_about': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -466,4 +512,4 @@ class Migration(SchemaMigration):
         }
     }
 
-    complete_apps = ['program']
+    complete_apps = ['datatree', 'program']

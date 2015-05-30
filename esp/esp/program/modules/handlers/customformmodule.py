@@ -36,8 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 
 from esp.web.util        import render_to_response
 
-from esp.datatree.models import *
-
 from esp.users.models import ESPUser, User, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm

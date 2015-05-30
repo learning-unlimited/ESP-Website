@@ -64,7 +64,6 @@ from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -544,7 +543,7 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        #   Because the timeslot has an anchor, the program is unnecessary.
+        #   Because the timeslot has a program, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
             role = Group.objects.get_or_create(name='Teacher')[0]
@@ -2658,7 +2657,6 @@ class GradeChangeRequest(TimeStampedModel):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
         
 # We can't import these earlier because of circular stuff...
-from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration

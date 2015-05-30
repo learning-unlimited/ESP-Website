@@ -39,7 +39,6 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
 from esp.users.models import ESPUser, User
-from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response

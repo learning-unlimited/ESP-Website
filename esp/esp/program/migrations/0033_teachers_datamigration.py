@@ -4,38 +4,12 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import ClassSubject
-from esp.users.models import UserBit
 from django.core.cache import cache
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        #   Use only currently valid UserBits
-        bits=UserBit.valid_objects().filter(verb__uri="V/Flags/Registration/Teacher")
-        #   Keep track of pairs copied so far so we don't duplicate
-        pairs_so_far = set()
-        i=0
-        for bit in bits:
-            cls=ClassSubject.objects.filter(anchor=bit.qsc)
-            l=cls.count()
-            if l==0:
-                continue
-            if l>1:
-                continue
-            usr=bit.user
-            cls=cls[0]
-            
-            #   Skip (user, class) pairs that we already stored
-            if (cls.id, usr.id) in pairs_so_far:
-                continue
-            pairs_so_far.add((cls.id, usr.id))
-            
-            #due to a issue with cache stuff, we'll manually insert the data
-            from django.db import connection, transaction
-            cursor = connection.cursor()
-
-            cursor.execute("INSERT INTO program_class_teachers (classsubject_id, espuser_id) VALUES (%s, %s);",[cls.id, usr.id])
-            transaction.commit_unless_managed()
+        pass
 
     def backwards(self, orm):
         for cls in ClassSubject.objects.all():

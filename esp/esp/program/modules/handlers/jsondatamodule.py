@@ -44,7 +44,6 @@ from django.db.models.query import Q
 from django.http import Http404, HttpResponse
 
 from esp.cal.models import Event
-from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType

@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
-from esp.datatree.models         import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
@@ -44,7 +43,6 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.datatree.models         import DataTree
 from datetime                    import timedelta, time
 from django.utils                import simplejson
 from collections                 import defaultdict

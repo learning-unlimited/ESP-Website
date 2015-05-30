@@ -54,7 +54,6 @@ from esp.cache import cache_function
 from esp.cache.key_set import wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
@@ -252,7 +251,6 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
     
-    anchor = AjaxForeignKey(DataTree, unique=True, blank=True, null=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     url = models.CharField(max_length=80)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()

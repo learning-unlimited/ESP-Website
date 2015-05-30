@@ -91,7 +91,7 @@ def program(request, tl, one, two, module, extra = None):
         from esp.program.models import Program
         
 	try:
-		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+		prog = Program.by_prog_inst(one, two)
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
 
@@ -115,7 +115,7 @@ def classchangerequest(request, tl, one, two):
     from esp.program.models.class_ import ClassSubject
     from urllib import quote
     try:
-        prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+        prog = Program.by_prog_inst(one, two)
     except Program.DoesNotExist:
         raise Http404("Program not found.")
     

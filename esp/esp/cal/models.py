@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from esp.datatree.models import *
 from datetime import datetime, timedelta
 from esp.cache import cache_function
 
