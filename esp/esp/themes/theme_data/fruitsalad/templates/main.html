@@ -143,9 +143,6 @@
 <div class="corners"><div class="ul"></div><div class="ur"></div></div>
 {% if request.path|equal:"/teach/index.html" or request.path|equal:"/learn/index.html" %}
 
-{# announcements #}
-<div id="divannouncements">
-<ul>
 {% load preview %}
 
 {% if request.path|equal:"/teach/index.html" %}
@@ -153,6 +150,13 @@
 {% else %}
     {% miniblog_for_user AnonymousUser as announcements learn 3 %}
 {% endif %}
+
+{% if not announcements.announcementList|length_is:0 %}
+
+{# announcements #}
+<div id="divannouncements">
+<ul>
+
 
 {% for announce in announcements.announcementList %}
        <li>
@@ -173,6 +177,9 @@
 {% if announcements.overflowed %}
 <div id="divannouncemore">
   <a href="/myesp/home/">more announcements...</a></div>
+{% endif %}
+{% else %}
+<!-- Default blank if there's no announcements -->
 {% endif %}
 {% else %}
 <h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
