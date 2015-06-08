@@ -37,15 +37,15 @@ class UserAvailabilityAdmin(admin.ModelAdmin):
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
 class ESPUserAdmin(UserAdmin):
-    #remove the user_permissions and is_superuser from adminpage
-    #(since we don't use either of those)
+    #remove the user_permissions from adminpage
+    #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
     from django.utils.translation import ugettext_lazy as _
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff',)}),
+        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser')}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
         (_('User Roles'), {'fields': ('groups',)}),
         )
