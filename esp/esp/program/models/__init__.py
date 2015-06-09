@@ -297,6 +297,9 @@ class Program(models.Model, CustomFormsLinkModel):
                 setattr(cls, user_type, cls.get_users_from_module(user_type))
                 setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
 
+    def get_absolute_url(self):
+        return "/manage/"+self.url+"/main"
+    
     @cache_function
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
