@@ -399,6 +399,9 @@ class ClassSection(models.Model):
 
         return sections
     
+    def get_absolute_url(self):
+        return self.parent_class.get_absolute_url()
+    
     @cache_function
     def get_meeting_times(self):
         return self.meeting_times.all()
@@ -1368,6 +1371,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getDocuments(self):
         return self.documents.all()
         
+    def get_absolute_url(self):
+        return "/manage/"+self.parent_program.url+"/manageclass/"+str(self.id)
+    
     @classmethod
     def ajax_autocomplete(cls, data):
         values = cls.objects.filter(title__istartswith=data).values(
