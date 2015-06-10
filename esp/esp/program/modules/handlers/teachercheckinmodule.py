@@ -67,7 +67,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         'when' defaults to datetime.now()."""
         if when is None:
             when = datetime.now()
-        if (teacher.isTeacher() or teacher.isAdmin()) and teacher.getTaughtClassesFromProgram(prog).exists():
+        if teacher.getTaughtClassesFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
