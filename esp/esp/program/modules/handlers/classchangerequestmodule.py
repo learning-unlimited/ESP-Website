@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from datetime import datetime
 from urllib import quote
 
+from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
 from esp.program.models.class_ import ClassSubject
 from esp.program.modules.base import ProgramModuleObj
@@ -63,17 +64,9 @@ class ClassChangeRequestModule(ProgramModuleObj):
     class Meta:
         proxy = True
 
-    def is_completed(self):
-        return True
-
-    def students(self, QObject=False):
-        if QObject:
-            return {}
-        else:
-            return {}
-
-    def studentDesc(self):
-        return {}
+    def isCompleted(self):
+        return StudentRegistration.valid_objects().filter(user=get_current_request().user,
+                                                          relationship__name="Request").exists()
 
     @main_call
     @needs_student
