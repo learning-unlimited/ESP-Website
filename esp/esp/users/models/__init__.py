@@ -1047,13 +1047,6 @@ are a teacher of the class"""
             rank = default
         return rank
 
-    @staticmethod
-    def getRankInSection(student, section, default=10):
-        if isinstance(section, int):
-            section = ClassSection.objects.get(id=section)
-        return getRankInClass(student, section.parent_class, default)
-
-
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
