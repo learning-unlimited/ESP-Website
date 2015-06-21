@@ -141,6 +141,8 @@
 {% block content_header %}
 <div id="content_header">
 <div class="corners"><div class="ul"></div><div class="ur"></div></div>
+
+<h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
 {% if request.path|equal:"/teach/index.html" or request.path|equal:"/learn/index.html" %}
 
 {% load preview %}
@@ -178,11 +180,7 @@
 <div id="divannouncemore">
   <a href="/myesp/home/">more announcements...</a></div>
 {% endif %}
-{% else %}
-<!-- Default blank if there's no announcements -->
 {% endif %}
-{% else %}
-<h1 class="title">{% block content_title %}&nbsp;{% endblock %}</h1>
 {% endif %}
 </div>
 {% endblock %}
