@@ -124,7 +124,7 @@
         {% if start_time %}
             {{ section.room }}
         {% else %}
-            {{ section.begin_time }}
+            {{ section.begin_time }} in {{ section.room }}
         {% endif %}
     </td>
     {% for teacher in section.teachers_list %}

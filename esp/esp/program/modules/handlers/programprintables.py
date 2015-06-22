@@ -972,10 +972,10 @@ Volunteer schedule for %s:
         elif 'img_format' in request.GET:
             file_type = request.GET['img_format']
         else:
-            file_type = 'pdf'
-
-        if onsite and file_type == 'pdf':
-            file_type = 'png'
+            if onsite:
+                file_type = 'png'
+            else:
+                file_type = 'pdf'
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'

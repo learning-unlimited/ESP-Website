@@ -196,6 +196,9 @@ class QuasiStaticData(models.Model):
                     return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
             
         return None
+    
+    def get_absolute_url(self):
+        return "/"+self.url+".html"
 
 def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class
