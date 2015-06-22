@@ -32,8 +32,7 @@ function updateDocs(docs) {
 
 <div id="scheduling-check-wrapper"/>
 <script type="text/jsx">
-  /** @jsx React.DOM */
-  React.renderComponent(
+  React.render(
     <SchedulingCheckList>
       {% for slug, title in check_list %}
         <SchedulingCheck slug="{{slug}}" title="{{title}}" />

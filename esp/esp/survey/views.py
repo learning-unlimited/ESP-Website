@@ -40,7 +40,6 @@ import xlwt
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
-from esp.datatree.models import *
 from esp.users.models import ESPUser, Record, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer

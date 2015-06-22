@@ -13,18 +13,7 @@
             {% endif %}
             {% if field.errors %}{{ field.errors }}<br />{% endif %}
             {{ field }} 
-            {% if not static_resource_requests %}
-            <a id="remove_request_{{ forloop.parentloop.counter0 }}" href="/teach/{{ program.getUrlBase }}/makeaclass">Remove</a>
-            {% endif %}
         </td>
     </tr>
     {% endfor %}
 {% endfor %}
-{% if not ajax_request %}
-<script type="text/javascript">
-<!--
-    {% for form in formset.forms %}
-    register_link({id: "remove_request_{{ forloop.counter0 }}", url: "/teach/{{ program.getUrlBase }}/ajax_requests", content: {action: "remove", form: "{{ forloop.counter0 }}"}, post_form: "clsform"});{% endfor %}
--->
-</script>
-{% endif %}

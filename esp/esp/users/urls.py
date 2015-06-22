@@ -3,7 +3,6 @@ from django.conf.urls.defaults import *
 from esp.users.views.registration import GradeChangeRequestView
 
 urlpatterns = patterns('esp.users.views',
-                       (r'^ajax_login/?', 'ajax_login'),
                        (r'^register/?$', 'user_registration_phase1',),
                        (r'^register/information/?$', 'user_registration_phase2'),
                        (r'^activate/?$', 'registration.activate_account',),

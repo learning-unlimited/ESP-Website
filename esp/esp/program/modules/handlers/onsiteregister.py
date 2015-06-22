@@ -38,7 +38,6 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm

@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ContactInfo, ESPUser
-from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
 from esp.web.util.main import render_to_response
 from django.db.models.query import QuerySet
@@ -100,26 +99,7 @@ def filter_archive(records, criteria):
             result = result.filter(description__icontains = c.options)
             
     return result
-        
-def filter_active(records, criteria):
-    result = records
-    for c in criteria:
-        if c.category == 'year':
-            result = result.filter(parent_program__anchor__name__icontains = c.options)
-        elif c.category == 'program':
-            result = result.filter(parent_program__anchor__parent__name__icontains = c.options)
-        elif c.category == 'title':
-            result = result.filter(anchor__friendly_name__istartswith = c.options)
-        elif c.category == 'category':
-            result = result.filter(category__category__istartswith = c.options)
-        elif c.category == 'teacher':
-            result = result.filter(teacher__icontains = c.options)
-        elif c.category == 'description':
-            result = result.filter(class_info__icontains = c.options)
-        archive_classes = [c.getArchiveClass() for c in result]
-            
-    return ArchiveClass.objects.filter(id__in=[c.id for c in archive_classes])
-        
+
 def title_heading(title_content):
     if len(title_content) > 0:
         return title_content[0]
@@ -163,14 +143,6 @@ def archive_classes(request, category, options, sortorder = None):
     if request.POST.has_key('filter_description'): filter_keys['description'][0]['default_value'] = request.POST['filter_description']
     
     results = filter_archive(ArchiveClass.objects.all(), criteria_list)
-    #   We don't need this code because, for now, we will create ArchiveClasses for all
-    #   active classes without actually archiving them.  -Michael
-    """
-    if request.POST.has_key('include_active') and request.POST['include_active'] == 'on':
-        original_id_list = [r['id'] for r in results.values('id')]
-        new_id_list = [r['id'] for r in filter_active(ClassSubject.objects.all(), criteria_list).values('id')]
-        results = ArchiveClass.objects.filter(id__in=(original_id_list + new_id_list))
-    """
     
     #    Sort the results by the specified order
     if (not isinstance(sortorder, list)) or len(sortorder) < 1:

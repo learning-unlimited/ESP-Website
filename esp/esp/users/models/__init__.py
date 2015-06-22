@@ -64,7 +64,6 @@ from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -128,10 +127,6 @@ class UserAvailability(models.Model):
 
 class ESPUserManager(Manager):
     pass
-
-def get_studentreg_model():
-    from esp.program.models import StudentRegistration
-    return StudentRegistration
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -548,7 +543,7 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        #   Because the timeslot has an anchor, the program is unnecessary.
+        #   Because the timeslot has a program, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
             role = Group.objects.get_or_create(name='Teacher')[0]
@@ -773,6 +768,7 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
+    @cache_function
     def isAdministrator(self, program=None):
         """Determine if the user is an admin for the program.
 
@@ -793,6 +789,17 @@ class ESPUser(User, AnonymousUser):
                         quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
         ).exists()
+    isAdministrator.get_or_create_token(('self',))
+    isAdministrator.get_or_create_token(('program',))
+    isAdministrator.depend_on_row('users.ESPUser', lambda user: {'self': user})
+    isAdministrator.depend_on_m2m('users.ESPUser', 'groups', lambda user, group: {'self': user})
+    # if the permission has null user and non-null group, expire all caches,
+    # otherwise expire only the one for the relevant user.
+    isAdministrator.depend_on_row('users.Permission', lambda perm:
+                                  {'self': perm.user}
+                                  if perm.user is not None
+                                  or perm.role is None
+                                  else {'self': wildcard})
     isAdmin = isAdministrator
 
     @cache_function
@@ -915,7 +922,11 @@ are a teacher of the class"""
         program's effective school year.
         """
         # "now" is actually whenever the program ran or will run
-        now = program.dates()[0]
+        dates = program.dates()
+        if len(dates) >= 1:
+            now = dates[0]
+        else:
+            now = None
         schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
@@ -1035,13 +1046,6 @@ are a teacher of the class"""
         if rank == -1:
             rank = default
         return rank
-
-    @staticmethod
-    def getRankInSection(student, section, default=10):
-        if isinstance(section, int):
-            section = ClassSection.objects.get(id=section)
-        return getRankInClass(student, section.parent_class, default)
-
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
@@ -2646,7 +2650,6 @@ class GradeChangeRequest(TimeStampedModel):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
         
 # We can't import these earlier because of circular stuff...
-from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
