@@ -213,13 +213,12 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         #   Set a flag on each perm for whether it has ended
+        current_date = datetime.now()
         for perm in perms:
-            if perm.end_date is None or  perm.end_date > datetime.now():
-                perm.open_now = True
-            else:
-                perm.open_now = False
+            did_start = perm.start_date <= current_date
+            did_not_end = perm.end_date is None or perm.end_date > current_date
+            perm.open_now = did_start and did_not_end
             
-
         #   For each permission, determine which other ones it implies
         for perm in perms:
             includes = Permission.implications.get(perm.permission_type, [])
