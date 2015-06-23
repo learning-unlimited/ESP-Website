@@ -252,9 +252,6 @@ class ProgramPrintables(ProgramModuleObj):
             sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
 
         #   Perform sorting based on specified order rules
-        #   NOTE: Other catalogs can filter by _num_students but this one can't.
-        if '_num_students' in sort_order:
-            sort_order.remove('_num_students')
         #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
         for i in xrange(len(sort_order)):
             if sort_order[i] == 'timeblock':
