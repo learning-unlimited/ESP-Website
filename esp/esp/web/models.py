@@ -35,12 +35,10 @@ Learning Unlimited, Inc.
 from django.db import models
 from django.db.models.query import Q
 
-from esp.datatree.models import DataTree
 from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
@@ -88,8 +86,6 @@ class NavBarCategory(models.Model):
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
-    path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
-    
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)

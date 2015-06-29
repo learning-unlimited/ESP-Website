@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail, can_process_and_send
-from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q
 from django.db import transaction

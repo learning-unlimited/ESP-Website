@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("datatree", "0004_change_fns_yet_again"),
+    )
+
     def forwards(self, orm):
 
         # Changing field 'ClassSection.anchor'

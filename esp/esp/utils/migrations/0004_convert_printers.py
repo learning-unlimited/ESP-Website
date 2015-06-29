@@ -4,18 +4,12 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-from esp.datatree.models import DataTree
 from esp.utils.models import Printer
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        #   Convert printers from DataTree nodes to Printers.
-        #   Don't bother converting UserBits into print requests.
-        for node in DataTree.objects.filter(uri__startswith='V/Publish/Print/'):
-            (printer, created) = Printer.objects.get_or_create(name=node.name)
-            if created:
-                print 'Created printer: %s' % printer.name
+        pass
 
     def backwards(self, orm):
         pass

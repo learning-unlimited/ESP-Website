@@ -35,32 +35,23 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
-from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
-from esp.tagdict.decorators      import require_tag
 from esp.web.util                import render_to_response
-from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
-from django.utils.datastructures import MultiValueDict
-from esp.dbmail.models           import send_mail
-from django.template.loader      import render_to_string
-from django.http                 import HttpResponse
-from esp.miniblog.models         import Entry
-from django.core.cache           import cache
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
-from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
-from datetime                    import timedelta
 from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
+
 import json
 from copy import deepcopy
 
@@ -553,94 +544,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                              'txtTeachers': txtTeachers,
                                                                              'coteachers':  coteachers,
                                                                              'conflicts':   conflictingusers})
-
-    @needs_teacher
-    def ajax_requests(self, request, tl, one, two, module, extra, prog):
-        """ Handle a request for modifying a ResourceRequestFormSet. 
-            This view is customized to handle the dynamic form
-            (i.e. resource type is specified in advance and loaded
-            into a hidden field). 
-        """
-
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', prog, )
-
-        #   Construct a formset from post data
-        resource_formset = ResourceRequestFormSet(request.POST, prefix='request', static_resource_requests=static_resource_requests, )
-        validity = resource_formset.is_valid()
-        form_dicts = [x.__dict__ for x in resource_formset.forms]
-        
-        #   Retrieve data from forms
-        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
-        form_datas_filtered = [x for x in form_datas if x.has_key('resource_type')]
-        
-        if request.POST.has_key('action'):
-            #   Modify form if an action is specified
-            if request.POST['action'] == 'add':
-                #   Construct initial data including new form
-                new_restype = ResourceType.objects.get(id=request.POST['restype'])
-                if len(new_restype.choices) > 0:
-                    new_data = form_datas_filtered + [{'desired_value': new_restype.choices[0]}]
-                else:
-                    new_data = form_datas_filtered + [{}]
-                new_types = [x['resource_type'] for x in form_datas_filtered] + [new_restype]
-            elif request.POST['action'] == 'remove':
-                #   Construct initial data removing undesired form
-                form_to_remove = int(request.POST['form'])
-                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
-                new_types = [x['resource_type'] for x in new_data]
-            
-            #   Instantiate a new formset having the additional form
-            new_formset = ResourceRequestFormSet(initial=new_data, resource_type=new_types, prefix='request', static_resource_requests=static_resource_requests, )
-        else:
-            #   Otherwise, just send back the original form
-            new_formset = resource_formset
-        
-        #   Render an HTML fragment with the new formset
-        context = {}
-        context['formset'] = new_formset
-        context['ajax_request'] = True
-        formset_str = render_to_string(self.baseDir()+'requests_form_fragment.html', context)
-        formset_script = render_to_string(self.baseDir()+'requests_form_fragment.js', context)
-        return HttpResponse(json.dumps({'request_forms_html': formset_str, 'script': formset_script}))
-
-    @needs_teacher
-    def ajax_restypes(self, request, tl, one, two, module, extra, prog):
-        """ Handle a request for modifying a ResourceTypeFormSet. 
-            This is pretty straightforward and should be generalized for
-            all further applications.
-        """
-        #   Construct a formset from post data
-        resource_formset = ResourceTypeFormSet(request.POST, prefix='restype')
-        validity = resource_formset.is_valid()
-        form_dicts = [x.__dict__ for x in resource_formset.forms]
-        
-        #   Retrieve data from forms
-        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
-        form_datas_filtered = form_datas
-        
-        if request.POST.has_key('action'):
-            #   Modify form if an action is specified
-            if request.POST['action'] == 'add':
-                #   Construct initial data including new form
-                new_data = form_datas_filtered + [{}]
-            elif request.POST['action'] == 'remove':
-                #   Construct initial data removing undesired form
-                form_to_remove = int(request.POST['form'])
-                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
-
-            #   Instantiate a new formset having the additional form
-            new_formset = ResourceTypeFormSet(initial=new_data, prefix='restype')
-        else:
-            #   Otherwise, just send back the original form
-            new_formset = resource_formset
-        
-        #   Render an HTML fragment with the new formset
-        context = {}
-        context['formset'] = new_formset
-        context['ajax_request'] = True
-        formset_str = render_to_string(self.baseDir()+'restype_form_fragment.html', context)
-        formset_script = render_to_string(self.baseDir()+'restype_form_fragment.js', context)
-        return HttpResponse(json.dumps({'restype_forms_html': formset_str, 'script': formset_script}))
         
     @aux_call
     @needs_teacher
@@ -742,8 +645,6 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context = {'module': self}
         
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
-
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
                 return self.goToCore(tl)
@@ -781,35 +682,18 @@ class TeacherClassRegModule(ProgramModuleObj):
                 restype_formset = e.restype_formset
 
         else:
-            errors = {}
-            
-            if static_resource_requests:
-                # With static resource requests, we need to display a form
-                # each available type --- there's no way to add the types
-                # that we didn't start out with
-                # Thus, if default_restype isn't set, we display everything
-                # potentially relevant
-                if Tag.getTag('allow_global_restypes'):
-                    resource_types = prog.getResourceTypes(include_classroom=True,
-                                                           include_global=True)
-                else:
-                    resource_types = prog.getResourceTypes(include_classroom=True)
-                resource_types = list(resource_types)
-                resource_types.reverse()
+            # With static resource requests, we need to display a form
+            # each available type --- there's no way to add the types
+            # that we didn't start out with
+            # Thus, if default_restype isn't set, we display everything
+            # potentially relevant
+            if Tag.getTag('allow_global_restypes'):
+                resource_types = prog.getResourceTypes(include_classroom=True,
+                                                       include_global=True)
             else:
-                # If we're not using static resource requests, then just
-                # hardcode some sane defaults
-                resource_types = set([])
-                default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
-                if default_restypes:
-                    resource_type_labels = json.loads(default_restypes)
-                    resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-
-                resource_type_labels = ['Classroom', 'A/V']
-                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
-                # Now that we're done putting together multiple resource type sources, listify!
-                resource_types = list(resource_types)
-                resource_types.sort(key=lambda x: -x.priority_default)
+                resource_types = prog.getResourceTypes(include_classroom=True)
+            resource_types = list(resource_types)
+            resource_types.reverse()
 
             if newclass is not None:
                 current_data = newclass.__dict__
@@ -864,29 +748,19 @@ class TeacherClassRegModule(ProgramModuleObj):
                 #   Todo...
                 ds = newclass.default_section()
                 class_requests = ResourceRequest.objects.filter(target=ds)
-                if static_resource_requests:
-                    #   Program the multiple-checkbox forms if static requests are used.
-                    resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests)
-                    initial_requests = {}
-                    for x in class_requests:
-                        if x.res_type.name not in initial_requests:
-                            initial_requests[x.res_type.name]  = []
-                        initial_requests[x.res_type.name].append(x.desired_value)
-                    for form in resource_formset.forms:
-                        field = form.fields['desired_value']
-                        if field.label in initial_requests:
-                            field.initial = initial_requests[field.label]
-                            if form.resource_type.only_one and len(field.initial):
-                                field.initial = field.initial[0]
-                else:
-                    #   With dynamic requests each form uses radio buttons, so there's a one-to-one correspondence
-                    #   between forms and requests.
-                    resource_formset = ResourceRequestFormSet(
-                        initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests],
-                        resource_type=[x.res_type for x in class_requests],
-                        prefix='request',
-                        static_resource_requests=static_resource_requests,
-                    )
+                #   Program the multiple-checkbox forms if static requests are used.
+                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
+                initial_requests = {}
+                for x in class_requests:
+                    if x.res_type.name not in initial_requests:
+                        initial_requests[x.res_type.name]  = []
+                    initial_requests[x.res_type.name].append(x.desired_value)
+                for form in resource_formset.forms:
+                    field = form.fields['desired_value']
+                    if field.label in initial_requests:
+                        field.initial = initial_requests[field.label]
+                        if form.resource_type.only_one and len(field.initial):
+                            field.initial = field.initial[0]
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
             else:
@@ -896,7 +770,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     reg_form = TeacherOpenClassRegForm(self)
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
-                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests, )
+                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['tl'] = 'teach'
@@ -906,7 +780,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
-        context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:

@@ -4,28 +4,29 @@ Test cases for Django-ESP utilities
 
 from __future__ import with_statement
 
-import unittest
+import datetime
 import doctest
-import subprocess
-
 try:
     import pylibmc as memcache
 except:
     import memcache
-
 import os
+import subprocess
 import sys
-from esp.utils.defaultclass import defaultclass
-from esp import utils
-from django.conf import settings
-from esp.utils.models import TemplateOverride
+import reversion
+import unittest
 
+from django.db.models.query import Q
+from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
 
-from django.core.cache.backends.base import default_key_func
+from esp.middleware import ESPError_Log
+from esp.users.models import ESPUser
+from esp import utils
+from esp.utils import query_builder
+from esp.utils.defaultclass import defaultclass
+from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
-from django.template import loader, Template, Context, TemplateDoesNotExist
-import reversion
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -219,6 +220,273 @@ class TemplateOverrideTest(DjangoTestCase):
         #   Delete the original template override and make sure you see nothing
         TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
         self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
+
+
+class QueryBuilderTest(DjangoTestCase):
+    maxDiff = None
+    def test_query_builder(self):
+        # Use Printer/PrintRequest to test, since they're simple and in the
+        # same app.
+
+        # Clean out any printers from other tests, and create our own.
+        Printer.objects.all().delete()
+        self.assertEqual(Printer.objects.count(), 0)
+        happy_printer = Printer.objects.create(name="Happy")
+        slow_printer = Printer.objects.create(name="Sad")
+        sad_printer = Printer.objects.create(name="Slow")
+        nice_user = ESPUser.objects.create(username="nice_user")
+        mean_user = ESPUser.objects.create(username="mean_user")
+        now = datetime.datetime.now()
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=sad_printer, user=mean_user)
+        PrintRequest.objects.create(printer=sad_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+
+        name_filter = query_builder.SearchFilter(
+            'named', 'named', [query_builder.TextInput('name')])
+        has_ever_printed_filter = query_builder.SearchFilter(
+            'has ever printed', 'has ever printed',
+            [query_builder.ConstantInput(
+                Q(printrequest__time_executed__isnull=False),
+                'has ever printed')])
+        always_works_filter = query_builder.SearchFilter(
+            'always works', 'always works',
+            [query_builder.ConstantInput(
+                Q(printrequest__time_executed__isnull=True),
+                'always works')], inverted=True)
+        print_query_builder = query_builder.QueryBuilder(
+            Printer.objects.all(),
+            [name_filter, has_ever_printed_filter, always_works_filter])
+
+        self.assertEqual(
+            print_query_builder.spec(), {
+                'englishName': 'printers',
+                'filterNames': ['named', 'has ever printed', 'always works'],
+                'filters': {
+                    'named': name_filter.spec(),
+                    'has ever printed': has_ever_printed_filter.spec(),
+                    'always works': always_works_filter.spec()
+                }})
+        self.assertEqual(
+            # printers named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'named', 'negated': False, 'values': ['Happy']}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers not named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'named', 'negated': True, 'values': ['Happy']}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have never printed
+            print_query_builder.as_queryset(
+                {'filter': 'has ever printed', 'negated': True,
+                 'values': [None]}
+            ).get(),
+            sad_printer)
+        self.assertEqual(
+            # printers that always work
+            print_query_builder.as_queryset(
+                {'filter': 'always works', 'negated': False, 'values': [None]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers named Happy that have never printed
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': False, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            0)
+        self.assertEqual(
+            # printers that are not (named Happy and have never printed)
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': True, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            3)
+        self.assertEqual(
+            # printers that are not (named Happy and always work)
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': True, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that are named Happy and always work
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': False, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers that are named Happy or always work
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': False, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers that are neither named Happy nor always work
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': True, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have ever printed or are named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': False, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have neither printed nor are named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': True, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).get(),
+            slow_printer)
+
+        rendered = Template("""
+            {% load query_builder %}
+            {% render_query_builder qb %}
+        """).render(Context({'qb': print_query_builder}))
+        self.assertIn("has ever printed", rendered)
+        self.assertIn("always works", rendered)
+
+    def test_search_filter(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        trivial_input = query_builder.ConstantInput(Q(a="b"))
+
+        search_filter_1 = query_builder.SearchFilter(
+            "instance", "the instance", [select_input, trivial_input])
+        self.assertEqual(search_filter_1.spec(),
+                         {'name': 'instance', 'title': 'the instance',
+                          'inputs': [select_input.spec(),
+                                     trivial_input.spec()]})
+        self.assertEqual(str(search_filter_1.as_q(['1', None])),
+                         str(Q(a_db_field='1') & Q(a="b")))
+        with self.assertRaises(ESPError_Log):
+            search_filter_1.as_q(['10000',None])
+        self.assertEqual(search_filter_1.as_english(['1', None]),
+                         "the instance with a db field 'option 1'")
+
+        
+    def test_select_input(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        self.assertEqual(select_input.spec(),
+                         {'reactClass': 'SelectInput',
+                          'options': [{'name': i,
+                                       'title': 'option %s' % i}
+                                      # do set(map(str, range(10))) to get the
+                                      # sort order the same as the dict sort
+                                      # order.  It doesn't matter in reality,
+                                      # but just making it the same is easier
+                                      # than writing a thing to compare
+                                      # correctly.
+                                      for i in set(map(str,range(10)))]})
+        # Q objects don't have an __eq__, so they don't compare as equal.  But
+        # comparing their str()s seems to work reasonably well.
+        self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
+        with self.assertRaises(ESPError_Log):
+            select_input.as_q('10000')
+        self.assertEqual(select_input.as_english('5'),
+                         "with a db field 'option 5'")
+        with self.assertRaises(ESPError_Log):
+            select_input.as_english('10000')
+
+    def test_trivial_input(self):
+        trivial_input = query_builder.ConstantInput(Q(a="b"), "a trivial input")
+        self.assertEqual(trivial_input.spec(), {'reactClass': 'ConstantInput'})
+        self.assertEqual(str(trivial_input.as_q(None)), str(Q(a="b")))
+        self.assertEqual(trivial_input.as_english(None), "a trivial input")
+
+    def test_optional_input(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        optional_input = query_builder.OptionalInput(select_input)
+        self.assertEqual(optional_input.spec(),
+                         {'reactClass': 'OptionalInput', 'name': '+',
+                          'inner': select_input.spec()})
+        self.assertEqual(str(optional_input.as_q(None)), str(Q()))
+        self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
+        self.assertEqual(optional_input.as_english(None), "")
+        self.assertEqual(optional_input.as_english('5'), 
+                         "with a db field 'option 5'")
+
+    def test_datetime_input(self):
+        datetime_input = query_builder.DatetimeInput("a_db_field")
+        self.assertEqual(datetime_input.spec(),
+                         {'reactClass': 'DatetimeInput', 'name': 'a db field'})
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': 'before', 'datetime': '11/30/2015 23:59'})),
+            str(Q(a_db_field__lt=datetime.datetime(2015, 11, 30, 23, 59))))
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': 'after', 'datetime': '11/30/1995 00:59'})),
+            str(Q(a_db_field__gt=datetime.datetime(1995, 11, 30, 0, 59))))
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': '', 'datetime': '11/01/2015 23:59'})),
+            str(Q(a_db_field=datetime.datetime(2015, 11, 1, 23, 59))))
+        with self.assertRaises(ValueError):
+            datetime_input.as_q(
+                {'comparison': '', 'datetime': '11/41/2015 23:59'})
+        self.assertEqual(
+            datetime_input.as_english(
+                {'comparison': 'before', 'datetime': '11/30/2015 23:59'}),
+            'a db field before 11/30/2015 23:59')
+    
+    def test_text_input(self):
+        text_input = query_builder.TextInput("a_db_field")
+        self.assertEqual(text_input.spec(),
+                         {'reactClass': 'TextInput', 'name': 'a db field'})
+        self.assertEqual(str(text_input.as_q("foo bar baz")),
+                         str(Q(a_db_field="foo bar baz")))
+        self.assertEqual(text_input.as_english("foo bar baz"),
+                         "a db field foo bar baz")
+
 
 def suite():
     """Choose tests to expose to the Django tester."""

@@ -36,7 +36,6 @@ import json
 
 from django.http import HttpResponse
 from django.db.models.query import Q
-from esp.datatree.models import *
 
 class JsonResponse(HttpResponse):
     def __init__(self, obj):

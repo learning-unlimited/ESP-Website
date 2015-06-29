@@ -60,7 +60,6 @@ from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
 # ESP models
-from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
@@ -235,7 +234,7 @@ class ClassManager(Manager):
         if order_args_override:
             order_args = order_args_override
         else:
-            order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
+            order_args = ['category__symbol', 'category__category', 'sections__meeting_times__start', '_num_students', 'id']
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
@@ -326,7 +325,6 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES, default=UNREVIEWED)                 #As the choices are shared with ClassSubject, they're at the top of the file
     registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
@@ -400,6 +398,9 @@ class ClassSection(models.Model):
             s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
 
         return sections
+    
+    def get_absolute_url(self):
+        return self.parent_class.get_absolute_url()
     
     @cache_function
     def get_meeting_times(self):
@@ -588,6 +589,19 @@ class ClassSection(models.Model):
             if time_passed > timedelta(0):
                 return True
         return False
+
+    def start_time_prefetchable(self):
+        """Like self.start_time().start, but can be prefetched.
+
+        Gets the start time of a class.  If self.meeting_times.all() has been
+        prefetched, this will not hit the DB.  If it has not been prefetched,
+        this will not help.
+        """
+        mts = self.meeting_times.all()
+        if mts:
+            return min(mt.start for mt in mts)
+        else:
+            return None
    
     def start_time(self):
         if self.meeting_times.count() > 0:
@@ -1087,6 +1101,11 @@ class ClassSection(models.Model):
         return cmp(one.id, other.id)
 
     def __cmp__(self, other):
+        # Warning: this hits the DB around four times per comparison, i.e.,
+        # O(n log n) times for a list.  Consider using prefetch_related and
+        # then sorting with the key self.start_time_prefetched(), which will
+        # hit the DB only once at the start, and compute the start time of each
+        # class only once.
         selfevent = self.firstBlockEvent()
         otherevent = other.firstBlockEvent()
 
@@ -1304,7 +1323,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     #customforms info
     form_link_name='Course'	
 
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     title = models.TextField()
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
@@ -1353,6 +1371,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getDocuments(self):
         return self.documents.all()
         
+    def get_absolute_url(self):
+        return "/manage/"+self.parent_program.url+"/manageclass/"+str(self.id)
+    
     @classmethod
     def ajax_autocomplete(cls, data):
         values = cls.objects.filter(title__istartswith=data).values(
@@ -1837,7 +1858,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
 
     def getRegVerbs(self, user):
-        """ Get the list of verbs that a student has within this class's anchor. """
+        """ Get the list of verbs that a student has within this class. """
         return self.getRegistrations(user).values_list('relationship__name', flat=True)
 
     def preregister_student(self, user, overridefull=False, automatic=False):

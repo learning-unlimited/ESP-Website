@@ -40,7 +40,6 @@ from esp.users.models import ESPUser
 from esp.web.util        import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppReview, StudentRegistration, RegistrationType
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
 

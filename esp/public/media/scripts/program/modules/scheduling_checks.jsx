@@ -1,5 +1,3 @@
-/** @jsx React.DOM */
-
 /**
  * List of scheduling checks.
  *

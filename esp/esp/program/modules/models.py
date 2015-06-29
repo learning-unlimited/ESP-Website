@@ -36,18 +36,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.handlers import *
 from django.db.models import Q
 
-#from django.contrib import admin
-#from django.db import models 
-#from esp.program.models import Program
-#
-#class DBReceipt(models.Model):
-#    """ Per-program Receipt templates """
-#    program = models.OneToOneField(Program)
-#    receipt = models.TextField()
-#
-#admin_site.register(DBReceipt)
-
-
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
     """
     Given a list of key:value dictionaries containing fields from the
@@ -94,7 +82,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         for (datum, (mod, created)) in mods:
             ids.append(mod.id)
 
-        #ProgramModule.objects.exclude(id__in=ids).delete()
+        ProgramModule.objects.exclude(id__in=ids).delete()
 
     for (datum, (mod, created)) in mods:
         #   If the module exists but the provided data adds fields that 
@@ -119,6 +107,6 @@ def install(model=None):
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
-    updateModules(table_data, model=model)
+    updateModules(table_data, deleteExtra=True, model=model)
     
 from esp.program.modules.module_ext import *

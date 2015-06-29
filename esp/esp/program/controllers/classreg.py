@@ -82,10 +82,8 @@ class ClassCreationController(object):
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
 
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
-
         try:
-            resource_formset = ResourceRequestFormSet(reg_data, prefix='request', static_resource_requests=static_resource_requests, )
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
         except ValidationError:
             resource_formset = None
 

@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
-from esp.datatree.models         import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
@@ -44,7 +43,6 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.datatree.models         import DataTree
 from datetime                    import timedelta, time
 import json
 from collections                 import defaultdict
@@ -477,17 +475,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_lunch_timeslots(self, request, tl, one, two, module, extra, prog):
         return self.ajax_lunch_timeslots_cached(prog)
         
-    @aux_call
-    @needs_admin
-    def securityschedule(self, request, tl, one, two, module, extra, prog):
-        """ Display a list of classes (by classroom) for each timeblock in a program """
-        events = Event.objects.filter(program=prog).order_by('start')
-        events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
-
-        context = { 'events': events_ctxt }
-
-        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
-            
     @aux_call
     @needs_admin
     def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):

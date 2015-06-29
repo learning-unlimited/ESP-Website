@@ -78,26 +78,6 @@
         <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
     </tr>
     -->
-{% if not static_resource_requests %}
-    <tr>
-        <td width="30%">
-            <b>Click to add requests:</b>
-            <noscript>(Note: Please enable Javascript.)</noscript>
-        </td>
-        <td>
-            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %}{% if allow_restype_creation %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>{% endif %}
-        </td>
-    </tr>
-<script type="text/javascript">
-<!--
-    register_fragment({id: "request_forms_html", url: ""});
-    register_fragment({id: "restype_forms_html", url: ""});
-    {% for rt in resource_types %}
-    register_link({id: "add_request_{{ rt.id }}", url: "/teach/{{ program.getUrlBase }}/ajax_requests", content: {action: "add", restype: "{{ rt.id }}"}, post_form: "clsform"});{% endfor %}
-    register_link({id: "add_restype", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "add"}, post_form: "clsform"});
--->
-</script>
-{% endif %}
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
 {% with restype_formset as formset %}
 {% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
