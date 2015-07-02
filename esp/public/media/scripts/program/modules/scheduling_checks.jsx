@@ -86,25 +86,7 @@ var SchedulingCheck = React.createClass({
         var settings = {
           header: false
         };
-        /*var settings = {
-          cellClass: function( current, key, item){
-              return current + ' cell_' + key + item.age;
-          },
-          classPrefix: 'mytable',
-          header: true,
-          headerClass: function( current, key ){
-            if( key == 'color')
-              return current + ' imblue';
-            return current;
-          },
-          keyField: 'name',
-          noRowsMessage: 'Where are my rows?',
-          rowClass: function( current, item ){
-            return current + ' row_' + item.name;
-          }
-        };*/
         table = <SelectTable rows = {data.body} settings = {settings} />;
-        // table = <JsonTable rows = {data.body} />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
@@ -115,7 +97,6 @@ var SchedulingCheck = React.createClass({
           }
         }
         table = <SelectTable rows = {data.body} columns = {columns} />;
-        //table = <JsonTable rows = {data.body} />;
       }
       body = <div>
         <div className="placeholder">
@@ -167,7 +148,6 @@ var SelectTable = React.createClass({
         };
     }
     return {sort: -1, greyed : temp};
-    //return {sort: false};
   },  
   render: function(){
     var me = this,
