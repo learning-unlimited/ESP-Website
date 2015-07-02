@@ -38,7 +38,7 @@ class SchedulingCheckModule(ProgramModuleObj):
     class Meta:
         proxy = True
 
-#For formatting output.  The default is to use HTMLSCFormatter, but someone writing a script
+#For formatting output.  The default is to use JSONFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures
 class RawSCFormatter:
     def format_table(self, l, options={}, help_text=""):
@@ -47,7 +47,7 @@ class RawSCFormatter:
     def format_list(self, l, options={}, help_text=""):
         return l
 
-class HTMLSCFormatter:
+class HTMLSCFormatter: # This might be dead, but idk maybe someone still wants it
     #requires: d, a two level dictionary where the the first set of
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
@@ -109,9 +109,72 @@ class HTMLSCFormatter:
         output += "</table>"
         return output
 
+# Builds JSON output for an object with attributes help_text, headings, and body.
+class JSONFormatter:
+    #requires: d, a two level dictionary where the the first set of
+    #   keys are the headings expected on the side of the table, and
+    #   the second set are the headings expected on the top of the table
+    def format_table(self, d, options={}, help_text=""):
+        if isinstance(d, list):
+            return json.dumps(self._format_list_table(d, options['headings'], help_text=help_text))
+        else:
+            return json.dumps(self._format_dict_table(d, options['headings'], help_text=help_text))
+
+    def format_list(self, l, help_text=""): # needs verify
+        output = {}
+        output["help_text"] = help_text
+        output["headings"] = [] # no headings
+        
+        # might be redundant, but it makes sure things aren't in a weird format
+        body = []        
+        for row in l:
+            body.append(self._table_row([row]))
+        output["body"] = body
+        return json.dumps(output)
+
+    def _table_headings(self, headings): # in case headings are a dict
+        #column headings
+        next_row = []
+        for h in headings:
+            next_row.append(str(h))
+        return next_row
+
+    def _table_row(self, row):
+        next_row = []
+        for r in row:
+            #displaying lists is sometimes borked.  This makes it not borked
+            if isinstance(r, list):
+                r = [str(i) for i in r]
+            next_row.append(str(r))
+        return next_row
+        
+    def _format_list_table(self, d, headings, help_text=""): #needs verify
+        output = {}
+        output["help_text"] = help_text
+        output["headings"] = self._table_headings(headings)
+        body = []
+        for row in d:
+            ordered_row = [row[h] for h in headings]
+            body.append(self._table_row(ordered_row)) # maybe?
+        output["body"] = body
+        return output
+
+    def _format_dict_table(self, d, headings, help_text=""): #needs verify
+        headings = [""] + headings[:]
+        output = {}
+        output["help_text"] = help_text        
+        output["headings"] = self._table_headings(headings)
+        
+        body = []
+        for key, row in sorted(d.iteritems()):
+            ordered_row = [row[h] for h in headings if h]
+            body.append(self._table_row([key] + ordered_row)) #maybe
+        output["body"] = body
+        return output
+        
 class SchedulingCheckRunner:
 #Generate html report and generate text report functions?lingCheckRunner:
-     def __init__(self, program, formatter=HTMLSCFormatter()):
+     def __init__(self, program, formatter=JSONFormatter()):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school
           only block and for lunch respectively

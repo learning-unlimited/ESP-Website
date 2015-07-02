@@ -80,11 +80,48 @@ var SchedulingCheck = React.createClass({
     } else if (!this.state.data) {
       body = <div className="placeholder">loading...</div>;
     } else {
+      var data = JSON.parse(this.state.data); // Might not work on old browsers
+      var table;
+      if (data.headings.length == 0) {
+        var settings = {
+          header: false
+        };
+        /*var settings = {
+          cellClass: function( current, key, item){
+              return current + ' cell_' + key + item.age;
+          },
+          classPrefix: 'mytable',
+          header: true,
+          headerClass: function( current, key ){
+            if( key == 'color')
+              return current + ' imblue';
+            return current;
+          },
+          keyField: 'name',
+          noRowsMessage: 'Where are my rows?',
+          rowClass: function( current, item ){
+            return current + ' row_' + item.name;
+          }
+        };*/
+        table = <JsonTable rows = {data.body} settings = {settings} />;
+        // table = <JsonTable rows = {data.body} />;
+      } else {
+        var columns = [];
+        for (i = 0; i < data.headings.length; i++) {
+          if (!!data.headings[i]) {
+            columns[i] = {key: String(i), label: data.headings[i]};
+          } else {
+            columns[i] = {key: String(i), label: " "};
+          }
+        }
+        table = <JsonTable rows = {data.body} columns = {columns} />;
+        //table = <JsonTable rows = {data.body} />;
+      }
       body = <div>
         <div className="placeholder">
           (loaded {this.state.timestamp}, click title to close)
         </div>
-        <div className="data" dangerouslySetInnerHTML={{__html: this.state.data}} />
+        {table}
       </div>;
     }
 
