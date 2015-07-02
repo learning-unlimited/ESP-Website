@@ -103,7 +103,7 @@ var SchedulingCheck = React.createClass({
             return current + ' row_' + item.name;
           }
         };*/
-        table = <JsonTable rows = {data.body} settings = {settings} />;
+        table = <SelectTable rows = {data.body} settings = {settings} />;
         // table = <JsonTable rows = {data.body} />;
       } else {
         var columns = [];
@@ -114,7 +114,7 @@ var SchedulingCheck = React.createClass({
             columns[i] = {key: String(i), label: " "};
           }
         }
-        table = <JsonTable rows = {data.body} columns = {columns} />;
+        table = <SelectTable rows = {data.body} columns = {columns} />;
         //table = <JsonTable rows = {data.body} />;
       }
       body = <div>
@@ -150,4 +150,79 @@ var RefreshButton = React.createClass({
       ↻
     </button>;
   },
+});
+
+
+// Modified from react-json-table example code.
+var SelectTable = React.createClass({
+  getInitialState: function(){
+    // We will store the sorted column and whether each row is greyed out
+    var temp = new Array();
+    for (i = 0; i < this.props.rows.length; i++) {
+        temp[this.props.rows[i]] = false;
+    }
+    if (this.props.settings == undefined) {
+        this.props.settings = {
+          header: true
+        };
+    }
+    return {sort: -1, greyed : temp};
+    //return {sort: false};
+  },  
+  render: function(){
+    var me = this,
+        // clone the rows
+        items = this.props.rows.slice()
+    ;
+    // Sort the table
+    if( this.state.sort ){
+      items.sort( function( a, b ){
+         return a[ me.state.sort ] > b[ me.state.sort ] ? 1 : -1;
+      });
+    }
+      
+    if (this.props.columns == undefined) {
+      return <JsonTable 
+        rows={items} 
+        settings={ this.getSettings() } 
+        onClickHeader={ this.onClickHeader }
+        onClickRow={ this.onClickRow }
+      />;
+    } else {
+      return <JsonTable 
+        rows={items} 
+        columns={this.props.columns}
+        settings={ this.getSettings() } 
+        onClickHeader={ this.onClickHeader }
+        onClickRow={ this.onClickRow }
+      />;
+    }
+  },
+  
+  getSettings: function(){
+      var me = this;
+      // We will add some classes to the selected rows and cells
+      return {
+        headerClass: function( current, key ){
+            if( me.state.sort == key )
+              return current + ' headerSelected';
+            return current;
+        },
+        rowClass: function( current, item ){
+          if( me.state.greyed[item] )
+            return current + ' rowGreyed';
+          return current;
+        },
+        header: this.props.settings.header
+      };
+  },
+    
+  onClickHeader: function( e, column ){
+    this.setState( {sort: column} );
+  },
+  
+  onClickRow: function( e, item ){
+    this.state.greyed[item] = !this.state.greyed[item];
+    this.setState(); // so that it actually updates
+  }
 });
