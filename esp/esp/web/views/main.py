@@ -330,11 +330,11 @@ def error_reporter(request):
     json_flag = ""
     
     if request.POST:
-        if request.raw_post_data.strip()[0] == '[':
+        if request.body.strip()[0] == '[':
             ## Probably a JSON error report
             ## Let's try to decode it
             try:
-                err = json.loads(request.raw_post_data)
+                err = json.loads(request.body)
 
                 ## Deal with messages that we don't want to deal with
                 if is_quirk_should_be_ignored(err):
@@ -375,7 +375,7 @@ def error_reporter(request):
             except Exception, e:
                 print "*** Exception!", e
                 print json.__dict__
-                err = request.raw_post_data
+                err = request.body
                     
             pprint(err, post)
 

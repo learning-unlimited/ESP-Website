@@ -51,6 +51,7 @@ SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 # Must be unique for every site hosted
 CACHE_PREFIX="ESP"
 
+ALLOWED_HOSTS = ['*']
 
 ###########################
 # Default file locations  #
@@ -173,7 +174,7 @@ MIDDLEWARE_GLOBAL = [
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
-    (1100, 'django.middleware.doc.XViewMiddleware'),
+    (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),

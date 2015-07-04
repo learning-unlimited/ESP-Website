@@ -96,7 +96,7 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             elif 'json_debug' in request.GET:
-                data = simplejson.dumps(result, sort_keys=True,
+                data = json.dumps(result, sort_keys=True,
                                         indent = '    ')
                 return render_to_response('utils/jsondebug.html',
                                           request, {'data': data},

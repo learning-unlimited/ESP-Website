@@ -156,7 +156,7 @@ def onModify(request):
     """
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
+            metadata = json.loads(request.body)
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:
