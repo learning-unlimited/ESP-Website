@@ -55,7 +55,7 @@ class DynamicModelHandler:
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
-        'boolean': {'typeMap': models.BooleanField, 'attrs':{}, 'args':[]},
+        'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
         'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
         'instructions': {'typeMap': None},
     }
@@ -179,7 +179,7 @@ class DynamicModelHandler:
         """
         attrs = self._field_types[ftype]['attrs'].copy()
         args = self._field_types[ftype]['args']
-        if ftype != "numeric":
+        if ftype != "numeric" and ftype  != "boolean":
             attrs['default'] = ''
         return self._field_types[ftype]['typeMap'](*args, **attrs)    
     

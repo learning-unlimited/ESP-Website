@@ -89,7 +89,7 @@ class NavBarEntry(models.Model):
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
-    indent = models.BooleanField()
+    indent = models.BooleanField(default=False)
 
     category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
