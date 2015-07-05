@@ -16,6 +16,15 @@ var SchedulingCheckList = React.createClass({
  *
  * This might or might not be loaded yet; clicking the heading will load the
  * data from the server and expand it.
+ * 
+ * There is supposedly a functionality in which clicking on a table row will cause it
+ * to be greyed out, however whether this actually happens depends on your
+ * scheduling_checks.css (clicking could possibly do nothing, or possibly
+ * do other things).
+ *
+ * Likewise, clicking on a table header will sort by that column. You can also
+ * add formatting in scheduling_checks.css so that the selected header will
+ * look different, e.g. be colored differently.
  */
 var SchedulingCheck = React.createClass({
   propTypes: {
@@ -28,6 +37,10 @@ var SchedulingCheck = React.createClass({
       open: false,
       failed: false,
       timestamp: "never",
+      tableState: {
+        greyed: {},
+        sort: -1          
+      }
     };
   },
 
@@ -86,7 +99,7 @@ var SchedulingCheck = React.createClass({
         var settings = {
           header: false
         };
-        table = <SelectTable rows = {data.body} settings = {settings} />;
+      table = <SelectTable rows = {data.body} settings = {settings} saveState = {this.state.tableState} />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
@@ -96,7 +109,10 @@ var SchedulingCheck = React.createClass({
             columns[i] = {key: String(i), label: " "};
           }
         }
-        table = <SelectTable rows = {data.body} columns = {columns} />;
+        var settings = {
+          header: true
+        };
+        table = <SelectTable rows = {data.body} columns = {columns} settings = {settings} saveState = {this.state.tableState} />;
       }
       body = <div>
         <div className="placeholder">
@@ -135,19 +151,11 @@ var RefreshButton = React.createClass({
 
 
 // Modified from react-json-table example code.
+// Required props: rows, saveState (with sort and greyed attributes), settings (with header attribute)
 var SelectTable = React.createClass({
   getInitialState: function(){
     // We will store the sorted column and whether each row is greyed out
-    var temp = new Array();
-    for (i = 0; i < this.props.rows.length; i++) {
-        temp[this.props.rows[i]] = false;
-    }
-    if (this.props.settings == undefined) {
-        this.props.settings = {
-          header: true
-        };
-    }
-    return {sort: -1, greyed : temp};
+    return {sort: this.props.saveState.sort, greyed : this.props.saveState.greyed};
   },  
   render: function(){
     var me = this,
@@ -198,11 +206,13 @@ var SelectTable = React.createClass({
   },
     
   onClickHeader: function( e, column ){
+    this.props.saveState.sort = column;
     this.setState( {sort: column} );
   },
   
   onClickRow: function( e, item ){
     this.state.greyed[item] = !this.state.greyed[item];
+    this.props.saveState.greyed[item] = this.state.greyed[item];
     this.setState(); // so that it actually updates
   }
 });
