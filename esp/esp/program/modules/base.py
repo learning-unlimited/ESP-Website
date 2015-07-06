@@ -165,16 +165,16 @@ class ProgramModuleObj(models.Model):
         return QRestriction
 
     @cache_function
-    def findModuleObject_base(tl, call_txt, prog):
+    def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
             matching a particular view function and area. """
         #   Check for a module that has a matching main_call
-        main_call_map = prog.getModuleViews_cached(main_only=True)
+        main_call_map = prog.getModuleViews(main_only=True)
         if (tl, call_txt) in main_call_map:
             return main_call_map[(tl, call_txt)]
             
         #   Check for a module that has a matching aux_call
-        all_call_map = prog.getModuleViews_cached(main_only=False)
+        all_call_map = prog.getModuleViews(main_only=False)
         if (tl, call_txt) in all_call_map:
             return all_call_map[(tl, call_txt)]
             
@@ -182,29 +182,22 @@ class ProgramModuleObj(models.Model):
         raise Http404
         
     #   Program.getModules cache takes care of our dependencies
-    findModuleObject_base.depend_on_cache('program.Program.getModules_base', lambda **kwargs: {})
-    findModuleObject_base = staticmethod(findModuleObject_base)
-    
-    @staticmethod
-    def findModuleObject(tl, call_txt, prog):
-        return ProgramModuleObj.findModuleObject_base(tl, call_txt, prog).toHandlerClass()
+    findModuleObject.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
+    findModuleObject = staticmethod(findModuleObject)
     
     #   The list of modules in a particular category (student reg, teacher reg)
     #   is accessed frequently and should be cached.
     @cache_function
-    def findCategoryModules_base(self, include_optional):
+    def findCategoryModules(self, include_optional):
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = filter(lambda mod: mod.module.module_type == module_type, prog.getModules_base())
+        moduleobjs = filter(lambda mod: mod.module.module_type == module_type, prog.getModules())
         if not include_optional:
             moduleobjs = filter(lambda mod: mod.required == True, moduleobjs)
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
-    findCategoryModules_base.depend_on_cache('program.Program.getModules_base', lambda **kwargs: {})
-    
-    def findCategoryModules(self, include_optional):
-        return [x.toHandlerClass() for x in self.findCategoryModules_base(include_optional)]
+    findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
@@ -232,31 +225,11 @@ class ProgramModuleObj(models.Model):
 
         raise Http404
 
-    def toHandlerClass(self):
-        """ Take a ProgramModuleObj and convert it to the handler class
-            (e.g. StudentClassRegModule, AdminMaterials) specified in the
-            database.   """
-        handler_class = self.module.getPythonClass()
-        result = handler_class()
-        result.__dict__.update(self.__dict__)
-        result.fixExtensions()
-        return result
-        
-    def toBaseClass(self):
-        """ Take a ProgramModuleObj subclass and convert it back to
-            ProgramModuleObj.   """
-        result = ProgramModuleObj()
-        result.__dict__.update(self.__dict__)
-        return result
-
     @staticmethod
-    def getFromProgModule(prog, mod, convert=True):
+    def getFromProgModule(prog, mod):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
-            Note that all the data is forcibly taken from the ProgramModuleObj table
-            If convert=True, cast the object as the appropriate class.
-            If convert=False, leave it as a ProgramModuleObj.    
-        """
+           Note that all the data is forcibly taken from the ProgramModuleObj table """
         
         BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
@@ -272,10 +245,13 @@ class ProgramModuleObj(models.Model):
         else:
             BaseModule = BaseModuleList[0]
         
-        if convert:
-            return BaseModule.toHandlerClass()
-        else:
-            return BaseModule
+        ModuleObj   = mod.getPythonClass()()
+        ModuleObj.__dict__.update(BaseModule.__dict__)
+        ModuleObj.fixExtensions()
+
+        return ModuleObj
+
+
 
     def getClassFromId(self, clsid, tl='teach'):
         """ This function can be called from a view to get a class object from an id. The id can be given
