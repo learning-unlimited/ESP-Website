@@ -53,7 +53,6 @@ if len(DATABASES['default']['USER']) == 0:
 if len(DATABASES['default']['PASSWORD']) == 0:
     try:
         DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
-        DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
     except:
         raise Exception("You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py")
 if len(DATABASES['default']['NAME']) == 0:
