@@ -37,18 +37,15 @@ var SchedulingCheck = React.createClass({
       open: false,
       failed: false,
       timestamp: "never",
-      tableState: { // gets modified by functions in the definition of SelectTable
+      tableState: {
         greyed: {},
-        sort: -1          
+        sort: false,
+        reverse: false
       }
     };
   },
   
   updateTableState: function (state) {
-    /*this.state.tableState = {
-      greyed: state.greyed,
-      sort: state.sort
-    };*/
     this.state.tableState = state;
   },
 
@@ -111,7 +108,7 @@ var SchedulingCheck = React.createClass({
           if (data.headings[i]) {
             columns[i] = {key: String(i), label: data.headings[i]};
           } else {
-            columns[i] = {key: String(i), label: " "};
+            columns[i] = {key: String(i), label: "--"};
           }
         }
         table = <SelectTable rows = {data.body} columns = {columns} header = {true} saveState = {this.state.tableState} updateTableState = {this.updateTableState} />;
@@ -159,7 +156,8 @@ var SelectTable = React.createClass({
     rows: React.PropTypes.array.isRequired,
     saveState: React.PropTypes.shape({
       greyed: React.PropTypes.object.isRequired,
-      sort: React.PropTypes.any.isRequired
+      sort: React.PropTypes.any.isRequired,
+      reverse: React.PropTypes.bool.isRequired
     }).isRequired,
     header: React.PropTypes.bool.isRequired,
     columns: React.PropTypes.array,
@@ -168,19 +166,19 @@ var SelectTable = React.createClass({
     
   getInitialState: function(){
     // We will store the sorted column and whether each row is greyed out
-    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed };
+    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed, reverse: this.props.saveState.reverse};
   },  
   render: function(){
     this.props.updateTableState(this.state);
-    var me = this,
-        // clone the rows
-        items = this.props.rows.slice()
-    ;
+    var me = this;
+    // clone the rows
+    items = this.props.rows.slice();
     
     items = _.sortBy(items, function( item ){
          return item[ me.state.sort ];
       });
-      
+    
+    if (this.state.reverse) items.reverse();
     
     return <JsonTable 
       rows={items} 
@@ -197,7 +195,11 @@ var SelectTable = React.createClass({
       return {
         headerClass: function( current, key ){
             if( me.state.sort == key ) {
-              return current + ' headerSelected';
+              if ( me.state.reverse) {
+                return current + ' headerSelected sortReversed';
+              } else {
+                return current + ' headerSelected';
+              }
             } else {
               return current;
             }
@@ -214,7 +216,11 @@ var SelectTable = React.createClass({
   },
     
   onClickHeader: function( e, column ){
-    this.setState( {sort: column} );
+    if (this.state.sort === column) {
+      this.setState( {reverse: !this.state.reverse} );        
+    } else {
+      this.setState( {sort: column, reverse: false} );
+    }
   },
   
   onClickRow: function( e, item ){ 

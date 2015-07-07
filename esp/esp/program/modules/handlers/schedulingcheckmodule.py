@@ -67,13 +67,17 @@ class JSONFormatter:
         output["body"] = [self._table_row([row]) for row in l]
         return json.dumps(output)
 
+
     def _table_row(self, row):
         next_row = []
         for r in row:
             #displaying lists is sometimes borked.  This makes it not borked
             if isinstance(r, list):
                 r = [str(i) for i in r]
-            next_row.append(str(r))
+            if isinstance(r, int):
+                next_row.append(r)
+            else:
+                next_row.append(str(r))
         return next_row
         
     def _format_list_table(self, d, headings, help_text=""): #needs verify
