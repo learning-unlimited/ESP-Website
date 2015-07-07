@@ -906,4 +906,4 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

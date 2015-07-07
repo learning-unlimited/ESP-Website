@@ -184,4 +184,4 @@ class LotteryStudentRegModule(ProgramModuleObj):
     
     class Meta:
         proxy = True
-
+        app_label = 'modules'

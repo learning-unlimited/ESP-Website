@@ -170,3 +170,4 @@ class AdmissionsDashboard(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

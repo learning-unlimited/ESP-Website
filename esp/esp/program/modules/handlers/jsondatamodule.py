@@ -802,3 +802,4 @@ teachers[key].filter(is_active = True).distinct().count()))
 
     class Meta:
         proxy = True
+        app_label = 'modules'

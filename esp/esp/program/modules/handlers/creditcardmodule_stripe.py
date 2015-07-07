@@ -297,4 +297,4 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

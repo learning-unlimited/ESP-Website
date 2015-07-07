@@ -26,6 +26,7 @@ class ClassSearchModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
     def query_builder(self):
         flag_types = ClassFlagType.get_flag_types(program=self.program)
