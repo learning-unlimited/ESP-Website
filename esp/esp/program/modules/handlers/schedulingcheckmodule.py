@@ -64,18 +64,8 @@ class JSONFormatter:
         output["headings"] = [] # no headings
         
         # might be redundant, but it makes sure things aren't in a weird format
-        body = []        
-        for row in l:
-            body.append(self._table_row([row]))
-        output["body"] = body
+        output["body"] = [self._table_row([row]) for row in l]
         return json.dumps(output)
-
-    def _table_headings(self, headings): # in case headings are a dict
-        #column headings
-        next_row = []
-        for h in headings:
-            next_row.append(str(h))
-        return next_row
 
     def _table_row(self, row):
         next_row = []
@@ -89,25 +79,16 @@ class JSONFormatter:
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
-        output["headings"] = self._table_headings(headings)
-        body = []
-        for row in d:
-            ordered_row = [row[h] for h in headings]
-            body.append(self._table_row(ordered_row)) # maybe?
-        output["body"] = body
+        output["headings"] = map(str, headings)
+        output["body"] = [self._table_row([row[h] for h in headings]) for row in d]
         return output
 
     def _format_dict_table(self, d, headings, help_text=""): #needs verify
         headings = [""] + headings[:]
         output = {}
         output["help_text"] = help_text        
-        output["headings"] = self._table_headings(headings)
-        
-        body = []
-        for key, row in sorted(d.iteritems()):
-            ordered_row = [row[h] for h in headings if h]
-            body.append(self._table_row([key] + ordered_row)) #maybe
-        output["body"] = body
+        output["headings"] = map(str, headings)
+        output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
         return output
         
 class SchedulingCheckRunner:

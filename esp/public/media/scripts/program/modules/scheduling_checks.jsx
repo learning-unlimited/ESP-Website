@@ -37,7 +37,7 @@ var SchedulingCheck = React.createClass({
       open: false,
       failed: false,
       timestamp: "never",
-      tableState: {
+      tableState: { // gets modified by functions in the definition of SelectTable
         greyed: {},
         sort: -1          
       }
@@ -96,23 +96,17 @@ var SchedulingCheck = React.createClass({
       var data = JSON.parse(this.state.data); // Might not work on old browsers
       var table;
       if (data.headings.length == 0) {
-        var settings = {
-          header: false
-        };
-      table = <SelectTable rows = {data.body} settings = {settings} saveState = {this.state.tableState} />;
+        table = <SelectTable rows = {data.body} header = {false} saveState = {this.state.tableState} />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
-          if (!!data.headings[i]) {
+          if (data.headings[i]) {
             columns[i] = {key: String(i), label: data.headings[i]};
           } else {
             columns[i] = {key: String(i), label: " "};
           }
         }
-        var settings = {
-          header: true
-        };
-        table = <SelectTable rows = {data.body} columns = {columns} settings = {settings} saveState = {this.state.tableState} />;
+        table = <SelectTable rows = {data.body} columns = {columns} header = {true} saveState = {this.state.tableState} />;
       }
       body = <div>
         <div className="placeholder">
@@ -151,40 +145,40 @@ var RefreshButton = React.createClass({
 
 
 // Modified from react-json-table example code.
-// Required props: rows, saveState (with sort and greyed attributes), settings (with header attribute)
 var SelectTable = React.createClass({
+  
+  propTypes: {
+    rows: React.PropTypes.array.isRequired,
+    savestate: React.PropTypes.shape({
+      greyed: React.PropTypes.object.isRequired,
+      sort: React.PropTypes.any.isRequired
+    }).isRequired,
+    header: React.PropTypes.bool.isRequired,
+    columns: React.PropTypes.object
+  },
+    
   getInitialState: function(){
     // We will store the sorted column and whether each row is greyed out
-    return {sort: this.props.saveState.sort, greyed : this.props.saveState.greyed};
+    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed};
   },  
   render: function(){
     var me = this,
         // clone the rows
         items = this.props.rows.slice()
     ;
-    // Sort the table
-    if( this.state.sort ){
-      items.sort( function( a, b ){
-         return a[ me.state.sort ] > b[ me.state.sort ] ? 1 : -1;
+    
+    items = _.sortBy(items, function( item ){
+         return item[ me.state.sort ];
       });
-    }
       
-    if (this.props.columns == undefined) {
-      return <JsonTable 
-        rows={items} 
-        settings={ this.getSettings() } 
-        onClickHeader={ this.onClickHeader }
-        onClickRow={ this.onClickRow }
-      />;
-    } else {
-      return <JsonTable 
-        rows={items} 
-        columns={this.props.columns}
-        settings={ this.getSettings() } 
-        onClickHeader={ this.onClickHeader }
-        onClickRow={ this.onClickRow }
-      />;
-    }
+    
+    return <JsonTable 
+      rows={items} 
+      columns={this.props.columns}
+      settings={ this.getSettings() } 
+      onClickHeader={ this.onClickHeader }
+      onClickRow={ this.onClickRow }
+    />;
   },
   
   getSettings: function(){
@@ -192,16 +186,20 @@ var SelectTable = React.createClass({
       // We will add some classes to the selected rows and cells
       return {
         headerClass: function( current, key ){
-            if( me.state.sort == key )
+            if( me.state.sort == key ) {
               return current + ' headerSelected';
-            return current;
+            } else {
+              return current;
+            }
         },
         rowClass: function( current, item ){
-          if( me.state.greyed[item] )
+          if( me.state.greyed[item] ) {
             return current + ' rowGreyed';
-          return current;
+          } else {
+            return current;
+          }
         },
-        header: this.props.settings.header
+        header: this.props.header
       };
   },
     
