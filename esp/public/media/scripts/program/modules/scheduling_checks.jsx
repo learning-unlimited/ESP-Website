@@ -39,7 +39,7 @@ var SchedulingCheck = React.createClass({
       timestamp: "never",
       tableState: {
         greyed: {},
-        sort: false,
+        sort: -1,
         reverse: false
       }
     };
@@ -47,6 +47,18 @@ var SchedulingCheck = React.createClass({
   
   updateTableState: function (state) {
     this.state.tableState = state;
+  },
+  
+  resetTable: function () {
+    this.setState({
+      tableState: {
+        greyed: {},
+        sort: -1,
+        reverse: false
+      },
+      open: false
+      });
+    
   },
 
   handleClick: function () {
@@ -125,6 +137,7 @@ var SchedulingCheck = React.createClass({
       <div className="scheduling-check-title">
         <span onClick={this.handleClick}>{this.props.title}</span>
         <RefreshButton onClick={this.loadData} />
+        <ResetButton onClick={this.resetTable} />
       </div>
       <div className="scheduling-check-body">
         {body}
@@ -148,6 +161,20 @@ var RefreshButton = React.createClass({
   },
 });
 
+/**
+ * Calls its onClick prop to reset table greying/sorting
+ */
+var ResetButton = React.createClass({
+  propTypes: {
+    onClick: React.PropTypes.func.isRequired,
+  },
+
+  render: function () {
+    return <button onClick={this.props.onClick} className="reset-button">
+      Reset
+    </button>;
+  },
+});
 
 // Modified from react-json-table example code.
 var SelectTable = React.createClass({
@@ -174,9 +201,7 @@ var SelectTable = React.createClass({
     // clone the rows
     items = this.props.rows.slice();
     
-    items = _.sortBy(items, function( item ){
-         return item[ me.state.sort ];
-      });
+    items = _.sortBy(items, me.state.sort);
     
     if (this.state.reverse) items.reverse();
     
