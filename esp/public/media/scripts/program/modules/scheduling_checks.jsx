@@ -43,6 +43,14 @@ var SchedulingCheck = React.createClass({
       }
     };
   },
+  
+  updateTableState: function (state) {
+    /*this.state.tableState = {
+      greyed: state.greyed,
+      sort: state.sort
+    };*/
+    this.state.tableState = state;
+  },
 
   handleClick: function () {
     if (this.state.open) {
@@ -96,7 +104,7 @@ var SchedulingCheck = React.createClass({
       var data = JSON.parse(this.state.data); // Might not work on old browsers
       var table;
       if (data.headings.length == 0) {
-        table = <SelectTable rows = {data.body} header = {false} saveState = {this.state.tableState} />;
+        table = <SelectTable rows = {data.body} header = {false} saveState = {this.state.tableState} updateTableState = {this.updateTableState} />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
@@ -106,7 +114,7 @@ var SchedulingCheck = React.createClass({
             columns[i] = {key: String(i), label: " "};
           }
         }
-        table = <SelectTable rows = {data.body} columns = {columns} header = {true} saveState = {this.state.tableState} />;
+        table = <SelectTable rows = {data.body} columns = {columns} header = {true} saveState = {this.state.tableState} updateTableState = {this.updateTableState} />;
       }
       body = <div>
         <div className="placeholder">
@@ -149,19 +157,21 @@ var SelectTable = React.createClass({
   
   propTypes: {
     rows: React.PropTypes.array.isRequired,
-    savestate: React.PropTypes.shape({
+    saveState: React.PropTypes.shape({
       greyed: React.PropTypes.object.isRequired,
       sort: React.PropTypes.any.isRequired
     }).isRequired,
     header: React.PropTypes.bool.isRequired,
-    columns: React.PropTypes.object
+    columns: React.PropTypes.array,
+    updateTableState: React.PropTypes.func.isRequired
   },
     
   getInitialState: function(){
     // We will store the sorted column and whether each row is greyed out
-    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed};
+    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed };
   },  
   render: function(){
+    this.props.updateTableState(this.state);
     var me = this,
         // clone the rows
         items = this.props.rows.slice()
@@ -204,13 +214,13 @@ var SelectTable = React.createClass({
   },
     
   onClickHeader: function( e, column ){
-    this.props.saveState.sort = column;
     this.setState( {sort: column} );
   },
   
-  onClickRow: function( e, item ){
-    this.state.greyed[item] = !this.state.greyed[item];
-    this.props.saveState.greyed[item] = this.state.greyed[item];
-    this.setState(); // so that it actually updates
+  onClickRow: function( e, item ){ 
+    // kind of kludgy but I can't figure out how to do this more nicely
+    newgreyed = jQuery.extend({}, this.state.greyed);
+    newgreyed[item] = !newgreyed[item]; 
+    this.setState( {greyed: newgreyed} );
   }
 });
