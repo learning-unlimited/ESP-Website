@@ -37,38 +37,34 @@ import time
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
 from django.db.models.query import Q
-from django.db import transaction
 from django.template.loader import render_to_string
 
 from django.conf import settings
 
-import os
-
-@transaction.atomic
 def process_messages(debug=False):
-    """ Go through all unprocessed messages and process them. """
+    """Go through all unprocessed messages and process them.
     
-    #   Perform an atomic update in order to claim which messages we will be processing.
-    my_pid = os.getpid()
+    Callers (e.g. dbmail_cron.py) should ensure that this function is not
+    called in more than one thread simultaneously."""
+    
     now = datetime.now()
     target_time = now + timedelta(seconds=10)
 
-    MessageRequest.objects.filter(Q(processed_by__lte=now) | Q(processed_by__isnull=True)).filter(processed=False).update(processed_by=target_time)
-    
-    #   Identify the messages we just claimed.
-    messages = MessageRequest.objects.filter(processed_by=target_time, processed=False)
+    # Choose a set of messages to process.  Anything which arrives later will
+    # not be processed by this run of the script.
+    messages = MessageRequest.objects.filter(Q(processed_by__lte=now) |
+                                             Q(processed_by__isnull=True),
+                                             processed=False)
+    messages = list(messages)
 
     #   Process message requests
     for message in messages:
-        try:
-            message.process(True, debug=debug)
-        except:
-            message.processed_by = None
-            message.save()
-        else:
-            message.processed = True
-            message.save()
-    return list(messages)
+        # If we raise an error here, transaction management will make sure that
+        # things with the MessageRequest get backed out properly.  We let the
+        # whole script just exit in this case -- this way we get an error
+        # message via cron, and the next run of the script can just try again.
+        message.process(True, debug=debug)
+    return messages
 
 # Deliberately uses transaction autocommitting -- we don't need this to be
 # atomic.
