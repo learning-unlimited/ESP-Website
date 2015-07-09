@@ -53,6 +53,8 @@ from esp.varnish import purge_page
 
 from django.conf import settings
 
+import reversion
+
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
 
@@ -62,6 +64,7 @@ DEFAULT_SPACING = 5
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
+@reversion.create_revision()
 def qsd(request, url):
 
     #   Extract the 'action' from the supplied URL if there is one
@@ -195,6 +198,7 @@ def qsd(request, url):
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
 
+@reversion.create_revision()
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     import json

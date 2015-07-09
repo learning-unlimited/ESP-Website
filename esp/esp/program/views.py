@@ -68,6 +68,7 @@ import operator
 import json
 from collections import defaultdict
 from decimal import Decimal
+import reversion
 
 try:
     from cStringIO import StringIO
@@ -560,6 +561,7 @@ def submit_transaction(request):
     return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
+@reversion.create_revision()
 @admin_required
 def manage_pages(request):
     if request.method == 'POST':

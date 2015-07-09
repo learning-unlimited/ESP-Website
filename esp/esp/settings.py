@@ -82,6 +82,7 @@ TEMPLATE_DIRS = (
 )
 
 DEFAULT_HOST = SITE_INFO[1]
+ALLOWED_HOSTS.append(DEFAULT_HOST)
 
 for (key,value) in CONTACTFORM_EMAIL_CHOICES:
     if (key in ('esp','general','esp-web','relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
