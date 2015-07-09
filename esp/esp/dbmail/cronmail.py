@@ -63,7 +63,7 @@ def process_messages(debug=False):
         # things with the MessageRequest get backed out properly.  We let the
         # whole script just exit in this case -- this way we get an error
         # message via cron, and the next run of the script can just try again.
-        message.process(True, debug=debug)
+        message.process(debug=debug)
     return messages
 
 # Deliberately uses transaction autocommitting -- we don't need this to be
@@ -74,10 +74,12 @@ def send_email_requests(debug=False):
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
 
-    if hasattr(settings, 'EMAILRETRIES') and settings.EMAILRETRIES is not None:
-        retries = settings.EMAILRETRIES
-    else:
-        retries = 2 # default 3 tries total
+    retries = getattr(settings, 'EMAILRETRIES', None)
+    if retries is None:
+        # previous code thought that settings.EMAILRETRIES might be set to None
+        # to be the default, rather than being undefined, so we keep that
+        # behavior.
+        retries = 2 # i.e. 3 tries total
 
     # Choose a set of emails to process.  Anything which arrives later will
     # not be processed by this run of the script.
@@ -87,7 +89,7 @@ def send_email_requests(debug=False):
                                           tries__lte=retries)
     mailtxts_list = list(mailtxts)
 
-    wait = getattr(settings, 'EMAILTIMEOUT')
+    wait = getattr(settings, 'EMAILTIMEOUT', None)
     if wait is None:
         wait = 1.5
     
