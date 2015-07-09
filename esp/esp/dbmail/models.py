@@ -95,17 +95,6 @@ def expire_unsent_emails(orm=None):
     TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
     MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
 
-@cache_function
-def can_process_and_send():
-    """
-    Returns True if the dbmail cronmail script is allowed to process and send
-    emails, and False otherwise.
-    """
-    return True
-can_process_and_send.depend_on_model(MigrationHistory)
-
-
-
 class ActionHandler(object):
     """ This class passes variable keys in such a way that django templates can use them."""
     def __init__(self, obj, user):
