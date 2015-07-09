@@ -41,12 +41,33 @@ var SchedulingCheck = React.createClass({
         greyed: {},
         sort: -1,
         reverse: false
-      }
+      },
+      tableKey: 0 // so React knows to rerender the table
     };
   },
   
-  updateTableState: function (state) {
-    this.state.tableState = state;
+  sortColumn: function (column) {
+    if (this.state.tableState.sort === column) {
+      this.setState( {
+        tableState: React.addons.update(this.state.tableState, 
+          { reverse: {$set: !this.state.tableState.reverse} } ),
+        tableKey: this.state.tableKey + 1
+        } );   
+    } else {
+      this.setState( {
+        tableState: React.addons.update(this.state.tableState, { sort: {$set: column}, reverse: {$set: false} }),
+        tableKey: this.state.tableKey + 1        
+        } );
+    }
+  },
+  
+  greyRow: function(item ){
+    newkey = {};
+    newkey[item] = !this.state.tableState.greyed[item];
+    this.setState( {
+      tableState: React.addons.update(this.state.tableState, { greyed: {$merge: newkey} } ),
+      tableKey: this.state.tableKey + 1
+      } );
   },
   
   resetTable: function () {
@@ -56,7 +77,7 @@ var SchedulingCheck = React.createClass({
         sort: -1,
         reverse: false
       },
-      open: false
+      tableKey: this.state.tableKey + 1
       });
     
   },
@@ -113,7 +134,10 @@ var SchedulingCheck = React.createClass({
       var data = JSON.parse(this.state.data); // Might not work on old browsers
       var table;
       if (data.headings.length == 0) {
-        table = <SelectTable rows = {data.body} header = {false} saveState = {this.state.tableState} updateTableState = {this.updateTableState} />;
+        table = <SelectTable rows = {data.body} header = {false} 
+                  saveState = {this.state.tableState} 
+                  clickHeader = {this.sortColumn} clickRow = {this.greyRow} 
+                  key = {this.state.tableKey} />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
@@ -123,7 +147,10 @@ var SchedulingCheck = React.createClass({
             columns[i] = {key: String(i), label: "--"};
           }
         }
-        table = <SelectTable rows = {data.body} columns = {columns} header = {true} saveState = {this.state.tableState} updateTableState = {this.updateTableState} />;
+        table = <SelectTable rows = {data.body} columns = {columns} 
+                  header = {true} saveState = {this.state.tableState} 
+                  clickHeader = {this.sortColumn} clickRow = {this.greyRow} 
+                  key = {this.state.tableKey} />;
       }
       body = <div>
         <div className="placeholder">
@@ -188,20 +215,18 @@ var SelectTable = React.createClass({
     }).isRequired,
     header: React.PropTypes.bool.isRequired,
     columns: React.PropTypes.array,
-    updateTableState: React.PropTypes.func.isRequired
+    clickHeader: React.PropTypes.func.isRequired,
+    clickRow: React.PropTypes.func.isRequired
   },
     
   getInitialState: function(){
-    // We will store the sorted column and whether each row is greyed out
     return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed, reverse: this.props.saveState.reverse};
   },  
   render: function(){
-    this.props.updateTableState(this.state);
-    var me = this;
     // clone the rows
     items = this.props.rows.slice();
     
-    items = _.sortBy(items, me.state.sort);
+    items = _.sortBy(items, this.state.sort);
     
     if (this.state.reverse) items.reverse();
     
@@ -241,17 +266,10 @@ var SelectTable = React.createClass({
   },
     
   onClickHeader: function( e, column ){
-    if (this.state.sort === column) {
-      this.setState( {reverse: !this.state.reverse} );        
-    } else {
-      this.setState( {sort: column, reverse: false} );
-    }
+    this.props.clickHeader(column);
   },
   
   onClickRow: function( e, item ){ 
-    // kind of kludgy but I can't figure out how to do this more nicely
-    newgreyed = jQuery.extend({}, this.state.greyed);
-    newgreyed[item] = !newgreyed[item]; 
-    this.setState( {greyed: newgreyed} );
+    this.props.clickRow(item);
   }
 });
