@@ -161,7 +161,6 @@ class MessageRequest(models.Model):
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
-    email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     def __unicode__(self):
@@ -273,20 +272,21 @@ class MessageRequest(models.Model):
                 'The error message is: "%s".' % \
                 (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
 
-    def process(self, processoverride=False, debug=False):
-        """ Process this request...if it's an email, create all the necessary email requests. """
+    # Processing a MessageRequest needs to be atomic, so that if the DB falls
+    # over halfway through the processing, we don't end up with half of the
+    # TextOfEmail objects created and half of them not without a way to repair.
+    # Unfortunately, this could be a pretty huge transaction -- if it turns out
+    # to be a huge performance hit, we will need to rethink how we do this, but
+    # I think we'll be okay, since nothing should block on it except other
+    # instances of the same function (which should probably be locked out
+    # anyway at a higher level).
+    @transaction.commit_on_success
+    def process(self, debug=False):
+        """Process this request, creating TextOfEmail and EmailRequest objects.
 
-        # if we already processed, return
-        if self.processed and not processoverride:
-            return
-
-        # there's no real thing for this...yet
-        if not self.email_all:
-            return
-
-        # this is for thread-safeness...
-        self.processed = True
-        self.save()
+        It is the caller's responsibility to call this only on unprocessed
+        MessageRequests.
+        """
 
         # figure out who we're sending from...
         if self.sender is not None and len(self.sender.strip()) > 0:
@@ -297,18 +297,13 @@ class MessageRequest(models.Model):
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 
-        users = self.recipients.getList(ESPUser)
-        try:
-            users = users.distinct()
-        except:
-            pass
+        users = self.recipients.getList(ESPUser).distinct()
 
         sendto_fn = self.get_sendto_fn_callable(self.sendto_fn_name)
 
         # go through each user and parse the text...then create the proper
         # emailrequest and textofemail object
         for user in users:
-            user = ESPUser(user)
             subject = self.parseSmartText(self.subject, user)
             msgtext = self.parseSmartText(self.msgtext, user)
 
@@ -340,6 +335,12 @@ class MessageRequest(models.Model):
                 newemailrequest['textofemail'] = newtxt
 
                 EmailRequest.objects.get_or_create(**newemailrequest)
+
+        # Mark ourselves processed.  We don't have to worry about the DB
+        # falling over between the above writes and this one, because the whole
+        # assembly is in a transaction.
+        self.processed = True
+        self.save()
 
         if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
