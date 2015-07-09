@@ -356,14 +356,20 @@ class TextOfEmail(models.Model):
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
-    locked = models.BooleanField(default=False)
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self, debug=False):
-        """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
+        """Take the email data in this TextOfEmail and send it.
+
+        Returns an exception, if one was raised by `send_mail`, or None if the
+        message sent successfully.
+
+        It is the caller's responsibility to call this only on emails which
+        have not already been sent, and which do not have too many retries.
+        """
 
         parent_request = None
         if self.emailrequest_set.count() > 0:
@@ -376,21 +382,21 @@ class TextOfEmail(models.Model):
         
         now = datetime.now()
 
-        # Before sending the email, check one more time that it hasn't been
-        # sent or expired.
-        if self.sent is not None:
-            return
-
-        send_mail(self.subject,
-                  self.msgtext,
-                  self.send_from,
-                  self.send_to,
-                  False,
-                  extra_headers=extra_headers,
-                  debug=debug)
-
-        self.sent = now
-        self.save()
+        try:
+            send_mail(self.subject,
+                      self.msgtext,
+                      self.send_from,
+                      self.send_to,
+                      False,
+                      extra_headers=extra_headers,
+                      debug=debug)
+        except Exception as e:
+            self.tries += 1
+            self.save()
+            return e
+        else:
+            self.sent = now
+            self.save()
 
     @classmethod
     def expireUnsentEmails(cls, min_tries=0, orm_class=None):
