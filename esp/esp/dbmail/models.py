@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 import sys
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 from esp.cache import cache_function
 from esp.middleware import ESPError
