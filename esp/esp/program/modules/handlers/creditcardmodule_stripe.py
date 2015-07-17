@@ -262,6 +262,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         currency="usd",
                         card=request.POST['stripeToken'],
                         description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },
