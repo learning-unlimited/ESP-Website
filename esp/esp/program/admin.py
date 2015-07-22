@@ -235,7 +235,7 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
-    exclude = ('teachers','anchor')
+    exclude = ('teachers',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
     fieldsets= (

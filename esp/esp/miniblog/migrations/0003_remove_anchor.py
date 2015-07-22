@@ -4,8 +4,6 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-from esp.datatree.models import DataTree, GetNode
-
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
@@ -18,11 +16,7 @@ class Migration(SchemaMigration):
         # This is wrapped in a transaction so that the schema changes below 
         # will work properly
         db.start_transaction()
-        try:
-            web_node_id = GetNode('Q/Web').id
-        except DataTree.DoesNotExist:
-            #   If there is no DataTree, delete everything.
-            web_node_id = -1
+        web_node_id = -1
         db.execute('DELETE FROM "miniblog_announcementlink" WHERE "anchor_id" != %s', [web_node_id,])
         db.execute('DELETE FROM "miniblog_entry" WHERE "anchor_id" != %s', [web_node_id,])
         db.commit_transaction()
@@ -44,11 +38,6 @@ class Migration(SchemaMigration):
         db.add_column('miniblog_entry', 'anchor',
                       self.gf('django.db.models.fields.related.ForeignKey')(default=1, to=orm['datatree.DataTree']),
                       keep_default=False)
-
-        # Set AnnouncementLink and Entry anchors to Q/Web
-        web_node = GetNode('Q/Web')
-        orm['miniblog.AnnouncementLink'].objects.all().update(anchor=web_node)
-        orm['miniblog.Entry'].objects.all().update(anchor=web_node)
 
         # Adding unique constraint on 'Entry', fields ['slug', 'anchor']
         # db.create_unique('miniblog_entry', ['slug', 'anchor_id'])

@@ -35,34 +35,22 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
-from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
-from esp.tagdict.decorators      import require_tag
 from esp.web.util                import render_to_response
-from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
-from django.utils.datastructures import MultiValueDict
-from esp.dbmail.models           import send_mail
-from django.template.loader      import render_to_string
-from django.http                 import HttpResponse
-from esp.miniblog.models         import Entry
-from django.core.cache           import cache
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
-from esp.resources.models        import ResourceType, ResourceRequest
 from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
-from datetime                    import timedelta
 from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
-import simplejson as json
-from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -553,92 +541,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                              'txtTeachers': txtTeachers,
                                                                              'coteachers':  coteachers,
                                                                              'conflicts':   conflictingusers})
-
-    @needs_teacher
-    def ajax_requests(self, request, tl, one, two, module, extra, prog):
-        """ Handle a request for modifying a ResourceRequestFormSet. 
-            This view is customized to handle the dynamic form
-            (i.e. resource type is specified in advance and loaded
-            into a hidden field). 
-        """
-
-        #   Construct a formset from post data
-        resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
-        validity = resource_formset.is_valid()
-        form_dicts = [x.__dict__ for x in resource_formset.forms]
-        
-        #   Retrieve data from forms
-        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
-        form_datas_filtered = [x for x in form_datas if x.has_key('resource_type')]
-        
-        if request.POST.has_key('action'):
-            #   Modify form if an action is specified
-            if request.POST['action'] == 'add':
-                #   Construct initial data including new form
-                new_restype = ResourceType.objects.get(id=request.POST['restype'])
-                if len(new_restype.choices) > 0:
-                    new_data = form_datas_filtered + [{'desired_value': new_restype.choices[0]}]
-                else:
-                    new_data = form_datas_filtered + [{}]
-                new_types = [x['resource_type'] for x in form_datas_filtered] + [new_restype]
-            elif request.POST['action'] == 'remove':
-                #   Construct initial data removing undesired form
-                form_to_remove = int(request.POST['form'])
-                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
-                new_types = [x['resource_type'] for x in new_data]
-            
-            #   Instantiate a new formset having the additional form
-            new_formset = ResourceRequestFormSet(initial=new_data, resource_type=new_types, prefix='request')
-        else:
-            #   Otherwise, just send back the original form
-            new_formset = resource_formset
-        
-        #   Render an HTML fragment with the new formset
-        context = {}
-        context['formset'] = new_formset
-        context['ajax_request'] = True
-        formset_str = render_to_string(self.baseDir()+'requests_form_fragment.html', context)
-        formset_script = render_to_string(self.baseDir()+'requests_form_fragment.js', context)
-        return HttpResponse(json.dumps({'request_forms_html': formset_str, 'script': formset_script}))
-
-    @needs_teacher
-    def ajax_restypes(self, request, tl, one, two, module, extra, prog):
-        """ Handle a request for modifying a ResourceTypeFormSet. 
-            This is pretty straightforward and should be generalized for
-            all further applications.
-        """
-        #   Construct a formset from post data
-        resource_formset = ResourceTypeFormSet(request.POST, prefix='restype')
-        validity = resource_formset.is_valid()
-        form_dicts = [x.__dict__ for x in resource_formset.forms]
-        
-        #   Retrieve data from forms
-        form_datas = [x.cleaned_data for x in resource_formset.forms if hasattr(x, 'cleaned_data')]
-        form_datas_filtered = form_datas
-        
-        if request.POST.has_key('action'):
-            #   Modify form if an action is specified
-            if request.POST['action'] == 'add':
-                #   Construct initial data including new form
-                new_data = form_datas_filtered + [{}]
-            elif request.POST['action'] == 'remove':
-                #   Construct initial data removing undesired form
-                form_to_remove = int(request.POST['form'])
-                new_data = form_datas_filtered[:form_to_remove] + form_datas_filtered[(form_to_remove + 1):]
-
-            #   Instantiate a new formset having the additional form
-            new_formset = ResourceTypeFormSet(initial=new_data, prefix='restype')
-        else:
-            #   Otherwise, just send back the original form
-            new_formset = resource_formset
-        
-        #   Render an HTML fragment with the new formset
-        context = {}
-        context['formset'] = new_formset
-        context['ajax_request'] = True
-        formset_str = render_to_string(self.baseDir()+'restype_form_fragment.html', context)
-        formset_script = render_to_string(self.baseDir()+'restype_form_fragment.js', context)
-        return HttpResponse(json.dumps({'restype_forms_html': formset_str, 'script': formset_script}))
         
     @aux_call
     @needs_teacher

@@ -4,7 +4,7 @@
 # 
 # Approves not-yet-approved requests where both answers are non-blank/None/whitespace
 # and prints the email address of these users to the screen. Make sure to configure
-# PROGRAM_ID and PROGRAM_COST (in dollars) below.
+# PROGRAM_ID below.
 #
 
 from script_setup import *
@@ -12,44 +12,37 @@ from script_setup import *
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
 
+import re
+
 
 # CONFIGURATION
-PROGRAM = "Splash! 2013"
-PROGRAM_COST = 40
+PROGRAM = "Splash 2014"
 
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(done = False, program__name=PROGRAM).exclude(household_income = None, extra_explaination = None)
-
-print reqs.count()
+reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
 
 print "New Approvals:"
 approved_any = False
 
-emails = []
-errors = []
+def is_blank(x):
+    return x is None or re.match(r'^(\s)*$', x)
 
 for req in reqs:
-#    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
-#        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+    if is_blank(req.household_income) and is_blank(req.extra_explaination):
+        continue
 
-#    if req.household_income is None and req.extra_explaination is None:
-#       continue
+    if req.approved:
+        continue
 
-    print req.user
-
-    if req.financialaidgrant_set.all().count() != 0 : continue
-
-    e = req.user.email
-    print e
-    emails.append(e)
+    print req.user.email
     try:
         f = FinancialAidGrant(request = req, percent = 100)
         f.save()
         req.done = True
         req.save()
     except:
-        errors.append(req.user)
+        print "Error on user %s" % req.user.id
     approved_any = True
 
 if not approved_any:

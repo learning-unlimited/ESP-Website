@@ -1,5 +1,3 @@
-/** @jsx React.DOM */
-
 var booleanFilters = [
   {
     "name": "and",
@@ -273,8 +271,8 @@ var Filter = React.createClass({
                          // We need to get the class with the name that is the
                          // string input.reactClass.  Doing so is
                          // *terrifyingly* easy.
-                         var inputClass = window[input.reactClass];
-                         return <inputClass ref={i} key={i} input={input} />;
+                         var InputClass = window[input.reactClass];
+                         return <InputClass ref={i} key={i} input={input} />;
                        });
     return <span>
       {inputs}
@@ -333,7 +331,7 @@ var SelectInput = React.createClass({
   },
 
   asJSON: function () {
-    var val = this.refs.select.getDOMNode().value;
+    var val = React.findDOMNode(this.refs.select).value;
     if (val == "") {
       this.setState({error: "Select an option!"});
       throw new BuildQueryError();
@@ -403,8 +401,8 @@ var OptionalInput = React.createClass({
     var inner = null;
     buttonClasses="qb-optional-button qb-input btn "
     if (this.state.show) {
-      var innerClass = window[this.props.input.inner.reactClass];
-      inner = <innerClass ref="inner" input={this.props.input.inner} />;
+      var InnerClass = window[this.props.input.inner.reactClass];
+      inner = <InnerClass ref="inner" input={this.props.input.inner} />;
       buttonClasses = buttonClasses + "active btn-success"
     } else {
       buttonClasses = buttonClasses + "btn-default"
@@ -438,8 +436,8 @@ var DatetimeInput = React.createClass({
 
   asJSON: function () {
     return {
-      comparison: this.refs.comparison.getDOMNode().value,
-      datetime: this.refs.datetime.getDOMNode().value,
+      comparison: React.findDOMNode(this.refs.comparison).value,
+      datetime: React.findDOMNode(this.refs.datetime).value,
     };
   },
 
@@ -448,7 +446,7 @@ var DatetimeInput = React.createClass({
   },
 
   componentDidUpdate: function () {
-    $j(this.refs.datetime.getDOMNode()).datetimepicker();
+    $j(React.findDOMNode(this.refs.datetime)).datetimepicker();
   },
 
   render: function () {
@@ -482,7 +480,7 @@ var TextInput = React.createClass({
   },
 
   asJSON: function () {
-    return this.refs.input.getDOMNode().value;
+    return React.findDOMNode(this.refs.input).value;
   },
 
   render: function () {

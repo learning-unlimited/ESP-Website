@@ -91,7 +91,7 @@ def program(request, tl, one, two, module, extra = None):
         from esp.program.models import Program
         
 	try:
-		prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+		prog = Program.by_prog_inst(one, two)
 	except Program.DoesNotExist:
 		raise Http404("Program not found.")
 
@@ -109,99 +109,6 @@ def program(request, tl, one, two, module, extra = None):
             return newResponse
 
 	raise Http404
-
-def classchangerequest(request, tl, one, two):
-    from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
-    from esp.program.models.class_ import ClassSubject
-    from urllib import quote
-    try:
-        prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
-    except Program.DoesNotExist:
-        raise Http404("Program not found.")
-    
-    if tl != "learn":
-        raise Http404
-
-    if not request.user or not request.user.is_authenticated():
-        return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path()) ))
-
-    if not request.user.isStudent() and not request.user.isAdmin(prog):
-        allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')
-        matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
-        if not matching_user_types:
-            return render_to_response('errors/program/notastudent.html', request, {})
-    
-    errorpage = 'errors/program/wronggrade.html'
-    
-    cur_grade = request.user.getGrade(prog)
-    if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
-        return render_to_response(errorpage, request, {'yog': request.user.getYOG(prog)})
-
-    setattr(request, "program", prog)
-    setattr(request, "tl", tl)
-    setattr(request, "module", "classchangerequest")
-
-    from django import forms
-    from datetime import datetime
-    from esp.utils.scheduling import getRankInClass
-
-    timeslots = prog.getTimeSlots()
-    sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
-    
-    enrollments = {}
-    for timeslot in timeslots:
-        try:
-            enrollments[timeslot] = ClassSubject.objects.get(nest_Q(StudentRegistration.is_valid_qobject(), 'sections__studentregistration'), sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog)
-        except ClassSubject.DoesNotExist: 
-            enrollments[timeslot] = None
-    
-    context = {}
-    context['timeslots'] = timeslots
-    context['enrollments'] = enrollments
-    context['user'] = request.user
-    if 'success' in request.GET: 
-        context['success'] = True
-    else: 
-        context['success'] = False
-    
-    if request.user.isStudent():
-        sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
-    else: 
-        sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
-    
-    fields = {}
-    for i, timeslot in enumerate(sections_by_slot.keys()): 
-        choices = [('0', "I'm happy with my current enrollment.")]
-        initial = '0'
-        for section in sections_by_slot[timeslot]:
-            choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
-            if section[1]:
-                initial = section[0].emailcode()
-        fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=choices, initial=initial)
-    
-    form = type('ClassChangeRequestForm', (forms.Form,), fields)
-    context['form'] = form()
-    if request.method == "POST": 
-        old_requests = StudentRegistration.valid_objects().filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request")
-        for r in old_requests:
-            r.expire()
-        form = form(request.POST)
-        if form.is_valid(): 
-            for value in form.cleaned_data.values(): 
-                section = None
-                for s in sections: 
-                    if s.emailcode() == value: 
-                        section = s
-                        break
-                if not section: 
-                    continue
-                r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
-                r.save()
-                
-            return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
-    else: 
-        return render_to_response('program/classchangerequest.html', request, context)
-
 
 def archives(request, selection, category = None, options = None):
 	""" Return a page with class archives """
