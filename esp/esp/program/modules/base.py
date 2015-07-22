@@ -507,6 +507,8 @@ class ProgramModuleObj(models.Model):
         """
         return context
 
+        class Meta:
+            app_label = 'modules'
 
 
 # will check and depending on the value of tl
