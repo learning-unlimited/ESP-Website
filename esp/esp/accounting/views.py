@@ -32,22 +32,29 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import csv
+import weasyprint 
+
 from collections import OrderedDict
 from datetime import datetime, time
 
-from django.core.exceptions import ObjectDoesNotExist
+
 from django.db.models import Q, Sum
 from django.http import HttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.views.generic import ListView, DetailView, CreateView, TemplateView
-from django.views.generic.base import TemplateView
+from django.template import RequestContext
+from django.template.loader import get_template
+from django.template.defaultfilters import slugify
 from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView
 
 from esp.accounting.models import Account, LineItemType
 from esp.program.models import Program
-
 from esp.users.models import admin_required, ESPUser
 from esp.web.util.main import render_to_response
+
 
 from forms import TransferDetailsReportForm
 
@@ -118,13 +125,69 @@ class TransferDetailsReportModel(object):
         return iter(self.sections)
 
 
-class TransferDetailsReport(TemplateView):
+class CSVResponseMixin(object):
+
+    def get_csv_response(self, context, **response_kwargs):
+        """
+        Sets content type to text/csv. Converts the report model into a csv document.
+        """
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="%s.csv"' % slugify('csv download')
+        writer = csv.writer(response)
+        report_model = context['report_model']
+
+        for section in report_model:
+            for transfer in section.transfers:
+                amount = transfer.amount_dec
+                if transfer.line_item.text == 'Student payment':
+                    amount = -amount
+
+                row = [unicode(section.program),
+                       transfer.id,
+                       transfer.timestamp,
+                       transfer.line_item.text,
+                       transfer.amount_dec
+                       ]
+                writer.writerow(row)
+
+        return response
+
+
+class PDFResponseMixin(object):
+    def get_pdf_response(self, context, **response_kwargs):
+        """
+        Sets content type to application/pdf. Converts the default response into a pdf 
+        document.
+        """
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="%s.pdf"' % slugify('csv download')
+        template = get_template(self.template_name)
+        html = template.render(RequestContext(self.request, context))
+
+        weasyprint.HTML(string=html).write_pdf(response)
+
+        return response
+
+
+class TransferDetailsReport(CSVResponseMixin, PDFResponseMixin, TemplateView):
     """
     A report displaying all transfers for the specified user
     within a given time frame and selected program. 
     """
     template_name = 'transfer_details_report.html'
     model = Program
+    file_type = 'html'
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.file_type == 'csv':
+            response = self.get_pdf_response(context, **response_kwargs)
+        elif self.file_type == 'pdf':
+            response = self.get_pdf_response(context, **response_kwargs)
+        else:
+            response = super(TransferDetailsReport, self).render_to_response(
+            context, **response_kwargs)
+
+        return response
 
     def get(self, request, *args, **kwargs):
         self.user = get_object_or_404(ESPUser, username=self.kwargs['username'])
@@ -136,8 +199,8 @@ class TransferDetailsReport(TemplateView):
         user_programs = Program.objects.filter(line_item_types__in=line_items).distinct()
         form = TransferDetailsReportForm(self.request.GET, user_programs=user_programs)
 
-
         if form.is_valid():
+            self.file_type = form.cleaned_data.get('file_type')
             context['report_model'] = TransferDetailsReportModel(self.user,
                                           form.cleaned_data.get('program'),
                                           form.cleaned_data.get('from_date'),
@@ -147,13 +210,9 @@ class TransferDetailsReport(TemplateView):
             context['to_date'] = form.cleaned_data.get('to_date')
 
         context['user'] = self.user
-
         context['form'] = form
-       
         return context
 
     @method_decorator(admin_required)
     def dispatch(self, *args, **kwargs):
         return super(TransferDetailsReport, self).dispatch(*args, **kwargs)
-
-
