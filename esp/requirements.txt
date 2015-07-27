@@ -39,6 +39,7 @@ django-grappelli==2.4.9
 # <https://github.com/learning-unlimited/django-filebrowser/commit/4557e6a6>.
 git+git://github.com/learning-unlimited/django-filebrowser.git
 
+weasyprint
 werkzeug
 django-bootstrap-form==3.1
 django-vanilla-views==1.0.2
