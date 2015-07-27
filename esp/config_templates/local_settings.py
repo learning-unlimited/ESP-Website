@@ -31,3 +31,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
 SECRET_KEY = '%(secret_key)s'
+DEBUG_TOOLBAR = False 
