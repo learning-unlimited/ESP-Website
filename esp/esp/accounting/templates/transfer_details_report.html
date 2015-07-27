@@ -32,6 +32,9 @@
                 <label for="id_to_date">{% trans "To" %}</label>
                 {{form.to_date}}
                  <button type="submit" class="btn btn-success show-transfers">{% trans "Show" %}</button>
+                 <button type="button" class="btn btn-info download-btn" value="csv">{% trans "CSV" %}</button>
+                 <button type="button" class="btn btn-info download-btn" value="pdf">{% trans "PDF" %}</button>
+                {{form.file_type}}
             </div>
           </form>
         </div>
@@ -142,8 +145,12 @@
 </div>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/js/bootstrap-datepicker.js"></script>
 <script>
-  $j('#id_from_date').datepicker();
-  $j('#id_to_date').datepicker();
+    $j('#id_from_date').datepicker();
+    $j('#id_to_date').datepicker();
+    $j('.download-btn').click(function() {
+    $j('#id_file_type').val($j(this).val());
+    $j(this).parents('form:first').submit();
+  });
 </script>
 </div>
 
