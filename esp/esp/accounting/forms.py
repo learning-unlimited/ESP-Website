@@ -3,11 +3,18 @@ from django import forms
 from models import Program
 from esp.accounting.models import LineItemType
 
+FILE_TYPES = (
+    ('html', 'HTML'),
+    ('csv', 'CVS'),
+    ('pdf', 'PDF'),
+)
+
 
 class TransferDetailsReportForm(forms.Form):
     program = forms.ChoiceField(required=False)
     from_date = forms.DateField(required=False, label='Dates')
     to_date = forms.DateField(required=False, label='To')
+    file_type = forms.ChoiceField(widget=forms.HiddenInput, required=False, choices=FILE_TYPES)
 
     def __init__(self, *args, **kwargs):
         if 'user_programs' in kwargs:
@@ -21,4 +28,3 @@ class TransferDetailsReportForm(forms.Form):
         for s in ('from_date','to_date',):
             self.fields[s].widget.attrs['class'] = 'input-small'
 
-       
