@@ -32,36 +32,24 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-
 from datetime import datetime, timedelta
 from model_mommy import mommy
-from django.test import TestCase
-from ..views import ReportSection
-from esp.program.models import Program
-from ..models import LineItemType, Account
-from esp.program.tests import ProgramFrameworkTest
 
-class TestReportSection(ProgramFrameworkTest):
-    """ Tests for the underlying ReportModels. """
-    
+from ..models import LineItemType, Account
+from ..views import ReportSection
+from django.test import TestCase
+from esp.program.models import Program
+from test_report_views import TransferDetailsReportTestBase
+
+
+class TestReportSection(TransferDetailsReportTestBase):
+    """ Tests for the underlying Report Models. 
+    Specific attention is paid to accuracy of calculations"""
+
     def setUp(self):
         """ Create a test non-admin account and a test admin account. """
         super(TestReportSection, self).setUp()
-        self.user_program = mommy.make(Program)
-
-        self.account = mommy.make(Account)
-        self.account.program = self.user_program
-        self.account.save()
-
-        self.line_item_types = mommy.make_recipe('esp.accounting.tests.line_item_type', _quantity=20)
-
-        for l in self.line_item_types:
-            l.program = self.user_program
-            l.save()
- 
-    def test_report_section_calculations(self):
-        pass
-   
+        
     def tearDown(self):
         LineItemType.objects.filter(pk__in=[l.id for l in self.line_item_types]).delete()
 

@@ -32,29 +32,22 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-
-import csv
-import weasyprint 
-
 from collections import OrderedDict
 from datetime import datetime, time
-
+import csv
 
 from django.db.models import Q, Sum
 from django.http import HttpResponse
-from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-from django.template import RequestContext
-from django.template.loader import get_template
 from django.template.defaultfilters import slugify
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 
 from esp.accounting.models import Account, LineItemType
+from esp.gen_media.view_helpers import PDFResponseMixin
 from esp.program.models import Program
 from esp.users.models import admin_required, ESPUser
 from esp.web.util.main import render_to_response
-
 
 from forms import TransferDetailsReportForm
 
@@ -102,9 +95,7 @@ class TransferDetailsReportModel(object):
         self.from_date = from_date
         self.to_date = to_date
 
-        line_items = LineItemType.objects.filter(transfer__user=self.user)
-        self.user_programs = Program.objects.filter(line_item_types__in=line_items) \
-                                            .distinct()
+        self.user_programs = self.user.get_purchased_programs()
 
         transfer_qs = self.user.transfers.all()
 
@@ -155,22 +146,6 @@ class CSVResponseMixin(object):
         return response
 
 
-class PDFResponseMixin(object):
-    def get_pdf_response(self, context, **response_kwargs):
-        """
-        Sets content type to application/pdf. Converts the default response into a pdf 
-        document.
-        """
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="%s.pdf"' % slugify('csv download')
-        template = get_template(self.template_name)
-        html = template.render(RequestContext(self.request, context))
-
-        weasyprint.HTML(string=html).write_pdf(response)
-
-        return response
-
-
 class TransferDetailsReport(CSVResponseMixin, PDFResponseMixin, TemplateView):
     """
     A report displaying all transfers for the specified user
@@ -182,7 +157,7 @@ class TransferDetailsReport(CSVResponseMixin, PDFResponseMixin, TemplateView):
 
     def render_to_response(self, context, **response_kwargs):
         if self.file_type == 'csv':
-            response = self.get_pdf_response(context, **response_kwargs)
+            response = self.get_csv_response(context, **response_kwargs)
         elif self.file_type == 'pdf':
             response = self.get_pdf_response(context, **response_kwargs)
         else:
