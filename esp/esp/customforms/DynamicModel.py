@@ -144,17 +144,16 @@ class DynamicModelHandler:
         if not self.field_list:
             self._getModelFieldList()
         
-        if not transaction.is_managed():
-            db.start_transaction()
-            db.create_table(self._tname, tuple(self.field_list))
+        if transaction.get_autocommit():
+            with transaction.atomic():
+                db.create_table(self._tname, tuple(self.field_list))
             
-            # Executing deferred SQL, after correcting the CREATE INDEX statements
-            deferred_sql = []
-            for stmt in db.deferred_sql:
-                deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-            db.deferred_sql = deferred_sql    
-            db.execute_deferred_sql()    
-            db.commit_transaction()
+                # Executing deferred SQL, after correcting the CREATE INDEX statements
+                deferred_sql = []
+                for stmt in db.deferred_sql:
+                    deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
+                db.deferred_sql = deferred_sql
+                db.execute_deferred_sql()
         else:
             db.create_table(self._tname, tuple(self.field_list))
             
@@ -165,13 +164,12 @@ class DynamicModelHandler:
             db.deferred_sql = deferred_sql    
             db.execute_deferred_sql()    
         
+    @transaction.atomic
     def deleteTable(self):
         """
         Deletes the response table for the current form
         """
-        db.start_transaction()
         db.delete_table(self._tname)
-        db.commit_transaction()
         
     def _getFieldToAdd(self, ftype):
         """

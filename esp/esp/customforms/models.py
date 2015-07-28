@@ -86,11 +86,5 @@ def create_schema(db):
     # block" errors.
     # Warning: This overrides the transaction management of any surrounding code.
 
-    with transaction.commit_manually():
-        transaction.commit()    # flush any existing transaction
-        try:
-            db.execute("CREATE SCHEMA customforms")
-        except:
-            transaction.rollback()
-        else:
-            transaction.commit()
+    with transaction.atomic():
+        db.execute("CREATE SCHEMA customforms")
