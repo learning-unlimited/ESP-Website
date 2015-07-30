@@ -488,7 +488,7 @@ class ClassChangeController(object):
         f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
         self.subject = "[" + self.program.niceName() + "] Class Change"
         self.from_email = "%s <%s>" % (self.program.niceName(), self.program.director_email)
-        self.bcc = self.from_email
+        self.bcc = [self.from_email]
         self.extra_headers = {}
         self.extra_headers['Reply-To'] = self.from_email
         for [student_ind] in numpy.transpose(numpy.nonzero(self.changed)):
