@@ -220,15 +220,15 @@ var SelectTable = React.createClass({
   },
     
   getInitialState: function(){
-    return {sort: this.props.saveState.sort, greyed: this.props.saveState.greyed, reverse: this.props.saveState.reverse};
+    return {};
   },  
   render: function(){
     // clone the rows
     items = this.props.rows.slice();
     
-    items = _.sortBy(items, this.state.sort);
+    items = _.sortBy(items, this.props.saveState.sort);
     
-    if (this.state.reverse) items.reverse();
+    if (this.props.saveState.reverse) items.reverse();
     
     return <JsonTable 
       rows={items} 
@@ -244,8 +244,8 @@ var SelectTable = React.createClass({
       // We will add some classes to the selected rows and cells
       return {
         headerClass: function( current, key ){
-            if( me.state.sort == key ) {
-              if ( me.state.reverse) {
+            if( me.props.saveState.sort == key ) {
+              if ( me.props.saveState.reverse) {
                 return current + ' headerSelected sortReversed';
               } else {
                 return current + ' headerSelected';
@@ -255,7 +255,7 @@ var SelectTable = React.createClass({
             }
         },
         rowClass: function( current, item ){
-          if( me.state.greyed[item] ) {
+          if( me.props.saveState.greyed[item] ) {
             return current + ' rowGreyed';
           } else {
             return current;
