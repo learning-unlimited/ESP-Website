@@ -139,17 +139,40 @@ class TestTransferDetailsReport(TransferDetailsReportTestBase):
         """
         Verifies that the data contained in the csv rows matches the data in the report model
         """
-        response = self.client.get(self.report_url,{'file_type':'csv'})
-        csv_rows = StringIO.StringIO(response.content)
+        csv_response = self.client.get(self.report_url,{'file_type':'csv'})
+        response = self.client.get(self.report_url)
+        report_model = response.context['report_model']
+        report_transfers = {}
 
+        for section in report_model.sections:
+            for transfer in section.transfers:
+                report_transfers[transfer.id] = transfer
+
+        csv_rows = StringIO.StringIO(csv_response.content)
         reader = csv.reader(csv_rows, delimiter=',')
+        num_cvs_rows = 0
+
+        for row in reader:
+
+            transfer_id = row[1]
+            timestamp = str(row[2])
+            line_item_text = str(row[3])
+            amount_dec = str(row[4])
+            report_transfer = report_transfers[int(transfer_id)]
+
+            self.assertEquals(str(report_transfer.timestamp), timestamp)
+            self.assertEquals(report_transfer.line_item.text, line_item_text)
+            self.assertEquals(str(report_transfer.amount_dec), amount_dec.replace('-', ''))
+            num_cvs_rows += 1
+
+        self.assertEqual(num_cvs_rows, len(report_transfers.keys()))
 
     def test_report_should_show_all_programs(self):
         """
         Report should should show all programs for specific student, when default
         options provided
         """
-        response = self.client.get(self.report_url)
+        csv_response = self.client.get(self.report_url)
         student_programs_names = [p.name for p in self.student.get_purchased_programs()]
         report_programs_names = [p.name for p in response.context['report_model'].user_programs]
         self.assertEquals(report_programs_names, student_programs_names, "Student programs should be equal to programs in report model")
