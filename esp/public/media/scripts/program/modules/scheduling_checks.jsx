@@ -42,7 +42,6 @@ var SchedulingCheck = React.createClass({
         sort: -1,
         reverse: false
       },
-      tableKey: 0 // so React knows to rerender the table
     };
   },
   
@@ -51,12 +50,10 @@ var SchedulingCheck = React.createClass({
       this.setState( {
         tableState: React.addons.update(this.state.tableState, 
           { reverse: {$set: !this.state.tableState.reverse} } ),
-        tableKey: this.state.tableKey + 1
         } );   
     } else {
       this.setState( {
         tableState: React.addons.update(this.state.tableState, { sort: {$set: column}, reverse: {$set: false} }),
-        tableKey: this.state.tableKey + 1        
         } );
     }
   },
@@ -66,7 +63,6 @@ var SchedulingCheck = React.createClass({
     newkey[item] = !this.state.tableState.greyed[item];
     this.setState( {
       tableState: React.addons.update(this.state.tableState, { greyed: {$merge: newkey} } ),
-      tableKey: this.state.tableKey + 1
       } );
   },
   
@@ -77,7 +73,6 @@ var SchedulingCheck = React.createClass({
         sort: -1,
         reverse: false
       },
-      tableKey: this.state.tableKey + 1
       });
     
   },
@@ -137,7 +132,7 @@ var SchedulingCheck = React.createClass({
         table = <SelectTable rows = {data.body} header = {false} 
                   saveState = {this.state.tableState} 
                   clickHeader = {this.sortColumn} clickRow = {this.greyRow} 
-                  key = {this.state.tableKey} />;
+                  />;
       } else {
         var columns = [];
         for (i = 0; i < data.headings.length; i++) {
@@ -150,7 +145,7 @@ var SchedulingCheck = React.createClass({
         table = <SelectTable rows = {data.body} columns = {columns} 
                   header = {true} saveState = {this.state.tableState} 
                   clickHeader = {this.sortColumn} clickRow = {this.greyRow} 
-                  key = {this.state.tableKey} />;
+                  />;
       }
       body = <div>
         <div className="placeholder">
