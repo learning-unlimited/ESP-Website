@@ -43,7 +43,7 @@ from django.template.defaultfilters import slugify
 from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 
-from esp.accounting.models import Account, LineItemType
+from esp.accounting.models import Account, LineItemType, TransferDetailsReportModel
 from esp.gen_media.view_helpers import PDFResponseMixin
 from esp.program.models import Program
 from esp.users.models import admin_required, ESPUser
@@ -57,65 +57,6 @@ def summary(request):
     context = {}
     context['accounts'] = Account.objects.all().order_by('id')
     return render_to_response('accounting/summary.html', request, context)
-
-
-class ReportSection(object):
-    """
-    Represents a specific section of the report i.e. for a specified program.
-    Performs basic summary calculations.
-    """
-    def __init__(self, program, transfers):
-        self.program = program
-        self.transfers = transfers.filter(line_item__program=program)
-
-        line_item_type_q = Q(line_item__text__iexact='Student payment')
-        sum_query = Sum('amount_dec')
-        self.total_owed_result = self.transfers.filter(~line_item_type_q) \
-                                     .aggregate(sum_query)
-
-        self.total_paid_result = self.transfers.filter(line_item_type_q) \
-                                     .aggregate(sum_query)
-
-        self.total_owed = self.total_owed_result['amount_dec__sum'] or 0
-        self.total_paid = self.total_paid_result['amount_dec__sum'] or 0
-        self.balance = float(self.total_owed) - float(self.total_paid)
-
-
-class TransferDetailsReportModel(object):
-    """
-    Represents the data to be displayed in the report. Implements underlying
-    data filtering logic. For convenience, can be iterated, in order to 
-    generate corresponding sections.
-    """
-
-    def __init__(self, user, program, from_date=None, to_date=None):
-        self.sections = []
-        self.user = user
-        self.program = program
-        self.from_date = from_date
-        self.to_date = to_date
-
-        self.user_programs = self.user.get_purchased_programs()
-
-        transfer_qs = self.user.transfers.all()
-
-        if program:
-            self.user_programs = self.user_programs.filter(id=program)
-
-        transfer_qs = transfer_qs.filter(line_item__program__in=list(self.user_programs))
-
-        if from_date:
-            transfer_qs = transfer_qs.filter(timestamp__gte=from_date)
-
-        if to_date:
-            transfer_qs = transfer_qs.filter(timestamp__lte=to_date)
-
-        transfer_qs = transfer_qs.order_by('-timestamp')
-        for program in self.user_programs:
-            self.sections.append(ReportSection(program, transfer_qs))
-
-    def __iter__(self):
-        return iter(self.sections)
 
 
 class CSVResponseMixin(object):

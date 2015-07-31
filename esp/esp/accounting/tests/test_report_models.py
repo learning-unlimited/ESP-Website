@@ -35,21 +35,52 @@ Learning Unlimited, Inc.
 from datetime import datetime, timedelta
 from model_mommy import mommy
 
-from ..models import LineItemType, Account
-from ..views import ReportSection
 from django.test import TestCase
+
 from esp.program.models import Program
 from test_report_views import TransferDetailsReportTestBase
 
+from ..models import LineItemType, TransferDetailsReportModel, Transfer
 
-class TestReportSection(TransferDetailsReportTestBase):
+
+class TestTransferDetailsReportSection(TransferDetailsReportTestBase):
     """ Tests for the underlying Report Models. 
     Specific attention is paid to accuracy of calculations"""
 
     def setUp(self):
         """ Create a test non-admin account and a test admin account. """
-        super(TestReportSection, self).setUp()
-        
+        super(TestTransferDetailsReportSection, self).setUp()
+        self.report_model = TransferDetailsReportModel(self.student)
+        self.user_transfers = Transfer.objects.filter(user=self.student)
+
+        self.section_transfers = {}
+        for section in self.report_model.sections:
+            for transfer in section.transfers:
+                self.section_transfers[transfer.id] = transfer
+
+    def test_num_sections(self):
+        self.assertEquals(len(self.student.get_purchased_programs()), len(self.report_model.sections))
+
+    def test_transfers_match(self):
+        """
+        Verifies that report model contains the same transfers that are associated to the user
+        """
+        self.assertEquals(len(list(self.user_transfers)), len(self.section_transfers))
+
+        for transfer in self.user_transfers:
+            self.section_transfers[transfer.id] == transfer
+
+    def test_amount_owed(self):
+        """
+        Verifies that report model correctly calculates amount owed
+        """
+        amount_owed = 0
+        for transfer in self.user_transfers:
+            if transfer.line_item.text != 'Student payment':
+                amount_owed += transfer.amount_dec
+
+        # self.assertEquals(amount_owed, )
+
     def tearDown(self):
         LineItemType.objects.filter(pk__in=[l.id for l in self.line_item_types]).delete()
 

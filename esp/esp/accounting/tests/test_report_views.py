@@ -42,7 +42,7 @@ from django.core.urlresolvers import reverse
 
 from esp.program.models import Program
 from esp.program.tests import ProgramFrameworkTest
-from ..models import LineItemType, Account, Transfer
+from ..models import LineItemType, Account, Transfer, TransferDetailsReportModel
 
 
 class TransferDetailsReportTestBase(ProgramFrameworkTest):
@@ -56,9 +56,12 @@ class TransferDetailsReportTestBase(ProgramFrameworkTest):
         self.student = self.students[0]
         self.admin = self.admins[0]
         self.line_item_types = []
+        self.programs = []
 
         for i in range(3):
             program = mommy.make(Program)
+            self.programs.append(program)
+
             account = mommy.make(Account)
             account.program = program
             account.save()
