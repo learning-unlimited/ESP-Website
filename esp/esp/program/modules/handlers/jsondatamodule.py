@@ -786,8 +786,10 @@ teachers[key].filter(is_active = True).distinct().count()))
             'num_payments': num_payments,
             # We need to convert to a float in order for json to serialize it.
             # Since we're not doing any computation client-side with these
-            # numbers, this doesn't cause accuracy issues.
-            'total_payments': float(total_payment),
+            # numbers, this doesn't cause accuracy issues.  If the
+            # total_payment is None, just coerce it to zero for display
+            # purposes.
+            'total_payments': float(total_payment or 0),
         }
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
     
