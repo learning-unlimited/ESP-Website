@@ -1,9 +1,11 @@
+import json
+
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
-from django.utils import simplejson as json
+
 from esp.customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
@@ -76,13 +78,13 @@ def getPerms(request):
     return HttpResponse(status=400)                                        
 
 @user_passes_test(test_func)
-@transaction.commit_on_success
+@transaction.atomic
 def onSubmit(request):
     #Stores form metadata in the database.
     
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
+            metadata = json.loads(request.body)
             fields = []
 
         # truncating field lengths to the character limits specified
@@ -147,14 +149,14 @@ def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
 @user_passes_test(test_func)
-@transaction.commit_on_success        
+@transaction.atomic        
 def onModify(request):
     """
     Handles form modifications
     """
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
+            metadata = json.loads(request.body)
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:

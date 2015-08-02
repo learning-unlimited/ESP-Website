@@ -70,4 +70,4 @@ class AdminVitals(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

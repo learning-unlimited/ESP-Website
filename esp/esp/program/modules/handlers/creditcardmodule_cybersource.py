@@ -107,4 +107,4 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -80,4 +80,4 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

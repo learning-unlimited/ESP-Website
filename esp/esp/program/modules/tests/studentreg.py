@@ -70,7 +70,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.moduleobj.user = self.students[0]
 
     def get_template_names(self, response):
-        return [x.name for x in response.template]        
+        return [x.name for x in response.templates]        
 
     def expect_template(self, response, template):
         self.assertTrue(template in self.get_template_names(response), 'Wrong template for profile: got %s, expected %s' % (self.get_template_names(response), template))

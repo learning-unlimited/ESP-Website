@@ -50,6 +50,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
+from decimal import Decimal
+import json
 import collections
 
 class ProgramPrintables(ProgramModuleObj):
@@ -1531,4 +1533,4 @@ Volunteer schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

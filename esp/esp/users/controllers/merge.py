@@ -51,8 +51,7 @@ def merge(absorber, absorbee):
         # I could probably be smarter about transaction handling.
         # Ideally, I'd check for uniqueness constraints *before* saving.
         # Then I wouldn't have to do any transaction stuff here.
-        transaction.enter_transaction_management()
-        try:
+        with transaction.atomic():
             if m2m:
                 getattr(obj, name).remove(absorbee)
                 getattr(obj, name).add(absorber)
@@ -60,11 +59,6 @@ def merge(absorber, absorbee):
             else:
                 setattr(obj, name, absorber)
                 obj.save()
-        except IntegrityError:
-            transaction.rollback()
-        finally:
-            transaction.commit()
-        transaction.leave_transaction_management()
 
 
 #########################

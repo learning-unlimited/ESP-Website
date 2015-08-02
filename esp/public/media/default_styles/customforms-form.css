@@ -148,7 +148,7 @@ form.form_stacked fieldset{
     margin-left: 5px;
 }
 
-form input[type="text"], form input[type="password"], form textarea, form select, form .uneditable-input {
+form input[type="text"], form input[type="url"], form input[type="email"], form input[type="number"], form input[type="password"], form textarea, form select, form .uneditable-input {
 	width: auto;
 }
 

@@ -34,99 +34,80 @@ Learning Unlimited, Inc.
 """
 import time
 
-from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail, can_process_and_send
+from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
 from django.db.models.query import Q
-from django.db import transaction
 from django.template.loader import render_to_string
 
 from django.conf import settings
 
-import os
-
-@transaction.autocommit
 def process_messages(debug=False):
-    """ Go through all unprocessed messages and process them. """
+    """Go through all unprocessed messages and process them.
     
-    #   Perform an atomic update in order to claim which messages we will be processing.
-    my_pid = os.getpid()
+    Callers (e.g. dbmail_cron.py) should ensure that this function is not
+    called in more than one thread simultaneously."""
+    
     now = datetime.now()
     target_time = now + timedelta(seconds=10)
 
-    if not can_process_and_send():
-        return []
-
-    MessageRequest.objects.filter(Q(processed_by__lte=now) | Q(processed_by__isnull=True)).filter(processed=False).update(processed_by=target_time)
-    
-    #   Identify the messages we just claimed.
-    messages = MessageRequest.objects.filter(processed_by=target_time, processed=False)
+    # Choose a set of messages to process.  Anything which arrives later will
+    # not be processed by this run of the script.
+    messages = MessageRequest.objects.filter(Q(processed_by__lte=now) |
+                                             Q(processed_by__isnull=True),
+                                             processed=False)
+    messages = list(messages)
 
     #   Process message requests
     for message in messages:
-        try:
-            message.process(True, debug=debug)
-        except:
-            message.processed_by = None
-            message.save()
-        else:
-            message.processed = True
-            message.save()
-    return list(messages)
+        # If we raise an error here, transaction management will make sure that
+        # things with the MessageRequest get backed out properly.  We let the
+        # whole script just exit in this case -- this way we get an error
+        # message via cron, and the next run of the script can just try again.
+        message.process(debug=debug)
+    return messages
 
-@transaction.autocommit
+# Deliberately uses transaction autocommitting -- we don't need this to be
+# atomic.
 def send_email_requests(debug=False):
-    """ Go through all email requests that aren't sent and send them. """
+    """Go through all email requests that aren't sent and send them.
+    
+    Callers (e.g. dbmail_cron.py) should ensure that this function is not
+    called in more than one thread simultaneously."""
 
-    if not can_process_and_send():
-        return
+    retries = getattr(settings, 'EMAILRETRIES', None)
+    if retries is None:
+        # previous code thought that settings.EMAILRETRIES might be set to None
+        # to be the default, rather than being undefined, so we keep that
+        # behavior.
+        retries = 2 # i.e. 3 tries total
 
-    if hasattr(settings, 'EMAILRETRIES') and settings.EMAILRETRIES is not None:
-        retries = settings.EMAILRETRIES
-    else:
-        retries = 2 # default 3 tries total
-
-    #   Find unsent e-mail requests
+    # Choose a set of emails to process.  Anything which arrives later will
+    # not be processed by this run of the script.
     mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=datetime.now()) |
                                           Q(sent_by__isnull=True),
                                           sent__isnull=True,
-                                          locked=False,
                                           tries__lte=retries)
     mailtxts_list = list(mailtxts)
-    
-    #   Mark these messages as locked for this send_email_requests call
-    #   If the process is killed unexpectedly, then any locked messages will need to be unlocked
-    #   TODO: consider a lock on the function, for example by locking a file
-    mailtxts.update(locked=True)
-    
-    if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
-        wait = settings.EMAILTIMEOUT
-    else:
+
+    wait = getattr(settings, 'EMAILTIMEOUT', None)
+    if wait is None:
         wait = 1.5
     
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
     for mailtxt in mailtxts_list:
-        try:
-            mailtxt.send(debug=debug)
-        except Exception as e:
-            #   Increment tries so that we don't continuously attempt to send this message
-            mailtxt.tries = mailtxt.tries + 1
-            mailtxt.save()
-
-            #   Queue report about this delivery failure
-            errors.append({'email': mailtxt, 'exception': str(e)})
+        exception = mailtxt.send(debug=debug)
+        if exception is not None:
+            errors.append({'email': mailtxt, 'exception': str(exception)})
             if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
         else:
             num_sent += 1
 
         time.sleep(wait)
 
-    #   Unlock the messages as we are done processing them
-    mailtxts.update(locked=False)
-
-    if num_sent > 0:
-        if debug: print 'Sent %d messages' % num_sent
+    if debug and num_sent > 0:
+        print 'Sent %d messages' % num_sent
 
     #   Report any errors
     if errors:

@@ -34,15 +34,16 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+import json
 import functools
-import simplejson as json
 
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
-from django.contrib.localflavor.us.forms import USStateSelect
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.forms import USStateSelect
+
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied

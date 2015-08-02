@@ -32,8 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import json
+
 from django.http import HttpResponse
-from django.utils import simplejson
 from django.db.models.query import Q
 
 class JsonResponse(HttpResponse):
@@ -44,7 +45,7 @@ class JsonResponse(HttpResponse):
         self["Content-Type"] = "text/plain"
 
     def serialize(self):
-        return(simplejson.dumps(self.original_obj))
+        return(json.dumps(self.original_obj))
 
 def teacher_lookup(request, limit=10):
      # FIXME: REQUIRE PERMISSIONS!
