@@ -82,14 +82,14 @@ class ClassCreationController(object):
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
 
-        try:
+        if 'request-TOTAL_FORMS' in reg_data:
             resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
-        except ValidationError:
+        else:
             resource_formset = None
 
-        try:
+        if 'restype-TOTAL_FORMS' in reg_data:
             restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
-        except ValidationError:
+        else:
             restype_formset = None
             
         if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
