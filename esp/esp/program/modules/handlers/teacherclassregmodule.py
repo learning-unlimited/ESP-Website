@@ -839,7 +839,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json import JsonResponse
+        from esp.web.views.json_utils import JsonResponse
 
         Q_teacher = Q(groups__name="Teacher")
 
