@@ -784,7 +784,10 @@ teachers[key].filter(is_active = True).distinct().count()))
         (num_payments, total_payment) = pac.payments_summary()
         accounting_data = {
             'num_payments': num_payments,
-            'total_payments': total_payment,
+            # We need to convert to a float in order for json to serialize it.
+            # Since we're not doing any computation client-side with these
+            # numbers, this doesn't cause accuracy issues.
+            'total_payments': float(total_payment),
         }
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
     
