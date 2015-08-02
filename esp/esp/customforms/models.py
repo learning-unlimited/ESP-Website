@@ -86,5 +86,9 @@ def create_schema(db):
     # block" errors.
     # Warning: This overrides the transaction management of any surrounding code.
 
-    with transaction.atomic():
+    transaction.set_autocommit(False)
+    try:
         db.execute("CREATE SCHEMA customforms")
+    except:
+        transaction.rollback()
+    transaction.set_autocommit(True)
