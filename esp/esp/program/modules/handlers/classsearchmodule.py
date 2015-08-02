@@ -112,6 +112,7 @@ class ClassSearchModule(ProgramModuleObj):
                 'queryset': queryset,
                 'english': english,
                 'program': self.program,
+                'flag_types': self.program.flag_types.all(),
             }
             return render_to_response(self.baseDir()+'search_results.html',
                                       request, context)
