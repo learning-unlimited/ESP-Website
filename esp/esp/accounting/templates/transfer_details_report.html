@@ -3,8 +3,15 @@
 {% load humanize %}
 
 {% block stylesheets %}
+
+
+    {% if not hide_region %}
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>
-    <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet" />
+    {% else %}
+    {% endif %}
+
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/css/bootstrap-datepicker.css" />
     {% block jquery_ui_stylesheet_version %}
     <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
     {% endblock jquery_ui_stylesheet_version %}
@@ -13,145 +20,169 @@
       .table td.text-right {
         text-align: right;
       }
+
+      @media print {
+          html {
+            margin:0;
+            padding: 0;
+
+          }
+
+          fieldset {
+            margin-bottom: 20px;
+          }
+
+          legend {
+              font-size: 1.2em;
+              font-weight: bolder;
+          }
+
+          table {
+              page-break-inside: avoid;
+              width:100%;
+          }
+
+          .container {
+            margin:0;
+            padding: 0;
+          }
+
+      }
     </style>
 {% endblock %}
 {% block body %}
-<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/css/bootstrap-datepicker.css" />
+
 
 <div class="container">
-<div class="row">
-	<div class="span10">
-    <div class="navbar">
-      <div class="navbar-inner">
-        <form method="GET" action="{% url transfer-details-report user.username %}" class="form-horizontal pull-left">
-            <div class="controls form-inline">
-                <label for="id_program">{% trans "Program" %}</label>
-                {{form.program}}
-                <label for="id_from_date">{% trans "From" %}</label>
-                {{form.from_date}}
-                <label for="id_to_date">{% trans "To" %}</label>
-                {{form.to_date}}
-                 <button type="submit" class="btn btn-success show-transfers">{% trans "Show" %}</button>
-                 <button type="button" class="btn btn-info download-btn" value="csv">{% trans "CSV" %}</button>
-                 <button type="button" class="btn btn-info download-btn" value="pdf">{% trans "PDF" %}</button>
-                {{form.file_type}}
-            </div>
-          </form>
-        </div>
-    </div>
-	</div>
-</div>
-<div class="row" style="text-align:center;">
-     <div class="span10">
-        <h1>{% trans "Transfer Details" %}</h1>
-        <p>
-          <h3>{{ user.get_full_name }}</h3>
-          <strong>{% if from_date %}{% trans "From" %}: {{ from_date }}{% endif %}{% if to_date %} {% trans "To" %}: {{ to_date }}{% endif %}</strong>
-        </p>
-     </div>
-</div>  
-<div class="row">
-	<div class="span10">
-		{% block content %}
-
-    {% for section in report_model %}
-        <fieldset>
-          <legend>
-            <h2>
-              {{ section.program }}
-            </h2>
-          </legend>
-           {% if section.transfers %}
-              <table class="table">
-                  <thead>
-                      <tr>
-                        <th>
-                            # {% trans "Transfer" %}
-                        </th>
-                        <th>
-                            {% trans "Transfer Date" %}
-                        </th>
-                        <th>
-                            {% trans "Type" %}
-                        </th>
-                        <th>
-                            {% trans "Amount" %}
-                        </th>
-                      </tr>
-                  </thead>
-                <tbody>
-                  {% for transfer in section.transfers %}
-                        <tr>
-                            <td>
-                                <b>{{ transfer.id }}</b>
-                            </td>
-                            <td>
-                                {{ transfer.timestamp|date:"m/d/Y" }}
-                            </td>
-                            <td>
-                                {{ transfer.line_item.text }}
-                            </td>
-                            <td class="text-right">
-                                {% if transfer.line_item.text == 'Student payment' %}-{% endif %}
-                                {{ transfer.amount_dec|floatformat:2|intcomma }}
-                            </td>
-                        </tr>
-                  {% endfor %}
-                         <tr>
-                            <th colspan="3" class="text-right">
-                              {% trans "Total owed" %}:
-                            </th>
-                            <td class="text-right">
-                              {{ section.total_owed|floatformat:2|intcomma }}
-                            </td>
-                          </tr>
-                          <tr>
-                            <th colspan="3" class="text-right">
-                              {% trans "Total paid" %}:
-                            </th>
-                            <td class="text-right">
-                              {{ section.total_paid|floatformat:2|intcomma }}
-                            </td>
-                          </tr>
-                          <tr>
-                            <th colspan="3" class="text-right">
-                              <strong>{% trans "Balance" %}:</strong>
-                            </th>
-                            <td class="text-right">
-                              {{ section.balance|floatformat:2|intcomma }}
-                            </td>
-                          </tr>
-                  </tbody>
-              </table>
-              <br />
-             <table class="pull-right span3" style="background:yellow;">
-
-                <tbody>
-                 
-                </tbody>
-            </div>
-              {% else %}
-              <div class="alert">        
-                <strong>{% trans "No transfers found for the selected period" %}</strong>
+{% if not hide_region %}
+  <div class="row">
+  	<div class="span12">
+      <div class="navbar">
+        <div class="navbar-inner">
+          <form method="get" action="{% url transfer-details-report user.username %}" class="form-horizontal pull-left">
+              <div class="controls form-inline">
+                  <label for="id_program">{% trans "Program" %}</label>
+                  {{form.program}}
+                  <label for="id_from_date">{% trans "From" %}</label>
+                  {{form.from_date}}
+                  <label for="id_to_date">{% trans "To" %}</label>
+                  {{form.to_date}}
+                   <button type="submit" class="btn btn-success show-transfers">{% trans "Show" %}</button>
+                   <button type="button" class="btn btn-info download-btn" value="csv">{% trans "CSV" %}</button>
+                   <button type="button" class="btn btn-info download-btn" value="pdf">{% trans "PDF" %}</button>
+                  {{form.file_type}}
               </div>
-                  
-                {% endif %}
+            </form>
+          </div>
+      </div>
+  	</div>
+  </div>
+  {% endif %}
+  <div class="row" style="text-align:center;">
+       <div class="span12">
+          <h1>{% trans "Transfer Details" %}</h1>
+          <div>
+            <h3>{{ user.get_full_name }}</h3>
+            <p>
+              <strong>{% if from_date %}{% trans "From" %}: {{ from_date }}{% endif %}{% if to_date %} {% trans "To" %}: {{ to_date }}{% endif %}</strong>
+            </p>
+          </div>
+       </div>
+  </div>  
+  <div class="row">
+  	<div class="span12">
+  		{% block content %}
 
-        </fieldset>
-    {% endfor %}
-{% endblock %}
-	</div>
+      {% for section in report_model %}
+          <fieldset>
+            <legend>
+                {{ section.program }}
+            </legend>
+             {% if section.transfers %}
+                <table class="table">
+                    <thead>
+                        <tr>
+                          <th>
+                              # {% trans "Transfer" %}
+                          </th>
+                          <th>
+                              {% trans "Transfer Date" %}
+                          </th>
+                          <th>
+                              {% trans "Type" %}
+                          </th>
+                          <th>
+                              {% trans "Amount" %}
+                          </th>
+                        </tr>
+                    </thead>
+                  <tbody>
+                    {% for transfer in section.transfers %}
+                          <tr>
+                              <td>
+                                  <b>{{ transfer.id }}</b>
+                              </td>
+                              <td>
+                                  {{ transfer.timestamp|date:"m/d/Y" }}
+                              </td>
+                              <td>
+                                  {{ transfer.line_item.text }}
+                              </td>
+                              <td class="text-right">
+                                  {% if transfer.line_item.text == 'Student payment' %}-{% endif %}
+                                  {{ transfer.amount_dec|floatformat:2|intcomma }}
+                              </td>
+                          </tr>
+                    {% endfor %}
+                           <tr>
+                              <th colspan="3" class="text-right">
+                                {% trans "Total owed" %}:
+                              </th>
+                              <td class="text-right">
+                                {{ section.total_owed|floatformat:2|intcomma }}
+                              </td>
+                            </tr>
+                            <tr>
+                              <th colspan="3" class="text-right">
+                                {% trans "Total paid" %}:
+                              </th>
+                              <td class="text-right">
+                                {{ section.total_paid|floatformat:2|intcomma }}
+                              </td>
+                            </tr>
+                            <tr>
+                              <th colspan="3" class="text-right">
+                                <strong>{% trans "Balance" %}:</strong>
+                              </th>
+                              <td class="text-right">
+                                {{ section.balance|floatformat:2|intcomma }}
+                              </td>
+                            </tr>
+                    </tbody>
+                </table>
+    
+            {% else %}
+                <div class="alert">        
+                  <strong>{% trans "No transfers found for the selected period" %}</strong>
+                </div>
+                    
+            {% endif %}
 
-</div>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/js/bootstrap-datepicker.js"></script>
-<script>
-    $j('#id_from_date').datepicker();
-    $j('#id_to_date').datepicker();
-    $j('.download-btn').click(function() {
-    $j('#id_file_type').val($j(this).val());
-    $j(this).parents('form:first').submit();
-  });
-</script>
+          </fieldset>
+      {% endfor %}
+      {% endblock content%}
+  	</div>
+  </div>
+
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/js/bootstrap-datepicker.js"></script>
+  <script type="text/javascript" >
+      $j('#id_from_date').datepicker();
+      $j('#id_to_date').datepicker();
+      $j('.download-btn').click(function() {
+      $j('#id_file_type').val($j(this).val());
+      $j(this).parents('form:first').submit();
+    });
+  </script>
 </div>
 
 {% endblock body %}

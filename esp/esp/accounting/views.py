@@ -100,6 +100,7 @@ class TransferDetailsReport(CSVResponseMixin, PDFResponseMixin, TemplateView):
         if self.file_type == 'csv':
             response = self.get_csv_response(context, **response_kwargs)
         elif self.file_type == 'pdf':
+            context['hide_region'] = True
             response = self.get_pdf_response(context, **response_kwargs)
         else:
             response = super(TransferDetailsReport, self).render_to_response(
