@@ -68,18 +68,22 @@ class TestTransferDetailsReportSection(TransferDetailsReportTestBase):
         self.assertEquals(len(list(self.user_transfers)), len(self.section_transfers))
 
         for transfer in self.user_transfers:
-            self.section_transfers[transfer.id] == transfer
+            self.assertEquals(self.section_transfers[transfer.id], transfer)
 
     def test_amount_owed(self):
         """
-        Verifies that report model correctly calculates amount owed
+        Verifies that report model correctly calculates amount owed for each section of the report
         """
         amount_owed = 0
         for transfer in self.user_transfers:
             if transfer.line_item.text != 'Student payment':
                 amount_owed += transfer.amount_dec
 
-        # self.assertEquals(amount_owed, )
+        section_amounts_owed = 0
+        for section in self.report_model.sections:
+            section_amounts_owed += section.total_owed
+
+        self.assertEquals(amount_owed, section_amounts_owed)
 
     def tearDown(self):
         LineItemType.objects.filter(pk__in=[l.id for l in self.line_item_types]).delete()
