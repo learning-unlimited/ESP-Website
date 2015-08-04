@@ -213,7 +213,10 @@
             </div>
         </td>
 
-        <td align="center" valign="center">{% if perm.open_now %}
+        <td align="center" valign="center">
+                    PERM:{{perm.open_now}}
+
+        {% if perm.open_now %}
             <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/close?id={{ perm.id }}">Close</a>
             {% else %}
             <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/open?id={{ perm.id }}">Open</a>

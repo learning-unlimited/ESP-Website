@@ -38,14 +38,14 @@ from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
 
 from django.db import models
-from django.db.models import Sum
-
+from django.db.models import Sum, Q
 from decimal import Decimal
+
 
 class LineItemType(models.Model):
     text = models.TextField(help_text='A description of this line item.')
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, related_name='line_item_types')
     required = models.BooleanField(default=False)
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
@@ -202,7 +202,7 @@ class Account(models.Model):
                 target_name = target.name
                 target_title = target.description_title
             
-            transfers_in_context.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
+            transfers_in_context.append({'amount': transfer['amount'], 'tarclasget_type': 'source', 'target_name': target_name, 'target_title': target_title})
             
         for transfer in transfers_out:
             target_name = "none"
@@ -223,10 +223,11 @@ class Account(models.Model):
     class Meta:
         unique_together = ('name',)
 
+
 class Transfer(models.Model):
     source = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_source', help_text='Source account; where the money is coming from.  Leave blank if this is a payment from outside.')
     destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, related_name='transfers')
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
@@ -285,6 +286,65 @@ class Transfer(models.Model):
             return base_result + u' (executed)'
         else:
             return base_result
+
+
+class TransferDetailsReportSection(object):
+    """
+    Represents a specific section of the report i.e. for a specified program.
+    Performs basic summary calculations.
+    """
+    def __init__(self, program, transfers):
+        self.program = program
+        self.transfers = transfers.filter(line_item__program=program)
+
+        line_item_type_q = Q(line_item__text__iexact='Student payment')
+        sum_query = Sum('amount_dec')
+        self.total_owed_result = self.transfers.filter(~line_item_type_q) \
+                                     .aggregate(sum_query)
+
+        self.total_paid_result = self.transfers.filter(line_item_type_q) \
+                                     .aggregate(sum_query)
+
+        self.total_owed = self.total_owed_result['amount_dec__sum'] or 0
+        self.total_paid = self.total_paid_result['amount_dec__sum'] or 0
+        self.balance = float(self.total_owed) - float(self.total_paid)
+
+
+class TransferDetailsReportModel(object):
+    """
+    Represents the tabular data to be used in the tranfer details report. Implements underlying
+    data filtering logic. For convenience, can be iterated, in order to 
+    generate corresponding sections.
+    """
+
+    def __init__(self, user, program_id=None, from_date=None, to_date=None):
+        self.sections = []
+        self.user = user
+        self.program_id = program_id
+        self.from_date = from_date
+        self.to_date = to_date
+
+        self.user_programs = self.user.get_purchased_programs()
+
+        transfer_qs = self.user.transfers.all()
+
+        if program_id:
+            self.user_programs = self.user_programs.filter(id=program_id)
+
+        transfer_qs = transfer_qs.filter(line_item__program__in=list(self.user_programs))
+
+        if from_date:
+            transfer_qs = transfer_qs.filter(timestamp__gte=from_date)
+
+        if to_date:
+            transfer_qs = transfer_qs.filter(timestamp__lte=to_date)
+
+        transfer_qs = transfer_qs.order_by('-timestamp')
+        for program in self.user_programs:
+            self.sections.append(TransferDetailsReportSection(program, transfer_qs))
+
+    def __iter__(self):
+        return iter(self.sections)
 
 
 def install():

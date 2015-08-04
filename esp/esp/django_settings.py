@@ -170,7 +170,8 @@ MIDDLEWARE_GLOBAL = [
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
-    ( 500, 'esp.middleware.ESPErrorMiddleware'),
+    #( 500, 'esp.middleware.ESPErrorMiddleware'),
+    ( 500, 'esp.middleware.AjaxErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
@@ -194,6 +195,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+
+    'django.contrib.markup',
+    'django.contrib.humanize',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
@@ -227,7 +231,7 @@ INSTALLED_APPS = (
     'south',
     'form_utils',
     'django.contrib.redirects',
-    'debug_toolbar',
+   # 'debug_toolbar',
     'bootstrapform',
     'django_nose',
     'esp.formstack',
@@ -313,7 +317,7 @@ CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 # configuration should include <script></script> tags
 ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
-DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
+DEBUG_TOOLBAR = False # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
 

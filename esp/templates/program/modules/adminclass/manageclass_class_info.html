@@ -1,6 +1,11 @@
+{% load userlist %}
+
+
 <tr>
     <th class="smaller">Teachers:</th>
-    <td>{{ class.getTeacherNames|join:", " }}<br />
+    <td>
+    {{class.get_teachers|userlist:','}}
+    <br />
     <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
     Edit Teacher List </a>
     </td>

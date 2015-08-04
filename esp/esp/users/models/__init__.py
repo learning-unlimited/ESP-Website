@@ -172,6 +172,12 @@ class ESPUser(User, AnonymousUser):
 
         self.create_membership_methods()
 
+    def __unicode__(self):
+        return self.get_full_name() or self.username
+
+    def get_absolute_url(self):
+        return '{0}?username={1}'.format(urlresolvers.reverse('userview'), self.username)
+      
     @classmethod
     def create_membership_methods(cls):
         """
@@ -248,7 +254,7 @@ class ESPUser(User, AnonymousUser):
         return self.__olduser
 
     def name(self):
-        return u'%s %s' % (self.first_name, self.last_name)
+        return self.get_full_name()
 
     def get_email_sendto_address_pair(self):
         """
@@ -375,6 +381,14 @@ class ESPUser(User, AnonymousUser):
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
         return u''
+
+    def get_purchased_programs(self):
+        """
+        Returns a queryset of Programs that the student has paid for.
+        """
+        from esp.accounting.models import LineItemType
+        line_items = LineItemType.objects.filter(transfer__user=self)
+        return Program.objects.filter(line_item_types__in=line_items).distinct()
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(classsubject__teachers=self)
@@ -1675,7 +1689,6 @@ class ZipCode(models.Model):
         return u'%s (%s, %s)' % (self.zip_code,
                                 self.longitude,
                                 self.latitude)
-
 
 
 class ZipCodeSearches(models.Model):
