@@ -113,6 +113,8 @@ def error500(request, template_name='500.html'):
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
+
+    return HttpResponse('suidades!')
     # If possible, we want to render this page with our custom
     # render_to_response().  If this fails for some reason, we still want to
     # display the original 500 error page, so fall back to manually creating an

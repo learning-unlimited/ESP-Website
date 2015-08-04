@@ -179,6 +179,7 @@ function update_class(clsid, statusId) {
 
 function fillClasses(data)
 {
+
     // First pull out the data
     sections = data.sections;
     classes = data.classes;
@@ -187,10 +188,9 @@ function fillClasses(data)
     $j("#classes_anchor").html('');
 
     // Now loop through and render each class row
-    for (var i in classes)
-    {
-	var cls = classes[i];
-	$j("#classes_anchor").append(createClassRow(cls));
+    for (var i in classes) {
+    	var cls = classes[i];
+    	$j("#classes_anchor").append(createClassRow(cls));
     }
     
     //  Save the data for later if we need it
@@ -247,45 +247,46 @@ function createClassRow(clsObj)
 ";
 
     // Now fill in the values in the template
-    var teacher_list = clsObj.teachers;
-    teacher_list = $j.map(teacher_list, function(val, index) {
-	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
-    });
-    var teacher_list_string = teacher_list.join(", ");
+  var teacher_list = clsObj.teachers;
 
-    var section_link_list = "";
-    for (var i = 0; i < clsObj.sections.length; i++)
-    {
-	var section = sections[clsObj.sections[i]];
-	section_link_list = section_link_list.concat("<a href='/teach/"+base_url+"/select_students/"+section.id+"'>Sec. "+section.index+"</a><br />");
-    }
+  var teacher_link_list = "";
+  for (var i in teacher_list) {
+      var teacher = json_data.teachers[teacher_list[i]];
+      var teacherName = teacher.first_name + " " + teacher.last_name;
+      teacher_link_list = teacher_link_list.concat('<a href="/manage/userview?username=' + teacher.username + '">' + teacherName + '</a><br />');
+  }
+
+  var section_link_list = "";
+  for (var i = 0; i < clsObj.sections.length; i++) {
+      var section = sections[clsObj.sections[i]];
+      section_link_list = section_link_list.concat("<a href='/teach/" + base_url + "/select_students/" + section.id + "'>Sec. " + section.index + "</a><br />");
+  }
     
-    var class_title_trimmed = clsObj.title;
-    if (class_title_trimmed.length > 40)
-    {
-	class_title_trimmed = class_title_trimmed.substring(0, 40);
-	class_title_trimmed = class_title_trimmed.concat("...");
-    }
+  var class_title_trimmed = clsObj.title;
+  if (class_title_trimmed.length > 40) {
+  	class_title_trimmed = class_title_trimmed.substring(0, 40);
+  	class_title_trimmed = class_title_trimmed.concat("...");
+  }
 
-    var status_details = getStatusDetails(clsObj.status);
+  var status_details = getStatusDetails(clsObj.status);
 
-    template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
+  template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
 	.replace(new RegExp("{{ cls.title }}", "g"), class_title_trimmed)
 	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.emailcode)
-	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string)
+	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_link_list)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
 	.replace(new RegExp("{{ title_css_class }}", "g"), status_details.classes.join(" "))
 	.replace(new RegExp("{{ cls_status }}", "g"), status_details['text']);
 
     // Turn the template into a jQuery node
-    $node = $j(template);
+  $node = $j(template);
 
     // Add in the CSRF onsubmit checker
-    $node.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
+  $node.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
 
     // Return the jQuery node
-    return $node;
+  return $node;
 }
 
 function handle_sort_control()

@@ -33,9 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf.urls import *
-from esp.accounting.views import summary
+from django.conf.urls.defaults import *
+from esp.accounting.views import summary, TransferDetailsReport
 
 urlpatterns = patterns('esp.accounting',
     (r'^$', summary),
+    url(r'^transfer_details/(?P<username>[^\.]+)', TransferDetailsReport.as_view(), name='transfer-details-report'),
 )
