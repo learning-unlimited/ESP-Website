@@ -224,7 +224,6 @@ INSTALLED_APPS = (
     'esp.varnish',
     'django_extensions',
     'reversion',
-    'south',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
