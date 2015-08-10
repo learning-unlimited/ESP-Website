@@ -325,6 +325,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     continue
                 teacher = {
                     'id': t.id,
+                    'username':t.username,
                     'first_name': t.first_name,
                     'last_name': t.last_name,
                     'sections': list(cls['sections'])
