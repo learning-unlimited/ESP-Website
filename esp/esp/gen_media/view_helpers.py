@@ -33,10 +33,31 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf.urls import *
-from esp.accounting.views import summary, TransferDetailsReport
+import weasyprint 
 
-urlpatterns = patterns('esp.accounting',
-    (r'^$', summary),
-    url(r'^transfer_details/(?P<username>[^\.]+)', TransferDetailsReport.as_view(), name='transfer-details-report'),
-)
+from django.template import RequestContext
+from django.template.loader import get_template
+from django.http import HttpResponse
+
+
+class PDFResponseMixin(object):
+
+    filename = None#set this attribute to customize the filename
+
+    def get_pdf_response(self, context, **response_kwargs):
+        """
+        Sets content type to application/pdf. Converts the default response into a pdf 
+        document. Assumes that inheriting class defines a template_name
+        """
+        if not hasattr(self, 'template_name'):
+            raise ValueError('A template_name was not defined')
+
+        filename = self.filename or self.template_name
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="%s.pdf"'%filename
+        template = get_template(self.template_name)
+        html = template.render(RequestContext(self.request, context))
+
+        weasyprint.HTML(string=html).write_pdf(response)
+
+        return response
