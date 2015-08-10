@@ -195,9 +195,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-
-    'django.contrib.markup',
-    'django.contrib.humanize',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
