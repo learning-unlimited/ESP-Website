@@ -97,44 +97,6 @@ def login_checked(request, *args, **kwargs):
     return reply
 
 
-def ajax_login(request, *args, **kwargs):
-    import simplejson as json
-    from django.contrib.auth import authenticate
-    from django.template.loader import render_to_string
-
-    username = None
-    password = None
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-
-    username = filter_username(username, password)
-
-    user = authenticate(username=username, password=password)
-    if user is not None:
-        if user.is_active:
-            result_str = 'Login successful'
-            user, forwarded = UserForwarder.follow(ESPUser(user))
-            if forwarded:
-                result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
-            auth_login(request, user)
-        else:
-            result_str = 'Account disabled'
-    else:
-        result_str = 'Invalid username or password'
-        
-    request.user = ESPUser(user)
-    content = render_to_string('users/loginbox_content.html', RequestContext(request, {'request': request, 'login_result': result_str}))
-    result_dict = {'loginbox_html': content}
-    
-    if request.user.isAdministrator():
-        admin_home_url = Tag.getTag('admin_home_page')
-        if admin_home_url:
-            result_dict['script'] = render_to_string('users/loginbox_redirect.js', {'target': admin_home_url})
-
-    return HttpResponse(json.dumps(result_dict))
-
-
 def signout(request):
     """ This view merges Django's logout view with our own "Goodbye" message. """
     auth_logout(request)

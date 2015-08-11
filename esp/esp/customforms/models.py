@@ -44,7 +44,7 @@ class Field(models.Model):
     seq = models.IntegerField()
     label = models.CharField(max_length=200)
     help_text = models.TextField(blank=True)
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
     
     def __unicode__(self):
         return u'%s' % (self.label)
@@ -86,11 +86,11 @@ def create_schema(db):
     # block" errors.
     # Warning: This overrides the transaction management of any surrounding code.
 
-    with transaction.commit_manually():
-        transaction.commit()    # flush any existing transaction
-        try:
-            db.execute("CREATE SCHEMA customforms")
-        except:
-            transaction.rollback()
-        else:
-            transaction.commit()
+    transaction.set_autocommit(False)
+    try:
+        db.execute("CREATE SCHEMA customforms")
+    except:
+        transaction.rollback()
+    else:
+        transaction.commit()
+    transaction.set_autocommit(True)

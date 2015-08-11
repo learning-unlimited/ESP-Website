@@ -42,14 +42,13 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, Record, ContactInfo
 from esp.cal.models import Event
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
-import simplejson as json
+import json
 
 
 class TeacherCheckinModule(ProgramModuleObj):
@@ -68,7 +67,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         'when' defaults to datetime.now()."""
         if when is None:
             when = datetime.now()
-        if teacher.isTeacher() and teacher.getTaughtClassesFromProgram(prog).exists():
+        if teacher.getTaughtClassesFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
@@ -331,3 +330,4 @@ class TeacherCheckinModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django import forms
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
-import simplejson as json
+import json
 
 """
 The SplashInfoForm is customizable for different lunch options.

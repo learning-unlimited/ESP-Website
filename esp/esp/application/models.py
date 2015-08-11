@@ -226,7 +226,7 @@ class FormstackStudentProgramAppManager(models.Manager):
                 return None
             except ValueError:
                 cls_title = val.strip()
-                clses = program.classes().filter(anchor__friendly_name=cls_title)
+                clses = program.classes().filter(title=cls_title)
                 if clses:
                     return clses[0]
                 else:
@@ -267,7 +267,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         submissions = settings.form().submissions(use_cache=False)
 
         # parse submitted data and make model instances
-        with transaction.commit_on_success():
+        with transaction.atomic():
             apps = []
             for submission in submissions:
                 try:

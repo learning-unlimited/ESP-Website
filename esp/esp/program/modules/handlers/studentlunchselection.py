@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.datatree.models         import *
 from esp.users.models            import Record
 from esp.cal.models              import Event
 
@@ -159,3 +158,4 @@ class StudentLunchSelection(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

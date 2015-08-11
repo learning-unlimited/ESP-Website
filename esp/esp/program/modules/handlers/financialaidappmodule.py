@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response, secure_required
 from esp.middleware      import ESPError
@@ -181,3 +180,4 @@ This request can be (re)viewed at:
 
     class Meta:
         proxy = True
+        app_label = 'modules'

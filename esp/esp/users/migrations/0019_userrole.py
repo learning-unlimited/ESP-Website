@@ -3,38 +3,14 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser
 from esp.users.models import install_groups
 from django.contrib.auth.models import Group
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        # First, create a Group for every verb name
-        role_verbs = orm['datatree.DataTree'].objects.filter(parent__uri="V/Flags/UserRole")
-        role_names = list(role_verbs.values_list('name', flat=True).distinct())
-        install_groups(role_names)
-
-        # Cache the groups so we don't have to keep fetching them from the DB.
-        groups = dict([(g.name, g) for g in Group.objects.all()])
-
-        # Now, for all user roles applied to users, add those users to the appropriate Group
-        # Do this in batched inserts: for each role, filter for all users with
-        # that role, and add them all at once to the Group.
-        role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(enddate__gte=datetime.datetime.now())
-        for role_name in role_names:
-            user_ids = list(role_bits.filter(verb__name=role_name).values_list('user', flat=True).distinct())
-            groups[role_name].user_set.add(*user_ids)
-
-        # Adds Administrators who might not have had the UserRole.
-        # The enddate filter is to prevent the migration from adding
-        # Administrators with an Administer privilege that is set to expire,
-        # since membership in the Administrator group has no expiration.
-        # Instead, an Administer privilege should be given in a later migration.
-        admin_role = groups["Administrator"]
-        admin_bits = UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__gte=datetime.datetime(3000,1,1))
-        admin_ids = list(admin_bits.values_list('user', flat=True).distinct())
-        admin_role.user_set.add(*admin_ids)
+        pass
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -143,16 +119,16 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'ContactInfo'},
             'address_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'address_postal': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'address_state': ('django.contrib.localflavor.us.models.USStateField', [], {'max_length': '2', 'null': 'True', 'blank': 'True'}),
+            'address_state': ('localflavor.us.models.USStateField', [], {}),
             'address_street': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'e_mail': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'phone_cell': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_day': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_even': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_cell': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_day': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_even': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'receive_txt_message': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
@@ -174,7 +150,7 @@ class Migration(DataMigration):
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'sms_number': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'sms_number': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'sms_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'users.espuser': {

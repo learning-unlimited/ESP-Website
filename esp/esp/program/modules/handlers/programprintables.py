@@ -32,13 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.web.util        import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser
-from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
+from esp.users.models    import ESPUser, User
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
@@ -46,12 +44,15 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
+from esp.utils.query_utils import nest_Q
+
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
-import simplejson as json
+import json
+import collections
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -888,23 +889,47 @@ Volunteer schedule for %s:
     def get_student_schedules(request, students, prog, extra='', onsite=False):
         """ generate student schedules """
         context = {}
+
+        # to avoid a query per student, get all the classes and SRs upfront
+        all_classes = ClassSection.objects.filter(
+            nest_Q(StudentRegistration.is_valid_qobject(),
+                   'studentregistration'),
+            studentregistration__user__in=students,
+            studentregistration__relationship__name='Enrolled',
+            parent_class__parent_program=prog,
+            status=ACCEPTED,
+            meeting_times__isnull=False).distinct()
+        all_classes = all_classes.select_related('parent_class')
+        all_classes = all_classes.prefetch_related('meeting_times')
+        classes_by_id = {cls.id: cls for cls in all_classes}
+
+        sr_pairs = all_classes.values_list('id', 'studentregistration__user')
+        classes_by_student = collections.defaultdict(list)
+        for cls_id, user_id in sr_pairs:
+            classes_by_student[user_id].append(classes_by_id[cls_id])
+
+        for user_id in classes_by_student:
+            # Sort the classes.  We don't want to use __cmp__ because it will
+            # not take advantage of our prefetching of meeting_times.
+            classes_by_student[user_id].sort(
+                key=lambda cls: (cls.start_time_prefetchable(), cls.title()))
+
+        times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
+        for t in times_compulsory:
+            t.friendly_times = [t.pretty_time()]
+            t.initial_rooms = []
  
-        scheditems = []
-        
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
-            classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == prog and cls.isAccepted() and cls.meeting_times.count() > 0]
-            # now we sort them by time/title
-            classes.sort()
+            classes = classes_by_student[student.id]
 
+            # TODO: conditional should use Tag.getBooleanTag or somesuch
             if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
                 times = list(prog.getTimeSlots())
                 for cls in classes:
-                    time_indices = []
                     index = 0
                     for t in cls.meeting_times.all():
                         if t in times:
@@ -915,14 +940,10 @@ Volunteer schedule for %s:
 
             #   Insert entries for the compulsory timeblocks into the schedule
             min_index = 0
-            times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
-                t.friendly_times = [t.pretty_time()]
-                t.initial_rooms = []
-                
                 i = min_index
                 while i < len(classes):
-                    if classes[i].start_time().start > t.start:
+                    if classes[i].start_time_prefetchable() > t.start:
                         classes.insert(i, t)
                         break
                     i += 1
@@ -953,10 +974,10 @@ Volunteer schedule for %s:
         elif 'img_format' in request.GET:
             file_type = request.GET['img_format']
         else:
-            file_type = 'pdf'
-
-        if onsite and file_type == 'pdf':
-            file_type = 'png'
+            if onsite:
+                file_type = 'png'
+            else:
+                file_type = 'pdf'
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
@@ -1515,4 +1536,4 @@ Volunteer schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

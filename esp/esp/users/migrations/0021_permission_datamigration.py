@@ -3,106 +3,14 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from esp.users.models import UserBit, Permission, ESPUser
+from esp.users.models import Permission, ESPUser
 from esp.program.models import Program
 from django.contrib.auth.models import Group
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        def end(bit):
-            date = bit.enddate
-            if date > datetime.datetime(3000,1,1):
-                return None
-            return date
-
-        #Administer
-        adm_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Administer",qsc__uri__startswith="Q/Programs")
-        for bit in adm_bits:
-            try:
-                p=orm['program.Program'].objects.get(anchor=bit.qsc)
-            except orm['program.Program'].DoesNotExist:
-                continue
-            orm['users.Permission'](permission_type="Administer", program=p, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
-
-        # Administer all programs, but with an enddate.
-        # Adds users that we didn't add to the Administrator group in 0019_userrole.
-        for bit in orm['users.UserBit'].objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__lt=datetime.datetime(3000,1,1)):
-            orm['users.Permission'](permission_type="Administer", program=None, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
-
-        #view programs
-        program_anchors=orm['program.Program'].objects.all().values_list("anchor",flat=True)
-        view_program_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Public", qsc__id__in=program_anchors)
-        for bit in view_program_bits:
-            try:
-                p=orm['program.Program'].objects.get(anchor=bit.qsc)
-            except orm['program.Program'].DoesNotExist:
-                continue
-            if bit.user is not None:
-                orm['users.Permission'](permission_type=bit.verb.uri[24:],
-                           user=bit.user,
-                           program=p, 
-                           startdate=bit.startdate,
-                           enddate=end(bit)).save()
-            else: 
-                for x in ESPUser.getTypes():
-                    orm['users.Permission'](permission_type=bit.verb.uri[24:],
-                               role=orm['auth.Group'].objects.get(name=x),
-                               program=p,
-                               startdate=bit.startdate,
-                               enddate=end(bit)).save()
-                               
-        #gradeoverride
-        go_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Registration/GradeOverride",qsc__uri__startswith="Q/Programs")
-        for bit in go_bits:
-            try:
-                p=orm['program.Program'].objects.get(anchor=bit.qsc)
-            except orm['program.Program'].DoesNotExist:
-                continue
-            orm['users.Permission'](permission_type="GradeOverride", program=p,user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
-
-        #onsite
-        onsite_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Registration/Onsite")
-        for bit in onsite_bits:
-            try:
-                p=orm['program.Program'].objects.get(anchor=bit.qsc)
-            except orm['program.Program'].DoesNotExist:
-                continue
-            orm['users.Permission'](permission_type="Onsite",
-                       user=bit.user,
-                       program=p, 
-                       startdate=bit.startdate,
-                       enddate=end(bit)).save()
-
-        #deadlines
-        deadline_bits = orm['users.UserBit'].objects.filter(verb__uri__startswith="V/Deadline/Registration")
-        for bit in deadline_bits:
-            try:
-                p=orm['program.Program'].objects.get(anchor=bit.qsc)
-            except orm['program.Program'].DoesNotExist:
-                continue
-            
-            name = bit.verb.uri[24:]
-            if bit.recursive and bit.verb.name in ["Classes", "Teacher", "Student"]:
-                name += "/All"
-            if bit.user is not None:
-                orm['users.Permission'](permission_type=name,
-                           user=bit.user,
-                           program=p, 
-                           startdate=bit.startdate,
-                           enddate=end(bit)).save()
-            elif bit.verb.uri[24:31]=="Teacher":
-                orm['users.Permission'](permission_type=name,
-                           role=orm['auth.Group'].objects.get(name="Teacher"),
-                           program=p, 
-                           startdate=bit.startdate,
-                           enddate=end(bit)).save()
-            elif bit.verb.uri[24:31]=="Student":
-                orm['users.Permission'](permission_type=name,
-                           role=orm['auth.Group'].objects.get(name="Student"),
-                           program=p, 
-                           startdate=bit.startdate,
-                           enddate=end(bit)).save()
+        pass
 
     def backwards(self, orm):
         orm['users.Permission'].objects.all().delete()
@@ -209,16 +117,16 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'ContactInfo'},
             'address_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'address_postal': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'address_state': ('django.contrib.localflavor.us.models.USStateField', [], {'max_length': '2', 'null': 'True', 'blank': 'True'}),
+            'address_state': ('localflavor.us.models.USStateField', [], {}),
             'address_street': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'e_mail': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'phone_cell': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_day': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_even': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_cell': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_day': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_even': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'receive_txt_message': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
@@ -240,7 +148,7 @@ class Migration(DataMigration):
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'sms_number': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'sms_number': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'sms_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'users.espuser': {

@@ -37,7 +37,7 @@ from django.contrib.auth.models import User
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+from localflavor.us.forms import USPhoneNumberField
 from esp.users.models import ESPUser, shirt_sizes, shirt_types
 from esp.tagdict.models import Tag
 

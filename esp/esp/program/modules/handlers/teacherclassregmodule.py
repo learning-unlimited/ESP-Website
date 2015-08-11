@@ -39,6 +39,7 @@ from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
+from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
 from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
@@ -50,6 +51,9 @@ from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
+
+import json
+from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -835,7 +839,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json import JsonResponse
+        from esp.web.views.json_utils import JsonResponse
 
         Q_teacher = Q(groups__name="Teacher")
 
@@ -902,4 +906,4 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

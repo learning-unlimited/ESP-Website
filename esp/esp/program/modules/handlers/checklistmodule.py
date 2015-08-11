@@ -38,7 +38,6 @@ from esp.program.models  import Program, ProgramCheckItem
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
-from esp.datatree.models import *
 from esp.users.models import ESPUser, User
 from django.http import HttpResponseRedirect
 
@@ -89,4 +88,4 @@ class CheckListModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

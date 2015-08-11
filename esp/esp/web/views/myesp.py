@@ -36,7 +36,6 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo, Permission
-from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject

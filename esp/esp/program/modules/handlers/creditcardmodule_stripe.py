@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
 from esp.web.util import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
@@ -241,7 +240,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         if 'error_type' not in context:
             try:
-                with transaction.commit_on_success():
+                with transaction.atomic():
                     # Save a record of the charge if we can uniquely identify the user/program.
                     # If this causes an error, the user will get a 500 error
                     # page, and the card will NOT be charged.
@@ -263,6 +262,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         currency="usd",
                         card=request.POST['stripeToken'],
                         description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },
@@ -298,4 +298,4 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

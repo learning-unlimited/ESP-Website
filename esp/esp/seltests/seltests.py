@@ -1,5 +1,5 @@
 from django_selenium.testcases import SeleniumTestCase
-from esp.seltests.util import try_ajax_login, try_normal_login, logout
+from esp.seltests.util import try_normal_login, logout
 from esp.users.models import ESPUser
 from esp.utils.models import TemplateOverride
 
@@ -41,36 +41,7 @@ class CsrfTestCase(SeleniumTestCase):
              """
         to.save()
 
-    def setUpAjaxLogin(self):
-        if(self.good_version == -1):
-             to, created = TemplateOverride.objects.get_or_create(name='index.html', version=1)
-        else:
-             to = TemplateOverride.objects.filter(name='index.html')[0]
-        to.content = """
-             {% extends "elements/html" %}
-
-             {% block body %}
-             {% include "users/loginbox_ajax.html" %}
-             {% endblock %}
-             """
-        to.save()
-
     def test_csrf_delete(self):
-        # First set up and test AJAX login
-        self.setUpAjaxLogin()
-
-        self.open_url("/")
-        try_ajax_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Student Student'))
-        logout(self)
-
-        self.delete_cookie("esp_csrftoken")
-
-        try_ajax_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Student Student'))
-        logout(self)
-
-
         # Now set up and test normal login
         self.setUpNormalLogin()
         self.open_url("/") # Load index

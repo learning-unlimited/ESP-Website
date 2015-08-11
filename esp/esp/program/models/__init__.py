@@ -37,12 +37,12 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
-import simplejson as json
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
-from django.contrib.localflavor.us.models import PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
@@ -54,7 +54,6 @@ from esp.cache import cache_function
 from esp.cache.key_set import wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
@@ -101,7 +100,7 @@ class ProgramModule(models.Model):
     seq = models.IntegerField()
     
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -110,31 +109,6 @@ class ProgramModule(models.Model):
     def getFriendlyName(self):
         """ Return a human-readable name that identifies this Program Module """
         return self.admin_title
-
-    def getSummaryCalls(self):
-        """
-        Returns a list of the summary view functions for the specified module
-
-        Only returns functions that are both listed in summary_calls,
-        and that are valid functions for this class.
-
-        Returns an empty list if no calls are found.
-        """
-        callNames = this.summary_calls.split(',')
-
-        calls = []
-        myClass = this.getPythonClass()
-
-             
-
-        for i in callNames:
-            try:
-                calls.append(getattr(myClass, i))
-            except:
-                pass
-
-        return calls
-
 
     def getPythonClass(self):
         """
@@ -277,7 +251,6 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
     
-    anchor = AjaxForeignKey(DataTree, unique=True, blank=True, null=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     url = models.CharField(max_length=80)
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
@@ -324,6 +297,9 @@ class Program(models.Model, CustomFormsLinkModel):
                 setattr(cls, user_type, cls.get_users_from_module(user_type))
                 setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
 
+    def get_absolute_url(self):
+        return "/manage/"+self.url+"/main"
+    
     @cache_function
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
@@ -1271,10 +1247,6 @@ class RegistrationProfile(models.Model):
         if records.count() == 0:
             record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
 
-    def cancelStudentRegConfirmation(self, user):
-        """ Cancel the registration confirmation for the specified student """
-        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
-        
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
@@ -1793,7 +1765,7 @@ class VolunteerRequest(models.Model):
 
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
-    confirmed = models.BooleanField()
+    confirmed = models.BooleanField(default=False)
 
     #   Fill out this if you're logged in...
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
