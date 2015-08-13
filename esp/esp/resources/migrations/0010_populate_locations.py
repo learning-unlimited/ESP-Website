@@ -151,7 +151,6 @@ class Migration(DataMigration):
         },
         'program.classsection': {
             'Meta': {'ordering': "['id']", 'object_name': 'ClassSection'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'null': 'True', 'blank': 'True'}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'duration': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
             'enrolled_students': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
@@ -175,7 +174,6 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'ClassSubject', 'db_table': "'program_class'"},
             'allow_lateness': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'allowable_class_size_ranges': ('django.db.models.fields.related.ManyToManyField', [], {'blank': 'True', 'related_name': "'classsubject_allowedsizes'", 'null': 'True', 'symmetrical': 'False', 'to': "orm['program.ClassSizeRange']"}),
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'null': 'True', 'blank': 'True'}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'cls'", 'to': "orm['program.ClassCategories']"}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'class_info': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
@@ -205,7 +203,6 @@ class Migration(DataMigration):
         },
         'program.program': {
             'Meta': {'object_name': 'Program'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']", 'symmetrical': 'False'}),
             'director_cc_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
             'director_confidential_email': ('django.db.models.fields.EmailField', [], {'default': "''", 'max_length': '75', 'blank': 'True'}),
@@ -257,7 +254,6 @@ class Migration(DataMigration):
         },
         'qsdmedia.media': {
             'Meta': {'object_name': 'Media'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'null': 'True', 'blank': 'True'}),
             'file_extension': ('django.db.models.fields.TextField', [], {'max_length': '16', 'null': 'True', 'blank': 'True'}),
             'file_name': ('django.db.models.fields.TextField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
             'format': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
