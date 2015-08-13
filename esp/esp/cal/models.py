@@ -185,10 +185,9 @@ class Event(models.Model):
         return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
     
     def num_classes_assigned(self):
-        #   Return the number of classes assigned to classrooms in this time slot.
-        from esp.resources.models import ResourceAssignment, ResourceType
-        classroom = ResourceType.get_or_create('Classroom')
-        return ResourceAssignment.objects.filter(resource__event=self, resource__res_type=classroom).count()
+        from esp.resources.models import Location
+        return Location.objects.filter(
+            classsection__meeting_times=self).count()
     
     def num_classes(self):
         #   Return the number of classes assigned to this time slot.

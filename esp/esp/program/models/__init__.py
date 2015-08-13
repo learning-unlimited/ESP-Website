@@ -739,6 +739,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return None
 
     @cache_function
+    # TODO(benkraft): fix and check callers
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
