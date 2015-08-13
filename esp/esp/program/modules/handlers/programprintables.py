@@ -1053,7 +1053,7 @@ Volunteer schedule for %s:
         context = {}
         classes.sort()
 
-        rooms = {}
+        rooms = collections.defaultdict(list)
         scheditems = []
 
         for cls in classes:
@@ -1062,14 +1062,11 @@ Volunteer schedule for %s:
                     update_dict = {'room': room.name,
                                    'cls': cls,
                                    'timeblock': event_group}
-                    if room.name in rooms:
-                        rooms[room.name].append(update_dict)
-                    else:
-                        rooms[room.name] = [update_dict]
+                    rooms[room.id].append(update_dict)
             
-        for room_name in rooms:
-            rooms[room_name].sort(key=lambda x: x['timeblock'].start)
-            for val in rooms[room_name]:
+        for room_id in rooms:
+            rooms[room_id].sort(key=lambda x: x['timeblock'].start)
+            for val in rooms[room_id]:
                 scheditems.append(val)
                 
         context['scheditems'] = scheditems
