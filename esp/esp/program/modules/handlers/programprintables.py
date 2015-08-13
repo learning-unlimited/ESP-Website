@@ -41,6 +41,7 @@ from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.resources.models import Location
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
@@ -568,34 +569,50 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.teachersbyFOO(request, tl, one, two, module, extra, prog, cmpsort)
 
-    @needs_admin
-    def roomsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'roomlist.html', extra_func = lambda x: {}):
-        
-        rooms = self.program.groupedClassrooms()
-        rooms = filter(filt_exp, rooms)
-        for s in rooms:
-            extra_dict = extra_func(s)
-            for key in extra_dict:
-                setattr(s, key, extra_dict[key])
-        rooms.sort(sort_exp)
-
-        context = {'rooms': rooms, 'program': self.program}
-
-        return render_to_response(self.baseDir()+template_file, request, context)
-
     @aux_call
     @needs_admin
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
-        #   List of open classrooms, sorted by the first time they are available
-        def filt(one):
-            return one.available_any_time(self.program)
-        
-        def cmpsort(one, other):
-            #   Find when available
-            return cmp(one.available_times(self.program)[0], other.available_times(self.program)[0])
+        # TODO(benkraft): it might be possible to make this more efficient.
+        # But I think it's okay (other than the furnishing issue, which is
+        # harder to fix).
+        locations = Location.objects.filter(event__program=self.program)
+        location_availability_pairs = locations.values_list('id', 'event')
+        location_use_pairs = locations.filter(
+            classsection__parent_class__parent_program=self.program
+        ).values_list('id', 'classsection__meeting_times').distinct()
 
-        return self.roomsbyFOO(request, tl, one, two, module, extra, prog, cmpsort, filt)
+        events = Event.objects.filter(program=self.program)
+        events_by_id = {event.id: event for event in events}
         
+        location_availability = collections.defaultdict(set)
+        # Get all times at which the classroom is available, ...
+        for loc_id, event_id in location_availability_pairs:
+            location_availability[loc_id].add(event_id)
+        # ... but not in use
+        for loc_id, event_id in location_use_pairs:
+            location_availability[loc_id].discard(event_id)
+
+        for loc_id in location_availability.keys():
+            location_availability[loc_id] = [
+                events_by_id[event_id]
+                for event_id in location_availability[loc_id]]
+            location_availability[loc_id].sort()
+
+        # grab only the ones that actually have availability, and sort by first
+        # available time.
+        locations = [loc for loc in locations.distinct()
+                     if location_availability[loc.id]]
+        for loc in locations:
+            loc.availability = location_availability[loc.id]
+            loc.furnishing_list = loc.furnishings(self.program)
+        locations.sort(key=lambda loc: (loc.availability[0], loc.name))
+
+        # Pack the location availibilities onto the locations for template use
+
+        context = {'locations': locations, 'program': self.program}
+
+        return render_to_response(self.baseDir() + 'roomlist.html',
+                                  request, context)
 
     @needs_admin
     def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}):

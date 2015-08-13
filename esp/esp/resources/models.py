@@ -70,6 +70,12 @@ class Location(models.Model):
 
     def __unicode__(self):
         return '%s (capacity %s)' % (self.name, self.capacity)
+
+    def furnishings(self, program):
+        # TODO(benkraft): one day this will not need to be terrible
+        return ResourceType.objects.filter(
+            program=program,
+            resource__res_group__location=self).distinct()
     
     # TODO(benkraft): change this to be the actually correct thing once we kill
     # resource groups fully.  Also, at that point, make it into something that
@@ -324,15 +330,6 @@ class Resource(models.Model):
                 sequence.append('N/A')
                 
         return sequence
-    
-    def is_conflicted(self):
-        return (self.assignments().count() > 1)
-    
-    def available_any_time(self, program=None):
-        return (len(self.available_times(program)) > 0)
-    
-    def available_times_html(self, program=None):
-        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times(program)))

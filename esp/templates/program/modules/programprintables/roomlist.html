@@ -48,14 +48,18 @@ table.sortable thead {
 </tr>
 </thead>
 <tbody>
-{% for room in rooms %}
+{% for location in locations %}
 <tr>
     <td>{{ forloop.counter }}</td>
-    <td>{{ room.name }}</td>
-    <td>&nbsp;{% autoescape off %}{{ room.prog_available_times }}{% endautoescape %}</td>
-    <td>&nbsp;
-        {% for f in room.furnishings %}
-            {{ f.res_type.name }}{% if not forloop.last %}<br />{% endif %}
+    <td>{{ location.name }}</td>
+    <td>
+      {% for event in location.availability %}
+        {{ event }}{% if not forloop.last %}<br />{% endif %}
+      {% endfor %}
+    </td>
+    <td>
+        {% for f in location.furnishing_list %}
+            {{ f.name }}{% if not forloop.last %}<br />{% endif %}
         {% endfor %}
     </td>    
 </tr>
