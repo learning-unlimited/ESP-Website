@@ -18,13 +18,6 @@
 {% endif %}
 
 <div id="program_form">
-<form method="post" action="/manage/{{ prog.url }}/resources/classroom_import">
-<table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="2" class="small">Import classrooms from a previous program</th></tr>
-    {{ import_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
-</table>
-</form>
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom">
 <input type="hidden" name="command" value="addedit" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">

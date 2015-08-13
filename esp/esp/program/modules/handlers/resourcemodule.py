@@ -225,79 +225,6 @@ class ResourceModule(ProgramModuleObj):
         
         return (response, context)
 
-    def resources_classroom_import(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        response = None
-        
-        controller = ResourceController(prog)
-        
-        import_mode = 'preview'
-        if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
-            import_mode = 'save'
-            
-        import_form = ClassroomImportForm(request.POST)
-        if not import_form.is_valid():
-            context['import_form'] = import_form
-        else:
-            past_program = import_form.cleaned_data['program']
-            complete_availability = import_form.cleaned_data['complete_availability']
-
-            resource_list = []
-            if complete_availability:
-                #   Make classrooms available at all of the new program's timeslots
-                for resource in past_program.groupedClassrooms():
-                    for timeslot in self.program.getTimeSlots():
-                        new_res = Resource(
-                            name = resource.name,
-                            res_type = resource.res_type,
-                            num_students = resource.num_students,
-                            is_unique = resource.is_unique,
-                            user = resource.user,
-                            event = timeslot
-                        )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
-                            new_res.save()
-                        resource_list.append(new_res)
-            else:
-                #   Attempt to match timeslots for the programs
-                ts_old = past_program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
-                ts_new = self.program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
-                ts_map = {}
-                for i in range(min(len(ts_old), len(ts_new))):
-                    ts_map[ts_old[i].id] = ts_new[i]
-
-                #   Iterate over the resources in the previous program
-                for res in past_program.getClassrooms():
-                    #   If we know what timeslot to put it in, make a copy
-                    if res.event.id in ts_map:
-                        new_res = Resource()
-                        new_res.name = res.name
-                        new_res.res_type = res.res_type
-                        new_res.num_students = res.num_students
-                        new_res.is_unique = res.is_unique
-                        new_res.user = res.user
-                        new_res.event = ts_map[res.event.id]
-                        #   Check to avoid duplicating rooms (so the process is idempotent)
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
-                            new_res.save()
-                        #   Note: furnishings are messed up, so don't bother copying those yet.
-                        resource_list.append(new_res)
-            
-            #   Render a preview page showing the resources for the previous program if desired
-            context['past_program'] = past_program
-            context['complete_availability'] = complete_availability
-            if import_mode == 'preview':
-                context['prog'] = self.program
-                result = self.program.collapsed_dict(resource_list)
-                key_list = result.keys()
-                key_list.sort()
-                context['new_rooms'] = [result[key] for key in key_list]
-                response = render_to_response(self.baseDir()+'classroom_import.html', request, context)
-            else:
-                extra = 'classroom'
-        
-        return (response, context)
-
     def resources_equipment(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
@@ -349,7 +276,6 @@ class ResourceModule(ProgramModuleObj):
             'restype': self.resources_restype,
             'classroom': self.resources_classroom,
             'timeslot_import': self.resources_timeslot_import,
-            'classroom_import': self.resources_classroom_import,
             'equipment': self.resources_equipment,
         }
         if extra in handlers:
