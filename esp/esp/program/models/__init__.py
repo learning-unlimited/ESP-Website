@@ -646,13 +646,6 @@ class Program(models.Model, CustomFormsLinkModel):
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
         
-    def addClassroom(self, classroom_form):
-        from esp.program.modules.forms.resources import ClassroomForm
-        
-        #   Parse classroom form to create classroom and associated resources, group them,
-        #   and save them.
-        assert False, 'todo'
-        
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
