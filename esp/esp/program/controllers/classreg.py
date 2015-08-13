@@ -2,7 +2,7 @@ from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
+from esp.resources.forms import ResourceRequestFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 
@@ -30,10 +30,9 @@ def get_custom_fields():
     return result
 
 class ClassCreationValidationError(Exception):
-    def __init__(self, reg_form, resource_formset, restype_formset, error_msg):
+    def __init__(self, reg_form, resource_formset, error_msg):
         self.reg_form = reg_form
         self.resource_formset = resource_formset
-        self.restype_formset = restype_formset
         super(ClassCreationValidationError, self).__init__(error_msg)
 
 class ClassCreationController(object):
@@ -44,13 +43,13 @@ class ClassCreationController(object):
     @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
 
         self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
-        self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
+        self.make_class_happen(cls, user, reg_form, resource_formset)
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
@@ -61,7 +60,7 @@ class ClassCreationController(object):
     @transaction.atomic
     def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
         
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -72,7 +71,7 @@ class ClassCreationController(object):
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, current_user, extra_time)
 
-        self.make_class_happen(cls, None, reg_form, resource_formset, restype_formset, editing=True)
+        self.make_class_happen(cls, None, reg_form, resource_formset, editing=True)
         
         self.send_class_mail_to_directors(cls, False)
 
@@ -87,17 +86,13 @@ class ClassCreationController(object):
         else:
             resource_formset = None
 
-        if 'restype-TOTAL_FORMS' in reg_data:
-            restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
-        else:
-            restype_formset = None
-            
-        if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
-            raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
+        if not reg_form.is_valid() or (resource_formset and not
+                                       resource_formset.is_valid()):
+            raise ClassCreationValidationError, (reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
-        return reg_form, resource_formset, restype_formset
+        return reg_form, resource_formset
     
-    def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
+    def make_class_happen(self, cls, user, reg_form, resource_formset, editing=False):
         self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
@@ -105,7 +100,7 @@ class ClassCreationController(object):
         if user and not editing:
             self.associate_teacher_with_class(cls, user)
 
-        self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
+        self.add_rsrc_requests_to_class(cls, resource_formset)
 
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
         if user in cls.get_teachers():
@@ -195,17 +190,12 @@ class ClassCreationController(object):
     def add_teacher_to_program_mailinglist(self, user):
         add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
 
-    def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
+    def add_rsrc_requests_to_class(self, cls, resource_formset):
         for sec in cls.get_sections():
             sec.clearResourceRequests()
             if resource_formset:
                 for resform in resource_formset.forms:
                     self.import_resource_formset(sec, resform)
-            if restype_formset:
-                for resform in restype_formset.forms:
-                    #   Save new types; handle imperfect validation
-                    if len(resform.cleaned_data['name']) > 0:
-                        self.import_restype_formset(self, sec, resform)
                     
     def import_resource_formset(self, sec, resform):
         if isinstance(resform.cleaned_data['desired_value'], list):
@@ -223,18 +213,6 @@ class ClassCreationController(object):
             rr.desired_value = resform.cleaned_data['desired_value']
             rr.save()
             return rr
-
-    def import_restype_formset(self, sec, resform):
-        rt, created = ResourceType.get_or_create(resform.cleaned_data['name'])
-        rt.choices = ['Yes']
-        rt.save()
-        rr = ResourceRequest()
-        rr.target = sec
-        rr.res_type = rt
-        rr.desired_value = 'Yes'
-        rr.save()
-        return (rt, rr)
-
 
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
