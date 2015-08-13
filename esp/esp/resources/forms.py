@@ -134,13 +134,3 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
         self.add_fields(form, i)
         
         return form
-    
-class ResourceTypeForm(forms.ModelForm):
-    name = forms.CharField(label='New Request', required=False)
-
-    class Meta:
-        model = ResourceType
-        fields = ['name']
-    
-class ResourceTypeFormSet(formset_factory(ResourceTypeForm, extra=0)):
-    pass
