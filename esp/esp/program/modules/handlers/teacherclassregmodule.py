@@ -687,10 +687,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
             if Tag.getTag('allow_global_restypes'):
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_global=True)
+                resource_types = prog.getResourceTypes(include_global=True)
             else:
-                resource_types = prog.getResourceTypes(include_classroom=True)
+                resource_types = prog.getResourceTypes()
             resource_types = list(resource_types)
             resource_types.reverse()
 
@@ -776,7 +775,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['form'] = reg_form
         context['formset'] = resource_formset
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
-        context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
+        context['resource_types'] = self.program.getResourceTypes()
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:
             context['grade_range_popup'] = (Tag.getProgramTag('grade_range_popup', self.program) != "False")

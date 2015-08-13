@@ -731,16 +731,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return None
 
     @cache_function
-    # TODO(benkraft): fix and check callers
-    def getResourceTypes(self, include_classroom=False, include_global=None):
-        #   Show all resources pertaining to the program that aren't these two hidden ones.
-        from esp.resources.models import ResourceType
-        
-        if include_classroom:
-            exclude_types = []
-        else:
-            exclude_types = [ResourceType.get_or_create('Classroom')]
-        
+    def getResourceTypes(self, include_global=None):
         if include_global is None:
             include_global = Tag.getTag('allow_global_restypes')
 
@@ -749,12 +740,11 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
+        return ResourceType.objects.filter(Q_filters).order_by('priority_default')
     getResourceTypes.depend_on_model('resources.ResourceType')
     getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
-        # TODO: check callers
         from esp.resources.models import Resource
         return Resource.objects.filter(event__program=self)
     
