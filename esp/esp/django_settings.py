@@ -196,7 +196,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'grappelli',
     'filebrowser',
-    'django.contrib.admin',
+    'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
     'esp.datatree',
     'esp.users',

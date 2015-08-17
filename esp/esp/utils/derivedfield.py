@@ -144,6 +144,7 @@ def DerivedField(FieldCls, getter_fn):
                     self._derived_reentrant_lock = False
             getter_fn.connect(handler)
 
+        #TODO(1.8): figure out if this needs replacing, and if so, with what
         def south_field_triple(self, ):
             # XXX: Uhhh... Such a hack... FIIK this really works
             field_class = FieldCls.__module__ + "." + self.get_internal_type()
