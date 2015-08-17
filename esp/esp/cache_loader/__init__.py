@@ -11,6 +11,7 @@ __path__ = ''
 import sys
 from django.conf import settings
 from esp.cache.registry import _finalize_caches, _lock_caches
+from django.apps import apps
 
 # Make sure everything's already imported
 
@@ -19,8 +20,8 @@ from esp.customforms.linkfields import cf_cache
 cf_cache._populate()
 
 # Import views files from INSTALLED_APPS
-for app_name in settings.INSTALLED_APPS:
-    if app_name != 'esp.cache_loader':
+for app_config in apps.get_app_configs():
+    if app_config.name != 'esp.cache_loader':
         __import__(app_name, {}, {}, ['models'])
 
 #   Make sure template override cache is registered

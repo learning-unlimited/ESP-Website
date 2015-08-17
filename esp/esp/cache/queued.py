@@ -10,6 +10,7 @@ def add_lazy_dependency(self, obj, operation):
     """ If obj is a function (thunk), delay operation; otherwise execute immediately. """
     if isinstance(obj, basestring):
         app_label, model_name = obj.split(".")
+        # TODO(1.8): seed_cache and only_installed don't exist anymore
         model = get_model(app_label, model_name,
                           seed_cache=False, only_installed=False)
         if model:
