@@ -639,6 +639,11 @@ Admin Admissions Dashboard
 Provides an interface for admins to review all of the applications in the
 program. For more information, see `</docs/admin/student_apps.rst>`_.
 
+Lottery Student Registration Big Board
+--------------------------------------
+
+
+
 Onsite modules (8)
 ==================
 
