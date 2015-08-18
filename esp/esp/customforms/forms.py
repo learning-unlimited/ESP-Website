@@ -38,7 +38,6 @@ class HiddenNameWidget(NameWidget):
         super(HiddenNameWidget, self).__init__(*args, **kwargs)
         for widget in self.widgets:
             widget.input_type = 'hidden'
-            widget.is_hidden = True
             
     def format_output(self, rendered_widgets):
         return u''.join(rendered_widgets)        
