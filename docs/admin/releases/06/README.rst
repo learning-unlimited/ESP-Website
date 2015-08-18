@@ -20,14 +20,28 @@ to the scheduling checks page by clicking the link "Run Scheduling Diagnostics"
 (/manage/[program]/[instance]/scheduling_checks) on the main program
 management.
 
-Class flags improvements
-~~~~~~~~~~~~~~~~~~~~~~~~
+Class flags and class search improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The search interface formerly associated with class flags has been rewritten,
+and comes with new search options.  It will also now be easier to add more
+search options, so let us know if there are ways you would find it useful to be
+able to search. 
 
 Lottery Student Registration Big Board
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+There is a new page for watching the current number of student registrations.
+You can get to it from the link "Student Registration Big Board" on the main
+program management page, or at /manage/[program]/[instance]/bigboard.  It has
+some of the same statistics as the dashboard, but is a lot faster to load, and
+has some fun extra numbers too.
+
 Logging current grade during student grade change request
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Changes to the handling of student grade levels
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Tags to disable shirt types question in profile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,6 +63,11 @@ admin panel.
 
 Customizing PDF letterhead
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Chapters can now upload a PDF letterhead file, which is used for the student
+completion certificate printable.  It should be named "letterhead.pdf" and go
+in the folder "latex_media" on the admin panel's file browser.  It can be a
+full-page PDF (8.5"×11"), or it can just be a top banner.
 
 UI for flushing individual caches
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,3 +119,14 @@ Minor feature additions and bugfixes
 - Expensive database queries that used to occur during student
   registration workflows were found and eliminated. This should
   improve the performance during registration.
+
+- Display improvements to scheduling checks: it is now possible to load each
+  check independently of others, refresh individual checks, sort, and hide
+  rows.
+
+- Added room numbers to teacher check-in for all timeblocks.
+
+- Many miscellaneous bug fixes.
+
+- Many behind-the-scenes changes to make the site easier to work on, improve
+  performance, and enable future improvements.
