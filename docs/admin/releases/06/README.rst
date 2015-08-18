@@ -13,7 +13,8 @@ Improvements to scheduling checks
 The "Scheduling Diagnostics" module has undergone significant improvements.
 Now, instead of waiting a long time for all the checks to be run and rendered,
 the page loads instantaneously, and you can run and see the results of
-whichever individual checks you want.
+whichever individual checks you want.  You can also sort each check by any
+column, and gray out rows (if, for instance, you are done dealing with them).
 
 If the "Scheduling Diagnostics" module is enabled for the program, you can get
 to the scheduling checks page by clicking the link "Run Scheduling Diagnostics"
@@ -119,10 +120,6 @@ Minor feature additions and bugfixes
 - Expensive database queries that used to occur during student
   registration workflows were found and eliminated. This should
   improve the performance during registration.
-
-- Display improvements to scheduling checks: it is now possible to load each
-  check independently of others, refresh individual checks, sort, and hide
-  rows.
 
 - Added room numbers to teacher check-in for all timeblocks.
 
