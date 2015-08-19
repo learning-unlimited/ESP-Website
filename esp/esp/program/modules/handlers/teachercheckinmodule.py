@@ -146,7 +146,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                     json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
                 else:
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
-        return HttpResponse(json.dumps(json_data), mimetype='text/json')
+        return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @staticmethod
     def get_phone(user):

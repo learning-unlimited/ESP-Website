@@ -100,7 +100,7 @@ def json_response(field_map={}):
                                         indent = '    ')
                 return render_to_response('utils/jsondebug.html',
                                           request, {'data': data},
-                                          mimetype="text/html")
+                                          content_type="text/html")
             else:
                 if field_map is None:
                     new_result = result
@@ -111,7 +111,7 @@ def json_response(field_map={}):
                         for item in result[key]:
                             new_list.append(map_fields(item))
                         new_result[key] = new_list
-                resp = HttpResponse(mimetype='application/json')
+                resp = HttpResponse(content_type='application/json')
                 json.dump(new_result, resp)
                 return resp
                 

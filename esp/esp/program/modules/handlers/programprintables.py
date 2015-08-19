@@ -857,7 +857,7 @@ Volunteer schedule for %s:
 
         import csv
         from django.http import HttpResponse
-        response = HttpResponse(mimetype='text/csv')
+        response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
         writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:            
@@ -1327,7 +1327,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from django.utils.encoding import smart_str
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_cvs = csv.writer(response)
 
         write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
@@ -1368,7 +1368,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get the list of all the sections, and all the times for this program.
@@ -1451,7 +1451,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get first section of each class
@@ -1523,7 +1523,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
         
         data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
