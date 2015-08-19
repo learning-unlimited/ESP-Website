@@ -37,7 +37,8 @@ Learning Unlimited, Inc.
 
 import django.template.loaders.cached
 
-from django.template.loader import BaseLoader, get_template_from_string
+from django.template.loader import BaseLoader
+from django.template.base import Template
 from django.template import TemplateDoesNotExist
 
 from esp.utils.models import TemplateOverride
@@ -82,7 +83,7 @@ class Loader(BaseLoader):
         if hash_val == INVALID_HASH:
             raise TemplateDoesNotExist('Template override not found')
         if hash_val not in self.cache:
-            template = get_template_from_string(Loader.get_override_contents(template_name), None, template_name)
+            template = Template(Loader.get_override_contents(template_name), None, template_name)
             self.cache[hash_val] = (template, DEFAULT_ORIGIN)
         return self.cache[hash_val]
     load_template.is_usable = True
