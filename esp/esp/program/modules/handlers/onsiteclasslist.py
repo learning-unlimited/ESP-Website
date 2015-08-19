@@ -87,7 +87,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def catalog_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         #   Fetch a reduced version of the catalog to save time
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
@@ -103,7 +103,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
         json.dump(list(data), resp)
         return resp
@@ -111,7 +111,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         #   Try to ensure we don't miss anyone
         students_dict = self.program.students(QObjects=True)
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
@@ -126,7 +126,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
         json.dump(list(data), resp)
         return resp
@@ -134,7 +134,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def counts_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
         json.dump(list(data), resp)
         return resp
@@ -142,7 +142,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call    
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, resourceassignment__resource__res_type__name="Classroom").select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
         json.dump(list(data), resp)
         return resp
@@ -150,7 +150,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
@@ -165,7 +165,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
@@ -243,7 +243,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
 
         result = {}
 

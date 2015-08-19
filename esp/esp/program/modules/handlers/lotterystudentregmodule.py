@@ -142,7 +142,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         for item in ordered_timeslots:
             ordered_timeslot_names.append([item.id, item.short_description])
 
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         
         json.dump(ordered_timeslot_names, resp)
         

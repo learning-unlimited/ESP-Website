@@ -294,7 +294,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
                 lst.append((s.id, ra.resource.name, ra.resource.event.id))
 
-        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), mimetype='text/csv')
+        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
 
     #helper functions for ajax_schedule_class
     #seperated out here to make code more readeable and enable testing

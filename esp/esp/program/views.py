@@ -197,7 +197,7 @@ def lsr_submit(request, program = None):
     cfe = ConfirmationEmailController()
     cfe.send_confirmation_email(request.user, program)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
 #@transaction.atomic
@@ -223,7 +223,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                 errors.append({"text": "Can't flag two classes with the same priority at the same time!", "cls_sections": list(sections_by_block[i][block]), "block": block, "priority": i, "doubled_priority": True})
     
     if len(errors): 
-        return HttpResponse(json.dumps(errors), mimetype='application/json')
+        return HttpResponse(json.dumps(errors), content_type='application/json')
 
     reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
     reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)] 
@@ -259,7 +259,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
         pprint(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
 def find_user(userstr):
@@ -690,7 +690,7 @@ def statistics(request, program=None):
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
             result['script'] = render_to_string('program/statistics/script.js', context)
-            return HttpResponse(json.dumps(result), mimetype='application/json')
+            return HttpResponse(json.dumps(result), content_type='application/json')
             
         if form.is_valid():
             #   A dictionary for template rendering the results of this query
@@ -757,7 +757,7 @@ def statistics(request, program=None):
                 result = {}
                 result['result_html'] = context['result']
                 result['script'] = render_to_string('program/statistics/script.js', context)
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
         else:
@@ -767,7 +767,7 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
 
@@ -779,7 +779,7 @@ def statistics(request, program=None):
     context['field_ids'] = get_field_ids(form)
 
     if request.is_ajax():
-        return HttpResponse(json.dumps(context), mimetype='application/json')
+        return HttpResponse(json.dumps(context), content_type='application/json')
     else:
         return render_to_response('program/statistics.html', request, context)
 
