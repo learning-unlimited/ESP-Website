@@ -3,7 +3,7 @@ from django import forms
 from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
-from django.contrib.formtools.wizard.views import SessionWizardView
+from formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect

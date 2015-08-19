@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 
 from django.db import models
 from django.template.loaders.cached import Loader as CachedLoader
-from django.template.loader import find_template
 import reversion
 
 from esp.users.models import ESPUser
