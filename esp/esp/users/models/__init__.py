@@ -2644,7 +2644,7 @@ class GradeChangeRequest(TimeStampedModel):
 
     def get_admin_url(self):
         return urlresolvers.reverse("admin:%s_%s_change" %
-        (self._meta.app_label, self._meta.module_name), args=(self.id,))
+        (self._meta.app_label, self._meta.model_name), args=(self.id,))
 
 
     def __unicode__(self):
