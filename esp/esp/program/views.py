@@ -232,7 +232,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     oldRegistrations = [] #[[] for i in range(0, priority_limit+1)] # 1-indexed for priority registrations, the 0-index is for interested registrations
     
     for i in range(1, priority_limit+1):
-        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]).select_related(depth=3))]
+        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]))]
     
     for (oldRegistration, priority) in oldRegistrations:
         if oldRegistration.section.id not in classes_flagged[0]:
@@ -247,7 +247,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                     classes_flagged[0].remove(oldRegistration.section.id)
                 break
     
-    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
+    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
     
     for i in range(1, priority_limit + 1):
         for s in list(flagworthy_sections[i]):
