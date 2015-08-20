@@ -29,14 +29,15 @@ and comes with new search options.  It will also now be easier to add more
 search options, so let us know if there are ways you would find it useful to be
 able to search. 
 
-Lottery Student Registration Big Board
+Student Registration Big Board
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There is a new page for watching the current number of student registrations.
 You can get to it from the link "Student Registration Big Board" on the main
 program management page, or at /manage/[program]/[instance]/bigboard.  It has
 some of the same statistics as the dashboard, but is a lot faster to load, and
-has some fun extra numbers too.
+has some fun extra numbers too.  Most of the statistics are most useful during
+lottery registration, but it is not restricted to the lottery.
 
 Logging current grade during student grade change request
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
