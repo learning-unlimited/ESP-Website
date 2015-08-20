@@ -649,14 +649,15 @@ Admin Admissions Dashboard
 Provides an interface for admins to review all of the applications in the
 program. For more information, see `</docs/admin/student_apps.rst>`_.
 
-Lottery Student Registration Big Board
+Student Registration Big Board
 --------------------------------------
 
 Provides a page for watching the current number of student registrations.
 You can get to it from the link "Student Registration Big Board" on the main
 program management page, or at /manage/[program]/[instance]/bigboard.  It has
 some of the same statistics as the dashboard, but is a lot faster to load, and
-has some fun extra numbers too.
+has some fun extra numbers too.  Most of the statistics are most useful during
+lottery registration, but it is not restricted to the lottery.
 
 
 Onsite modules (8)
