@@ -483,27 +483,39 @@ class AJAXSchedulingModule(ProgramModuleObj):
             Be very careful using this view since it can sometimes work quite well,
             and there is currently no backup.
         """
-        
+        response = None
         try:
-            lock_level = int(request.GET.get('lock_level', '0'))
+            lock_level = int(request.POST.get('lock_level', '0'))
         except:
             lock_level = 0
-        print lock_level
-            
-        num_affected_sections = self.clear_schedule_logic(prog, lock_level)
+        if request.method == 'POST':
+            num_affected_sections = self.clear_schedule_logic(prog, lock_level)
+            data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
+            response = HttpResponse(content_type="application/json")
+            json.dump(data, response) 
+        else:
+            context = {}
+            context['num_affected_sections'] = self._get_affected_sections(prog, lock_level).count()
+            response = render_to_response(self.baseDir()+'clear_schedule_confirmation.html', request, context) 
 
-        data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
-        response = HttpResponse(content_type="application/json")
-        json.dump(data, response)
         return response
 
+    def _get_affected_sections(self, prog, lock_level=0):
+        """
+        Returns a QuerySet for ClassSection instances filtered  by parent_program and lock_level
+        """
+        return ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
+
     def clear_schedule_logic(self, prog, lock_level=0):
-        affected_sections = ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
-        num_affected_sections = affected_sections.distinct().count()
+        affected_sections = self._get_affected_sections(prog, lock_level)
+        
         ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
         ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
+
+        num_affected_sections = 0
         for section in affected_sections:
             section.meeting_times.clear()
+            num_affected_sections += 1
         
         return num_affected_sections
 
