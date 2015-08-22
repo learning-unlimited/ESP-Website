@@ -45,6 +45,19 @@ Logging current grade during student grade change request
 Changes to the handling of student grade levels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Previously, different parts of the website were inconsistent in how
+students' grade levels were calculated: sometimes according to the
+current school year and sometimes according to the start date of the
+relevant program. Now, all grade level logic pertaining to a specific
+program is done using student grade levels as of the start date of the
+program. (Note that the student's grade is considered to advance at
+the beginning of August, so for summer programs this will typically be
+the grade that the student just finished.)
+
+The exceptions to this are non-program-specific pages such as the
+student profile and grade change requests, where the calculated grade
+is only used for display purposes.
+
 Tags to disable shirt types question in profile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
