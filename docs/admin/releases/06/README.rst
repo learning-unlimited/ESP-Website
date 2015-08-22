@@ -87,6 +87,15 @@ full-page PDF (8.5"×11"), or it can just be a top banner.
 UI for flushing individual caches
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The page /cache/view_all provides an interface listing all the cached
+functions on the website and allowing them to be flushed
+individually. This is an alternative to using /manage/flushcache/ when
+you know which cache(s) need to be flushed, which may cause less of a
+performance hit than flushing all caches at once.
+
+A developer may instruct you to use this in case of a bug where some
+data on the site is out of date.
+
 Script to ask teachers to increase their class capacities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
