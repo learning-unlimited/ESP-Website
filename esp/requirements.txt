@@ -26,7 +26,7 @@ xlwt==1.0.0
 django-debug-toolbar==1.3.2
 django-grappelli==2.7.1
 # filebrowser doesn't officially support 1.8 yet. I hope it works.
-django-filebrowser==3.5.8
+django-filebrowser==3.5.7
 werkzeug
 django-bootstrap-form==3.2
 django-vanilla-views==1.0.4

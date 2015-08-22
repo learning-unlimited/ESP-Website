@@ -198,7 +198,6 @@ INSTALLED_APPS = (
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
-    'esp.datatree',
     'esp.users',
     'esp.miniblog',
     'esp.web',
@@ -212,8 +211,6 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.survey',
     'esp.accounting',
-    'esp.accounting_core',
-    'esp.accounting_docs',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
@@ -370,7 +367,7 @@ SHELL_PLUS_POST_IMPORTS = (
 
 #   Set test runner to behave like pre-1.6 versions of Django
 #   Exclude apps from testing
-TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
+#TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
 
 SKIP_SOUTH_TESTS = True
