@@ -2,6 +2,7 @@
 
 import types
 
+from django.apps import apps
 from django.db.models import signals, get_model
 
 pending_lookups = {}
@@ -12,7 +13,7 @@ def add_lazy_dependency(self, obj, operation):
         app_label, model_name = obj.split(".")
         try:
             # This is a private API, please fix it!
-            model = get_model(app_label, model_name)
+            model = apps.get_registered_model(app_label, model_name)
         except LookupError:
             key = (app_label, model_name)
             value = operation
