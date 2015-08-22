@@ -1,4 +1,4 @@
-Django==1.4.20
+Django==1.4.22
 pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
