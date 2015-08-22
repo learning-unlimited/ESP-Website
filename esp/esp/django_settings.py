@@ -267,8 +267,6 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
 # no i18n
 USE_I18N = False
 
-AUTH_PROFILE_MODULE='users.ESPUser_Profile'
-
 FORCE_SCRIPT_NAME = ''
 
 # Page to redirect people to when they log in
