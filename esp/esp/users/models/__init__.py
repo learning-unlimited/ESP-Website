@@ -1388,7 +1388,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     full_legal_name = models.CharField(max_length=128, blank=True, null=True)
-    university_email = models.EmailField(blank=True, null=True)
+    university_email = models.EmailField(blank=True, null=True, max_length=75)
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
@@ -1728,7 +1728,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    e_mail = models.EmailField('E-mail address', blank=True, null=True)
+    e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
     phone_day = PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
