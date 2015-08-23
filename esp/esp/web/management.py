@@ -34,13 +34,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.apps import apps
+from django.db import DEFAULT_DB_ALIAS, router
 from django.db.models import signals, get_apps, get_models
+from django.utils import six
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.management import update_contenttypes
 from esp.web import models as web
 from esp.utils.custom_cache import custom_cache
 
-def update_esp_contenttypes(app_config, content_type_class=ContentType, verbosity=2, **kwargs):
+def update_esp_contenttypes(app_config, content_type_class=ContentType, verbosity=2,
+                            using=DEFAULT_DB_ALIAS, **kwargs):
     """
     Removes any content type model entries in the given app that no longer have
     a matching model class, then creates content types.
@@ -95,7 +99,10 @@ def update_esp_contenttypes(app_config, content_type_class=ContentType, verbosit
                 print("Deleting stale content type '%s | %s'" % (ct.app_label, ct.model))
             ct.delete()
 
-    update_contenttypes(app, verbosity, interactive=False, **kwargs)
+    if 'interactive' in kwargs:
+        del kwargs['interactive']
+
+    update_contenttypes(app_config, verbosity, interactive=False, **kwargs)
 
 def update_all_esp_contenttypes(content_type_class=ContentType, verbosity=2, **kwargs):
     for app in get_apps():
