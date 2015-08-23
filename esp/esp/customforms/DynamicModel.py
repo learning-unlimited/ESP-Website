@@ -2,7 +2,8 @@ import re
 import os
 
 from django.db import models
-from south.db import db
+# TODO(1.8): rewrite this to not depend on south
+#from south.db import db
 from django.db.models.loading import cache
 from django.db import transaction
 from esp.customforms.models import Field

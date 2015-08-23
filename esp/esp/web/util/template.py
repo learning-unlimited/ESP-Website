@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from django.template.base import generic_tag_compiler
 from django.template import Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from esp.cache import cache_function
@@ -165,7 +166,8 @@ class InclusionTagCacheDecorator(object):
 
                     return in_self.render_given_args(args)
 
-            compile_func = partial(template.generic_tag_compiler,
+            # generic_tag_compiler is private API
+            compile_func = partial(generic_tag_compiler,
                 params=params, varargs=[], varkw={},
                 defaults=defaults, name=func.__name__,
                 takes_context=takes_context, node_class=InclusionNode)
