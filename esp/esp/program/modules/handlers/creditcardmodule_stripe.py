@@ -113,11 +113,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Check for a 'donation' line item type on this program, which we will need
         #   Note: This could also be created by default for every program,
         #   in the accounting controllers.
-        (lit, created) = LineItemType.objects.get_or_create(
-            text=self.settings['donation_text'],
-            program=self.program,
-            required=False
-        )
+        if self.settings['offer_donation']:
+            (lit, created) = LineItemType.objects.get_or_create(
+                text=self.settings['donation_text'],
+                program=self.program,
+                required=False
+            )
 
         #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
         #   and followed by a 24 character base64-encoded string.
@@ -158,8 +159,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         payment_type = iac.default_payments_lineitemtype()
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
-        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text'])
-        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
+        offer_donation = self.settings['offer_donation']
+        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text']) if offer_donation else None
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=filter(None, [payment_type, sibling_type, grant_type, donate_type])).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
         #   accepted by Stripe.
@@ -170,7 +172,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['amount_paid'] = iac.amount_paid()
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
-        donation_prefs = iac.get_preferences([donate_type,])
+        donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
