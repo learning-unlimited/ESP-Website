@@ -142,4 +142,10 @@ def DerivedField(FieldCls, getter_fn):
                     self._derived_reentrant_lock = False
             getter_fn.connect(handler)
 
+        # Make Django think we're in the FieldCls for the purpose of migrations
+        def deconstruct(self):
+            name, path, args, kwargs = super(NewCls, self).deconstruct()
+            path = "%s.%s" % (FieldCls.__module__, FieldCls.__name__)
+            return name, path, args, kwargs
+
     return NewCls

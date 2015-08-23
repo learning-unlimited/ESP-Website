@@ -49,6 +49,7 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils import timezone
 
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
@@ -1205,7 +1206,7 @@ class RegistrationProfile(models.Model):
     teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
     guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
-    last_ts = models.DateTimeField(default=datetime.now())
+    last_ts = models.DateTimeField(default=timezone.now)
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
     most_recent_profile = models.BooleanField(default=False)

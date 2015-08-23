@@ -66,22 +66,22 @@ class NavBarCategory(models.Model):
                 return categories[0]
 
         #   If all else fails, make something up.
-        return NavBarCategory.default()
+        return default_navbarcategory()
 
     from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
     
-    @classmethod
-    def default(cls):
-        """ Default navigation category.  For now, the one with the lowest ID. """
-        if not hasattr(cls, '_default'):
-            if not cls.objects.exists():
-                install()
-            cls._default = cls.objects.all().order_by('id')[0]
-        return cls._default
-    
     def __unicode__(self):
         return u'%s' % self.name
+
+def default_navbarcategory():
+    """ Default navigation category. """
+    if not hasattr(NavBarCategory, '_default'):
+        if not NavBarCategory.objects.exists():
+            install()
+        NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
+    return NavBarCategory._default
+
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
@@ -91,7 +91,7 @@ class NavBarEntry(models.Model):
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
+    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
 
     def can_edit(self, user):
         return user.isAdmin()

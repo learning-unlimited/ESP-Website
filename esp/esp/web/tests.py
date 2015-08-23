@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.web.models import NavBarEntry, NavBarCategory
+from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from django.conf import settings
@@ -173,7 +173,7 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.name = "learn:index"
         qsd_rec_new.author = self.admins[0]
-        qsd_rec_new.nav_category = NavBarCategory.default()
+        qsd_rec_new.nav_category = default_navbarcategory()
         qsd_rec_new.content = "This is the content of the test QSD page"
         qsd_rec_new.title = "Test QSD page"
         qsd_rec_new.description = ""
