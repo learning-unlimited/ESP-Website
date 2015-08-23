@@ -78,7 +78,9 @@ def default_navbarcategory():
     """ Default navigation category. """
     if not hasattr(NavBarCategory, '_default'):
         if not NavBarCategory.objects.exists():
-            install()
+            # We shouldn't need this before we've had a chance to run install()
+            # But Django was trying to call it anyway
+            return None
         NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
     return NavBarCategory._default
 
