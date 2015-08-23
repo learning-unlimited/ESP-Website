@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 import sys
 
-from south.modelsinspector import introspector
+#from south.modelsinspector import introspector
 
 def DerivedField(FieldCls, getter_fn):
     """

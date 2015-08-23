@@ -163,6 +163,14 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                  error_messages=None, show_hidden_initial=False, shadow_field_name=None,
                  *args, **kwargs):
 
+        # This is necessary to work around a bug in Django 1.8:
+        # AjaxForeignKey sets this as form_class, and since it's
+        # a ForeignKey subclass, some Django code
+        # inserts limit_choices_to into the kwargs, causing
+        # IntegerField to error when its __init__ is called
+        if 'limit_choices_to' in kwargs:
+            del kwargs['limit_choices_to']
+
         super(AjaxForeignKeyNewformField, self).__init__(*args, **kwargs)
 
         if ajax_func is None:
