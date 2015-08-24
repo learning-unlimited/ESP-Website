@@ -41,6 +41,10 @@ from django.template.loader import render_to_string
 
 from django.conf import settings
 
+
+_ONE_WEEK = timedelta(weeks=1)
+
+
 def process_messages(debug=False):
     """Go through all unprocessed messages and process them.
     
@@ -48,13 +52,17 @@ def process_messages(debug=False):
     called in more than one thread simultaneously."""
     
     now = datetime.now()
-    target_time = now + timedelta(seconds=10)
+    one_week_ago = now - _ONE_WEEK
 
     # Choose a set of messages to process.  Anything which arrives later will
-    # not be processed by this run of the script.
+    # not be processed by this run of the script. Any outstanding requests
+    # which were created over one week ago are assumed to be out-of-date, and
+    # are ignored.
     messages = MessageRequest.objects.filter(Q(processed_by__lte=now) |
                                              Q(processed_by__isnull=True),
-                                             processed=False)
+                                             created_at__gte=one_week_ago,
+                                             processed=False,
+    )
     messages = list(messages)
 
     #   Process message requests
@@ -74,6 +82,9 @@ def send_email_requests(debug=False):
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
 
+    now = datetime.now()
+    one_week_ago = now - _ONE_WEEK
+
     retries = getattr(settings, 'EMAILRETRIES', None)
     if retries is None:
         # previous code thought that settings.EMAILRETRIES might be set to None
@@ -82,9 +93,12 @@ def send_email_requests(debug=False):
         retries = 2 # i.e. 3 tries total
 
     # Choose a set of emails to process.  Anything which arrives later will
-    # not be processed by this run of the script.
-    mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=datetime.now()) |
+    # not be processed by this run of the script. Any outstanding requests
+    # which were created over one week ago are assumed to be out-of-date, and
+    # are ignored.
+    mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=now) |
                                           Q(sent_by__isnull=True),
+                                          created_at__gte=one_week_ago,
                                           sent__isnull=True,
                                           tries__lte=retries)
     mailtxts_list = list(mailtxts)
