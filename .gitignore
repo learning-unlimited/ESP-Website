@@ -27,3 +27,6 @@ vagrant/.vagrant/*
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg
 *_admin_thumbnail.png
+
+# Mac
+.DS_Store
