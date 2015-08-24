@@ -1,5 +1,5 @@
 Django==1.8.5
-pillow==2.9.0
+pillow==2.8.2
 cssutils==1.0
 django-extensions==1.5.5
 django-form-utils==1.0.2
