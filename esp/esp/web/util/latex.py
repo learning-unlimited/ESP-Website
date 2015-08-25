@@ -34,9 +34,10 @@ Learning Unlimited, Inc.
 """
 """ This module will render latex code and return a rendered display. """
 
+from contextlib import nested
 import os.path
 import os
-from subprocess import check_call, PIPE, STDOUT
+from subprocess import check_call, STDOUT
 from random import random
 from functools import partial
 import hashlib
@@ -46,6 +47,7 @@ from django.http import HttpResponse
 
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
+devnull_sentinel = object()
 
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """ Render some tex source to latex. This will run the latex
@@ -72,7 +74,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     
     return gen_latex(rendered_source, filetype)
 
-def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOUT):
+def gen_latex(texcode, type='pdf', remove_files=False, stdout=devnull_sentinel, stderr=STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -93,7 +95,7 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
         `bool`
     :param stdout:
         See subprocess.__doc__.
-        Default is PIPE, which does not print output to stdout.
+        Default is to redirect to os.devnull, which does not print output to stdout.
     :type stdout:
         `int` or `file` or `None`
     :param stderr:
@@ -107,18 +109,24 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=PIPE, stderr=STDOU
     :rtype:
         HttpResponse
     """
+    files = [stdout, stderr]
+    with nested(*(open(os.devnull, 'w') for f in files if f is devnull_sentinel)) as devnull_files:
+        for devnull_file in devnull_files:
+            files[files.index(devnull_sentinel)] = devnull_file
+        stdout, stderr = files
 
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type, remove_files=remove_files)
+
+
+def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
         return HttpResponse(texcode, mimetype='text/plain')
-    
 
     # write to the LaTeX file
-    texfile   = open(file_base+TEX_EXT, 'w')
-    texfile.write(texcode.encode('utf-8'))
-    texfile.close()
-    
+    with open(file_base+TEX_EXT, 'w') as texfile:
+        texfile.write(texcode.encode('utf-8'))
 
     file_types = ['pdf','log','tex','svg','png']
 
