@@ -34,3 +34,4 @@ Learning Unlimited, Inc.
 """
 """ This is the users module. """
 
+default_app_config = 'esp.users.apps.UsersConfig'

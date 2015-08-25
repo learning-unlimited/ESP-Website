@@ -1,433 +1,337 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
-from south.db import db
-from django.db import models
-from esp.users.models import *
+from django.db import models, migrations
+import datetime
+import esp.customforms.linkfields
+import esp.db.fields
+import django_extensions.db.fields
+import localflavor.us.models
+import django.contrib.auth.models
+import django.utils.timezone
+from django.conf import settings
 
-class Migration:
-    
-    depends_on = (
-        ("datatree", "0001_initial"),
-        ("tagdict", "0001_initial"),
-        ("cal", "0001_initial"),
-    )
-    
-    def forwards(self, orm):
-        
-        # Adding model 'TeacherInfo'
-        db.create_table('users_teacherinfo', (
-            ('id', orm['users.TeacherInfo:id']),
-            ('user', orm['users.TeacherInfo:user']),
-            ('graduation_year', orm['users.TeacherInfo:graduation_year']),
-            ('college', orm['users.TeacherInfo:college']),
-            ('major', orm['users.TeacherInfo:major']),
-            ('bio', orm['users.TeacherInfo:bio']),
-            ('shirt_size', orm['users.TeacherInfo:shirt_size']),
-            ('shirt_type', orm['users.TeacherInfo:shirt_type']),
-        ))
-        db.send_create_signal('users', ['TeacherInfo'])
-        
-        # Adding model 'UserBitImplication'
-        db.create_table('users_userbitimplication', (
-            ('id', orm['users.UserBitImplication:id']),
-            ('qsc_original', orm['users.UserBitImplication:qsc_original']),
-            ('verb_original', orm['users.UserBitImplication:verb_original']),
-            ('qsc_implied', orm['users.UserBitImplication:qsc_implied']),
-            ('verb_implied', orm['users.UserBitImplication:verb_implied']),
-            ('recursive', orm['users.UserBitImplication:recursive']),
-        ))
-        db.send_create_signal('users', ['UserBitImplication'])
 
-        # Adding model 'ZipCode'
-        db.create_table('users_zipcode', (
-            ('id', orm['users.ZipCode:id']),
-            ('zip_code', orm['users.ZipCode:zip_code']),
-            ('latitude', orm['users.ZipCode:latitude']),
-            ('longitude', orm['users.ZipCode:longitude']),
-        ))
-        db.send_create_signal('users', ['ZipCode'])
-        
-        # Adding model 'ESPUser'
-        #   Michael Price 9/22/2010: Don't do anything, the auth_user table already exists.
-        db.send_create_signal('users', ['ESPUser'])
-        
-        # Adding model 'PersistentQueryFilter'
-        db.create_table('users_persistentqueryfilter', (
-            ('id', orm['users.PersistentQueryFilter:id']),
-            ('item_model', orm['users.PersistentQueryFilter:item_model']),
-            ('q_filter', orm['users.PersistentQueryFilter:q_filter']),
-            ('sha1_hash', orm['users.PersistentQueryFilter:sha1_hash']),
-            ('create_ts', orm['users.PersistentQueryFilter:create_ts']),
-            ('useful_name', orm['users.PersistentQueryFilter:useful_name']),
-        ))
-        db.send_create_signal('users', ['PersistentQueryFilter'])
-        
-        # Adding model 'GuardianInfo'
-        db.create_table('users_guardianinfo', (
-            ('id', orm['users.GuardianInfo:id']),
-            ('user', orm['users.GuardianInfo:user']),
-            ('year_finished', orm['users.GuardianInfo:year_finished']),
-            ('num_kids', orm['users.GuardianInfo:num_kids']),
-        ))
-        db.send_create_signal('users', ['GuardianInfo'])
-        
-        # Adding model 'EducatorInfo'
-        db.create_table('users_educatorinfo', (
-            ('id', orm['users.EducatorInfo:id']),
-            ('user', orm['users.EducatorInfo:user']),
-            ('subject_taught', orm['users.EducatorInfo:subject_taught']),
-            ('grades_taught', orm['users.EducatorInfo:grades_taught']),
-            ('school', orm['users.EducatorInfo:school']),
-            ('position', orm['users.EducatorInfo:position']),
-        ))
-        db.send_create_signal('users', ['EducatorInfo'])
+class Migration(migrations.Migration):
 
-        # Adding model 'EmailPref'
-        db.create_table('users_emailpref', (
-            ('id', orm['users.EmailPref:id']),
-            ('email', orm['users.EmailPref:email']),
-            ('email_opt_in', orm['users.EmailPref:email_opt_in']),
-            ('first_name', orm['users.EmailPref:first_name']),
-            ('last_name', orm['users.EmailPref:last_name']),
-            ('sms_number', orm['users.EmailPref:sms_number']),
-            ('sms_opt_in', orm['users.EmailPref:sms_opt_in']),
-        ))
-        db.send_create_signal('users', ['EmailPref'])
-        
-        # Adding model 'PasswordRecoveryTicket'
-        db.create_table('users_passwordrecoveryticket', (
-            ('id', orm['users.PasswordRecoveryTicket:id']),
-            ('user', orm['users.PasswordRecoveryTicket:user']),
-            ('recover_key', orm['users.PasswordRecoveryTicket:recover_key']),
-            ('expire', orm['users.PasswordRecoveryTicket:expire']),
-        ))
-        db.send_create_signal('users', ['PasswordRecoveryTicket'])
-        
-        # Adding model 'ZipCodeSearches'
-        db.create_table('users_zipcodesearches', (
-            ('id', orm['users.ZipCodeSearches:id']),
-            ('zip_code', orm['users.ZipCodeSearches:zip_code']),
-            ('distance', orm['users.ZipCodeSearches:distance']),
-            ('zipcodes', orm['users.ZipCodeSearches:zipcodes']),
-        ))
-        db.send_create_signal('users', ['ZipCodeSearches'])
-        
-        # Adding model 'UserBit'
-        db.create_table('users_userbit', (
-            ('id', orm['users.UserBit:id']),
-            ('user', orm['users.UserBit:user']),
-            ('qsc', orm['users.UserBit:qsc']),
-            ('verb', orm['users.UserBit:verb']),
-            ('startdate', orm['users.UserBit:startdate']),
-            ('enddate', orm['users.UserBit:enddate']),
-            ('recursive', orm['users.UserBit:recursive']),
-        ))
-        db.send_create_signal('users', ['UserBit'])
-        
-        # Adding model 'ESPUser_Profile'
-        db.create_table('users_espuser_profile', (
-            ('id', orm['users.ESPUser_Profile:id']),
-            ('user', orm['users.ESPUser_Profile:user']),
-        ))
-        db.send_create_signal('users', ['ESPUser_Profile'])
-        
-        # Adding model 'StudentInfo'
-        db.create_table('users_studentinfo', (
-            ('id', orm['users.StudentInfo:id']),
-            ('user', orm['users.StudentInfo:user']),
-            ('graduation_year', orm['users.StudentInfo:graduation_year']),
-            ('school', orm['users.StudentInfo:school']),
-            ('dob', orm['users.StudentInfo:dob']),
-            ('studentrep', orm['users.StudentInfo:studentrep']),
-            ('studentrep_expl', orm['users.StudentInfo:studentrep_expl']),
-            ('heardofesp', orm['users.StudentInfo:heardofesp']),
-        ))
-        db.send_create_signal('users', ['StudentInfo'])
-        
-        # Adding model 'K12School'
-        db.create_table('users_k12school', (
-            ('id', orm['users.K12School:id']),
-            ('contact', orm['users.K12School:contact']),
-            ('school_type', orm['users.K12School:school_type']),
-            ('grades', orm['users.K12School:grades']),
-            ('school_id', orm['users.K12School:school_id']),
-            ('contact_title', orm['users.K12School:contact_title']),
-            ('name', orm['users.K12School:name']),
-        ))
-        db.send_create_signal('users', ['K12School'])
-        
-        # Adding model 'UserAvailability'
-        db.create_table('users_useravailability', (
-            ('id', orm['users.UserAvailability:id']),
-            ('user', orm['users.UserAvailability:user']),
-            ('event', orm['users.UserAvailability:event']),
-            ('role', orm['users.UserAvailability:role']),
-            ('priority', orm['users.UserAvailability:priority']),
-        ))
-        db.send_create_signal('users', ['UserAvailability'])
-        
-        # Adding model 'ContactInfo'
-        db.create_table('users_contactinfo', (
-            ('id', orm['users.ContactInfo:id']),
-            ('user', orm['users.ContactInfo:user']),
-            ('first_name', orm['users.ContactInfo:first_name']),
-            ('last_name', orm['users.ContactInfo:last_name']),
-            ('e_mail', orm['users.ContactInfo:e_mail']),
-            ('phone_day', orm['users.ContactInfo:phone_day']),
-            ('phone_cell', orm['users.ContactInfo:phone_cell']),
-            ('phone_even', orm['users.ContactInfo:phone_even']),
-            ('address_street', orm['users.ContactInfo:address_street']),
-            ('address_city', orm['users.ContactInfo:address_city']),
-            ('address_state', orm['users.ContactInfo:address_state']),
-            ('address_zip', orm['users.ContactInfo:address_zip']),
-            ('address_postal', orm['users.ContactInfo:address_postal']),
-            ('undeliverable', orm['users.ContactInfo:undeliverable']),
-        ))
-        db.send_create_signal('users', ['ContactInfo'])
-        
-        # Adding ManyToManyField 'UserBitImplication.created_bits'
-        db.create_table('users_userbitimplication_created_bits', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('userbitimplication', models.ForeignKey(orm.UserBitImplication, null=False)),
-            ('userbit', models.ForeignKey(orm.UserBit, null=False))
-        ))
-    
-    def backwards(self, orm):
-        
-        # Deleting model 'TeacherInfo'
-        db.delete_table('users_teacherinfo')
-        
-        # Deleting model 'UserBitImplication'
-        db.delete_table('users_userbitimplication')
-        
-        # Deleting model 'ZipCode'
-        db.delete_table('users_zipcode')
-        
-        # Deleting model 'ESPUser'
-        db.delete_table('auth_user')
-        
-        # Deleting model 'PersistentQueryFilter'
-        db.delete_table('users_persistentqueryfilter')
-        
-        # Deleting model 'GuardianInfo'
-        db.delete_table('users_guardianinfo')
-        
-        # Deleting model 'EducatorInfo'
-        db.delete_table('users_educatorinfo')
-        
-        # Deleting model 'EmailPref'
-        db.delete_table('users_emailpref')
-        
-        # Deleting model 'PasswordRecoveryTicket'
-        db.delete_table('users_passwordrecoveryticket')
-        
-        # Deleting model 'ZipCodeSearches'
-        db.delete_table('users_zipcodesearches')
-        
-        # Deleting model 'UserBit'
-        db.delete_table('users_userbit')
-        
-        # Deleting model 'ESPUser_Profile'
-        db.delete_table('users_espuser_profile')
-        
-        # Deleting model 'StudentInfo'
-        db.delete_table('users_studentinfo')
-        
-        # Deleting model 'K12School'
-        db.delete_table('users_k12school')
-        
-        # Deleting model 'UserAvailability'
-        db.delete_table('users_useravailability')
-        
-        # Deleting model 'ContactInfo'
-        db.delete_table('users_contactinfo')
-        
-    
-    
-    models = {
-        'auth.group': {
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '80'}),
-            'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
-        },
-        'auth.permission': {
-            'Meta': {'unique_together': "(('content_type', 'codename'),)"},
-            'codename': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '50'})
-        },
-        'auth.user': {
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
-        },
-        'cal.event': {
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
-            'description': ('django.db.models.fields.TextField', [], {}),
-            'end': ('django.db.models.fields.DateTimeField', [], {}),
-            'event_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.EventType']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'priority': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'short_description': ('django.db.models.fields.TextField', [], {}),
-            'start': ('django.db.models.fields.DateTimeField', [], {})
-        },
-        'cal.eventtype': {
-            'description': ('django.db.models.fields.TextField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
-        },
-        'contenttypes.contenttype': {
-            'Meta': {'unique_together': "(('app_label', 'model'),)", 'db_table': "'django_content_type'"},
-            'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '100'})
-        },
-        'datatree.datatree': {
-            'Meta': {'unique_together': "(('name', 'parent'),)"},
-            'friendly_name': ('django.db.models.fields.TextField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'lock_table': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'parent': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'child_set'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'range_correct': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'rangeend': ('django.db.models.fields.IntegerField', [], {}),
-            'rangestart': ('django.db.models.fields.IntegerField', [], {}),
-            'uri': ('django.db.models.fields.CharField', [], {'max_length': '1024'}),
-            'uri_correct': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
-        },
-        'users.contactinfo': {
-            'address_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
-            'address_postal': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'address_state': ('localflavor.us.models.USStateField', [], {}),
-            'address_street': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
-            'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
-            'e_mail': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'phone_cell': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_day': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_even': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
-        'users.educatorinfo': {
-            'grades_taught': ('django.db.models.fields.CharField', [], {'max_length': '16', 'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'position': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
-            'school': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
-            'subject_taught': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
-        'users.emailpref': {
-            'email': ('django.db.models.fields.EmailField', [], {'max_length': '64', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
-            'email_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'sms_number': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'sms_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
-        },
-        'users.espuser_profile': {
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'unique': 'True'})
-        },
-        'users.guardianinfo': {
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'num_kids': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
-            'year_finished': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'})
-        },
-        'users.k12school': {
-            'contact': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.ContactInfo']", 'null': 'True', 'blank': 'True'}),
-            'contact_title': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'grades': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'school_id': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
-            'school_type': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
-        },
-        'users.passwordrecoveryticket': {
-            'expire': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'recover_key': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
-        },
-        'users.persistentqueryfilter': {
-            'create_ts': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'item_model': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
-            'q_filter': ('django.db.models.fields.TextField', [], {}),
-            'sha1_hash': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
-            'useful_name': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'null': 'True', 'blank': 'True'})
-        },
-        'users.studentinfo': {
-            'dob': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
-            'graduation_year': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'heardofesp': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'school': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
-            'studentrep': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'studentrep_expl': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
-        'users.teacherinfo': {
-            'bio': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'college': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
-            'graduation_year': ('django.db.models.fields.CharField', [], {'max_length': '4', 'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'major': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
-            'shirt_size': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
-            'shirt_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
-        'users.useravailability': {
-            'event': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.Event']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'priority': ('django.db.models.fields.DecimalField', [], {'default': "'1.0'", 'max_digits': '3', 'decimal_places': '2'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
-        },
-        'users.userbit': {
-            'enddate': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(9999, 1, 1, 0, 0)', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'qsc': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'userbit_qsc'", 'to': "orm['datatree.DataTree']"}),
-            'recursive': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'startdate': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'}),
-            'verb': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'userbit_verb'", 'to': "orm['datatree.DataTree']"})
-        },
-        'users.userbitimplication': {
-            'created_bits': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'to': "orm['users.UserBit']", 'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'qsc_implied': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'qsc_implied'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'qsc_original': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'qsc_original'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'recursive': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'verb_implied': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'verb_implied'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'verb_original': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'verb_original'", 'null': 'True', 'to': "orm['datatree.DataTree']"})
-        },
-        'users.zipcode': {
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'latitude': ('django.db.models.fields.DecimalField', [], {'max_digits': '10', 'decimal_places': '6'}),
-            'longitude': ('django.db.models.fields.DecimalField', [], {'max_digits': '10', 'decimal_places': '6'}),
-            'zip_code': ('django.db.models.fields.CharField', [], {'max_length': '5'})
-        },
-        'users.zipcodesearches': {
-            'distance': ('django.db.models.fields.DecimalField', [], {'max_digits': '15', 'decimal_places': '3'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'zip_code': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.ZipCode']"}),
-            'zipcodes': ('django.db.models.fields.TextField', [], {})
-        }
-    }
-    
-    complete_apps = ['users']
+    dependencies = [
+        ('cal', '0002_event_program'),
+        ('program', '0001_initial'),
+        ('auth', '0006_require_contenttypes_0002'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='ContactInfo',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('first_name', models.CharField(max_length=64)),
+                ('last_name', models.CharField(max_length=64)),
+                ('e_mail', models.EmailField(max_length=75, null=True, verbose_name=b'E-mail address', blank=True)),
+                ('phone_day', localflavor.us.models.PhoneNumberField(max_length=20, null=True, verbose_name=b'Home phone', blank=True)),
+                ('phone_cell', localflavor.us.models.PhoneNumberField(max_length=20, null=True, verbose_name=b'Cell phone', blank=True)),
+                ('receive_txt_message', models.BooleanField(default=False)),
+                ('phone_even', localflavor.us.models.PhoneNumberField(max_length=20, null=True, verbose_name=b'Alternate phone', blank=True)),
+                ('address_street', models.CharField(max_length=100, null=True, verbose_name=b'Street address', blank=True)),
+                ('address_city', models.CharField(max_length=50, null=True, verbose_name=b'City', blank=True)),
+                ('address_state', localflavor.us.models.USStateField(blank=True, max_length=2, null=True, verbose_name=b'State', choices=[(b'AL', b'Alabama'), (b'AK', b'Alaska'), (b'AS', b'American Samoa'), (b'AZ', b'Arizona'), (b'AR', b'Arkansas'), (b'AA', b'Armed Forces Americas'), (b'AE', b'Armed Forces Europe'), (b'AP', b'Armed Forces Pacific'), (b'CA', b'California'), (b'CO', b'Colorado'), (b'CT', b'Connecticut'), (b'DE', b'Delaware'), (b'DC', b'District of Columbia'), (b'FL', b'Florida'), (b'GA', b'Georgia'), (b'GU', b'Guam'), (b'HI', b'Hawaii'), (b'ID', b'Idaho'), (b'IL', b'Illinois'), (b'IN', b'Indiana'), (b'IA', b'Iowa'), (b'KS', b'Kansas'), (b'KY', b'Kentucky'), (b'LA', b'Louisiana'), (b'ME', b'Maine'), (b'MD', b'Maryland'), (b'MA', b'Massachusetts'), (b'MI', b'Michigan'), (b'MN', b'Minnesota'), (b'MS', b'Mississippi'), (b'MO', b'Missouri'), (b'MT', b'Montana'), (b'NE', b'Nebraska'), (b'NV', b'Nevada'), (b'NH', b'New Hampshire'), (b'NJ', b'New Jersey'), (b'NM', b'New Mexico'), (b'NY', b'New York'), (b'NC', b'North Carolina'), (b'ND', b'North Dakota'), (b'MP', b'Northern Mariana Islands'), (b'OH', b'Ohio'), (b'OK', b'Oklahoma'), (b'OR', b'Oregon'), (b'PA', b'Pennsylvania'), (b'PR', b'Puerto Rico'), (b'RI', b'Rhode Island'), (b'SC', b'South Carolina'), (b'SD', b'South Dakota'), (b'TN', b'Tennessee'), (b'TX', b'Texas'), (b'UT', b'Utah'), (b'VT', b'Vermont'), (b'VI', b'Virgin Islands'), (b'VA', b'Virginia'), (b'WA', b'Washington'), (b'WV', b'West Virginia'), (b'WI', b'Wisconsin'), (b'WY', b'Wyoming')])),
+                ('address_zip', models.CharField(max_length=5, null=True, verbose_name=b'Zip code', blank=True)),
+                ('address_postal', models.TextField(null=True, blank=True)),
+                ('undeliverable', models.BooleanField(default=False)),
+            ],
+            options={
+                'db_table': 'users_contactinfo',
+            },
+            bases=(models.Model, esp.customforms.linkfields.CustomFormsLinkModel),
+        ),
+        migrations.CreateModel(
+            name='EducatorInfo',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('subject_taught', models.CharField(max_length=64, null=True, blank=True)),
+                ('grades_taught', models.CharField(max_length=16, null=True, blank=True)),
+                ('school', models.CharField(max_length=128, null=True, blank=True)),
+                ('position', models.CharField(max_length=64, null=True, blank=True)),
+            ],
+            options={
+                'db_table': 'users_educatorinfo',
+            },
+        ),
+        migrations.CreateModel(
+            name='EmailPref',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('email', models.EmailField(max_length=64, unique=True, null=True, blank=True)),
+                ('email_opt_in', models.BooleanField(default=True)),
+                ('first_name', models.CharField(max_length=64)),
+                ('last_name', models.CharField(max_length=64)),
+                ('sms_number', localflavor.us.models.PhoneNumberField(max_length=20, null=True, blank=True)),
+                ('sms_opt_in', models.BooleanField(default=False)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ESPUser_Profile',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+            ],
+            options={
+                'db_table': 'users_espuser_profile',
+            },
+        ),
+        migrations.CreateModel(
+            name='GradeChangeRequest',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('created', django_extensions.db.fields.CreationDateTimeField(default=django.utils.timezone.now, verbose_name='created', editable=False, blank=True)),
+                ('modified', django_extensions.db.fields.ModificationDateTimeField(default=django.utils.timezone.now, verbose_name='modified', editable=False, blank=True)),
+                ('claimed_grade', models.PositiveIntegerField()),
+                ('grade_before_request', models.PositiveIntegerField()),
+                ('reason', models.TextField()),
+                ('approved', models.NullBooleanField()),
+                ('acknowledged_time', models.DateTimeField(null=True, blank=True)),
+            ],
+            options={
+                'ordering': ['-acknowledged_time', '-created'],
+            },
+        ),
+        migrations.CreateModel(
+            name='GuardianInfo',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('year_finished', models.PositiveIntegerField(null=True, blank=True)),
+                ('num_kids', models.PositiveIntegerField(null=True, blank=True)),
+            ],
+            options={
+                'db_table': 'users_guardianinfo',
+            },
+        ),
+        migrations.CreateModel(
+            name='K12School',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('school_type', models.TextField(help_text=b'i.e. Public, Private, Charter, Magnet, ...', null=True, blank=True)),
+                ('grades', models.TextField(help_text=b'i.e. "PK, K, 1, 2, 3"', null=True, blank=True)),
+                ('school_id', models.CharField(help_text=b'An 8-digit ID number.', max_length=128, null=True, blank=True)),
+                ('contact_title', models.TextField(null=True, blank=True)),
+                ('name', models.TextField(null=True, blank=True)),
+                ('contact', esp.db.fields.AjaxForeignKey(blank=True, to='users.ContactInfo', help_text=b'A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.', null=True)),
+            ],
+            options={
+                'db_table': 'users_k12school',
+            },
+        ),
+        migrations.CreateModel(
+            name='PasswordRecoveryTicket',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('recover_key', models.CharField(max_length=30)),
+                ('expire', models.DateTimeField(null=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Permission',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('start_date', models.DateTimeField(default=datetime.datetime.now, help_text=b'If blank, has always started.', null=True, blank=True)),
+                ('end_date', models.DateTimeField(default=None, help_text=b'If blank, never ends.', null=True, blank=True)),
+                ('permission_type', models.CharField(max_length=80, choices=[(b'Administer', b'Full administrative permissions'), (b'View', b'Able to view a program'), (b'Onsite', b'Access to onsite interfaces'), (b'GradeOverride', b'Ignore grade ranges for studentreg'), (b'Student Deadlines', ((b'Student', b'Basic student access'), (b'Student/OverrideFull', b'Register for a full program'), (b'Student/All', b'All student deadlines'), (b'Student/Applications', b'Apply for classes'), (b'Student/Catalog', b'View the catalog'), (b'Student/Classes', b'Classes'), (b'Student/Classes/OneClass', b'Classes/OneClass'), (b'Student/Classes/Lottery', b'Enter the lottery'), (b'Student/Classes/Lottery/View', b'View lottery results'), (b'Student/ExtraCosts', b'Extra costs page'), (b'Student/MainPage', b'Registration mainpage'), (b'Student/Confirm', b'Confirm registration'), (b'Student/Cancel', b'Cancel registration'), (b'Student/Payment', b'Pay for a program'), (b'Student/Profile', b'Set profile info'), (b'Student/Survey', b'Access to survey'), (b'Student/FormstackMedliab', b'Access to Formstack medical and liability form'), (b'Student/Finaid', b'Access to financial aid application'))), (b'Teacher Deadlines', ((b'Teacher', b'Basic teacher access'), (b'Teacher/All', b'All teacher deadlines'), (b'Teacher/Acknowledgement', b'Teacher acknowledgement'), (b'Teacher/AppReview', b"Review students' apps"), (b'Teacher/Availability', b'Set availability'), (b'Teacher/Catalog', b'Catalog'), (b'Teacher/Classes', b'Classes'), (b'Teacher/Classes/All', b'Classes/All'), (b'Teacher/Classes/View', b'Classes/View'), (b'Teacher/Classes/Edit', b'Classes/Edit'), (b'Teacher/Classes/Create', b'Create classes of all types'), (b'Teacher/Classes/Create/Class', b'Create standard classes'), (b'Teacher/Classes/Create/OpenClass', b'Create open classes'), (b'Teacher/Classes/SelectStudents', b'Classes/SelectStudents'), (b'Teacher/Events', b'Teacher training signup'), (b'Teacher/Quiz', b'Teacher quiz'), (b'Teacher/MainPage', b'Registration mainpage'), (b'Teacher/Survey', b'Teacher Survey'), (b'Teacher/Profile', b'Set profile info'), (b'Teacher/Survey', b'Access to survey')))])),
+                ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
+                ('role', models.ForeignKey(blank=True, to='auth.Group', help_text=b'Apply this permission to an entire user role (can be blank).', null=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='PersistentQueryFilter',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('item_model', models.CharField(max_length=256)),
+                ('q_filter', models.TextField()),
+                ('sha1_hash', models.CharField(max_length=256)),
+                ('create_ts', models.DateTimeField(auto_now_add=True)),
+                ('useful_name', models.CharField(max_length=1024, null=True, blank=True)),
+            ],
+            options={
+                'db_table': 'users_persistentqueryfilter',
+            },
+        ),
+        migrations.CreateModel(
+            name='Record',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('event', models.CharField(max_length=80, choices=[(b'student_survey', b'Completed student survey'), (b'teacher_survey', b'Completed teacher survey'), (b'reg_confirmed', b'Confirmed registration'), (b'attended', b'Attended program'), (b'conf_email', b'Was sent confirmation email'), (b'teacher_quiz_done', b'Completed teacher quiz'), (b'paid', b'Paid for program'), (b'med', b'Submitted medical form'), (b'med_bypass', b'Recieved medical bypass'), (b'liab', b'Submitted liability form'), (b'onsite', b'Registered for program on-site'), (b'schedule_printed', b'Printed student schedule on-site'), (b'teacheracknowledgement', b'Did teacher acknowledgement'), (b'lunch_selected', b'Selected a lunch block'), (b'extra_form_done', b'Filled out Custom Form'), (b'extra_costs_done', b'Filled out Student Extra Costs Form'), (b'donation_done', b'Filled out Donation Form'), (b'waitlist', b'Waitlisted for a program'), (b'interview', b'Teacher-interviewed for a program'), (b'teacher_training', b'Attended teacher-training for a program'), (b'teacher_checked_in', b'Teacher checked in for teaching on the day of the program'), (b'twophase_reg_done', b'Completed two-phase registration')])),
+                ('time', models.DateTimeField(default=datetime.datetime.now, blank=True)),
+                ('program', models.ForeignKey(blank=True, to='program.Program', null=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='StudentInfo',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('graduation_year', models.PositiveIntegerField(null=True, blank=True)),
+                ('school', models.CharField(max_length=256, null=True, blank=True)),
+                ('dob', models.DateField(null=True, blank=True)),
+                ('gender', models.CharField(max_length=32, null=True, blank=True)),
+                ('studentrep', models.BooleanField(default=False)),
+                ('studentrep_expl', models.TextField(null=True, blank=True)),
+                ('heard_about', models.TextField(null=True, blank=True)),
+                ('food_preference', models.CharField(max_length=256, null=True, blank=True)),
+                ('shirt_size', models.CharField(blank=True, max_length=5, null=True, choices=[(b'14/16', b'14/16 (XS)'), (b'S', b'S'), (b'M', b'M'), (b'L', b'L'), (b'XL', b'XL'), (b'XXL', b'XXL')])),
+                ('shirt_type', models.CharField(blank=True, max_length=20, null=True, choices=[(b'M', b'Plain'), (b'F', b'Fitted (for women)')])),
+                ('medical_needs', models.TextField(null=True, blank=True)),
+                ('schoolsystem_id', models.CharField(max_length=32, null=True, blank=True)),
+                ('schoolsystem_optout', models.BooleanField(default=False)),
+                ('post_hs', models.TextField(default=b'', blank=True)),
+                ('transportation', models.TextField(default=b'', blank=True)),
+                ('k12school', esp.db.fields.AjaxForeignKey(blank=True, to='users.K12School', help_text=b'Begin to type your school name and select your school if it comes up.', null=True)),
+            ],
+            options={
+                'db_table': 'users_studentinfo',
+            },
+        ),
+        migrations.CreateModel(
+            name='TeacherInfo',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('graduation_year', models.CharField(max_length=4, null=True, blank=True)),
+                ('from_here', models.NullBooleanField()),
+                ('is_graduate_student', models.NullBooleanField()),
+                ('college', models.CharField(max_length=128, null=True, blank=True)),
+                ('major', models.CharField(max_length=32, null=True, blank=True)),
+                ('bio', models.TextField(null=True, blank=True)),
+                ('shirt_size', models.CharField(blank=True, max_length=5, null=True, choices=[(b'14/16', b'14/16 (XS)'), (b'S', b'S'), (b'M', b'M'), (b'L', b'L'), (b'XL', b'XL'), (b'XXL', b'XXL')])),
+                ('shirt_type', models.CharField(blank=True, max_length=20, null=True, choices=[(b'M', b'Plain'), (b'F', b'Fitted (for women)')])),
+                ('full_legal_name', models.CharField(max_length=128, null=True, blank=True)),
+                ('university_email', models.EmailField(max_length=75, null=True, blank=True)),
+                ('student_id', models.CharField(max_length=128, null=True, blank=True)),
+                ('mail_reimbursement', models.NullBooleanField()),
+            ],
+            bases=(models.Model, esp.customforms.linkfields.CustomFormsLinkModel),
+        ),
+        migrations.CreateModel(
+            name='UserAvailability',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('priority', models.DecimalField(default=b'1.0', max_digits=3, decimal_places=2)),
+                ('event', models.ForeignKey(to='cal.Event')),
+                ('role', models.ForeignKey(to='auth.Group')),
+            ],
+            options={
+                'db_table': 'users_useravailability',
+            },
+        ),
+        migrations.CreateModel(
+            name='UserForwarder',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ZipCode',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('zip_code', models.CharField(max_length=5)),
+                ('latitude', models.DecimalField(max_digits=10, decimal_places=6)),
+                ('longitude', models.DecimalField(max_digits=10, decimal_places=6)),
+            ],
+            options={
+                'db_table': 'users_zipcode',
+            },
+        ),
+        migrations.CreateModel(
+            name='ZipCodeSearches',
+            fields=[
+                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
+                ('distance', models.DecimalField(max_digits=15, decimal_places=3)),
+                ('zipcodes', models.TextField()),
+                ('zip_code', models.ForeignKey(to='users.ZipCode')),
+            ],
+            options={
+                'db_table': 'users_zipcodesearches',
+            },
+        ),
+        migrations.CreateModel(
+            name='ESPUser',
+            fields=[
+            ],
+            options={
+                'verbose_name': 'ESP User',
+                'proxy': True,
+            },
+            bases=('auth.user', django.contrib.auth.models.AnonymousUser),
+        ),
+        migrations.AddField(
+            model_name='userforwarder',
+            name='source',
+            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_out', to='users.ESPUser', unique=True),
+        ),
+        migrations.AddField(
+            model_name='userforwarder',
+            name='target',
+            field=esp.db.fields.AjaxForeignKey(related_name='forwarders_in', to='users.ESPUser'),
+        ),
+        migrations.AddField(
+            model_name='useravailability',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser'),
+        ),
+        migrations.AddField(
+            model_name='teacherinfo',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True),
+        ),
+        migrations.AddField(
+            model_name='studentinfo',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+        ),
+        migrations.AddField(
+            model_name='record',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+        ),
+        migrations.AddField(
+            model_name='permission',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', help_text=b'Blank does NOT mean apply to everyone, use role-based permissions for that.', null=True),
+        ),
+        migrations.AddField(
+            model_name='passwordrecoveryticket',
+            name='user',
+            field=models.ForeignKey(to=settings.AUTH_USER_MODEL),
+        ),
+        migrations.AddField(
+            model_name='guardianinfo',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+        ),
+        migrations.AddField(
+            model_name='gradechangerequest',
+            name='acknowledged_by',
+            field=models.ForeignKey(blank=True, to='users.ESPUser', null=True),
+        ),
+        migrations.AddField(
+            model_name='gradechangerequest',
+            name='requesting_student',
+            field=models.ForeignKey(related_name='requesting_student_set', to='users.ESPUser'),
+        ),
+        migrations.AddField(
+            model_name='espuser_profile',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(to='users.ESPUser', unique=True),
+        ),
+        migrations.AddField(
+            model_name='educatorinfo',
+            name='k12school',
+            field=models.ForeignKey(blank=True, to='users.K12School', null=True),
+        ),
+        migrations.AddField(
+            model_name='educatorinfo',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True),
+        ),
+        migrations.AddField(
+            model_name='contactinfo',
+            name='user',
+            field=esp.db.fields.AjaxForeignKey(blank=True, to=settings.AUTH_USER_MODEL, null=True),
+        ),
+    ]

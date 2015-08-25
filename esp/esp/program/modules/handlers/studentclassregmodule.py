@@ -476,7 +476,7 @@ class StudentClassRegModule(ProgramModuleObj):
         try:
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if 'no_schedule' in request.POST:
-                resp = HttpResponse(mimetype='application/json')
+                resp = HttpResponse(content_type='application/json')
                 json.dump({'status': success}, resp)
                 return resp
             if success:
@@ -606,7 +606,7 @@ class StudentClassRegModule(ProgramModuleObj):
         # using .extra() to select all the category text simultaneously
         timeslots = self.program.getTimeSlots()
 
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         
         json.dump(list(timeslots), resp, default=json_encode)
         
@@ -620,7 +620,7 @@ class StudentClassRegModule(ProgramModuleObj):
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)        
         
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         
         json.dump(list(classes), resp, default=json_encode)
         
@@ -637,13 +637,13 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             verb_list = [ signup_verb_uri ]
 
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         json.dump(verb_list, resp)
         return resp
 
     def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         clean_counts = prog.student_counts_by_section_id()
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         json.dump(clean_counts, resp)
         return resp
 
@@ -660,7 +660,7 @@ class StudentClassRegModule(ProgramModuleObj):
               }
             for b in reg_bits ]
         
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         json.dump(reg_bits_data, resp)
         return resp
     
@@ -750,7 +750,7 @@ class StudentClassRegModule(ProgramModuleObj):
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
 
         if 'no_schedule' in request.POST:
-            resp = HttpResponse(mimetype='application/json')
+            resp = HttpResponse(content_type='application/json')
             json.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
             return resp
         

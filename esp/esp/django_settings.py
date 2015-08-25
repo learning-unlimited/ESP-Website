@@ -196,9 +196,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'grappelli',
     'filebrowser',
-    'django.contrib.admin',
+    'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
-    'esp.datatree',
     'esp.users',
     'esp.miniblog',
     'esp.web',
@@ -212,19 +211,15 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.survey',
     'esp.accounting',
-    'esp.accounting_core',
-    'esp.accounting_docs',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
-    'esp.cache_loader',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
     'django_extensions',
     'reversion',
-    'south',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
@@ -267,8 +262,6 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
 
 # no i18n
 USE_I18N = False
-
-AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
 
@@ -373,13 +366,8 @@ SHELL_PLUS_POST_IMPORTS = (
 
 #   Set test runner to behave like pre-1.6 versions of Django
 #   Exclude apps from testing
-TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
+#TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
-
-SKIP_SOUTH_TESTS = True
-SOUTH_TESTS_MIGRATE = False
-SOUTH_AUTO_FREEZE_APP = True
-SOUTH_USE_PYC = False
 
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None

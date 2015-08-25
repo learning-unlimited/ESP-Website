@@ -312,7 +312,6 @@ USE_PROFILER = False
 DEFAULT_CACHE_TIMEOUT = 120
 DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_ENGINE = 'esp.db.prepared'
-SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'

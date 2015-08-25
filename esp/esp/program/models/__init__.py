@@ -49,6 +49,7 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils import timezone
 
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
@@ -255,9 +256,9 @@ class Program(models.Model, CustomFormsLinkModel):
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.EmailField() # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
+    director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
+    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
@@ -1205,7 +1206,7 @@ class RegistrationProfile(models.Model):
     teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
     guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
-    last_ts = models.DateTimeField(default=datetime.now())
+    last_ts = models.DateTimeField(default=timezone.now)
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
     most_recent_profile = models.BooleanField(default=False)
@@ -1784,7 +1785,7 @@ class VolunteerOffer(models.Model):
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     
     #   ...or this if you haven't.
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True, max_length=75)
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
     

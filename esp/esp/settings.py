@@ -113,5 +113,3 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 # that set a cookie on the top-level domain
 # NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
-
-SKIP_SOUTH_TESTS = True # To disable South's own unit tests

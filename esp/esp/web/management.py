@@ -34,18 +34,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.apps import apps
+from django.db import DEFAULT_DB_ALIAS, router
 from django.db.models import signals, get_apps, get_models
+from django.utils import six
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.management import update_contenttypes
 from esp.web import models as web
 from esp.utils.custom_cache import custom_cache
 
-def post_syncdb(sender, app, **kwargs):
-    if app == web:
-        with custom_cache():
-            web.install()
-
-def update_esp_contenttypes(app, created_models, content_type_class=ContentType, verbosity=2, **kwargs):
+def update_esp_contenttypes(app_config, content_type_class=ContentType, verbosity=2,
+                            using=DEFAULT_DB_ALIAS, **kwargs):
     """
     Removes any content type model entries in the given app that no longer have
     a matching model class, then creates content types.
@@ -58,39 +57,56 @@ def update_esp_contenttypes(app, created_models, content_type_class=ContentType,
 
     The content_type_class defaults to ContentType, but allows a frozen ORM to
     be passed in for use during a migration.
+
+    Re-copied for Django 1.8 updates
     """
-    app_models = get_models(app)
+    if not app_config.models_module:
+        return
+
+    try:
+        ContentType = apps.get_model('contenttypes', 'ContentType')
+    except LookupError:
+        return
+
+    if not router.allow_migrate_model(using, ContentType):
+        return
+
+    ContentType.objects.clear_cache()
+
+    app_label = app_config.label
+
+    app_models = {
+        model._meta.model_name: model
+        for model in app_config.get_models()}
+
     if not app_models:
         return
-    # They all have the same app_label, get the first one.
-    app_label = app_models[0]._meta.app_label
-    app_models = dict(
-        (model._meta.object_name.lower(), model)
-        for model in app_models
-    )
+
     # Get all the content types
-    content_types = dict(
-        (ct.model, ct)
-        for ct in content_type_class.objects.filter(app_label=app_label)
-    )
+    content_types = {
+        ct.model: ct
+        for ct in ContentType.objects.using(using).filter(app_label=app_label)
+    }
     to_remove = [
         ct
-        for (model_name, ct) in content_types.iteritems()
+        for (model_name, ct) in six.iteritems(content_types)
         if model_name not in app_models
     ]
 
     if to_remove:
         for ct in to_remove:
             if verbosity >= 2:
-                print "Deleting stale content type '%s | %s'" % (ct.app_label, ct.model)
+                print("Deleting stale content type '%s | %s'" % (ct.app_label, ct.model))
             ct.delete()
 
-    update_contenttypes(app, created_models, verbosity, **kwargs)
+    if 'interactive' in kwargs:
+        del kwargs['interactive']
+
+    update_contenttypes(app_config, verbosity, interactive=False, **kwargs)
 
 def update_all_esp_contenttypes(content_type_class=ContentType, verbosity=2, **kwargs):
     for app in get_apps():
         update_esp_contenttypes(app, None, content_type_class, verbosity, **kwargs)
 
-signals.post_syncdb.connect(post_syncdb)
-signals.post_syncdb.connect(update_esp_contenttypes)
+signals.post_migrate.connect(update_esp_contenttypes)
 

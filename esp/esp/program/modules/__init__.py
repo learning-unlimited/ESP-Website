@@ -33,3 +33,4 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+default_app_config = 'esp.program.modules.apps.ModulesConfig'
