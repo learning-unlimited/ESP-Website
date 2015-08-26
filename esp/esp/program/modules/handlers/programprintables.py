@@ -50,6 +50,7 @@ from django.conf import settings
 from django.template.loader import select_template, render_to_string
 from django.utils.encoding import smart_str
 
+from datetime import datetime
 from decimal import Decimal
 import simplejson as json
 
@@ -892,6 +893,12 @@ Volunteer schedule for %s:
  
         scheditems = []
         
+        studentschedule_show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        timeslots = list(prog.getTimeSlots())
+        times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
+        for t in times_compulsory:
+            t.friendly_times = [t.pretty_time()]
+            t.initial_rooms = []
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -900,10 +907,10 @@ Volunteer schedule for %s:
             # now we sort them by time/title
             classes.sort()
 
-            if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
+            if studentschedule_show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
-                times = list(prog.getTimeSlots())
+                times = list(timeslots)
                 for cls in classes:
                     time_indices = []
                     index = 0
@@ -916,10 +923,7 @@ Volunteer schedule for %s:
 
             #   Insert entries for the compulsory timeblocks into the schedule
             min_index = 0
-            times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
-                t.friendly_times = [t.pretty_time()]
-                t.initial_rooms = []
                 
                 i = min_index
                 while i < len(classes):
@@ -938,15 +942,16 @@ Volunteer schedule for %s:
             student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
             student.admission = iac.get_transfers(required_only=True)  # Program admission
             student.paid_online = iac.has_paid()
-            student.amount_finaid = iac.amount_finaid()
             student.amount_siblingdiscount = iac.amount_siblingdiscount()
+            amt_request = iac.amount_requested()
+            student.amount_finaid = iac.amount_finaid(amt_request, student.amount_siblingdiscount)
             student.itemizedcosttotal = iac.amount_due()
             student.splashinfo = SplashInfo.getForUser(student, prog)
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
             student.classes = classes
-            
+
         context['students'] = students
         context['program'] = prog
 
