@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 """ This module will render latex code and return a rendered display. """
 
-from contextlib import nested
 import os.path
 import os
 from subprocess import check_call, STDOUT
@@ -47,7 +46,7 @@ from django.http import HttpResponse
 
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
-devnull_sentinel = object()
+_devnull_sentinel = object()
 
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """ Render some tex source to latex. This will run the latex
@@ -74,7 +73,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     
     return gen_latex(rendered_source, filetype)
 
-def gen_latex(texcode, type='pdf', remove_files=False, stdout=devnull_sentinel, stderr=STDOUT):
+def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -103,17 +102,19 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=devnull_sentinel, 
         Default is STDOUT, which directs output to the same place that is
         specified by the stdout param.
     :type stderr:
-        `int`
+        `int` or `file` or `None`
     :return:
         The generated file.
     :rtype:
         HttpResponse
     """
-    files = [stdout, stderr]
-    with nested(*(open(os.devnull, 'w') for f in files if f is devnull_sentinel)) as devnull_files:
-        for devnull_file in devnull_files:
-            files[files.index(devnull_sentinel)] = devnull_file
-        stdout, stderr = files
+    with open(os.devnull, 'w') as devnull_file:
+        # NOTE(jmoldow): `_devnull_sentinel` is private, and currently only the
+        # default parameter for `stdout` uses it, so this list comprehension
+        # isn't necessary. But using the list comprehension means that the
+        # right thing will happen if someone were to change the default
+        # parameter for `stderr`.
+        stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
 
         return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type, remove_files=remove_files)
 
