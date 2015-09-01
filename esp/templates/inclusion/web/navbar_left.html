@@ -1,27 +1,7 @@
 {% if navbar_list.entries %}
-  <!-- secondary nav -->
-  <ul id="submenu">
-  {% for nav_entry in navbar_list.entries %}
-    <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}">
-      {% if nav_entry.entry.is_link %}
-        <a href="{{ nav_entry.entry.makeUrl }}"
-          title="Click for `{{ nav_entry.entry.makeTitle }}'">
-          {{ nav_entry.entry.makeTitle }}
-        </a>
-      {% else %}
-          {{ nav_entry.entry.makeTitle }}
-      {% endif %}
-   </li>
-  {% endfor %}
-  {% if navbar_list.category %}
-  {% with navbar_list.category as cat %}
-  <li class="hidden navbar-manage admin">
-      <span role="button" class="navbar-manage-expander"><span class="glyphicon glyphicon-option-horizontal" aria-hidden="true"></span> <span class="navbar-manage-contractible">Navbar Category: {{ cat.name }}</span></span>
-      <a href="/admin/web/navbarcategory/{{ cat.id }}/" class="navbar-manage-contractible"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> Set navbar name/path/description</a>
-      <a href="/admin/web/navbarentry/?category__id__exact={{ cat.id }}&amp;o=2" class="navbar-manage-contractible"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit navbar contents</a>
-      <a href="/admin/web/navbarentry/add/?category={{ cat.id }}&amp;sort_rank={{ navbar_list.next_sort_rank }}" class="navbar-manage-contractible"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add navbar entry</a>
-  </li>
-  {% endwith %}
-  {% endif %}
-  </ul>
+<!-- secondary nav -->
+<ul id="submenu">
+	<!-- Cheating. See esp/web/templatetags/navbar.py -ageng 2013-08-12 -->
+	{% include "inclusion/web/navbar_entries.html" %}
+</ul>
 {% endif %}

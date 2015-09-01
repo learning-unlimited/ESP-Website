@@ -102,14 +102,16 @@ class VolunteerOfferForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
 
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Indicate your availability for one or more shifts; after scheduling any classes you might be teaching, we\'ll also confirm your shift assignments with you.', widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
-
-    comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
-
-    confirm = forms.BooleanField(help_text=mark_safe('<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>'), required=False)
-
+    
+    # UChicago Splash! 2013 is hijacking the "comments" field to ask how many shifts the volunteers would ideally work.
+    #comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
+    comments = forms.CharField(label='Number of shifts', help_text='How many shifts do you want to volunteer for? (If blank, we will assume no preference.)', required=False)
+    
+    confirm = forms.BooleanField(help_text=mark_safe('<label for="id_confirm" style="color: red; font-weight: bold;"> I will be available at the time(s) selected above.</label>'), required=False)
+    
     def __init__(self, *args, **kwargs):
         def positive_or_no(n):
             return (n > 0) and ('%d' % n) or 'no'
