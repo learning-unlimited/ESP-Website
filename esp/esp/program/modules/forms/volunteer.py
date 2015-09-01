@@ -99,16 +99,20 @@ class VolunteerOfferForm(forms.Form):
 
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
+    
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Indicate your availability for one or more shifts; after scheduling any classes you might be teaching, we\'ll also confirm your shift assignments with you.', widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
-
-    comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
-
-    confirm = forms.BooleanField(help_text=mark_safe('<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>'), required=False)
-
+    
+    # UChicago Splash! 2013 is hijacking the "comments" field to ask how many shifts the volunteers would ideally work.
+    #comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
+    comments = forms.CharField(label='Number of shifts', help_text='How many shifts do you want to volunteer for? (If blank, we will assume no preference.)', required=False)
+    
+    confirm = forms.BooleanField(help_text=mark_safe('<label for="id_confirm" style="color: red; font-weight: bold;"> I will be available at the time(s) selected above.</label>'), required=False)
+    
     def __init__(self, *args, **kwargs):
+        def positive_or_no(n):
+            return (n > 0) and ('%d' % n) or 'no'
         if 'program' in kwargs:
             self.program = kwargs['program']
             del kwargs['program']
@@ -117,7 +121,7 @@ class VolunteerOfferForm(forms.Form):
 
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s (%d more needed)' % (v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
+        self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
 
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
@@ -129,6 +133,10 @@ class VolunteerOfferForm(forms.Form):
 
         if not Tag.getTag('volunteer_allow_comments'):
             del self.fields['comments']
+        else:
+            tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)
+            if tag_data:
+                self.fields['comments'].help_text = tag_data
 
     def load(self, user):
         self.fields['user'].initial = user.id
@@ -176,6 +184,7 @@ class VolunteerOfferForm(forms.Form):
                 user = ESPUser.objects.create_user(auto_username, user_data['email'])
                 user.__dict__.update(user_data)
                 user.save()
+                user.recoverPassword()
 
         #   Record this user account as a volunteer
         user.makeVolunteer()
