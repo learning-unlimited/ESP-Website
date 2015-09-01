@@ -1,0 +1,12 @@
+{% for nav_entry in navbar_list.entries %}
+  <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}">
+    {% if nav_entry.entry.is_link %}
+      <a href="{{ nav_entry.entry.makeUrl }}"
+        title="Click for `{{ nav_entry.entry.makeTitle }}'">
+        {{ nav_entry.entry.makeTitle }}
+      </a>
+    {% else %}
+        {{ nav_entry.entry.makeTitle }}
+    {% endif %}
+ </li>
+{% endfor %}

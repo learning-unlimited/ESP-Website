@@ -16,7 +16,7 @@ class OnSiteRegForm(forms.Form):
 
     grade = forms.ChoiceField(choices = list(zip(list(range(7, 13)), list(range(7, 13)))), widget=forms.Select({'class':'required'}))
 
-    paid = forms.BooleanField(required = False)
+    paid = forms.BooleanField(required = False, widget=forms.HiddenInput())
     medical = forms.BooleanField(required = False)
     liability = forms.BooleanField(required = False)
 

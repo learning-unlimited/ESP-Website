@@ -62,6 +62,7 @@ from esp.survey.templatetags.survey import render_responses_for_section
 from esp.survey.templatetags.survey import render_responses_for_section_pdf
 
 from esp.web.templatetags.navbar import navbar_gen
+from esp.web.templatetags.navbar import navbar_by_category
 
 from esp.web.templatetags.topbar import get_primary_nav
 
