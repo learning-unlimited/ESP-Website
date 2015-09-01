@@ -66,10 +66,11 @@ class VolunteerManage(ProgramModuleObj):
             response = HttpResponse(mimetype="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
-            write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
+            # UChicago wanted to see comments. -ageng 2013-07-14
+            write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address", "Comments"))
             for request in requests:
                 for offer in request.get_offers():
-                    write_csv.writerow((request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email))
+                    write_csv.writerow((request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email, offer.comments))
             response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
             return response
         

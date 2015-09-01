@@ -12,9 +12,9 @@ class OnSiteRegForm(forms.Form):
     school = forms.CharField(max_length=128, widget=forms.HiddenInput, required=False)
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School', help_text="(Type the school's name and click on a match if it pops up.)")
 
-    grade = forms.ChoiceField(choices = zip(range(7, 13), range(7, 13)), widget=forms.Select({'class':'required'}))
+    grade = forms.ChoiceField(choices = zip(range(9, 13), range(9, 13)), widget=forms.Select({'class':'required'}))
 
-    paid = forms.BooleanField(required = False)
+    paid = forms.BooleanField(required = False, widget=forms.HiddenInput())
     medical = forms.BooleanField(required = False)
     liability = forms.BooleanField(required = False)
 

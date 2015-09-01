@@ -211,6 +211,11 @@ def ajax_qsd(request):
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 
+        # Clobber prevention. -ageng 2013-08-12
+        # Now needs to be slightly more complicated since we're on reversion. -ageng 2014-01-04
+        if not QuasiStaticData.objects.get_by_url(qsd.url) == qsd:
+            return HttpResponse(content='The edit you are submitting is not based on the newest version!\n(Is someone else editing? Did you get here by a back button?)\nCopy out your work if you need it. Then refresh the page to get the latest version.', status=409)
+
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
         if qsd.content != post_dict['data']:

@@ -945,7 +945,8 @@ are a teacher of the class"""
         assume_student will save us a database hit if the user is a student,
         but cost us at least one and possibly several if they're not.
         """
-        if assume_student or self.isStudent():
+        # Admins are testing studentreg on their own accounts -ageng 2013-08-28
+        if assume_student or self.isStudent() or self.isAdministrator(program):
             if program is None:
                 regProf = self.getLastProfile()
             else:

@@ -775,6 +775,9 @@ class ClassSection(models.Model):
         for t in teachers:
             timeslot_list.append(list(t.getAvailableTimes(self.parent_program, ignore_classes)))
             
+        # If there are no teachers, every time is viable. -ageng 2013-08-28
+        if not timeslot_list:
+            return self.parent_program.getTimeSlotList()
         available_times = intersect_lists(timeslot_list)
         
         #   If the class is already scheduled, put its time in.
@@ -916,7 +919,12 @@ class ClassSection(models.Model):
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    return u'This section conflicts with your schedule--check out the other sections!'
+                    # Chicago wants to acknowledge classes without siblings.
+                    # -ageng 2013-08-28
+                    if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=10).exclude(id=self.id):
+                        return u'This section conflicts with your schedule--check out the other sections!'
+                    else:
+                        return u'This class conflicts with your schedule!'
                     
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
@@ -943,13 +951,15 @@ class ClassSection(models.Model):
 
         return None
 
-    def cannotSchedule(self, meeting_times, ignore_classes=True):
+    def cannotSchedule(self, rooms, ignore_classes=True):
         """
         Returns False if the given times work; otherwise, an error message.
 
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
+        # Check meeting times
+        meeting_times = Event.objects.filter(resource__in=rooms).order_by('start')
         #if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
         for t in self.teachers:
@@ -960,7 +970,10 @@ class ClassSection(models.Model):
             conflicts = self.conflicts(t, meeting_times)
             if conflicts:
                 return u"The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
-            # Fallback in case we couldn't come up with details
+        # Check room availability
+        occupiers = ResourceAssignment.objects.filter(resource__in=rooms).exclude(target=self)
+        if occupiers:
+            return u"; ".join(u'%s is taken by %s during %s' % (o.resource.name, o.target.emailcode(), o.resource.event.short_description) for o in occupiers)
         return False
 
     #   If the values returned by this function are ever needed in QuerySet form,
