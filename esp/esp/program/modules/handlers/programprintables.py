@@ -934,7 +934,6 @@ class ProgramPrintables(ProgramModuleObj):
             elif user.isVolunteer():
                 schedule_type = u'Volunteer'
 
-
         if schedule_type == u'Student':
             template = get_template('program/modules/programprintables/studentschedule_email.html')
             sched_items = ProgramPrintables.get_student_classlist(program, user)
