@@ -881,10 +881,10 @@ Volunteer schedule for %s:
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
+        return ProgramPrintables.get_student_schedules(students, prog, extra, onsite)
 
     @staticmethod
-    def get_student_schedules(request, students, prog, extra='', onsite=False):
+    def get_student_schedules(students, prog, extra='', onsite=False):
         """ generate student schedules """
         context = {}
 
@@ -917,16 +917,18 @@ Volunteer schedule for %s:
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
  
+        # TODO: conditional should use Tag.getBooleanTag or somesuch
+        show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = classes_by_student[student.id]
 
-            # TODO: conditional should use Tag.getBooleanTag or somesuch
-            if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
+            if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
-                times = list(prog.getTimeSlots())
+                times = timeslots[:]
                 for cls in classes:
                     index = 0
                     for t in cls.meeting_times.all():
