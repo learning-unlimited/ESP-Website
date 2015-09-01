@@ -56,6 +56,7 @@ from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd
 
 from esp.web.templatetags.navbar import navbar_gen
+from esp.web.templatetags.navbar import navbar_by_category
 
 from esp.web.templatetags.topbar import get_primary_nav
 

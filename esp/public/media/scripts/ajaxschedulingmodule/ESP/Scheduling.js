@@ -285,7 +285,7 @@ ESP.Scheduling = function(){
 		    var populate_class_popup = function(called_node) {
 			// Create the size and popup data
 			var size_info = [
-			    " max size=" + s.class_size_max.toString(),
+			    s.class_size_max ? " max size=" + s.class_size_max.toString() : "",
 			    s.max_class_capacity ? " max cap=" + s.max_class_capacity.toString() : "",
 			    s.optimal_class_size ? " optimal size=" + s.optimal_class_size.toString() : "",
 			    s.optimal_class_size_range ? " optimal size range=" + s.optimal_class_size_range : ""
