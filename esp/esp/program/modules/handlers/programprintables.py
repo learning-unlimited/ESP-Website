@@ -881,10 +881,10 @@ Volunteer schedule for %s:
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        return ProgramPrintables.get_student_schedules(students, prog, extra, onsite)
+        return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
     @staticmethod
-    def get_student_schedules(students, prog, extra='', onsite=False):
+    def get_student_schedules(request, students, prog, extra='', onsite=False):
         """ generate student schedules """
         context = {}
 
