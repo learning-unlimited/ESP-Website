@@ -91,8 +91,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(country_names.items(), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+    emerg_address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -150,7 +150,7 @@ HOW_TO_GET_TO_PROGRAM = (
     '',
     'Other...',
     'My school has already arranged for a bus',
-    'I will ask my teachers and counselors to arrange for a bus for me and my peers',
+    'I will ask my school to arrange a bus',
     'My parent/guardian will drive me',
     'I will take mass transit (bus, train/subway, etc)',
     'I will drive myself',
@@ -408,7 +408,7 @@ _undeletable_fields_all = ['e_mail']
 
 # A list of student fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_students = ['graduation_year']
-class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
+class StudentProfileForm(UserContactForm, EmergContactForm, StudentInfoForm):
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super(StudentProfileForm, self).__init__(*args, **kwargs)
