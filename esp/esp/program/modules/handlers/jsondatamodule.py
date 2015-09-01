@@ -629,6 +629,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
+        # Hack to insert requested_room as a resource request -ageng 2013-08-20
+        if section.parent_class.requested_room:
+            rrequest_dict[section.id].append((-1, section.parent_class.requested_room))
 
         section_info = []
         for sec in cls.get_sections():

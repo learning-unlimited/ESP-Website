@@ -52,7 +52,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -84,7 +84,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    emerg_address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -137,7 +137,7 @@ WhatToDoAfterHS = (
 HowToGetToProgram = (
     'Other...',
     'My school has already arranged for a bus',
-    'I will ask my teachers and counselors to arrange for a bus for me and my peers',
+    'I will ask my school to arrange a bus',
     'My parent/guardian will drive me',
     'I will take mass transit (bus, train/subway, etc)',
     'I will drive myself',
@@ -200,7 +200,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if user and user.registrationprofile_set.count() > 0:
             user_grade = user.getGrade()
             grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
-            if grade_tup not in self.fields['graduation_year'].choices:
+            # Prevent 0th grade from showing up -ageng 2013-08-26
+            if grade_tup not in self.fields['graduation_year'].choices and user_grade > 0:
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
@@ -371,7 +372,7 @@ GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
-class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
+class StudentProfileForm(UserContactForm, EmergContactForm, StudentInfoForm):
     """ Form for student profiles """
 
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
