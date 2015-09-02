@@ -14,11 +14,15 @@ function updateDocs(docs) {
 }
 //-->
 </script>
+<script type="text/javascript" src="https://rawgit.com/arqex/react-json-table/6518983b5ecc0a314e50a4b7f26985c04069babd/build/react-json-table.min.js"></script>
+<script type="text/jsx" src="/media/scripts/program/modules/scheduling_checks.jsx"></script>
+
 {% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/scheduling_checks.css" />
 {% endblock %}
 
 {% block content %}
@@ -28,12 +32,15 @@ function updateDocs(docs) {
 
 <h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
 
-{% for value in checks %}
-<ul>
-  <p> 
-    {{ value|safe }}
-  </p>
-</ul>
-{% endfor %}
+<div id="scheduling-check-wrapper"/>
+<script type="text/jsx">
+  React.render(
+    <SchedulingCheckList>
+      {% for slug, title in check_list %}
+        <SchedulingCheck slug="{{slug}}" title="{{title}}" />
+      {% endfor %}
+    </SchedulingCheckList>,
+    document.getElementById("scheduling-check-wrapper"));
+</script>
 
 {% endblock %}

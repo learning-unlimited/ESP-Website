@@ -36,6 +36,9 @@ from django import template
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
+import os
+import subprocess
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -109,8 +112,6 @@ def histogram(answer_list, format='html'):
     from django.conf import settings
     HISTOGRAM_PATH = 'images/histograms/'
     HISTOGRAM_DIR = settings.MEDIA_ROOT + HISTOGRAM_PATH
-    from esp.web.util.latex import get_rand_file_base
-    import os
     import tempfile
     
     image_width = 2.75
@@ -158,7 +159,8 @@ def histogram(answer_list, format='html'):
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
-    template_file = settings.TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
+    template_file = os.path.join(settings.TEMPLATE_DIRS[0],
+                                 'survey', 'histogram_base.eps')
 
     context['file_name'] = file_name # This guy depends on the SHA-1
     
@@ -170,13 +172,20 @@ def histogram(answer_list, format='html'):
     
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
+    png_filename = "%s.png" % file_base
     if format == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, file_name)
+        image_path = os.path.join(tempfile.gettempdir(), png_filename)
     elif format == 'html':
-        image_path = '%s%s.png' % (HISTOGRAM_DIR, file_base)
-        if not os.path.exists(image_path):
-            os.system('gs -dBATCH -dNOPAUSE -dTextAlphaBits=4 -dDEVICEWIDTHPOINTS=216 -dDEVICEHEIGHTPOINTS=162 -sDEVICE=png16m -R96 -sOutputFile=%s %s' % (image_path, file_name))
-        return '<img src="%s.png" />' % ('/media/' + HISTOGRAM_PATH + file_base)
+        image_path = os.path.join(HISTOGRAM_DIR, png_filename)
+    if not os.path.exists(image_path):
+        subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
+                         '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
+                         '-sDEVICE=png16m', '-R96',
+                         '-sOutputFile=' + image_path, file_name])
+    if format == 'tex':
+        return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
+    if format == 'html':
+        return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
     
 @register.filter
 def answer_to_list(ans):

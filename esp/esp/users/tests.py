@@ -309,12 +309,6 @@ class AjaxExistenceChecker(TestCase):
         for key in self.keys:
             self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
         
-class AjaxLoginExistenceTest(AjaxExistenceChecker):
-    def __init__(self, *args, **kwargs):
-        super(AjaxLoginExistenceTest, self).__init__(*args, **kwargs)
-        self.path = '/myesp/ajax_login/'
-        self.keys = ['loginbox_html']
-        
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
         self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()

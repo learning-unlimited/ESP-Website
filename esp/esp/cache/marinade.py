@@ -33,20 +33,46 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import inspect
+
 from django.db.models import Model
 from django.db.models.query import QuerySet
 from django.contrib.auth.models import AnonymousUser
 
 from esp.utils import force_str
-from esp.cache.function import describe_class
 
+def describe_class(cls):
+    return '%s.%s' % (cls.__module__.rstrip('.'), cls.__name__)
+
+def get_containing_class():
+    # intended to be called from a method decorator's body
+    # get_containg_class -> decorator -> containing class/module
+    class_name = inspect.currentframe().f_back.f_back.f_code.co_name
+    if class_name == '<module>':
+        return None
+    return class_name
+
+def describe_func(func, class_name=None):
+    if hasattr(func, 'im_class'):
+        # I don't think we actually hit this case... this is only for bound/unbound member functions
+        return '%s.%s' % (describe_class(func.im_class), func.__name__)
+    else:
+        if class_name is None:
+            return '%s.%s' % (func.__module__.rstrip('.'), func.__name__)
+        else:
+            return '%s.%s.%s' % (func.__module__.rstrip('.'), class_name, func.__name__)
+
+# It's kinda like pickling, but not quite
 def marinade_dish(arg):
     if isinstance(arg, QuerySet):
         return marinade_dish(list(arg))
     if isinstance(arg, list):
         return '[%s]' % ','.join([marinade_dish(item) for item in arg])
     if isinstance(arg, Model):
-        if not isinstance(arg, AnonymousUser) and arg.id is None:
+        # ESPUsers are also instances of AnonymousUser, but might not be
+        # anonymous.
+        if arg.id is None and (not isinstance(arg, AnonymousUser) or
+                               not arg.is_anonymous()):
             import random
             # TODO: Make this log something
             print "PASSING UNSAVED MODEL!!! ERROR!!! CACHING CODE SHOULD NOT BE ENABLED!!!"
@@ -58,62 +84,3 @@ def marinade_dish(arg):
     if hasattr(arg, '__marinade__'):
         return arg.__marinade__()
     return force_str(arg)
-
-def incorporate_given(argspec, args, kwargs):
-    if argspec[0] is None:
-        return
-    for name, val in zip(argspec[0], args):
-        kwargs[name] = val
-    num_nargs = len(argspec[0])
-    num_sargs = len(args)
-    num_match = min(num_nargs, num_sargs)
-    return args[num_match:]
-
-def incorporate_defaults(argspec, kwargs):
-    if argspec[0] is None or argspec[3] is None:
-        return
-    num_args = len(argspec[0])
-    num_defs = len(argspec[3])
-    for i in range(num_defs):
-        arg = argspec[0][num_args-1 - i]
-        if not kwargs.has_key(arg):
-            kwargs[arg] = argspec[3][num_defs-1 - i]
-
-def normalize_args(argspec, args, kwargs):
-    kwargs = kwargs.copy()
-    rest_args = incorporate_given(argspec, args, kwargs)
-    incorporate_defaults(argspec, kwargs)
-    return kwargs, rest_args
-
-def args_to_key(argspec, kwargs, rest_args):
-    # TODO: don't make so many copies?
-    kwargs = kwargs.copy()
-    ans = '|'
-
-    if argspec[0] is not None:
-        for named_arg in argspec[0]:
-            ans += marinade_dish(kwargs[named_arg])
-            ans += '|'
-            del kwargs[named_arg] # don't duplicate these
-    ans += '/r|'
-
-    if rest_args is not None:
-        for arg in rest_args:
-            ans += marinade_dish(arg)
-            ans += '|'
-    ans += '/k|'
-
-    for key in sorted(kwargs.keys()):
-        ans += '%s=%s|' % (key, marinade_dish(kwargs[key]))
-    return ans
-
-# It's kinda like pickling, but not quite
-def marinade(func, args, kwargs):
-    """ Given a function, args, and kwargs, return a cache key """
-    # TODO: don't recompute this one all the time
-    import inspect
-    argspec = inspect.getargspec(func)
-
-    kwargs, rest_args = normalize_args(argspec, args, kwargs)
-
-    return args_to_key(argspec, kwargs, rest_args)

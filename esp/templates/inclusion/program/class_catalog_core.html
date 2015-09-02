@@ -95,7 +95,7 @@
        <b>Materials for this class include:</b>
         <span class="doclist">
         {% for doc in class.docs_summary %}
-        <a href="{{ doc.target_url }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
         {% endfor %}
         {% if class.media_count > class.docs_summary|length %}
         <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>

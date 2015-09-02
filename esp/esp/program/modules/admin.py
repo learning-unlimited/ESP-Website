@@ -60,7 +60,6 @@ class CRMIAdmin(admin.ModelAdmin):
     list_display = ('module', program)
     list_filter = ('module__program',)
     search_fields = ('module__program__name',)
-    exclude = ['display_times']
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):

@@ -82,10 +82,8 @@ class ClassCreationController(object):
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
 
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
-
         try:
-            resource_formset = ResourceRequestFormSet(reg_data, prefix='request', static_resource_requests=static_resource_requests, )
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
         except ValidationError:
             resource_formset = None
 
@@ -249,7 +247,6 @@ class ClassCreationController(object):
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
-        #mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
         mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.

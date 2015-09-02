@@ -34,22 +34,19 @@ Learning Unlimited, Inc.
 """
 
 from esp.cache.registry import all_caches
-from esp.users.models import admin_required, ESPUser
+from esp.users.models import admin_required
 from esp.web.util.main import render_to_response
-from esp.cache.varnish import purge_page
-from django.http import HttpResponse
+from django.shortcuts import redirect
+from django.core.urlresolvers import reverse
 
 @admin_required
 def view_all(request):
-    caches = sorted(all_caches.values(), key=lambda c: c.name)
+    caches = sorted(all_caches, key=lambda c: c.name)
     cache_data = [{'pretty_name': cache.pretty_name, 'hit_count': cache.hit_count, 'miss_count': cache.miss_count} for cache in caches]
     return render_to_response('cache/view_all.html', request, {'caches': cache_data})
 
-def varnish_purge(request):
-    # Authenticate
-    if (not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator()):
-        raise PermissionDenied
-    # Purge the page specified
-    purge_page(request.POST['page'])
-    # Return the minimum possible
-    return HttpResponse('')
+@admin_required
+def flush(request, cache_id):
+    cache = sorted(all_caches, key=lambda c: c.name)[int(cache_id)]
+    cache.delete_all()
+    return redirect(reverse(view_all))

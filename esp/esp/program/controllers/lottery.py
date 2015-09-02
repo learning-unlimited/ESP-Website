@@ -44,7 +44,7 @@ from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
-from esp.mailman import add_list_member, remove_list_member, list_contents
+from esp.mailman import add_list_members, remove_list_member, list_contents
 
 from django.conf import settings
 from django.db.models import Min
@@ -241,7 +241,7 @@ class LotteryAssignmentController(object):
         #   Populate student grades; grade will be assumed to be 0 if not entered on profile
         self.student_grades = numpy.zeros((self.num_students,))
         gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
-        self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.current_schoolyear() - gradyear_pairs[:, 1] + self.program.incrementGrade()
+        self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.program_schoolyear(self.program) - gradyear_pairs[:, 1]
         
         #   Find section capacities (TODO: convert to single query)
         for sec in self.sections:
@@ -675,15 +675,16 @@ class LotteryAssignmentController(object):
         
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            self.clear_mailman_list("%s_%s-students" % (self.program.program_type, self.program.program_instance))
+            program_list = "%s_%s-students" % (self.program.program_type, self.program.program_instance)
+            self.clear_mailman_list(program_list)
+            # Add all registered students into the program mailing list, even
+            # if they didn't get enrolled into any classes.
+            add_list_members(program_list, ESPUser.objects.filter(id__in=list(self.student_ids)).distinct())
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
                 list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
+                student_ids = self.student_ids[numpy.nonzero(self.student_sections[:,i])]
+                students = ESPUser.objects.filter(id__in=student_ids).distinct()
                 for list_name in list_names:
                     self.clear_mailman_list(list_name)
-                for j in range(self.num_students):
-                    student = ESPUser.objects.get(id=self.student_ids[i])
-                    for list_name in list_names:
-                        add_list_member(list_name, student.email)
-                    add_list_member("%s_%s-students" % (self.program.program_type, self.program.program_instance), student.email)
-        
+                    add_list_members(list_name, students)

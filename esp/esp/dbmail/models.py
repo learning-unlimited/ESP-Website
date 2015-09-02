@@ -34,14 +34,13 @@ Learning Unlimited, Inc.
 """
 import sys
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Q
 from esp.cache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
-from esp.datatree.models import *
 from esp.users.models import PersistentQueryFilter, ESPUser
 from django.template import Template #, VariableNode, TextNode
 
@@ -65,7 +64,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
         extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
-    if type(recipient_list) == str or type(recipient_list) == unicode:
+    if isinstance(recipient_list, basestring):
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
@@ -95,17 +94,6 @@ def expire_unsent_emails(orm=None):
         orm = sys.modules[__name__]
     TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
     MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
-
-@cache_function
-def can_process_and_send():
-    """
-    Returns True if the dbmail cronmail script is allowed to process and send
-    emails, and False otherwise.
-    """
-    return True
-can_process_and_send.depend_on_model(MigrationHistory)
-
-
 
 class ActionHandler(object):
     """ This class passes variable keys in such a way that django templates can use them."""
@@ -173,7 +161,6 @@ class MessageRequest(models.Model):
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
-    email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     def __unicode__(self):
@@ -187,7 +174,7 @@ class MessageRequest(models.Model):
         return pickle.loads(str(self.special_headers)) # We call str here because pickle hates unicode. -ageng 2008-11-18
     def special_headers_dict_set(self, value):
         import cPickle as pickle
-        if type(value) is not dict:
+        if not isinstance(value, dict):
             value = {}
         self.special_headers = pickle.dumps(value)
     special_headers_dict = property( special_headers_dict_get, special_headers_dict_set )
@@ -285,20 +272,21 @@ class MessageRequest(models.Model):
                 'The error message is: "%s".' % \
                 (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
 
-    def process(self, processoverride=False, debug=False):
-        """ Process this request...if it's an email, create all the necessary email requests. """
+    # Processing a MessageRequest needs to be atomic, so that if the DB falls
+    # over halfway through the processing, we don't end up with half of the
+    # TextOfEmail objects created and half of them not without a way to repair.
+    # Unfortunately, this could be a pretty huge transaction -- if it turns out
+    # to be a huge performance hit, we will need to rethink how we do this, but
+    # I think we'll be okay, since nothing should block on it except other
+    # instances of the same function (which should probably be locked out
+    # anyway at a higher level).
+    @transaction.commit_on_success
+    def process(self, debug=False):
+        """Process this request, creating TextOfEmail and EmailRequest objects.
 
-        # if we already processed, return
-        if self.processed and not processoverride:
-            return
-
-        # there's no real thing for this...yet
-        if not self.email_all:
-            return
-
-        # this is for thread-safeness...
-        self.processed = True
-        self.save()
+        It is the caller's responsibility to call this only on unprocessed
+        MessageRequests.
+        """
 
         # figure out who we're sending from...
         if self.sender is not None and len(self.sender.strip()) > 0:
@@ -309,18 +297,13 @@ class MessageRequest(models.Model):
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 
-        users = self.recipients.getList(ESPUser)
-        try:
-            users = users.distinct()
-        except:
-            pass
+        users = self.recipients.getList(ESPUser).distinct()
 
         sendto_fn = self.get_sendto_fn_callable(self.sendto_fn_name)
 
         # go through each user and parse the text...then create the proper
         # emailrequest and textofemail object
         for user in users:
-            user = ESPUser(user)
             subject = self.parseSmartText(self.subject, user)
             msgtext = self.parseSmartText(self.msgtext, user)
 
@@ -353,6 +336,12 @@ class MessageRequest(models.Model):
 
                 EmailRequest.objects.get_or_create(**newemailrequest)
 
+        # Mark ourselves processed.  We don't have to worry about the DB
+        # falling over between the above writes and this one, because the whole
+        # assembly is in a transaction.
+        self.processed = True
+        self.save()
+
         if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
 
@@ -368,14 +357,20 @@ class TextOfEmail(models.Model):
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
-    locked = models.BooleanField(default=False)
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
     def send(self, debug=False):
-        """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
+        """Take the email data in this TextOfEmail and send it.
+
+        Returns an exception, if one was raised by `send_mail`, or None if the
+        message sent successfully.
+
+        It is the caller's responsibility to call this only on emails which
+        have not already been sent, and which do not have too many retries.
+        """
 
         parent_request = None
         if self.emailrequest_set.count() > 0:
@@ -388,21 +383,21 @@ class TextOfEmail(models.Model):
         
         now = datetime.now()
 
-        # Before sending the email, check one more time that it hasn't been
-        # sent or expired.
-        if self.sent is not None:
-            return
-
-        send_mail(self.subject,
-                  self.msgtext,
-                  self.send_from,
-                  self.send_to,
-                  False,
-                  extra_headers=extra_headers,
-                  debug=debug)
-
-        self.sent = now
-        self.save()
+        try:
+            send_mail(self.subject,
+                      self.msgtext,
+                      self.send_from,
+                      self.send_to,
+                      False,
+                      extra_headers=extra_headers,
+                      debug=debug)
+        except Exception as e:
+            self.tries += 1
+            self.save()
+            return e
+        else:
+            self.sent = now
+            self.save()
 
     @classmethod
     def expireUnsentEmails(cls, min_tries=0, orm_class=None):

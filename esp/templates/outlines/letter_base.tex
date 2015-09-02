@@ -1,36 +1,27 @@
 \documentclass[10pt]{article}  % standard LaTeX, 12 point type
 \usepackage{amsfonts,latexsym}
 \usepackage{amsthm, amssymb, amsmath}
-\usepackage[left=0.75in,right=0.75in,top=1in, bottom=.5in,nohead,nofoot]{geometry}
+\usepackage[left=1in,right=1in,top=2in,bottom=1in,headheight=0in,nofoot]{geometry}
 \usepackage{lastpage}
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc}
 \usepackage{enumerate}
 \usepackage{subfigure}
 \usepackage{boxedminipage}
+\usepackage{wallpaper}
+
+\ULCornerWallPaper{1}{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.pdf}
+\pagestyle{empty}
 
 {% block headers %}
 {% endblock %}
 
 \begin{document}
 
-\begin{center}
-  \vspace*{-0.8in}
-  \makebox[\textwidth][c]{\includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.eps}}
-\end{center}
-
-\vspace{.1in}
-\begin{center}
-\begin{minipage}{7in}
-
 
 {% block maincontent %}
-\thispagestyle{empty}
-
 {% endblock %}
 
-\end{minipage}
-\end{center}
 {% block additionalcontent %}
 
 {% endblock %}

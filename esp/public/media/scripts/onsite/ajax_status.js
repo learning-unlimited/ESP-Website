@@ -17,7 +17,7 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     compact_classes: true,
-    categories_to_display: []
+    categories_to_display: {}
 };
 
 /*  Ajax status flags
@@ -243,6 +243,10 @@ function update_checkboxes()
             {
 		      studentcheckbox.attr("disabled", "disabled");
             } 
+            else if (data.classes[section.class_id].category__id == open_class_category.id)
+            {
+                studentcheckbox.attr("disabled", "disabled");
+            }
             else 
             {
                 studentcheckbox.change(handle_checkbox);
@@ -697,32 +701,36 @@ function update_category_filters()
     {
         var id = parseInt(id_str);
 
-        if (settings.categories_to_display.indexOf(id) == -1)
+        if (!settings.categories_to_display[id])
         {
             console.log("Hiding category .section_category_" + id);
             $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
+    }
+    if (!settings.categories_to_display[open_class_category.id])
+    {
+        console.log("Hiding walk-ins");
+        $j(".section_category_" + open_class_category.id).not(".student_enrolled").addClass("section_category_hidden");
     }
 }
 
 function toggle_categories() {
     var showAll = $j(this).prop("id") == "category_show_all";
 
-    if(showAll) {
-        settings.categories_to_display.length = 0;
-
-        for(var key in data.categories) {
-            settings.categories_to_display.push(parseInt(key));
-        }
-
-    } else {
-        settings.categories_to_display = [];
+    for(var key in data.categories) {
+        settings.categories_to_display[parseInt(key)] = showAll;
     }
     
     $j("#category_list :checkbox").not(".category_selector")
+                                  .not("#category_select_" + open_class_category.id)
                                   .prop('checked', showAll);
     update_category_filters();
 
+}
+
+function extract_category_id(element_id) 
+{
+    return parseInt(element_id.split("_")[2]);
 }
 
 function render_category_options()
@@ -732,30 +740,31 @@ function render_category_options()
     top_div.html("");
 
     //  Add a checkbox for each category we know about
-    for (var id_str in data.categories)
+    function add_category_checkbox(category)
     {
-        var id = parseInt(id_str);
+        var id = category.id;
         var new_li = $j("<div/>").addClass("category_item");
         var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
 
-        if (settings.categories_to_display.indexOf(id) != -1) {
+        if (settings.categories_to_display[id]) {
             new_checkbox.attr("checked", "checked");
         }
 
         new_checkbox.change(function (event) {
-            var target_id = parseInt(event.target.id.split("_")[2]);
-            var id_index = settings.categories_to_display.indexOf(target_id);
-            if (id_index == -1)
-                settings.categories_to_display.push(target_id)
-            else
-                settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
+            var target_id = extract_category_id(event.target.id);
+            settings.categories_to_display[target_id] = !settings.categories_to_display[target_id];
             update_category_filters();
         });
 
         new_li.append(new_checkbox);
-        new_li.append($j("<span/>").html(data.categories[id].symbol + ": " + data.categories[id].category));
+        new_li.append($j("<span/>").html(category.symbol + ": " + category.category));
         top_div.append(new_li);
     }
+    for (var key in data.categories) {
+        var category = data.categories[key];
+        add_category_checkbox(category);
+    }
+    add_category_checkbox(open_class_category);
 
     //initialize select all/none
     $j('.category_selector').click(toggle_categories);
@@ -772,15 +781,11 @@ function populate_classes()
     for (var i in data.catalog.categories)
     {
         var new_category = data.catalog.categories[i];
-        /*
-        //  Skip "open class" category
-        if (new_category.id == open_class_category.id)
-            continue;
-        */
+
         data.categories[new_category.id] = new_category;
-        if (settings.categories_to_display.indexOf(new_category.id) == -1)
+        if (settings.categories_to_display[new_category.id] === undefined)
         {
-            settings.categories_to_display.push(new_category.id);
+            settings.categories_to_display[new_category.id] = true;
         }
     }
 
@@ -800,8 +805,6 @@ function populate_classes()
     {
         var new_cls = data.catalog.classes[i];
         new_cls.teachers = new_cls.teacher_names;
-        //  This check would hide walk-in seminars
-        //  if (new_cls.category__id != open_class_category.id)
         data.classes[new_cls.id] = new_cls;
     }
     
@@ -875,7 +878,7 @@ function populate_rooms()
     for (var i in data.rooms)
     {
         data.sections[data.rooms[i][0]].rooms = data.rooms[i][1];
-        
+    
         //  Lower capacity to that of room if needed
         if (data.rooms[i][2] < data.sections[data.rooms[i][0]].capacity)
             data.sections[data.rooms[i][0]].capacity = data.rooms[i][2];

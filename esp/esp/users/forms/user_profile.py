@@ -212,6 +212,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('show_student_tshirt_size_options'):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
+        elif Tag.getTag('studentinfo_shirt_type_selection') == 'False':
+            del self.fields['shirt_type']
 
         if not Tag.getTag('show_student_vegetarianism_options'):
             del self.fields['food_preference']

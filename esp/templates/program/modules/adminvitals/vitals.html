@@ -16,7 +16,8 @@ json_data = {};
         .add("#stats_hours")
         .add("#stats_timeslots")
         .add("#stats_tshirts")
-        .add("#stats_splashinfo");
+        .add("#stats_splashinfo")
+        .add("#stats_accounting");
       $module_group_headers = $module_groups.children(".module_group_header");
       $module_group_headers.click(getStats);
     });
@@ -82,6 +83,12 @@ json_data = {};
       </div>
       <div class="module_group" id="stats_splashinfo">
         <div class="module_group_header module_group_expandable">Lunch and Sibling Discounts <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_accounting">
+        <div class="module_group_header module_group_expandable">Accounting <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body" style="display:none">
 	  Loading data...
 	</div>

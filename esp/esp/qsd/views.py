@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, Permission
-from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory
 from esp.web.util.main import render_to_response
@@ -50,7 +49,7 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.cache.varnish import purge_page
+from esp.varnish import purge_page
 
 from django.conf import settings
 

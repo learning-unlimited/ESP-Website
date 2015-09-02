@@ -35,25 +35,22 @@ Learning Unlimited, Inc.
 
 from django.conf import settings
 
-__all__ = ['register_cache', 'cache_by_uid', 'dump_all_caches', 'caches_locked']
+__all__ = ['register_cache', 'dump_all_caches', 'caches_locked']
 
-all_caches = {}
+all_caches = []
 
 def register_cache(cache_obj):
-    all_caches[cache_obj.uid] = cache_obj
-
-def cache_by_uid(uid):
-    return all_caches.get(uid, None)
+    all_caches.append(cache_obj)
 
 def dump_all_caches():
-    for c in all_caches.values():
+    for c in all_caches:
         c.delete_all()
 
 def _finalize_caches():
-    for c in all_caches.values():
-        c.run_all_delayed()
-        if settings.CACHE_DEBUG:
-            print "Initialized cache", c.pretty_name
+    from esp.cache.queued import do_all_pending
+    do_all_pending()
+    if settings.CACHE_DEBUG:
+        print "Initialized caches"
 
 _caches_locked = False
 def caches_locked():

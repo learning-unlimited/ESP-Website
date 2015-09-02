@@ -86,6 +86,7 @@ class ViewUserInfoTest(TestCase):
             self.fake_admin.save()
 
         self.admin.makeRole('Administrator')
+
         
     def assertStringContains(self, string, contents):
         if not (contents in string):
@@ -94,7 +95,65 @@ class ViewUserInfoTest(TestCase):
     def assertNotStringContains(self, string, contents):
         if contents in string:
             self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
-            
+
+    def testIssue1448UsernameMatchesFirstName(self):
+        """
+        Test for issue: https://github.com/learning-unlimited/ESP-Website/issues/1448
+
+        If someone creates an account with a username that is also someone else's first name or last name, 
+        then you can't search by that first name or last name in the admin toolbar, because you'll just be 
+        taken to the first account rather than the search page with the list of accounts having that name.
+
+        This was probably considered a feature at one point. But right now it's more of a bug. 
+        If we really want to maintain some functionality for exact matching, maybe the results page can be 
+        organized so that, when there's an exact match, it says something like: "found user with username "foo", 
+        also found other matching users" followed by the current results page. And if there is nothing but the exact 
+        match, then we can have the current behavior of redirecting directly to that profile.
+
+        Steps to reproduce:
+
+        Create account 1 with a username abcabc.
+        Create account 2 with a different username, but first name abcabc.
+        Now from an admin account, search for abcabc in the admin toolbar.
+        You get taken to account 1, but you might have wanted account 2.
+        """
+        username = 'abcabc'
+        self.user.username = username
+        self.user.save()
+
+        self.admin.first_name = username
+        self.admin.save()
+
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID
+        response = c.get("/manage/usersearch", { "userstr": username })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
+    def testUserIDSearchOneResult(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+
+    def testUserIDSearchMultipleResults(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+        self.user.username = str(self.admin.id)
+        self.user.save()
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": self.admin.id })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
     def testUserSearchFn(self):
         """
         Tests whether the user-search page works properly.
@@ -103,11 +162,6 @@ class ViewUserInfoTest(TestCase):
         """
         c = Client()
         c.login(username=self.admin.username, password=self.password)
-
-        # Try searching by ID
-        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Try searching by username
         response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
@@ -121,9 +175,12 @@ class ViewUserInfoTest(TestCase):
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
         # Full name, unique
-        response = c.get("/manage/usersearch", { "userstr": "Admin User" })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+        # I don't think this makes any sense, surely there is more than one
+
+        # response = c.get("/manage/usersearch", { "userstr": "Admin User" })
+        # self.assertEqual(response.status_code, 302)
+        # self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
@@ -439,7 +496,7 @@ class ProgramHappenTest(TestCase):
         thisyear = datetime.now().year
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10), dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
         
         # Student logs in and signs up for classes
@@ -661,7 +718,7 @@ class ProgramFrameworkTest(TestCase):
         Does not get called by default, but subclasses can call it.
         """
         for student in self.students:
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.program_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1079,7 +1136,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             # Give the student a starting grade
             startGrade = int(random.random() * 6) + 7
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade))
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1120,9 +1177,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
-
-            # Get their grade
-            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
