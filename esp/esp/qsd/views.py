@@ -44,7 +44,7 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
-from esp.middleware import ESPError, Http403
+from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
@@ -179,7 +179,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError("You don't have permission to edit this page.", log=False)
+            raise Http403, "You don't have permission to edit this page."
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
