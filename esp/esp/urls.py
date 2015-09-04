@@ -31,7 +31,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.conf.urls.defaults import patterns, include, url, handler500, handler404
+
+from django.conf.urls import patterns, include, handler500, handler404
+from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
@@ -111,7 +113,7 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
-urlpatterns += patterns('esp.web.views.json',
+urlpatterns += patterns('esp.web.views.json_utils',
 
      # JSON
     (r'json/teachers/$', 'teacher_lookup'))
@@ -128,7 +130,6 @@ urlpatterns += patterns('esp.web.views.main',
 
 
     # Program stuff
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
 
@@ -151,9 +152,6 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
 
-urlpatterns += patterns('', 
-    (r'^dataviews/', include('esp.dataviews.urls')) )
-    
 urlpatterns += patterns('esp.qsdmedia.views', 
     (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
@@ -162,7 +160,7 @@ urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
-    url(r'^__debug__/', include(debug_toolbar.urls)),
+    (r'^__debug__/', include(debug_toolbar.urls)),
 )
 
 urlpatterns += patterns('esp.formstack.views',

@@ -113,7 +113,7 @@
 </div>
 
 {% load preview %}
-{% miniblog_for_user None as announcements 6 %}
+{% miniblog_for_user AnonymousUser as announcements 6 %}
 
 {% load markup %}
 {% for announce in announcements.announcementList %}

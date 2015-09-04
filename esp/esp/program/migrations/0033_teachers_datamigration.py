@@ -4,38 +4,12 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import ClassSubject
-from esp.users.models import UserBit
 from django.core.cache import cache
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        #   Use only currently valid UserBits
-        bits=UserBit.valid_objects().filter(verb__uri="V/Flags/Registration/Teacher")
-        #   Keep track of pairs copied so far so we don't duplicate
-        pairs_so_far = set()
-        i=0
-        for bit in bits:
-            cls=ClassSubject.objects.filter(anchor=bit.qsc)
-            l=cls.count()
-            if l==0:
-                continue
-            if l>1:
-                continue
-            usr=bit.user
-            cls=cls[0]
-            
-            #   Skip (user, class) pairs that we already stored
-            if (cls.id, usr.id) in pairs_so_far:
-                continue
-            pairs_so_far.add((cls.id, usr.id))
-            
-            #due to a issue with cache stuff, we'll manually insert the data
-            from django.db import connection, transaction
-            cursor = connection.cursor()
-
-            cursor.execute("INSERT INTO program_class_teachers (classsubject_id, espuser_id) VALUES (%s, %s);",[cls.id, usr.id])
-            transaction.commit_unless_managed()
+        pass
 
     def backwards(self, orm):
         for cls in ClassSubject.objects.all():
@@ -414,7 +388,7 @@ class Migration(DataMigration):
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True', 'blank': 'True'}),
-            'phone': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'request': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.VolunteerRequest']"}),
             'shirt_size': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'shirt_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
@@ -431,16 +405,16 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'ContactInfo'},
             'address_city': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'address_postal': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'address_state': ('django.contrib.localflavor.us.models.USStateField', [], {'max_length': '2', 'null': 'True', 'blank': 'True'}),
+            'address_state': ('localflavor.us.models.USStateField', [], {}),
             'address_street': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'address_zip': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'e_mail': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'phone_cell': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_day': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'phone_even': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_cell': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_day': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'phone_even': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'receive_txt_message': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
@@ -462,7 +436,7 @@ class Migration(DataMigration):
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
-            'sms_number': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'sms_number': ('localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'sms_opt_in': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'users.espuser': {

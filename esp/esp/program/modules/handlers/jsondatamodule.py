@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime
 import operator
-import simplejson as json
+import json
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
@@ -44,7 +44,6 @@ from django.db.models.query import Q
 from django.http import Http404, HttpResponse
 
 from esp.cal.models import Event
-from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
@@ -56,7 +55,8 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import Transfer
 
 from decimal import Decimal
 
@@ -107,7 +107,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             } for room_id in classrooms_grouped.keys() ]
 
         return {'rooms': classrooms_dicts}
-    rooms.method.cached_function.depend_on_model(lambda: Resource)
+    rooms.method.cached_function.depend_on_model('resources.Resource')
 
     @aux_call
     @json_response()
@@ -137,12 +137,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
-        #   Convert comma-separated timeslot IDs to lists
+        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT array_agg(resources_resource.event_id) FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         for i in range(len(data)):
-            if data[i]['timeslots']:
-                data[i]['timeslots'] = [int(x) for x in data[i]['timeslots'].strip().split(',')]
-            else:
+            if not data[i]['timeslots']:
                 data[i]['timeslots'] = []
         return {'schedule_assignments': list(data)}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -365,10 +362,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog):
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
- 
+        else:
+            # TODO: determine if anything still relies on the legacy format.
+            # merge the legacy format with the current format, just in case
+            sections = self.lottery_preferences_usepriority(request, prog)['sections']
+            sections_legacy = self.lottery_preferences_legacy(request, prog)['sections']
+            sections_merged = []
+            for item, item_legacy in zip(sections, sections_legacy):
+                assert item['id'] == item_legacy['id']
+                item_merged = dict(item_legacy.items() + item.items())
+                sections_merged.append(item_merged)
+            return {'sections': sections_merged}
+
+    def lottery_preferences_legacy(self, request, prog):
+        # DEPRECATED: see comments in lottery_preferences method
         sections = list(prog.sections().values('id'))
         sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
         sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
@@ -595,7 +605,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
         
         return {'message_requests': data}
-    message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()
@@ -728,6 +738,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
+        #   Convert Decimal values to float for serialization
+        for i in range(len(annotated_categories)):
+            annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
         ## Calculate the grade data:
@@ -766,6 +779,20 @@ teachers[key].filter(is_active = True).distinct().count()))
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
+        #   Add accounting stats
+        pac = ProgramAccountingController(prog)
+        (num_payments, total_payment) = pac.payments_summary()
+        accounting_data = {
+            'num_payments': num_payments,
+            # We need to convert to a float in order for json to serialize it.
+            # Since we're not doing any computation client-side with these
+            # numbers, this doesn't cause accuracy issues.  If the
+            # total_payment is None, just coerce it to zero for display
+            # purposes.
+            'total_payments': float(total_payment or 0),
+        }
+        dictOut["stats"].append({"id": "accounting", "data": accounting_data})
+    
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
@@ -790,3 +817,4 @@ teachers[key].filter(is_active = True).distinct().count()))
 
     class Meta:
         proxy = True
+        app_label = 'modules'

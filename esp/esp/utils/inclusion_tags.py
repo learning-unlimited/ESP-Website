@@ -52,9 +52,6 @@ from esp.program.templatetags.class_render import render_class_current
 from esp.program.templatetags.class_render import render_class_preview
 from esp.program.templatetags.class_render import render_class_row
 
-from esp.program.templatetags.scheduling import scheduling_matrix_row
-from esp.program.templatetags.scheduling import class_options_row
-
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd
 

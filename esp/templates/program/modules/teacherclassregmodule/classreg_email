@@ -1,5 +1,5 @@
 {% autoescape off %}Teacher Registration Notification
-{% if admin %}Manage this class: <http://{{ DEFAULT_HOST }}{% url esp.web.views.main.program 'manage' one two 'manageclass' id %}>{% endif %}
+{% if admin %}Manage this class: <http://{{ DEFAULT_HOST }}{% url 'esp.web.views.main.program' 'manage' one two 'manageclass' id %}>{% endif %}
 ---------------------------------
 Teachers:{% for teacher in teachers %}
 
@@ -49,7 +49,7 @@ Comments to Director:
 
 ---------------------------------
 {% if admin %}If you have reviewed all of this information and would like to approve the class, click here: 
-    <http://{{ DEFAULT_HOST }}{% url esp.web.views.main.program 'manage' one two 'approveclass' id %}>
+    <http://{{ DEFAULT_HOST }}{% url 'esp.web.views.main.program' 'manage' one two 'approveclass' id %}>
 {% endif %}
 
 {% endautoescape %}

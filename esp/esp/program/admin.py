@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
-from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site
 
@@ -79,6 +78,10 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
                                             'contact_emergency__first_name', 'contact_emergency__last_name']
     list_filter = ('program', )
     date_hierarchy = 'last_ts'
+
+    def lookup_allowed(self, key, value):
+        return True
+
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
@@ -231,7 +234,7 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
-    exclude = ('teachers','anchor')
+    exclude = ('teachers',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
     fieldsets= (

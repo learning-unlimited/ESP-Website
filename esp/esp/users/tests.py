@@ -3,11 +3,12 @@ import datetime
 from model_mommy import mommy
 
 from django import forms
-from django.contrib.auth import login
-from django.contrib.auth.models import Group
 from django.core import mail
+from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import Group
+from django.test.client import Client, RequestFactory
+from django.http import HttpRequest
 from django.conf import settings
-from django.test.client import Client
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -20,6 +21,7 @@ from esp.users.views import make_user_admin
 
 class ESPUserTest(TestCase):
     def setUp(self):
+        self.factory = RequestFactory()
         user_role_setup()
 
     def testInit(self):
@@ -42,23 +44,18 @@ class ESPUserTest(TestCase):
         self.failUnless( Permission.objects.filter(user=uid).count() == 0 )
 
     def testMorph(self):
-        class scratchCls(object):
-            pass
         class scratchDict(dict):
             def cycle_key(self):
                 pass
             def flush(self):
                 for i in self.keys():
                     del self[i]
-
+    
         # Make up a fake request object
-        # This definitely doesn't meet the spec of the real request object;
-        # if tests fail as a result in the future, it'll need to be fixed.
-        request = scratchCls()
-
+        request = self.factory.get('/')
+        request.session = scratchDict()
         request.backend = 'django.contrib.auth.backends.ModelBackend'
         request.user = None
-        request.session = scratchDict()
 
         # Create a couple users and give them roles
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
@@ -302,18 +299,12 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
         
-        import simplejson as json
+        import json
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)
         for key in self.keys:
             self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
-        
-class AjaxLoginExistenceTest(AjaxExistenceChecker):
-    def __init__(self, *args, **kwargs):
-        super(AjaxLoginExistenceTest, self).__init__(*args, **kwargs)
-        self.path = '/myesp/ajax_login/'
-        self.keys = ['loginbox_html']
         
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):

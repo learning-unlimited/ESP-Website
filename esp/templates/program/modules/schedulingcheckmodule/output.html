@@ -14,7 +14,9 @@ function updateDocs(docs) {
 }
 //-->
 </script>
+<script type="text/javascript" src="https://rawgit.com/arqex/react-json-table/6518983b5ecc0a314e50a4b7f26985c04069babd/build/react-json-table.min.js"></script>
 <script type="text/jsx" src="/media/scripts/program/modules/scheduling_checks.jsx"></script>
+
 {% endblock %}
 
 {% block stylesheets %}
@@ -32,8 +34,7 @@ function updateDocs(docs) {
 
 <div id="scheduling-check-wrapper"/>
 <script type="text/jsx">
-  /** @jsx React.DOM */
-  React.renderComponent(
+  React.render(
     <SchedulingCheckList>
       {% for slug, title in check_list %}
         <SchedulingCheck slug="{{slug}}" title="{{title}}" />

@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 
-from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 import os.path
@@ -50,7 +49,6 @@ root_file_path = "uploaded"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True) # Relevant node in the tree
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
@@ -147,7 +145,7 @@ class Picture(models.Model):
     """
     media = models.ForeignKey(Media, unique=True) # the Media "superclass" instance; should be one-to-one
 
-    is_arbitrarily_resizable_format = models.BooleanField() # is the image a bitmap-based or vector-based format?
+    is_arbitrarily_resizable_format = models.BooleanField(default=False) # is the image a bitmap-based or vector-based format?
 
     x_resolution = models.IntegerField(blank=True, null=True) # Horizontal width of the Picture, in pixels
     y_resolution = models.IntegerField(blank=True, null=True) # Vertical height of the Picture, in pixels
@@ -175,7 +173,7 @@ class Paper(models.Model):
     Contains basic metadata for a paper, typically (though not necessarily) submitted to a conference or publication.
     """
 
-    is_mutable_text = models.BooleanField() # Is the text alterable?, or is it in a locked format like a PDF or a locked MS Office document
+    is_mutable_text = models.BooleanField(default=False) # Is the text alterable?, or is it in a locked format like a PDF or a locked MS Office document
     type = models.ForeignKey(PaperType) # Type of the paper, from a list of officially-acknowledged "types"
 
     media = models.ForeignKey(Media, unique=True)

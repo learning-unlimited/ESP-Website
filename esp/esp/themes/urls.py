@@ -1,7 +1,7 @@
 
 from esp.themes.views import editor, selector, configure, confirm_overwrite, landing, recompile
 
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 urlpatterns = patterns('',
                         (r'^/?$', landing),

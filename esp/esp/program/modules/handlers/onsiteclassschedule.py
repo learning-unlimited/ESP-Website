@@ -38,7 +38,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
-from esp.datatree.models import *
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
@@ -100,4 +99,4 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

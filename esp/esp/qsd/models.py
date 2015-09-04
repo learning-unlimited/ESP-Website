@@ -59,7 +59,7 @@ class QSDManager(FileDBManager):
             return self.filter(url=url).select_related().latest('create_date')
         except QuasiStaticData.DoesNotExist:
             return None
-    get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     @cache_function
     def get_by_url_else_init(self, url, defaults={}):
@@ -84,7 +84,7 @@ class QSDManager(FileDBManager):
             content = '\n'.join(content)
             qsd_obj.content = content
         return qsd_obj
-    get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+    get_by_url_else_init.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
 
     def __str__(self):
         return "QSDManager()"
@@ -160,7 +160,7 @@ class QuasiStaticData(models.Model):
     @cache_function
     def html(self):
         return markdown(self.content)
-    html.depend_on_row(lambda:QuasiStaticData, 'self')
+    html.depend_on_row('qsd.QuasiStaticData', 'self')
 
     @staticmethod
     def prog_qsd_url(prog, name):
@@ -196,6 +196,9 @@ class QuasiStaticData(models.Model):
                     return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
             
         return None
+    
+    def get_absolute_url(self):
+        return "/"+self.url+".html"
 
 def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class
@@ -206,36 +209,3 @@ def qsd_cache_key(path, user=None,):
         return hashlib.md5('%s-%s' % (path, name, user.id)).hexdigest()
     else:
         return hashlib.md5('%s' % (path, ) ).hexdigest()
-
-
-class ESPQuotations(models.Model):
-    """ Quotation about ESP """
-
-    content = models.TextField()
-    display = models.BooleanField()
-    author  = models.CharField(max_length=64)
-    create_date = models.DateTimeField(default=datetime.now())
-
-    @staticmethod
-    def getQuotation():
-        import random
-        cutoff = .9
-        if random.random() > cutoff:
-            return None
-
-        current_pool = cache.get('esp_quotes')
-
-        if current_pool is None:
-            current_pool = list(ESPQuotations.objects.filter(display=True).order_by('?')[:5])
-            # Cache the current pool for a day
-            if len(current_pool) == 0:
-                return None
-
-            cache.set('esp_quotes', current_pool, 86400)
-
-        return random.choice(current_pool)
-
-        
-    class Meta:
-        verbose_name_plural = 'ESP Quotations'
-

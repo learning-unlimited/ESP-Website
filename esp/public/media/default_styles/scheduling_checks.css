@@ -1,3 +1,7 @@
+table { border-spacing: 0; }
+td { padding: 10px; cursor: pointer; }
+th { cursor: pointer; }
+
 .scheduling-check {
      border: 1px solid black;
      padding: 10px;
@@ -14,6 +18,11 @@
      font-size: 14px;
 }
 
+.reset-button {
+     margin-left: auto;
+     float: right;
+}
+
 .refresh-button {
      margin-left: auto;
      float: right;
@@ -21,4 +30,16 @@
 
 .placeholder {
      text-align: center;
+}
+
+.rowGreyed {
+color: lightgray;
+}
+
+.headerSelected {
+  color: blue;
+}
+
+.sortReversed {
+  color: red;
 }

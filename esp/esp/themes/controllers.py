@@ -236,19 +236,13 @@ class ThemeController(object):
             tf1.write(less_data)
             tf1.close()
 
-        (less_output_fd, less_output_filename) = tempfile.mkstemp()
-        less_output_file = os.fdopen(less_output_fd, 'w')
-        less_output_file.write(less_data)
-        if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
-        less_output_file.close()
-
         less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
-        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, less_output_filename]
-        lessc_process = subprocess.Popen(' '.join(lessc_args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate()[0]
+        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
+        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        css_data = lessc_process.communicate(less_data)[0]
 
         if lessc_process.returncode != 0:
             raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
