@@ -117,7 +117,9 @@ class InclusionTagCacheDecorator(object):
                             t = select_template(file_name)
                         else:
                             t = get_template(file_name)
-                        in_self.nodelist = t.nodelist
+                        # TODO: I don't think getting the underlying Template like this is documented
+                        # so it might be fragile
+                        in_self.nodelist = t.template.nodelist
                     return in_self.nodelist.render(context_class(dict, autoescape=in_self._context.autoescape))
 
                 if not disable:
@@ -166,7 +168,7 @@ class InclusionTagCacheDecorator(object):
 
                     return in_self.render_given_args(args)
 
-            # generic_tag_compiler is private API
+            # TODO: generic_tag_compiler is private API
             compile_func = partial(generic_tag_compiler,
                 params=params, varargs=[], varkw={},
                 defaults=defaults, name=func.__name__,
