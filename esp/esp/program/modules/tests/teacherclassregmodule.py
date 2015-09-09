@@ -286,8 +286,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         d = self.moduleobj.teachers()
         self.failUnless(self.teacher in d['taught_before'])
 
-        transaction.rollback()
-
     @transaction.atomic
     def test_deadline_met(self):
 
@@ -300,6 +298,3 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.failUnless(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.failUnless(not self.moduleobj.deadline_met())
-        
-        transaction.rollback()
-

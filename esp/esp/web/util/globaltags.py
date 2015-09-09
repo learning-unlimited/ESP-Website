@@ -1,4 +1,5 @@
 from django import template
 
-template.add_to_builtins('esp.web.templatetags.latex')
-template.add_to_builtins('esp.web.templatetags.last')
+# TODO: private API, please fix!
+template.base.add_to_builtins('esp.web.templatetags.latex')
+template.base.add_to_builtins('esp.web.templatetags.last')
