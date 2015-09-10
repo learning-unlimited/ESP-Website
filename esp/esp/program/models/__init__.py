@@ -1898,6 +1898,8 @@ from esp.program.models.flags import *
 def install():
     from esp.program.models.class_ import install as install_class
     print "Installing esp.program initial data..."
+    if not RegistrationType.objects.exists():
+        RegistrationType.objects.create(name='Enrolled', category='student')
     install_class()
 
 # The following are only so that we can refer to them in caching

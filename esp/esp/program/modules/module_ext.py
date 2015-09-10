@@ -53,7 +53,10 @@ class DBReceipt(models.Model):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 def get_regtype_enrolled():
-    RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
+    if RegistrationType.objects.exists():
+        return RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
+    else: # if this is being called while running initial migrations
+        return None
 
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
