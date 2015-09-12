@@ -58,6 +58,7 @@ from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
+from django.utils.functional import SimpleLazyObject
 
 
 
@@ -144,13 +145,25 @@ class ESPUser(User, AnonymousUser):
         # Set up the storage for instance state
         self._state = ModelState()
     
+        # A bit of a hack: if we're passed a SimpleLazyObject, make sure it's
+        # initialized (with `dir` which is proxied), and then grab the __dict__
+        # of the wrapped User or ESPUser.   This is necessary because
+        # SimpleLazyObject doesn't proxy __dict__, so copying it would fail.
+        if isinstance(userObj, SimpleLazyObject):
+            dir(userObj)
+            self.__dict__ = userObj._wrapped.__dict__
+            # This is just a method, so SimpleLazyObj will proxy it just fine.
+            self._is_anonymous = userObj.is_anonymous()
+
         # TODO(benkraft): in the case of an ESPUser, we should consider
         # overriding __new__ to just return the ESPUser it was passed; I don't
         # know why you'd call ESPUser on an ESPUser except by accident, but
-        # giving you back your ESPUser should work just finne.  On the other
+        # giving you back your ESPUser should work just fine.  On the other
         # hand, this might be trickier than it sounds because there are a bunch
-        # of metaclasses flying around.
-        if isinstance(userObj, (ESPUser, User, AnonymousUser)):
+        # of metaclasses flying around, and because if __new__ returns an
+        # ESPUser it will then get __init__ called on it, which might be
+        # unnecessary.
+        elif isinstance(userObj, (ESPUser, User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
             self._is_anonymous = userObj.is_anonymous()
 
