@@ -144,14 +144,14 @@ class ESPUser(User, AnonymousUser):
         # Set up the storage for instance state
         self._state = ModelState()
     
-        if isinstance(userObj, ESPUser):
-            self.__olduser = userObj.getOld()
-            self.__dict__.update(self.__olduser.__dict__)
-            self._is_anonymous = userObj.is_anonymous()
-
-        elif isinstance(userObj, (User, AnonymousUser)):
+        # TODO(benkraft): in the case of an ESPUser, we should consider
+        # overriding __new__ to just return the ESPUser it was passed; I don't
+        # know why you'd call ESPUser on an ESPUser except by accident, but
+        # giving you back your ESPUser should work just finne.  On the other
+        # hand, this might be trickier than it sounds because there are a bunch
+        # of metaclasses flying around.
+        if isinstance(userObj, (ESPUser, User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
-            self.__olduser = userObj
             self._is_anonymous = userObj.is_anonymous()
 
         elif userObj is not None or len(args) > 0:
@@ -241,12 +241,6 @@ class ESPUser(User, AnonymousUser):
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
-    def getOld(self):
-        if not hasattr(self, "_ESPUser__olduser"):
-            self.__olduser = User()
-        self.__olduser.__dict__.update(self.__dict__)
-        return self.__olduser
-
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
@@ -277,16 +271,6 @@ class ESPUser(User, AnonymousUser):
         if lastname == 0:
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
-
-    def __eq__(self, other):
-        """Extends equality to support User object == ESPUser object."""
-        if type(other) == User:
-            return self.getOld() == other or self.id == other.id
-        else:
-            return super(ESPUser, self).__eq__(other)
-
-    def is_authenticated(self):
-        return self.getOld().is_authenticated()
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
