@@ -285,6 +285,9 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
+    def is_authenticated(self):
+        return not self.is_anonymous()
+
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
