@@ -1,0 +1,32 @@
+{% extends "main.html" %} 
+{% load i18n %} 
+{% block title %}{{program.niceName}} {% trans "Printables" %}{% endblock %} 
+{% block subsection_name %}{% trans "All Classes CSV Export" %}{% endblock %} 
+{% block content %}
+<link rel="stylesheet" type="text/css" href="/media/styles/multiselect.css" />
+<script src="/media/scripts/jquery.multi-select.js" type="text/javascript"></script>
+<h1>{% trans "All Classes CSV Export" %}</h1>
+<div class="alert alert-info">
+    {% trans "Select the fields that you would like to include in the CSV export." %}
+</div>
+<form method="get" action="paid_list">
+    <fieldset>
+        <legend>
+            {% trans "Select Fields" %}
+        </legend>
+       <div>
+          {{form.subject_fields}}
+      </div>
+    </fieldset>
+    <hr />
+    <div>
+      <button type="button" class="btn btn-large btn-primary">{% trans "Export CSV" %} >></button>
+      <button type="button" class="btn btn-large" disabled>{% trans "Cancel" %}</button>
+    </div>
+</form>
+<script type="text/javascript">
+$j(function() {
+    $j('#id_subject_fields').multiSelect();
+});
+</script>
+{% endblock %}

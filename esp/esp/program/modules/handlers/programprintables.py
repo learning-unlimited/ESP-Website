@@ -32,27 +32,47 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
-from esp.web.util        import render_to_response
-from esp.users.models    import ESPUser, User
-from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
-from esp.program.models.class_ import ACCEPTED
-from esp.users.views     import search_for_user
-from esp.users.controllers.usersearch import UserSearchController
-from esp.web.util.latex  import render_to_latex
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.tagdict.models import Tag
-from esp.cal.models import Event
-from esp.middleware import ESPError
-from esp.utils.query_utils import nest_Q
+import collections
+import csv
+from decimal import Decimal
+import json
 
+from django import forms
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
-from decimal import Decimal
-import json
-import collections
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.cal.models import Event
+from esp.middleware import ESPError
+from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models.class_ import ACCEPTED
+from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
+from esp.tagdict.models import Tag
+from esp.users.controllers.usersearch import UserSearchController
+from esp.users.models    import ESPUser, User
+from esp.users.views     import search_for_user
+from esp.utils.query_utils import nest_Q
+from esp.web.util        import render_to_response
+from esp.web.util.latex  import render_to_latex
+
+
+class AllClassesSelectionForm(forms.Form):
+    subject_fields = forms.MultipleChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
+
+        field_list = [field for field in ClassSubject._meta.fields]
+        field_list.sort(key=lambda x: x.name)
+
+        field_choices = [(field.name, field.verbose_name.title()) for field in field_list]
+    
+        self.fields['subject_fields'].choices = field_choices 
+
+        self.field_dict = dict(field_choices)
+
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -1319,37 +1339,50 @@ Volunteer schedule for %s:
                     'descriptions': ProgramPrintables.getTranscript(prog, user, 'latex_desc')}
 
         return render_to_latex(self.baseDir()+'completion_certificate.tex', context, file_type)
+
+    @aux_call
+    @needs_admin
+    def all_classes_select_fields(self, request, tl, one, two, module, extra, prog):
+        form = AllClassesSelectionForm()
+        context = {}
+        context['form'] = form
+        return render_to_response(self.baseDir()+'all_classes_select_fields.html', request, context)
         
     @aux_call
     @needs_admin
     def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
-        import csv
-        from django.http import HttpResponse
-        from django.utils.encoding import smart_str
-
         response = HttpResponse(mimetype="text/csv")
         write_cvs = csv.writer(response)
+        form = AllClassesSelectionForm(request.POST)
 
-        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
-        for cls in ClassSubject.objects.filter(parent_program=prog):
-            write_cvs.writerow(
-                (cls.id,
-                 ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
-                 smart_str(cls.title),
-                 cls.prettyDuration(),
-                 cls.grade_min,
-                 cls.grade_max,
-                 cls.class_size_min,
-                 cls.class_size_max,
-                 cls.category,
-                 smart_str(cls.class_info),
-                 ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
-                 smart_str(cls.message_for_directors),
-                 smart_str(cls.prereqs),
-                 smart_str(cls.directors_notes),
-                 ", ".join(cls.friendly_times()),
-                 ", ".join(cls.prettyrooms()),
-                 ))
+        if form.is_valid():
+            selected_fields = form.cleaned_fields['subject_fields']
+            csv_headings = [form.field_dict[fieldname] for fieldname in selected_fields]
+            write_cvs.writerow(csv_headings)
+
+
+
+
+        # write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
+        # for cls in ClassSubject.objects.filter(parent_program=prog):
+        #     write_cvs.writerow(
+        #         (cls.id,
+        #          ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
+        #          smart_str(cls.title),
+        #          cls.prettyDuration(),
+        #          cls.grade_min,
+        #          cls.grade_max,
+        #          cls.class_size_min,
+        #          cls.class_size_max,
+        #          cls.category,
+        #          smart_str(cls.class_info),
+        #          ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
+        #          smart_str(cls.message_for_directors),
+        #          smart_str(cls.prereqs),
+        #          smart_str(cls.directors_notes),
+        #          ", ".join(cls.friendly_times()),
+        #          ", ".join(cls.prettyrooms()),
+        #          ))
 
         response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
         return response
