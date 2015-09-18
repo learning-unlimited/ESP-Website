@@ -220,7 +220,7 @@ class ESPErrorMiddleware(object):
             response = render_to_response('error.html', context, context_instance=context_instance)  # Will use a pretty ESP error page...
             response.status_code = 500
             return response
-        return None
+        return 
 
             
     def _get_traceback(self, exc_info=None):
