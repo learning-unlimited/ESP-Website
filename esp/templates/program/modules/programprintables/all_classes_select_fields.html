@@ -9,7 +9,14 @@
 <div class="alert alert-info">
     {% trans "Select the fields that you would like to include in the CSV export." %}
 </div>
-<form method="get" action="paid_list">
+
+{% if form.errors %}
+<div class="alert alert-error">
+    {% trans "Please select at least one field." %}
+</div>
+{% endif %}
+<form method="post" action="all_classes_spreadsheet">
+   
     <fieldset>
         <legend>
             {% trans "Select Fields" %}
@@ -20,7 +27,7 @@
     </fieldset>
     <hr />
     <div>
-      <button type="button" class="btn btn-large btn-primary">{% trans "Export CSV" %} >></button>
+      <button type="submit" class="btn btn-large btn-primary">{% trans "Export CSV" %} >></button>
       <button type="button" class="btn btn-large" disabled>{% trans "Cancel" %}</button>
     </div>
 </form>
