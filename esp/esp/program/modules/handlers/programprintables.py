@@ -39,9 +39,11 @@ import json
 
 from django import forms
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
+from django.contrib import messages
 
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.cal.models import Event
@@ -56,22 +58,6 @@ from esp.users.views     import search_for_user
 from esp.utils.query_utils import nest_Q
 from esp.web.util        import render_to_response
 from esp.web.util.latex  import render_to_latex
-
-
-class AllClassesSelectionForm(forms.Form):
-    subject_fields = forms.MultipleChoiceField()
-
-    def __init__(self, *args, **kwargs):
-        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
-
-        field_list = [field for field in ClassSubject._meta.fields]
-        field_list.sort(key=lambda x: x.name)
-
-        field_choices = [(field.name, field.verbose_name.title()) for field in field_list]
-    
-        self.fields['subject_fields'].choices = field_choices 
-
-        self.field_dict = dict(field_choices)
 
 
 class ProgramPrintables(ProgramModuleObj):
@@ -1342,50 +1328,28 @@ Volunteer schedule for %s:
 
     @aux_call
     @needs_admin
-    def all_classes_select_fields(self, request, tl, one, two, module, extra, prog):
+    def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
         form = AllClassesSelectionForm()
+        converter = form.converter
+
+        if request.method == 'POST':
+            form = AllClassesSelectionForm(request.POST)
+            if form.is_valid():
+                response = HttpResponse(mimetype="text/csv")
+                write_cvs = csv.writer(response)
+                selected_fields = form.cleaned_data['subject_fields']
+                csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
+                write_cvs.writerow(csv_headings)
+
+                for cls in ClassSubject.objects.filter(parent_program=prog):
+                    write_cvs.writerow([converter.fieldvalue(cls,f) for f in selected_fields])
+
+                response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
+                return response
+
         context = {}
         context['form'] = form
         return render_to_response(self.baseDir()+'all_classes_select_fields.html', request, context)
-        
-    @aux_call
-    @needs_admin
-    def all_classes_spreadsheet(self, request, tl, one, two, module, extra, prog):
-        response = HttpResponse(mimetype="text/csv")
-        write_cvs = csv.writer(response)
-        form = AllClassesSelectionForm(request.POST)
-
-        if form.is_valid():
-            selected_fields = form.cleaned_fields['subject_fields']
-            csv_headings = [form.field_dict[fieldname] for fieldname in selected_fields]
-            write_cvs.writerow(csv_headings)
-
-
-
-
-        # write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
-        # for cls in ClassSubject.objects.filter(parent_program=prog):
-        #     write_cvs.writerow(
-        #         (cls.id,
-        #          ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
-        #          smart_str(cls.title),
-        #          cls.prettyDuration(),
-        #          cls.grade_min,
-        #          cls.grade_max,
-        #          cls.class_size_min,
-        #          cls.class_size_max,
-        #          cls.category,
-        #          smart_str(cls.class_info),
-        #          ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
-        #          smart_str(cls.message_for_directors),
-        #          smart_str(cls.prereqs),
-        #          smart_str(cls.directors_notes),
-        #          ", ".join(cls.friendly_times()),
-        #          ", ".join(cls.prettyrooms()),
-        #          ))
-
-        response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
-        return response
 
     @aux_call
     @needs_admin
@@ -1569,3 +1533,42 @@ Volunteer schedule for %s:
     class Meta:
         proxy = True
         app_label = 'modules'
+
+
+class AllClassesFieldConverter(object):
+    TEACHERS = 'teachers'
+    TIMES = 'times'
+    ROOMS = 'rooms'
+
+    def __init__(self):
+        field_list = [field for field in ClassSubject._meta.fields]
+        #field_list.sort(key=lambda x: x.name)
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS)]
+        self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
+
+        #sort tuple list by field name
+        sorted(self.field_choices,key=lambda x: x[0])
+        self.field_dict = dict(self.field_choices)
+        self.field_converters = {
+            self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
+            self.TIMES: lambda x: ", ".join(x.friendly_times()),
+            self.ROOMS: lambda x: ", ".join(x.prettyrooms())
+        }
+
+    def fieldvalue(self, model_instance, fieldname):
+        fieldvalue = ''
+        if fieldname in self.field_converters:
+            fieldvalue = self.field_converters[fieldname](model_instance)
+        elif hasattr(model_instance, fieldname):
+            fieldvalue = getattr(model_instance, fieldname)
+        return fieldvalue
+
+
+class AllClassesSelectionForm(forms.Form):
+    subject_fields = forms.MultipleChoiceField()
+
+    def __init__(self, *args, **kwargs):
+        super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
+
+        self.converter = AllClassesFieldConverter()
+        self.fields['subject_fields'].choices = self.converter.field_choices 
