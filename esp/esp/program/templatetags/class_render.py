@@ -75,7 +75,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
             'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times}           
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
@@ -85,6 +85,7 @@ render_class.cached_function.get_or_create_token(('cls',))
 # of things like lunch constraints -- a change made in another block could
 # affect whether you can add a class in this one.  So we depend on all SRs for
 # this user.
+# TODO(benkraft): do these need to also get copied elsewhere?
 render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class.cached_function.get_or_create_token(('user',))
 
