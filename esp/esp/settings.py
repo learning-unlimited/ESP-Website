@@ -44,6 +44,9 @@ from django_settings import *
 # Import system-specific settings
 from local_settings import *
 
+# Do this here so we have access to PROJECT_ROOT
+TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
+
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:
     try:
@@ -75,11 +78,6 @@ LESS_SEARCH_PATH = [
 ]
 
 MANAGERS = ADMINS
-
-TEMPLATE_DIRS = (
-    os.path.join(PROJECT_ROOT, 'templates'),
-    
-)
 
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
