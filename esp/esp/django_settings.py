@@ -74,7 +74,6 @@ LOGIN_REDIRECT_URL = '/'
 ###########################
 DEBUG = False
 DISPLAYSQL = False
-TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
 USE_PROFILER = False
@@ -154,15 +153,42 @@ DEFAULT_CACHE_TIMEOUT = 86400
 
 SITE_ID = 1
 
-TEMPLATE_LOADERS = (
-    'esp.utils.template.Loader',
-    ('esp.utils.template.CachedLoader',
-        (
-         'django.template.loaders.filesystem.Loader',
-         'django.template.loaders.app_directories.Loader',
-        )
-    ),
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            # Filled in by settings.py so it can depend on PROJECT_ROOT
+        ],
+        'OPTIONS': {
+            'context_processors': [
+                'esp.context_processors.media_url', # remove this one after all branches are transitioned
+                'esp.context_processors.esp_user',
+                'esp.context_processors.current_site',
+                'esp.context_processors.index_backgrounds',
+                'esp.context_processors.espuserified_request',
+                'esp.context_processors.preload_images',
+                'esp.context_processors.email_settings',
+                'esp.context_processors.program',
+                'esp.context_processors.schoolyear',
+                'django.core.context_processors.i18n',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'django.core.context_processors.media',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.static',
+            ],
+            'loaders': [
+                'esp.utils.template.Loader',
+                ('django.template.loaders.cached.Loader',
+                    (
+                     'django.template.loaders.filesystem.Loader',
+                     'django.template.loaders.app_directories.Loader',
+                    )
+                ),
+            ]
+        },
+    },
+]
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -243,21 +269,6 @@ ATOMIC_REQUESTS = True
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.
 CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
-
-TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
-                               'esp.context_processors.esp_user',
-                               'esp.context_processors.current_site',
-                               'esp.context_processors.index_backgrounds',
-                               'esp.context_processors.espuserified_request',
-                               'esp.context_processors.preload_images',
-                               'esp.context_processors.email_settings',
-                               'esp.context_processors.program',
-                               'esp.context_processors.schoolyear',
-                               'django.core.context_processors.i18n',
-                               'django.contrib.auth.context_processors.auth',
-                               'django.contrib.messages.context_processors.messages',
-                               'django.core.context_processors.media',
-                               )
 
 # no i18n
 USE_I18N = False
