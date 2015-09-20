@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
-from django.template.loaders.cached import Loader as CachedLoader
 import reversion
 
 from esp.users.models import ESPUser
@@ -66,18 +65,6 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
-
-        #   Reset all Django template loaders
-        #   (our own template loader will be reset through the caching API)
-        from django.template import engines
-        engine = engines['django']
-        # TODO: template_loaders is private API
-        loaders = engine.engine.template_loaders
-        from django.template.loaders.cached import Loader as cached_loader
-        if isinstance(loaders, list):
-            for tloader in filter(lambda x: isinstance(x, cached_loader), loaders):
-                tloader.reset()
-
         super(TemplateOverride, self).save(*args, **kwargs)
 
 class Printer(models.Model):
