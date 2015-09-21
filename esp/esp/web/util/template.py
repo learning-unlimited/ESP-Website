@@ -46,17 +46,7 @@ from esp.cache import cache_function
 from esp.cache.key_set import is_wildcard
 from esp.middleware import ESPError
 
-__all__ = ['cache_inclusion_tag', 'DISABLED']
-
-
-class Disabled_Cache(object):
-    def noop(*args, **kwargs):
-        return None
-
-    get = set = delete = noop
-
-DISABLED = Disabled_Cache()
-
+__all__ = ['cache_inclusion_tag']
 
 CONTEXT_ATTRS_TO_COPY = ['autoescape', 'use_l10n', 'use_tz']
 
