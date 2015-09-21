@@ -58,6 +58,9 @@ class Disabled_Cache(object):
 DISABLED = Disabled_Cache()
 
 
+CONTEXT_ATTRS_TO_COPY = ['autoescape', 'use_l10n', 'use_tz']
+
+
 def _render_cache_key_set_mapper(params):
     """Return a function suitable for use as a depend_on_cache mapping_func
 
@@ -65,17 +68,16 @@ def _render_cache_key_set_mapper(params):
     the function, and returning a key_set for
     CacheInclusionNode.render_given_args."""
     def key_set(**kwargs):
-        if kwargs == {}:
-            # If the key set is empty, we can just flush everything.
-            return {}
-        elif any(is_wildcard(val) for val in kwargs.itervalues()):
-            # Flush everything if we got a wildcard, because the argcache API
-            # doesn't support a more precise expiry.
+        if any(param not in kwargs or is_wildcard(kwargs[param])
+               for param in params):
+            # If the key set is missing any keys, or has any wildcards, dump
+            # everything, because the argcache API doesn't support a more
+            # precise expiry.
             return {}
         else:
             # Otherwise, prepare a key set embedding the argument list in the
             # 'args' key
-            return {'resolved_args': [kwargs.get(key) for key in params]}
+            return {'resolved_args': [kwargs[key] for key in params]}
     return key_set
 
 
@@ -174,13 +176,15 @@ def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
         same tag render differently.  If you don't know what any of that means,
         it probably won't hurt you; as of Django 1.8, the only built-in tag
         that might require care is `{% cycle %}`.
+      * Unlike cache_function, using cache_inclusion_tag to decorate a class
+        method is not supported.
     """
     def dec(func):
         # In our case varargs and varkw had better be None, or else
         # cache_function will fail.
         params, varargs, varkw, defaults = getargspec(func)
         # CHANGED: added the following line
-        cached_func = cache_function(func)
+        cached_func = cache_function(func, containing_class=None)
 
         class CachedInclusionNode(TagHelperNode):
             # CHANGED: added the following lines, which makes sure that the
@@ -208,17 +212,26 @@ def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
                 # render_given_args so we can cache it.  We sneakily pass
                 # context around where argcache won't see it -- as an attribute
                 # of self (which argcache won't noticed due to our
-                # __marindate__ above), rather than as a proper function
+                # __marinate__ above), rather than as a proper function
                 # parameter.  As above, this is dangerous, but we will only
-                # ever access a whitelisted set of attributes on it.
+                # ever access a whitelisted set of attributes on it.  We also
+                # want to make sure the cache *does* depend on certain
+                # attributes of the context which we will end up copying over
+                # to the inclusion tag's context, and which might change
+                # between invocations of the inclusion tag, so we pass those as
+                # context_attrs.
                 self._context = context
-                return self.render_given_args(resolved_args)
+                context_attrs = {
+                    attr: getattr(context, attr)
+                    for attr in CONTEXT_ATTRS_TO_COPY
+                    if hasattr(context, attr)}
+                return self.render_given_args(resolved_args, context_attrs)
 
             # CHANGED: this was previously inlined in render(), we break it out
             # into a separate function so we can cache it.  Again, pull context
             # back off of self.  Remember not to access anything on it that is
             # likely to change between invocations.
-            def render_given_args(self, resolved_args):
+            def render_given_args(self, resolved_args, context_attrs):
                 context = self._context
                 # CHANGED: func -> cached_func
                 _dict = cached_func(*resolved_args)
@@ -242,9 +255,8 @@ def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
                 # require using a plain Context, and copy a whitelisted set of
                 # attrs over, rather than using copy().
                 new_context = Context(_dict)
-                for attr in ['autoescape', 'use_l10n', 'use_tz', 'template']:
-                    if hasattr(context, attr):
-                        setattr(new_context, attr, getattr(context, attr))
+                for attr, val in context_attrs.iteritems():
+                    setattr(new_context, attr, val)
                 new_context.render_context = copy(context.render_context)
                 # CHANGED: removed copying the csrf_token over to the
                 # new_context, because we should never do that.  If you need a
