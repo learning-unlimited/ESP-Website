@@ -1536,6 +1536,11 @@ Volunteer schedule for %s:
 
 
 class AllClassesFieldConverter(object):
+    """
+    Handles value extraction and formatting of CLassSubject instances. This is
+    used as 'pre-processing' step when generating the records for the All Classes 
+    CSV spreadsheet.
+    """
     TEACHERS = 'teachers'
     TIMES = 'times'
     ROOMS = 'rooms'
@@ -1549,18 +1554,28 @@ class AllClassesFieldConverter(object):
         #sort tuple list by field name
         sorted(self.field_choices,key=lambda x: x[0])
         self.field_dict = dict(self.field_choices)
+
+        #a dict of field names and asscoiated formatting lambdas to handle generation
+        #of field data that should have a different format than the default.
         self.field_converters = {
             self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
             self.TIMES: lambda x: ", ".join(x.friendly_times()),
             self.ROOMS: lambda x: ", ".join(x.prettyrooms())
         }
 
-    def fieldvalue(self, model_instance, fieldname):
+    def fieldvalue(self, class_subject, fieldname):
+        """
+        Returns the value of the specified field for the supplied class_subject instance.
+        Fields that are defined in the field_converters dict will have an associated 
+        formatting function which will be executed to return the appropriate format.
+        """
         fieldvalue = ''
         if fieldname in self.field_converters:
-            fieldvalue = self.field_converters[fieldname](model_instance)
-        elif hasattr(model_instance, fieldname):
-            fieldvalue = getattr(model_instance, fieldname)
+            fieldvalue = self.field_converters[fieldname](class_subject)
+        elif hasattr(class_subject, fieldname):
+            fieldvalue = getattr(class_subject, fieldname)
+        else:
+            raise ValueError('Invalid fieldname supplied {0}'.format(fieldname))
         return fieldvalue
 
 
