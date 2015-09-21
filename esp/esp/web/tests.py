@@ -201,6 +201,14 @@ class CacheInclusionTagTest(TestCase):
         self.assertEqual(rendered, "foo 1")
         self.assertEqual(counter[0], 1)
 
+        # test that it doesn't depend on template identity
+        t_ = Template("{% load test_tags %}{% silly_inclusion_tag arg %}")
+        rendered = t_.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        rendered = t_.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        self.assertEqual(counter[0], 1)
+
         # test that it doesn't depend on the surrounding context
         rendered = t.render(Context({'arg': 'foo'}))
         self.assertEqual(rendered, "foo 1")
