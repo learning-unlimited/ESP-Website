@@ -147,6 +147,12 @@ def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
     or less like `register.inclusion_tag`, subject to the gotchas below.
     You may use the caching API to add dependencies for automatic invalidation
     by accessing the 'cached_function' attribute of the decorated function.
+
+    Parameters:
+    * register should be `template.Library()`.
+    * file_name should be the template file to use, or a `Template()` object.
+    * takes_context and name are as in `register.inclusion_tag`.
+
     For example:
 
     from django import template
@@ -158,6 +164,10 @@ def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
     def fun_tag(foo, bar, baz):
         return {'foo': foo}
     fun_tag.cached_function.depend_on_row(lambda: SomeModel, lambda some_instance: {'foo': some_instance.foo})
+
+    Note that you will need to import the template tag from somewhere that will
+    get imported on server startup, likely utils/inclusion_tags.py, to make
+    sure that the caching code gets set up correctly.
 
     GOTCHAS:
       * cache_inclusion_tag will always pass a Context through to the template,
