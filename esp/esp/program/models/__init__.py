@@ -50,17 +50,27 @@ from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
 
+from esp.users.models import ESPUser, Permission
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError, AjaxError
+from esp.middleware import ESPError, AjaxError, ESPError_Log
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
+
+
+PROFILE_MAX_AGE_DAYS = 5
+
+
+class ProgramAccessError(ESPError_Log):
+    def __init__(self, msg):
+        self.msg = msg
+        super(ProgramAccessError, self).__init__(msg)
 
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
@@ -74,6 +84,7 @@ def get_model(module_name, model_name):
     except:
         pass
     return None
+
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -1270,10 +1281,15 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        if user.is_anonymous():
-            regProfList = RegistrationProfile.objects.none()
-        else:
-            regProfList = (RegistrationProfile.objects
+        has_access = Permission.user_has_perm(user, '/Profile', program)
+
+        if not has_access:
+            raise ProgramAccessError('The user does not have access to this program')
+
+        profile_list = RegistrationProfile.objects.none()
+
+        if not user.is_anonymous():
+            profile_list = (RegistrationProfile.objects
                            .filter(user__exact=user, program__exact=program)
                            .select_related(
                                'user', 'program', 'contact_user',
@@ -1281,16 +1297,21 @@ class RegistrationProfile(models.Model):
                                'student_info', 'teacher_info', 'guardian_info',
                                'educator_info')
                            .order_by('-last_ts','-id')[:1])
-        if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
-            regProf.program = program
-            if regProf.id is not None:
-                regProf.id = None
-                if (datetime.now() - regProf.last_ts).days <= 5:
-                    regProf.save()
+        
+        if len(profile_list) < 1:
+            registration_profile = RegistrationProfile.getLastProfile(user)
+            registration_profile.program = program
+
+            if registration_profile.id is not None:
+                registration_profile.id = None
+                if (datetime.now() - registration_profile.last_ts).days <= PROFILE_MAX_AGE_DAYS:
+                    registration_profile.save()
         else:
-            regProf = regProfList[0]
-        return regProf
+            registration_profile = profile_list[0]
+                
+        return registration_profile
+
+
     # Thanks to our attempts to be smart and steal profiles from other programs,
     # the cache can't depend only on profiles with the same (user, program).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
@@ -1368,6 +1389,7 @@ class TeacherBio(models.Model):
 
     @staticmethod
     def getLastForProgram(user, program):
+
         bios = TeacherBio.objects.filter(user__exact=user, program__exact=program).order_by('-last_ts','-id')
 
         if bios.count() < 1:
