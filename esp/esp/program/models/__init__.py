@@ -1281,7 +1281,7 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        has_access = Permission.user_has_perm(user, '/Profile', program)
+        has_access = Permission.user_has_perm(user, "Student/Profile", program)
 
         if not has_access:
             raise ProgramAccessError('The user does not have access to this program')
