@@ -32,7 +32,7 @@ able to search.
 Student Registration Big Board
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There is a new page for watching the current number of student registrations.
+There is a new module for watching the current number of student registrations.
 You can get to it from the link "Student Registration Big Board" on the main
 program management page, or at /manage/[program]/[instance]/bigboard.  It has
 some of the same statistics as the dashboard, but is a lot faster to load, and
