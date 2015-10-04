@@ -2,10 +2,8 @@ import re
 import os
 
 from django.db import models
-# TODO(1.8): rewrite this to not depend on south
-#from south.db import db
 from django.db.models.loading import cache
-from django.db import transaction
+from django.db import connection, transaction
 from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
@@ -28,10 +26,33 @@ def get_file_upload_path(instance, filename):
 class DynamicModelHandler:
     """
     Handler class for creating, modifying and deleting dynamic models
-        -Uses South for db operations
+        -Uses Django's SchemaEditor API for db operations
         - __init__() takes as input two arguments -> 'form', the current Form instance, and 'fields', 
             a list of (field_id, field_type) tuples
-        -'fields' is optional. If not provided, it is computed automatically.    
+        -'fields' is optional. If not provided, it is computed automatically.
+
+    -----
+
+    I'm not the original author of the code, I'm just updating it, and I'm not entirely sure
+    that the following is correct, but I want to leave these notes for the next person to
+    have to modify this:
+
+    You might look at this, notice that there's some weird special handling of foreign keys
+    going on, and wonder what it's there for. Here's my best guess at what it's doing.
+
+    - The one called "only_fkey" or "link_type" is the custom form's link. A custom form can
+    be associated with a particular model, usually a program. As far as I can tell this doesn't
+    do anything, but it's there and it's in use.
+
+    - If the form is not anonymous, it'll need a foreign key to ESPUser.
+
+    - Then there are other "link fields". This is the weird one. I think the idea is that you
+    can have a custom form with fields that are actually stored in another model. The custom form
+    responses table has a foreign key to that other model. The form will have multiple fields
+    that are part of this linked model, and you might add or remove one of those, but the existence
+    of the foreign key in the custom forms table shouldn't change unles you've added a new one
+    or removed all of them. This is why you have to keep track of them and check, and have
+    separate add and remove methods from the normal fields.
     """
     
     _app_label = 'customforms'
@@ -67,7 +88,8 @@ class DynamicModelHandler:
         self.field_list = []
         self.fields = fields
         self._tname = 'customforms\".\"customforms_response_%d' % form.id
-        self.link_models_list = []     # Used to store the names of models that are currently linked to via link fields
+        # Keep track of the models being linked to (see docstring)
+        self.link_models_list = []
     
     def __marinade__(self):
         """
@@ -95,6 +117,15 @@ class DynamicModelHandler:
         else:
             return None
             
+    def _getLinkModelField(self, model):
+        """
+        Returns a ForeignKey Field for the given model
+        """
+        # If I don't set db_index=False here, Django tries to create an index,
+        # which breaks because Django doesn't know that customforms is in its
+        # own schema
+        return models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL, db_index=False)
+
     def _getModelFieldList(self):
         """
         Returns a list of Model Field tuples given a list of field_types (from the metadata)
@@ -110,12 +141,12 @@ class DynamicModelHandler:
         
         self.field_list.append( ('id', models.AutoField(primary_key = True) ) )
         if not self.form.anonymous:
-            self.field_list.append( ('user', models.ForeignKey(ESPUser, null = True, blank = True, on_delete = models.SET_NULL) ) )
+            self.field_list.append( ('user', self._getLinkModelField(ESPUser) ) )
             
         # Checking for only_fkey links
         if self.form.link_type != '-1':
             model_cls = cf_cache.only_fkey_models[self.form.link_type]
-            self.field_list.append( ('link_%s' % model_cls.__name__, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
+            self.field_list.append( ('link_%s' % model_cls.__name__, self._getLinkModelField(model_cls)) )
             
         # Check for linked fields-
         # Insert a foreign-key to the parent model for link fields
@@ -128,13 +159,13 @@ class DynamicModelHandler:
                 new_field = self._getModelField(field)
                 if new_field:
                     self.field_list.append( ('question_%s' % str(field_id), new_field) )
-        
-        # Adding foreign key fields for link-field models
+
         for model in link_models:
             if model:
-                self.field_list.append( ('link_%s' % model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
+                new_field = self._getLinkModelField(model)
+                self.field_list.append( ('link_%s' % model.__name__, new_field) )
                 self.link_models_list.append(model.__name__)
-                    
+
         return self.field_list
         
     def createTable(self):
@@ -144,33 +175,22 @@ class DynamicModelHandler:
         
         if not self.field_list:
             self._getModelFieldList()
-        
+
         if transaction.get_autocommit():
             with transaction.atomic():
-                db.create_table(self._tname, tuple(self.field_list))
-            
-                # Executing deferred SQL, after correcting the CREATE INDEX statements
-                deferred_sql = []
-                for stmt in db.deferred_sql:
-                    deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-                db.deferred_sql = deferred_sql
-                db.execute_deferred_sql()
+                with connection.schema_editor() as schema_editor:
+                    schema_editor.create_model(self.createDynModel())
         else:
-            db.create_table(self._tname, tuple(self.field_list))
-            
-            # Executing deferred SQL, after correcting the CREATE INDEX statements
-            deferred_sql = []
-            for stmt in db.deferred_sql:
-                deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-            db.deferred_sql = deferred_sql    
-            db.execute_deferred_sql()    
+            with connection.schema_editor() as schema_editor:
+                schema_editor.create_model(self.createDynModel())
         
     @transaction.atomic
     def deleteTable(self):
         """
         Deletes the response table for the current form
         """
-        db.delete_table(self._tname)
+        with connection.schema_editor() as schema_editor:
+            schema_editor.delete_model(self.createDynModel())
         
     def _getFieldToAdd(self, ftype):
         """
@@ -193,28 +213,28 @@ class DynamicModelHandler:
             
         return "question_%d" % field.id
     
-    def addOrUpdateField(self, field, db_func, **kwargs):
-        """
-        Applies db_func to a column (or columns) corresponding to a particular field
-        Depending on db_func, this can be used to ADD COLUMN or ALTER COLUMN
-        """
-        field_name = self.get_field_name(field)
-        #   TODO: Return early if this is a linked field
-        db_func(self._tname, field_name, self._getFieldToAdd(field.field_type), **kwargs)
-        
     def addField(self, field):
-        self.addOrUpdateField(field, db.add_column, keep_default=False)
+        with connection.schema_editor() as schema_editor:
+            model = self.createDynModel()
+            field_name = self.get_field_name(field)
+            schema_editor.add_field(model, model._meta.get_field(field_name))
 
-    def updateField(self, field):
-        self.addOrUpdateField(field, db.alter_column)
+    def updateField(self, field, old_field):
+        with connection.schema_editor() as schema_editor:
+            model = self.createDynModel()
+            field_name = self.get_field_name(field)
+            schema_editor.alter_field(model, self._getModelField(old_field),
+                                      model._meta.get_field(field_name))
         
     def removeField(self, field):
         """
         Removes a column (or columns) corresponding to a particular field
         """
-        field_name = self.get_field_name(field)
-        #   TODO: Return early if this is a linked field
-        db.delete_column(self._tname, field_name)
+        with connection.schema_editor() as schema_editor:
+            model = self.createDynModel()
+            field_name = self.get_field_name(field)
+            #   TODO: Return early if this is a linked field
+            schema_editor.remove_field(model, model._meta.get_field(field_name))
         
     def removeLinkField(self, field):
         """
@@ -222,11 +242,13 @@ class DynamicModelHandler:
         """
         if not cf_cache.isLinkField(field.field_type):
             return
-        model_cls = cf_cache.modelForLinkField(field.field_type)
-        if model_cls.__name__ in self.link_models_list:
-            field_name = 'link_%s' % model_cls.__name__
-            db.delete_column(self._tname, "%s_id" % field_name)
-            self.link_models_list.remove(model_cls.__name__)
+        with connection.schema_editor() as schema_editor:
+            model = self.createDynModel()
+            link_model_cls = cf_cache.modelForLinkField(field.field_type)
+            if link_model_cls.__name__ in self.link_models_list:
+                field_name = 'link_%s' % link_model_cls.__name__
+                schema_editor.remove_field(model, model._meta.get_field(field_name))
+                self.link_models_list.remove(link_model_cls.__name__)
         
     def addLinkFieldColumn(self, field):
         """
@@ -234,31 +256,39 @@ class DynamicModelHandler:
         If not, it adds in the column.
         """
         if not cf_cache.isLinkField(field.field_type):
-            return    
-        model_cls = cf_cache.modelForLinkField(field.field_type)
-        if model_cls.__name__ not in self.link_models_list:
-            # Add in the FK-column for this model
-            field_name = self.get_field_name(field)
-            db.add_column(self._tname, field_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL))
-            self.link_models_list.append(model_cls.__name__)
+            return
+        with connection.schema_editor() as schema_editor:
+            link_model_cls = cf_cache.modelForLinkField(field.field_type)
+            if link_model_cls.__name__ not in self.link_models_list:
+                # Add in the FK-column for this model
+                model = self.createDynModel()
+                field_name = self.get_field_name(field)
+                schema_editor.add_field(model, model._meta.get_field(field_name))
+                self.link_models_list.append(model_cls.__name__)
         
-    def change_only_fkey(self, old_link_type, new_link_type):
+    def change_only_fkey(self, form, old_link_type, new_link_type, link_id):
         """
         Used to change the foreign key corresponding to only_fkey_links when a 
         form is modified.
         """
-        
-        if old_link_type != new_link_type and old_link_type != "-1":
-            # Old FK column needs to go
-            old_model_cls = cf_cache.only_fkey_models[old_link_type]
-            old_field_name = 'link_%s' % old_model_cls.__name__
-            db.delete_column(self._tname, "%s_id" % old_field_name)
+        with connection.schema_editor() as schema_editor:
+            if old_link_type != new_link_type and old_link_type != "-1":
+                # Old FK column needs to go
+                model = self.createDynModel()
+                old_model_cls = cf_cache.only_fkey_models[old_link_type]
+                old_field_name = 'link_%s' % old_model_cls.__name__
+                schema_editor.remove_field(model, model._meta.get_field(old_field_name))
             
-        if old_link_type != new_link_type and new_link_type != "-1":
-            # New FK column needs to be inserted
-            new_model_cls = cf_cache.only_fkey_models[new_link_type]
-            new_field_name = 'link_%s' % new_model_cls.__name__
-            db.add_column(self._tname, new_field_name, models.ForeignKey(new_model_cls, null=True, blank=True, on_delete=models.SET_NULL))
+            form.link_type = new_link_type
+            form.link_id = link_id
+            form.save()
+
+            if old_link_type != new_link_type and new_link_type != "-1":
+                # New FK column needs to be inserted
+                model = self.createDynModel()
+                new_model_cls = cf_cache.only_fkey_models[new_link_type]
+                new_field_name = 'link_%s' % new_model_cls.__name__
+                schema_editor.add_field(model, model._meta.get_field(new_field_name))
     
     def createDynModel(self):
         """
@@ -270,7 +300,8 @@ class DynamicModelHandler:
         
         # Removing any existing model definitions from Django's cache
         try:
-            del cache.app_models[self._app_label][_model_name.lower()]
+            # TODO: private API, please fix
+            del cache.get_app_config(self._app_label).models[_model_name.lower()]
         except KeyError:
             pass
             
