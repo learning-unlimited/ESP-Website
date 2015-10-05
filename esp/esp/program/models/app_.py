@@ -81,6 +81,7 @@ class BaseAppElement(object):
         
         class form_class(forms.ModelForm):
             class Meta:
+                fields = "__all__"
                 model = self.__class__
         
         #   Enlarge text fields to a reasonable size (dangit Django).

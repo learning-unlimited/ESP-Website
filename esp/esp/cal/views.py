@@ -40,6 +40,7 @@ from django.forms import ModelForm
 
 class EventForm(ModelForm):
     class Meta:
+        fields = "__all__"
         model = Event
 
 def createevent(request):
