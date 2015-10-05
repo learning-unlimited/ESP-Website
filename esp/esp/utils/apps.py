@@ -1,6 +1,9 @@
 from django.apps import AppConfig
 from django.db.models import signals
 
+def run_install(sender, **kwargs):
+    sender.models_module.install()
+
 class InstallConfig(AppConfig):
     """
     Base class for app configs of modules that use install() for initial
@@ -8,8 +11,4 @@ class InstallConfig(AppConfig):
     """
 
     def ready(self):
-        def run_install(sender, **kwargs):
-            if sender.name == self.name:
-                sender.models_module.install()
-
-        signals.post_migrate.connect(run_install)
+        signals.post_migrate.connect(run_install, sender=self)
