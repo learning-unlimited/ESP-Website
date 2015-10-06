@@ -19,6 +19,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 
 from django.db.models.loading import get_models
 from django.conf import settings as S
+import django
+
+django.setup()
 
 # http://sontek.net/blog/detail/tips-and-tricks-for-the-python-interpreter
 for m in get_models():

@@ -374,11 +374,6 @@ SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
 
-#   Set test runner to behave like pre-1.6 versions of Django
-#   Exclude apps from testing
-#TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
-TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
-
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None

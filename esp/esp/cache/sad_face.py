@@ -46,8 +46,8 @@ DEFAULT_MESSAGE = \
 """
 For the purposes of signal creation, caches must be loaded when the server
 imports everything. You probably created a cache in a module Django doesn't
-know about. Just explicitly import this module in the __init__.py of some
-installed app.
+know about. Just explicitly import this module in the models.py or
+models/__init__.py of some installed app.
 
 For future signals, files in models.py under any INSTALLED_APPS are
 automatically imported. Also, in our code, views.py tend to be as well.

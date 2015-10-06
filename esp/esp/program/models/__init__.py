@@ -63,7 +63,6 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
-
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
     parent_module_name = '.'.join(module_name.split('.')[:-1])
@@ -1890,7 +1889,8 @@ class StudentSubjectInterest(ExpirableModel):
 
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
-    
+
+# Needed for app loading, don't delete
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
