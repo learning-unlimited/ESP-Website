@@ -2,7 +2,7 @@ from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
@@ -286,7 +286,7 @@ class CustomFormHandler():
         class Meta:
             fieldsets = self.fieldsets
         attrs = {'Meta': Meta}
-        attrs.update(SortedDict(self.fields))
+        attrs.update(OrderedDict(self.fields))
         
         page_form = type(_form_name, (BaseCustomForm,), attrs)
         return page_form        

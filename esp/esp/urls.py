@@ -61,12 +61,12 @@ urlpatterns += patterns('',
                      (r'^admin/', include(admin_site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
-                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
+                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
                         )
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
 urlpatterns += patterns('',
-(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
+(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/', permanent=True)),)
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
@@ -150,7 +150,7 @@ urlpatterns += patterns('esp.web.views.main',
 )
 
 urlpatterns += patterns('',
-(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
+(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True)),)
 
 urlpatterns += patterns('esp.qsdmedia.views', 
     (r'^download\/([^/]+)/?$', 'qsdmedia2'), 

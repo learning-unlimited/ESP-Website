@@ -22,10 +22,10 @@ class CacheConfig(AppConfig):
             __import__(app_config.name, {}, {}, ['models'])
 
         #   Make sure template override cache is registered
-        from esp.utils.template import Loader
+        import esp.utils.template
 
         #   Make sure all cached inclusion tags are registered
-        from esp.utils.inclusion_tags import *
+        import esp.utils.inclusion_tags
 
         # import esp.cache.test
 

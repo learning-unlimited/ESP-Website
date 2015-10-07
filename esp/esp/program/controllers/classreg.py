@@ -9,7 +9,7 @@ from esp.tagdict.models import Tag
 from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.db import transaction
 
 from datetime import timedelta, datetime
@@ -18,7 +18,7 @@ import json
 from django.conf import settings
 
 def get_custom_fields():
-    result = SortedDict()
+    result = OrderedDict()
     form_list_str = Tag.getTag('teacherreg_custom_forms')
     if form_list_str:
         form_cls_list = json.loads(form_list_str)

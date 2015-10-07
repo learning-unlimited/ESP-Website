@@ -43,7 +43,7 @@ from django.db import models
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
 from django.contrib.contenttypes.fields import GenericRelation
@@ -216,7 +216,7 @@ class ClassManager(Manager):
         #   Retrieve the content type for finding class documents (generic relation)
         content_type_id = ContentType.objects.get_for_model(ClassSubject).id
         
-        select = SortedDict([('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
+        select = OrderedDict([('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
                              ('_index_qsd', 'SELECT COUNT(*) FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
@@ -359,7 +359,7 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         enrolled_type = RegistrationType.get_map()['Enrolled']
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
+        select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
         
         select_params = [ enrolled_type.id,
                           now,

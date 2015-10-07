@@ -1,6 +1,6 @@
 from django.forms.fields import Select
 from django import forms
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from localflavor.us.forms import USStateField, USStateSelect
 
         
@@ -14,7 +14,7 @@ class NameWidget(forms.MultiWidget):
         
     def decompress(self, value):
         """
-        'value' is a SortedDict
+        'value' is a OrderedDict
         """
         
         if value:
@@ -57,7 +57,7 @@ class NameField(forms.MultiValueField):
         super(NameField, self).__init__(fields, *args, **kwargs)
     
     def compress(self, value_list):
-        compressed_value = SortedDict()
+        compressed_value = OrderedDict()
         if value_list:
             compressed_value['%s_first_name' % self.name] = value_list[0]
             compressed_value['%s_last_name' % self.name] = value_list[1]
@@ -117,7 +117,7 @@ class AddressField(forms.MultiValueField):
         super(AddressField, self).__init__(fields, *args, **kwargs)
         
     def compress(self, value_list):
-        compressed_value = SortedDict()
+        compressed_value = OrderedDict()
         if value_list:
             compressed_value['%s_street' % self.name] = value_list[0]
             compressed_value['%s_city' % self.name] = value_list[1]
