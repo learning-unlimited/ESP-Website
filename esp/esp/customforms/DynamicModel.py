@@ -191,6 +191,7 @@ class DynamicModelHandler:
         """
         with connection.schema_editor() as schema_editor:
             schema_editor.delete_model(self.createDynModel())
+        self.purgeDynModel()
         
     def _getFieldToAdd(self, ftype):
         """
@@ -299,11 +300,7 @@ class DynamicModelHandler:
         _model_name = 'Response_%d' % self.form.id
         
         # Removing any existing model definitions from Django's cache
-        try:
-            # TODO: private API, please fix
-            del apps.get_app_config(self._app_label).models[_model_name.lower()]
-        except KeyError:
-            pass
+        self.purgeDynModel()
             
         class Meta:
             app_label = self._app_label
@@ -318,6 +315,19 @@ class DynamicModelHandler:
         
         dynModel = type(_model_name, (models.Model,), attrs)
         return dynModel    
+
+    def purgeDynModel(self):
+        """
+        Purges the model from Django's app registry cache.
+        """
+
+        _model_name = 'Response_%d' % self.form.id
+        try:
+            # TODO: private API, please fix
+            del apps.get_app_config(self._app_label).models[_model_name.lower()]
+            apps.clear_cache()
+        except KeyError:
+            pass
                 
         
 # Giving it an alias that's less of a mouthful        

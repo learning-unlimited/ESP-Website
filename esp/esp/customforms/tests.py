@@ -58,6 +58,11 @@ class CustomFormsTest(TestCase):
         new_student.makeRole('Student')
         self.student = new_student
 
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
     def testAuthentication(self):
         """ Make sure custom forms pages are not viewable to unprivileged users,
             but are viewable to admins. """
