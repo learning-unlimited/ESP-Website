@@ -106,7 +106,7 @@ class ClassSearchModule(ProgramModuleObj):
             queryset = query_builder.as_queryset(decoded)
             queryset = queryset.distinct().order_by('id').prefetch_related(
                 'flags', 'flags__flag_type', 'teachers', 'category',
-                'sections')
+                'sections', 'sections__resourcerequest_set')
             english = query_builder.as_english(decoded)
             context = {
                 'queryset': queryset,
