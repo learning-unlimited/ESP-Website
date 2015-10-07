@@ -37,11 +37,13 @@ class ClassSearchModule(ProgramModuleObj):
         flag_select_input = SelectInput(
             field_name='flags__flag_type', english_name='type',
             options={str(ft.id): ft.name for ft in flag_types})
+        any_flag_input = ConstantInput(Q(flags__isnull=False))
         flag_filter = SearchFilter(name='flag', title='the flag',
                                    inputs=[flag_select_input] +
                                    flag_datetime_inputs)
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
-                                       inputs=flag_datetime_inputs)
+                                       inputs=[any_flag_input] +
+                                       flag_datetime_inputs)
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
