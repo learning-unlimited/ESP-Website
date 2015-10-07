@@ -2,7 +2,7 @@ import re
 import os
 
 from django.db import models
-from django.db.models.loading import cache
+from django.apps import apps
 from django.db import connection, transaction
 from esp.customforms.models import Field
 from esp.cache import cache_function
@@ -301,7 +301,7 @@ class DynamicModelHandler:
         # Removing any existing model definitions from Django's cache
         try:
             # TODO: private API, please fix
-            del cache.get_app_config(self._app_label).models[_model_name.lower()]
+            del apps.get_app_config(self._app_label).models[_model_name.lower()]
         except KeyError:
             pass
             

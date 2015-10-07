@@ -41,7 +41,7 @@ import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
 from django.core.cache import cache
@@ -62,18 +62,6 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
-
-#   A function to lazily import models that is occasionally needed for cache dependencies.
-def get_model(module_name, model_name):
-    parent_module_name = '.'.join(module_name.split('.')[:-1])
-    module = __import__(module_name, (), (), parent_module_name)
-    try:
-        module_class = getattr(module, model_name)
-        if issubclass(module_class, models.Model):
-            return module_class
-    except:
-        pass
-    return None
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -276,7 +264,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     'Add flag types in <a href="%s">the admin panel</a>.',
                     urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
 
-    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     class Meta:
         app_label = 'program'

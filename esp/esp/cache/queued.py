@@ -3,7 +3,7 @@
 import types
 
 from django.apps import apps
-from django.db.models import signals, get_model
+from django.db.models import signals
 
 pending_lookups = {}
 

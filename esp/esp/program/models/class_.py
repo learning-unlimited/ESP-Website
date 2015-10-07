@@ -46,7 +46,7 @@ from django.db.models.manager import Manager
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 
@@ -1328,7 +1328,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     purchase_requests = models.TextField(blank=True, null=True)
     custom_form_data = JSONField(blank=True, null=True)
     
-    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
     
     objects = ClassManager()
 

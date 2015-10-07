@@ -40,7 +40,7 @@ from django.db import models
 from django.template import loader
 from django.core.cache import cache
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 try:
     import cPickle as pickle
@@ -320,7 +320,7 @@ class Answer(models.Model):
     ## Generic ForeignKey: either the program, the class, or the section ##
     content_type = models.ForeignKey(ContentType, blank=True, null=True)
     object_id = models.PositiveIntegerField(blank=True, null=True)
-    target = generic.GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
     ## End Generic ForeignKey ##
 
     question = models.ForeignKey(Question, db_index=True)
