@@ -113,11 +113,6 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
-urlpatterns += patterns('esp.web.views.json_utils',
-
-     # JSON
-    (r'json/teachers/$', 'teacher_lookup'))
-
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
