@@ -157,7 +157,8 @@ class SchedulingCheckRunner:
           ('teachers_who_like_running', 'Teachers who like running'),
           ('hungry_teachers', 'Hungry Teachers'),
           ('no_overlap_classes', "Classes which shouldn't overlap"),
-          ('special_classroom_types', "Special Classroom Types")
+          ('special_classroom_types', 'Special Classroom Types'),
+          ('hosed_teachers', 'Hosed Teachers')
      ]
 
      #################################################
@@ -553,3 +554,33 @@ class SchedulingCheckRunner:
          return self.formatter.format_table(mismatches,
                                             {'headings': HEADINGS},
                                             help_text=self.special_classroom_types.__doc__)
+
+     # This isn't really a scheduling check. It's a check that's useful
+     # to run before scheduling. But it works well with the format and
+     # this way everyone else doesn't have to rediscover the round_to
+     # argument to ESPUser.getTaughtTime() every year.
+     def hosed_teachers(self):
+         """
+         Teachers who have registered almost as many hours of classes
+         as hours of availability. Intended to be run before scheduling,
+         and will not change as classes are scheduled.
+         """
+         teachers = self.p.teachers()['class_submitted']
+         hosed = []
+         for teacher in teachers:
+             # This will break if we ever start having class blocks
+             # that aren't an hour long
+             availability = len(teacher.getAvailableTimes(self.p, ignore_classes=True))
+             class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
+             delta = availability - class_hours
+             # Arbitrary formula, seems to do a good job of catching the cases I care about
+             if delta == 0 or class_hours/float(delta) >= 2:
+                 hosed.append({'Teacher': teacher.username,
+                               'Class hours': class_hours,
+                               'Available hours': availability,
+                               'Free hours': delta})
+         return self.formatter.format_table(hosed,
+                                            {'headings': ['Teacher', 'Class hours',
+                                                          'Available hours',
+                                                          'Free hours']},
+                                            help_text=self.hosed_teachers.__doc__)
