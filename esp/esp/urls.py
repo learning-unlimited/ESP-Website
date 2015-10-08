@@ -29,10 +29,10 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
-import os
-from django.conf.urls.defaults import patterns, include, url, handler500, handler404
+
+from django.conf.urls import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
@@ -68,12 +68,6 @@ urlpatterns += patterns('',
 urlpatterns += patterns('',
 (r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
 
-#   Short term views
-urlpatterns += patterns('',
-                        (r'^', include('esp.shortterm.urls'),),
-                        )
-
-
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
                         (r'^error_reporter', 'error_reporter'),
@@ -101,7 +95,8 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls'),)
+                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^varnish/', include('esp.varnish.urls'))
                         )
 
 urlpatterns += patterns('esp.qsd.views',
@@ -118,11 +113,6 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
-urlpatterns += patterns('esp.web.views.json',
-
-     # JSON
-    (r'json/teachers/$', 'teacher_lookup'))
-
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
@@ -135,7 +125,6 @@ urlpatterns += patterns('esp.web.views.main',
 
 
     # Program stuff
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
 
@@ -158,9 +147,6 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
 
-urlpatterns += patterns('', 
-    (r'^dataviews/', include('esp.dataviews.urls')) )
-    
 urlpatterns += patterns('esp.qsdmedia.views', 
     (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
@@ -169,7 +155,7 @@ urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
-    url(r'^__debug__/', include(debug_toolbar.urls)),
+    (r'^__debug__/', include(debug_toolbar.urls)),
 )
 
 urlpatterns += patterns('esp.formstack.views',

@@ -30,19 +30,16 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db import models
 from django.db.models.query import Q
 
-from esp.datatree.models import DataTree
 from esp.db.fields import AjaxForeignKey
-from esp.program.models import Program
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
-    include_auto_links = models.BooleanField()
+    include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
     long_explanation = models.TextField()
@@ -71,14 +68,15 @@ class NavBarCategory(models.Model):
         #   If all else fails, make something up.
         return NavBarCategory.default()
 
-    from_request.depend_on_model(lambda: NavBarCategory) 
+    from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
     
     @classmethod
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
         if not hasattr(cls, '_default'):
-
+            if not cls.objects.exists():
+                install()
             cls._default = cls.objects.all().order_by('id')[0]
         return cls._default
     
@@ -88,12 +86,10 @@ class NavBarCategory(models.Model):
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
-    path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
-    
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
-    indent = models.BooleanField()
+    indent = models.BooleanField(default=False)
 
     category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
@@ -117,6 +113,9 @@ class NavBarEntry(models.Model):
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
-    NavBarCategory.objects.get_or_create(name='default', defaults={ 'long_explanation':
-        'The default category, to which new nav bars and QSD pages get assigned.'})
-
+    print "Installing esp.web initial data..."
+    if not NavBarCategory.objects.filter(name='default').exists():
+        NavBarCategory.objects.create(
+            name='default',
+            long_explanation='The default category, to which new nav bars and QSD pages get assigned.',
+        )

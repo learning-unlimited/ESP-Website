@@ -30,15 +30,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
-from django.db.models.query import Q
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -48,8 +47,7 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -145,17 +143,31 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     def students(self, QObject = False):
-        from django.db.models import Q
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         
-        if QObject:
-            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
-        else:
-            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
+        # Force Django to generate two subqueries without joining SRs to SSIs,
+        # as efficiently as possible since it's still a big query.
+        sr_ids = StudentRegistration.valid_objects().filter(
+            section__parent_class__parent_program=self.program
+        ).values('user').distinct()
+        ssi_ids = StudentSubjectInterest.valid_objects().filter(
+            subject__parent_program=self.program).values('user').distinct()
+        any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
+        
+        qobjects = {
+            'enrolled': Enrolled & Par & Unexpired,
+            'classreg': any_reg_q,
+        }
 
+        if QObject:
+            retVal = qobjects
+        else:
+            retVal = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
+        
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -222,9 +234,6 @@ class StudentClassRegModule(ProgramModuleObj):
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        # Hack, to hide the Saturday night timeslots from grades 7-8
-        if not is_onsite and not user.getGrade() > 8:
-            timeslots = [x for x in timeslots if x.start.hour < 19]
         
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -259,7 +268,6 @@ class StudentClassRegModule(ProgramModuleObj):
                 else:
                     timeslot_dict[mt.id] = [section_dict]
                     
-        user_priority = user.getRegistrationPriorities(self.program, [t.id for t in timeslots])
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -270,9 +278,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 cls_list = timeslot_dict[timeslot.id]
-                schedule.append((timeslot, cls_list, blockCount + 1, user_priority[i]))
+                doesnt_have_enrollment = not any(sec['section'].is_enrolled
+                                                 for sec in cls_list)
+                schedule.append((timeslot, cls_list, blockCount + 1,
+                                 doesnt_have_enrollment))
             else:                
-                schedule.append((timeslot, [], blockCount + 1, user_priority[i]))
+                schedule.append((timeslot, [], blockCount + 1, False))
 
             prevTimeSlot = timeslot
                 
@@ -287,7 +298,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
-        import simplejson as json
+        import json as json
         from django.template.loader import render_to_string
         context = self.prepare({})
         context['prog'] = self.program
@@ -466,7 +477,7 @@ class StudentClassRegModule(ProgramModuleObj):
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(mimetype='application/json')
-                simplejson.dump({'status': success}, resp)
+                json.dump({'status': success}, resp)
                 return resp
             if success:
                 try:
@@ -597,7 +608,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         resp = HttpResponse(mimetype='application/json')
         
-        simplejson.dump(list(timeslots), resp, default=json_encode)
+        json.dump(list(timeslots), resp, default=json_encode)
         
         return resp"""
 
@@ -611,7 +622,7 @@ class StudentClassRegModule(ProgramModuleObj):
         
         resp = HttpResponse(mimetype='application/json')
         
-        simplejson.dump(list(classes), resp, default=json_encode)
+        json.dump(list(classes), resp, default=json_encode)
         
         return resp
 
@@ -627,13 +638,13 @@ class StudentClassRegModule(ProgramModuleObj):
             verb_list = [ signup_verb_uri ]
 
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(verb_list, resp)
+        json.dump(verb_list, resp)
         return resp
 
     def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         clean_counts = prog.student_counts_by_section_id()
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(clean_counts, resp)
+        json.dump(clean_counts, resp)
         return resp
 
     @aux_call
@@ -650,7 +661,7 @@ class StudentClassRegModule(ProgramModuleObj):
             for b in reg_bits ]
         
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(reg_bits_data, resp)
+        json.dump(reg_bits_data, resp)
         return resp
     
     # This function exists only to apply the @meets_deadline decorator.
@@ -740,7 +751,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(mimetype='application/json')
-            simplejson.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
+            json.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
             return resp
         
         if len(cleared_ids) > 0:
@@ -764,11 +775,11 @@ class StudentClassRegModule(ProgramModuleObj):
 
         module = prog.getModule('OnSiteClassList')
         if module:
-            return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
         
         #  Otherwise this will be a 404
         return None
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

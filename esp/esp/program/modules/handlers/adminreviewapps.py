@@ -31,7 +31,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
@@ -40,7 +40,6 @@ from esp.users.models import ESPUser
 from esp.web.util        import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppReview, StudentRegistration, RegistrationType
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
 
@@ -203,7 +202,7 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
+        schedule = u"""
 Student schedule for %s:
 
  Time               | Class                   | Room""" % student.name()
@@ -218,12 +217,12 @@ Student schedule for %s:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = 'N/A'
+                rooms = u'N/A'
             else:
-                rooms = ", ".join(rooms)
+                rooms = u", ".join(rooms)
                 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
+            schedule += u"""
+%s|%s|%s""" % (u",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
                
@@ -232,4 +231,4 @@ Student schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -30,18 +30,18 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.cache import cache_function
-from esp.cache.function import describe_func
+from esp.cache.function import get_containing_class
 
 from django.http import HttpResponse
 from django.db.models import Model
 
 from inspect import getargspec
 from functools import wraps
-import simplejson
+import json
 
 class OptionalDecorator(object):
     """ A simple decorator to turn a function into a no-op.  If the argument evaluates
@@ -74,6 +74,9 @@ def json_response(field_map={}):
         if related lookups were used. 
     """
     
+    # Here instead of at the top because of circular imports
+    from esp.web.util.main import render_to_response
+
     def map_fields(item):
         if isinstance(item, Model):
             item = item.__dict__
@@ -88,10 +91,16 @@ def json_response(field_map={}):
 
     def dec(func):
         @wraps(func)
-        def _evaluate(*args, **kwargs):
-            result = func(*args, **kwargs)
+        def _evaluate(module_obj, request, *args, **kwargs):
+            result = func(module_obj, request, *args, **kwargs)
             if isinstance(result, HttpResponse):
                 return result
+            elif 'json_debug' in request.GET:
+                data = json.dumps(result, sort_keys=True,
+                                        indent = '    ')
+                return render_to_response('utils/jsondebug.html',
+                                          request, {'data': data},
+                                          mimetype="text/html")
             else:
                 if field_map is None:
                     new_result = result
@@ -103,7 +112,7 @@ def json_response(field_map={}):
                             new_list.append(map_fields(item))
                         new_result[key] = new_list
                 resp = HttpResponse(mimetype='application/json')
-                simplejson.dump(new_result, resp)
+                json.dump(new_result, resp)
                 return resp
                 
         return _evaluate
@@ -117,10 +126,13 @@ class CachedModuleViewDecorator(object):
     
     def __init__(self, func):
         parent_obj = self
+        # NOTE: get_containing_class inspects the stack, so we have to
+        # call it ourselves. TODO fix this?
+        containing_class = get_containing_class()
 
         def prepare_dec(func):
             self.params, xx, xxx, defaults = getargspec(func)
-            self.cached_function = cache_function(func, uid_extra='*'+describe_func(func))
+            self.cached_function = cache_function(func, containing_class=containing_class)
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
                 #   Construct argument list

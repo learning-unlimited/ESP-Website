@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 
@@ -60,6 +60,6 @@ class ConfigForm(ThemeConfigurationForm):
 
         #   Replace "featured programs" (url, name) dicts with actual programs
         if 'featured_programs' in data:
-            result['featured_programs'] = [Program.objects.get(anchor__uri__icontains=x['url']) for x in data['featured_programs']]
+            result['featured_programs'] = [Program.objects.get(url__icontains=x['url']) for x in data['featured_programs']]
 
         return result

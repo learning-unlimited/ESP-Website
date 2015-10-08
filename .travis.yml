@@ -9,7 +9,7 @@ before_install:
 install: 
   - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres) -qq
   - esp/packages_base_manual_install.sh
-  - (pip install -r esp/requirements.txt --use-mirrors || tail pip.log 1>&2 2>/dev/null) | tee pip.log | grep '^Downloading/unpacking'
+  - pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
   - ln -s `pwd`/esp/public/media/default_images esp/public/media/images

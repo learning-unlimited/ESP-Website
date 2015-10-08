@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
@@ -39,7 +39,6 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
 from esp.users.models import ESPUser, User
-from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response
@@ -193,92 +192,6 @@ class AdminClass(ProgramModuleObj):
 
         return HttpResponse('')
 
-    @aux_call
-    @needs_admin
-    def attendees(self, request, tl, one, two, module, extra, prog):
-        """ Mark students as having attended the program, or as having registered for the specified class """
-        saved_record = False
-        
-        if request.method == 'POST':
-            if not( request.POST.has_key('class_id') and request.POST.has_key('ids_to_enter') ):
-                raise ESPError("Error: The server lost track of your data!  Please go back to the main page of this feature and try entering it again.")
-
-            usernames = []
-            ids = []
-
-            for id in [ x for x in request.POST['ids_to_enter'].split('\n') if x.strip() != '' ]:
-                try: # We're going to accept both usernames and user ID's.
-                     # Assume that valid integers are user ID's
-                     # and things that aren't valid integers are usernames.
-                    if id[0] == '0':
-                        id_trimmed = id.strip()[:-1]
-                    else:
-                        id_trimmed = id
-                    
-                    id_val = int(id_trimmed)
-                    ids.append(id_val)
-                except ValueError:
-                    usernames.append( id.strip() )
-                    
-            Q_Users = Q(id=-1) # in case usernames and ids are both empty
-            if usernames:
-                Q_Users |= Q(username__in = usernames)
-
-            if ids:
-                Q_Users |= Q(id__in = ids)
-                    
-            users = ESPUser.objects.filter( Q_Users )
-
-            if request.POST['class_id'] == 'program':
-                already_registered_users = prog.students()['attended']
-            else:
-                cls = ClassSection.objects.get(id = request.POST['class_id'])
-                already_registered_users = cls.students()
-
-            already_registered_ids = [ i.id for i in already_registered_users ]
-                                               
-            new_attendees = ESPUser.objects.filter( Q_Users )
-            if already_registered_ids != []:
-                new_attendees = new_attendees.exclude( id__in = already_registered_ids )
-            new_attendees = new_attendees.distinct()
-
-            no_longer_attending = ESPUser.objects.filter( id__in = already_registered_ids )
-            if ids != [] or usernames != []:
-                no_longer_attending = no_longer_attending.exclude( Q_Users )
-            no_longer_attending = no_longer_attending.distinct()
-
-            if request.POST['class_id'] == 'program':
-                for stu in no_longer_attending:
-                    prog.cancelStudentRegConfirmation(stu)
-                for stu in new_attendees:
-                    prog.confirmStudentReg(stu)
-            else:
-                for stu in no_longer_attending:
-                    cls.unpreregister_student(stu)
-                for stu in new_attendees:
-                    cls.preregister_student(stu, overridefull=True)
-                    
-            saved_record = True
-        else:
-            if request.GET.has_key('class_id'):
-                if request.GET['class_id'] == 'program':
-                    is_program = True
-                    registered_students = prog.students()['attended']
-                else:
-                    is_program = False
-                    cls = ClassSection.objects.get(id = request.GET['class_id'])
-                    registered_students = cls.students()
-
-                context = { 'is_program': is_program,
-                            'prog': prog,
-                            'cls': cls,
-                            'registered_students': registered_students,
-                            'class_id': request.GET['class_id'] }
-                    
-                return render_to_response(self.baseDir()+'attendees_enter_users.html', request, context)
-
-        return render_to_response(self.baseDir()+'attendees_selectclass.html', request, { 'saved_record': saved_record, 'prog': prog })
-        
     @aux_call
     @needs_admin
     def deletesection(self, request, tl, one, two, module, extra, prog):
@@ -482,22 +395,6 @@ class AdminClass(ProgramModuleObj):
 
         return self.goToCore(tl)
 
-    @needs_admin
-    def main(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
-        context = {}
-        modules = self.program.getModules(request.user, 'manage')
-        
-        for module in modules:
-            context = module.prepare(context)
-
-                    
-        context['modules'] = modules
-        context['one'] = one
-        context['two'] = two
-
-        return render_to_response(self.baseDir()+'mainpage.html', request, context)
-
     @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
@@ -644,40 +541,6 @@ class AdminClass(ProgramModuleObj):
         
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
 
-    @aux_call
-    @needs_admin
-    def bulkapproval(self, request, tl, one, two, module, extra, prog):
-        """
-        Allow admins to approve classes en masse by entering a list of
-        ClassSubject ids separated by newlines.
-        """
-        
-        if request.POST.has_key('clslist'):
-            clsids = request.POST['clslist'].split('\n')
-            clsids = [id.strip() for id in clsids if id.strip() != ""]
-            # Ignore the class category symbols. We don't need to read them,
-            # and half the time people are probably going to get them wrong.
-            clsids = [''.join(c for c in id if c in '0123456789') for id in clsids]
-
-            cls_subjects = ClassSubject.objects.filter(id__in=clsids, parent_program=prog)
-            cls_subjects.update(status=10)
-
-            cls_sections = ClassSection.objects.filter(parent_class__in=cls_subjects)
-            cls_sections.update(status=10)
-
-            context = {}
-            context['updated_classes'] = cls_subjects
-
-            cls_id_strings = set([str(cls.id) for cls in cls_subjects])
-            context['failed_ids'] = [id for id in clsids if not (id in cls_id_strings)]
-            context['num_failures'] = len(context['failed_ids'])
-
-            return render_to_response(self.baseDir()+"approval_success.html", request, context)
-
-
-        return render_to_response(self.baseDir()+"mass_approve_form.html", request, {})
-
-
     class Meta:
         proxy = True
-
+        app_label = 'modules'

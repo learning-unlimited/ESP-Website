@@ -1,3 +1,9 @@
-A grade change request was received from: {{ student.name }} (ID: {{ student.id }}, e-mail: {{ student.email }})
+A grade change request was received from: {{ student.name }} (ID: {{ student.id }}, e-mail: {{ student.email }}).
+
+Current Grade: {{ change_request.grade_before_request }}
+Claimed Grade: {{ change_request.claimed_grade }}
+Reason: {{ change_request.reason }}
+
+
 Please review the request here: http://{{ site }}{{ change_request.get_admin_url }}
 

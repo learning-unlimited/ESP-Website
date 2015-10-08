@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib.auth.decorators import login_required
@@ -371,7 +371,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
         
-        context['resource_types'] = self.program.getResourceTypes().exclude(priority_default=0).order_by('priority_default')
+        context['resource_types'] = self.program.getResourceTypes()
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True
@@ -401,4 +401,4 @@ class ResourceModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

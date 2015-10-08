@@ -32,7 +32,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import datetime
@@ -40,7 +40,6 @@ import xlwt
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
-from esp.datatree.models import *
 from esp.users.models import ESPUser, Record, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer

@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 """ Models for Resources application """
@@ -153,11 +153,20 @@ class ResourceRequest(models.Model):
     
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
     
     def __unicode__(self):
         return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
+
+    class Admin:
+        pass
+
+class ResourceGroup(models.Model):
+    """ A hack to make the database handle resource group ID creation """
+
+    def __unicode__(self):
+        return 'Resource group %d' % (self.id,)
 
     class Admin:
         pass
@@ -167,9 +176,13 @@ class Resource(models.Model):
     res_type, attach to a user if necessary. """
     
     name = models.CharField(max_length=80)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     num_students = models.IntegerField(blank=True, default=-1)
-    group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
+    # do not use group_id, use res_group instead
+    # group_id can be removed with a future migration after all sites
+    # have successfully run the migration to res_group
+    group_id = models.IntegerField(default=-1)
+    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True)
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
@@ -184,14 +197,10 @@ class Resource(models.Model):
                 return '%s (%s)' % (self.name, unicode(self.res_type))
     
     def save(self, *args, **kwargs):
-        if self.group_id == -1:
-            #   Give this a new group id.
-            vals = Resource.objects.all().order_by('-group_id').values_list('group_id', flat=True)
-            max_id = 0
-            if len(vals) > 0:
-                max_id = vals[0]
-                
-            self.group_id = max_id + 1
+        if self.res_group is None:
+            #   Make a new group for this
+            new_group = ResourceGroup.objects.create()
+            self.res_group = new_group
             self.is_unique = True
         else:
             self.is_unique = False
@@ -252,9 +261,9 @@ class Resource(models.Model):
         return result
     
     def grouped_resources(self):
-        if self.group_id == -1:
+        if self.res_group_id is None:
             return Resource.objects.filter(id=self.id)
-        return Resource.objects.filter(group_id=self.group_id)
+        return Resource.objects.filter(res_group=self.res_group_id)
     
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
@@ -351,8 +360,8 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
-    is_available.depend_on_row(lambda:ResourceAssignment, lambda instance: {'self': instance.resource})
-    is_available.depend_on_row(lambda:Event, lambda instance: {'timeslot': instance})
+    is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
+    is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
     
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -387,7 +396,7 @@ class ResourceAssignment(models.Model):
         return self.target_subj
     
     def resources(self):
-        return Resource.objects.filter(group_id=self.resource.group_id)
+        return Resource.objects.filter(res_group=self.resource.res_group)
     
     class Admin:
         pass
@@ -395,9 +404,34 @@ class ResourceAssignment(models.Model):
     
 def install():
     #   Create default resource types.
-    ResourceType.objects.get_or_create(name='Classroom',description='Type of classroom',attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space')
-    ResourceType.objects.get_or_create(name='A/V',description='A/V equipment',attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player')
-    ResourceType.objects.get_or_create(name='Computer[s]',description='Computer[s]',attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students')
-    ResourceType.objects.get_or_create(name='Seating',description='Seating arrangement',attributes_pickled="Don't care|Fixed seats|Movable desks")
-    ResourceType.objects.get_or_create(name='Light control',description='Light control',attributes_pickled="Don't care|Darkenable")
-    
+    print "Installing esp.resources initial data..."
+    if not ResourceType.objects.filter(name='Classroom').exists():
+        ResourceType.objects.create(
+            name='Classroom',
+            description='Type of classroom',
+            attributes_pickled='Lecture|Discussion|Outdoor|Lab|Open space',
+        )
+    if not ResourceType.objects.filter(name='A/V').exists():
+        ResourceType.objects.create(
+            name='A/V',
+            description='A/V equipment',
+            attributes_pickled='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
+        )
+    if not ResourceType.objects.filter(name='Computer[s]').exists():
+        ResourceType.objects.create(
+            name='Computer[s]',
+            description='Computer[s]',
+            attributes_pickled='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
+        )
+    if not ResourceType.objects.filter(name='Seating').exists():
+        ResourceType.objects.create(
+            name='Seating',
+            description='Seating arrangement',
+            attributes_pickled="Don't care|Fixed seats|Movable desks",
+        )
+    if not ResourceType.objects.filter(name='Light control').exists():
+        ResourceType.objects.create(
+            name='Light control',
+            description='Light control',
+            attributes_pickled="Don't care|Darkenable",
+        )

@@ -2,7 +2,11 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-td {
+#student_selector_area {
+    position: relative;
+}
+
+#compact-classes-body td {
     font-size: 9pt;
 }
 
@@ -14,7 +18,7 @@ ul {
     font-size: 10pt;
 }
 
-th {
+#compact-classes-body th {
     background-color: #cccccc;
     font-size: 10pt;
     padding-bottom: 8px;
@@ -135,7 +139,7 @@ span {
     font-size: 0.9em;
 }
 
-#category_controls {
+#category_controls, #settings_controls {
     text-align: left;
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;
@@ -193,23 +197,23 @@ span {
     float: left;
 }
 
-.compact-classes .tooltip {
+.tooltip {
     position: relative; /*this is the key*/
     z-index: 24;
     color: #000000 !important;
     text-decoration: none !important;
 }
 
-.compact-classes .tooltip:hover {
+.tooltip:hover {
     z-index: 25; 
     background-color: #ffff99;
 }
 
-.compact-classes .tooltip span.tooltip_hover {
+.tooltip span.tooltip_hover {
     display: none;
 }
 
-.compact-classes .tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
+.tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
     display: block;
     position: absolute;
     top: 2em; 
@@ -224,6 +228,6 @@ span {
     text-align: left;
 }
 
-.compact-classes .tooltip_wide span {
+.tooltip_wide span {
     width: 600px !important;
 }

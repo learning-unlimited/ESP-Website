@@ -30,15 +30,16 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.datatree.models import *
 from esp.web.util        import render_to_response
 from datetime            import datetime        
 from django.db.models.query     import Q
+from django.db.models    import Sum
 from esp.users.models    import User, ESPUser
+from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 
@@ -59,14 +60,24 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
         student_list = list(pac.all_students())
         payment_table = []
         
+        #   Fetch detailed information for every student associated with the program
         for student in student_list:
             iac = IndividualAccountingController(prog, student)
             payment_table.append((student, iac.get_transfers(), iac.amount_requested(), iac.amount_due()))
 
-        context = { 'program': prog, 'payment_table': payment_table }
+        #   Also fetch summary information about the payments
+        (num_payments, total_payment) = pac.payments_summary()
+
+        context = {
+            'program': prog,
+            'payment_table': payment_table,
+            'num_students': len(student_list),
+            'num_payments': num_payments,
+            'total_payment': total_payment,
+        }
         
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

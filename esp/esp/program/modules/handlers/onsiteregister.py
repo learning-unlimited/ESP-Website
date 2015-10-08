@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
@@ -38,7 +38,6 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
@@ -105,7 +104,7 @@ class OnSiteRegister(ProgramModuleObj):
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade'], ESPUser.program_schoolyear(self.program)))
 
                 try:
                     if isinstance(new_data['k12school'], K12School):
@@ -153,8 +152,8 @@ class OnSiteRegister(ProgramModuleObj):
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form, 'current_year':ESPUser.current_schoolyear()})
+	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

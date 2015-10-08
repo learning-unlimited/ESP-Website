@@ -30,12 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
 from esp.web.util        import render_to_response
 from esp.miniblog.models import Entry
-from esp.datatree.models import *
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     @classmethod
@@ -83,4 +82,4 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

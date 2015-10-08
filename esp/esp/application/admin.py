@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
@@ -52,7 +52,8 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
               'finaid_user_id_field', 'finaid_username_field',
               'app_is_open']
     readonly_fields = ['module', 'forms_for_api_key', 'form_fields', 'finaid_form_fields']
-    list_display = ['module']
+    list_display = ['module', 'app_is_open']
+    search_fields = ('module__program__name',)
 
     def forms_for_api_key(self, fsas):
         if fsas.api_key == '':
@@ -164,7 +165,7 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                     'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
-    list_filter = ['app__admin_status', 'subject', 'subject__parent_program']
+    list_filter = ['app__admin_status', 'subject', 'subject__parent_program', 'student_preference']
     search_fields = default_user_search('app__user') + ['subject__title', 'subject__id']
 
     def user(self, classapp):

@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.models import FinancialAidRequest
@@ -70,7 +70,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.moduleobj.user = self.students[0]
 
     def get_template_names(self, response):
-        return [x.name for x in response.template]        
+        return [x.name for x in response.templates]        
 
     def expect_template(self, response, template):
         self.assertTrue(template in self.get_template_names(response), 'Wrong template for profile: got %s, expected %s' % (self.get_template_names(response), template))
@@ -280,7 +280,8 @@ class StudentRegTest(ProgramFrameworkTest):
         
         #   Check that selecting an option for a "multiple choice" extra item works
         lit = LineItemType.objects.get(program=self.program, text='Food')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-cost' % lit.id: '7.00'})
+        lio = filter(lambda x: x[2] == 'Large', lit.options)[0]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-option' % lit.id: str(lio[0])})
         self.assertEqual(response.status_code, 302)
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)

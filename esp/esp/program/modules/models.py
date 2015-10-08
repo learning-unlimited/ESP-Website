@@ -30,23 +30,11 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.handlers import *
 from django.db.models import Q
-
-#from django.contrib import admin
-#from django.db import models 
-#from esp.program.models import Program
-#
-#class DBReceipt(models.Model):
-#    """ Per-program Receipt templates """
-#    program = models.OneToOneField(Program)
-#    receipt = models.TextField()
-#
-#admin_site.register(DBReceipt)
-
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
     """
@@ -64,6 +52,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     
     #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
+    global_defaults = {'seq': 0, 'required': False}
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
         qs = model.objects.filter(**query_kwargs)
@@ -74,7 +63,11 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
                 datum.pop('main_call')
             if 'aux_calls' in datum:
                 datum.pop('aux_calls')
-            query_kwargs['defaults'] = datum            
+            #   Ensure that all of the required fields are present when calling get_or_create
+            new_obj_defaults = global_defaults.copy()
+            new_obj_defaults.update(datum)
+            query_kwargs['defaults'] = new_obj_defaults
+            
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
@@ -89,7 +82,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         for (datum, (mod, created)) in mods:
             ids.append(mod.id)
 
-        #ProgramModule.objects.exclude(id__in=ids).delete()
+        ProgramModule.objects.exclude(id__in=ids).delete()
 
     for (datum, (mod, created)) in mods:
         #   If the module exists but the provided data adds fields that 
@@ -106,6 +99,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
 
 def install(model=None):
     """ Install the initial ProgramModule table data for all currently-existing modules """
+    print "Installing esp.program.modules initial data..."
     from esp.program.modules import handlers
     modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
 
@@ -113,6 +107,6 @@ def install(model=None):
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
-    updateModules(table_data, model=model)
+    updateModules(table_data, deleteExtra=True, model=model)
     
 from esp.program.modules.module_ext import *

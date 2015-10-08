@@ -7,11 +7,11 @@ from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
-from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
+from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.utils.forms import DummyField
-from esp.users.models import ContactInfo
+from esp.users.models import ContactInfo, ESPUser
 from esp.cache import cache_function
 from esp.program.models import Program
 
@@ -469,10 +469,10 @@ class FormHandler:
             else:
                 field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
-    _getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})
-    _getFormMetadata.depend_on_row(lambda: Attribute, lambda attr: {'form': attr.field.form})
-    _getFormMetadata.depend_on_row(lambda: Section, lambda section: {'form': section.page.form})
-    _getFormMetadata.depend_on_row(lambda: Page, lambda page: {'form': page.form})    
+    _getFormMetadata.depend_on_row('customforms.Field', lambda field: {'form': field.form})
+    _getFormMetadata.depend_on_row('customforms.Attribute', lambda attr: {'form': attr.field.form})
+    _getFormMetadata.depend_on_row('customforms.Section', lambda section: {'form': section.page.form})
+    _getFormMetadata.depend_on_row('customforms.Page', lambda page: {'form': page.form})
         
     def _getHandlers(self):
         """
@@ -623,7 +623,10 @@ class FormHandler:
         
         # Add in the user column if form is not anonymous
         if not form.anonymous:
-            response_data['questions'].append(['user_id', 'User', 'fk'])
+            response_data['questions'].append(['user_id', 'User ID', 'fk'])
+            response_data['questions'].append(['user_display', 'User', 'textField'])
+            response_data['questions'].append(['user_email', 'User e-mail', 'textField'])
+            response_data['questions'].append(['username', 'Username', 'textField'])
             
         # Add in the column for link fields, if any
         if form.link_type != "-1":
@@ -646,14 +649,20 @@ class FormHandler:
                 # Include this field only if it isn't a dummy field
             elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label'], ftype])
-            
+
+        users = ESPUser.objects.in_bulk(map(lambda response: response['user_id'], responses))
+
         # Now let's set up the responses
         for response in responses:
             link_instances_cache={}
             
             # Add in user if form is not anonymous
             if not form.anonymous:
+                user = users[response['user_id']]
                 response['user_id'] = unicode(response['user_id'])
+                response['user_display'] = user.name()
+                response['user_email'] = user.email
+                response['username'] = user.username
                 
             # Add in links
             if only_fkey_model is not None:
@@ -685,7 +694,7 @@ class FormHandler:
         response_data['answers'].extend(responses)                                    
                     
         return response_data
-    # getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})
+    # getResponseData.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     
     def getResponseExcel(self):
         """

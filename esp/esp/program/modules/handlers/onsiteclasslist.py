@@ -30,10 +30,10 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 import colorsys
 from datetime import datetime, timedelta
 
@@ -49,10 +49,9 @@ from esp.cal.models import Event
 from esp.cache import cache_function
 from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
-from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
-
+from esp.tagdict.models import Tag
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -61,17 +60,12 @@ def hsl_to_rgb(hue, saturation, lightness=0.5):
 class OnSiteClassList(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return [ {
-            "admin_title": "Show All Classes at Onsite Registration",
-            "link_title": "List of All Classes",
-            "module_type": "onsite",
-            "seq": 31,
-            }, {
+        return {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
-            } ]
+            }
 
     @cache_function
     def section_data(sec):
@@ -82,8 +76,8 @@ class OnSiteClassList(ProgramModuleObj):
         sect['teachers'] = ', '.join([t.name() for t in list(sec.teachers)])
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
-    section_data.depend_on_model(lambda: ResourceAssignment)
-    section_data.depend_on_cache(lambda: ClassSubject.get_teachers, lambda **kwargs: {})
+    section_data.depend_on_model('resources.ResourceAssignment')
+    section_data.depend_on_cache(ClassSubject.get_teachers, lambda **kwargs: {})
     section_data=staticmethod(section_data)
 
     """ Warning: for performance reasons, these views are not abstracted away from
@@ -102,7 +96,7 @@ class OnSiteClassList(ProgramModuleObj):
             'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        simplejson.dump(data, resp)
+        json.dump(data, resp)
 
         return resp
     
@@ -111,7 +105,7 @@ class OnSiteClassList(ProgramModuleObj):
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -126,7 +120,7 @@ class OnSiteClassList(ProgramModuleObj):
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
         data = students.values_list('id', 'last_name', 'first_name').distinct()
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -134,7 +128,7 @@ class OnSiteClassList(ProgramModuleObj):
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
         
     @aux_call
@@ -142,15 +136,15 @@ class OnSiteClassList(ProgramModuleObj):
     def counts_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call    
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
-        simplejson.dump(list(data), resp)
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, resourceassignment__resource__res_type__name="Classroom").select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -165,7 +159,7 @@ class OnSiteClassList(ProgramModuleObj):
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     @aux_call
@@ -179,7 +173,7 @@ class OnSiteClassList(ProgramModuleObj):
             user = None
             result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
         try:
-            desired_sections = simplejson.loads(request.GET['sections'])
+            desired_sections = json.loads(request.GET['sections'])
         except:
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
@@ -240,7 +234,7 @@ class OnSiteClassList(ProgramModuleObj):
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     
@@ -266,7 +260,7 @@ class OnSiteClassList(ProgramModuleObj):
         PrintRequest.objects.create(user=user_obj, printer=printer)
         result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
 
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
 
     @aux_call
@@ -279,7 +273,7 @@ class OnSiteClassList(ProgramModuleObj):
         
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
-        context['open_class_category'] = mark_safe(simplejson.dumps(open_class_category))
+        context['open_class_category'] = mark_safe(json.dumps(open_class_category))
         
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 
@@ -370,35 +364,56 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
-        return self.classList_base(request, tl, one, two, module, extra, prog, 'classlist.html')
+        return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
     @needs_student
     def classlist_public(self, request, tl, one, two, module, extra, prog):
-        return self.classList_base(request, tl, one, two, module, extra, prog, 'allclass_fragment.html')
+        return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
-    def classList_base(self, request, tl, one, two, module, extra, prog, template_name=None):
+    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name='classlist.html'):
         """ Display a list of all classes that still have space in them """
+
+        #   Allow options to be supplied as an argument to the view function, in lieu
+        #   of request.GET (used by the public view just above)
+        if options is None:
+            options = request.GET.copy()
+
+            #   Display options-selection page if this page is requested with no GET variables
+            if len(options.keys()) == 0:
+                return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
+
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}
         for key_option in defaults.keys():
-            if request.GET.has_key(key_option):
-                context[key_option] = request.GET[key_option]
+            if options.has_key(key_option):
+                context[key_option] = options[key_option]
             else:
                 context[key_option] = defaults[key_option]
 
         time_now = datetime.now()
 
-        if 'start' in request.GET:
-            curtime = Event.objects.filter(id=request.GET['start'])
+        start_id = int(options.get('start', -1))
+        if start_id != -1:
+            curtime = Event.objects.filter(id=start_id)
         else:
             window_start = time_now + timedelta(-1, 85200)
             curtime = Event.objects.filter(start__gte=window_start).order_by('start')
 
-        if 'end' in request.GET:
-            endtime = Event.objects.filter(id=request.GET['end'])
+        end_id = int(options.get('end', -1))
+        if end_id != -1:
+            endtime = Event.objects.filter(id=end_id)
         else:
             endtime = None
+
+        sort_spec = options.get('sorting', None)
+        if sort_spec is None:
+            sort_spec = extra
+
+        #   Enforce a maximum refresh speed to avoid server overload.
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        if int(context['refresh']) < min_refresh:
+            context['refresh'] = min_refresh
 
         if curtime:
             curtime = curtime[0]
@@ -413,21 +428,21 @@ class OnSiteClassList(ProgramModuleObj):
                      status=10, parent_class__status=10,
                      begin_time__gte=curtime.start
                      )
-            if extra == 'unsorted':
+            if sort_spec == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
-            elif extra == 'by_time':
+            elif sort_spec == 'by_time':
                 classes = classes.order_by('begin_time', 'parent_class__category', 'id').distinct()
             else:
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
         
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
 
-        if extra == 'unsorted':
+        if sort_spec == 'unsorted':
             context['use_categories'] = False
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, context)
+        return render_to_response(self.baseDir()+template_name, request, context)
 
     @main_call
     @needs_onsite
@@ -454,4 +469,4 @@ class OnSiteClassList(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

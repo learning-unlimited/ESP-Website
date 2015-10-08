@@ -4,35 +4,29 @@ Test cases for Django-ESP utilities
 
 from __future__ import with_statement
 
-import unittest
+import datetime
 import doctest
-import subprocess
-
 try:
     import pylibmc as memcache
 except:
     import memcache
-
 import os
+import subprocess
 import sys
-try:
-    from esp.utils.memcached_multihost import CacheClass as MultihostCacheClass
-except:
-    MultihostCacheClass = False
-    print "Couldn't import MultihostCacheClass.  Not running tests against it."
-from esp.utils.defaultclass import defaultclass
-from esp import utils
-from django.conf import settings
-from esp.utils.models import TemplateOverride
+import reversion
+import unittest
 
+from django.db.models.query import Q
+from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
 
-from django.core.management import call_command
-from django.core.cache.backends.base import default_key_func
-from django.db.models import loading
+from esp.middleware import ESPError_Log
+from esp.users.models import ESPUser
+from esp import utils
+from esp.utils import query_builder
+from esp.utils.defaultclass import defaultclass
+from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
-from django.template import loader, Template, Context, TemplateDoesNotExist
-import reversion
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -92,8 +86,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
-        self.tryImport("simplejson")  # Used for some of our AJAX magic
-        self.tryImport("icalendar")  # Currently not significantly used, but we have some hanging imports.  Originally used for exporting .ics calendar files, usable by many calendaring applications; we may do this again at some point.
+        self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
 	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
@@ -132,7 +125,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stderr=open(os.devnull, "w"))
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
 
@@ -154,191 +147,6 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
         self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
 
-if MultihostCacheClass:
-    class MultihostCacheClassTest(MemcachedTestCase):
-        """
-        Test cases for the memcached_multihost CacheClass class
-        """
-
-        CACHES = [ "127.0.0.1:11213",
-                   "127.0.0.1:11214",
-                   "127.0.0.1:11215",
-                   "127.0.0.1:11216",
-                   "127.0.0.1:11217",
-                   "127.0.0.1:11218",
-                   "127.0.0.1:11219" ]
-        
-        CACHE_BACKENDS = CACHES[:5] + [ ";".join(CACHES[5:7]) ]
-        
-        def setUp(self):
-            """
-            Create and configure a MultihostCacheClass instance to test.
-            Also, our last two servers are actually joined; update accordingly.
-            """
-            super(MultihostCacheClassTest, self).setUp()
-            
-            for client in self.clients[5:7]:
-                client.disconnect_all()
-            self.clients = self.clients[:5] + [ memcache.Client(self.CACHES[5:7]) ]
-            
-            self._old_REMOTE_CACHE_SERVERS = getattr(settings, 'REMOTE_CACHE_SERVERS', None)
-            settings.REMOTE_CACHE_SERVERS = self.CACHE_BACKENDS[1:3] + self.CACHE_BACKENDS[5:6]
-            
-            self._old_REMOTE_CACHES_TO_FLUSH = getattr(settings, 'REMOTE_CACHES_TO_FLUSH', None)
-            settings.REMOTE_CACHES_TO_FLUSH = self.CACHE_BACKENDS[3:5]
-            
-            self._old_CACHE_PREFIX = settings.CACHE_PREFIX
-            settings.CACHE_PREFIX = "TEST_"
-            
-            self.cacheclass = MultihostCacheClass(self.CACHE_BACKENDS[0], {})
-            
-            #   Give the memcached processes time to start up before we query them.
-            os.system('sleep 2')
-
-        def tearDown(self):
-            """
-            Clean up our MultihostCacheClass instance
-            """
-            self.cacheclass.close()
-            super(MultihostCacheClassTest, self).tearDown()
-            
-            settings.REMOTE_CACHE_SERVERS = self._old_REMOTE_CACHE_SERVERS
-            settings.REMOTE_CACHES_TO_FLUSH = self._old_REMOTE_CACHES_TO_FLUSH
-            settings.CACHE_PREFIX = self._old_CACHE_PREFIX
-
-        def make_key(self, key):
-            """
-            Make a proper cache key from the given string, by prepending our cache prefix.
-            Recall that the cache clients that we're given are raw memcached clients;
-            they know nothing about Django at all, and they certainly don't know about the
-            custom cache key setup that the Multihost class that we're testing, uses.
-            """
-
-            #   This is kind of a hack; this test case doesn't know about the Django configuration,
-            #   but the Django configuration controls what keys actually get sent to the
-            #   cache backend.  Here we're assuming that Django is running on defaults.
-            return default_key_func(settings.CACHE_PREFIX + key, '', '1')
-        
-        def validate_inAllClients(self, key, value):
-            """ Validate that the given key is set in all clients to the given value """
-            for client in self.clients:
-                client_value = client.get( self.make_key(key) )
-                self.assertEqual(client_value, value)
-
-        def validate_inUpdatingClients(self, key, value):
-            """ Validate that the given key is set in clients that we're updating, to the given value """
-            for client in self.clients[0:3] + self.clients[5:6]:
-                client_value = client.get( self.make_key(key) )
-                self.assertEqual(client_value, value)
-                
-        def validate_inDeleteOnlyClients(self, key, value):
-            """ Validate that the given key is set in clients that we're only flushing, to the given value """
-            for client in self.clients[3:5]:
-                client_value = client.get( self.make_key(key) )
-                self.assertEqual(client_value, value)
-            
-        def testGet(self):
-            # This is already tested implicitly by lots of other tests
-            # (since it's the best way to validate that insert/update operations did the right thing).
-            # Oh well, being explicit is good, and it's a cheap test.
-            self.cacheclass.set('testGet', 'key')
-            self.assertEqual('key', self.cacheclass.get('testGet'))
-
-        def testAdd(self):
-            # Wipe any existing key value, just in case
-            self.cacheclass.delete("testAdd")
-
-            # Do a straight add
-            self.cacheclass.add('testAdd', 'key')
-            self.validate_inUpdatingClients('testAdd', 'key')
-            self.validate_inDeleteOnlyClients('testAdd', None)
-
-            # Make sure we can't re-add stuffs
-            self.cacheclass.add('testAdd', 'new_key')
-            self.validate_inUpdatingClients('testAdd', 'key')
-            self.validate_inDeleteOnlyClients('testAdd', None)
-
-            # Make sure that, when we clobber stuff, it gets deleted from delete clients
-            self.cacheclass.delete("testAddClobber")
-            for client in self.clients[1:]:
-                client.set( self.make_key("testAddClobber"), "some key" )
-
-            self.cacheclass.add("testAddClobber", "another key!")
-            self.validate_inDeleteOnlyClients('testAddClobber', None)
-            
-            # but only if we actually clobber things
-            for client in self.clients[0:3] + self.clients[5:7]:
-                client.set( self.make_key("testAddClobber"), "some key" )
-            for client in self.clients[3:5]:
-                client.set( self.make_key("testAddClobber"), "a third key!!" )
-
-            self.cacheclass.add("testAddClobber", "key that's doomed to get ignored...")
-            self.validate_inUpdatingClients('testAddClobber', 'some key')
-            self.validate_inDeleteOnlyClients('testAddClobber', 'a third key!!')
-        
-        def testSet(self):
-            # Clear out old cached keys, just in case
-            self.cacheclass.delete('testSet')
-            
-            # Do a straight set
-            self.cacheclass.set('testSet', 'key')
-            self.validate_inUpdatingClients('testSet', 'key')
-            self.validate_inDeleteOnlyClients('testSet', None)
-        
-            # Make sure we can clobber stuffs
-            self.cacheclass.set('testSet', 'new_key')
-            self.validate_inUpdatingClients('testSet', 'new_key')
-            self.validate_inDeleteOnlyClients('testSet', None)
-
-            # Make sure that, when we clobber stuff, it gets deleted from delete clients
-            for client in self.clients:
-                client.set( self.make_key("testSetClobber"), "some key" )
-
-            self.cacheclass.set("testSetClobber", "another key!")
-            self.validate_inUpdatingClients('testSetClobber', 'another key!')
-            self.validate_inDeleteOnlyClients('testSetClobber', None)
-        
-        def testDelete(self):
-            # Clear out old cached keys, just in case
-            self.cacheclass.delete('testDelete')
-            
-            # Set a key, then make sure we can make it go away
-            self.validate_inAllClients('testDelete', None)
-            self.cacheclass.set('testDelete', 'key')
-            self.validate_inUpdatingClients('testDelete', 'key')
-            self.validate_inDeleteOnlyClients('testDelete', None)
-            self.cacheclass.delete('testDelete')
-            self.validate_inAllClients('testDelete', None)
-
-        def testGetMany(self):
-            # Set a bunch of keys, then try getting them
-            keys = ['one', 'two', 'three']
-            values = ['1', '2', '3']
-
-            for key, value in zip(keys, values):
-                self.cacheclass.set(key, value)
-
-            self.assertEqual(dict(zip(keys, values)), self.cacheclass.get_many(keys))
-            
-        def testHasKey(self):
-            # Test has_key() and __contains__() in the same function, since they're
-            # supposed to have identical functionality:
-            self.cacheclass.set('test_HasKey', 'Purple Water Buffalo')        
-            
-            self.assert_(self.cacheclass.has_key('test_HasKey'))
-            self.assert_(self.cacheclass.__contains__('test_HasKey'))
-            self.assert_('test_HasKey' in self.cacheclass)
-
-        def testIncrDecr(self):
-            # Also combine the incr() and decr() tests, 'cause I'm lazy:
-            self.cacheclass.set('test_math', 1)
-            self.cacheclass.decr('test_math')
-            self.assertEqual(0, self.cacheclass.get('test_math'))
-            self.cacheclass.incr('test_math')
-            self.cacheclass.incr('test_math')
-            self.cacheclass.incr('test_math')
-            self.assertEqual(3, self.cacheclass.get('test_math'))
-        
 
 class DefaultclassTestCase(unittest.TestCase):
     def testDefaultclass(self):
@@ -370,15 +178,8 @@ class DefaultclassTestCase(unittest.TestCase):
     
         myOtherKls2 = kls[0]()
         self.assertEqual(myOtherKls2.get_name(), "otherKls")
-        
-class DBOpsTestCase(DjangoTestCase):
-    def testSyncdb(self):
-        loading.cache.loaded = False
-        call_command('syncdb', verbosity=0)
-    def testMigrate(self):
-        loading.cache.loaded = False
-        call_command('migrate', verbosity=0)
-        
+
+
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
@@ -419,6 +220,273 @@ class TemplateOverrideTest(DjangoTestCase):
         #   Delete the original template override and make sure you see nothing
         TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
         self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
+
+
+class QueryBuilderTest(DjangoTestCase):
+    maxDiff = None
+    def test_query_builder(self):
+        # Use Printer/PrintRequest to test, since they're simple and in the
+        # same app.
+
+        # Clean out any printers from other tests, and create our own.
+        Printer.objects.all().delete()
+        self.assertEqual(Printer.objects.count(), 0)
+        happy_printer = Printer.objects.create(name="Happy")
+        slow_printer = Printer.objects.create(name="Sad")
+        sad_printer = Printer.objects.create(name="Slow")
+        nice_user = ESPUser.objects.create(username="nice_user")
+        mean_user = ESPUser.objects.create(username="mean_user")
+        now = datetime.datetime.now()
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=happy_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=sad_printer, user=mean_user)
+        PrintRequest.objects.create(printer=sad_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=nice_user,
+                                    time_executed=now)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+        PrintRequest.objects.create(printer=slow_printer, user=mean_user)
+
+        name_filter = query_builder.SearchFilter(
+            'named', 'named', [query_builder.TextInput('name')])
+        has_ever_printed_filter = query_builder.SearchFilter(
+            'has ever printed', 'has ever printed',
+            [query_builder.ConstantInput(
+                Q(printrequest__time_executed__isnull=False),
+                'has ever printed')])
+        always_works_filter = query_builder.SearchFilter(
+            'always works', 'always works',
+            [query_builder.ConstantInput(
+                Q(printrequest__time_executed__isnull=True),
+                'always works')], inverted=True)
+        print_query_builder = query_builder.QueryBuilder(
+            Printer.objects.all(),
+            [name_filter, has_ever_printed_filter, always_works_filter])
+
+        self.assertEqual(
+            print_query_builder.spec(), {
+                'englishName': 'printers',
+                'filterNames': ['named', 'has ever printed', 'always works'],
+                'filters': {
+                    'named': name_filter.spec(),
+                    'has ever printed': has_ever_printed_filter.spec(),
+                    'always works': always_works_filter.spec()
+                }})
+        self.assertEqual(
+            # printers named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'named', 'negated': False, 'values': ['Happy']}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers not named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'named', 'negated': True, 'values': ['Happy']}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have never printed
+            print_query_builder.as_queryset(
+                {'filter': 'has ever printed', 'negated': True,
+                 'values': [None]}
+            ).get(),
+            sad_printer)
+        self.assertEqual(
+            # printers that always work
+            print_query_builder.as_queryset(
+                {'filter': 'always works', 'negated': False, 'values': [None]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers named Happy that have never printed
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': False, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            0)
+        self.assertEqual(
+            # printers that are not (named Happy and have never printed)
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': True, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            3)
+        self.assertEqual(
+            # printers that are not (named Happy and always work)
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': True, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that are named Happy and always work
+            print_query_builder.as_queryset(
+                {'filter': 'and', 'negated': False, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers that are named Happy or always work
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': False, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).get(),
+            happy_printer)
+        self.assertEqual(
+            # printers that are neither named Happy nor always work
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': True, 'values': [
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']},
+                    {'filter': 'always works', 'negated': False,
+                     'values': [None]}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have ever printed or are named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': False, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).distinct().count(),
+            2)
+        self.assertEqual(
+            # printers that have neither printed nor are named Happy
+            print_query_builder.as_queryset(
+                {'filter': 'or', 'negated': True, 'values': [
+                    {'filter': 'has ever printed', 'negated': True,
+                     'values': [None]},
+                    {'filter': 'named', 'negated': False, 'values': ['Happy']}
+                ]}
+            ).get(),
+            slow_printer)
+
+        rendered = Template("""
+            {% load query_builder %}
+            {% render_query_builder qb %}
+        """).render(Context({'qb': print_query_builder}))
+        self.assertIn("has ever printed", rendered)
+        self.assertIn("always works", rendered)
+
+    def test_search_filter(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        trivial_input = query_builder.ConstantInput(Q(a="b"))
+
+        search_filter_1 = query_builder.SearchFilter(
+            "instance", "the instance", [select_input, trivial_input])
+        self.assertEqual(search_filter_1.spec(),
+                         {'name': 'instance', 'title': 'the instance',
+                          'inputs': [select_input.spec(),
+                                     trivial_input.spec()]})
+        self.assertEqual(str(search_filter_1.as_q(['1', None])),
+                         str(Q(a_db_field='1') & Q(a="b")))
+        with self.assertRaises(ESPError_Log):
+            search_filter_1.as_q(['10000',None])
+        self.assertEqual(search_filter_1.as_english(['1', None]),
+                         "the instance with a db field 'option 1'")
+
+        
+    def test_select_input(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        self.assertEqual(select_input.spec(),
+                         {'reactClass': 'SelectInput',
+                          'options': [{'name': i,
+                                       'title': 'option %s' % i}
+                                      # do set(map(str, range(10))) to get the
+                                      # sort order the same as the dict sort
+                                      # order.  It doesn't matter in reality,
+                                      # but just making it the same is easier
+                                      # than writing a thing to compare
+                                      # correctly.
+                                      for i in set(map(str,range(10)))]})
+        # Q objects don't have an __eq__, so they don't compare as equal.  But
+        # comparing their str()s seems to work reasonably well.
+        self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
+        with self.assertRaises(ESPError_Log):
+            select_input.as_q('10000')
+        self.assertEqual(select_input.as_english('5'),
+                         "with a db field 'option 5'")
+        with self.assertRaises(ESPError_Log):
+            select_input.as_english('10000')
+
+    def test_trivial_input(self):
+        trivial_input = query_builder.ConstantInput(Q(a="b"), "a trivial input")
+        self.assertEqual(trivial_input.spec(), {'reactClass': 'ConstantInput'})
+        self.assertEqual(str(trivial_input.as_q(None)), str(Q(a="b")))
+        self.assertEqual(trivial_input.as_english(None), "a trivial input")
+
+    def test_optional_input(self):
+        select_input = query_builder.SelectInput(
+            "a_db_field", {str(i): "option %s" % i for i in range(10)})
+        optional_input = query_builder.OptionalInput(select_input)
+        self.assertEqual(optional_input.spec(),
+                         {'reactClass': 'OptionalInput', 'name': '+',
+                          'inner': select_input.spec()})
+        self.assertEqual(str(optional_input.as_q(None)), str(Q()))
+        self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
+        self.assertEqual(optional_input.as_english(None), "")
+        self.assertEqual(optional_input.as_english('5'), 
+                         "with a db field 'option 5'")
+
+    def test_datetime_input(self):
+        datetime_input = query_builder.DatetimeInput("a_db_field")
+        self.assertEqual(datetime_input.spec(),
+                         {'reactClass': 'DatetimeInput', 'name': 'a db field'})
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': 'before', 'datetime': '11/30/2015 23:59'})),
+            str(Q(a_db_field__lt=datetime.datetime(2015, 11, 30, 23, 59))))
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': 'after', 'datetime': '11/30/1995 00:59'})),
+            str(Q(a_db_field__gt=datetime.datetime(1995, 11, 30, 0, 59))))
+        self.assertEqual(
+            str(datetime_input.as_q(
+                {'comparison': '', 'datetime': '11/01/2015 23:59'})),
+            str(Q(a_db_field=datetime.datetime(2015, 11, 1, 23, 59))))
+        with self.assertRaises(ValueError):
+            datetime_input.as_q(
+                {'comparison': '', 'datetime': '11/41/2015 23:59'})
+        self.assertEqual(
+            datetime_input.as_english(
+                {'comparison': 'before', 'datetime': '11/30/2015 23:59'}),
+            'a db field before 11/30/2015 23:59')
+    
+    def test_text_input(self):
+        text_input = query_builder.TextInput("a_db_field")
+        self.assertEqual(text_input.spec(),
+                         {'reactClass': 'TextInput', 'name': 'a db field'})
+        self.assertEqual(str(text_input.as_q("foo bar baz")),
+                         str(Q(a_db_field="foo bar baz")))
+        self.assertEqual(text_input.as_english("foo bar baz"),
+                         "a db field foo bar baz")
+
 
 def suite():
     """Choose tests to expose to the Django tester."""

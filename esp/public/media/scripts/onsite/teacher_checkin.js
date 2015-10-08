@@ -6,6 +6,8 @@ $j(function(){
     var input = $j("#shortcuts-box input");
     var selected = 0;
     var checkins = [];
+
+    $j(".flag-detail").hide();
     
     //Replace hyphens with non-breaking hyphens, to stop Chrome from breaking up phone numbers
     function changeHyphens(n, node){
@@ -72,7 +74,7 @@ $j(function(){
         });
         this.value += "...";
     });
-    
+
     $j(document).keypress(function(e){
         if(e.which==13 && e.shiftKey){
             $j(".selected .checkin").click();
@@ -102,19 +104,21 @@ $j(function(){
             e.preventDefault();
         }
     }).keydown(function(e){
-        input.focus();
-        if(e.which==38)
-            selected--;
-        else if(e.which==40)
-            selected++;
-        else if(e.which==33)
-            selected-=5;
-        else if(e.which==34)
-            selected+=5;
-        else
-            return;
-        updateSelected(true);
-        e.preventDefault();
+        if(e.target.nodeName !== "TEXTAREA") {
+            input.focus();
+            if(e.which==38)
+                selected--;
+            else if(e.which==40)
+                selected++;
+            else if(e.which==33)
+                selected-=5;
+            else if(e.which==34)
+                selected+=5;
+            else
+                return;
+            updateSelected(true);
+            e.preventDefault();
+        }
     }).keyup(function(e){
         input.change();
     });

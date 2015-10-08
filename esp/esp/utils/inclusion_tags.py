@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 """ This file merely imports all of the template tag functions that are cached.
@@ -51,9 +51,6 @@ from esp.program.templatetags.class_render import render_class_minimal
 from esp.program.templatetags.class_render import render_class_current
 from esp.program.templatetags.class_render import render_class_preview
 from esp.program.templatetags.class_render import render_class_row
-
-from esp.program.templatetags.scheduling import scheduling_matrix_row
-from esp.program.templatetags.scheduling import class_options_row
 
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd

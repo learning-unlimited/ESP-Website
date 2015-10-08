@@ -29,12 +29,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 import os
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
+# Django expects BASE_DIR
+BASE_DIR = PROJECT_ROOT
 
 # Configure Django to support ESP
 from django_settings import *
@@ -80,6 +82,7 @@ TEMPLATE_DIRS = (
 )
 
 DEFAULT_HOST = SITE_INFO[1]
+ALLOWED_HOSTS.append(DEFAULT_HOST)
 
 for (key,value) in CONTACTFORM_EMAIL_CHOICES:
     if (key in ('esp','general','esp-web','relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
@@ -110,3 +113,5 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 # that set a cookie on the top-level domain
 # NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
+
+SKIP_SOUTH_TESTS = True # To disable South's own unit tests

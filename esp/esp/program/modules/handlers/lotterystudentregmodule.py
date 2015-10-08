@@ -1,42 +1,46 @@
 
-__author__    = "MIT ESP"
+__author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
-__license__   = "GPL v.2"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 MIT ESP
+Copyright (c) 2007 by the individual contributors
+  (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-Contact Us:
-ESP Web Group
-MIT Educational Studies Program,
-84 Massachusetts Ave W20-467, Cambridge, MA 02139
-Phone: 617-253-4882
-Email: web@esp.mit.edu
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@learningu.org
 """
 
 from uuid                        import uuid4 as get_uuid
 from datetime                    import datetime, timedelta
 from collections                 import defaultdict
+import json
 
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
-from django.utils                import simplejson
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
@@ -96,7 +100,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from django.utils import simplejson
+        import json
         from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
@@ -105,7 +109,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
-        open_class_category = mark_safe(simplejson.dumps(open_class_category))
+        open_class_category = mark_safe(json.dumps(open_class_category))
 
         context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
@@ -140,7 +144,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         resp = HttpResponse(mimetype='application/json')
         
-        simplejson.dump(ordered_timeslot_names, resp)
+        json.dump(ordered_timeslot_names, resp)
         
         return resp
 
@@ -180,4 +184,4 @@ class LotteryStudentRegModule(ProgramModuleObj):
     
     class Meta:
         proxy = True
-
+        app_label = 'modules'

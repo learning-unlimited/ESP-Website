@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
@@ -39,7 +39,6 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
@@ -81,4 +80,4 @@ class OnsitePaidItemsModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

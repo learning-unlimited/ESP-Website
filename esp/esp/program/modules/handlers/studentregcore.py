@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.cache           import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper
@@ -38,7 +38,6 @@ from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser, Record
-from esp.datatree.models import *
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
@@ -240,7 +239,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @cache_function
     def printer_names():
         return Printer.objects.all().values_list('name', flat=True)
-    printer_names.depend_on_model(lambda: Printer)
+    printer_names.depend_on_model('utils.Printer')
     printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
 
     @main_call
@@ -307,4 +306,4 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

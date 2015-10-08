@@ -6,7 +6,7 @@ try:
     import pylibmc
     from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 except ImportError:
-    from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
+    from django.core.cache.backends.memcached import MemcachedCache as PylibmcCacheClass
 from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
@@ -27,9 +27,6 @@ NO_HASH_PREFIX = "NH_"
 HASH_PREFIX = "H_"
 
 class CacheClass(BaseCache):
-    idebug = False
-    queries = []
-
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
         self._wrapped_cache = PylibmcCacheClass(server, params)
@@ -55,24 +52,21 @@ class CacheClass(BaseCache):
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
 
     @try_multi(8)
-    def add(self, key, value, timeout=0, version=None):
+    def add(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key, version), value, timeout=timeout, version=version)
 
     @try_multi(8)
     def get(self, key, default=None, version=None):
-        val = self._wrapped_cache.get(self.make_key(key, version), default=default, version=version)
-        if self.idebug: self._idebuglog("get", key, val)
-        return val
+        return self._wrapped_cache.get(self.make_key(key, version), default=default, version=version)
 
     @try_multi(8)
-    def set(self, key, value, timeout=0, version=None):
+    def set(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key, version), value, timeout=timeout, version=version)
 
     @try_multi(8)
     def delete(self, key, version=None):
-        if self.idebug: self._idebuglog("delete", key, None)
         return self._wrapped_cache.delete(self.make_key(key, version), version=version)
 
     @try_multi(8)
@@ -96,17 +90,3 @@ class CacheClass(BaseCache):
 
     def close(self, **kwargs):
         self._wrapped_cache.close()
-
-    def _idebuglog(self, method, key, val = None):
-        if self.idebug:
-            self.queries.append( {'method': method, 
-                                  'key': str(key),
-                                  'value': str(val) if val is not None else '' } )
-
-    def idebug_on(self):
-        self.idebug = True
-        self.queries = []
-
-    def idebug_off(self):
-        self.idebug = False
-        self.queries = []

@@ -30,14 +30,15 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 """ This module will render latex code and return a rendered display. """
 
 import os.path
 import os
-import subprocess
+from subprocess import check_call, STDOUT
 from random import random
+from functools import partial
 import hashlib
 import tempfile
 from esp.middleware import ESPError
@@ -45,8 +46,9 @@ from django.http import HttpResponse
 
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
+_devnull_sentinel = object()
 
-def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None):
+def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """ Render some tex source to latex. This will run the latex
         interpreter and generate the necessary file type
         (either pdf, tex, ps, dvi, or a log file)   """
@@ -66,36 +68,68 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf', landscape=None)
 
     context['MEDIA_ROOT'] = settings.MEDIA_ROOT
     context['file_type'] = filetype
-        
 
     rendered_source = t.render(context)
     
-    #   Autodetect landscape mode if 'landscape' is in the first 10 lines of output
-    top_lines = rendered_source.split('\n')[:10]
-    if landscape is None:
-        if 'landscape' in '\n'.join(top_lines):
-            landscape=True
-    
-    return gen_latex(rendered_source, filetype, landscape)
+    return gen_latex(rendered_source, filetype)
+
+def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=STDOUT):
+    """Generate the latex code.
+
+    :param texcode:
+        The latex source code to use to generate the output.
+    :type texcode:
+        `unicode`
+    :param type:
+        The type of file to generate.
+        Must be one of 'pdf', 'tex', 'log', 'svg', or 'png'.
+        'tex' returns texcode itself, without processing.
+        'log' returns the log file from the execution of latex on texcode.
+        The others return the compilation of texcode into that format.
+    :type type:
+        `str`, element of ('pdf', 'tex', 'log', 'svg', 'png')
+    :param remove_files:
+        True if intermediate build files should be removed, else False.
+    :type remove_files:
+        `bool`
+    :param stdout:
+        See subprocess.__doc__.
+        Default is to redirect to os.devnull, which does not print output to stdout.
+    :type stdout:
+        `int` or `file` or `None`
+    :param stderr:
+        See subprocess.__doc__.
+        Default is STDOUT, which directs output to the same place that is
+        specified by the stdout param.
+    :type stderr:
+        `int` or `file` or `None`
+    :return:
+        The generated file.
+    :rtype:
+        HttpResponse
+    """
+    with open(os.devnull, 'w') as devnull_file:
+        # NOTE(jmoldow): `_devnull_sentinel` is private, and currently only the
+        # default parameter for `stdout` uses it, so this list comprehension
+        # isn't necessary. But using the list comprehension means that the
+        # right thing will happen if someone were to change the default
+        # parameter for `stderr`.
+        stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
+
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type, remove_files=remove_files)
 
 
-def gen_latex(texcode, type='pdf', landscape=False):
-    """ Generate the latex code. """
-
-    remove_files = True
+def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
         return HttpResponse(texcode, mimetype='text/plain')
-    
 
     # write to the LaTeX file
-    texfile   = open(file_base+TEX_EXT, 'w')
-    texfile.write(texcode.encode('utf-8'))
-    texfile.close()
-    
+    with open(file_base+TEX_EXT, 'w') as texfile:
+        texfile.write(texcode.encode('utf-8'))
 
-    file_types = ['pdf','dvi','ps','log','tex','svg','png']
+    file_types = ['pdf','log','tex','svg','png']
 
     # Get (sometimes-)necessary library files
     from django.conf import settings
@@ -103,54 +137,34 @@ def gen_latex(texcode, type='pdf', landscape=False):
     
     #   Set latex options
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
-    #   Set dvips options
-    dvips_options = ['-t', 'letter']
-    if landscape:
-        dvips_options = ['-t', 'letter,landscape']
 
-    if type=='pdf':
+    # All command calls will use the same values for the cwd, stdout, and
+    # stderr arguments, so we define a partially-applied callable call()
+    # that makes it easier to call check_call() with these values.
+    call = partial(check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+
+    if type == 'pdf':
         mime = 'application/pdf'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
-        if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
-            
-    elif type=='dvi':
-        mime = 'application/x-dvi'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        
-    elif type=='ps':
-        mime = 'application/postscript'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + [file_base, '-o', '%s.ps' % file_base], cwd=TEX_TEMP)
-        if remove_files:
-            os.remove('%s.dvi' % file_base)
-        
-    elif type=='log':
-        mime = 'text/plain'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
 
-    elif type=='svg':
+    elif type == 'log':
+        mime = 'text/plain'
+        call(['latex'] + latex_options + ['%s.tex' % file_base])
+
+    elif type == 'svg':
         mime = 'image/svg+xml'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base], cwd=TEX_TEMP)
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
         if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
             os.remove('%s.pdf' % file_base)
-        
-    elif type=='png':
+
+    elif type == 'png':
         mime = 'image/png'
-        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
+        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        call(['convert', '-density', '192',
+              '%s.pdf' % file_base, '%s.png' % file_base])
         if remove_files:
-            os.remove('%s.dvi' % file_base)
-            os.remove('%s.ps' % file_base)
+            os.remove('%s.pdf' % file_base)
 
     else:
         raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))

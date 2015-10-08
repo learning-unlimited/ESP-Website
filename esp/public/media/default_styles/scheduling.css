@@ -105,6 +105,9 @@ font-size: small;
 	  width: 100%; max-width: none; min-width: none;
 	  border-bottom: 1px solid #666; font-size: smaller;
       }
+      .matrix-row-header-box .tooltip_popup {
+          left: 121px;
+      }
 
 .matrix-cell-body {
 display: block; overflow: auto;

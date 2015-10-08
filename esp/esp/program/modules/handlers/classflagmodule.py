@@ -29,48 +29,49 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.db.models.query import Q
 from django.http import HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseRedirect
 
-import json
-import operator
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.base import main_call, aux_call, needs_admin
+from esp.web.util import render_to_response
 
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
-from esp.cache           import cache_function
-from esp.web.util        import render_to_response
-
-from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models import ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
 
 class ClassFlagModule(ProgramModuleObj):
-    doc = """ Flag classes, such as for further review.  Find all classes matching certain flags, and so on. """
+    doc = """Flag classes, such as for further review."""
+
     @classmethod
     def module_properties(cls):
         return {
-                "admin_title": "Class Flags",
-                "link_title": "Manage Class Flags",
-                "module_type": "manage",
-                "seq": 100,
-                }
+            "admin_title": "Class Flags",
+            "link_title": "Manage Class Flags",
+            "module_type": "manage",
+            "seq": 100,
+        }
 
     class Meta:
         proxy = True
-    
+        app_label = 'modules'
+
     def teachers(self, QObject = False):
         fts = ClassFlagType.get_flag_types(self.program)
         t = {}
         for flag_type in fts:
-            q = Q(classsubject__flags__flag_type=flag_type.id)
+            q = Q(classsubject__flags__flag_type=flag_type.id,
+                  classsubject__parent_program=self.program)
             if QObject:
                 t['flag_%s' % flag_type.id] = q
             else:
                 t['flag_%s' % flag_type.id] = ESPUser.objects.filter(q).distinct()
         return t
-    
+
     def teacherDesc(self):
         fts = ClassFlagType.get_flag_types(self.program)
         descs = {}
@@ -78,92 +79,11 @@ class ClassFlagModule(ProgramModuleObj):
             descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag.""" % flag_type.name
         return descs
 
-    def jsonToQuerySet(self, j):
-        '''Takes a dict decoded from the json sent by the javascript in /manage///classflags/ and converts it to QuerySet.'''
-        base = ClassSubject.objects.filter(parent_program=self.program)
-        lookup = 'flags__flag_type'
-        t = j['type']
-        v = j['value']
-        if t=='flag':
-            return base.filter(**{lookup: v})
-        elif t=='not flag':
-            return base.exclude(**{lookup: v})
-        elif t=='category':
-            return base.filter(category=v)
-        elif t=='not category':
-            return base.exclude(category=v)
-        elif t=='status':
-            return base.filter(status=v)
-        elif t=='not status':
-            return base.exclude(status=v)
-        else:
-            # Here v is going to be a list of subqueries.  First, evaluate them.
-            subqueries = [self.jsonToQuerySet(i) for i in v]
-            if t=='all':
-                return reduce(operator.and_, subqueries)
-            elif t=='any':
-                return reduce(operator.or_, subqueries)
-            elif t=='none':
-                return base.exclude(pk__in=reduce(operator.or_, subqueries))
-            elif t=='not all':
-                return base.exclude(pk__in=reduce(operator.and_, subqueries))
-            else:
-                raise ESPError('Invalid json for flag query builder!')
-
-    def jsonToEnglish(self, j):
-        '''Takes a dict decided from the json sent by the javscript in /manage///classflags/ and converts it to something vaguely human-readable.'''
-        t = j['type']
-        v = j['value']
-        if 'flag' in t:
-            return t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v).name+'"'
-        if 'category' in t:
-            return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
-        if 'status' in t:
-            statusname = {
-                    10: 'Accepted',
-                    5: 'Accepted but hidden',
-                    0: 'Unreviewed',
-                    -10: 'Rejected',
-                    -20: 'Cancelled',
-                    }[int(v)]
-            return t[:-6]+'the status "'+statusname+'"'
-        else:
-            subqueries = [self.jsonToEnglish(i) for i in v]
-            return t+" of ("+', '.join(subqueries)+")"
-
     @main_call
     @needs_admin
     def classflags(self, request, tl, one, two, module, extra, prog):
-        '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
-
-        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["flag", "not flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
-        # Grab the data from either a GET or a POST.
-        # We allow a GET request to make them linkable, and POST requests for some kind of backwards-compatibility with the way the interface previously worked.
-        if request.method == 'GET':
-            if 'query' in request.GET:
-                data = request.GET['query']
-            else:
-                data = None
-        else:
-            data = request.POST['query']
-        context = {
-                'flag_types': ClassFlagType.get_flag_types(self.program),
-                'prog': self.program,
-                }
-        if data is None:
-            # We should display the query builder interface.
-            fts = ClassFlagType.get_flag_types(self.program)
-            context['categories'] = self.program.class_categories.all()
-            return render_to_response(self.baseDir()+'flag_query_builder.html', request, context)
-        else:
-            # They've sent a query, let's process it.
-            decoded = json.loads(data)
-            queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
-            english = self.jsonToEnglish(decoded)
-            context['queryset']=queryset
-            context['english']=english
-            return render_to_response(self.baseDir()+'flag_results.html', request, context)
-
+        """Deprecated, use the ClassSearchModule instead."""
+        return HttpResponseRedirect('classsearch')
 
     @aux_call
     @needs_admin

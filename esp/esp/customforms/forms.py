@@ -1,7 +1,7 @@
 from django.forms.fields import Select
 from django import forms
 from django.utils.datastructures import SortedDict
-from django.contrib.localflavor.us.forms import USStateField, USStateSelect
+from localflavor.us.forms import USStateField, USStateSelect
 
         
 class NameWidget(forms.MultiWidget):

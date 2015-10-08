@@ -30,13 +30,12 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser
-from esp.datatree.models import *
 from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
@@ -99,6 +98,8 @@ class SurveyManagement(ProgramModuleObj):
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
 
+    survey = surveys
+
     class Meta:
         proxy = True
-
+        app_label = 'modules'

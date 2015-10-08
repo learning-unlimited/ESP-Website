@@ -8,9 +8,8 @@ from esp.utils.defaultclass import defaultclass
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
-import re
-import simplejson as json
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+import json
+from localflavor.us.forms import USPhoneNumberField
 
 _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
 
@@ -210,6 +209,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getTag('show_student_tshirt_size_options'):
             del self.fields['shirt_size']
+            del self.fields['shirt_type']
+        elif Tag.getTag('studentinfo_shirt_type_selection') == 'False':
             del self.fields['shirt_type']
 
         if not Tag.getTag('show_student_vegetarianism_options'):

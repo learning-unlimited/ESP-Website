@@ -29,7 +29,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.web.models import NavBarEntry, NavBarCategory
@@ -171,7 +171,6 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         from esp.web.models import NavBarCategory
         
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = self.program.anchor
         qsd_rec_new.name = "learn:index"
         qsd_rec_new.author = self.admins[0]
         qsd_rec_new.nav_category = NavBarCategory.default()

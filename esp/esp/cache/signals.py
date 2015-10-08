@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 __all__ = ['table_dirty', 'cache_deleted']
 
@@ -43,4 +43,4 @@ from django.dispatch import Signal
 ### table_dirty = Signal()
 
 """ Emitted when a cache is deleted. """
-cache_deleted = Signal(providing_args=[]) # DON'T FORGOT TO SPECIFY THESE AT SOME POINT...
+cache_deleted = Signal(providing_args=['key_set'])

@@ -30,13 +30,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.middleware import ESPError
+from esp.program.models import StudentRegistration
 from django.db.models.query      import Q
 from django import forms
 
@@ -347,7 +348,7 @@ class ListGenModule(ProgramModuleObj):
         context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
-    @main_call
+    @aux_call
     @needs_admin
     def selectList_old(self, request, tl, one, two, module, extra, prog):
         """ Allow use of the "old style" user selector if that is desired for
@@ -370,4 +371,4 @@ class ListGenModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -29,14 +29,16 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 """ This module houses the base ProgramModuleObj from which all module handlers are derived.
     There are many useful and magical functions provided in here, most of which can be called
     from within the program handler.
 """
+from functools import wraps
 
 from django.db import models
+from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -70,7 +72,7 @@ class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=True)
 
     def docs(self):
@@ -180,7 +182,7 @@ class ProgramModuleObj(models.Model):
         raise Http404
         
     #   Program.getModules cache takes care of our dependencies
-    findModuleObject.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findModuleObject.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     findModuleObject = staticmethod(findModuleObject)
     
     #   The list of modules in a particular category (student reg, teacher reg)
@@ -195,7 +197,7 @@ class ProgramModuleObj(models.Model):
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
-    findCategoryModules.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
@@ -205,7 +207,7 @@ class ProgramModuleObj(models.Model):
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if tl != "manage" and tl != "json" and isinstance(moduleobj, CoreModule):
+        if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
             scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
@@ -332,7 +334,7 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def get_full_path(self, tl=None):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
-    get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
+    get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
     @classmethod
     def get_summary_path(cls, function):
@@ -473,7 +475,7 @@ class ProgramModuleObj(models.Model):
             if not "seq" in props:
                 props["seq"] = 200
 
-        if type(props) == dict:
+        if isinstance(props, dict):
             props = [ props ]
 
         for prop in props:
@@ -508,6 +510,8 @@ class ProgramModuleObj(models.Model):
         """
         return context
 
+        class Meta:
+            app_label = 'modules'
 
 
 # will check and depending on the value of tl
@@ -521,14 +525,12 @@ def usercheck_usetl(method):
     
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-            
-        if tl == 'learn' and not request.user.isStudent():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'teach' and not request.user.isTeacher():
-            return render_to_response(errorpage, request, {})
-        
-        if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
+
+        if ((not request.user.isAdmin(moduleObj.program))
+             and (
+                 (tl == 'learn' and not request.user.isStudent())
+                 or (tl == 'teach' and not request.user.isTeacher())
+                 or (tl == 'manage'))):
             return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
@@ -640,7 +642,7 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {})
+            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
 
         return method(moduleObj, request, tl, *args, **kwargs)
     
@@ -733,6 +735,34 @@ def meets_all_deadlines(extensions=[]):
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline
+
+def user_passes_test(test_func, error_message):
+    """A method decorator based on django.contrib.auth.decorators.user_passes_test.
+
+    Decorate a ProgramModuleObj view method, such that requests will only
+    pass through if test_func(moduleObj) returns True. test_func must be a
+    callable with a signature of test_func(moduleObj) -> `bool`.
+    The body of test_func can use moduleObj and get_current_request()
+    (particularly, get_current_request().user) to decide if it should return
+    True or False.
+
+    In the failure case, an error page will be rendered. error_message will
+    be used as the 'extension' template variable in the error page, so it
+    should be formatted similarly to the output of list_extensions().
+    """
+    def user_passes_test(view_method):
+        @wraps(view_method, assigned=available_attrs(view_method))
+        def _check(moduleObj, request, tl, *args, **kwargs):
+            if test_func(moduleObj):
+                return view_method(moduleObj, request, tl, *args, **kwargs)
+            errorpage = 'errors/program/deadline-%s.html' % tl
+            return render_to_response(
+                errorpage,
+                request,
+                {'extension': error_message, 'moduleObj': moduleObj},
+            )
+        return _check
+    return user_passes_test
 
 
 def main_call(func):

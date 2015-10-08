@@ -30,11 +30,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-from string import Template
-import cStringIO
 import datetime
 import os
 import os.path
@@ -53,7 +51,7 @@ from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
-from esp.cache import varnish
+from esp.varnish import varnish
 from esp.middleware import ESPError
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
@@ -238,19 +236,13 @@ class ThemeController(object):
             tf1.write(less_data)
             tf1.close()
 
-        (less_output_fd, less_output_filename) = tempfile.mkstemp()
-        less_output_file = os.fdopen(less_output_fd, 'w')
-        less_output_file.write(less_data)
-        if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
-        less_output_file.close()
-
         less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
-        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, less_output_filename]
-        lessc_process = subprocess.Popen(' '.join(lessc_args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate()[0]
+        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
+        lessc_process = subprocess.Popen(' '.join(lessc_args), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        css_data = lessc_process.communicate(less_data)[0]
 
         if lessc_process.returncode != 0:
             raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
@@ -265,15 +257,15 @@ class ThemeController(object):
         Reloads the theme (possibly updating the template overrides with recent
         code changes), then recompiles the customizations.
         """
-        if theme_name is None:
-            theme_name = self.get_current_theme()
         if (customization_name is None) or (customization_name == "None"):
             customization_name = self.get_current_customization()
+        if customization_name == "None":
+            return
+        if theme_name is None:
+            theme_name = self.get_current_theme()
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
         self.update_template_settings()
-        if customization_name == "None":
-            return
         (vars, palette) = self.load_customizations(customization_name)
         if vars:
             self.customize_theme(vars)

@@ -30,10 +30,10 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, Program
 
@@ -54,7 +54,7 @@ class RegistrationTypeController(object):
                 return set(cls.default_names)
         display_names = Tag.getProgramTag(key=cls.key, program=prog)
         if display_names:
-            display_names = simplejson.loads(display_names) + cls.default_names
+            display_names = json.loads(display_names) + cls.default_names
         else:
             display_names = cls.default_names
         if "All" in display_names:
@@ -75,7 +75,7 @@ class RegistrationTypeController(object):
         try:
             if "All" in display_names:
                 display_names = cls.default_names + ["All"]
-            Tag.setTag(key=cls.key, target=prog, value=simplejson.dumps(display_names))
+            Tag.setTag(key=cls.key, target=prog, value=json.dumps(display_names))
             return True
         except Exception:
             return False

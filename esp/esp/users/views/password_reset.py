@@ -1,11 +1,6 @@
-import os.path
-
 from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
-from django.contrib.auth.models import User
-from django.template import loader
 from django.http import HttpResponseRedirect
-from django.db.models.query import Q
-from esp.users.models import PersistentQueryFilter, ESPUser, PasswordRecoveryTicket
+from esp.users.models import ESPUser, PasswordRecoveryTicket
 from esp.web.util.main import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login

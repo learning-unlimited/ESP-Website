@@ -30,15 +30,14 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
-from esp.datatree.models import *
 from datetime         import datetime, timedelta
 
 class OnsiteClassSchedule(ProgramModuleObj):
@@ -68,24 +67,12 @@ class OnsiteClassSchedule(ProgramModuleObj):
         return HttpResponseRedirect(redirectURL)
 
     @aux_call
-    @needs_student
+    @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
-        #   tl, one, two, module, extra, prog
-        format = 'pdf'
-        if 'format' in request.GET:
-            format = request.GET['format'].lower()
         if 'user' in request.GET:
             user = ESPUser.objects.get(id=request.GET['user'])
         else:
             user = request.user
-        request.GET = {'op':'usersearch',
-                       'userid': str(user.id) }
-
-        module = [module for module in self.program.getModules('manage')
-                  if type(module) == ProgramPrintables        ][0]
-
-        module.user = user
-        module.program = self.program
         
         #  onsite=False since we probably want a PDF
         return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
@@ -112,4 +99,4 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

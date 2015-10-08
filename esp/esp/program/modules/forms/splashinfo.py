@@ -29,13 +29,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django import forms
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
-import simplejson as json
+import json
 
 """
 The SplashInfoForm is customizable for different lunch options.

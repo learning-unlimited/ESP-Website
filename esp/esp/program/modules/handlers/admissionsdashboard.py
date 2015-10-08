@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
@@ -39,7 +39,7 @@ from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
 
 from django.http import HttpResponse
-from django.utils import simplejson as json
+import json
 
 class AdmissionsDashboard(ProgramModuleObj):
     """
@@ -170,3 +170,4 @@ class AdmissionsDashboard(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

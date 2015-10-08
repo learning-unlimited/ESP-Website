@@ -30,14 +30,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 from django.core.files.base import ContentFile
 
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.web.util         import get_from_id, render_to_response
-from esp.datatree.models  import *
 from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
@@ -171,10 +170,10 @@ def bio_user(request, founduser):
     # If we show classes that are yet to run, it's possible that
     # the corresponding course catalog isn't up yet, in which case
     # the teacher-bio pages leak information.
-    # Also, sort by the order of the corresponding program's DataTree node.
+    # Also, sort by the order of the corresponding program's id.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=datetime.now()).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-anchor__parent__parent__id')
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=datetime.now()).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-parent_program__id')
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it

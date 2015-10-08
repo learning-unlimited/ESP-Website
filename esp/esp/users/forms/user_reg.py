@@ -1,12 +1,10 @@
 from django import forms
-from django.contrib.auth.models import User
-from django.contrib.localflavor.us.forms import USPhoneNumberField
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import CaptchaForm, StrippedCharField
-
+from localflavor.us.forms import USPhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -159,4 +157,5 @@ class GradeChangeRequestForm(forms.ModelForm):
     """
     class Meta:
         model = GradeChangeRequest
-        exclude = ('acknowledged_by','acknowledged_time','requesting_student','approved',)
+        exclude = ('acknowledged_by','acknowledged_time','requesting_student',
+                   'approved', 'grade_before_request',)

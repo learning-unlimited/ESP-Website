@@ -30,7 +30,7 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 ################################################################################
@@ -51,6 +51,9 @@ SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 # Must be unique for every site hosted
 CACHE_PREFIX="ESP"
 
+# Auto-populated in settings.py
+# Can also be overridden in local_settings.py
+ALLOWED_HOSTS = []
 
 ###########################
 # Default file locations  #
@@ -84,7 +87,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@lists.learningu.org'),
+    ('LU Web Team','serverlog@learningu.org'),
 )
 
 GRAPPELLI_ADMIN_TITLE = "ESP administration"
@@ -119,7 +122,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'learninguarchive@gmail.com',
     'bounces': 'learningubounces@gmail.com',
-    'support': 'websupport@lists.learningu.org',
+    'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
     'treasury': 'esp-credit-cards@mit.edu',
@@ -168,19 +171,15 @@ MIDDLEWARE_GLOBAL = [
    #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
-   #( 600, 'esp.middleware.psycomiddleware.PsycoMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
-   #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
-    (1100, 'django.middleware.doc.XViewMiddleware'),
+    (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
-    (1500, 'django.middleware.transaction.TransactionMiddleware'),
-    (1600, 'reversion.middleware.RevisionMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
@@ -195,7 +194,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'django.contrib.markup',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
@@ -208,7 +206,6 @@ INSTALLED_APPS = (
     'esp.program.modules',
     'esp.dbmail',
     'esp.cal',
-    'esp.lib',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.resources',
@@ -217,15 +214,14 @@ INSTALLED_APPS = (
     'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
-    'esp.shortterm',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
     'esp.tagdict',
     'esp.seltests',
-    'esp.dataviews',
     'esp.themes',
+    'esp.varnish',
     'django_extensions',
     'reversion',
     'south',
@@ -246,7 +242,9 @@ for app in ('django_evolution', 'django_command_extensions'):
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
-SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+ATOMIC_REQUESTS = True
 
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.
@@ -260,6 +258,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.preload_images',
                                'esp.context_processors.email_settings',
                                'esp.context_processors.program',
+                               'esp.context_processors.schoolyear',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',
@@ -322,7 +321,6 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
     'debug_toolbar.panels.headers.HeadersPanel',
     'debug_toolbar.panels.logging.LoggingPanel',
-    'debug_toolbar.panels.redirects.RedirectsPanel',
     'debug_toolbar.panels.request.RequestPanel',
     'debug_toolbar.panels.settings.SettingsPanel',
     'debug_toolbar.panels.signals.SignalsPanel',
@@ -331,7 +329,8 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.templates.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
-    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel'
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
 )
 
 def custom_show_toolbar(request):
@@ -339,17 +338,28 @@ def custom_show_toolbar(request):
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
+    'DISABLE_PANELS': set([
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    ]),
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
     ],
-    'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'RENDER_PANELS': True, # Ideally would be None, but there is a bug in their code.
+    'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
+}
+
+# Settings for Stripe credit card payments (can be overridden in
+# local_settings.py).  Global settings are used to define site-wide defaults,
+# but the keys can be overridden in the 'stripe_settings' Tag object to direct
+# payments to different accounts, either on a global or per-program basis.
+STRIPE_CONFIG = {
+    'secret_key': '',
+    'publishable_key': '',
 }
 
 #   Allow Filebrowser to edit anything under media/
@@ -361,9 +371,15 @@ SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
 
+#   Set test runner to behave like pre-1.6 versions of Django
 #   Exclude apps from testing
 TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
+
+SKIP_SOUTH_TESTS = True
+SOUTH_TESTS_MIGRATE = False
+SOUTH_AUTO_FREEZE_APP = True
+SOUTH_USE_PYC = False
 
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None

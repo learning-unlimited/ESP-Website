@@ -29,12 +29,10 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
 from django.contrib import admin
-from django.db.models import ManyToManyField
-from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site
 
@@ -80,6 +78,10 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
                                             'contact_emergency__first_name', 'contact_emergency__last_name']
     list_filter = ('program', )
     date_hierarchy = 'last_ts'
+
+    def lookup_allowed(self, key, value):
+        return True
+
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
@@ -216,22 +218,23 @@ def sec_classrooms(obj):
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
+    list_display = ('emailcode', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
-    search_fields = ['parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
-    pass
+    search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
     model = ClassSection
     fields = ('status','meeting_times', 'prettyrooms')
     readonly_fields = ('meeting_times', 'prettyrooms')
+    can_delete = False
+
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
-    exclude = ('teachers','anchor')
+    exclude = ('teachers',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
     fieldsets= (
@@ -306,6 +309,7 @@ admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
     list_display = ('flag_type','subject','comment', 'created_by', 'modified_by')
+    readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)

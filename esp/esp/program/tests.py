@@ -30,22 +30,32 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 
-from esp.users.models import ESPUser, StudentInfo, Permission
-from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
-from esp.resources.models import ResourceType
+from esp.accounting.models import LineItemType
+from esp.cal.models import EventType, Event
+from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
+from esp.qsd.models import QuasiStaticData
+from esp.resources.models import Resource, ResourceType
+from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
+from esp.web.models import NavBarCategory
 
-from django.contrib.auth.models import User, Group
-import datetime, random, hashlib
-
+from django.contrib.auth.models import Group
 from django.test.client import Client
-from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from django import forms
 
+from esp.program.controllers.classreg import get_custom_fields
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+from esp.program.forms import ProgramCreationForm
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.setup import prepare_program, commit_program
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
+from datetime import datetime, timedelta
+from decimal import Decimal
+import hashlib
 import numpy
 import random
 import re
@@ -53,7 +63,6 @@ import unicodedata
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
-        import random
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
@@ -76,6 +85,7 @@ class ViewUserInfoTest(TestCase):
             self.fake_admin.save()
 
         self.admin.makeRole('Administrator')
+
         
     def assertStringContains(self, string, contents):
         if not (contents in string):
@@ -84,7 +94,65 @@ class ViewUserInfoTest(TestCase):
     def assertNotStringContains(self, string, contents):
         if contents in string:
             self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
-            
+
+    def testIssue1448UsernameMatchesFirstName(self):
+        """
+        Test for issue: https://github.com/learning-unlimited/ESP-Website/issues/1448
+
+        If someone creates an account with a username that is also someone else's first name or last name, 
+        then you can't search by that first name or last name in the admin toolbar, because you'll just be 
+        taken to the first account rather than the search page with the list of accounts having that name.
+
+        This was probably considered a feature at one point. But right now it's more of a bug. 
+        If we really want to maintain some functionality for exact matching, maybe the results page can be 
+        organized so that, when there's an exact match, it says something like: "found user with username "foo", 
+        also found other matching users" followed by the current results page. And if there is nothing but the exact 
+        match, then we can have the current behavior of redirecting directly to that profile.
+
+        Steps to reproduce:
+
+        Create account 1 with a username abcabc.
+        Create account 2 with a different username, but first name abcabc.
+        Now from an admin account, search for abcabc in the admin toolbar.
+        You get taken to account 1, but you might have wanted account 2.
+        """
+        username = 'abcabc'
+        self.user.username = username
+        self.user.save()
+
+        self.admin.first_name = username
+        self.admin.save()
+
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID
+        response = c.get("/manage/usersearch", { "userstr": username })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
+    def testUserIDSearchOneResult(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+
+    def testUserIDSearchMultipleResults(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+        self.user.username = str(self.admin.id)
+        self.user.save()
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": self.admin.id })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
     def testUserSearchFn(self):
         """
         Tests whether the user-search page works properly.
@@ -93,11 +161,6 @@ class ViewUserInfoTest(TestCase):
         """
         c = Client()
         c.login(username=self.admin.username, password=self.password)
-
-        # Try searching by ID
-        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Try searching by username
         response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
@@ -111,9 +174,12 @@ class ViewUserInfoTest(TestCase):
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
         # Full name, unique
-        response = c.get("/manage/usersearch", { "userstr": "Admin User" })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+        # I don't think this makes any sense, surely there is more than one
+
+        # response = c.get("/manage/usersearch", { "userstr": "Admin User" })
+        # self.assertEqual(response.status_code, 302)
+        # self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
@@ -219,8 +285,6 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
     
     def setUp(self):
-        from esp.users.models import ESPUser
-
         #create Groups for userroles
         user_role_setup()
 
@@ -241,15 +305,6 @@ class ProgramHappenTest(TestCase):
 
     def makeprogram(self):
         """ Test program creation through the web form. """
-        from esp.users.models import ESPUser
-        from esp.program.models import Program, ProgramModule, ClassCategories
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.accounting.models import LineItemType
-        from decimal import Decimal
-        # Imports for the HttpRequest hack
-        from esp.program.views import newprogram
-        from django.http import HttpRequest
-        
         # Make stuff that a program needs
         ClassCategories.objects.create(symbol='X', category='Everything')
         ClassCategories.objects.create(symbol='N', category='Nothing')
@@ -312,11 +367,6 @@ class ProgramHappenTest(TestCase):
 
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
-        from esp.cal.models import EventType, Event
-        from esp.resources.models import Resource, ResourceType, ResourceAssignment
-        from esp.program.controllers.classreg import get_custom_fields
-        from django import forms
-        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
@@ -358,18 +408,18 @@ class ProgramHappenTest(TestCase):
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
             'hardness_rating': '**',
-        }
-        """
             #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
+            'request-MAX_NUM_FORMS': '1000',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
             'request-0-desired_value': 'Lecture',
             'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-        """
+            'restype-MAX_NUM_FORMS': '1000',
+        }
         
         #   Fill in required fields from any custom forms used by the program
         #   This should be improved in the future (especially if we have dynamic forms)
@@ -431,10 +481,6 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
-        from esp.users.models import ContactInfo, StudentInfo
-        from esp.program.models import RegistrationProfile, StudentRegistration
-        from datetime import datetime, timedelta
-
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
@@ -446,10 +492,10 @@ class ProgramHappenTest(TestCase):
         sec.assignClassRoom(self.classroom)
         
         # shortcut student profile creation -- presumably we're also testing this elsewhere
-        thisyear = datetime.now().year
+        thisyear = ESPUser.program_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10), dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
         
         # Student logs in and signs up for classes
@@ -500,21 +546,7 @@ class ProgramFrameworkTest(TestCase):
     """
     
     def setUp(self, *args, **kwargs):
-        from esp.users.models import ESPUser
-        from esp.cal.models import Event, EventType
-        from esp.cal.models import install as cal_install
-        from esp.resources.models import Resource, ResourceType
-        from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
-        from esp.program.setup import prepare_program, commit_program
-        from esp.program.forms import ProgramCreationForm
-        from esp.qsd.models import QuasiStaticData
-        from esp.web.models import NavBarCategory
-        from datetime import datetime, timedelta
-        from esp.program.modules.models import install as program_modules_install
-
         user_role_setup()
-        program_modules_install()
-        cal_install()
         
         #   Default parameters
         settings = {'num_timeslots': 3,
@@ -553,19 +585,22 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
+            name = u'student%04d' % i
+            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
+            name = u'teacher%04d' % i
+            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
+            name = u'admin%04d' % i
+            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
@@ -652,7 +687,7 @@ class ProgramFrameworkTest(TestCase):
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
-                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
@@ -676,15 +711,42 @@ class ProgramFrameworkTest(TestCase):
                         sec.assign_room(random.choice(vr))
                         #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
-    #   Helper function to give each student a profile so they can sign up for classes.
-    #   Does not get called by default, but subclasses can call it.
-    def add_student_profiles(self):
+    def add_user_profiles(self):
+        """Helper function to give each user a profile so they can register.
+
+        Does not get called by default, but subclasses can call it.
+        """
         for student in self.students:
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.program_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
-            
+        for teacher in self.teachers:
+            teacher_teacherinfo = TeacherInfo(user=teacher)
+            teacher_teacherinfo.save()
+            digit = teacher.id % 10
+            phone = (u'%d' % digit) * 10
+            teacher_contactinfo = ContactInfo(
+                user=teacher,
+                first_name=teacher.first_name,
+                last_name=teacher.last_name,
+                e_mail=teacher.email,
+                phone_day=phone,
+                phone_cell=phone,
+            )
+            teacher_contactinfo.save()
+            teacher_regprofile = RegistrationProfile(
+                user=teacher,
+                program=self.program,
+                teacher_info=teacher_teacherinfo,
+                contact_user=teacher_contactinfo,
+                most_recent_profile=True,
+            )
+            teacher_regprofile.save()
+
+    # For backwards compatability.
+    add_student_profiles = add_user_profiles
+
     #   Helper function to put the students in classes.
     #   Does not get called by default, but subclasses can call it.
     def classreg_students(self):
@@ -707,9 +769,6 @@ class ProgramFrameworkTest(TestCase):
     # Helper function to create another program in the past
     # Does not get called by default, but subclasses can call it
     def create_past_program(self):
-        from esp.program.models import ProgramModule
-        from esp.program.forms import ProgramCreationForm
-        from esp.program.setup import prepare_program, commit_program
         # Make a program
         prog_form_values = {
                 'term': '1111_Spring',
@@ -767,11 +826,6 @@ class ScheduleMapTest(ProgramFrameworkTest):
         properly reflected in their schedule map.
     """
     def runTest(self):
-        from esp.program.models import ScheduleMap, ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        
-        import random
-        
         def occupied_slots(map):
             result = []
             for key in map:
@@ -834,7 +888,6 @@ class BooleanLogicTest(TestCase):
         working correctly.
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression
         #   Create a logic expression with default values
         exp, created = BooleanExpression.objects.get_or_create(label='bltestexp')
         a = exp.add_token('1')
@@ -866,9 +919,6 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
            between the results of these tests. 
     """
     def runTest(self):
-        from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
-        from esp.program.modules.base import ProgramModuleObj
-        
         #   Initialize
         student = self.students[0]
         program = self.program
@@ -992,10 +1042,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
-        from esp.program.models import ProgramModule
-        from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
-    
         #   Make all default modules non-required
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj
@@ -1080,13 +1126,16 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
         self.priority_rts=[self.priority_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 1
+        scrmi.save()
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
         for student in self.students:
             # Give the student a starting grade
             startGrade = int(random.random() * 6) + 7
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade))
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1128,9 +1177,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
 
-            # Get their grade
-            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
-
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
@@ -1148,7 +1194,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lotteryController.save_assignments()
 
         #   Get stats
-        stats = lotteryController.compute_stats()
+        stats = lotteryController.compute_stats(display=False)
 
         #   Check stats for correctness
         #   - Some basic stats
@@ -1235,8 +1281,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
     
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
-        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
-        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/3')
         self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
         scrmi.priority_limit = 3

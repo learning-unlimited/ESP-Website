@@ -1,9 +1,11 @@
+import json
+
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
-from django.utils import simplejson as json
+
 from esp.customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
@@ -76,21 +78,27 @@ def getPerms(request):
     return HttpResponse(status=400)                                        
 
 @user_passes_test(test_func)
-@transaction.commit_on_success
+@transaction.atomic
 def onSubmit(request):
     #Stores form metadata in the database.
     
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
-            
+            metadata = json.loads(request.body)
             fields = []
-            
+
+        # truncating field lengths to the character limits specified
+        title = metadata['title'][0:Form._meta.get_field_by_name('title')[0].max_length]
+        link_type = metadata['link_type'][0:Form._meta.get_field_by_name('link_type')[0].max_length]
+        perms = metadata['perms'][0:Form._meta.get_field_by_name('perms')[0].max_length]
+        success_message = metadata['success_message'][0:Form._meta.get_field_by_name('success_message')[0].max_length]
+        success_url = metadata['success_url'][0:Form._meta.get_field_by_name('success_url')[0].max_length]
+
         # Creating form
-        form = Form.objects.create(title=metadata['title'], 
-            description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], 
-            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
-            success_message=metadata['success_message'], success_url=metadata['success_url']
+        form = Form.objects.create(title=title, 
+            description=metadata['desc'], created_by=request.user, link_type=link_type, 
+            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=perms,
+            success_message=success_message, success_url=success_url
             )
         
         # Inserting pages
@@ -141,14 +149,14 @@ def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
 @user_passes_test(test_func)
-@transaction.commit_on_success        
+@transaction.atomic        
 def onModify(request):
     """
     Handles form modifications
     """
     if request.is_ajax():
         if request.method == 'POST':
-            metadata = json.loads(request.raw_post_data)
+            metadata = json.loads(request.body)
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:

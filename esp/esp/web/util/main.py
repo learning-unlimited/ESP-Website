@@ -30,17 +30,13 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@lists.learningu.org
+  Email: web-team@learningu.org
 """
 import re
-from esp.users.models import ESPUser
 from django.template import Context, Template, loader, RequestContext
 from django.conf import settings
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
-from django.contrib.auth.models import AnonymousUser
-from esp.program.models import Program
-from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
 from esp.themes.controllers import ThemeController
 from django.conf import settings
@@ -60,14 +56,12 @@ def get_from_id(id, module, strtype = 'object', error = True):
             raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
         return None
     return foundobj
-    
-def render_response(request, template, dictionary, mimetype=None, ):
-    from esp.web.util.idebug import idebug_hook
-    inst = RequestContext(request)
-    inst.update(dictionary)
-    idebug_hook(request, inst)
-    
-    return django.shortcuts.render_to_response(template, {}, context_instance = inst, mimetype=mimetype, )
+
+
+def render_response(request, *args, **kwargs):
+    kwargs['context_instance'] = RequestContext(request)
+    return django.shortcuts.render_to_response(*args, **kwargs)
+
 
 def _per_program_template_name(prog, templatename):
     tpath = templatename.split("/")

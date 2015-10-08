@@ -1,37 +1,40 @@
 
-__author__    = "MIT ESP"
+__author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
-__license__   = "GPL v.2"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2012 MIT ESP
+Copyright (c) 2012 by the individual contributors
+  (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
 of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
-Contact Us:
-ESP Web Group
-MIT Educational Studies Program,
-84 Massachusetts Ave W20-467, Cambridge, MA 02139
-Phone: 617-253-4882
-Email: web@esp.mit.edu
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@learningu.org
 """
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
-from esp.datatree.models         import *
 from esp.users.models            import Record
 from esp.cal.models              import Event
 
@@ -55,12 +58,13 @@ class StudentLunchSelectionForm(forms.Form):
         
         #   Set choices for timeslot field
         #   [(None, '')] + 
-        events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
         events_filtered = filter(lambda x: x.start.day == self.day.day, events_all)
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
         
     def load_data(self):
-        lunch_registrations = list(StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program))
+        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
+        lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:
@@ -154,3 +158,4 @@ class StudentLunchSelection(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
