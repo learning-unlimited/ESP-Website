@@ -31,7 +31,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.conf.urls.defaults import patterns, include, url, handler500, handler404
+
+from django.conf.urls import patterns, include, handler500, handler404
+from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
 from django.conf.urls.static import static
@@ -111,11 +113,6 @@ urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
 
-urlpatterns += patterns('esp.web.views.json',
-
-     # JSON
-    (r'json/teachers/$', 'teacher_lookup'))
-
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
@@ -158,7 +155,7 @@ urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
-    url(r'^__debug__/', include(debug_toolbar.urls)),
+    (r'^__debug__/', include(debug_toolbar.urls)),
 )
 
 urlpatterns += patterns('esp.formstack.views',

@@ -6,7 +6,7 @@ try:
     import pylibmc
     from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 except ImportError:
-    from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
+    from django.core.cache.backends.memcached import MemcachedCache as PylibmcCacheClass
 from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
@@ -52,7 +52,7 @@ class CacheClass(BaseCache):
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
 
     @try_multi(8)
-    def add(self, key, value, timeout=0, version=None):
+    def add(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.add(self.make_key(key, version), value, timeout=timeout, version=version)
 
@@ -61,7 +61,7 @@ class CacheClass(BaseCache):
         return self._wrapped_cache.get(self.make_key(key, version), default=default, version=version)
 
     @try_multi(8)
-    def set(self, key, value, timeout=0, version=None):
+    def set(self, key, value, timeout=None, version=None):
         self._failfast_test(key, value)
         return self._wrapped_cache.set(self.make_key(key, version), value, timeout=timeout, version=version)
 

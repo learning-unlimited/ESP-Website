@@ -190,7 +190,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         teacher_list = ESPUser.objects.filter(self.moduleobj.get_resource_pairs()[i][2])
         return teacher in teacher_list
 
-    @transaction.commit_manually
+    @transaction.atomic
     def test_get_resource_pairs(self):
         prog = self.program
         new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
@@ -206,14 +206,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.delete_resource_request(sec, new_res_type1)
         self.failUnless(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-        transaction.rollback()
-
+    
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]
         return set(teaching_teachers) == set(all_teachers)
 
-    @transaction.commit_manually
+    @transaction.atomic
     def test_teachers(self):
         # Get the instance of StudentClassRegModule
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
@@ -289,7 +288,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         transaction.rollback()
 
-    @transaction.commit_manually
+    @transaction.atomic
     def test_deadline_met(self):
 
         self.failUnless(self.moduleobj.deadline_met())

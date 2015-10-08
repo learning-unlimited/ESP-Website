@@ -41,7 +41,7 @@ from collections import defaultdict
 from django.conf import settings
 from django.db import models
 from django.db.models.query import Q
-from django.db.models import signals
+from django.db.models import signals, Sum
 from django.db.models.manager import Manager
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
@@ -209,20 +209,18 @@ class ClassManager(Manager):
 
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
+
+        classes = classes.annotate(_num_students=Sum('sections__enrolled_students'))
         
         #   Retrieve the content type for finding class documents (generic relation)
         content_type_id = ContentType.objects.get_for_model(ClassSubject).id
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
-                             ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
+        select = SortedDict([('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
-        select_params = [ enrolled_type.id,
-                          now,
-                          now,
-                          content_type_id,
+        select_params = [ content_type_id,
                           '%/Classes/%',
                           '%[A-Z]',
                           '/%',

@@ -72,7 +72,7 @@ class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=True)
 
     def docs(self):
@@ -507,6 +507,8 @@ class ProgramModuleObj(models.Model):
         """
         return context
 
+        class Meta:
+            app_label = 'modules'
 
 
 # will check and depending on the value of tl

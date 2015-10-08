@@ -58,6 +58,7 @@ class ClassFlagModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
     def teachers(self, QObject = False):
         fts = ClassFlagType.get_flag_types(self.program)

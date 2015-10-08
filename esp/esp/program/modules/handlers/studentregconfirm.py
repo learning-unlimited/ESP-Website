@@ -60,4 +60,4 @@ class StudentRegConfirm(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

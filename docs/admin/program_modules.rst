@@ -317,6 +317,9 @@ This is the module that embeds a Formstack form on a student-facing page for
 student applications.  For more information, see
 `</docs/admin/student_apps.rst>`_.
 
+Class Change Request Module (ClassChangeRequest)
+------------------------------------------------
+
 Teacher modules (13)
 ====================
 
@@ -483,9 +486,16 @@ To set up class flags, first add some flag types from the admin panel at
 /admin/program/classflagtype/, then add them to your program by choosing your
 program in /admin/program/program/ and scrolling to the bottom of the page.
 (There is also a place to add them at program creation.) Now you can add and
-view class flags from the edit class or manage class pages.  To create a list
-of classes with(out) some flag, go to the manage page for the program, and in
-the complete list of modules, choose "Manage class flags".
+view class flags from the edit class or manage class pages.
+
+Class Search (ClassSearchModule)
+--------------------------------
+
+This page, formerly a part of the ClassFlagModule allows building queries of
+classes, such as all classes with or without a particular flag, status,
+category, or any combination thereof.  It can be reached by clicking on "Search
+for Classes" under the complete module list on the program management main
+page.
 
 Communications Panel for Admin (CommModule)
 -------------------------------------------
@@ -638,6 +648,17 @@ Admin Admissions Dashboard
 
 Provides an interface for admins to review all of the applications in the
 program. For more information, see `</docs/admin/student_apps.rst>`_.
+
+Student Registration Big Board
+--------------------------------------
+
+Provides a page for watching the current number of student registrations.
+You can get to it from the link "Student Registration Big Board" on the main
+program management page, or at /manage/[program]/[instance]/bigboard.  It has
+some of the same statistics as the dashboard, but is a lot faster to load, and
+has some fun extra numbers too.  Most of the statistics are most useful during
+lottery registration, but it is not restricted to the lottery.
+
 
 Onsite modules (8)
 ==================

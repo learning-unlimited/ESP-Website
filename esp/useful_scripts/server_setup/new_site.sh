@@ -207,6 +207,10 @@ else
 fi
 echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
 
+SECRET_KEY=`$CURDIR/random_password.sh`
+echo "Generated random secret key"
+echo "SECRET_KEY=\"$SECRET_KEY\"" >> $BASEDIR/.espsettings
+
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
@@ -264,6 +268,7 @@ ADMINS = (
     ('LU Web group','serverlog@learningu.org'),
 )
 CACHE_PREFIX = "${SITENAME}ESP"
+SECRET_KEY = '$SECRET_KEY'
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {

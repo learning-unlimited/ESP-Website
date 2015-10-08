@@ -100,7 +100,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):
-            if '<select id="id_graduation_year" class="required" name="graduation_year">' in line:
+            if '<select class="required" id="id_graduation_year" name="graduation_year">' in line:
                 break
         self.assertTrue(i < len(lines)-1) ## Found the relevant line
 

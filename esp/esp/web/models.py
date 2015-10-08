@@ -39,7 +39,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
-    include_auto_links = models.BooleanField()
+    include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
     long_explanation = models.TextField()
@@ -89,7 +89,7 @@ class NavBarEntry(models.Model):
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
-    indent = models.BooleanField()
+    indent = models.BooleanField(default=False)
 
     category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 

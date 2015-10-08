@@ -93,7 +93,7 @@ class ThemesTest(TestCase):
             
             #   Supply more settings if the theme asks for them.
             if '<form id="theme_setup_form"' in response.content:
-                field_matches = re.findall(r'<(input type="\S+"|textarea).*?name="(\S+)".*?>', response.content, flags=re.DOTALL)
+                field_matches = re.findall(r'<(input id="\S+"|textarea).*?name="(\S+)".*?>', response.content, flags=re.DOTALL)
                 #   This is the union of all the theme configuration settings that
                 #   have a non-trivial form (e.g. key = value fails validation).
                 settings_dict = {

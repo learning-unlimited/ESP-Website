@@ -37,12 +37,12 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
-import simplejson as json
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
-from django.contrib.localflavor.us.models import PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
@@ -100,7 +100,7 @@ class ProgramModule(models.Model):
     seq = models.IntegerField()
     
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -1778,7 +1778,7 @@ class VolunteerRequest(models.Model):
 
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
-    confirmed = models.BooleanField()
+    confirmed = models.BooleanField(default=False)
 
     #   Fill out this if you're logged in...
     user = AjaxForeignKey(ESPUser, blank=True, null=True)

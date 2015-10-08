@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime
 import operator
-import simplejson as json
+import json
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
@@ -55,7 +55,8 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import Transfer
 
 from decimal import Decimal
 
@@ -737,6 +738,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
+        #   Convert Decimal values to float for serialization
+        for i in range(len(annotated_categories)):
+            annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
         ## Calculate the grade data:
@@ -775,6 +779,20 @@ teachers[key].filter(is_active = True).distinct().count()))
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
+        #   Add accounting stats
+        pac = ProgramAccountingController(prog)
+        (num_payments, total_payment) = pac.payments_summary()
+        accounting_data = {
+            'num_payments': num_payments,
+            # We need to convert to a float in order for json to serialize it.
+            # Since we're not doing any computation client-side with these
+            # numbers, this doesn't cause accuracy issues.  If the
+            # total_payment is None, just coerce it to zero for display
+            # purposes.
+            'total_payments': float(total_payment or 0),
+        }
+        dictOut["stats"].append({"id": "accounting", "data": accounting_data})
+    
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
@@ -799,3 +817,4 @@ teachers[key].filter(is_active = True).distinct().count()))
 
     class Meta:
         proxy = True
+        app_label = 'modules'
