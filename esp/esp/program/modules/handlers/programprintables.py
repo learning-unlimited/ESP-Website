@@ -926,7 +926,7 @@ Volunteer schedule for %s:
             last_classes = []
             days = {}
             for cls in classes:
-                date = cls.end_time().end.date().isocalendar()
+                date = cls.end_time_prefetchable().date().isocalendar()
                 if date in days:
                     days[date].append(cls)
                 else:

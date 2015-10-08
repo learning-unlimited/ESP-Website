@@ -716,8 +716,21 @@ class ClassSection(models.Model):
     def end_time(self):
         """Returns the meeting time for this section with the latest end time"""
         all_times = self.meeting_times.order_by("-end")
-        if all_times: return all_times[0]
-        else: return []
+        if all_times:
+            return all_times[0]
+        else:
+            return None
+
+    def end_time_prefetchable(self):
+        """Like self.end_time().end, but can be prefetched.
+
+        See self.start_time_prefetchable().
+        """
+        mts = self.meeting_times.all()
+        if mts:
+            return max(mt.end for mt in mts)
+        else:
+            return None
     
     def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
