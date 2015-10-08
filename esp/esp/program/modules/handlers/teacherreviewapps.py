@@ -39,7 +39,6 @@ from esp.users.models import ESPUser, User
 from esp.web.util        import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentRegistration
 from django.contrib.auth.decorators import login_required
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.views.decorators.cache import never_cache
@@ -256,4 +255,4 @@ class TeacherReviewApps(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

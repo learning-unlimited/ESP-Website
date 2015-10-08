@@ -14,7 +14,7 @@ from django.db import transaction
 
 from datetime import timedelta, datetime
 from decimal import Decimal
-import simplejson as json
+import json
 from django.conf import settings
 
 def get_custom_fields():
@@ -41,7 +41,7 @@ class ClassCreationController(object):
         self.program = prog
         self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
@@ -58,7 +58,7 @@ class ClassCreationController(object):
 
         return cls
 
-    @transaction.commit_on_success
+    @transaction.atomic
     def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
         
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
@@ -82,16 +82,14 @@ class ClassCreationController(object):
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
 
-        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
-
-        try:
-            resource_formset = ResourceRequestFormSet(reg_data, prefix='request', static_resource_requests=static_resource_requests, )
-        except ValidationError:
+        if 'request-TOTAL_FORMS' in reg_data:
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
+        else:
             resource_formset = None
 
-        try:
+        if 'restype-TOTAL_FORMS' in reg_data:
             restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
-        except ValidationError:
+        else:
             restype_formset = None
             
         if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):

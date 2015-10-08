@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from esp.datatree.models import *
 from markdown import markdown
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey

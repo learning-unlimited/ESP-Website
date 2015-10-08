@@ -3,7 +3,6 @@ import re
 from django import template
 from django.contrib.auth.models import User, AnonymousUser
 
-from esp.datatree.models import *
 from esp.miniblog.views import get_visible_announcements
 
 __all__ = ['MiniblogNode', 'miniblog_for_user']
@@ -29,7 +28,7 @@ class MiniblogNode(template.Node):
         try:
             user_obj = template.resolve_variable(self.user, context)
         except template.VariableDoesNotExist:
-            if self.user == "AnonymousUser" or self.user == "None":
+            if self.user == "AnonymousUser":
                 user_obj = AnonymousUser()
             else:
                 raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user

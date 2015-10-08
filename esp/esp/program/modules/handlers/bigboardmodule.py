@@ -26,6 +26,7 @@ class BigBoardModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
     @main_call
     @needs_admin

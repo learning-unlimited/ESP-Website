@@ -9,7 +9,7 @@ from django.utils.safestring import mark_safe
 import django.utils.formats
 from django.template import Template, Context
 
-import simplejson as json
+import json
 import datetime
 import time
 

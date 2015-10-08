@@ -278,6 +278,13 @@ class ProgramAccountingController(BaseAccountingController):
             we shouldn't be expecting their money.  """
         self.all_transfers().filter(user__in=users, executed=False).delete()
 
+    def payments_summary(self):
+        """ Return a tuple with the number and total dollar amount of payments
+            that have been made so far. """
+        payment_li_type = self.default_payments_lineitemtype()
+        payments = Transfer.objects.filter(line_item=payment_li_type)
+        return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
+
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)

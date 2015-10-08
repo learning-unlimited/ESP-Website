@@ -7,6 +7,10 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("accounting_core", "0001_initial"),
+    )
+
     def forwards(self, orm):
         # Adding model 'PurchaseOrder'
         db.create_table('accounting_docs_purchaseorder', (

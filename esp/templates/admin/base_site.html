@@ -27,14 +27,10 @@ ul.ui-autocomplete li
 
 {% block title %}{{ title|escape }} | {% trans 'ESP site admin' %}{% endblock %}
 
-{% block branding %}
-<h1 id="site-name"><a href="/" title="Go to the main page">{% trans 'ESP administration' %}</a></h1>
-{% endblock %}
-
 {% block nav-global %}{% endblock %}
 
 {% block userlinks %}
 {{ block.super }}
-<li><a href="{% url filebrowser:fb_browse %}">{% trans 'FileBrowser' %}</a></li>
-<li><a href="{% url esp.themes.views.landing %}">{% trans 'Theme settings' %}</a></li>
+<li><a href="{% url 'filebrowser:fb_browse' %}">{% trans 'FileBrowser' %}</a></li>
+<li><a href="{% url 'esp.themes.views.landing' %}">{% trans 'Theme settings' %}</a></li>
 {% endblock userlinks %}

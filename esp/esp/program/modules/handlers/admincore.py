@@ -37,7 +37,6 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.datatree.models import *
 from esp.users.models import User, Permission
 from django import forms
 from django.forms.formsets import formset_factory
@@ -255,4 +254,4 @@ class AdminCore(ProgramModuleObj, CoreModule):
     
     class Meta:
         proxy = True
-
+        app_label = 'modules'

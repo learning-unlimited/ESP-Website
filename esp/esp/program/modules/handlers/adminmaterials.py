@@ -107,4 +107,4 @@ class AdminMaterials(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

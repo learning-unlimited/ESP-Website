@@ -38,7 +38,6 @@ from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser, Record
-from esp.datatree.models import *
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
@@ -307,4 +306,4 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-        
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -86,6 +85,7 @@ class ViewUserInfoTest(TestCase):
             self.fake_admin.save()
 
         self.admin.makeRole('Administrator')
+
         
     def assertStringContains(self, string, contents):
         if not (contents in string):
@@ -94,7 +94,65 @@ class ViewUserInfoTest(TestCase):
     def assertNotStringContains(self, string, contents):
         if contents in string:
             self.assert_(False, "'%s' are in '%s' and shouldn't be" % (contents, string))
-            
+
+    def testIssue1448UsernameMatchesFirstName(self):
+        """
+        Test for issue: https://github.com/learning-unlimited/ESP-Website/issues/1448
+
+        If someone creates an account with a username that is also someone else's first name or last name, 
+        then you can't search by that first name or last name in the admin toolbar, because you'll just be 
+        taken to the first account rather than the search page with the list of accounts having that name.
+
+        This was probably considered a feature at one point. But right now it's more of a bug. 
+        If we really want to maintain some functionality for exact matching, maybe the results page can be 
+        organized so that, when there's an exact match, it says something like: "found user with username "foo", 
+        also found other matching users" followed by the current results page. And if there is nothing but the exact 
+        match, then we can have the current behavior of redirecting directly to that profile.
+
+        Steps to reproduce:
+
+        Create account 1 with a username abcabc.
+        Create account 2 with a different username, but first name abcabc.
+        Now from an admin account, search for abcabc in the admin toolbar.
+        You get taken to account 1, but you might have wanted account 2.
+        """
+        username = 'abcabc'
+        self.user.username = username
+        self.user.save()
+
+        self.admin.first_name = username
+        self.admin.save()
+
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID
+        response = c.get("/manage/usersearch", { "userstr": username })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
+    def testUserIDSearchOneResult(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
+        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+
+    def testUserIDSearchMultipleResults(self):
+        c = Client()
+        c.login(username=self.admin.username, password=self.password)
+        self.user.username = str(self.admin.id)
+        self.user.save()
+
+        # Try searching by ID direct hit
+        response = c.get("/manage/usersearch", { "userstr": self.admin.id })
+        self.assertEqual(response.status_code, 200)
+        self.assertStringContains(response.content, 'Multiple users matched the criteria that you specified')
+
+
     def testUserSearchFn(self):
         """
         Tests whether the user-search page works properly.
@@ -103,11 +161,6 @@ class ViewUserInfoTest(TestCase):
         """
         c = Client()
         c.login(username=self.admin.username, password=self.password)
-
-        # Try searching by ID
-        response = c.get("/manage/usersearch", { "userstr": str(self.admin.id) })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Try searching by username
         response = c.get("/manage/usersearch", { "userstr": str(self.fake_admin.username) })
@@ -121,9 +174,12 @@ class ViewUserInfoTest(TestCase):
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
         # Full name, unique
-        response = c.get("/manage/usersearch", { "userstr": "Admin User" })
-        self.assertEqual(response.status_code, 302)
-        self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
+
+        # I don't think this makes any sense, surely there is more than one
+
+        # response = c.get("/manage/usersearch", { "userstr": "Admin User" })
+        # self.assertEqual(response.status_code, 302)
+        # self.assertStringContains(response['location'], "/manage/userview?username=adminuser124353")
 
         # Last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "User" })
@@ -352,18 +408,18 @@ class ProgramHappenTest(TestCase):
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
             'hardness_rating': '**',
-        }
-        """
             #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
+            'request-MAX_NUM_FORMS': '1000',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
             'request-0-desired_value': 'Lecture',
             'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-        """
+            'restype-MAX_NUM_FORMS': '1000',
+        }
         
         #   Fill in required fields from any custom forms used by the program
         #   This should be improved in the future (especially if we have dynamic forms)
@@ -436,7 +492,7 @@ class ProgramHappenTest(TestCase):
         sec.assignClassRoom(self.classroom)
         
         # shortcut student profile creation -- presumably we're also testing this elsewhere
-        thisyear = datetime.now().year
+        thisyear = ESPUser.program_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
         prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
@@ -631,7 +687,7 @@ class ProgramFrameworkTest(TestCase):
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
-                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.

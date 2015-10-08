@@ -36,7 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser
-from esp.datatree.models import *
 from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
@@ -116,6 +115,8 @@ class SurveyModule(ProgramModuleObj):
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
 
+    surveys = survey
+
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -3,7 +3,7 @@ from esp.themes.controllers import ThemeController
 from django import template
 
 import os.path
-import simplejson as json
+import json
 
 register = template.Library()
 
@@ -106,7 +106,6 @@ def truncatewords_char(value, arg):
 
     Argument: Number of characters to truncate before.
     """
-    from django.utils.text import truncate_words
     try:
         length = int(arg)
     except ValueError: # Invalid literal for int().

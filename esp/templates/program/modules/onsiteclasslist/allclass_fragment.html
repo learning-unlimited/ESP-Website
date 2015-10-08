@@ -1,8 +1,12 @@
-<table cellpadding="2" cellspacing="0" width="100%" style="table-layout: fixed;"> 
+<meta name="viewport" content="width=640">
+<style>
+  table td.shrink { white-space: nowrap; width: 0 }
+</style>
+<table cellpadding="2" cellspacing="0" width="100%">
             <tr>
-            <td width="15%">&nbsp;</td>
-            <td width="75%">&nbsp;</td>
-            <td width="10%">&nbsp;</td>
+            <td class="shrink">&nbsp;</td>
+            <td class="expand">&nbsp;</td>
+            <td class="shrink">&nbsp;</td>
             </tr>
     <tr>
         <th colspan="4">All Open Classes - Currently {{ current_time }}</th>
@@ -13,19 +17,19 @@
          {% if use_categories %}
             {% ifchanged %}
                 </td></tr>
-               <tr><th class="start_time">{{ class.begin_time }}</th></tr>
+               <tr><th colspan="3" class="start_time">{{ class.begin_time }}</th></tr>
                <tr><td>
             {% endifchanged %}
             {% ifchanged %}
                 </td></tr>
-               <tr><th class="category">{{ class.category.category }}</th></tr>
+               <tr><th colspan="3" class="category">{{ class.category.category }}</th></tr>
                <tr><td>
             {% endifchanged %}
          {% endif %}
             <tr>
-            <td width="15%"><div class="hideextra"><span class="classitem"style="color: #00CC00;">{% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></div></td>
-            <td width="75%"><div class="hideextra"><span class="classitem"><b>{{ class.emailcode }}</b>: {{ class.title }}</span></div></td>
-            <td width="10%"><div class="hideextra"><span class="classitem"style="color: #CC0000;">Grades {{ class.parent_class.grade_min }}--{{ class.parent_class.grade_max }}</span></div> </td>
+            <td class="shrink"><div class="hideextra"><span class="classitem"style="color: #00CC00;">{% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></div></td>
+            <td class="expand"><div class="hideextra"><span class="classitem"><b>{{ class.emailcode }}</b>: {{ class.title }}</span></div></td>
+            <td class="shrink"><div class="hideextra"><span class="classitem"style="color: #CC0000;">Grades {{ class.parent_class.grade_min }}--{{ class.parent_class.grade_max }}</span></div> </td>
             </tr>
         {% endif %} 
         {% endif %}

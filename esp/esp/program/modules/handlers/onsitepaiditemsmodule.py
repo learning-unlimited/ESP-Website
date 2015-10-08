@@ -39,7 +39,6 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser
 from esp.users.controllers.usersearch import UserSearchController
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
@@ -81,4 +80,4 @@ class OnsitePaidItemsModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'
