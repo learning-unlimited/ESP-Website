@@ -213,7 +213,7 @@ class ProgramModuleObj(models.Model):
                 other_modules = moduleobj.findCategoryModules(False)
                 for m in other_modules:
                     m.request = request
-                    if request.user.is_morphed() and not isinstance(m, RegProfileModule):
+                    if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
                         continue
                     if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
