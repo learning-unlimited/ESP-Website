@@ -28,7 +28,7 @@ jquery_ui_init = function(){
     accordion_settings = {
 	// Class 'header' elements will be considered headers by the accordion
 	header: ".header",
-	autoHeight: false,
+	heightStyle: "content",
 	collapsible: true,
 	beforeActivate: function(event, ui) {
 	    // If we're switching to the preferences tab, update it
