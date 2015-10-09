@@ -30,9 +30,9 @@ jquery_ui_init = function(){
 	header: ".header",
 	autoHeight: false,
 	collapsible: true,
-	changestart: function(event, ui) {
+	beforeActivate: function(event, ui) {
 	    // If we're switching to the preferences tab, update it
-	    if (ui.newContent.attr("id") == "preferences")
+	    if (ui.newPanel.attr("id") == "preferences")
 	    {
 		update_preferences({'timeslots': timeslots, 'sections': sections});
 	    }
