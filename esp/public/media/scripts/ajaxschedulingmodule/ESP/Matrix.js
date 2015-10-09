@@ -296,7 +296,15 @@ function Matrix(
         //Room headers
         var rows = {};	//table rows by room name
         var room_ids = Object.keys(this.rooms);
-        room_ids.sort();
+        room_ids.sort(function (room1, room2) {
+	    // sort by building number
+            var bldg1 = parseInt(room1, 10);
+            var bldg2 = parseInt(room2, 10);
+            if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
+                return bldg1 - bldg2;
+            }
+            return room1.localeCompare(room2);
+        });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td class='room'>" + id + "</td>");
