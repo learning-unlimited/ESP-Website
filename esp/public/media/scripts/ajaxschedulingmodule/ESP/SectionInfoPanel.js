@@ -1,6 +1,6 @@
 /**
  * The panel to display information about a section.
- * 
+ *
  * @param el: The element to shape into the panel
  * @param sections: The sections object of the scheduler
  * @param togglePanel: The panel to hide when this one is shown. May be null.
@@ -51,15 +51,15 @@ function SectionInfoPanel(el, sections, togglePanel) {
                 this.sections.unscheduleSection(section);
             }.bind(this));
         var baseURL = this.sections.getBaseUrlString();
-	    var links =  $j(
-            "<a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class + 
-                "'>Manage</a>" + 
+        var links =  $j(
+            "<a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class +
+                "'>Manage</a>" +
                 " <a target='_blank' href='" + baseURL + "editclass/" + section.parent_class +
                 "'>Edit</a>");
         toolbar.append(unscheduleButton);
         toolbar.append(links);
         return toolbar;
-        
+
     }.bind(this);
 
     // The content to put on the panel
@@ -69,12 +69,12 @@ function SectionInfoPanel(el, sections, togglePanel) {
         // Make content
         var teachers = this.sections.getTeachersString(section);
         var resources = this.sections.getResourceString(section);
-        
+
         var content_parts = [
             "Title: " + section.title,
             "Teachers: " + teachers,
             "Class size max: " + section.class_size_max,
-	        "Length: " + Math.ceil(section.length),
+            "Length: " + Math.ceil(section.length),
             "Grades: " + section.grade_min + "-" + section.grade_max,
             "Resource Requests: " + resources,
             "Flags: " + section.flags,
@@ -85,7 +85,7 @@ function SectionInfoPanel(el, sections, togglePanel) {
         if(section.special_requests && section.special_requests.length > 0) {
             content_parts.push("Room Requests: " + section.special_requests);
         }
-	
+
 
         contentDiv.append(content_parts.join("</br>"));
 

@@ -29,11 +29,10 @@ describe("Helpers", function(){
                 expect(intersection1.length).toEqual(1);
                 expect(intersection1[0]).toEqual(1);
 
-                var arrays2 = [[1, 5, 7, 9], 
+                var arrays2 = [[1, 5, 7, 9],
                 [2 , 3]];
                 var intersection2 = helpersIntersection(arrays2, true);
                 expect(intersection2.length).toEqual(0);
                 });
             });
 });
-

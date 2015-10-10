@@ -19,20 +19,20 @@ function ChangelogFetcher(matrix, api_client, start_index){
      * @param interval: The time in milliseconds between polling the server
      */
     this.pollForChanges = function(interval){
-	    window.setInterval(this.getChanges.bind(this), interval);
+        window.setInterval(this.getChanges.bind(this), interval);
     };
 
     /**
      * Fetch the changelog from the server
      */
     this.getChanges = function(){
-	    this.api_client.get_change_log(
-	        this.last_applied_index,
-	        this.applyChangeLog.bind(this),
-	        function(msg) {
-		        console.log(msg);
-	        }
-	    );
+        this.api_client.get_change_log(
+            this.last_applied_index,
+            this.applyChangeLog.bind(this),
+            function(msg) {
+                console.log(msg);
+            }
+        );
     };
 
     /**
@@ -41,14 +41,14 @@ function ChangelogFetcher(matrix, api_client, start_index){
      * @param data: the data to apply to the matrix
      */
     this.applyChangeLog = function(data){
-	    $j.each(data.changelog, function(id, change){
-	        var section = matrix.sections.getById(change.id);
-	        if (change.timeslots.length == 0){
-		        this.matrix.sections.unscheduleSectionLocal(section);
-	        } else {
-		        this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
-	        }
-	        this.last_applied_index = change.index;
-	    }.bind(this));
+        $j.each(data.changelog, function(id, change){
+            var section = matrix.sections.getById(change.id);
+            if (change.timeslots.length == 0){
+                this.matrix.sections.unscheduleSectionLocal(section);
+            } else {
+                this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
+            }
+            this.last_applied_index = change.index;
+        }.bind(this));
     };
 };

@@ -1,6 +1,6 @@
 /**
  * The panel that shows error and log messages to the user.
- * 
+ *
  * @param el: The element to render into the panel
  * @param initialMessage: The message to go initially on the panel
  */
@@ -18,7 +18,7 @@ function MessagePanel(el, initialMessage) {
 
     /**
      * Append a line to the message div in the form of a <p>.
-     * 
+     *
      * @param msg: The message to add
      */
     this.addMessage = function(msg) {

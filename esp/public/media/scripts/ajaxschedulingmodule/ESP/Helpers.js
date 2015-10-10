@@ -10,14 +10,14 @@ helpers_add_timeslots_order = function(timeslot_object){
 
     // Sort timeslots by start time
     var sorted_timeslot_array = timeslot_array.sort(function(a,b){
-            for (i=0; i<a.start.length; i++) {
+        for (i=0; i<a.start.length; i++) {
             var comp = a.start[i] - b.start[i];
             if (comp != 0) {
-            return comp;
+                return comp;
             }
-            }
-            return 0;
-            });
+        }
+        return 0;
+    });
 
     // Update the order in the original timeslot_object
     for (i=0; i<sorted_timeslot_array.length; i++){
@@ -44,25 +44,25 @@ helpers_hex_string_to_color = function(hex_string) {
 helpersIntersection = function(arrays, isInteger) {
     var frequencies = {};
     $j.each(arrays, function(index, array) {
-            $j.each(array, function(index, elt) {
-                if(frequencies.hasOwnProperty(elt)) {
+        $j.each(array, function(index, elt) {
+            if(frequencies.hasOwnProperty(elt)) {
                 frequencies[elt] += 1;
-                } else {
+            } else {
                 frequencies[elt] = 1;
-                }
-                });
-            });
+            }
+        });
+    });
 
     var intersection = [];
     $j.each(frequencies, function(elt, freq) {
-            if(freq == arrays.length) {
+        if(freq == arrays.length) {
             if(isInteger) {
-            intersection.push(parseInt(elt));
+                intersection.push(parseInt(elt));
             } else {
-            intersection.push(elt);
+                intersection.push(elt);
             }
-            }
-            });
+        }
+    });
 
     return intersection;
 

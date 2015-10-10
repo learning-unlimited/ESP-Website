@@ -20,9 +20,9 @@
  * Classes:
  * --------------------
  *   code    length   availability       teachers
- * - S11s1   1        3, 5               1, 2          
+ * - S11s1   1        3, 5               1, 2
  * - S11s2   1        3, 5               1, 2
- * - A22s1   2        11, 13             4        
+ * - A22s1   2        11, 13             4
  * - S33s1   2        3, 5, 7, 11        1
  * - A44s1   1        7, 11, 13          3
  * - M55S1   1        7, 11              1, 3
@@ -36,7 +36,7 @@ function teacher_fixture() {
             last_name: "Hacker",
             username: "aphacker",
             availability: [3, 5, 7, 11],
-            sections: [1, 2, 4, 6], 
+            sections: [1, 2, 4, 6],
         },
         2: {
             id: 2,
@@ -60,7 +60,7 @@ function teacher_fixture() {
             last_name: "Beaver",
             username: "tbeaver",
             availability: [11, 13],
-            sections: [3],            
+            sections: [3],
         },
     };
 };
@@ -302,4 +302,3 @@ function schedule_assignment_fixture() {
         }
     };
 };
-

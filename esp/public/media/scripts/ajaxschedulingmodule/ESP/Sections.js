@@ -1,7 +1,7 @@
 /**
  * Stores the section data and provides helper methods for accessing and scheduling
  * sections.
- * 
+ *
  * @params sections_data: The raw section data
  * @params teacher_data: The raw teacher data for populating the sections
  * @params scheduleAssignments: The scheule assignments
@@ -63,7 +63,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             $j("body").trigger("schedule-changed");
         });
     }.bind(this));
-    
+
     // Set up search
     this.searchObject = {active: false, text: "", type: $j("[name='class-search-type']").val()}
     $j("#class-search-text, [name='class-search-type']").on("keyup change", function(evt) {
@@ -82,18 +82,18 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      */
     this.init = function() {
         $j.each(sections_data, function(section_id, section) {
-                section.teacher_data = []
-                $j.each(section.teachers, function(index, teacher_id) {
-                    section.teacher_data.push(teacher_data[teacher_id]);
-                    });
-                });
+            section.teacher_data = []
+            $j.each(section.teachers, function(index, teacher_id) {
+                section.teacher_data.push(teacher_data[teacher_id]);
+            });
+        });
     };
 
     this.init();
 
     /**
      * Bind a matrix to the sections to allow the scheduling methods to work
-     * 
+     *
      * @param matrix: The matrix to bind
      */
     this.bindMatrix = function(matrix) {
@@ -122,26 +122,26 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             $j.each(this.filter, function(filterName, filterObject) {
                 if(filterObject.active && !filterObject.valid(section)) {
                     sectionValid = false;
-                } 
+                }
                 if(section.emailcode==="C8682s2"){
                     console.log(sectionValid, filterObject.valid(section));
                 }
                 if(this.searchObject.active) {
-                    
+
                     if(section[this.searchObject.type].toLowerCase().search(this.searchObject.text.toLowerCase())>-1) {
                         sectionValid = true;
-                         
+
                     }
                 }
-                }.bind(this));
-             if (
-                this.scheduleAssignments[section.id] && 
+            }.bind(this));
+            if (
+                this.scheduleAssignments[section.id] &&
                 this.scheduleAssignments[section.id].room_name == null &&
                 sectionValid
                 ){
-                    returned_sections.push(section);
-                }
-            }.bind(this));
+                returned_sections.push(section);
+            }
+           }.bind(this));
         return returned_sections;
     };
 
@@ -149,7 +149,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      * Select the cells associated with this section, put it on the section info
      * panel, and highlight the available cells to place the section.
      *
-     * @param section: The section to select 
+     * @param section: The section to select
      */
     this.selectSection = function(section) {
         if(this.selectedSection) {
@@ -164,9 +164,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var assignment = this.scheduleAssignments[section.id];
         if(assignment.room_name) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                    var cell = this.matrix.getCell(assignment.room_name, timeslot);
-                    cell.select();
-                    }.bind(this));
+                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                cell.select();
+            }.bind(this));
         } else {
             section.directoryCell.select();
         }
@@ -181,7 +181,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     /**
      * Unselect the cells associated with the currently selected section, hide the section info
      * panel, and unhighlight the available cells to place the section.
-     */ 
+     */
     this.unselectSection = function() {
         if(!this.selectedSection) {
             return;
@@ -189,9 +189,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         var assignment = this.scheduleAssignments[this.selectedSection.id];
         if(assignment.room_name) {
             $j.each(assignment.timeslots, function(index, timeslot) {
-                    var cell = this.matrix.getCell(assignment.room_name, timeslot);
-                    cell.unselect();
-                    }.bind(this));
+                var cell = this.matrix.getCell(assignment.room_name, timeslot);
+                cell.unselect();
+            }.bind(this));
         } else {
             this.selectedSection.directoryCell.unselect();
         }
@@ -204,9 +204,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
     /**
      * Get the timeslots available for scheduling this section.
-     * Returns an array of two lists. 
+     * Returns an array of two lists.
      *
-     * The first has all the timeslots where all teachers are available and 
+     * The first has all the timeslots where all teachers are available and
      * none are teaching.
      *
      * The second has all the timeslots where teachers are available but already teaching
@@ -215,26 +215,26 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      */
     this.getAvailableTimeslots = function(section) {
         var availabilities = [];
-        var already_teaching = [];        
+        var already_teaching = [];
         $j.each(section.teacher_data, function(index, teacher) {
-                var teacher_availabilities = teacher.availability.slice();
-                teacher_availabilities = teacher_availabilities.filter(function(val) {
-                    return this.matrix.timeslots.get_by_id(val);
-                }.bind(this));
-                $j.each(teacher.sections, function(index, section_id) {
-                    var assignment = this.scheduleAssignments[section_id];
-                    if(assignment && section_id != section.id) {
+            var teacher_availabilities = teacher.availability.slice();
+            teacher_availabilities = teacher_availabilities.filter(function(val) {
+                return this.matrix.timeslots.get_by_id(val);
+            }.bind(this));
+            $j.each(teacher.sections, function(index, section_id) {
+                var assignment = this.scheduleAssignments[section_id];
+                if(assignment && section_id != section.id) {
                     $j.each(assignment.timeslots, function(index, timeslot_id) {
                         var availability_index = teacher_availabilities.indexOf(timeslot_id);
                         if(availability_index >= 0) {
-                        teacher_availabilities.splice(availability_index, 1);
-                        already_teaching.push(timeslot_id);
+                            teacher_availabilities.splice(availability_index, 1);
+                            already_teaching.push(timeslot_id);
                         }
-                        }.bind(this));
-                    }
                     }.bind(this));
-                availabilities.push(teacher_availabilities);
-                }.bind(this));
+                }
+            }.bind(this));
+            availabilities.push(teacher_availabilities);
+        }.bind(this));
         var availableTimeslots = helpersIntersection(availabilities, true);
         return [availableTimeslots, already_teaching];
     };
@@ -247,8 +247,8 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     this.getTeachersString = function(section) {
         var teacher_list = []
             $j.each(section.teacher_data, function(index, teacher) {
-                    teacher_list.push(teacher.first_name + " " + teacher.last_name);
-                    });
+                teacher_list.push(teacher.first_name + " " + teacher.last_name);
+            });
         var teachers = teacher_list.join(", ");
         return teachers;
     };
@@ -264,7 +264,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
     /**
      * Schedule a section of a class.
-     * 
+     *
      * @param section: The section to schedule
      * @param room_name: The name of the room to schedule it in
      * @param first_timeslot_id: The ID of the first timeslot to schedule the section in
@@ -282,19 +282,19 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
         // Optimistically schedule the section locally before hearing back from the server
         this.scheduleSectionLocal(section, room_name, schedule_timeslots);
         this.apiClient.schedule_section(
-                section.id,
-                schedule_timeslots,
-                room_name, 
-                function() {},
-                // If there's an error, reschedule the section in its old location
-                function(msg) {
-                this.scheduleSectionLocal(section, 
-                    old_assignment.room_name, 
+            section.id,
+            schedule_timeslots,
+            room_name,
+            function() {},
+            // If there's an error, reschedule the section in its old location
+            function(msg) {
+                this.scheduleSectionLocal(section,
+                    old_assignment.room_name,
                     old_assignment.timeslots);
                 this.matrix.messagePanel.addMessage("Error: " + msg)
                 console.log(msg);
-                }.bind(this)
-                );
+            }.bind(this)
+        );
     }
 
 
@@ -310,9 +310,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
         // Check to see if we need to make any changes
         if(
-                old_assignment.room_name == room_name &&
-                JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
-          ){
+            old_assignment.room_name == room_name &&
+            JSON.stringify(old_assignment.timeslots)==JSON.stringify(schedule_timeslots)
+            ){
             return;
         }
 
@@ -335,9 +335,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
         // Update the array that keeps track of the assignments
         this.scheduleAssignments[section.id] = {
-room_name: room_name,
-           timeslots: schedule_timeslots,
-           id: section.id
+            room_name: room_name,
+            timeslots: schedule_timeslots,
+            id: section.id
         };
 
         // Trigger the event that tells the directory to update itself.
@@ -346,7 +346,7 @@ room_name: room_name,
 
     /**
      * Make the selected section appear as a "ghost" on the schedule.
-     * 
+     *
      * @param room_name: The room that the class would go in
      * @param first_timeslot_id: The id of the first timeslot the class would go in
      */
@@ -382,16 +382,15 @@ room_name: room_name,
         // Optimistically make local changes to unschedule the class
         this.unscheduleSectionLocal(section);
         this.apiClient.unschedule_section(
-                section.id,
-                function(){ 
-                },
-                // If the server returns an error, put the class back in its original spot
-                function(msg){
+            section.id,
+            function(){},
+            // If the server returns an error, put the class back in its original spot
+            function(msg){
                 this.scheduleSectionLocal(section, old_room_name, old_schedule_timeslots);
                 this.matrix.messagePanel.addMessage("Error: " + msg);
                 console.log(msg);
-                }.bind(this)
-                );
+            }.bind(this)
+        );
     };
 
     /**

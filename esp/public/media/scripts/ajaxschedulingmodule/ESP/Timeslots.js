@@ -1,12 +1,12 @@
 /**
  * Stores timeslot data and provides convenience methods
- * 
+ *
  * @param timeslots_data: The raw timeslot data
  */
 function Timeslots(timeslots_data, lunch_timeslots){
     // TODO: move helper to add timeslot order here
     this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
-    this.timeslots = timeslots_data; 
+    this.timeslots = timeslots_data;
     this.lunch_timeslots = {};
     $j.each(lunch_timeslots, function(index, lunch_id) {
         var lunch_slot = this.timeslots[lunch_id];
@@ -16,7 +16,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
         } else {
             this.lunch_timeslots[lunch_slot_day] = [lunch_slot];
         }
-    }.bind(this)); 
+    }.bind(this));
     console.log(this.lunch_timeslots);
 
     /**
