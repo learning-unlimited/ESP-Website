@@ -1,5 +1,6 @@
 function generateFakeMatrix(){
     var sections = new Sections(section_fixture(),
+                                 {},
                                  teacher_fixture(),
                                  schedule_assignment_fixture(),
                                  new ApiClient());

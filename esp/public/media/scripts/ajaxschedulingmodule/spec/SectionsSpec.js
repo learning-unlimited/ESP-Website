@@ -2,7 +2,7 @@ describe("SectionsSpec", function() {
     var sections, matrix;
 
     beforeEach(function() {
-        sections = new Sections(section_fixture(), teacher_fixture(),
+        sections = new Sections(section_fixture(), {}, teacher_fixture(),
             schedule_assignment_fixture(), new FakeApiClient());
         matrix = generateFakeMatrix();
         sections.bindMatrix(matrix);
@@ -25,6 +25,8 @@ describe("SectionsSpec", function() {
         it("gets the correct section", function() {
             var s = section_fixture()[1];
             s.teacher_data = [teacher_fixture()[1], teacher_fixture()[2]]
+            s.schedulingComment = '';
+            s.schedulingLocked = false;
             expect(sections.getById(1)).toEqual(s);
         });
     });
