@@ -224,34 +224,41 @@ function Matrix(
             result.reason = "Error: Not scheduled during a timeblock";
             return result;
         }
-        
+
         var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
         var validateIndividualCell = function(index, cell) {
             return !(cell.disabled || (cell.section && cell.section !== section) ||
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
         };
 
-        // If there's only one section, the check is short
         var firstCell = this.getCell(room_name, schedule_timeslots[0]);
         if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
             result.valid = false;
             result.reason = "first cell is not valid"
             return result;
         }
-            
-        var firstTimeslot = this.timeslots.get_by_id(schedule_timeslots[0]);
+
         // Check to make sure all the cells are available
-        for(timeslot_index in schedule_timeslots){
-            var timeslot = this.timeslots.get_by_id(schedule_timeslots[timeslot_index]);
-            var nextCell = this.getCell(room_name, timeslot.id);
-            if (!validateIndividualCell(timeslot_index, nextCell) || 
-                !this.timeslots.on_same_day(firstTimeslot, timeslot)){
+        for(var timeslot_index in schedule_timeslots){
+            var cell = this.getCell(room_name, schedule_timeslots[timeslot_index]);
+            if (!validateIndividualCell(timeslot_index, cell)){
                 result.valid = false;
-                result.reason = "Error: timeslot" +  timeslot.id + 
+                result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
                     " already has a class in " + room_name + "."
-                    return result;
+                return result;
             }
         }
+
+        // Check to make sure all timeslots are contiguous.
+        var timeslot_objects = schedule_timeslots.map(function(timeslot_id){return timeslots.get_by_id(timeslot_id);});
+        if (!timeslots.are_timeslots_contiguous(timeslot_objects)){
+            result.valid = false;
+            result.reason = "Error: timeslots starting from " + schedule_timeslots[0] +
+                " are not contiguous."
+            return result;
+        }
+
+        // Check lunch constraints.
         var scheduled_over_lunch = false;
         $j.each(this.timeslots.lunch_timeslots, function(day, lunch_slots) {
             if(this.timeslots.on_same_day(lunch_slots[0], this.timeslots.get_by_id(schedule_timeslots[0]))) {

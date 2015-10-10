@@ -42,17 +42,17 @@ describe("Timeslots", function(){
 
         describe("get_timeslot_length", function(){
                 it("returns 1 for a .83 hour timeslot", function(){
-                    expect(t.get_time_between(3, 3)).toEqual(1);
+                    expect(t.get_hours_spanned(3, 3)).toEqual(1);
                     });
 
                 it("returns 1 for a 1 hour timeslot", function(){
                     times[3].length = 1;
-                    t = new Timeslots(times);
-                    expect(t.get_time_between(3, 3)).toEqual(1);
+                    t = new Timeslots(times, []);
+                    expect(t.get_hours_spanned(3, 3)).toEqual(1);
                     });
 
                 it("returns 2 for a 1.83 hour timeslot", function(){
-                    expect(t.get_time_between(3, 5)).toEqual(2);
+                    expect(t.get_hours_spanned(3, 5)).toEqual(2);
                     });
                 });
 });

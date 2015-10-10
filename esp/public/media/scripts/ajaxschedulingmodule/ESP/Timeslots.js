@@ -57,13 +57,13 @@ function Timeslots(timeslots_data, lunch_timeslots){
     this.get_timeslots_to_schedule_section = function(section, first_timeslot_id){
         var times = [first_timeslot_id];
         var last_timeslot_id = first_timeslot_id;
-        while (this.get_time_between(first_timeslot_id, last_timeslot_id) < section.length){
+        while (this.get_hours_spanned(first_timeslot_id, last_timeslot_id) < section.length){
             var last_timeslot = this.get_by_id(last_timeslot_id);
             next_timeslot = this.get_by_order(last_timeslot.order + 1);
 
-            if (!this.on_same_day(last_timeslot, next_timeslot)){
-                console.log("timeslot " + last_timeslot.id + " and timeslot " + 
-                        next_timeslot.id +" are on different days");
+            if (!this.are_timeslots_contiguous([last_timeslot, next_timeslot])){
+                console.log("timeslot " + last_timeslot.id + " and timeslot " +
+                        next_timeslot.id +" are not contiguous");
                 return null;
             }
             last_timeslot_id = next_timeslot.id;
@@ -73,9 +73,9 @@ function Timeslots(timeslots_data, lunch_timeslots){
     };
 
     /**
-     * Get the number of hours in between two timeslots with ids id_1 and id_2
+     * Get the number of hours spanned by the two timeslots with ids id_1 and id_2
      */
-    this.get_time_between = function(id_1, id_2) {
+    this.get_hours_spanned = function(id_1, id_2) {
         var start = this.timeslots[id_1].start;
         var end = this.timeslots[id_2].end;
 
@@ -87,4 +87,58 @@ function Timeslots(timeslots_data, lunch_timeslots){
         }
         return hours;
     };
+
+    /**
+     * Get the number of minutes between the two timeslots with ids id_1 and id_2
+     */
+    this.get_minutes_between = function(id_1, id_2) {
+        var end = this.timeslots[id_1].end;
+        var start = this.timeslots[id_2].start;
+
+        var hours = start[3] - end[3];
+        var minutes = start[4] - end[4];
+        return hours * 60 + minutes;
+    };
+
+    /**
+     * Returns a guess of whether the specified timeslots are contiguous in time
+     */
+    this.are_timeslots_contiguous = function(timeslots) {
+        // we use the minimum time difference between timeslots as an
+        //   expected "passing period" duration; then, we just check
+        //   whether the given timeslots are within that period
+        // we also fail if any timeslot isn't in the right order or same day
+        // if we encounter anything unexpected, we return true to avoid
+        //   incorrectly adding a constraint on scheduling
+        if (this.minimumDifference === false){
+            return true;
+        }
+        for(var i = 0; i < timeslots.length - 1; i++){
+            if (timeslots[i].order + 1 != timeslots[i + 1].order ||
+                !this.on_same_day(timeslots[i], timeslots[i + 1])){
+                return false;
+            }
+            var difference = this.get_minutes_between(timeslots[i].id, timeslots[i + 1].id);
+            if (difference > this.minimumDifference){
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // compute the minimum time difference between timeslots
+    //  (this is used in this.are_timeslots_contiguous)
+    var minimumDifference = false;
+    for(var i = 0; i < this.timeslots_sorted.length - 1; i++) {
+        var currentTimeslot = this.timeslots_sorted[i];
+        var nextTimeslot = this.timeslots_sorted[i + 1];
+        if (!this.on_same_day(currentTimeslot, nextTimeslot)){
+            continue;
+        }
+        var difference = this.get_minutes_between(currentTimeslot.id, nextTimeslot.id);
+        if (minimumDifference === false || difference < minimumDifference){
+            minimumDifference = difference;
+        }
+    }
+    this.minimumDifference = minimumDifference;
 };
