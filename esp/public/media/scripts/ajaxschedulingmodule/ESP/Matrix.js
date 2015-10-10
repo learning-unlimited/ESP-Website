@@ -268,7 +268,6 @@ function Matrix(
                         count++;
                     }
                 });
-                console.log(count);
                 if(count == lunch_slots.length) {
                     scheduled_over_lunch = true;
                 }
@@ -277,7 +276,6 @@ function Matrix(
         if(scheduled_over_lunch) {
             result.valid = false;
             result.reason = "scheduled over lunch";
-            console.log("over lunch");
             return result;
         }
         return result;
