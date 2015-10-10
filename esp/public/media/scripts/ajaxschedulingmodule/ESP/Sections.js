@@ -123,14 +123,9 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
                 if(filterObject.active && !filterObject.valid(section)) {
                     sectionValid = false;
                 }
-                if(section.emailcode==="C8682s2"){
-                    console.log(sectionValid, filterObject.valid(section));
-                }
                 if(this.searchObject.active) {
-
                     if(section[this.searchObject.type].toLowerCase().search(this.searchObject.text.toLowerCase())>-1) {
                         sectionValid = true;
-
                     }
                 }
             }.bind(this));
