@@ -30,15 +30,11 @@ function Timeslots(timeslots_data, lunch_timeslots){
 
     /**
      * Get a timeslot by its rank in the day based on start time
-     * 
+     *
      * @param order: get the order-th timeslot
      */
     this.get_by_order = function(order){
-        for (id in this.timeslots){
-            if (this.timeslots[id].order == order){
-                return this.timeslots[id];
-            }
-        }	
+        return this.timeslots_sorted[order];
     };
 
     /**
