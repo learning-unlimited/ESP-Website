@@ -101,7 +101,7 @@ describe("Cell", function(){
 
                 it("adds the section to the element", function(){
                     c.addSection(section);
-                    expect(c.el[0].innerText).toEqual(section.emailcode);
+                    expect(c.el[0].innerHTML).toContain(section.emailcode);
                     });
 
                 it("adds styling to the el", function(){
@@ -153,17 +153,19 @@ describe("Cell", function(){
                 expect($j(c.el[0]).css('background-color')).toEqual('rgb(32, 32, 32)');
                 expect(c.el.hasClass("ghost-section")).toBeTrue();
             });
-           
+
         });
 
         describe("removeGhostSection", function() {
+            var originalBackgroundColor;
             beforeEach(function() {
+                originalBackgroundColor = $j(c.el[0]).css('background-color');
                 c.addSection(section);
                 c.addGhostSection(section2);
             });
             it("removes the styling from the cell", function() {
                 c.removeGhostSection();
-                expect(c.el[0].innerHTML).not.toMatch(section2.emailcode);  
+                expect(c.el[0].innerHTML).not.toMatch(section2.emailcode);
                 expect(c.el.hasClass("ghost-section")).toBeFalse();
             });
 
@@ -174,14 +176,14 @@ describe("Cell", function(){
                 expect($j(c.el[0]).css('background-color')).toEqual('rgb(16, 16, 16)');
                 expect($j(c.el[0]).css('color')).toEqual('rgb(255, 255, 255)');
             });
-    
+
             it("returns the cell to its previous styling otherwise", function() {
                 c.removeSection(section);
                 c.removeGhostSection();
                 expect(c.el[0].innerHTML).toEqual("");
-                expect($j(c.el[0]).css('background-color')).toEqual('');
+                expect($j(c.el[0]).css('background-color')).toEqual(originalBackgroundColor);
             });
         });
-        
-        
+
+
 });

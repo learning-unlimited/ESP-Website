@@ -5,9 +5,9 @@ describe("Timeslots", function(){
 
         beforeEach(function() {
             times = time_fixture();
-            t = new Timeslots(times);
+            t = new Timeslots(times, []);
             one_hour_section = section_1();
-            two_hour_section = section_2(); 
+            two_hour_section = section_2();
         });
 
         it("returns timeslots by id", function(){

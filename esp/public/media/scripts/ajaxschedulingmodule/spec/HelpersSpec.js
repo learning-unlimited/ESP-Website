@@ -3,8 +3,10 @@ describe("Helpers", function(){
             it("puts the timeslots in order", function() {
                 var original_timeslots = time_fixture();
                 var ordered_timeslots = helpers_add_timeslots_order(original_timeslots);
-                expect(ordered_timeslots['3'].order).toEqual(0);
-                expect(ordered_timeslots['5'].order).toEqual(1);
+                expect(original_timeslots['3'].order).toEqual(0);
+                expect(original_timeslots['5'].order).toEqual(1);
+                expect(ordered_timeslots[0].id).toEqual(3);
+                expect(ordered_timeslots[1].id).toEqual(5);
                 });
             });
 
