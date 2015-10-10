@@ -2,10 +2,10 @@
 #
 # To build the image:
 # cd /path/to/local/repository
-# sudo docker build -t learning_unlimited/esp-website-base .
+# sudo docker build -t learningu/esp-website-base .
 #
 # To create and run a container from the image for the first time:
-# sudo docker run -d -v /path/to/local/repository:/home/vagrant/devsite --name esp-website -p 127.0.0.1:8000:8000 -p 127.0.0.1:2222:22 learning_unlimited/esp-website-base
+# sudo docker run -d -v /path/to/local/repository:/home/vagrant/devsite --name esp-website -p 127.0.0.1:8000:8000 -p 127.0.0.1:2222:22 learningu/esp-website-base
 #
 # Additional setup:
 # fab --set container=docker vagrant_dev_setup
