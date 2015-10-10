@@ -3,7 +3,7 @@ describe("SectionInfoPanel", function() {
     var sipNoToggle;
     var sections;
     beforeEach(function() {
-        sections = new Sections(section_fixture(), teacher_fixture(), 
+        sections = new Sections(section_fixture(), teacher_fixture(),
                                     schedule_assignment_fixture(), new FakeApiClient());
         sipNoToggle = new SectionInfoPanel($j("<div>"), sections, null);
         sipToggle = new SectionInfoPanel($j("<div>"), sections, new MessagePanel($j("<div>"), "Initial Message"));
@@ -21,7 +21,7 @@ describe("SectionInfoPanel", function() {
 
         });
     });
-    
+
     describe("show", function() {
         it("should remove a ui-helper-hidden class", function() {
             sipNoToggle.show();
@@ -48,5 +48,5 @@ describe("SectionInfoPanel", function() {
 
         });
     });
-             
+
 });

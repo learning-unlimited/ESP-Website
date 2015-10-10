@@ -15,6 +15,7 @@ function Scheduler(
     matrixEl,
     messageEl,
     sectionInfoEl,
+    sectionDialogEl,
     last_applied_index,
     update_interval
 ) {
@@ -38,25 +39,28 @@ function Scheduler(
             section.resource_requests = {};
             section.resource_requests[section.id] = [];
         }
-        
+
 
     });
 
     this.lunch_timeslots = data.lunch_timeslots;
     this.timeslots = new Timeslots(data.timeslots, this.lunch_timeslots);
-    
+
     this.rooms = data.rooms;
 
-    this.sections = new Sections(data.sections, 
-                                 data.teachers, 
-                                 data.schedule_assignments, 
+    this.sections = new Sections(data.sections,
+                                 data.section_details,
+                                 data.teachers,
+                                 data.schedule_assignments,
                                  new ApiClient());
 
-    this.messagePanel = new MessagePanel(messageEl, 
+    this.messagePanel = new MessagePanel(messageEl,
                                          "Welcome to the Ajax Scheduler!");
-    this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl, 
-                                                 this.sections, 
-                                                 this.messagePanel)
+    this.sectionCommentDialog = new SectionCommentDialog(sectionDialogEl, this.sections);
+    this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
+                                                 this.sections,
+                                                 this.messagePanel,
+                                                 this.sectionCommentDialog)
 
     this.matrix = new Matrix(
         this.timeslots,
@@ -67,9 +71,9 @@ function Scheduler(
         this.sectionInfoPanel
     );
 
-    this.directory = new Directory(this.sections, 
-                                   directoryEl, 
-                                   data.schedule_assignments, 
+    this.directory = new Directory(this.sections,
+                                   directoryEl,
+                                   data.schedule_assignments,
                                    this.matrix);
 
     this.changelogFetcher = new ChangelogFetcher(
@@ -107,8 +111,8 @@ function Scheduler(
     $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
         var cell = $j(evt.currentTarget.parentElement).data("cell");
         this.sections.selectSection(cell.section);
-    }.bind(this)); 
- 
+    }.bind(this));
+
     $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
         this.sections.unscheduleAsGhost();
     }.bind(this));
@@ -116,7 +120,7 @@ function Scheduler(
     $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
         var cell = $j(evt.currentTarget).data("cell");
         if(this.sections.selectedSection) {
-            this.sections.scheduleSection(this.sections.selectedSection, 
+            this.sections.scheduleSection(this.sections.selectedSection,
                                           cell.room_name, cell.timeslot_id);
         }
     }.bind(this));

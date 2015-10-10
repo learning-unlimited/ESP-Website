@@ -18,8 +18,8 @@ describe("CellColors", function(){
             valid_characters = ["0", "1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"];
             characters = color.substr(1);
             for (i in characters){
-	            var c = characters[i];
-	            expect(valid_characters.indexOf(c)).toBeGreaterThan(-1);
+                var c = characters[i];
+                expect(valid_characters.indexOf(c)).toBeGreaterThan(-1);
             };
         });
 

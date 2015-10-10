@@ -42,6 +42,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionInfoPanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ChangelogFetcher.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
@@ -56,16 +57,16 @@
       <div id="matrix-div" class="component-div"></div>
     </td>
     <td class="no-border">
-      <div id="side-panel-wrapper" class="component-div ui-widget">
+      <div id="side-panel-wrapper" class="ui-widget">
         <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
         <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
 
-        <div id="side-panel" class="ui-widget">
-          <ul> 
+        <div id="side-panel" class="component-div ui-widget">
+          <ul>
             <li><a href="#classes">Classes</a></li>
             <li><a href="#filters">Filters</a></li>
           </ul>
-          <div id="side-panel">
+          <div id="side-panel-inner">
                 <div id="classes">
                     <div id="class-search">
                         <form>
@@ -115,6 +116,17 @@
     </td>
   </tr>
 </table>
+
+<div id="commentDialog">
+  <form>
+    <fieldset>
+      <label for="commentDialog-comment">Comment</label>
+      <input type="text" id="commentDialog-comment" class="ui-widget-content ui-corner-all" />
+      <input type="checkbox" id="commentDialog-lock" class="ui-widget-content ui-corner-all" />
+      <label for="commentDialog-lock">Lock</label>
+    </fieldset>
+  </form>
+</div>
 
 </body>
 </html>

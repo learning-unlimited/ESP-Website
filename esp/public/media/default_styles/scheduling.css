@@ -90,8 +90,8 @@ input.numeric {
 th {
     color: black;
 }
-button#unschedule {
-    font-size: .7em;
+button.sidetoolbar {
+    font-size: .7em !important;
 }
 
 #side-panel-header {

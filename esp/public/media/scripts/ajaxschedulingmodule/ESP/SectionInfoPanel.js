@@ -1,14 +1,15 @@
 /**
  * The panel to display information about a section.
- * 
+ *
  * @param el: The element to shape into the panel
  * @param sections: The sections object of the scheduler
  * @param togglePanel: The panel to hide when this one is shown. May be null.
  */
-function SectionInfoPanel(el, sections, togglePanel) {
+function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
     this.el = el;
     this.togglePanel = togglePanel; // The panel that should be hidden when the info panel is shown
     this.sections = sections;
+    this.sectionCommentDialog = sectionCommentDialog;
 
     /**
      * Hide the panel and show togglePanel if it exists.
@@ -44,22 +45,41 @@ function SectionInfoPanel(el, sections, togglePanel) {
     // The buttons available for this section
     var getToolbar = function(section) {
         var toolbar = $j("<div>");
-        var unscheduleButton = $j("<button id='unschedule'>Unschedule Section</button></br>");
-        unscheduleButton
-            .button()
-            .click(function(evt) {
-                this.sections.unscheduleSection(section);
-            }.bind(this));
+        if(this.sections.isScheduled(section)) {
+            var unscheduleButton = $j("<button class='sidetoolbar'>Unschedule Section</button>");
+            unscheduleButton
+                .button()
+                .click(function(evt) {
+                    this.sections.unscheduleSection(section);
+                }.bind(this)
+            );
+
+            var commentText = 'Set Comment';
+            if (section.schedulingLocked) {
+                commentText = 'Edit Comment or Unlock';
+            } else if (section.schedulingComment) {
+                commentText = 'Edit Comment';
+            }
+            var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
+            commentButton
+                .button()
+                .click(function(evt) {
+                    this.sectionCommentDialog.show(section);
+                }.bind(this)
+            );
+
+            toolbar.append(unscheduleButton);
+            toolbar.append(commentButton);
+        }
         var baseURL = this.sections.getBaseUrlString();
-	    var links =  $j(
-            "<a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class + 
-                "'>Manage</a>" + 
+        var links =  $j(
+            "<br/><a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class +
+                "'>Manage</a>" +
                 " <a target='_blank' href='" + baseURL + "editclass/" + section.parent_class +
                 "'>Edit</a>");
-        toolbar.append(unscheduleButton);
         toolbar.append(links);
         return toolbar;
-        
+
     }.bind(this);
 
     // The content to put on the panel
@@ -69,25 +89,34 @@ function SectionInfoPanel(el, sections, togglePanel) {
         // Make content
         var teachers = this.sections.getTeachersString(section);
         var resources = this.sections.getResourceString(section);
-        
-        var content_parts = [
-            "Title: " + section.title,
-            "Teachers: " + teachers,
-            "Class size max: " + section.class_size_max,
-	        "Length: " + Math.ceil(section.length),
-            "Grades: " + section.grade_min + "-" + section.grade_max,
-            "Resource Requests: " + resources,
-            "Flags: " + section.flags,
-        ]
+
+        var content_parts = {};
+
+        if(section.schedulingComment) {
+            content_parts['Scheduling Comment'] = section.schedulingComment;
+        }
+
+        content_parts['Title'] = section.title;
+        content_parts['Teachers'] = teachers;
+        content_parts['Class size max'] = section.class_size_max;
+        content_parts['Length'] = Math.ceil(section.length);
+        content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
+        content_parts['Resource Requests'] = resources;
+        content_parts['Flags'] = section.flags;
+
         if(section.comments) {
-            content_parts.push("Comments: " + section.comments);
+            content_parts['Comments'] = section.comments;
         }
         if(section.special_requests && section.special_requests.length > 0) {
-            content_parts.push("Room Requests: " + section.special_requests);
+            content_parts['Room Requests'] = section.special_requests;
         }
-	
 
-        contentDiv.append(content_parts.join("</br>"));
+        for(var header in content_parts) {
+            var partDiv = $j('<div>');
+            partDiv.append('<b>' + header + ': </b>');
+            partDiv.append(content_parts[header]);
+            contentDiv.append(partDiv);
+        }
 
         return contentDiv;
     }.bind(this);

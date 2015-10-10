@@ -1,7 +1,7 @@
 describe("ChangelogFetcher", function() {
     var c = new ChangelogFetcher(generateFakeMatrix(), new FakeApiClient(), 32);
 
- 	var changelog_entry = {
+    var changelog_entry = {
         id: 2,
         index: 2,
         room_name: "room-2",
