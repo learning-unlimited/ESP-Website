@@ -23,7 +23,10 @@ function MessagePanel(el, initialMessage) {
      */
     this.addMessage = function(msg) {
         this.el.append( "<p>" + msg + "</p>");
-        this.el.scrollTop(this.el[0].scrollHeight);
+        // some browsers need delay before scrollHeight is updated
+        setTimeout(function() {
+            this.el.scrollTop(this.el[0].scrollHeight);
+        }.bind(this), 0);
     };
 
     /**
