@@ -85,6 +85,8 @@ describe("Matrix", function(){
         it("returns the html cell for the requested room and time", function(){
             var s1 = section_1();
             s1.teacher_data = [teacher_fixture()[1], teacher_fixture()[2]];
+            s1.schedulingComment = '';
+            s1.schedulingLocked = false;
             expect(m.getCell("room-1", 3).section).toEqual(s1);
             expect(m.getCell("room-1", 3).room_name).toEqual("room-1");
             expect(m.getCell("room-3", 3).timeslot_id).toEqual(3);

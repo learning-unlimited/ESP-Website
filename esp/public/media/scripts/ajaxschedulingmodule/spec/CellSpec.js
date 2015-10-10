@@ -83,8 +83,8 @@ describe("Cell", function(){
             expect(tooltip).toContain("Ben Bitdiddle");
             expect(tooltip).toContain("Alyssa P. Hacker");
             expect(tooltip).toContain("Fascinating Science Phenomena");
-            expect(tooltip).toContain("Class size max: 150");
-            expect(tooltip).toContain("Length: 1");
+            expect(tooltip).toContain("Class size max</b>: 150");
+            expect(tooltip).toContain("Length</b>: 1");
         });
     });
 

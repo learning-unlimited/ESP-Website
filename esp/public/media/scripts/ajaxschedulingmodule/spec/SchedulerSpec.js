@@ -2,7 +2,7 @@ describe("Scheduler", function(){
     var s;
 
     beforeEach(function(){
-        s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"), 11, 12345678);
+        s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"), $j("<div/>"), 11, 12345678);
     });
 
     it("should have a directory and a matrix", function(){
