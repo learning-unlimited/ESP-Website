@@ -5,7 +5,7 @@ describe("Timeslots", function(){
 
     beforeEach(function() {
         times = time_fixture();
-        t = new Timeslots(times, []);
+        t = new Timeslots(times);
         one_hour_section = section_1();
         two_hour_section = section_2();
     });
@@ -47,7 +47,7 @@ describe("Timeslots", function(){
 
         it("returns 1 for a 1 hour timeslot", function(){
             times[3].length = 1;
-            t = new Timeslots(times, []);
+            t = new Timeslots(times);
             expect(t.get_hours_spanned(3, 3)).toEqual(1);
         });
 

@@ -8,16 +8,19 @@ function Timeslots(timeslots_data, lunch_timeslots){
     this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
     this.timeslots = timeslots_data;
     this.lunch_timeslots = {};
-    $j.each(lunch_timeslots, function(index, lunch_id) {
-        var lunch_slot = this.timeslots[lunch_id];
-        var lunch_slot_day = lunch_slot.end[2];
-        if(this.lunch_timeslots[lunch_slot_day]) {
-            this.lunch_timeslots[lunch_slot_day].push(lunch_slot);
-        } else {
-            this.lunch_timeslots[lunch_slot_day] = [lunch_slot];
-        }
-    }.bind(this));
-    console.log(this.lunch_timeslots);
+
+    if(lunch_timeslots) {
+        $j.each(lunch_timeslots, function(index, lunch_id) {
+            var lunch_slot = this.timeslots[lunch_id];
+            var lunch_slot_day = lunch_slot.end[2];
+            if(this.lunch_timeslots[lunch_slot_day]) {
+                this.lunch_timeslots[lunch_slot_day].push(lunch_slot);
+            } else {
+                this.lunch_timeslots[lunch_slot_day] = [lunch_slot];
+            }
+        }.bind(this));
+        console.log(this.lunch_timeslots);
+    }
 
     /**
      * Get a timeslot by its id
