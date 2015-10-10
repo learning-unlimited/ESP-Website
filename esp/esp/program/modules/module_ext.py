@@ -41,7 +41,7 @@ from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from django.conf import settings
 from esp.users.models import ESPUser
-from esp.program.models import Program, RegistrationType
+from esp.program.models import Program, RegistrationType, ClassSection
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
@@ -283,13 +283,22 @@ class AJAXChangeLogEntry(models.Model):
     # unique index in change_log of this entry
     index = models.IntegerField()
 
-    # comma-separated list of integer timeslots
+    # whether this is a scheduling entry (or comment entry)
+    isScheduling = models.BooleanField(default=True)
+
+    # scheduling entry: comma-separated list of integer timeslots
     timeslots = models.CharField(max_length=256)
 
-    # name of the room involved in scheduling update
+    # scheduling entry: name of the room involved in scheduling update
     room_name = models.CharField(max_length=256)
 
-    # class ID to update
+    # comment entry: comment text
+    comment = models.CharField(max_length=256, null=True)
+
+    # comment entry: is locked
+    locked = models.BooleanField(default=False)
+
+    # ClassSection ID to update
     cls_id = models.IntegerField()
 
     # user responsible for this entry
@@ -298,10 +307,16 @@ class AJAXChangeLogEntry(models.Model):
     # time we entered this
     time = models.FloatField()
 
-    def update(self, index, timeslots, room_name, cls_id):
-        self.index = index
+    def setScheduling(self, timeslots, room_name, cls_id):
+        self.isScheduling = True
         self.timeslots = ','.join([str(x) for x in timeslots])
         self.room_name = room_name
+        self.cls_id = cls_id
+
+    def setComment(self, comment, lock, cls_id):
+        self.isScheduling = False
+        self.comment = comment
+        self.locked = lock
         self.cls_id = cls_id
 
     def save(self, *args, **kwargs):
@@ -318,6 +333,20 @@ class AJAXChangeLogEntry(models.Model):
             return self.user.username
         else:
             return "unknown"
+
+    def toDict(self):
+        d = {}
+        d['index'] = self.index
+        d['id'] = self.cls_id
+        d['user'] = self.getUserName()
+        d['isScheduling'] = self.isScheduling
+        if self.isScheduling:
+            d['room_name'] = self.room_name
+            d['timeslots'] = self.getTimeslots()
+        else:
+            d['comment'] = self.comment
+            d['locked'] = self.locked
+        return d
 
 class AJAXChangeLog(models.Model):
     # program this change log stores changes for
@@ -338,19 +367,25 @@ class AJAXChangeLog(models.Model):
         self.entries.filter(time__lte=max_time).delete()
         self.save()
 
-    def append(self, timeslots, room_name, cls_id, user=None):
-        next_index = self.get_latest_index() + 1
-
-        entry = AJAXChangeLogEntry()
-        entry.update(next_index, timeslots, room_name, cls_id)
-
+    def append(self, entry, user=None):
+        entry.index = self.get_latest_index() + 1
         if user:
-        	entry.user = user
+            entry.user = user
 
         entry.save()
         self.save()
         self.entries.add(entry)
         self.save()
+
+    def appendScheduling(self, timeslots, room_name, cls_id, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setScheduling(timeslots, room_name, cls_id)
+        self.append(entry, user)
+
+    def appendComment(self, comment, lock, cls_id, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setComment(comment, lock, cls_id)
+        self.append(entry, user)
 
     def get_latest_index(self):
         index = self.entries.all().aggregate(models.Max('index'))['index__max']
@@ -373,12 +408,28 @@ class AJAXChangeLog(models.Model):
         entry_list = list()
 
         for entry in new_entries:
-            entry_list.append( {	'index'     : entry.index,
-                                    'room_name' : entry.room_name,
-                                    'id'    : entry.cls_id,
-                                    'timeslots' : entry.getTimeslots(),
-                                    'user'      : entry.getUserName() })
+            entry_list.append(entry.toDict())
 
         return entry_list
+
+# stores scheduling details about an section for the AJAX scheduler
+#  (e.g., scheduling comments, locked from AJAX scheduling, etc.)
+class AJAXSectionDetail(models.Model):
+    program = AjaxForeignKey(Program)
+    cls_id = models.IntegerField()
+    comment = models.CharField(max_length=256)
+    locked = models.BooleanField(default=False)
+
+    def initialize(self, program, cls_id, comment, locked):
+        self.program = program
+        self.cls_id = cls_id
+        self.comment = comment
+        self.locked = locked
+        self.save()
+
+    def update(self, comment, locked):
+        self.comment = comment
+        self.locked = locked
+        self.save()
 
 from esp.application.models import FormstackAppSettings

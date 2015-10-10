@@ -21,6 +21,31 @@ function ApiClient() {
     }
 
     /**
+     * Set a scheduling comment on a section.
+     *
+     * @param section_id: the section to set comment on
+     * @param comment: comment to set, or blank for no comment
+     * @param locked: true/false whether to lock the section from further scheduling
+     * @param callback(): called on success
+     * @param errorReporter(err): called on error with string error message
+     */
+    this.set_comment = function(section_id, comment, locked, callback, errorReporter) {
+        params = {
+            'cls': section_id,
+            'comment': comment,
+            'csrfmiddlewaretoken': csrf_token(),
+        };
+        if(locked) {
+            params['locked'] = 'yes';
+        }
+        $j.post('ajax_set_comment', params).success(function() {
+            callback();
+        }).error(function() {
+            errorReporter('An error occurred setting comment.');
+        });
+    };
+
+    /**
      * Schedule a section on the server.
      *
      * @param section_id: The ID of the section to schedule

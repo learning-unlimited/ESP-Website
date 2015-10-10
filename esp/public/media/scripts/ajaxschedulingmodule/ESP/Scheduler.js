@@ -15,6 +15,7 @@ function Scheduler(
     matrixEl,
     messageEl,
     sectionInfoEl,
+    sectionDialogEl,
     last_applied_index,
     update_interval
 ) {
@@ -48,15 +49,18 @@ function Scheduler(
     this.rooms = data.rooms;
 
     this.sections = new Sections(data.sections,
+                                 data.section_details,
                                  data.teachers,
                                  data.schedule_assignments,
                                  new ApiClient());
 
     this.messagePanel = new MessagePanel(messageEl,
                                          "Welcome to the Ajax Scheduler!");
+    this.sectionCommentDialog = new SectionCommentDialog(sectionDialogEl, this.sections);
     this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
                                                  this.sections,
-                                                 this.messagePanel)
+                                                 this.messagePanel,
+                                                 this.sectionCommentDialog)
 
     this.matrix = new Matrix(
         this.timeslots,

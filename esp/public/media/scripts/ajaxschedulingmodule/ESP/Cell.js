@@ -88,22 +88,29 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      *       work. It would be nice if this was in Sectinos instead.
      */
     this.tooltip = function(){
-        var tooltip_parts = [
-            "<b>" + this.section.emailcode + ": " + this.section.title + "</b>",
-            "Teachers: " + this.matrix.sections.getTeachersString(this.section),
-            "Class size max: " + this.section.class_size_max,
-            "Length: " + Math.ceil(this.section.length),
-            "Grades: " + this.section.grade_min + "-" + this.section.grade_max,
-            "Resource Requests:" + this.matrix.sections.getResourceString(this.section),
-            "Flags: " + this.section.flags,
-        ];
+        var tooltip_parts = {};
+        if(this.section.schedulingComment) {
+            tooltip_parts['Scheduling Comment'] = this.section.schedulingComment +
+                (this.section.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
+        }
+        tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
+        tooltip_parts['Class size max'] = this.section.class_size_max;
+        tooltip_parts['Length'] = Math.ceil(this.section.length);
+        tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
+        tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(this.section);
+        tooltip_parts['Flags'] = this.section.flags;
         if(this.section.comments) {
-            tooltip_parts.push("Comments: " + this.section.comments);
+            tooltip_parts['Comments'] = this.section.comments;
         }
         if(this.section.special_requests && this.section.special_requests.length > 0) {
-            tooltip_parts.push("Room Requests: " + this.section.special_requests);
+            tooltip_parts['Room Requests'] = this.section.special_requests;
         }
-        return tooltip_parts.join("<br/>");
+
+        var tooltipText = "<b>" + this.section.emailcode + ": " + this.section.title + "</b>";
+        for(var header in tooltip_parts) {
+            tooltipText += "<br/><b>" + header + "</b>: " + tooltip_parts[header];
+        }
+        return tooltipText;
     };
 
     /**

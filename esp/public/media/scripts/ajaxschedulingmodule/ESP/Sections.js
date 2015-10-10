@@ -3,11 +3,12 @@
  * sections.
  *
  * @params sections_data: The raw section data
+ * @params section_details_data: The AJAX section detail data
  * @params teacher_data: The raw teacher data for populating the sections
  * @params scheduleAssignments: The scheule assignments
  * @params apiClient: The object that can communicate with the server
  */
-function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
+function Sections(sections_data, section_details_data, teacher_data, scheduleAssignments, apiClient) {
     this.sections_data = sections_data;
     this.scheduleAssignments = scheduleAssignments;
     this.apiClient = apiClient;
@@ -78,7 +79,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
 
 
     /**
-     * Populate the sections data with teacher info
+     * Populate the sections data with teacher and section-detail info
      */
     this.init = function() {
         $j.each(sections_data, function(section_id, section) {
@@ -86,6 +87,15 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             $j.each(section.teachers, function(index, teacher_id) {
                 section.teacher_data.push(teacher_data[teacher_id]);
             });
+
+            sectionDetails = section_details_data[section_id];
+            if(sectionDetails) {
+                section.schedulingComment = sectionDetails[0].comment;
+                section.schedulingLocked = sectionDetails[0].locked;
+            } else {
+                section.schedulingComment = '';
+                section.schedulingLocked = false;
+            }
         });
     };
 
@@ -110,6 +120,14 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
     };
 
     /**
+     * Whether the specified section is scheduled
+     */
+    this.isScheduled = function(section) {
+        return this.scheduleAssignments[section.id] &&
+            this.scheduleAssignments[section.id].room_name;
+    };
+
+    /**
      * Get the sections that are not yet scheduled
      */
     this.filtered_sections = function(){
@@ -129,11 +147,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
                     }
                 }
             }.bind(this));
-            if (
-                this.scheduleAssignments[section.id] &&
-                this.scheduleAssignments[section.id].room_name == null &&
-                sectionValid
-                ){
+            if (sectionValid && this.scheduleAssignments[section.id] && !this.isScheduled(section)){
                 returned_sections.push(section);
             }
            }.bind(this));
@@ -274,6 +288,13 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             return;
         }
 
+        // Make sure section not locked
+        if (section.schedulingLocked){
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.unselectSection();
+            return;
+        }
+
         // Optimistically schedule the section locally before hearing back from the server
         this.scheduleSectionLocal(section, room_name, schedule_timeslots);
         this.apiClient.schedule_section(
@@ -298,7 +319,7 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      *
      * @param section: The section to schedule
      * @param room_name: The name of the room to schedule it in
-     * @param schedule_timeslots: The IDs of the timeslots to schedule the section in     *
+     * @param schedule_timeslots: The IDs of the timeslots to schedule the section in
      */
     this.scheduleSectionLocal = function(section, room_name, schedule_timeslots){
         var old_assignment = this.scheduleAssignments[section.id];
@@ -370,6 +391,13 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
      * @param section: the section to unschedule
      */
     this.unscheduleSection = function(section){
+        // Make sure section not locked
+        if (section.schedulingLocked){
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.");
+            this.unselectSection();
+            return;
+        }
+
         var old_assignment = this.scheduleAssignments[section.id];
         var old_room_name = old_assignment.room_name;
         var old_schedule_timeslots = old_assignment.timeslots;
@@ -387,6 +415,28 @@ function Sections(sections_data, teacher_data, scheduleAssignments, apiClient) {
             }.bind(this)
         );
     };
+
+    /**
+     * Set the comment and locked on a class.
+     *
+     * @param section: the section to update
+     * @param comment: a string comment to post
+     * @param locked: true if this class should be locked from scheduling
+     */
+    this.setComment = function(section, comment, locked){
+        // go ahead and set section to new status
+        // unlike other cases, we don't revert this update if the API call fails
+        // this is because the comment/locked is a front-end helper
+        //   if API call fails, user will still get message, and this way user
+        //   can anyway continue scheduling this section
+        section.schedulingComment = comment;
+        section.schedulingLocked = locked;
+        this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
+            this.matrix.messagePanel.addMessage("Error: " + msg);
+            console.log(msg);
+        }.bind(this));
+        this.unselectSection();
+    }
 
     /**
      * Update the local interface to reflect unscheduling a class

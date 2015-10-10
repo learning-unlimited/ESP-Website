@@ -42,6 +42,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionInfoPanel.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ChangelogFetcher.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
@@ -115,6 +116,17 @@
     </td>
   </tr>
 </table>
+
+<div id="commentDialog">
+  <form>
+    <fieldset>
+      <label for="commentDialog-comment">Comment</label>
+      <input type="text" id="commentDialog-comment" class="ui-widget-content ui-corner-all" />
+      <input type="checkbox" id="commentDialog-lock" class="ui-widget-content ui-corner-all" />
+      <label for="commentDialog-lock">Lock</label>
+    </fieldset>
+  </form>
+</div>
 
 </body>
 </html>
