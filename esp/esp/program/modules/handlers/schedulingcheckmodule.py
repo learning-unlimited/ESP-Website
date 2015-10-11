@@ -148,6 +148,7 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
+          ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
           ('capacity_by_category', 'Total capacity in each block by category'),
@@ -231,6 +232,14 @@ class SchedulingCheckRunner:
                     elif not (False in [b in mt for b in lunch]):
                          l.append(s)
           return self.formatter.format_list(l)
+
+     def unapproved_scheduled_classes(self):
+         output = []
+         sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p)
+         for sec in sections:
+             if sec.get_meeting_times() or sec.getResources():
+                 output.append(sec)
+         return self.formatter.format_list(output)
 
      def teachers_teaching_two_classes_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
