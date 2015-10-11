@@ -25,9 +25,7 @@ table,th,td
 }
 
 .locked-cell{
-    border-style: solid !important;
-    border-color: red !important;
-    border-width: 2px !important;
+    outline: 4px #FF0000 solid !important;
 }
 
 .ghost-section {
