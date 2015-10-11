@@ -314,7 +314,7 @@ class SchedulingCheckRunner:
                  for block in lunch:
                      q=q.filter(classsubject__sections__meeting_times=block)
                  for t in q.distinct():
-                     classes = [ClassSection.objects.get(parent_class__teachers=t,meeting_times=block) for block in lunch]
+                     classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          bads.append({
                              'Teacher': t,
