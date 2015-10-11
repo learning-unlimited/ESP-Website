@@ -50,8 +50,7 @@ function ChangelogFetcher(matrix, api_client, start_index){
                     this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
                 }
             } else {
-                section.schedulingComment = change.comment;
-                section.schedulingLocked = change.locked;
+                this.matrix.sections.setComment(section, change.comment, change.locked);
             }
             this.last_applied_index = change.index;
         }.bind(this));

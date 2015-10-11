@@ -31,6 +31,10 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
     this.matrix = matrix;
     this.disabled = false;
 
+    this.section = null;
+    this.ghostSection = false;
+    this.selected = false;
+
 
     /**
      * Initialize the cell
@@ -62,23 +66,56 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         this.el.addClass("matrix-cell");
     }
 
+    /**
+     * Re-apply styling on the cell based on section/selected status.
+     */
+    this.update = function() {
+        this.el.removeData("section");
+        this.el.removeClass("available-cell occupied-cell selectable-cell locked-cell selected-section ghost-section");
+        this.el[0].innerHTML = "";
+        this.el.css("background-color", "");
+        this.el.css("background", "");
+        this.el.css("color", "");
+
+        if(this.ghostSection || !this.section) {
+            this.el.addClass("available-cell");
+
+            if(this.ghostSection) {
+                this.el.css("background", this.cellColors.color(this.ghostSection));
+                this.el.css("color", this.cellColors.textColor(this.ghostSection));
+                this.el.addClass("ghost-section");
+                this.el[0].innerHTML = this.ghostSection.emailcode;
+            }
+        } else {
+            this.el.data("section", this.section);
+            this.el.addClass("occupied-cell");
+            this.el.addClass("selectable-cell");
+            if(this.section.schedulingLocked) {
+                this.el.addClass("locked-cell");
+            }
+            if(this.selected) {
+                this.el.addClass("selected-section");
+            }
+            this.el.css("background-color", this.cellColors.color(this.section));
+            this.el.css("color", this.cellColors.textColor(this.section));
+            this.el[0].innerHTML = "<a href='#'>" + this.section.emailcode + "</a>";
+        }
+    };
 
     /**
      * Highlight a cell and show its info in the section-info panel.
      */
     this.select = function() {
-        if(this.el.hasClass("selectable-cell")) {
-            this.el.addClass("selected-section");
-        }
+        this.selected = true;
+        this.update();
     };
 
     /**
      * Unhighlight a cell and hide the section-info panel.
      */
     this.unselect = function() {
-        if(this.el.hasClass("selected-section")) {
-            this.el.removeClass("selected-section");
-        }
+        this.selected = false;
+        this.update();
     };
 
     /**
@@ -119,37 +156,17 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * @param section: The section to add to the cell.
      */
     this.addSection = function(section){
-        // Add the section data
         this.section = section;
-        this.el.data("section", section);
-
-        // Mark the cell as occupied and selectable
-        this.el.addClass("occupied-cell");
-        this.el.addClass("selectable-cell");
-        this.el.removeClass("available-cell");
-
-        // Add the styling for the section
-        this.el.css("background-color", this.cellColors.color(section));
-        this.el.css("color", this.cellColors.textColor(section));
-        this.el[0].innerHTML = "<a href='#'>" + section.emailcode + "</a>";
+        this.ghostSection = null;
+        this.update();
     };
 
     /**
      * Remove a section from the cell and all associated data
      */
     this.removeSection = function(){
-        // Remove the section data
         this.section = null;
-        this.el.removeData("section");
-
-        // Mark the cell as available and unselectable
-        this.el.addClass("available-cell");
-        this.el.removeClass("occupied-cell");
-        this.el.removeClass("selectable-cell");
-
-        // Remove the styling for the section
-        this.el[0].innerHTML = "";
-        this.el.css("background-color", "");
+        this.update();
     };
 
     /**
@@ -158,23 +175,16 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
      * @param section: The section to display.
      */
     this.addGhostSection = function(section) {
-        this.el.css("background", this.cellColors.color(section));
-        this.el.css("color", this.cellColors.textColor(section));
-        this.el.addClass("ghost-section");
-        this.el[0].innerHTML = section.emailcode;
+        this.ghostSection = section;
+        this.update();
     };
 
     /**
      * Remove the ghost section and put back the original section if present.
      */
     this.removeGhostSection = function() {
-        this.el.removeClass("ghost-section");
-        this.el.css("background", "");
-        if(this.section) {
-            this.addSection(this.section);
-        } else {
-            this.removeSection();
-        }
+        this.ghostSection = null;
+        this.update();
     };
 
 

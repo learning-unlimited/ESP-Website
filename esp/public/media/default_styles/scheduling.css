@@ -24,6 +24,12 @@ table,th,td
 .occupied-cell{
 }
 
+.locked-cell{
+    border-style: solid !important;
+    border-color: red !important;
+    border-width: 2px !important;
+}
+
 .ghost-section {
     opacity: .7 !important;
 }

@@ -424,6 +424,10 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param locked: true if this class should be locked from scheduling
      */
     this.setComment = function(section, comment, locked){
+        if(section.schedulingComment == comment && section.schedulingLocked == locked) {
+            return;
+        }
+
         // go ahead and set section to new status
         // unlike other cases, we don't revert this update if the API call fails
         // this is because the comment/locked is a front-end helper
@@ -435,6 +439,15 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             this.matrix.messagePanel.addMessage("Error: " + msg);
             console.log(msg);
         }.bind(this));
+
+        // update cells in case we switched the locked flag
+        var assignment = this.scheduleAssignments[section.id];
+        if(assignment.room_name) {
+            $j.each(assignment.timeslots, function(index, timeslot) {
+                this.matrix.getCell(assignment.room_name, timeslot).update();
+            }.bind(this));
+        }
+
         this.unselectSection();
     }
 
