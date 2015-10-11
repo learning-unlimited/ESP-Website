@@ -148,6 +148,7 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
+          ('classes_too_long', 'Classes which are too long or have gaps'),
           ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
@@ -232,6 +233,29 @@ class SchedulingCheckRunner:
                     elif not (False in [b in mt for b in lunch]):
                          l.append(s)
           return self.formatter.format_list(l)
+
+     # TODO(mgersh): this is just me being lazy because
+     # this method on ClassSection isn't in mit-prod right now
+     @staticmethod
+     def end_time_prefetchable(sec):
+        """Like self.end_time().end, but can be prefetched.
+        See self.start_time_prefetchable().
+        """
+        mts = sec.meeting_times.all()
+        if mts:
+            return max(mt.end for mt in mts)
+        else:
+            return None
+
+     def classes_too_long(self):
+         output = []
+         for sec in self._all_class_sections():
+             start_time = sec.start_time_prefetchable()
+             end_time = self.end_time_prefetchable(sec)
+             length = end_time - start_time
+             if length.total_seconds()/float(3600) - float(sec.duration) > 0.3:
+                 output.append(sec)
+         return self.formatter.format_list(output)
 
      def unapproved_scheduled_classes(self):
          output = []
