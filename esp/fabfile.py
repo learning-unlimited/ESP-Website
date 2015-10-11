@@ -144,15 +144,17 @@ def mount_encrypted_partition():
         sudo('cryptsetup luksOpen /dev/mapper/%s encrypted' % (ENCRYPTED_VG_NAME,))
     sudo('mount /dev/mapper/encrypted /mnt/encrypted')
 
-def create_encrypted_partition():
-
+def ensure_encrypted_partition():
     #   Check for the encrypted partition already existing on the
     #   VM, and quit if it does.
     if sudo('cryptsetup isLuks /dev/mapper/%s ; echo $?' % (ENCRYPTED_VG_NAME,)).strip() == '0':
         print 'Encrypted partition already exists; mounting.'
         mount_encrypted_partition()
         return
-    
+    create_encrypted_partition()
+
+@task
+def create_encrypted_partition():
     print 'Now creating encrypted partition for data storage.'
     print 'Please make up a passphrase and enter it when prompted.'
     
@@ -206,7 +208,7 @@ def load_db_dump(dbuser, dbfile):
         using that encrypted storage.   """
 
     with use_vagrant():
-        create_encrypted_partition()
+        ensure_encrypted_partition()
         load_encrypted_database(dbuser, dbfile)
 
 @task
