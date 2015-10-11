@@ -53,24 +53,24 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
                     this.sections.unscheduleSection(section);
                 }.bind(this)
             );
-
-            var commentText = 'Set Comment';
-            if (section.schedulingLocked) {
-                commentText = 'Edit Comment or Unlock';
-            } else if (section.schedulingComment) {
-                commentText = 'Edit Comment';
-            }
-            var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
-            commentButton
-                .button()
-                .click(function(evt) {
-                    this.sectionCommentDialog.show(section);
-                }.bind(this)
-            );
-
             toolbar.append(unscheduleButton);
-            toolbar.append(commentButton);
         }
+
+        var commentText = 'Set Comment';
+        if (section.schedulingLocked) {
+            commentText = 'Edit Comment or Unlock';
+        } else if (section.schedulingComment) {
+            commentText = 'Edit Comment';
+        }
+        var commentButton = $j("<button class='sidetoolbar'>" + commentText + "</button>");
+        commentButton
+            .button()
+            .click(function(evt) {
+                this.sectionCommentDialog.show(section);
+            }.bind(this)
+        );
+        toolbar.append(commentButton);
+
         var baseURL = this.sections.getBaseUrlString();
         var links =  $j(
             "<br/><a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class +
