@@ -422,8 +422,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: the section to update
      * @param comment: a string comment to post
      * @param locked: true if this class should be locked from scheduling
+     * @param remote: true if this setComment request comes from the server and not local user
      */
-    this.setComment = function(section, comment, locked){
+    this.setComment = function(section, comment, locked, remote){
         if(section.schedulingComment == comment && section.schedulingLocked == locked) {
             return;
         }
@@ -435,10 +436,14 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         //   can anyway continue scheduling this section
         section.schedulingComment = comment;
         section.schedulingLocked = locked;
-        this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
-            this.matrix.messagePanel.addMessage("Error: " + msg);
-            console.log(msg);
-        }.bind(this));
+
+        if(!remote) {
+            this.apiClient.set_comment(section.id, comment, locked, function(){}, function(msg){
+                this.matrix.messagePanel.addMessage("Error: " + msg);
+                console.log(msg);
+            }.bind(this));
+	    this.unselectSection();
+	}
 
         // update cells in case we switched the locked flag
         var assignment = this.scheduleAssignments[section.id];
@@ -447,8 +452,6 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 this.matrix.getCell(assignment.room_name, timeslot).update();
             }.bind(this));
         }
-
-        this.unselectSection();
     }
 
     /**
