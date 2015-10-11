@@ -131,8 +131,8 @@ def link_media():
         return
 
     with cd('%s/esp/public/media' % REMOTE_PROJECT_DIR):
-        run('ln -s default_images images')
-        run('ln -s default_styles styles')
+        run('ln -s -T default_images images || true')
+        run('ln -s -T default_styles styles || true')
 
 def mount_encrypted_partition():
     if sudo('df | grep encrypted | wc -l').strip() == '1':
