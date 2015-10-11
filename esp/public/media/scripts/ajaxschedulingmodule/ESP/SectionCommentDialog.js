@@ -8,8 +8,8 @@ function SectionCommentDialog(el, sections) {
     this.el = el;
     this.dialog = el.dialog({
         autoOpen: false,
-        height: 300,
-        width: 350,
+        height: 200,
+        width: 450,
         modal: true,
         buttons: {
             "Set Comment": function() {
