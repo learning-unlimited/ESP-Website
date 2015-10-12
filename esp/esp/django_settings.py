@@ -73,7 +73,6 @@ LOGIN_REDIRECT_URL = '/'
 # Default debug settings  #
 ###########################
 DEBUG = False
-DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
