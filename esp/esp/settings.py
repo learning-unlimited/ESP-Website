@@ -111,3 +111,18 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 # that set a cookie on the top-level domain
 # NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
+
+if SENTRY_DSN:
+    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
+    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware
+    # and PrettyErrorEmailMiddlware) will remain enabled and will receive
+    # exceptions before Raven does.
+    import raven
+
+    INSTALLED_APPS += (
+        'raven.contrib.django.raven_compat',
+    )
+    RAVEN_CONFIG = {
+        'dsn': SENTRY_DSN,
+        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
+    }
