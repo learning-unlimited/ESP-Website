@@ -2,7 +2,7 @@ Django==1.8.5
 pillow==2.8.2
 cssutils==1.0
 django-extensions==1.5.5
-django-form-utils==1.0.2
+django-form-utils==1.0.3
 django-reversion==1.8.7
 django-selenium==0.9.8
 django-localflavor==1.1
@@ -31,7 +31,7 @@ werkzeug
 django-bootstrap-form==3.2
 django-vanilla-views==1.0.4
 django-nose==1.4.1
-model-mommy==1.2.4
+model-mommy==1.2.5
 docutils==0.12
 Pygments==2.0.2
 twilio==3.6.5

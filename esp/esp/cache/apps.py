@@ -32,5 +32,3 @@ class CacheConfig(AppConfig):
         # Fix up the queued events
         _finalize_caches()
         _lock_caches()
-
-        print "Caches loaded"
