@@ -529,7 +529,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = True
-DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
