@@ -149,6 +149,8 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
+          ('classes_wrong_length', 'Classes which are the wrong length or have gaps'),
+          ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
           ('capacity_by_category', 'Total capacity in each block by category'),
@@ -233,6 +235,24 @@ class SchedulingCheckRunner:
                          l.append(s)
           return self.formatter.format_list(l)
 
+     def classes_wrong_length(self):
+         output = []
+         for sec in self._all_class_sections():
+             start_time = sec.start_time_prefetchable()
+             end_time = sec.end_time_prefetchable()
+             length = end_time - start_time
+             if abs(length.total_seconds()/float(3600) - float(sec.duration)) > 0.3:
+                 output.append(sec)
+         return self.formatter.format_list(output)
+
+     def unapproved_scheduled_classes(self):
+         output = []
+         sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p)
+         for sec in sections:
+             if sec.get_meeting_times() or sec.getResources():
+                 output.append(sec)
+         return self.formatter.format_list(output)
+
      def teachers_teaching_two_classes_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
           l = []
@@ -282,7 +302,7 @@ class SchedulingCheckRunner:
                  for block in lunch:
                      q=q.filter(classsubject__sections__meeting_times=block)
                  for t in q.distinct():
-                     classes = [ClassSection.objects.get(parent_class__teachers=t,meeting_times=block) for block in lunch]
+                     classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          bads.append({
                              'Teacher': t,
