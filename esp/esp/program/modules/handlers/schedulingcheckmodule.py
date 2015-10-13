@@ -149,7 +149,7 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
-          ('classes_too_long', 'Classes which are too long or have gaps'),
+          ('classes_wrong_length', 'Classes which are the wrong length or have gaps'),
           ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
@@ -235,13 +235,13 @@ class SchedulingCheckRunner:
                          l.append(s)
           return self.formatter.format_list(l)
 
-     def classes_too_long(self):
+     def classes_wrong_length(self):
          output = []
          for sec in self._all_class_sections():
              start_time = sec.start_time_prefetchable()
              end_time = sec.end_time_prefetchable()
              length = end_time - start_time
-             if length.total_seconds()/float(3600) - float(sec.duration) > 0.3:
+             if abs(length.total_seconds()/float(3600) - float(sec.duration)) > 0.3:
                  output.append(sec)
          return self.formatter.format_list(output)
 
