@@ -38,7 +38,7 @@ from esp.tagdict.models import Tag
 
 from django import forms
 
-import simplejson as json
+import json
 
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)

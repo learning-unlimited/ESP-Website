@@ -44,7 +44,7 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
-from esp.middleware import ESPError, Http403
+from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
@@ -52,6 +52,8 @@ from django.views.decorators.cache import cache_control
 from esp.varnish import purge_page
 
 from django.conf import settings
+
+import reversion
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -62,6 +64,7 @@ DEFAULT_SPACING = 5
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
+@reversion.create_revision()
 def qsd(request, url):
 
     #   Extract the 'action' from the supplied URL if there is one
@@ -176,7 +179,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError("You don't have permission to edit this page.", log=False)
+            raise Http403, "You don't have permission to edit this page."
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -195,19 +198,20 @@ def qsd(request, url):
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
 
+@reversion.create_revision()
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
-    from django.utils import simplejson
+    import json
     from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
 
     if ( request.user.id is None ):
-        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
+        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=401)
     if post_dict['cmd'] == "update":
         if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
-            return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
+            return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=403)
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 
@@ -225,4 +229,4 @@ def ajax_qsd(request):
         result['content'] = markdown(qsd.content)
         result['url'] = qsd.url
 
-    return HttpResponse(simplejson.dumps(result))
+    return HttpResponse(json.dumps(result))

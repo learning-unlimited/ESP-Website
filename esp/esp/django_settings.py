@@ -51,6 +51,9 @@ SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
 # Must be unique for every site hosted
 CACHE_PREFIX="ESP"
 
+# Auto-populated in settings.py
+# Can also be overridden in local_settings.py
+ALLOWED_HOSTS = []
 
 ###########################
 # Default file locations  #
@@ -75,6 +78,7 @@ TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
 USE_PROFILER = False
+SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -173,12 +177,10 @@ MIDDLEWARE_GLOBAL = [
     ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
-    (1100, 'django.middleware.doc.XViewMiddleware'),
+    (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
-    (1500, 'django.middleware.transaction.TransactionMiddleware'),
-    (1600, 'reversion.middleware.RevisionMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
@@ -193,7 +195,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
-    'django.contrib.markup',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
@@ -242,7 +243,9 @@ for app in ('django_evolution', 'django_command_extensions'):
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
-SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+ATOMIC_REQUESTS = True
 
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.
@@ -369,6 +372,7 @@ SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
 
+#   Set test runner to behave like pre-1.6 versions of Django
 #   Exclude apps from testing
 TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')

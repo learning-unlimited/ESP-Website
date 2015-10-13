@@ -180,3 +180,4 @@ This request can be (re)viewed at:
 
     class Meta:
         proxy = True
+        app_label = 'modules'

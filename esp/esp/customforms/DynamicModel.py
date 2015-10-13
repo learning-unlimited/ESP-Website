@@ -55,7 +55,7 @@ class DynamicModelHandler:
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
-        'boolean': {'typeMap': models.BooleanField, 'attrs':{}, 'args':[]},
+        'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
         'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
         'instructions': {'typeMap': None},
     }
@@ -144,17 +144,16 @@ class DynamicModelHandler:
         if not self.field_list:
             self._getModelFieldList()
         
-        if not transaction.is_managed():
-            db.start_transaction()
-            db.create_table(self._tname, tuple(self.field_list))
+        if transaction.get_autocommit():
+            with transaction.atomic():
+                db.create_table(self._tname, tuple(self.field_list))
             
-            # Executing deferred SQL, after correcting the CREATE INDEX statements
-            deferred_sql = []
-            for stmt in db.deferred_sql:
-                deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-            db.deferred_sql = deferred_sql    
-            db.execute_deferred_sql()    
-            db.commit_transaction()
+                # Executing deferred SQL, after correcting the CREATE INDEX statements
+                deferred_sql = []
+                for stmt in db.deferred_sql:
+                    deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
+                db.deferred_sql = deferred_sql
+                db.execute_deferred_sql()
         else:
             db.create_table(self._tname, tuple(self.field_list))
             
@@ -165,13 +164,12 @@ class DynamicModelHandler:
             db.deferred_sql = deferred_sql    
             db.execute_deferred_sql()    
         
+    @transaction.atomic
     def deleteTable(self):
         """
         Deletes the response table for the current form
         """
-        db.start_transaction()
         db.delete_table(self._tname)
-        db.commit_transaction()
         
     def _getFieldToAdd(self, ftype):
         """
@@ -179,7 +177,7 @@ class DynamicModelHandler:
         """
         attrs = self._field_types[ftype]['attrs'].copy()
         args = self._field_types[ftype]['args']
-        if ftype != "numeric":
+        if ftype != "numeric" and ftype  != "boolean":
             attrs['default'] = ''
         return self._field_types[ftype]['typeMap'](*args, **attrs)    
     

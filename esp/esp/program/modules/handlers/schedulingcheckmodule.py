@@ -37,6 +37,7 @@ class SchedulingCheckModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
 #For formatting output.  The default is to use JSONFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures

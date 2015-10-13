@@ -371,4 +371,4 @@ class ListGenModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

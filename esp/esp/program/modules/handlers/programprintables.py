@@ -50,6 +50,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
+from decimal import Decimal
+import json
 import collections
 
 class ProgramPrintables(ProgramModuleObj):
@@ -917,16 +919,32 @@ Volunteer schedule for %s:
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
  
+        # TODO: conditional should use Tag.getBooleanTag or somesuch
+        show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = classes_by_student[student.id]
 
-            # TODO: conditional should use Tag.getBooleanTag or somesuch
-            if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
+            #get the student's last class on each day
+            last_classes = []
+            days = {}
+            for cls in classes:
+                date = cls.end_time_prefetchable().date().isocalendar()
+                if date in days:
+                    days[date].append(cls)
+                else:
+                    days[date]=[cls]
+
+            for day,day_classes in days.items():
+                last_classes.append(day_classes[-1])
+            last_classes.sort()
+
+            if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
-                times = list(prog.getTimeSlots())
+                times = timeslots[:]
                 for cls in classes:
                     index = 0
                     for t in cls.meeting_times.all():
@@ -963,6 +981,7 @@ Volunteer schedule for %s:
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
             student.classes = classes
+            student.last_classes = last_classes
             
         context['students'] = students
         context['program'] = prog
@@ -1531,4 +1550,4 @@ Volunteer schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -25,5 +25,13 @@
             </td>
         </tr>
         {% include "program/modules/adminclass/manageclass_class_info.html" %}
+	<tr>
+	  <th class="smaller">Resource requests:</th>
+	  <td>
+	    {% for r in class.sections.all.0.resourcerequest_set.all %}
+	    {{ r }} <br/>
+	    {% endfor %}
+	  </td>
+	</tr>
     </tbody>
 </table>

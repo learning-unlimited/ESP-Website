@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
@@ -298,7 +298,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
-        import simplejson as json
+        import json as json
         from django.template.loader import render_to_string
         context = self.prepare({})
         context['prog'] = self.program
@@ -477,7 +477,7 @@ class StudentClassRegModule(ProgramModuleObj):
             success = self.addclass_logic(request, tl, one, two, module, extra, prog)
             if 'no_schedule' in request.POST:
                 resp = HttpResponse(mimetype='application/json')
-                simplejson.dump({'status': success}, resp)
+                json.dump({'status': success}, resp)
                 return resp
             if success:
                 try:
@@ -608,7 +608,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         resp = HttpResponse(mimetype='application/json')
         
-        simplejson.dump(list(timeslots), resp, default=json_encode)
+        json.dump(list(timeslots), resp, default=json_encode)
         
         return resp"""
 
@@ -622,7 +622,7 @@ class StudentClassRegModule(ProgramModuleObj):
         
         resp = HttpResponse(mimetype='application/json')
         
-        simplejson.dump(list(classes), resp, default=json_encode)
+        json.dump(list(classes), resp, default=json_encode)
         
         return resp
 
@@ -638,13 +638,13 @@ class StudentClassRegModule(ProgramModuleObj):
             verb_list = [ signup_verb_uri ]
 
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(verb_list, resp)
+        json.dump(verb_list, resp)
         return resp
 
     def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         clean_counts = prog.student_counts_by_section_id()
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(clean_counts, resp)
+        json.dump(clean_counts, resp)
         return resp
 
     @aux_call
@@ -661,7 +661,7 @@ class StudentClassRegModule(ProgramModuleObj):
             for b in reg_bits ]
         
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(reg_bits_data, resp)
+        json.dump(reg_bits_data, resp)
         return resp
     
     # This function exists only to apply the @meets_deadline decorator.
@@ -751,7 +751,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(mimetype='application/json')
-            simplejson.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
+            json.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
             return resp
         
         if len(cleared_ids) > 0:
@@ -782,4 +782,4 @@ class StudentClassRegModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'
