@@ -235,24 +235,11 @@ class SchedulingCheckRunner:
                          l.append(s)
           return self.formatter.format_list(l)
 
-     # TODO(mgersh): this is just me being lazy because
-     # this method on ClassSection isn't in mit-prod right now
-     @staticmethod
-     def end_time_prefetchable(sec):
-        """Like self.end_time().end, but can be prefetched.
-        See self.start_time_prefetchable().
-        """
-        mts = sec.meeting_times.all()
-        if mts:
-            return max(mt.end for mt in mts)
-        else:
-            return None
-
      def classes_too_long(self):
          output = []
          for sec in self._all_class_sections():
              start_time = sec.start_time_prefetchable()
-             end_time = self.end_time_prefetchable(sec)
+             end_time = sec.end_time_prefetchable()
              length = end_time - start_time
              if length.total_seconds()/float(3600) - float(sec.duration) > 0.3:
                  output.append(sec)
