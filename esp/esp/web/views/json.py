@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from django.http import HttpResponse
 from django.utils import simplejson
 from django.db.models.query import Q
-from esp.datatree.models import *
 
 class JsonResponse(HttpResponse):
     def __init__(self, obj):

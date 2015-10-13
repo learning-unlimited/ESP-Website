@@ -204,7 +204,9 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Sibling discount').order_by('-id')[0]
 
-    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False):
+    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):
+        if lineitemtype_id:
+            return Q(id=lineitemtype_id)
         q_object = Q(program=self.program)
         if required_only:
             q_object &= Q(required=True, for_payments=False, for_finaid=False)
@@ -275,6 +277,13 @@ class ProgramAccountingController(BaseAccountingController):
         """ Clear financial records for these users; if they didn't show up,
             we shouldn't be expecting their money.  """
         self.all_transfers().filter(user__in=users, executed=False).delete()
+
+    def payments_summary(self):
+        """ Return a tuple with the number and total dollar amount of payments
+            that have been made so far. """
+        payment_li_type = self.default_payments_lineitemtype()
+        payments = Transfer.objects.filter(line_item=payment_li_type)
+        return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
 
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):

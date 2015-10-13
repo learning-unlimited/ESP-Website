@@ -51,7 +51,7 @@ from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
-from esp.cache import varnish
+from esp.varnish import varnish
 from esp.middleware import ESPError
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')

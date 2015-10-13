@@ -64,7 +64,6 @@ from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -88,15 +87,6 @@ DEFAULT_USER_TYPES = [
     ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
     ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
-
-def user_get_key(user):
-    """ Returns the key of the user, regardless of anything about the user object. """
-    if user is None or type(user) == AnonymousUser or \
-        (type(user) != User and type(user) != ESPUser) or \
-         user.id is None:
-        return 'None'
-    else:
-        return str(user.id)
 
 def admin_required(func):
     @functools.wraps(func)
@@ -137,10 +127,6 @@ class UserAvailability(models.Model):
 
 class ESPUserManager(Manager):
     pass
-
-def get_studentreg_model():
-    from esp.program.models import StudentRegistration
-    return StudentRegistration
 
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
@@ -405,27 +391,27 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import Program # Need the Class object.
-        if type(program) != Program: # if we did not receive a program
+        if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
             if include_rejected: 
                 return self.classsubject_set.filter(parent_program = program)
             else:
                 return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
-    getTaughtClassesFromProgram.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
-    getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
+    getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
+    getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         return self.classsubject_set.all()
-    getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
-    getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
 
 
     def getTaughtSections(self, program = None, include_rejected = False):
@@ -442,7 +428,7 @@ class ESPUser(User, AnonymousUser):
             return ClassSection.objects.filter(parent_class__in=classes)
         else:
             return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
-    getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
+    getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
@@ -454,7 +440,7 @@ class ESPUser(User, AnonymousUser):
         else:
             return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
-    getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
+    getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
@@ -471,7 +457,8 @@ class ESPUser(User, AnonymousUser):
             rounded_hours = lambda x: float( x )
         for s in user_sections:
             #   don't count cancelled or rejected classes -- Ted
-            if (include_scheduled or (s.start_time() is None)) and (s.parent_class.status >= 0):
+            #   or rejected sections -- lua
+            if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
@@ -543,9 +530,9 @@ class ESPUser(User, AnonymousUser):
                  {'self':self, 'program':program, 'ignore_classes':True})
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
-    getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
-    getAvailableTimes.depend_on_m2m(lambda:Program, 'program_modules', lambda prog, pm: {'program': prog})
-    getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
+    getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_m2m('program.Program', 'program_modules', lambda prog, pm: {'program': prog})
+    getAvailableTimes.depend_on_row('users.UserAvailability', lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
@@ -556,7 +543,7 @@ class ESPUser(User, AnonymousUser):
         self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
-        #   Because the timeslot has an anchor, the program is unnecessary.
+        #   Because the timeslot has a program, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
             role = Group.objects.get_or_create(name='Teacher')[0]
@@ -650,14 +637,8 @@ class ESPUser(User, AnonymousUser):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
-    def get_sr_model():
-        from esp.program.models import StudentRegistration
-        return StudentRegistration
-    def get_tsid_function():
-        from esp.program.models import ClassSection
-        return ClassSection.timeslot_ids
-    getEnrolledSectionsFromProgram.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
-    getEnrolledSectionsFromProgram.depend_on_cache(get_tsid_function, lambda self=wildcard, **kwargs: {})
+    getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+    getEnrolledSectionsFromProgram.depend_on_cache('program.ClassSection.timeslot_ids', lambda self=wildcard, **kwargs: {})
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
@@ -672,7 +653,7 @@ class ESPUser(User, AnonymousUser):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
-    getFirstClassTime.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
@@ -711,19 +692,6 @@ class ESPUser(User, AnonymousUser):
             priority += 1
 
         return priority
-        
-    #   We often request the registration priority for all timeslots individually
-    #   because our schedules display enrollment status on a per-timeslot (rather
-    #   than per-class) basis.  This function is intended to speed that up.
-    def getRegistrationPriorities(self, prog, timeslot_ids):
-        num_slots = len(timeslot_ids)
-        events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
-        result = [0 for i in range(num_slots)]
-        id_order = range(num_slots)
-        id_order.sort(key=lambda i: timeslot_ids[i])
-        for i in range(num_slots):
-            result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
-        return result
 
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
@@ -731,20 +699,12 @@ class ESPUser(User, AnonymousUser):
     def canRegToFullProgram(self, program):
         return Permission.user_has_perm(self, 'Student/OverrideFull', program)
 
-    #   This is needed for cache dependencies on financial aid functions
-    def get_finaid_model():
-        from esp.program.models import FinancialAidRequest
-        return FinancialAidRequest
-    def get_finaid_grant_model():
-        from esp.accounting.models import FinancialAidGrant
-        return FinancialAidGrant
-
     @cache_function
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
     #   Invalidate cache when any of the user's financial aid requests are changed
-    appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
-    appliedFinancialAid.depend_on_row(get_finaid_grant_model, lambda fr: {'self': fr.request.user})
+    appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
+    appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
 
     @cache_function
     def hasFinancialAid(self, program):
@@ -754,7 +714,7 @@ class ESPUser(User, AnonymousUser):
             return True
         else:
             return False
-    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+    hasFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
 
     def isOnsite(self, program=None):
         """Determine if the user is an authorized onsite user for the program.
@@ -808,6 +768,7 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
+    @cache_function
     def isAdministrator(self, program=None):
         """Determine if the user is an admin for the program.
 
@@ -828,6 +789,17 @@ class ESPUser(User, AnonymousUser):
                         quser & qprogram & Permission.is_valid_qobject(),
                         permission_type="Administer",
         ).exists()
+    isAdministrator.get_or_create_token(('self',))
+    isAdministrator.get_or_create_token(('program',))
+    isAdministrator.depend_on_row('users.ESPUser', lambda user: {'self': user})
+    isAdministrator.depend_on_m2m('users.ESPUser', 'groups', lambda user, group: {'self': user})
+    # if the permission has null user and non-null group, expire all caches,
+    # otherwise expire only the one for the relevant user.
+    isAdministrator.depend_on_row('users.Permission', lambda perm:
+                                  {'self': perm.user}
+                                  if perm.user is not None
+                                  or perm.role is None
+                                  else {'self': wildcard})
     isAdmin = isAdministrator
 
     @cache_function
@@ -914,12 +886,15 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
-    def current_schoolyear(program=None):
-        if program == None:
+    def current_schoolyear(now=None):
+        """
+        Get the school year for the current time or a given time.
+
+        School year NNNN is defined as the period between August
+        NNNN-1 and July NNNN.
+        """
+        if now is None:
             now = date.today()
-        else:
-            # "now" is actually whenever the program ran or will run
-            now = program.dates()[0]
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
@@ -932,25 +907,81 @@ are a teacher of the class"""
             schoolyear = curyear + 1
         return schoolyear
 
+    @staticmethod
     @cache_function
-    def getGrade(self, program = None):
-        grade = 0
-        if self.isStudent():
+    def program_schoolyear(program):
+        """
+        Get the school year for a given program.
+
+        This is determined by the current_schoolyear (see above) of
+        the first day of the program, and is used to calculate a
+        student's effective grade for the program.
+
+        This can be modified by setting the program tag
+        "increment_default_grade_levels", which increments the
+        program's effective school year.
+        """
+        # "now" is actually whenever the program ran or will run
+        dates = program.dates()
+        if len(dates) >= 1:
+            now = dates[0]
+        else:
+            now = None
+        schoolyear = ESPUser.current_schoolyear(now)
+        schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
+        return schoolyear
+    program_schoolyear.__func__.depend_on_row(Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(Event, lambda event: {'program': event.program})
+
+    @cache_function
+    def getYOG(self, program=None, assume_student=False):
+        """
+        Get a student's year of graduation.
+
+        If program is given, use the registration profile from that
+        program to look up the graduation year; otherwise, use the
+        latest one.
+
+        assume_student will save us a database hit if the user is a student,
+        but cost us at least one and possibly several if they're not.
+        """
+        if assume_student or self.isStudent():
             if program is None:
                 regProf = self.getLastProfile()
             else:
                 from esp.program.models import RegistrationProfile
-                regProf = RegistrationProfile.getLastForProgram(self,program)
+                regProf = RegistrationProfile.getLastForProgram(self, program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
-                    if program:
-                        grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
+                    return regProf.student_info.graduation_year
+        return None
+    getYOG.get_or_create_token(('self',))
+    getYOG.depend_on_row('users.StudentInfo', lambda info: {'self': info.user})
 
+    @cache_function
+    def getGrade(self, program=None, assume_student=False):
+        """Get the grade of this student.
+
+        Get the grade at the time of the program, or for the current school
+        year if program is None.
+
+        assume_student will save us a database hit if the user is a student,
+        but cost us at least one and possibly several if they're not.  See
+        ESPUser.getYOG.
+        """
+        grade = 0
+        yog = self.getYOG(program, assume_student)
+        schoolyear = None
+        if program is not None:
+            schoolyear = ESPUser.program_schoolyear(program)
+        if yog is not None:
+            grade = ESPUser.gradeFromYOG(yog, schoolyear)
         return grade
     #   The cache will need to be cleared once per academic year.
-    getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
-    getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
+    getGrade.get_or_create_token(('self',))
+    getGrade.get_or_create_token(('program',))
+    getGrade.depend_on_cache(getYOG, lambda self=wildcard, program=wildcard, **kwargs: {'self': self, 'program': program})
+    getGrade.depend_on_cache(program_schoolyear.__func__, lambda self=wildcard, **kwargs: {'program': self})
 
     @staticmethod
     def gradeFromYOG(yog, schoolyear=None):
@@ -963,8 +994,9 @@ are a teacher of the class"""
         return schoolyear + 12 - yog
 
     @staticmethod
-    def YOGFromGrade(grade):
-        schoolyear = ESPUser.current_schoolyear()
+    def YOGFromGrade(grade, schoolyear=None):
+        if schoolyear is None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             grade = int(grade)
         except:
@@ -1014,13 +1046,6 @@ are a teacher of the class"""
         if rank == -1:
             rank = default
         return rank
-
-    @staticmethod
-    def getRankInSection(student, section, default=10):
-        if isinstance(section, int):
-            section = ClassSection.objects.get(id=section)
-        return getRankInClass(student, section.parent_class, default)
-
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
@@ -1073,8 +1098,8 @@ def update_email(**kwargs):
             return
         old_user = User.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
-        new_email = new_user.email if new_user.is_active else None
-        if old_email == new_email:
+        new_email = new_user.get_email_sendto_address() if new_user.is_active else None
+        if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
             # They didn't change their email and didn't activate/deactivate,
             # don't do anything.
             return
@@ -1284,14 +1309,14 @@ class StudentInfo(models.Model):
             studentInfo.food_preference      = new_data['food_preference']
 
         
-        studentInfo.studentrep = new_data.get('studentrep', False)    
+        studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.post_hs = new_data.get('post_hs', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
-        studentInfo.transportation = new_data.get('transportation', '')        
+        studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
         if new_data.get('studentrep', False):
             #   E-mail membership notifying them of the student rep request.
@@ -1310,13 +1335,15 @@ class StudentInfo(models.Model):
         return studentInfo
 
     def getSchool(self):
-        """ Obtain a string representation of the student's school  """ 
+        """ Obtain a string representation of the student's school  """
         if self.k12school:
             return self.k12school
         elif self.school:
             return self.school
         else:
             return None
+
+    getSchool.short_description = "School"
 
     def __unicode__(self):
         username = "N/A"
@@ -1330,8 +1357,8 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name = 'TeacherInfo'
     link_fields_list = [
-        ('graduation_year', 'Graduation year'), 
-        ('from_here', 'Current student checkbox'), 
+        ('graduation_year', 'Graduation year'),
+        ('from_here', 'Current student checkbox'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1564,6 +1591,16 @@ class EducatorInfo(models.Model):
         educatorInfo.save()
         return educatorInfo
 
+    def getSchool(self):
+        """ Obtain a string representation of the educator's school  """
+        if self.k12school:
+            return self.k12school
+        elif self.school:
+            return self.school
+        else:
+            return None
+    getSchool.short_description = "School"
+
     def __unicode__(self):
         username = ""
         if self.user != None:
@@ -1713,9 +1750,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             return myZip.distance(remoteZip)
         except:
             return -1
-
-
-
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
@@ -2231,7 +2265,7 @@ class Record(models.Model):
 def flatten(choices):
     l=[]
     for x in choices:
-        if type(x[1])!=tuple: l.append(x[0])
+        if not isinstance(x[1], tuple): l.append(x[0])
         else: l=l+flatten(x[1])
     return l
 
@@ -2417,7 +2451,7 @@ class Permission(ExpirableModel):
         def squash(choices):
             l=[]
             for x in choices:
-                if type(x[1])!=tuple: l.append(x)
+                if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
         
@@ -2428,7 +2462,7 @@ class Permission(ExpirableModel):
         def squash(choices):
             l=[]
             for x in choices:
-                if type(x[1])!=tuple: l.append(x)
+                if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
         
@@ -2525,6 +2559,7 @@ class GradeChangeRequest(TimeStampedModel):
     """
   
     claimed_grade = models.PositiveIntegerField()
+    grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)
@@ -2611,9 +2646,10 @@ class GradeChangeRequest(TimeStampedModel):
         (self._meta.app_label, self._meta.module_name), args=(self.id,))
 
 
-
+    def __unicode__(self):
+        return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
+        
 # We can't import these earlier because of circular stuff...
-from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration

@@ -37,12 +37,10 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.datatree.models import *
 from esp.users.models import User, Permission
 from django import forms
 from django.forms.formsets import formset_factory
 
-from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.middleware import ESPError
 
@@ -54,7 +52,7 @@ class EditPermissionForm(forms.Form):
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
 
 class NewPermissionForm(forms.Form):
-    permission_type=forms.ChoiceField(choices=filter(lambda x:type(x[1])==tuple and "Deadline" in x[0],Permission.PERMISSION_CHOICES))
+    permission_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)

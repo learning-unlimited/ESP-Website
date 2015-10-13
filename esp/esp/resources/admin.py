@@ -55,13 +55,13 @@ class ResourceRequestAdmin(admin.ModelAdmin):
 
 class ResourceAdmin(admin.ModelAdmin):
     def program(obj):
-        return obj.res_type.program.name
-    list_display = ('name', 'res_type', 'num_students', 'event', 'group_id', program)
-    list_filter = ('res_type__program',)
+        return obj.event.program.name
+    list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
+    list_filter = ('event__program',)
     search_fields = ('name', 'res_type__name', 'res_type__description',
-            'res_type__attributes_pickled', 'res_type__program__name',
+            'res_type__attributes_pickled', 'event__program__name',
             'num_students', 'event__name', 'event__short_description',
-            '=group_id')
+            '=res_group__id')
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'resource', 'target')

@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
-from esp.datatree.models         import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
@@ -44,7 +43,6 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.datatree.models         import DataTree
 from datetime                    import timedelta, time
 from django.utils                import simplejson
 from collections                 import defaultdict
@@ -134,10 +132,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(sections_dicts, response)
         return response
     ajax_sections_cached.get_or_create_token(('prog',))
-    ajax_sections_cached.depend_on_model(lambda: ClassSubject)
-    ajax_sections_cached.depend_on_model(lambda: ClassSection)
-    ajax_sections_cached.depend_on_model(lambda: ClassSizeRange)
-    ajax_sections_cached.depend_on_model(lambda: ResourceRequest)
+    ajax_sections_cached.depend_on_model('program.ClassSubject')
+    ajax_sections_cached.depend_on_model('program.ClassSection')
+    ajax_sections_cached.depend_on_model('program.ClassSizeRange')
+    ajax_sections_cached.depend_on_model('resources.ResourceRequest')
 
     @aux_call
     @needs_admin
@@ -165,7 +163,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(classrooms_dicts, response)
         return response
     ajax_rooms_cached.get_or_create_token(('prog',))
-    ajax_rooms_cached.depend_on_model(lambda: Resource)
+    ajax_rooms_cached.depend_on_model('resources.Resource')
     
 
     @aux_call
@@ -267,7 +265,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(classrooms_dicts, response)
         return response
     ajax_resources_cached.get_or_create_token(('prog',))
-    ajax_resources_cached.depend_on_model(lambda: Resource)
+    ajax_resources_cached.depend_on_model('resources.Resource')
 
 
     @aux_call
@@ -452,13 +450,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
     # So, cache it; and have the cache expire whenever any of the relevant models changes.
     # Yeah, the cache will get expired quite often...; but, eh, it's a cheap function.
     ajax_schedule_get_uuid.get_or_create_token(('prog',))
-    ajax_schedule_get_uuid.depend_on_model(lambda: ResourceAssignment)
-    ajax_schedule_get_uuid.depend_on_model(lambda: Resource)
-    ajax_schedule_get_uuid.depend_on_model(lambda: ResourceRequest)
-    ajax_schedule_get_uuid.depend_on_model(lambda: Event)
-    ajax_schedule_get_uuid.depend_on_model(lambda: ClassSection)
-    ajax_schedule_get_uuid.depend_on_model(lambda: ClassSubject)
-    ajax_schedule_get_uuid.depend_on_model(lambda: UserAvailability)
+    ajax_schedule_get_uuid.depend_on_model('resources.ResourceAssignment')
+    ajax_schedule_get_uuid.depend_on_model('resources.Resource')
+    ajax_schedule_get_uuid.depend_on_model('resources.ResourceRequest')
+    ajax_schedule_get_uuid.depend_on_model('cal.Event')
+    ajax_schedule_get_uuid.depend_on_model('program.ClassSection')
+    ajax_schedule_get_uuid.depend_on_model('program.ClassSubject')
+    ajax_schedule_get_uuid.depend_on_model('users.UserAvailability')
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
@@ -466,28 +464,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
         response = HttpResponse(content_type="application/json")
         simplejson.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model(lambda: Event)
-    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassSection)
-    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassSubject)
-    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassCategories)
-    ajax_lunch_timeslots_cached.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
+    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
+    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
+    ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     
     @aux_call
     @needs_admin
     def ajax_lunch_timeslots(self, request, tl, one, two, module, extra, prog):
         return self.ajax_lunch_timeslots_cached(prog)
         
-    @aux_call
-    @needs_admin
-    def securityschedule(self, request, tl, one, two, module, extra, prog):
-        """ Display a list of classes (by classroom) for each timeblock in a program """
-        events = Event.objects.filter(program=prog).order_by('start')
-        events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
-
-        context = { 'events': events_ctxt }
-
-        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
-            
     @aux_call
     @needs_admin
     def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):

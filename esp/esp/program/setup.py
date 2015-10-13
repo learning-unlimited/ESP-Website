@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.datatree.models import *
 from esp.users.models import ESPUser, Permission
 from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController

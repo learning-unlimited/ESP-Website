@@ -220,8 +220,8 @@ INSTALLED_APPS = (
     'esp.cache_loader',
     'esp.tagdict',
     'esp.seltests',
-    'esp.dataviews',
     'esp.themes',
+    'esp.varnish',
     'django_extensions',
     'reversion',
     'south',
@@ -232,10 +232,6 @@ INSTALLED_APPS = (
     'django_nose',
     'esp.formstack',
     'esp.application',
-
-    # TODO(jmoldow): Remove after stable release, after last migration to
-    # remove tables has been run.
-    'esp.shortterm',
 )
 
 import os
@@ -260,6 +256,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.preload_images',
                                'esp.context_processors.email_settings',
                                'esp.context_processors.program',
+                               'esp.context_processors.schoolyear',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',

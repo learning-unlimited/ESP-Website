@@ -44,7 +44,6 @@ from django.db.models.query import Q
 from django.http import Http404, HttpResponse
 
 from esp.cal.models import Event
-from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
@@ -56,7 +55,8 @@ from esp.tagdict.models import Tag
 from esp.users.models import UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import Transfer
 
 from decimal import Decimal
 
@@ -102,12 +102,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
         return {'rooms': classrooms_dicts}
-    rooms.method.cached_function.depend_on_model(lambda: Resource)
+    rooms.method.cached_function.depend_on_model('resources.Resource')
 
     @aux_call
     @json_response()
@@ -137,12 +137,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
-        #   Convert comma-separated timeslot IDs to lists
+        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT array_agg(resources_resource.event_id) FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         for i in range(len(data)):
-            if data[i]['timeslots']:
-                data[i]['timeslots'] = [int(x) for x in data[i]['timeslots'].strip().split(',')]
-            else:
+            if not data[i]['timeslots']:
                 data[i]['timeslots'] = []
         return {'schedule_assignments': list(data)}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -365,10 +362,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog):
         if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
- 
+        else:
+            # TODO: determine if anything still relies on the legacy format.
+            # merge the legacy format with the current format, just in case
+            sections = self.lottery_preferences_usepriority(request, prog)['sections']
+            sections_legacy = self.lottery_preferences_legacy(request, prog)['sections']
+            sections_merged = []
+            for item, item_legacy in zip(sections, sections_legacy):
+                assert item['id'] == item_legacy['id']
+                item_merged = dict(item_legacy.items() + item.items())
+                sections_merged.append(item_merged)
+            return {'sections': sections_merged}
+
+    def lottery_preferences_legacy(self, request, prog):
+        # DEPRECATED: see comments in lottery_preferences method
         sections = list(prog.sections().values('id'))
         sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
         sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
@@ -595,7 +605,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
         
         return {'message_requests': data}
-    message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()
@@ -608,15 +618,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         vitals = {'id': 'vitals'}
 
         class_num_list = []
-        class_num_list.append(("Total # of Classes", len(classes)))
-        class_num_list.append(("Total # of Class Sections", len(prog.sections().select_related())))
-        class_num_list.append(("Total # of Lunch Classes", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", len(classes.filter(status=0))))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
+        class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Class Sections", prog.sections().select_related().distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category = "Lunch").filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=0).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=-10).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=-20).distinct().count()))
         for ft in ClassFlagType.get_flag_types(prog):
-            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).count()))
+            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).distinct().count()))
         vitals['classnum'] = class_num_list
 
         #   Display pretty labels for teacher and student numbers
@@ -632,9 +642,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for key in teachers.keys():
             if key in teacher_labels_dict:
                 vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
-len(teachers[key])))
+teachers[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['teachernum'].append((key, len(teachers[key])))
+                vitals['teachernum'].append((key, teachers[key].filter(is_active = True).distinct().count()))
                 
         student_labels_dict = {}
         for module in prog.getModules():
@@ -646,9 +656,9 @@ len(teachers[key])))
         students = prog.students()
         for key in students.keys():
             if key in student_labels_dict:
-                vitals['studentnum'].append((student_labels_dict[key], len(students[key])))
+                vitals['studentnum'].append((student_labels_dict[key], students[key].filter(is_active = True).distinct().count()))
             else:
-                vitals['studentnum'].append((key, len(students[key])))
+                vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
@@ -679,7 +689,9 @@ len(teachers[key])))
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
         curclasses = ClassSection.prefetch_catalog_data(
-            ClassSection.objects.filter(parent_class__parent_program = prog))
+            ClassSection.objects
+            .filter(parent_class__parent_program=prog)
+            .select_related('parent_class', 'parent_class__category'))
 
         ## Is it really faster to do this logic in Python?
         ## It'd be even faster to just write a raw SQL query to do it.
@@ -735,7 +747,9 @@ len(teachers[key])))
         for g in grades:
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
+            grade_students = filter(
+                lambda x: x.getGrade(prog, assume_student=True)==g,
+                students['enrolled'])
             grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
         dictOut["stats"].append({"id": "grades", "data": grades_annotated})
 
@@ -762,6 +776,15 @@ len(teachers[key])))
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
+        #   Add accounting stats
+        pac = ProgramAccountingController(prog)
+        (num_payments, total_payment) = pac.payments_summary()
+        accounting_data = {
+            'num_payments': num_payments,
+            'total_payments': total_payment,
+        }
+        dictOut["stats"].append({"id": "accounting", "data": accounting_data})
+    
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})

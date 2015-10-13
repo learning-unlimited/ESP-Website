@@ -31,8 +31,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from collections import OrderedDict
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
@@ -43,7 +44,6 @@ from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting_core.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
@@ -90,23 +90,36 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for i in pac.get_lineitemtypes(optional_only=True):
-            student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
+        for line_item_type in pac.get_lineitemtypes(optional_only=True):
+            student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
+            for option in line_item_type.options:
+                (option_id, option_amount, option_description) = option
+                key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
+                student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
         return student_desc
 
     def students(self, QObject = False):
         """ Return the useful lists of students for the Extra Costs module. """
 
-        student_lists = {}
+        student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
         
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
-                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(transfer__line_item = i))
+                students = pac.all_students_Q(lineitemtype_id=i.id)
+                student_lists['extracosts_%d' % i.id] = students
             else:
-                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(transfer__line_item = i).distinct()
+                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                student_lists['extracosts_%d' % i.id] = students
+            for option in i.options:
+                key = 'extracosts_%d_%d' % (i.id, option[0])
+                filter_qobject = Q(transfer__option=option[0])
+                if QObject:
+                    student_lists[key] = students & filter_qobject
+                else:
+                    student_lists[key] = students.filter(filter_qobject).distinct()
 
         return student_lists
 

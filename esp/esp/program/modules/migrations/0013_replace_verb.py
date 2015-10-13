@@ -5,79 +5,20 @@ from south.v2 import SchemaMigration
 from django.db import models
 from esp.program.modules.module_ext import StudentClassRegModuleInfo
 from esp.program.models import RegistrationType
-from esp.datatree.models import GetNode, DataTree
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        #   Save the original verb names
-        original_verb_len = len('V/Flags/Registration/')
-        ## MIT-specific fix:  Make sure all SCRMI's actually have regg verbs
-
-        try:
-            default_verb = GetNode("V/Flags/Registration/Enrolled")
-        except DataTree.DoesNotExist:
-            #   Insufficient tree information; use null
-            default_verb = DataTree()
-
-        #	Shorthand for StudentClassRegModuleInfo model from frozen ORM
-        scrmi_model = orm['modules.StudentClassRegModuleInfo']
-
-        verb_map = {}
-        name_map = {}
-        for item in scrmi_model.objects.all().values_list('id', 'signup_verb_id'):
-            verb_map[item[0]] = item[1] if item[1] else default_verb.id
-        for key, val in verb_map.iteritems():
-            name_map[key] = DataTree.objects.get(id=val).get_uri()[original_verb_len:]
-
-        #   Delete the verbs (need to allow null values)
-        db.start_transaction()
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True))
-        for item in scrmi_model.objects.all():
-            item.signup_verb = None
-            item.save()
-        db.commit_transaction()
         
-        #   Changing field 'StudentClassRegModuleInfo.signup_verb'
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.RegistrationType'], null=True))
-        db.start_transaction()
-        #   Change verb IDs to RegistrationTypes
-        for item in scrmi_model.objects.all():
-            item.signup_verb = RegistrationType.get_map(include=[name_map[item.id]], category='student')[name_map[item.id]]
-            item.save()
-        db.commit_transaction()
         
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.RegistrationType']))
 
     def backwards(self, orm):
-
-        #	Shorthand for StudentClassRegModuleInfo model from frozen ORM
-        scrmi_model = orm['modules.StudentClassRegModuleInfo']
-
-        #   Save the verb names
-        verb_map = {}
-        name_map = {}
-        for item in scrmi_model.objects.all().values_list('id', 'signup_verb_id'):
-            verb_map[item[0]] = item[1]
-        for id in verb_map:
-            name_map[id] = RegistrationType.objects.get(id=verb_map[id]).name
-
-        #   Delete the verbs (need to allow null values)
-        db.start_transaction()
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.RegistrationType'], null=True))
-        for item in scrmi_model.objects.all():
-            item.signup_verb = None
-            item.save()
-        db.commit_transaction()
 
-        #   Changing field 'StudentClassRegModuleInfo.signup_verb'
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True))
-        db.start_transaction()
-        #   Change verb IDs back to DataTrees
-        for item in scrmi_model.objects.all():
-            item.signup_verb_id = DataTree.get_by_uri('V/Flags/Registration/%s' % name_map[item.id], create=True).id
-            item.save()
-        db.commit_transaction()
             
         db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree']))
 

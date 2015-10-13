@@ -5,7 +5,7 @@ from south.v2 import DataMigration
 from django.db import models
 from django.core.exceptions import MultipleObjectsReturned
 from django.contrib.contenttypes.models import ContentType
-from esp.program.models import Program, ClassSubject, ClassSection
+from esp.program.models import ClassSubject, ClassSection
 from esp.survey.models import Survey, Question, Answer
 
 class Migration(DataMigration):
@@ -33,9 +33,9 @@ class Migration(DataMigration):
 
         #   Find answers associated with programs
         program_ct = ContentType.objects.get(app_label='program', model='program')
-        for program in Program.objects.all():
+        for program in orm['program.Program'].objects.all():
             orm.Answer.objects.filter(anchor=program.anchor).update(object_id=program.id, content_type=program_ct)
-        print 'Updated %d programs' % Program.objects.all().count()
+        print 'Updated %d programs' % orm['program.Program'].objects.all().count()
         
         #   Find answers associated with class subjects
         subject_ct = ContentType.objects.get(app_label='program', model='classsubject')
