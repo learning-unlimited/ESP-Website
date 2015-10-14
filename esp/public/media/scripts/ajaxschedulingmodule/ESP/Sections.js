@@ -442,8 +442,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 this.matrix.messagePanel.addMessage("Error: " + msg);
                 console.log(msg);
             }.bind(this));
-	    this.unselectSection();
-	}
+            this.unselectSection();
+        }
 
         // update cells in case we switched the locked flag
         var assignment = this.scheduleAssignments[section.id];
