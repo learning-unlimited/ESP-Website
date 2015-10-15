@@ -158,7 +158,7 @@ This module should be enabled if your program involves students picking and choo
 * Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
 * Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
 * Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the QSD area on the catalog if you would like students to see their schedule while doing this. 
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
 * Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
 * Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
 * Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
@@ -207,8 +207,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key donation_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 The module, when enabled, is available at the url
 /learn/<program>/<instance>/donation. It will also show up as an item in the
@@ -542,8 +542,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key stripe_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 Credit Card Viewer
 ------------------
