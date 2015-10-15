@@ -7,4 +7,4 @@ sudo apt-get install -y python-software-properties
 sudo add-apt-repository -y ppa:chris-lea/node.js
 sudo apt-get update
 sudo apt-get install -y nodejs
-sudo npm install -g less@1.3.1
+sudo -H npm install -g less@1.3.1
