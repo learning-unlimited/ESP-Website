@@ -42,7 +42,7 @@ from esp.resources.models import ResourceType, Location
 # New resources forms
 
 
-class LocationFormSet(modelformset_factory(Location)):
+class LocationFormSet(modelformset_factory(Location, exclude=())):
     def __init__(self, *args, **kwargs):
         super(LocationFormSet, self).__init__(*args, **kwargs)
         self.queryset = Location.objects.order_by('name')
