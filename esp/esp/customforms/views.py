@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 
 from django.db import transaction
@@ -137,13 +138,15 @@ def onSubmit(request):
 def get_or_create_altered_obj(model, initial_id, **attrs):
     if model.objects.filter(id=initial_id).exists():
         obj = model.objects.get(id=initial_id)
+        old_obj = deepcopy(obj)
         obj.__dict__.update(attrs)
         obj.save()
         created = False
     else:
         obj = model.objects.create(**attrs)
+        old_obj = None
         created = True
-    return (obj, created)
+    return (obj, old_obj, created)
     
 def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
@@ -166,18 +169,18 @@ def onModify(request):
             
             # Populating the old fields list
             dmh._getModelFieldList()
-            
-            # Check if only_fkey links have changed
-            if form.link_type != metadata['link_type']:
-                dmh.change_only_fkey(form.link_type, metadata['link_type'])
-            
+
             # NOT updating 'anonymous'
-            form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], 
-                link_id=int(metadata['link_id']), perms=metadata['perms'],
+            form.__dict__.update(title=metadata['title'], description=metadata['desc'], perms=metadata['perms'],
                 success_message=metadata['success_message'], success_url=metadata['success_url']
                 )
             
             form.save()
+
+            # Check if only_fkey links have changed
+            if form.link_type != metadata['link_type']:
+                dmh.change_only_fkey(form, form.link_type, metadata['link_type'], link_id)
+
             curr_keys = {'pages': [], 'sections': [], 'fields': []}
             old_pages = Page.objects.filter(form=form)
             old_sections = Section.objects.filter(page__in=old_pages)    
@@ -192,7 +195,7 @@ def onModify(request):
                                 )
                     curr_keys['sections'].append(curr_sect.id)
                     for field in section['fields']:
-                        (curr_field, field_created) = get_or_create_altered_obj(Field, field['data']['parent_id'], 
+                        (curr_field, old_field, field_created) = get_or_create_altered_obj(Field, field['data']['parent_id'],
                                                     form=form, section=curr_sect, field_type=field['data']['field_type'], 
                                                     seq=int(field['data']['seq']), label=field['data']['question_text'], 
                                                     help_text=field['data']['help_text'], required=field['data']['required']
@@ -203,7 +206,7 @@ def onModify(request):
                                 dmh.addLinkFieldColumn(curr_field)
                             else: dmh.addField(curr_field)
                         elif not cf_cache.isLinkField(curr_field.field_type):
-                            dmh.updateField(curr_field)
+                            dmh.updateField(curr_field, old_field)
                             
                         # Store a reference to the linked model so that we don't drop it from the table.
                         if cf_cache.isLinkField(curr_field.field_type):
@@ -321,7 +324,7 @@ def getExcelData(request, form_id):
     form = Form.objects.get(pk=form_id)
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
-    response = HttpResponse(wbk.getvalue(), mimetype="application/vnd.ms-excel")
+    response = HttpResponse(wbk.getvalue(), content_type="application/vnd.ms-excel")
     response['Content-Disposition']='attachment; filename=%s.xls' % form.title
     return response                   
         

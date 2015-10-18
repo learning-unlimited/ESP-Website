@@ -68,7 +68,7 @@ def _per_program_template_name(prog, templatename):
     new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
     return "/".join(new_tpath)
 
-def render_to_response(template, request, context, prog=None, auto_per_program_templates=True, mimetype=None, use_request_context=True):
+def render_to_response(template, request, context, prog=None, auto_per_program_templates=True, content_type=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
 
     if isinstance(template, (basestring,)):
@@ -91,10 +91,10 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
 
     if not use_request_context:
         context['request'] = request
-        response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
+        response = django.shortcuts.render_to_response(template, context, content_type=content_type)
         return response
     else:
-        return render_response(request, template, context, mimetype=mimetype)
+        return render_response(request, template, context, content_type=content_type)
 
 """ Override Django error views to provide some context info. """
 def error404(request, template_name='404.html'):

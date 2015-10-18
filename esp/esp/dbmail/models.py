@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import re
 import sys
 
 from django.db import models, transaction
@@ -52,9 +53,6 @@ from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
-
-from south.models import MigrationHistory
-
 
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
@@ -114,7 +112,16 @@ class ActionHandler(object):
             return getattr(obj, key)
         
         return obj.get_msg_vars(self._user, key)
-    
+
+
+_MESSAGE_CREATED_AT_HELP_TEXT = """
+    The time this object was created at. Useful for informational
+    purposes, and also as a safety mechanism for preventing un-sent
+    (because of previous bugs and failures), out-of-date messages from
+    being sent.
+"""
+_MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
+
 
 class MessageRequest(models.Model):
     """ An initial request to broadcast an e-mail message """
@@ -159,6 +166,14 @@ class MessageRequest(models.Model):
                     "should receive the message.")
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
+
+    # Use `default` instead of `auto_now_add`, so that the migration creating
+    # this field can set times in the past.
+    created_at = models.DateTimeField(
+        default=datetime.now, null=False, blank=False, editable=False,
+        auto_now_add=False, help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
+    )
+
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
@@ -317,6 +332,7 @@ class MessageRequest(models.Model):
                     'send_from': send_from,
                     'subject': subject,
                     'msgtext': msgtext,
+                    'created_at': self.created_at,
                     'defaults': {'sent': None},
                 }
 
@@ -355,6 +371,15 @@ class TextOfEmail(models.Model):
     send_from = models.CharField(max_length=1024) # Valid email address
     subject = models.TextField() # E-mail subject; plain text
     msgtext = models.TextField() # Message body; plain text
+
+    # Don't use `default` or `auto_now_add`. When a
+    # :class:`TextOfEmail` is created from a :class:`MessageRequest`, the
+    # `created_at` value should be copied over at creation time.
+    created_at = models.DateTimeField(
+        null=False, blank=False, editable=False, auto_now_add=False,
+        help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
+    )
+
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
     tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed

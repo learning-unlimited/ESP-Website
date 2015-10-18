@@ -7,7 +7,6 @@ CACHE_PREFIX = "ludev"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
 DEBUG = True
-DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 CACHE_DEBUG = False

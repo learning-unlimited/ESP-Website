@@ -37,15 +37,17 @@ then
     sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
 fi
 
-if [[ ! -z "$VIRTUAL_ENV" ]]
+# Ensure that the virtualenv exists and is activated.
+if [[ -z "$VIRTUAL_ENV" ]]
 then
-    pip install -r "$BASEDIR/esp/requirements.txt"
-else
     VIRTUALENV_DIR=${VIRTUALENV_DIR:-$BASEDIR/env}
     if [[ ! -f "$VIRTUALENV_DIR/bin/activate" ]]
     then
         $BASEDIR/esp/make_virtualenv.sh $VIRTUALENV_DIR
     fi
     source "$VIRTUALENV_DIR/bin/activate"
-    pip install -r "$BASEDIR/esp/requirements.txt"
 fi
+
+# Upgrade/install pip, setuptools, wheel, and application dependencies.
+pip install -U pip setuptools wheel
+pip install -U -r "$BASEDIR/esp/requirements.txt"

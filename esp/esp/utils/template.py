@@ -35,9 +35,8 @@ Learning Unlimited, Inc.
 
 """ A loader that looks for templates in the override model. """
 
-import django.template.loaders.cached
-
-from django.template.loader import BaseLoader, get_template_from_string
+from django.template.loaders import base
+from django.template.base import Template
 from django.template import TemplateDoesNotExist
 
 from esp.utils.models import TemplateOverride
@@ -50,7 +49,7 @@ DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 INVALID_CONTENTS = ''
 INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
-class Loader(BaseLoader):
+class Loader(base.Loader):
     is_usable = True
     
     def __init__(self, *args, **kwargs):
@@ -82,7 +81,7 @@ class Loader(BaseLoader):
         if hash_val == INVALID_HASH:
             raise TemplateDoesNotExist('Template override not found')
         if hash_val not in self.cache:
-            template = get_template_from_string(Loader.get_override_contents(template_name), None, template_name)
+            template = Template(Loader.get_override_contents(template_name), None, template_name)
             self.cache[hash_val] = (template, DEFAULT_ORIGIN)
         return self.cache[hash_val]
     load_template.is_usable = True
@@ -100,31 +99,3 @@ class Loader(BaseLoader):
         if source:
             return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
         raise TemplateDoesNotExist(template_name)
-
-class CachedLoader(django.template.loaders.cached.Loader):
-    """
-    Wrapper class that takes a list of template loaders as an argument and
-    attempts to load templates from them in order, caching the result.
-
-    A subclass of django.template.loaders.cached.Loader that implements the
-    unimplemented load_template_source method from the BaseLoader base class.
-    """
-    is_usable = True
-
-    def load_template_source(self, template_name, template_dirs=None):
-        """
-        Returns a tuple containing the source and origin for the given template
-        name. Iterates through its list of template loaders in order, calling
-        load_template_source() for each of them and returning the first valid
-        result. Raises TemplateDoesNotExist Exception if the template for the
-        given template name does not exist in any of the template loaders.
-
-        Overrides the unimplemented method from the BaseLoader base class.
-        """
-        for loader in self.loaders:
-            try:
-                return loader.load_template_source(template_name, template_dirs=template_dirs)
-            except TemplateDoesNotExist:
-                pass
-        raise TemplateDoesNotExist(template_name)
-

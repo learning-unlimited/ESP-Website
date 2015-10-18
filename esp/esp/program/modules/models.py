@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.handlers import *
+from esp.program.modules.handlers import * # Needed for app loading, don't delete
 from django.db.models import Q
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):

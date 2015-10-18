@@ -142,7 +142,15 @@ table.address_field tr{
 form.form-stacked label {
 	display: inline;
 	margin-left: 5px;
-}	
+}
+
+form.form-stacked label input[type=checkbox],
+form.form-stacked label input[type=radio] {
+    /* even in form-stacked, checkboxes and radio buttons should be
+       displayed on the same line as the input */
+    display: inline-block;
+    margin-bottom: 5px;
+}
 
 form.form_stacked fieldset{
     margin-left: 5px;

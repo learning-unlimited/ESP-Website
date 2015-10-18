@@ -302,7 +302,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = False
-DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
@@ -312,7 +311,6 @@ USE_PROFILER = False
 DEFAULT_CACHE_TIMEOUT = 120
 DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_ENGINE = 'esp.db.prepared'
-SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
