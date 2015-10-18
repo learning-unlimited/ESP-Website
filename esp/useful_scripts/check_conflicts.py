@@ -32,17 +32,6 @@ for s in sections:
     if expected_duration != actual_duration and actual_duration > 0:  # >0 to avoid unscheduled classes
         print str(s.emailcode()) + ' has expected duration ' + str(expected_duration) + ', actual duration ' + str(actual_duration)
             
-# The Events in the Resources for the section match the Events of the meeting_times for the section.
-print "Checking: The Events in the Resources for the section match the Events of the meeting_times for the section."
-for s in sections:
-    resource_events = [x.event for x in s.getResources()]
-    meeting_time_events = s.get_meeting_times()
-    if sorted(resource_events) != sorted(meeting_time_events):
-        print str(s.emailcode()) + ' has resource events: '
-        print resource_events
-        print str(s.emailcode()) + ' has meeting_time events: '
-        print meeting_time_events
-
 # No two class sections have the same teacher at the same time.
 print "Checking: No two class sections have the same teacher at the same time."
 for t in teachers:
@@ -65,6 +54,7 @@ sectionlist = list(sections)   # I don't trust the QuerySet to iterate in the sa
 numsections = len(sectionlist)
 count=0
 for i in range(0,numsections):
+    # TODO: update a la the consistency check
     s1 = sectionlist[i]
     s1_used_resources = set(s1.getResources())
     if len(s1_used_resources) == 0:

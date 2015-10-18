@@ -286,8 +286,7 @@ class Resource(models.Model):
         if self.res_group_id is None:
             return Resource.objects.none()
         else:
-            return self.res_group.resource_set.exclude(
-                id=self.id, res_type__name='Classroom')
+            return self.res_group.resource_set.exclude(id=self.id)
 
     def assign_to_section(self, section):
         if self.is_available():
@@ -299,7 +298,7 @@ class Resource(models.Model):
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
         
     def assignments(self):
-        # TODO: update this
+        # TODO: remove after old resource forms and schedule_sequence are removed
         return ResourceAssignment.objects.filter(
             resource__res_group__resource=self)
     

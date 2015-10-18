@@ -602,6 +602,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return timeslot.available_locations()
     
     def collapsed_dict(self, resources):
+        # TODO: update this and callers
         result = {}
         for c in resources:
             if c.name not in result:

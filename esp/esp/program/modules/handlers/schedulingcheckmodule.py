@@ -218,10 +218,7 @@ class SchedulingCheckRunner:
           problem_classes = []
           for s in self._all_class_sections():
                mt =  s.get_meeting_times()
-               rooms = s.getResources()
-               if(len(rooms) != ceil(s.duration)):
-                    problem_classes.append(s)
-               elif(len(rooms) != len(mt)):
+               if(len(mt) != ceil(s.duration)):
                     problem_classes.append(s)
           return self.formatter.format_list(problem_classes)
 
@@ -250,7 +247,7 @@ class SchedulingCheckRunner:
          output = []
          sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p)
          for sec in sections:
-             if sec.get_meeting_times() or sec.getResources():
+             if sec.get_meeting_times() or sec.locations.all():
                  output.append(sec)
          return self.formatter.format_list(output)
 

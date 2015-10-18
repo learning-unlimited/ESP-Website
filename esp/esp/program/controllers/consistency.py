@@ -74,6 +74,7 @@ class ConsistencyChecker(object):
         return result
     
     def check_resource_conflicts(self):
+        # TODO: check locations
         result = []
         sectionlist = list(self.sections)   # I don't trust the QuerySet to iterate in the same order for both loops.
         numsections = len(sectionlist)

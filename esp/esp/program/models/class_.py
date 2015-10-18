@@ -482,6 +482,7 @@ class ClassSection(models.Model):
         self.getResourceRequests().delete()
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
+        self.locations.clear()
         self.checklist_progress.clear()
 
         super(ClassSection, self).delete()
@@ -492,31 +493,25 @@ class ClassSection(models.Model):
     checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
-        # TODO: check callers of this to make sure they don't expect classrooms
         return self.resourceassignment_set.all()
 
     def getResources(self):
-        # TODO: check callers of this to make sure they don't expect classrooms
         assignment_list = self.getResourceAssignments()
         return [a.resource for a in assignment_list]
     
     def getResourceRequests(self):
-        # TODO: check callers of this to make sure they don't expect classrooms
         return ResourceRequest.objects.filter(target=self)
     
     def clearResourceRequests(self):
-        # TODO: check callers of this to make sure they don't expect classrooms
         for rr in self.getResourceRequests():
             rr.delete()
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
-
-        # TODO: simplify, since classrooms won't be in
-        # resources/resourceassignments
-        cls_restype = ResourceType.get_or_create('Classroom')
-        ta_restype = ResourceType.get_or_create('Teacher Availability')
-        return self.getResourceAssignments().filter(target=self).exclude(resource__res_type=cls_restype).exclude(resource__res_type=ta_restype)
+        return (self.getResourceAssignments()
+                .filter(target=self)
+                .exclude(resource__res_type__name='Teacher Availability'))
+                                                              
     
     def prettyrooms(self):
         """ Return the pretty name of the rooms. """
@@ -774,6 +769,8 @@ class ClassSection(models.Model):
         return available_rooms
     
     def clearRooms(self):
+        # TODO(benkraft): after locations is merged, consider removing and
+        # inlining this.
         self.locations.clear()
             
     def clearFloatingResources(self):
@@ -1643,7 +1640,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return True
     
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
-        # TODO: check that this won't expect classrooms
         return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
