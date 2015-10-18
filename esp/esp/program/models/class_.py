@@ -688,7 +688,7 @@ class ClassSection(models.Model):
         unavail_times = self.meeting_times.exclude(available_locations=room)
         if unavail_times.exists():
             status = False
-            errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            errors.append( u'Room %s does not exist at the times requested by %s.' % (room.name, self.emailcode()) )
 
         meeting_times = self.meeting_times.all()
 
