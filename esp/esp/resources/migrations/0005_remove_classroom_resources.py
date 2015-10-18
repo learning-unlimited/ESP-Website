@@ -17,6 +17,9 @@ def remove_classrooms(apps, schema_editor):
     Resource.objects.filter(res_type__name='Classroom').delete()
 
 
+# TODO: remove ResourceType Classroom too?
+
+
 class Migration(migrations.Migration):
 
     dependencies = [

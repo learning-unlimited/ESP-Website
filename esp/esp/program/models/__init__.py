@@ -595,8 +595,8 @@ class Program(models.Model, CustomFormsLinkModel):
                                      program=self).exists()
     
     def getClassrooms(self, timeslot=None):
-        # TODO: maybe remove, or remove timeslot != None
-        if timeslot is not None:
+        # TODO(benkraft): remove and inline this after locations are merged.
+        if timeslot is None:
             return Location.objects.filter(event__program=self)
         else:
             return timeslot.available_locations()
