@@ -222,7 +222,7 @@ def load_db_dump(dbuser, dbfile):
 def recreate_encrypted_partition():
     """ Blow away any previous encrypted partition and create a new one. """
 
-    with use_container():
+    with use_vagrant():
         create_encrypted_partition()
 
 @task
