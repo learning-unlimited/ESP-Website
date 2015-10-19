@@ -184,16 +184,6 @@ class Event(models.Model):
     def pretty_start_time(self):
         return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
     
-    def num_classes_assigned(self):
-        from esp.resources.models import Location
-        return Location.objects.filter(
-            classsection__meeting_times=self).count()
-    
-    def num_classes(self):
-        #   Return the number of classes assigned to this time slot.
-        from esp.program.models import ClassSection
-        return ClassSection.objects.filter(meeting_times=self).count()
-    
     def parent_program(self):
         return self.program
     
