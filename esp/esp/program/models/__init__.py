@@ -721,6 +721,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def getResourceTypes(self, include_global=None):
+        """Excludes classrooms."""
         if include_global is None:
             include_global = Tag.getTag('allow_global_restypes')
 
