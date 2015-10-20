@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.cache           import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -111,7 +111,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Add this user to the waitlist """
         self.request = request
 
-        if not self.program.isFull():
+        if prog.user_can_join(request.user):
             raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
 
         waitlist = Record.objects.filter(event="waitlist",
@@ -136,6 +136,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     
     @meets_deadline("/Confirm")
+    @meets_cap
     def confirmreg_new(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
@@ -166,7 +167,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
-        if prog.isFull() and not user.canRegToFullProgram(prog) and not self.program.isConfirmed(user):
+        if not prog.user_can_join(user):
             raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
 
         modules = prog.getModules(request.user, tl)
@@ -246,6 +247,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     @meets_deadline('/MainPage')
+    @meets_cap
     def studentreg(self, request, tl, one, two, module, extra, prog):
         """ Display a student reg page """
         self.request = request

@@ -290,6 +290,11 @@ class LotteryAssignmentController(object):
         
         #   Compute number of spaces - exit if section or program is already full.  Otherwise, set num_spaces to the number of students we can add without overfilling the section or program.
         num_spaces = self.section_capacities[si] - numpy.sum(self.student_sections[:, si])
+        # TODO(benkraft): This doesn't support program_size_by_grade.  For
+        # Stanford's use case, they don't need it -- they want the cap to
+        # apply to entering the lottery too.  But we should either decide that
+        # that's the Right Way and remove the program size logic from here
+        # entirely, or implement it here too.
         if self.program.program_size_max:
             program_spaces_remaining = self.program.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
             if program_spaces_remaining == 0:

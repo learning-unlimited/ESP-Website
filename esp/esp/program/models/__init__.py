@@ -536,26 +536,121 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return ESPUser.objects.filter(union).distinct()
 
-    @cache_function
-    def isFull(self):
-        """ Can this program accept any more students? """
+    # Don't bother caching this.  Everything it calls is cached to the extent
+    # possible, with different dependencies.
+    def user_can_join(self, user):
+        """Can this user join this program?
 
-        # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
-        if self.program_size_max is None or self.program_size_max == 0:
-            return False
+        The program cap may be set by either making Program.program_size_max
+        nonzero or by the tag "program_size_by_grade" (which should be a json
+        object of grade -> cap).  The latter overrides the former.  If there is
+        a (possibly per-grade) cap, and the program is at or above that cap, a
+        user can only join a program if they are already registered for it, or
+        if they have the OverrideFull permission.
 
-        students_dict = self.students(QObjects = True)
-        if students_dict.has_key('classreg'):
-            students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
+        The tag's value, if set, should be a json object.  The keys should be
+        grades (as strings, e.g. "9") or inclusive ranges of grades (separated
+        by hyphens, e.g.  "7-9"), and the values should be caps for that range.
+        Each cap will be checked, so having overlapping caps is possible,
+        although it may hurt performance.
+        """
+        # TODO(benkraft): maybe this shouldn't be a Tag.  For now it basically
+        # has to be because I don't want to deal with migrations until after
+        # we're on django 1.8.
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
+        if size_tag:
+            return self._user_can_join_by_grade(user)
+        elif self.program_size_max:
+            return self._user_can_join_at_all(user)
         else:
-            students_count = ESPUser.objects.filter(record__event="reg_confirmed",record__program=self).distinct().count()
+            return True
 
-        isfull = ( students_count >= self.program_size_max )
+    # Unfortunately, the following two functions depends on approximately
+    # everything in sight, including every student registration for the program
+    # and for the grade-based version every registration profile for the
+    # program, so they're probably not worth caching.
+    def _students_in_program_in_grades(self, grades):
+        """The number of students in the program in a set of grades
 
-        return isfull
-    isFull.depend_on_cache('program.ClassSection.num_students', lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
-    isFull.depend_on_row('program.Program', lambda prog: {'self': prog})
-    isFull.depend_on_row('users.Record', lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
+        Used by the program cap logic.
+        """
+        # Due to how RegistrationProfiles work, this is ~impossible to do
+        # efficiently.  getGrade is cached, though, and probably most of those
+        # caches will be warm, so it'll probably be okay.  Maybe.  Hopefully.
+        return len([student for student in self.students()['classreg']
+                    if student.getGrade(self, assume_student=True) in grades])
+
+    def _students_in_program(self):
+        """The number of students in the program.
+
+        Used by the program cap logic.
+        """
+        return self.students()['classreg'].count()
+
+    @cache_function
+    def _student_is_in_program(self, user):
+        """Return whether the student is in the program."""
+        students = self.students()['classreg']
+        return students.filter(id=user.id).exists()
+    _student_is_in_program.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    _student_is_in_program.depend_on_row('program.ClassSection', lambda cls: {'self': cls.parent_class.parent_program})
+    _student_is_in_program.depend_on_row('program.StudentRegistration', lambda sr: {'user': sr.user})
+    _student_is_in_program.depend_on_row('program.StudentSubjectInterest', lambda ssi: {'user': ssi.user})
+    _student_is_in_program.get_or_create_token(('self',))
+    _student_is_in_program.get_or_create_token(('user',))
+
+    def _user_can_join_by_grade(self, user):
+        """Helper function for user_can_join, when using program_size_by_grade.
+
+        This may be very slow if the user is not in the program; unfortunately
+        there's not much we can do about it.
+        """
+        # Check these first because computing the number of students in the
+        # program is slow and uncacheable.
+        if user.canRegToFullProgram(self):
+            return True
+        if self._student_is_in_program(user):
+            return True
+        caps = self._grade_caps()
+        grade = user.getGrade(self, assume_student=True)
+        for grades, cap in caps:
+            if (grade in grades and
+                    self._students_in_program_in_grades(grades) >= cap):
+                return False
+        return True
+
+    @cache_function
+    def _grade_caps(self):
+        """Parses the program_size_by_grade Tag.
+
+        See user_can_join for the tag syntax.
+
+        Returns a dict with tuples of valid grades as keys, and caps as values.
+        """
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
+        size_dict = {}
+        for k, v in json.loads(size_tag).iteritems():
+            if '-' in k:
+                low, high = map(int, k.split('-'))
+                size_dict[tuple(xrange(low, high + 1))] = v
+            else:
+                size_dict[(int(k),)] = v
+        return size_dict
+    _grade_caps.depend_on_model('tagdict.Tag')
+
+    def _user_can_join_at_all(self, user):
+        """Helper function for user_can_join, when using program_size_max.
+
+        This may be very slow if the user is not in the program; unfortunately
+        there's not much we can do about it.
+        """
+        # Check these first because computing the number of students in the
+        # program is slow and uncacheable.
+        if user.canRegToFullProgram(self):
+            return True
+        if self._student_is_in_program(user):
+            return True
+        return self._students_in_program() < self.program_size_max
 
     @cache_function
     def open_class_registration(self):

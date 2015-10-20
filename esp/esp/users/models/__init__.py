@@ -697,7 +697,7 @@ class ESPUser(User, AnonymousUser):
         return clsObj.students().filter(id=self.id).exists()
 
     def canRegToFullProgram(self, program):
-        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
+        return Permission.user_has_perm(self, 'OverrideFull', program)
 
     @cache_function
     def appliedFinancialAid(self, program):
@@ -2282,10 +2282,12 @@ class Permission(ExpirableModel):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
+        # The following two are outside of "Student/" so that they aren't
+        # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
+        ("OverrideFull", "Register for a full program"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
-            ("Student/OverrideFull", "Register for a full program"),
             ("Student/All", "All student deadlines"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
