@@ -45,6 +45,7 @@ from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
+from esp.tagdict.models import Tag
 
 from django.conf import settings
 from django.db.models import Min
