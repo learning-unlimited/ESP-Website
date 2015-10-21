@@ -68,6 +68,16 @@ class LotteryAssignmentController(object):
         
 
         self.program = program
+
+        if Tag.getProgramTag('program_size_by_grade', self.program):
+            # TODO(benkraft): Consider implementing this.  Stanford's use case
+            # as of Fall 2015 (for which program_size_by_grade was written)
+            # doesn't need it, but we might want to implement it anyway, or
+            # remove the program size logic from the lottery entirely.
+            print ("WARNING: The lottery doesn't support the "
+                   "program_size_by_grade Tag yet.  It will run based on "
+                   "`Program.program_size_max`, which is %s." %
+                   self.program.program_size_max)
         students = self.program.students()
         if 'twophase_star_students' in students:
             # We can't do the join in SQL, because the query generated takes at least half an hour.  So do it in python.

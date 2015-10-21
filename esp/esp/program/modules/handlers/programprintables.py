@@ -919,17 +919,17 @@ Volunteer schedule for %s:
             t.initial_rooms = []
  
         # TODO: conditional should use Tag.getBooleanTag or somesuch
-        studentschedule_show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = classes_by_student[student.id]
 
-            if studentschedule_show_empty_blocks:
+            if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
-                times = list(timeslots)
+                times = timeslots[:]
                 for cls in classes:
                     index = 0
                     for t in cls.meeting_times.all():

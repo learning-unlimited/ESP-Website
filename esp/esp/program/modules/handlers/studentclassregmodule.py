@@ -45,7 +45,7 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.program.modules import module_ext
@@ -461,6 +461,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
+    @meets_cap
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
@@ -469,6 +470,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
+    @meets_cap
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
         if not request.is_ajax():
@@ -499,6 +501,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
+    @meets_cap
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
         from esp.cal.models import Event
