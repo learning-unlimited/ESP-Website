@@ -36,7 +36,7 @@ from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
 from esp.tagdict.models import Tag
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
-from esp.web.models import NavBarCategory
+from esp.web.models import NavBarCategory, default_navbarcategory
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -88,7 +88,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.url = 'test'
         qsd_rec_new.name = 'test'
         qsd_rec_new.author = self.admin_user
-        qsd_rec_new.nav_category = NavBarCategory.default()
+        qsd_rec_new.nav_category = default_navbarcategory()
         qsd_rec_new.content = ''
         qsd_rec_new.title = 'Test page'
         qsd_rec_new.description = ''

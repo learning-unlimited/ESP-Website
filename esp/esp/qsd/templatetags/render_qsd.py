@@ -1,11 +1,8 @@
 from django import template
 from django.shortcuts import render_to_response
-from django.core.cache import cache
-from esp.web.util.template import cache_inclusion_tag, DISABLED
+from esp.web.util.template import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
-from esp.qsd.models import qsd_cache_key, qsd_edit_id
 from esp.tagdict.models import Tag
-from urllib import quote
 
 register = template.Library()
 

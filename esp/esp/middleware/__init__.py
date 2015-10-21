@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.middleware.esperrormiddleware import *
-from esp.middleware.whitespacemiddleware import *
 from esp.middleware.fixiemiddleware import *
 from esp.middleware.espcachemiddleware import *
 from esp.middleware.prettyerroremail import *

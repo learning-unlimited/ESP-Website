@@ -297,7 +297,7 @@ class ListGenModule(ProgramModuleObj):
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
-                    mimetype=mimetype,
+                    content_type=mimetype,
                 )
             else:
                 context = {

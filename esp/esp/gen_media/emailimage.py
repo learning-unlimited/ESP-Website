@@ -65,7 +65,7 @@ class EmailImage(GenImageBase):
     def _generate_file(self):
         """ Generates the png file. """
 
-        import ImageFont, Image, ImageDraw, ImageFilter
+        from PIL import ImageFont, Image, ImageDraw, ImageFilter
 
         font_path = settings.MEDIA_ROOT + 'DroidSansMono.ttf'
         font = ImageFont.truetype(font_path, self.font_size)

@@ -40,7 +40,7 @@ import os.path
 from esp.middleware import ESPError
 
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 # Create your models here.
 
@@ -62,7 +62,7 @@ class Media(models.Model):
     #   Currently limited to be either a ClassSubject or Program.
     owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to={'model__in': ['classsubject', 'program']})
     owner_id = models.PositiveIntegerField(blank=True, null=True)
-    owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
+    owner = GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """

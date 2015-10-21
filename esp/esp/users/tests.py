@@ -9,6 +9,7 @@ from django.contrib.auth.models import Group
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -116,6 +117,20 @@ class ESPUserTest(TestCase):
             adminUser.delete()
         if (c2):
             studentUser.delete()
+
+    def test_lazy_user(self):
+        """Test that we can handle a SimpleLazyObject."""
+        u1 = User.objects.create(username='laziness_123',
+                                 last_login=datetime.datetime.now())
+        u2 = ESPUser(u1)
+        u3 = SimpleLazyObject(lambda: u1)
+        u4 = SimpleLazyObject(lambda: u2)
+        u5 = ESPUser(u2)
+        u6 = ESPUser(u3)
+        u7 = ESPUser(u4)
+        for u in [u1, u2, u3, u4, u5, u6, u7]:
+            self.assertEqual(u.username, 'laziness_123')
+            self.assertIsNotNone(u.id)
 
 
 

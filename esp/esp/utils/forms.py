@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.forms.forms import Form, Field, BoundField
 from django import forms
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.utils.html import escape, mark_safe
 from django.template import loader
 from django.core.mail import send_mail

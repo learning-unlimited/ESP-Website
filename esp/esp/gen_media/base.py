@@ -108,7 +108,7 @@ class GenImageBase(GenMediaBase):
     @property
     def img(self):
         """ An image tag, ready to be inserted into HTML. """
-        from django.forms.util import flatatt
+        from django.forms.utils import flatatt
         from django.utils.safestring import mark_safe
         return mark_safe('<img src="%s"%s />' \
                 % (self.url, flatatt(self._attrs())))

@@ -49,7 +49,7 @@ from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
-from django.forms.util           import ErrorDict
+from django.forms.utils          import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
