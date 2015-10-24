@@ -613,7 +613,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         caps = self._grade_caps()
         grade = user.getGrade(self, assume_student=True)
-        for grades, cap in caps:
+        for grades, cap in caps.iteritems():
             if (grade in grades and
                     self._students_in_program_in_grades(grades) >= cap):
                 return False
