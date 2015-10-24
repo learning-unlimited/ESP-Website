@@ -10,7 +10,7 @@ from fabric.operations import get
 from fabric.state import default_channel
 
 import fabtools
-import fabtools.vagrant
+from fabtools.vagrant import vagrant_settings
 
 from contextlib import contextmanager
 import posixpath
@@ -57,17 +57,6 @@ def remote_pipe(local_command, remote_command, buf_size=1024*1024):
     if local_ret != 0 or remote_ret != 0:
         raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
 
-def use_vagrant():
-    vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ', 1)[1].strip("\"")
-    host_str = '127.0.0.1:2222'
-    config_dict = {
-        'user': REMOTE_USER,
-        'hosts': [host_str],
-        'host_string': host_str,
-        'key_filename': vagrant_key_file,
-    }
-    return settings(**config_dict)
-
 @contextmanager
 def esp_env():
     with cd('%s/esp' % REMOTE_PROJECT_DIR):
@@ -84,7 +73,7 @@ def create_settings():
         'db_password': gen_password(8),
         'secret_key': gen_password(64),
     }
-    
+
     #   Initialize the database as specified in the settings
     fabtools.require.postgres.server()
     fabtools.require.postgres.user(context['db_user'], context['db_password'])
@@ -163,7 +152,7 @@ def ensure_encrypted_partition():
 def create_encrypted_partition():
     print 'Now creating encrypted partition for data storage.'
     print 'Please make up a passphrase and enter it when prompted.'
-    
+
     #   Get cryptsetup and create the encrypted filesystem
     sudo('apt-get install -y -qq cryptsetup')
     unmount_encrypted_partition()  # unmount in case it already exists
@@ -172,7 +161,7 @@ def create_encrypted_partition():
     sudo('mkfs.ext4 /dev/mapper/encrypted')
     sudo('mkdir -p /mnt/encrypted')
     sudo('mount /dev/mapper/encrypted /mnt/encrypted')
-    
+
     #   Get postgres and create the tablespace on that filesystem
     fabtools.require.postgres.server()
     sudo('chown -R postgres /mnt/encrypted')
@@ -181,10 +170,10 @@ def create_encrypted_partition():
 def load_encrypted_database(db_owner, db_filename):
     """ Load an encrypted database dump (.sql.gz.gpg) into the VM.
         Expects to receive the Postgres username of the role
-        that "owns" the objects in the database (typically 
+        that "owns" the objects in the database (typically
         this matches the chapter's site directory name, or 'esp'
         in the case of MIT).    """
-    
+
     #   Generate a new local_settings.py file with this database owner
     context = {
         'db_user': db_owner,
@@ -199,7 +188,7 @@ def load_encrypted_database(db_owner, db_filename):
     run('sudo -u postgres psql -c "DROP ROLE IF EXISTS %s"' % (db_owner,))
     run('sudo -u postgres psql -c "CREATE ROLE %s LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
     run('sudo -u postgres psql -c "CREATE DATABASE devsite_django OWNER %s TABLESPACE encrypted"' % (db_owner,))
-    
+
     #   Decrypt the DB dump (if needed) and send to the VM's Postgres install.
     #   This sends the SQL commands to the VM via the remote_pipe function.
     if db_filename.endswith('.gpg'):
@@ -214,7 +203,7 @@ def load_db_dump(dbuser, dbfile):
     """ Create an encrypted partition on the VM and load a database dump
         using that encrypted storage.   """
 
-    with use_vagrant():
+    with vagrant_settings():
         ensure_encrypted_partition()
         load_encrypted_database(dbuser, dbfile)
 
@@ -222,7 +211,7 @@ def load_db_dump(dbuser, dbfile):
 def recreate_encrypted_partition():
     """ Blow away any previous encrypted partition and create a new one. """
 
-    with use_vagrant():
+    with vagrant_settings():
         create_encrypted_partition()
 
 @task
@@ -237,7 +226,7 @@ def vagrant_dev_setup(dbuser=None, dbfile=None):
         raise Exception('You must specify the PostgreSQL user that your database belongs to in the dbuser argument.')
     using_db_dump = (dbuser is not None and dbfile is not None)
 
-    with use_vagrant():
+    with vagrant_settings():
         if using_db_dump:
             load_db_dump(dbuser, dbfile)
         else:
@@ -249,20 +238,20 @@ def vagrant_dev_setup(dbuser=None, dbfile=None):
 @task
 def run_devserver():
     """ Run Django dev server on port 8000. """
-    with use_vagrant():
+    with vagrant_settings():
         with esp_env():
             sudo('python manage.py runserver 0.0.0.0:8000')
 
 @task
 def manage(cmd):
     """ Run a manage.py command """
-    with use_vagrant():
+    with vagrant_settings():
         with esp_env():
             sudo('python manage.py '+cmd)
 
 @task
 def update_deps():
-    with use_vagrant():
+    with vagrant_settings():
         with esp_env():
             sudo('python manage.py update_deps')
 
@@ -271,11 +260,11 @@ def open_db():
     """ Mounts the encrypted filesystem containing any loaded database
         dumps.  Should be executed after 'vagrant up' and before any
         other operations such as run_devserver. """
-    with use_vagrant():
+    with vagrant_settings():
         mount_encrypted_partition()
 
 @task
 def reload_apache():
     """ Reload apache2 server. """
-    with use_vagrant():
+    with vagrant_settings():
         sudo('service apache2 reload')
