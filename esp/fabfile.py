@@ -2,7 +2,10 @@
 ESP-Website dev server management via Fabric
 """
 
-from fabric.api import env, local, run, task, cd, prefix, sudo
+from fabric.api import *
+
+from fabtools.vagrant import vagrant
+
 from fabric.contrib import files
 from fabric.contrib import django as fabric_django
 from fabric.context_managers import settings
@@ -10,7 +13,6 @@ from fabric.operations import get
 from fabric.state import default_channel
 
 import fabtools
-from fabtools.vagrant import vagrant_settings
 
 from contextlib import contextmanager
 import posixpath
@@ -19,6 +21,16 @@ import random
 import getpass
 import subprocess
 import socket
+
+# Configure the Vagrant VM as the default target of our commands, so long as no
+# hosts were specified on the command line. Calling `vagrant()` is sort of like
+# writing `env.hosts = ['vagrant']`, but it handles the hostname and SSH config
+# properly.
+#
+# This means that run() and sudo() will execute on the Vagrant VM by default.
+#
+if not env.hosts:
+    vagrant()
 
 fabric_django.project('esp')
 
@@ -203,16 +215,14 @@ def load_db_dump(dbuser, dbfile):
     """ Create an encrypted partition on the VM and load a database dump
         using that encrypted storage.   """
 
-    with vagrant_settings():
-        ensure_encrypted_partition()
-        load_encrypted_database(dbuser, dbfile)
+    ensure_encrypted_partition()
+    load_encrypted_database(dbuser, dbfile)
 
 @task
 def recreate_encrypted_partition():
     """ Blow away any previous encrypted partition and create a new one. """
 
-    with vagrant_settings():
-        create_encrypted_partition()
+    create_encrypted_partition()
 
 @task
 def vagrant_dev_setup(dbuser=None, dbfile=None):
@@ -226,45 +236,39 @@ def vagrant_dev_setup(dbuser=None, dbfile=None):
         raise Exception('You must specify the PostgreSQL user that your database belongs to in the dbuser argument.')
     using_db_dump = (dbuser is not None and dbfile is not None)
 
-    with vagrant_settings():
-        if using_db_dump:
-            load_db_dump(dbuser, dbfile)
-        else:
-            create_settings()
-            initialize_db()
-        setup_apache()
-        link_media()
+    if using_db_dump:
+        load_db_dump(dbuser, dbfile)
+    else:
+        create_settings()
+        initialize_db()
+    setup_apache()
+    link_media()
 
 @task
 def run_devserver():
     """ Run Django dev server on port 8000. """
-    with vagrant_settings():
-        with esp_env():
-            sudo('python manage.py runserver 0.0.0.0:8000')
+    with esp_env():
+        sudo('python manage.py runserver 0.0.0.0:8000')
 
 @task
 def manage(cmd):
     """ Run a manage.py command """
-    with vagrant_settings():
-        with esp_env():
-            sudo('python manage.py '+cmd)
+    with esp_env():
+        sudo('python manage.py '+cmd)
 
 @task
 def update_deps():
-    with vagrant_settings():
-        with esp_env():
-            sudo('python manage.py update_deps')
+    with esp_env():
+        sudo('python manage.py update_deps')
 
 @task
 def open_db():
     """ Mounts the encrypted filesystem containing any loaded database
         dumps.  Should be executed after 'vagrant up' and before any
         other operations such as run_devserver. """
-    with vagrant_settings():
-        mount_encrypted_partition()
+    mount_encrypted_partition()
 
 @task
 def reload_apache():
     """ Reload apache2 server. """
-    with vagrant_settings():
-        sudo('service apache2 reload')
+    sudo('service apache2 reload')
