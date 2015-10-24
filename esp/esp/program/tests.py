@@ -41,6 +41,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
+from esp.tagdict.models import Tag
 
 from django.contrib.auth.models import Group
 from django.test.client import Client
@@ -814,6 +815,108 @@ class ProgramFrameworkTest(TestCase):
         commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
 
         self.new_prog = new_prog
+
+
+class ProgramCapTest(ProgramFrameworkTest):
+    """Test various forms of program cap."""
+    def setUp(self):
+        super(ProgramCapTest, self).setUp(num_students=20)
+        self.schedule_randomly()
+        # The students it creates will be in 10th grade.
+        self.add_user_profiles()
+
+        self.tenth_graders = self.students[:-10]
+        # Make some be in 11th grade
+        self.eleventh_graders = self.students[-10:-5]
+        for student in self.eleventh_graders:
+            student.set_grade(student.getGrade() + 1)
+        # Make some be in 9th grade
+        self.ninth_graders = self.students[-5:]
+        for student in self.ninth_graders:
+            student.set_grade(student.getGrade() - 1)
+
+    def test_cap_0(self):
+        self.program.program_size_max = 0
+        self.program.save()
+        for user in self.students:
+            # Assert that everyone can join the program.
+            self.assertTrue(self.program.user_can_join(user))
+
+    def test_cap_none(self):
+        self.program.program_size_max = None
+        self.program.save()
+        for user in self.students:
+            # Assert that everyone can join the program.
+            self.assertTrue(self.program.user_can_join(user))
+
+    def test_simple_cap(self):
+        enrolled, _ = RegistrationType.objects.get_or_create(
+            name='Enrolled', category='student')
+        self.program.program_size_max = 3
+        self.program.save()
+        for user in self.students[:3]:
+            # Assert that the first 3 users can join.
+            self.assertTrue(self.program.user_can_join(user))
+            # Join the program!
+            StudentRegistration.objects.create(
+                user=user, section=self.program.sections()[0],
+                relationship=enrolled)
+        for user in self.students[3:]:
+            # Assert that no more users may join, no matter their grade.
+            self.assertFalse(self.program.user_can_join(user))
+        for user in self.students[:3]:
+            # Assert that the first 3 users can still register (because they're
+            # already in the program)
+            self.assertTrue(self.program.user_can_join(user))
+        # Clean up
+        StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program).delete()
+
+    def test_grade_based_cap(self):
+        enrolled, _ = RegistrationType.objects.get_or_create(
+            name='Enrolled', category='student')
+        Tag.objects.create(key='program_size_by_grade',
+                           value='{"10": 5, "11-12": 2}',
+                           target=self.program)
+
+        for user in self.tenth_graders[:5]:
+            # Assert that the first 5 10th graders can join.
+            self.assertTrue(self.program.user_can_join(user))
+            # Join the program!
+            StudentRegistration.objects.create(
+                user=user, section=self.program.sections()[0],
+                relationship=enrolled)
+        for user in self.tenth_graders[5:]:
+            # Assert that no more 10th graders may join.
+            self.assertFalse(self.program.user_can_join(user))
+
+        for user in self.eleventh_graders[:2]:
+            # Assert that the first 2 11th graders can join.
+            self.assertTrue(self.program.user_can_join(user))
+            # Join the program!
+            StudentRegistration.objects.create(
+                user=user, section=self.program.sections()[0],
+                relationship=enrolled)
+        for user in self.eleventh_graders[2:]:
+            # Assert that no more 11th graders may join.
+            self.assertFalse(self.program.user_can_join(user))
+        for user in self.eleventh_graders[:2]:
+            # Assert that students who have already registered can still join.
+            self.assertTrue(self.program.user_can_join(user))
+
+        for user in self.ninth_graders:
+            # Assert that any number of 9th graders can join.
+            self.assertTrue(self.program.user_can_join(user))
+            # Join the program!
+            StudentRegistration.objects.create(
+                user=user, section=self.program.sections()[0],
+                relationship=enrolled)
+
+        # Clean up
+        StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program).delete()
+        Tag.objects.filter(key='program_size_by_grade').delete()
+
 
 def randomized_attrs(program):
     section_list = list(program.sections())
