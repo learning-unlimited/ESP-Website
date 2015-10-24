@@ -87,8 +87,6 @@ class FinancialAidAppModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
-    # I didn't set @meets_cap here, because I don't want a bug in that to be
-    # misinterpreted as "we are out of financial aid".
     def finaid(self,request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 from collections import OrderedDict
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
@@ -129,7 +129,6 @@ class StudentExtraCosts(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/ExtraCosts')
-    @meets_cap
     def extracosts(self,request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program
