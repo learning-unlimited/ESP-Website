@@ -30,7 +30,19 @@ import socket
 # This means that run() and sudo() will execute on the Vagrant VM by default.
 #
 if not env.hosts:
-    vagrant()
+    try:
+        vagrant()
+    except SystemExit:
+        print ""
+        print "***** "
+        print "***** Fabric encountered a fatal exception when loading the Vagrant configuration!"
+        print "***** Make sure that Vagrant is running:"
+        print "*****"
+        print "*****   $ vagrant status"
+        print "*****   $ vagrant up"
+        print "***** "
+
+        raise
 
 fabric_django.project('esp')
 
