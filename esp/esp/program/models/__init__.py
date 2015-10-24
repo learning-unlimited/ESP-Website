@@ -602,6 +602,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def _user_can_join_by_grade(self, user):
         """Helper function for user_can_join, when using program_size_by_grade.
 
+        Should be called only if the program_size_by_grade tag is set.
+
         This may be very slow if the user is not in the program; unfortunately
         there's not much we can do about it.
         """
@@ -625,9 +627,10 @@ class Program(models.Model, CustomFormsLinkModel):
 
         See user_can_join for the tag syntax.
 
-        Returns a dict with tuples of valid grades as keys, and caps as values.
+        Returns a dict with tuples of valid grades as keys, and caps as values,
+        or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self)
+        size_tag = Tag.getProgramTag("program_size_by_grade", self) or "{}"
         size_dict = {}
         for k, v in json.loads(size_tag).iteritems():
             if '-' in k:
@@ -640,6 +643,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def _user_can_join_at_all(self, user):
         """Helper function for user_can_join, when using program_size_max.
+
+        Should be called only if the program_size_by_grade tag is not set and
+        program_size_max is nonzero.
 
         This may be very slow if the user is not in the program; unfortunately
         there's not much we can do about it.
