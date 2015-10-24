@@ -57,6 +57,15 @@ def remote_pipe(local_command, remote_command, buf_size=1024*1024):
     if local_ret != 0 or remote_ret != 0:
         raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
 
+def use_container():
+    container = env.get('container', 'vagrant')
+    if container == 'vagrant':
+        return use_vagrant()
+    elif container == 'docker':
+        return use_docker()
+    else:
+        raise Exception("Unrecognized container: {0}".format(container))
+
 def use_vagrant():
     vagrant_key_file = local('cd ../vagrant && vagrant ssh-config | grep IdentityFile', capture=True).split(' ', 1)[1].strip("\"")
     host_str = '127.0.0.1:2222'
@@ -68,11 +77,22 @@ def use_vagrant():
     }
     return settings(**config_dict)
 
+def use_docker():
+    host_str = '127.0.0.1:2222'
+    config_dict = {
+        'user': REMOTE_USER,
+        'hosts': [host_str],
+        'host_string': host_str,
+        'password': REMOTE_USER,
+    }
+    return settings(**config_dict)
+
 @contextmanager
 def esp_env():
     with cd('%s/esp' % REMOTE_PROJECT_DIR):
         with prefix('source %s/bin/activate' % REMOTE_VIRTUALENV_DIR):
-            yield
+            with prefix('export LANG=en_US.UTF-8'):
+                yield
 
 def gen_password(length):
     return ''.join([random.choice(string.letters + string.digits) for i in range(length)])
@@ -214,7 +234,7 @@ def load_db_dump(dbuser, dbfile):
     """ Create an encrypted partition on the VM and load a database dump
         using that encrypted storage.   """
 
-    with use_vagrant():
+    with use_container():
         ensure_encrypted_partition()
         load_encrypted_database(dbuser, dbfile)
 
@@ -237,7 +257,7 @@ def vagrant_dev_setup(dbuser=None, dbfile=None):
         raise Exception('You must specify the PostgreSQL user that your database belongs to in the dbuser argument.')
     using_db_dump = (dbuser is not None and dbfile is not None)
 
-    with use_vagrant():
+    with use_container():
         if using_db_dump:
             load_db_dump(dbuser, dbfile)
         else:
@@ -249,20 +269,20 @@ def vagrant_dev_setup(dbuser=None, dbfile=None):
 @task
 def run_devserver():
     """ Run Django dev server on port 8000. """
-    with use_vagrant():
+    with use_container():
         with esp_env():
             sudo('python manage.py runserver 0.0.0.0:8000')
 
 @task
 def manage(cmd):
     """ Run a manage.py command """
-    with use_vagrant():
+    with use_container():
         with esp_env():
             sudo('python manage.py '+cmd)
 
 @task
 def update_deps():
-    with use_vagrant():
+    with use_container():
         with esp_env():
             sudo('python manage.py update_deps')
 
@@ -271,11 +291,11 @@ def open_db():
     """ Mounts the encrypted filesystem containing any loaded database
         dumps.  Should be executed after 'vagrant up' and before any
         other operations such as run_devserver. """
-    with use_vagrant():
+    with use_container():
         mount_encrypted_partition()
 
 @task
 def reload_apache():
     """ Reload apache2 server. """
-    with use_vagrant():
+    with use_container():
         sudo('service apache2 reload')
