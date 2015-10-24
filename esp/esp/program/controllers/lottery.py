@@ -45,6 +45,7 @@ from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
+from esp.tagdict.models import Tag
 
 from django.conf import settings
 from django.db.models import Min
@@ -68,6 +69,16 @@ class LotteryAssignmentController(object):
         
 
         self.program = program
+
+        if Tag.getProgramTag('program_size_by_grade', self.program):
+            # TODO(benkraft): Consider implementing this.  Stanford's use case
+            # as of Fall 2015 (for which program_size_by_grade was written)
+            # doesn't need it, but we might want to implement it anyway, or
+            # remove the program size logic from the lottery entirely.
+            print ("WARNING: The lottery doesn't support the "
+                   "program_size_by_grade Tag yet.  It will run based on "
+                   "`Program.program_size_max`, which is %s." %
+                   self.program.program_size_max)
         students = self.program.students()
         if 'twophase_star_students' in students:
             # We can't do the join in SQL, because the query generated takes at least half an hour.  So do it in python.
