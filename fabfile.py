@@ -104,7 +104,7 @@ def create_settings():
     fabtools.require.postgres.database(context['db_name'], context['db_user'])
 
     #   Create the local_settings.py file on the target
-    files.upload_template('./config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
+    files.upload_template('./deploy/config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
 
 def setup_apache():
     context = {
@@ -124,7 +124,7 @@ def setup_apache():
     fabtools.require.deb.package('libapache2-mod-wsgi')
     fabtools.require.apache.module_enabled('wsgi')
     fabtools.require.apache.site_disabled('default')
-    fabtools.require.apache.site('devsite', template_source='./config_templates/apache2_vhost.conf', **context)
+    fabtools.require.apache.site('devsite', template_source='./deploy/config_templates/apache2_vhost.conf', **context)
 
 def initialize_db():
     #   Activate virtualenv (should make a context manager)
@@ -205,7 +205,7 @@ def load_encrypted_database(db_owner, db_filename):
         'db_password': gen_password(8),
         'secret_key': gen_password(64),
     }
-    files.upload_template('./config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
+    files.upload_template('./deploy/config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
 
     #   Set up the user (with blank DB) in Postgres
     run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
