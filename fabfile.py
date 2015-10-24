@@ -6,6 +6,8 @@ from fabric.api import *
 
 from fabtools.vagrant import vagrant
 
+import os
+
 from fabric.contrib import files
 from fabric.contrib import django as fabric_django
 from fabric.context_managers import settings
@@ -81,6 +83,12 @@ def remote_pipe(local_command, remote_command, buf_size=1024*1024):
     if local_ret != 0 or remote_ret != 0:
         raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
 
+def relative(path):
+    """ Expresses a relative path as an absolute path using `env.real_fabfile`.
+        Paths are relative to the directory containing this file. """
+    directory = os.path.dirname(env.real_fabfile)
+    return os.path.join(directory, path)
+
 @contextmanager
 def esp_env():
     with cd('%s/esp' % REMOTE_PROJECT_DIR):
@@ -104,7 +112,7 @@ def create_settings():
     fabtools.require.postgres.database(context['db_name'], context['db_user'])
 
     #   Create the local_settings.py file on the target
-    files.upload_template('./deploy/config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
+    files.upload_template(relative('deploy/config_templates/local_settings.py'), '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
 
 def setup_apache():
     context = {
@@ -124,7 +132,7 @@ def setup_apache():
     fabtools.require.deb.package('libapache2-mod-wsgi')
     fabtools.require.apache.module_enabled('wsgi')
     fabtools.require.apache.site_disabled('default')
-    fabtools.require.apache.site('devsite', template_source='./deploy/config_templates/apache2_vhost.conf', **context)
+    fabtools.require.apache.site('devsite', template_source=relative('deploy/config_templates/apache2_vhost.conf'), **context)
 
 def initialize_db():
     #   Activate virtualenv (should make a context manager)
@@ -136,7 +144,6 @@ def link_media():
     #   Don't do this if the host is Windows (no symlinks).
     import platform
     if platform.system() == 'Windows':
-        import os
         print 'Cannot link media directories on Windows.  Please copy them yourself, if this is what you want:'
         print '  cd %s' % os.path.join(os.path.dirname(__file__), 'public', 'media')
         print '  cp -r default_images images'
@@ -205,7 +212,7 @@ def load_encrypted_database(db_owner, db_filename):
         'db_password': gen_password(8),
         'secret_key': gen_password(64),
     }
-    files.upload_template('./deploy/config_templates/local_settings.py', '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
+    files.upload_template(relative('deploy/config_templates/local_settings.py'), '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
 
     #   Set up the user (with blank DB) in Postgres
     run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
