@@ -1,6 +1,6 @@
 Vagrant based dev servers
 =========================
-Authors: 
+Authors:
    - Michael Price <price@learningu.org>
 
 .. contents:: :local:
@@ -8,7 +8,7 @@ Authors:
 Introduction
 ------------
 
-Follow "Setup procedure" below to quickly install a dev server on your computer, regardless of what operating system you are using.  The procedure relies on Virtualbox, Vagrant and Fabric.  Your working copy is on your computer, but it is shared with a virtual machine (VM) which actually renders the site.  
+Follow "Setup procedure" below to quickly install a dev server on your computer, regardless of what operating system you are using.  The procedure relies on Virtualbox, Vagrant and Fabric.  Your working copy is on your computer, but it is shared with a virtual machine (VM) which actually renders the site.
 
 History
 ~~~~~~~
@@ -45,18 +45,16 @@ Using a shell, navigate to the directory where you would like to place the code 
 
 Next, use Vagrant to create your VM: ::
 
-    cd vagrant
     vagrant up
 
 Note that you will not be able to see the VM, since it runs in a "headless" mode by default.
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    vagrant ssh -- -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv" 
+    vagrant ssh -- -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv"
 
 Finally, you should use Fabric to deploy the development environment. At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
-    cd ../esp
     fab vagrant_dev_setup
 
 The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
@@ -73,7 +71,7 @@ Now you can run the dev server: ::
 
     fab run_devserver
 
-Once this is running, you should be able to open a Web browser on your computer (not within the VM) and navigate to http://localhost:8000, where you will see the site.  
+Once this is running, you should be able to open a Web browser on your computer (not within the VM) and navigate to http://localhost:8000, where you will see the site.
 
 If you are using encrypted databases, you will need to run 'fab open_db' after each time you start the VM ('vagrant up'), and enter the passphrase that you specified during the setup process.
 
@@ -82,12 +80,12 @@ Usage
 
 The working copy you checked out with Git at the beginning contains the code you should use when working on the site.  It has been shared with the VM, and the VM does not have its own copy of the code.
 
-If you need to debug things inside of the VM, you can go to the ``vagrant`` directory in your working copy and run ``vagrant ssh``. 
+If you need to debug things inside of the VM, you can go to the ``vagrant`` directory in your working copy and run ``vagrant ssh``.
 
 * The location of the working copy within the VM is ``/home/vagrant/devsite``
 * The location of the virtualenv used by the VM is ``/home/vagrant/devsite_virtualenv``
   This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links.
-  
+
 For example, if you want to run a shell: ::
 
     vagrant ssh
@@ -104,9 +102,7 @@ Once you have everything set up, normal usage of your vagrant dev server should 
 
 Before you start anything: ::
 
-    cd vagrant/
     vagrant up
-    cd ../esp
     fab open_db
 
 To run your dev server: ::
@@ -130,4 +126,3 @@ This is a TODO list for the developers:
 * Support deploying to other targets (other than Vagrant VMs) - could be useful for deployment
 * Make things more customizable
 * Reduce number of setup steps
-
