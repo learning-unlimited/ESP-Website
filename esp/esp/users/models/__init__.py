@@ -954,6 +954,12 @@ are a teacher of the class"""
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     return regProf.student_info.graduation_year
+                else:
+                    # Something weird happened. Try to get their grade from somewhere else
+                    # (hacky quick fix for Stanford, 10/2015)
+                    regProf = self.getLastProfile()
+                    if regProf.student_info.graduation_year:
+                        return regProf.student_info.graduation_year
         return None
     getYOG.get_or_create_token(('self',))
     getYOG.depend_on_row('users.StudentInfo', lambda info: {'self': info.user})
