@@ -80,7 +80,7 @@ Usage
 
 The working copy you checked out with Git at the beginning contains the code you should use when working on the site.  It has been shared with the VM, and the VM does not have its own copy of the code.
 
-If you need to debug things inside of the VM, you can go to the ``vagrant`` directory in your working copy and run ``vagrant ssh``.
+If you need to debug things inside of the VM, you can open your shell, go to the directory where you checked out the code, and run ``vagrant ssh``.
 
 * The location of the working copy within the VM is ``/home/vagrant/devsite``
 * The location of the virtualenv used by the VM is ``/home/vagrant/devsite_virtualenv``
