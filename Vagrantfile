@@ -21,7 +21,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Share working directory with the guest VM, so you can edit
   # code files in your host environment.
-  config.vm.synced_folder "../", "/home/vagrant/devsite"
+  config.vm.synced_folder "./", "/home/vagrant/devsite"
 
   # Provider-specific configuration: headless mode, memory
   config.vm.provider :virtualbox do |vb|
