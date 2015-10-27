@@ -145,7 +145,10 @@ def update():
         # Trying to load a db dump with migrations ahead of your branch
         # was probably a bad idea anyway
         run('python manage.py migrate')
-        run('python manage.py recompile_theme')
+        with settings(warn_only=True):
+            # Work around a themes bug. Running twice is intentional.
+            run('python manage.py recompile_theme')
+            run('python manage.py recompile_theme')
 
 def link_media():
     #   Don't do this if the host is Windows (no symlinks).
