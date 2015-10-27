@@ -46,6 +46,7 @@ from local_settings import *
 
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
+TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:

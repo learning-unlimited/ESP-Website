@@ -135,10 +135,10 @@ def setup_apache():
     fabtools.require.apache.site('devsite', template_source=relative('deploy/config_templates/apache2_vhost.conf'), **context)
 
 def initialize_db():
-    #   Activate virtualenv (should make a context manager)
+    #   Activate virtualenv
     with esp_env():
-        run('python manage.py syncdb')
         run('python manage.py migrate')
+        run('python manage.py createsuperuser')
 
 def link_media():
     #   Don't do this if the host is Windows (no symlinks).

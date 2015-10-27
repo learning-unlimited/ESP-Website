@@ -302,7 +302,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = False
-TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
 USE_PROFILER = False
@@ -356,8 +355,8 @@ then
     echo "$DBNAME database.  Please follow their directions."
 
     cd $BASEDIR/esp/esp
-    ./manage.py syncdb
     ./manage.py migrate
+    ./manage.py createsuperuser
     cd $CURDIR
     
     #   Set initial Site (used in password recovery e-mail)
