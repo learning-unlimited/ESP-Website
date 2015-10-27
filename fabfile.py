@@ -217,7 +217,7 @@ def load_encrypted_database(db_owner, db_filename):
     #   Set up the user (with blank DB) in Postgres
     run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
     run('sudo -u postgres psql -c "DROP ROLE IF EXISTS %s"' % (db_owner,))
-    run('sudo -u postgres psql -c "CREATE ROLE %s LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
+    run('sudo -u postgres psql -c "CREATE ROLE %s CREATEDB LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
     run('sudo -u postgres psql -c "CREATE DATABASE devsite_django OWNER %s TABLESPACE encrypted"' % (db_owner,))
 
     #   Decrypt the DB dump (if needed) and send to the VM's Postgres install.

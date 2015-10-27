@@ -25,7 +25,7 @@ MIDDLEWARE_LOCAL = []
 
 EMAIL_HOST_SENDER = 'devsite.learningu.org'
 VARNISH_HOST = None
-DEBUG_TOOLBAR = False
+DEBUG_TOOLBAR = True
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
