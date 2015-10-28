@@ -288,8 +288,7 @@ def manage(cmd):
 
 @task
 def update_deps():
-    with esp_env():
-        sudo('python manage.py update_deps')
+    sudo('%s/esp/update_deps.sh --virtualenv=%s' % (REMOTE_PROJECT_DIR, REMOTE_VIRTUALENV_DIR))
 
 @task
 def open_db():
