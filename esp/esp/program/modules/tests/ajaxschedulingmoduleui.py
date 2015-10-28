@@ -10,10 +10,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 import time
 
 class AJAXSchedulingModuleUITest(ProgramFrameworkSeleniumTest):
-    fixtures = ['testdata']
 
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({
             'num_rooms': 4,
