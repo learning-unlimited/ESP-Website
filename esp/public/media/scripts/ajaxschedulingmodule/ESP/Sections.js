@@ -49,7 +49,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         return result;
     }.bind(this);
     this.filter.classHideUnapproved.valid = function(a) {
-        return a.status === 10;
+        return a.status > 0;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
