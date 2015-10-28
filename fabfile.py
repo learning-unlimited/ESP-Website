@@ -135,10 +135,20 @@ def setup_apache():
     fabtools.require.apache.site('devsite', template_source=relative('deploy/config_templates/apache2_vhost.conf'), **context)
 
 def initialize_db():
-    #   Activate virtualenv (should make a context manager)
+    #   Activate virtualenv
     with esp_env():
-        run('python manage.py syncdb')
         run('python manage.py migrate')
+        run('python manage.py createsuperuser')
+
+def post_db_load():
+    with esp_env():
+        # Trying to load a db dump with migrations ahead of your branch
+        # was probably a bad idea anyway
+        run('python manage.py migrate')
+        with settings(warn_only=True):
+            # Work around a themes bug. Running twice is intentional.
+            run('python manage.py recompile_theme')
+            run('python manage.py recompile_theme')
 
 def link_media():
     #   Don't do this if the host is Windows (no symlinks).
@@ -217,7 +227,7 @@ def load_encrypted_database(db_owner, db_filename):
     #   Set up the user (with blank DB) in Postgres
     run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
     run('sudo -u postgres psql -c "DROP ROLE IF EXISTS %s"' % (db_owner,))
-    run('sudo -u postgres psql -c "CREATE ROLE %s LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
+    run('sudo -u postgres psql -c "CREATE ROLE %s CREATEDB LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
     run('sudo -u postgres psql -c "CREATE DATABASE devsite_django OWNER %s TABLESPACE encrypted"' % (db_owner,))
 
     #   Decrypt the DB dump (if needed) and send to the VM's Postgres install.
@@ -236,6 +246,7 @@ def load_db_dump(dbuser, dbfile):
 
     ensure_encrypted_partition()
     load_encrypted_database(dbuser, dbfile)
+    post_db_load()
 
 @task
 def recreate_encrypted_partition():
@@ -277,8 +288,7 @@ def manage(cmd):
 
 @task
 def update_deps():
-    with esp_env():
-        sudo('python manage.py update_deps')
+    sudo('%s/esp/update_deps.sh --virtualenv=%s' % (REMOTE_PROJECT_DIR, REMOTE_VIRTUALENV_DIR))
 
 @task
 def open_db():

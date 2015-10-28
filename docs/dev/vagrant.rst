@@ -51,17 +51,19 @@ Note that you will not be able to see the VM, since it runs in a "headless" mode
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    vagrant ssh -- -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv"
+    fab update_deps
 
-Finally, you should use Fabric to deploy the development environment. At some point during this process, you will be asked to enter information for the site's superuser account. ::
-
-    fab vagrant_dev_setup
+Finally, you should use Fabric to deploy the development environment.
 
 The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
 
     fab vagrant_dev_setup:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
 
 Typically the user name for the database is typically the lowercase name of the chapter; however, for MIT's system it is simply "esp".  Please ask the Web team for assistance if you need to know the user name, or obtain a database dump.
+
+Alternatively, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
+
+    fab vagrant_dev_setup
 
 If you would like to load a database dump to a system that has already been set up, you may do so with the "load_db_dump" task (which overwrites the existing database on the dev server): ::
 
@@ -111,8 +113,8 @@ To run your dev server: ::
 
 Other useful command examples: ::
 
-    fab manage:cmd=shell_plus
-    fab manage:cmd='migrate program'
+    fab manage:shell_plus
+    fab manage:'migrate program'
 
 Once you're done: ::
 
