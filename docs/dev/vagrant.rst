@@ -51,11 +51,11 @@ Note that you will not be able to see the VM, since it runs in a "headless" mode
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    vagrant ssh -- -t -t -C "/home/vagrant/devsite/esp/update_deps.sh --virtualenv=/home/vagrant/devsite_virtualenv"
+    fab update_deps
 
 Finally, you should use Fabric to deploy the development environment.
 
-Most developers will want to seed their environment with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
+The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
 
     fab vagrant_dev_setup:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
 

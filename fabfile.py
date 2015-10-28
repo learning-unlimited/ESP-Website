@@ -140,7 +140,7 @@ def initialize_db():
         run('python manage.py migrate')
         run('python manage.py createsuperuser')
 
-def update():
+def post_db_load():
     with esp_env():
         # Trying to load a db dump with migrations ahead of your branch
         # was probably a bad idea anyway
@@ -246,7 +246,7 @@ def load_db_dump(dbuser, dbfile):
 
     ensure_encrypted_partition()
     load_encrypted_database(dbuser, dbfile)
-    update()
+    post_db_load()
 
 @task
 def recreate_encrypted_partition():
