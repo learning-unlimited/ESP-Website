@@ -49,7 +49,6 @@ from esp.cal.models import Event
 from esp.cache import cache_function
 from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
-from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
@@ -61,17 +60,12 @@ def hsl_to_rgb(hue, saturation, lightness=0.5):
 class OnSiteClassList(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return [ {
-            "admin_title": "Show All Classes at Onsite Registration",
-            "link_title": "List of All Classes",
-            "module_type": "onsite",
-            "seq": 31,
-            }, {
+        return {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
-            } ]
+            }
 
     @cache_function
     def section_data(sec):
@@ -149,7 +143,7 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, resourceassignment__resource__res_type__name="Classroom").select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
         simplejson.dump(list(data), resp)
         return resp
     
@@ -377,7 +371,7 @@ class OnSiteClassList(ProgramModuleObj):
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
-    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name=None):
+    def classList_base(self, request, tl, one, two, module, extra, prog, options=None, template_name='classlist.html'):
         """ Display a list of all classes that still have space in them """
 
         #   Allow options to be supplied as an argument to the view function, in lieu
@@ -448,7 +442,7 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, context)
+        return render_to_response(self.baseDir()+template_name, request, context)
 
     @main_call
     @needs_onsite

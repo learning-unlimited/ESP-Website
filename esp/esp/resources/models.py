@@ -153,7 +153,7 @@ class ResourceRequest(models.Model):
     
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
     
     def __unicode__(self):
@@ -176,7 +176,7 @@ class Resource(models.Model):
     res_type, attach to a user if necessary. """
     
     name = models.CharField(max_length=80)
-    res_type = models.ForeignKey(ResourceType)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     num_students = models.IntegerField(blank=True, default=-1)
     # do not use group_id, use res_group instead
     # group_id can be removed with a future migration after all sites

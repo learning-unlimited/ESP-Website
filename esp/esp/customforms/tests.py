@@ -200,8 +200,8 @@ class CustomFormsTest(TestCase):
         for field_spec in indiv_response:
             self.assertEqual(self.map_form_value(responses_corrected[key]), indiv_response[key])
         self.assertTrue('questions' in response_data)
-        self.assertEqual(len(response_data['questions']), len(responses_initial) + 1)   #   provided fields plus user_id
+        self.assertEqual(len(response_data['questions']), len(responses_initial) + 4)   #   provided fields plus user_id, user_display, user_email, username
         for entry in response_data['questions']:
-            if entry[0] == 'user_id':
+            if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)

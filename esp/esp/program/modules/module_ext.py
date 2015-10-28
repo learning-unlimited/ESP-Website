@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 import time
 from datetime import timedelta
 from django.db import models
-from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from django.conf import settings

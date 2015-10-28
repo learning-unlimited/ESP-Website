@@ -40,7 +40,6 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, User, Record
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template

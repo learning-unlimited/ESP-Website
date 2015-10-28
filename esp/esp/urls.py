@@ -130,7 +130,6 @@ urlpatterns += patterns('esp.web.views.main',
 
 
     # Program stuff
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
 
@@ -153,9 +152,6 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
 
-urlpatterns += patterns('', 
-    (r'^dataviews/', include('esp.dataviews.urls')) )
-    
 urlpatterns += patterns('esp.qsdmedia.views', 
     (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )

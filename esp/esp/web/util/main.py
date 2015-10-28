@@ -37,7 +37,6 @@ from django.template import Context, Template, loader, RequestContext
 from django.conf import settings
 from django import http
 from django.http import HttpResponse, HttpResponseRedirect
-from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
 from esp.themes.controllers import ThemeController
 from django.conf import settings

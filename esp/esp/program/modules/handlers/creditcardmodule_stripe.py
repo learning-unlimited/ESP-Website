@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
 from esp.web.util import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
@@ -210,6 +209,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         context = {'postdata': request.POST.copy()}
 
+        group_name = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+
         iac = IndividualAccountingController(self.program, request.user)
 
         #   Set Stripe key based on settings.  Also require the API version
@@ -260,7 +261,8 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         amount=amount_cents_post,
                         currency="usd",
                         card=request.POST['stripeToken'],
-                        description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+                        description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },

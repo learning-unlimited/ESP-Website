@@ -37,7 +37,6 @@ import re
 import unicodedata
 
 from esp.users.models import StudentInfo, K12School
-from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -110,8 +109,6 @@ class ProgramCreationForm(BetterModelForm):
             value.append(json_module.id)
         return value
 
-    # use field grouping
-    #as_table = grouped_as_table
 
     class Meta:
         fieldsets = [
