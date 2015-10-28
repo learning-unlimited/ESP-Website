@@ -7,12 +7,12 @@ from django.contrib.auth.models import User, Group
 from django.test import LiveServerTestCase
 
 from django.test import LiveServerTestCase
-from esp.tests.util import user_role_setup
+from esp.tests.util import CacheFlushTestCase
 
 import re
 import unicodedata
 
-class ProgramFrameworkSeleniumTest(LiveServerTestCase):
+class ProgramFrameworkSeleniumTest(LiveServerTestCase, CacheFlushTestCase):
     """ A test case that initializes a program with the parameters passed to setUp(). 
         Everything is done with get_or_create so it can be run multiple times in the
         same session.
@@ -25,19 +25,13 @@ class ProgramFrameworkSeleniumTest(LiveServerTestCase):
     
     def setUp(self, *args, **kwargs):
         from esp.cal.models import Event, EventType
-        from esp.cal.models import install as cal_install
         from esp.resources.models import Resource, ResourceType
         from esp.program.setup import prepare_program, commit_program
         from esp.program.forms import ProgramCreationForm
         from esp.qsd.models import QuasiStaticData
         from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
-        from esp.program.modules.models import install as program_modules_install
 
-        user_role_setup()
-        program_modules_install()
-        cal_install()
-        
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -153,7 +147,8 @@ class ProgramFrameworkSeleniumTest(LiveServerTestCase):
         self.timeslots = self.program.getTimeSlots()
         for i in range(settings['num_rooms']):
             for ts in self.timeslots:
-                res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
+                classroom = ResourceType.get_or_create('Classroom')
+                res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=classroom)
         self.rooms = self.program.getClassrooms()
                    
         #   Create classes and sections
