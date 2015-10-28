@@ -72,7 +72,7 @@ class ProgramModuleObj(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=True)
 
     def docs(self):
@@ -201,6 +201,7 @@ class ProgramModuleObj(models.Model):
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
+        from esp.program.modules.handlers.regprofilemodule import RegProfileModule
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         #   If a "core" module has been found:
@@ -214,6 +215,8 @@ class ProgramModuleObj(models.Model):
                 other_modules = moduleobj.findCategoryModules(False)
                 for m in other_modules:
                     m.request = request
+                    if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
+                        continue
                     if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
@@ -507,6 +510,8 @@ class ProgramModuleObj(models.Model):
         """
         return context
 
+        class Meta:
+            app_label = 'modules'
 
 
 # will check and depending on the value of tl

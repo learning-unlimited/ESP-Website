@@ -32,11 +32,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.web.models import NavBarEntry, NavBarCategory
+from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from django.conf import settings
+from django.template import Template, Context
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.web.templatetags.test_tags import counter
+from esp.utils.models import TemplateOverride
+from esp.cache.tests import Article, Reporter
 
 import difflib
 import re
@@ -81,7 +85,6 @@ class NavbarTest(TestCase):
 
     def navbars_enabled(self):
         #   Check that the main template uses navbars
-        from esp.utils.models import TemplateOverride
         qs = TemplateOverride.objects.filter(name='main.html').order_by('-id')
         if qs.exists():
             if qs[0].content.find('{% navbar_gen') < 0:
@@ -173,13 +176,116 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         qsd_rec_new = QuasiStaticData()
         qsd_rec_new.name = "learn:index"
         qsd_rec_new.author = self.admins[0]
-        qsd_rec_new.nav_category = NavBarCategory.default()
+        qsd_rec_new.nav_category = default_navbarcategory()
         qsd_rec_new.content = "This is the content of the test QSD page"
         qsd_rec_new.title = "Test QSD page"
         qsd_rec_new.description = ""
         qsd_rec_new.keywords = ""
         qsd_rec_new.save()
-        
+
+
+class CacheInclusionTagTest(TestCase):
+    # Makes use of the tags in web/templatetags/test_tags.py
+    # This is one giant test because the ordering matters.
+    def test_rendering(self):
+        # test that it renders
+        t = Template("{% load test_tags %}{% silly_inclusion_tag arg %}")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        self.assertEqual(counter[0], 1)
+
+        # test that it is cached
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        self.assertEqual(counter[0], 1)
+
+        # test that it doesn't depend on template identity
+        t_ = Template("{% load test_tags %}{% silly_inclusion_tag arg %}")
+        rendered = t_.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        rendered = t_.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        self.assertEqual(counter[0], 1)
+
+        # test that it doesn't depend on the surrounding context
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 1")
+        rendered = t.render(Context({'arg': 'foo', 'unused': 'whatever'}))
+        self.assertEqual(rendered, "foo 1")
+        self.assertEqual(counter[0], 1)
+
+        # test that it does depend on its arguments
+        rendered = t.render(Context({'arg': 'bar'}))
+        self.assertEqual(rendered, "bar 2")
+        rendered = t.render(Context({'arg': 'bar', 'unused': 'lol'}))
+        self.assertEqual(rendered, "bar 2")
+        self.assertEqual(counter[0], 2)
+
+        # test that changing any TemplateOverride expires the cache
+        TemplateOverride.objects.create(name="foo", content="bar")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 3")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 3")
+        self.assertEqual(counter[0], 3)
+
+        # test that a depend_on_row works correctly
+        reporter1 = Reporter.objects.create(first_name="baz", last_name="quux")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 3")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 3")
+        self.assertEqual(counter[0], 3)
+
+        reporter2 = Reporter.objects.create(first_name="foo", last_name="quux")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 4")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 4")
+        self.assertEqual(counter[0], 4)
+
+        reporter1.last_name = "quuuuuuuuuuuuuuuuuuux"
+        reporter1.save()
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 4")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 4")
+        self.assertEqual(counter[0], 4)
+
+        reporter2.last_name = "quuuuuuuuuuuuuuuuuuux"
+        reporter2.save()
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 5")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 5")
+        self.assertEqual(counter[0], 5)
+
+        # test that a depend_on_model works correctly
+        Article.objects.create(headline="exciting article",
+                               content="no content",
+                               reporter=reporter1)
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 6")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 6")
+        self.assertEqual(counter[0], 6)
+
+        # test that the cache depends on Context attributes like autoescape
+        t2 = Template("{% load test_tags %}{% autoescape off %}"
+                      "{% silly_inclusion_tag arg %}{% endautoescape %}")
+        rendered = t2.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 7")
+        rendered = t2.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 7")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 6")
+        rendered = t.render(Context({'arg': 'foo'}))
+        self.assertEqual(rendered, "foo 6")
+        self.assertEqual(counter[0], 7)
+
+
 class JavascriptSyntaxTest(TestCase):
 
     def runTest(self, display=False):

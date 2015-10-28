@@ -69,7 +69,6 @@ USE_MAILMAN = True
 # Debug settings  #
 ###################
 DEBUG = False
-DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
@@ -97,7 +96,5 @@ from database_settings import *
 # Middleware #
 ##############
 
-MIDDLEWARE_LOCAL = [
-    #(1250, 'esp.middleware.StatsMiddleware'),
-]
+MIDDLEWARE_LOCAL = []
 

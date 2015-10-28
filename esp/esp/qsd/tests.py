@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.qsd.models import QuasiStaticData
-from esp.web.models import NavBarCategory
+from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
 from django.template import Template, Context
@@ -74,7 +74,7 @@ class QSDCorrectnessTest(TestCase):
             qsd_rec_new.url = 'learn/bar'
             qsd_rec_new.name = "learn:bar"
             qsd_rec_new.author = self.author
-            qsd_rec_new.nav_category = NavBarCategory.default()
+            qsd_rec_new.nav_category = default_navbarcategory()
             qsd_rec_new.content = "Inline Testing 123"
             qsd_rec_new.title = "Test QSD page"
             qsd_rec_new.description = ""
@@ -120,7 +120,7 @@ class QSDCorrectnessTest(TestCase):
             qsd_rec_new.url = 'learn/foo'
             qsd_rec_new.name = "learn:foo"
             qsd_rec_new.author = self.author
-            qsd_rec_new.nav_category = NavBarCategory.default()
+            qsd_rec_new.nav_category = default_navbarcategory()
             qsd_rec_new.content = "Testing 123"
             qsd_rec_new.title = "Test QSD page"
             qsd_rec_new.description = ""

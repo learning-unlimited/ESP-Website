@@ -42,7 +42,7 @@ from markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
 from esp.cache import cache_function
-from esp.web.models import NavBarCategory
+from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
 class QSDManager(FileDBManager):
@@ -106,7 +106,7 @@ class QuasiStaticData(models.Model):
     title = models.CharField(max_length=256)
     content = models.TextField()
     
-    nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
+    nav_category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
     author = AjaxForeignKey(ESPUser, verbose_name="last modifed by") #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.

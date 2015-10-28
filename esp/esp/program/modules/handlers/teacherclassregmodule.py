@@ -45,12 +45,15 @@ from esp.web.util                import render_to_response
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
-from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeFormSet
+from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
-from django.forms.util           import ErrorDict
+from django.forms.utils          import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
+
+import json
+from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -676,7 +679,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             except ClassCreationValidationError, e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
-                restype_formset = e.restype_formset
 
         else:
             # With static resource requests, we need to display a form
@@ -758,7 +760,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                         field.initial = initial_requests[field.label]
                         if form.resource_type.only_one and len(field.initial):
                             field.initial = field.initial[0]
-                restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
             else:
                 if action=='create':
@@ -768,14 +769,12 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
-                restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['tl'] = 'teach'
         context['one'] = one
         context['two'] = two
         context['form'] = reg_form
         context['formset'] = resource_formset
-        context['restype_formset'] = restype_formset
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
@@ -836,7 +835,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json import JsonResponse
+        from esp.web.views.json_utils import JsonResponse
 
         Q_teacher = Q(groups__name="Teacher")
 
@@ -903,4 +902,4 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

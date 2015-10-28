@@ -2,7 +2,8 @@
 
 import types
 
-from django.db.models import signals, get_model
+from django.apps import apps
+from django.db.models import signals
 
 pending_lookups = {}
 
@@ -10,14 +11,15 @@ def add_lazy_dependency(self, obj, operation):
     """ If obj is a function (thunk), delay operation; otherwise execute immediately. """
     if isinstance(obj, basestring):
         app_label, model_name = obj.split(".")
-        model = get_model(app_label, model_name,
-                          seed_cache=False, only_installed=False)
-        if model:
-            operation(model)
-        else:
+        try:
+            # This is a private API, please fix it!
+            model = apps.get_registered_model(app_label, model_name)
+        except LookupError:
             key = (app_label, model_name)
             value = operation
             pending_lookups.setdefault(key, []).append(value)
+        else:
+            operation(model)
     elif isinstance(obj, types.FunctionType):
         import warnings
         warnings.warn("Using lambdas to thunk dependencies is deprecated. Use strings instead.", DeprecationWarning, stacklevel=3)

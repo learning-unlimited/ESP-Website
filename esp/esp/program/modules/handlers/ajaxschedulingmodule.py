@@ -44,7 +44,7 @@ from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from datetime                    import timedelta, time
-from django.utils                import simplejson
+import json
 from collections                 import defaultdict
 from esp.cache                   import cache_function
 from uuid                        import uuid4 as get_uuid
@@ -97,7 +97,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
                 lst.append((s.id, ra.resource.name, ra.resource.event.id))
 
-        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), mimetype='text/csv')
+        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
 
     #helper functions for ajax_schedule_class
     #seperated out here to make code more readeable and enable testing
@@ -105,7 +105,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
         kwargs['val'] = last_changed['val']
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(kwargs, response)
+        json.dump(kwargs, response)
         return response            
 
     def ajax_schedule_deletereg(self, prog, cls, user=None):
@@ -270,7 +270,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'latest_index' : self.get_change_log(prog).get_latest_index() }
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(ret, response)
+        json.dump(ret, response)
         response.raw_value = ret  # So that other functions can call this view and get the original return value back
         return response
 
@@ -294,7 +294,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_lunch_timeslots_cached(self, prog):
         data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(data, response)
+        json.dump(data, response)
         return response
     ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
@@ -326,7 +326,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(data, response)
+        json.dump(data, response)
         return response
 
     def clear_schedule_logic(self, prog, lock_level=0):
@@ -341,3 +341,4 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

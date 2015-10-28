@@ -64,10 +64,10 @@
 }
 
 /* prettier forms */
-#divmaintext form select, #divmaintext form input[type=text], #divmaintext form input[type=file], #divmaintext form input[type=password], #divmaintext form textarea { border: 1px solid #b7b7b7; }
-#divmaintext form select.required, #divmaintext form input[type=text].required, #divmaintext form input[type=password].required, #divmaintext form input[type=file].required, #divmaintext form textarea.required { border: 1px solid #FFb7b7; }
-#divmaintext form select:focus, #divmaintext form input[type=text]:focus, #divmaintext form input[type=password]:focus, #divmaintext form textarea:focus { border: 1px solid black; }
-#divmaintext form select:focus.required, #divmaintext form input[type=text]:focus.required, #divmaintext form input[type=password]:focus.required, #divmaintext form textarea:focus.required { border: 1px solid #F00; }
+#divmaintext form select, #divmaintext form input[type=text], #divmaintext form input[type=url], #divmaintext form input[type=email], #divmaintext form input[type=number], #divmaintext form input[type=file], #divmaintext form input[type=password], #divmaintext form textarea { border: 1px solid #b7b7b7; }
+#divmaintext form select.required, #divmaintext form input[type=text].required, #divmaintext form input[type=url].required, #divmaintext form input[type=email].required, #divmaintext form input[type=number].required, #divmaintext form input[type=password].required, #divmaintext form input[type=file].required, #divmaintext form textarea.required { border: 1px solid #FFb7b7; }
+#divmaintext form select:focus, #divmaintext form input[type=text]:focus, #divmaintext form input[type=url]:focus, #divmaintext form input[type=email]:focus, #divmaintext form input[type=number]:focus, #divmaintext form input[type=password]:focus, #divmaintext form textarea:focus { border: 1px solid black; }
+#divmaintext form select:focus.required, #divmaintext form input[type=text]:focus.required, #divmaintext form input[type=url]:focus.required, #divmaintext form input[type=email]:focus.required, #divmaintext form input[type=number]:focus.required, #divmaintext form input[type=password]:focus.required, #divmaintext form textarea:focus.required { border: 1px solid #F00; }
 
 #divmaintext form table.plain
 {

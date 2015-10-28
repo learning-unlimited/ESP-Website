@@ -38,7 +38,8 @@ from django.contrib.sites.models import Site
 from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.users.models import ESPUser, Permission
-from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
+from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from urllib import quote
@@ -47,7 +48,7 @@ from Cookie import SimpleCookie
 
 import datetime
 import re
-from django.utils import simplejson as json
+import json
 
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
@@ -329,11 +330,11 @@ def error_reporter(request):
     json_flag = ""
     
     if request.POST:
-        if request.raw_post_data.strip()[0] == '[':
+        if request.body.strip()[0] == '[':
             ## Probably a JSON error report
             ## Let's try to decode it
             try:
-                err = json.loads(request.raw_post_data)
+                err = json.loads(request.body)
 
                 ## Deal with messages that we don't want to deal with
                 if is_quirk_should_be_ignored(err):
@@ -374,7 +375,7 @@ def error_reporter(request):
             except Exception, e:
                 print "*** Exception!", e
                 print json.__dict__
-                err = request.raw_post_data
+                err = request.body
                     
             pprint(err, post)
 

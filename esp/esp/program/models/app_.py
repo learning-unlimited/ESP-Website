@@ -37,12 +37,14 @@ from esp.users.models import ESPUser
 
 from django.db import models
 from django import forms
+from django.utils.deconstruct import deconstructible
 
 import datetime
 
 __all__ = ['StudentAppQuestion', 'StudentAppResponse', 'StudentAppReview', 'StudentApplication']
 
-class BaseAppElement:
+@deconstructible
+class BaseAppElement(object):
     """ Base class for models that you would like to generate forms from.
     Make this a subclass of the model and overload the two attributes:
     -   _element_name: a slug-like name for the model to differentiate its 
@@ -79,6 +81,7 @@ class BaseAppElement:
         
         class form_class(forms.ModelForm):
             class Meta:
+                fields = "__all__"
                 model = self.__class__
         
         #   Enlarge text fields to a reasonable size (dangit Django).
