@@ -1,14 +1,10 @@
-from django.apps import AppConfig
+from argcache.apps import ArgCacheConfig
 
-class CacheConfig(AppConfig):
+class ESPCacheConfig(ArgCacheConfig):
     """ Makes sure all caches are inserted. Replacement for cache_loader. """
 
-    name = 'esp.cache'
-
     def ready(self):
-        import sys
-        from django.conf import settings
-        from esp.cache.registry import _finalize_caches, _lock_caches
+        from argcache.registry import _finalize_caches, _lock_caches
         from django.apps import apps
 
         # Make sure everything's already imported
@@ -26,8 +22,6 @@ class CacheConfig(AppConfig):
 
         #   Make sure all cached inclusion tags are registered
         import esp.utils.inclusion_tags
-
-        # import esp.cache.test
 
         # Fix up the queued events
         _finalize_caches()

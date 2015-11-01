@@ -12,7 +12,7 @@ from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo, ESPUser
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.program.models import Program
 
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields

@@ -37,7 +37,7 @@ import sys
 
 from django.db import models, transaction
 from django.db.models import Q
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey

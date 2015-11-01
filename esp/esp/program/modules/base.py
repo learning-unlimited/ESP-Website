@@ -44,7 +44,7 @@ from django.utils.safestring import mark_safe
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
 from esp.web.util import render_to_response
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME

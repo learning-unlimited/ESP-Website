@@ -46,7 +46,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_stude
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.web.util import render_to_response
 from esp.cal.models import Event
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest

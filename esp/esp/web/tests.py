@@ -40,7 +40,7 @@ from django.template import Template, Context
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.web.templatetags.test_tags import counter
 from esp.utils.models import TemplateOverride
-from esp.cache.tests import Article, Reporter
+from argcache.tests import Article, Reporter
 
 import difflib
 import re

@@ -53,7 +53,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
 from esp.tagdict.models  import Tag
-from esp.cache           import cache_function
+from argcache            import cache_function
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct

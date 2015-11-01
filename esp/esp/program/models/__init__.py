@@ -51,8 +51,7 @@ from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.utils import timezone
 
-from esp.cache import cache_function
-from esp.cache.key_set import wildcard
+from argcache import cache_function, wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey

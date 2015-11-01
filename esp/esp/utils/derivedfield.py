@@ -70,7 +70,7 @@ def DerivedField(FieldCls, getter_fn):
     #>>>     mySum = DerivedField(models.IntegerField, counter_fn)(null=False, default=0)
 
     Now, note that I specified an argument "counter_fn".  counter_fn must be
-    a function that is cached using the caching API (esp.cache.argcache).
+    a function that is cached using the caching API (argcache).
     This code is an extension of the caching API: When that API flushes the
     cache in memcached, this code catches that event and also updates the value
     stored in the database.  So, for example:
@@ -79,7 +79,7 @@ def DerivedField(FieldCls, getter_fn):
     #>>>     " Example model that we might want to count "
     #>>>     myModelFk = models.ForeignKey(MyModel)
     #>>>
-    #>>> from esp.cache import cache_function
+    #>>> from argcache import cache_function
     #>>> @cache_function 
     #>>> def counter_fn(self):
     #>>>     return self.frob_set.count()

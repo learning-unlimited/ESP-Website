@@ -2,8 +2,8 @@
 from django import template
 from django.template import Template
 from esp.web.util.template import cache_inclusion_tag
-from esp.cache.tests import Article, Reporter
-from esp.cache import registry
+from argcache.tests import Article, Reporter
+from argcache import registry
 
 # hack the cache loader so we can define more caches
 registry._caches_locked = False

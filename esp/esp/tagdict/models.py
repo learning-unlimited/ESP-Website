@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from esp.cache import cache_function
+from argcache import cache_function
 
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django

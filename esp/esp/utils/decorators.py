@@ -33,8 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.cache import cache_function
-from esp.cache.function import get_containing_class
+from argcache import cache_function
+from argcache.function import get_containing_class
 
 from django.http import HttpResponse
 from django.db.models import Model

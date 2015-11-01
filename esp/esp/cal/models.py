@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 from datetime import datetime, timedelta
-from esp.cache import cache_function
+from argcache import cache_function
 
 # Create your models here.
 

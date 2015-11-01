@@ -36,7 +36,7 @@ from django.db import models
 from django.db.models.query import Q
 
 from esp.db.fields import AjaxForeignKey
-from esp.cache import cache_function
+from argcache import cache_function
         
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)

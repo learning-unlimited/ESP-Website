@@ -4,7 +4,7 @@ import subprocess
 from django.db.models.aggregates import Count, Max, Min
 from django.db.models.query import Q
 
-from esp.cache import cache_function_for
+from argcache import cache_function_for
 from esp.program.models import ClassSubject
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call

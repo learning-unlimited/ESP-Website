@@ -42,8 +42,8 @@ from django.template.base import generic_tag_compiler, TagHelperNode, Template
 from django.utils.itercompat import is_iterable
 from django.utils import six
 
-from esp.cache import cache_function
-from esp.cache.key_set import is_wildcard
+from argcache import cache_function
+from argcache.key_set import is_wildcard
 from esp.middleware import ESPError
 
 __all__ = ['cache_inclusion_tag']
