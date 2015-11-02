@@ -288,22 +288,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def isStep(self):
         return False
 
-
-    def getNavBars(self):
-        nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and Permission.objects.user_has_perms(self.request.user, "Student/Classes/OneClass", program=self.program)):
-             nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
-                      'text': '%s Student Registration' % ( self.program.niceSubName() ),
-                      'section': ''})
-
-        if self.request.user.isAdmin(self.program):
-            nav_bars.append({'link':'/learn/%s/studentreg/' % (self.program.getUrlBase()),
-                             'text':'%s Student Reg Inline Text' % self.program.niceSubName(),
-                             'section': 'learn'})
-
-        return nav_bars
-    
-
     class Meta:
         proxy = True
         app_label = 'modules'

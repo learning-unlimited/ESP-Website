@@ -758,15 +758,6 @@ class StudentClassRegModule(ProgramModuleObj):
             #   The 'extra' value should be the ID list
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
-    def getNavBars(self):
-        """ Returns a list of the dictionary to render the class catalog, if it's open """
-        if super(StudentClassRegModule, self).deadline_met('/Catalog'):
-            return [{ 'link': '/learn/%s/catalog' % ( self.program.getUrlBase() ),
-                      'text': '%s Catalog' % ( self.program.niceSubName() ) }]
-        
-        else:
-            return []
-
     @aux_call
     def openclasses(self, request, tl, one, two, module, extra, prog):
         """ A publicly viewable version of the onsite class list. 

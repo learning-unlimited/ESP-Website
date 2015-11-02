@@ -142,14 +142,6 @@ class ProgramModuleObj(models.Model):
     def get_msg_vars(self, user, key):
         return None
 
-    def getCoreView(self, tl):
-        import esp.program.modules.models
-        modules = self.program.getModules(get_current_request().user, tl)
-        for module in modules:
-            if isinstance(module, CoreModule):
-                return getattr(module, module.get_main_view(tl))
-        assert False, 'No core module to return to!'
-
     def getCoreURL(self, tl):
         import esp.program.modules.models
         modules = self.program.getModules(get_current_request().user, tl)
@@ -363,22 +355,6 @@ class ProgramModuleObj(models.Model):
 
         return mark_safe(link)
 
-
-    @classmethod
-    def makeSummaryLink(cls, function):
-        """
-        Makes a nice HTML link that points to the specified view function, as a member of 'cls'
-
-        'function' must be a member function of 'cls'; 'cls' must be a valid program module class.  Both must be non-anonymous; ie., __name__ must be definned for both.
-        """
-        try:
-            function_pretty_name = function.__doc__.split('\n')[0]
-        except AttributeError: # Someone forgot to define a docstring!
-            function_pretty_name = "[%s.%s]" % (cls.__name__, function.__name__)        
-
-        return '<a href="%s" class="vModuleLink" onmouseover="updateDocs(\'<p>%s</p>\')">%s</a>' % \
-               (cls.get_summary_path(function), function.__doc__, function_pretty_name, )
-
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.main_view)
@@ -388,9 +364,6 @@ class ProgramModuleObj(models.Model):
 
     def prepare(self, context):
         return context
-
-    def getNavBars(self):
-        return []
 
     def getTemplate(self):
         if self.module.inline_template:
@@ -483,35 +456,8 @@ class ProgramModuleObj(models.Model):
             
         return props
                 
-        
-            
-    @classmethod
-    def getSummary(cls):
-        """
-        Return  the name of a template file that renders the myESP view for this class.
-        Returns None if no such view exists for this class.
-
-        This is a stub, to be overridden by subclasses.
-        """
-        return None
-
-    @classmethod
-    def prepareSummary(cls, context):
-        """
-        Modifies the 'context' dictionary by adding any data that the template pointed to
-        by 'getSummary', needs in its context in order to render proprerly.
-
-        Keys added to 'context' should be strings that contain an identifier that's
-        unique to this class, such as self.__name__.  This is not strictly enforced, though.
-
-        Returns the modified context.
-
-        This is a stub, to be overridden by subclasses.
-        """
-        return context
-
-        class Meta:
-            app_label = 'modules'
+    class Meta:
+        app_label = 'modules'
 
 
 # will check and depending on the value of tl

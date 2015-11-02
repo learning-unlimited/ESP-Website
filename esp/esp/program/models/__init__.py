@@ -1235,12 +1235,6 @@ class RegistrationProfile(models.Model):
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
 
-    def confirmStudentReg(self, user):
-        """ Confirm the specified user's registration in the program """
-        records = Record.objects.filter(user=self.user, event="reg_confirmed")
-        if records.count() == 0:
-            record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
-
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
@@ -1304,9 +1298,6 @@ class RegistrationProfile(models.Model):
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self,verbs=None):
         return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
-    
-    def registered_classes(self):
-        return ESPUser(self.user).getEnrolledSections(program=self.program)
 
 
 class TeacherBio(models.Model):
@@ -1735,10 +1726,6 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
            
-def schedule_constraint_test(prog):
-    sc = ScheduleConstraint(program=prog)
-    return True
-    
 
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
