@@ -69,9 +69,9 @@ from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
-from esp.resources.models        import Resource, ResourceRequest, ResourceAssignment, ResourceType
-from argcache                    import cache_function, wildcard
-from esp.utils.derivedfield      import DerivedField
+from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
+from argcache                     import cache_function, wildcard
+from argcache.extras.derivedfield import DerivedField
 
 from esp.middleware.threadlocalrequest import get_current_request
 
