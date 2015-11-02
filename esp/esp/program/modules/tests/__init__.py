@@ -47,5 +47,4 @@ from esp.program.modules.tests.commpanel import CommunicationsPanelTest
 from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest
 from esp.program.modules.tests.adminclass import CancelClassTest
-from esp.program.modules.tests.ajaxschedulingmoduleui import AJAXSchedulingModuleUITest
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
