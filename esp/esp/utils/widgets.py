@@ -13,8 +13,6 @@ import json
 import datetime
 import time
 
-from esp.utils import captcha
-
 # DATETIMEWIDGET
 calEnable = u"""
 <script type="text/javascript">
@@ -158,24 +156,6 @@ class SplitDateWidget(forms.MultiWidget):
     def format_output(self, rendered_widgets):
         return '\n'.join(rendered_widgets)
 
-class CaptchaWidget(forms.widgets.TextInput):
-    request = None
-    
-    def render(self, name, value, attrs=None):
-        if self.request:
-            return captcha.displayhtml(self.request, public_key=settings.RECAPTCHA_PUBLIC_KEY)
-        else:
-            raise ESPError('Captcha field initialized without request.  Please set the widget\'s request attribute.', log=True)
-    
-    def value_from_datadict(self, data, files, name):
-        challenge = data.get('recaptcha_challenge_field')
-        response = data.get('recaptcha_response_field')
-        captcha_response = captcha.submit(challenge, response, settings.RECAPTCHA_PRIVATE_KEY, self.request.META['REMOTE_ADDR'])
-
-        if captcha_response.is_valid:
-            return True
-        else:
-            return None
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
