@@ -238,11 +238,11 @@ INSTALLED_APPS = (
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.cache.apps.ESPCacheConfig',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
+    'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
     'form_utils',
