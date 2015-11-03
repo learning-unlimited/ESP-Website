@@ -551,12 +551,6 @@ class ESPUser(User, AnonymousUser):
         new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
-    def convertAvailability(self):
-        resources = Resource.objects.filter(user=self)
-        for res in resources:
-            self.addAvailableTime(Program.objects.all()[0], res.event)
-        resources.delete()
-
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
         
@@ -881,10 +875,6 @@ are a teacher of the class"""
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
-
-    @staticmethod
-    def isUserNameTaken(username):
-        return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
     def current_schoolyear(now=None):
@@ -1743,14 +1733,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
         db_table = 'users_contactinfo'
-
-    def _distance_from(self, zip):
-        try:
-            myZip = ZipCode.objects.get(zip_code = self.address_zip)
-            remoteZip = ZipCode.objects.get(zip_code = zip)
-            return myZip.distance(remoteZip)
-        except:
-            return -1
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)

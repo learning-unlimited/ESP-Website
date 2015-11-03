@@ -137,10 +137,6 @@ class ResourceType(models.Model):
 
         cls._get_or_create_cache[(label, program)] = ret
         return ret
-        
-    @staticmethod
-    def global_types():
-        return ResourceType.objects.filter(program__isnull=True)
 
     def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
@@ -268,14 +264,6 @@ class Resource(models.Model):
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
     
-    #   Modified to handle assigning rooms to both classes and their individual sections.
-    #   Resource assignments are always handled at the section level now. 
-    #   The assign_to_class function is copied for backwards compatibility.
-    
-    def assign_to_subject(self, new_class, check_constraint=True):
-        for sec in new_class.sections.all():
-            self.assign_to_section(sec, check_constraint)
-        
     def assign_to_section(self, section, check_constraint=True, override=False):
         if override:
             self.clear_assignments()
@@ -322,9 +310,6 @@ class Resource(models.Model):
                 
         return sequence
     
-    def is_conflicted(self):
-        return (self.assignments().count() > 1)
-    
     def available_any_time(self, program=None):
         return (len(self.available_times(program)) > 0)
     
@@ -343,12 +328,6 @@ class Resource(models.Model):
         else:
             return Event.objects.filter(id__in=event_list).order_by('start')
     
-    def is_independent(self):
-        if self.is_unique:
-            return True
-        else:
-            return False
-        
     @cache_function
     def is_available(self, QObjects=False, timeslot=None):
         if timeslot is None:

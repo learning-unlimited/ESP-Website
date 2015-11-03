@@ -536,24 +536,6 @@ class ClassSection(models.Model):
     def emailcode(self):
         return self.parent_class.emailcode() + u's' + unicode(self.index())
    
-    def starts_soon(self):
-        #   Return true if the class's start time is less than 50 minutes after the current time
-        #   and less than 10 minutes before the current time.
-        first_block = self.start_time()
-        if first_block is None:
-            return False
-        else:
-            st = first_block.start
-            
-        if st is None:
-            return False
-        else:
-            td = time.time() - time.mktime(st.timetuple())
-            if td < 600 and td > -3000:
-                return True
-            else:
-                return False
-            
     def already_passed(self):
         start_time = self.start_time()
         if start_time is None:
@@ -764,10 +746,6 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.get_teachers()
-        try:
-            num_teachers = teachers.count()
-        except:
-            num_teachers = len(teachers)
 
         timeslot_list = []
         for t in teachers:
@@ -1125,13 +1103,6 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def room_capacity(self):
-        ir = self.initial_rooms()
-        if ir.count() == 0:
-            return 0
-        else:
-            return reduce(lambda x,y: x+y, [r.num_students for r in ir])
-            
     def isFull(self, ignore_changes=False):
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):
             return False
@@ -1551,12 +1522,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def max_students(self):
         return self.sections.count()*self.class_size_max
 
-    def fraction_full(self):
-        try:
-            return (self.num_students()*1.0)/self.max_students()
-        except ZeroDivisionError:
-            return 1.0
-
     def emailcode(self):
         """ Return the emailcode for this class.
 
@@ -1566,10 +1531,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
-
-    def got_qsd(self):
-        """ Returns if this class has any associated QSD. """
-        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url()).exists()
 
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
@@ -1604,10 +1565,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             
         return self._studentapps_count
         
-        
-    def cache_time(self):
-        return 99999
-    
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
@@ -1914,19 +1871,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return result
 
     @staticmethod
-    def catalog_sort(one, other):
-        cmp1 = cmp(one.category.category, other.category.category)
-        if cmp1 != 0:
-            return cmp1
-        cmp2 = ClassSubject.class_sort_by_timeblock(one, other)
-        if cmp2 != 0:
-            return cmp2
-        cmp3 = ClassSubject.class_sort_by_title(one, other)
-        if cmp3 != 0:
-            return cmp3
-        return cmp(one, other)
-    
-    @staticmethod
     def class_sort_by_category(one, other):
         return cmp(one.category.category, other.category.category)
         
@@ -1958,16 +1902,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     @staticmethod
     def class_sort_noop(one, other):
         return 0
-
-    @staticmethod
-    def sort_muxer(sorters):
-        def sort_fn(one, other):
-            for fn in sorters:
-                val = fn(one, other)
-                if val != 0:
-                    return val
-            return 0
-        return sort_fn
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
@@ -2078,17 +2012,6 @@ class ClassCategories(models.Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.category, self.symbol)
         
-        
-    @staticmethod
-    def category_string(letter):
-        
-        results = ClassCategories.objects.filter(category__startswith = letter)
-        
-        if results.count() == 1:
-            return results[0].category
-        else:
-            return None
-
     class Admin:
         pass
 

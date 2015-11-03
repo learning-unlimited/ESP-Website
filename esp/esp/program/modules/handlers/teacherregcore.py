@@ -71,15 +71,6 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     def isStep(self):
         return False
     
-    def getNavBars(self):
-        if super(TeacherRegCore, self).deadline_met("/MainPage"):
-            return [{ 'link': '/teach/%s/teacherreg' % ( self.program.getUrlBase() ),
-                      'text': '%s Teacher Registration' % ( self.program.niceSubName() ),
-                      'section': 'teach'}]
-        else:
-            return []
-
-
     class Meta:
         proxy = True
         app_label = 'modules'
