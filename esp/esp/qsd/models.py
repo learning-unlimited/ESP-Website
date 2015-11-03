@@ -35,17 +35,14 @@ from datetime import datetime
 import hashlib
 
 from django.db import models
-from django.core.cache import cache
-from django.contrib.auth.models import User
 
 from markdown import markdown
 from esp.db.fields import AjaxForeignKey
-from esp.db.file_db import *
 from esp.cache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
-class QSDManager(FileDBManager):
+class QSDManager(models.Manager):
 
     @cache_function
     def get_by_url(self, url):
@@ -99,7 +96,7 @@ def qsd_edit_id(val):
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
 
-    objects = QSDManager(8, 'QuasiStaticData')
+    objects = QSDManager()
 
     url = models.CharField(max_length=256, help_text="Full url, without the trailing .html")
     name = models.SlugField(blank=True)

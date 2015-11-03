@@ -56,14 +56,6 @@ class SurveyManagement(ProgramModuleObj):
     def isStep(self):
         return False
 
-    def getNavBars(self):
-        nav_bars = []
-        if self.module.module_type == 'learn':
-            nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
-                    'text': '%s Survey' % ( self.program.niceSubName() ),
-                    'section': 'learn'})
-        return nav_bars
-    
     @needs_admin
     def survey_create(self, request, tl, one, two, module, extra, prog):
        

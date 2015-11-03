@@ -524,30 +524,6 @@ class MessageVars(models.Model):
         
 
         return True
-            
-    @staticmethod
-    def getModuleVar(msgrequest, varstring, user):
-        """ This is used to get the module variable from a string representation. """
-
-        try:
-            module, varname = varstring.split('.')
-        except:
-            raise ESPError('Variable %s not a valid module.var name' % varstring, log=False)
-
-        try:
-            msgVar = MessageVars.objects.get(provider_name = module, messagerequest = msgrequest)
-        except:
-            #raise ESPError("Could not get the variable provider... %s is an invalid variable module." % module, log=False)
-            # instead of erroring, I'm just going to ignore it.
-            return '{{%s}}' % varstring
-    
-
-        result = msgVar.getVar(varname, user)
-
-        if result is None:
-            return '{{%s}}' % varstring
-        else:
-            return result
 
     def __unicode__(self):
         return "Message Variables for %s" % self.messagerequest

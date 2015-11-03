@@ -97,10 +97,6 @@ class Event(models.Model):
         return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
             (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
 
-    def is_happening(self, time=datetime.now()):
-        """ Return True if the specified time is between start and end """
-        return (time > self.start and time < self.end)
-
     @staticmethod
     def total_length(event_list):
         #   Returns the time from the start of the first event to the end of the last.
