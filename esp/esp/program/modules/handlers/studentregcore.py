@@ -69,6 +69,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         iac = IndividualAccountingController(self.program, user)
         return (iac.amount_due() <= 0)
     have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
+    have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
+    have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
         now = datetime.now()
