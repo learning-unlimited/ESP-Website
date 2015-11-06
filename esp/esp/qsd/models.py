@@ -197,6 +197,9 @@ class QuasiStaticData(models.Model):
     def get_absolute_url(self):
         return "/"+self.url+".html"
 
+    class Meta:
+        verbose_name = 'Editable'
+
 def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class
     # Otherwise, the wrong cache path will be invalidated
