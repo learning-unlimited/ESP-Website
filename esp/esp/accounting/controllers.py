@@ -510,7 +510,7 @@ class IndividualAccountingController(ProgramAccountingController):
     
     def has_paid(self, in_full=False):
         if in_full:
-            return (self.amount_paid() > 0) and (self.amount_due <= 0)
+            return (self.amount_paid() > 0) and (self.amount_due() <= 0)
         else:
             return (self.amount_paid() > 0)
 

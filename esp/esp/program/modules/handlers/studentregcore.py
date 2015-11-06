@@ -51,6 +51,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template, select_template
 import operator
+from esp.cache import cache_function
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
@@ -62,10 +63,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "seq": -9999
             }
 
+    @cache_function
     def have_paid(self, user):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.amount_due() <= 0)
+    have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
+    have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
+    have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
         now = datetime.now()
