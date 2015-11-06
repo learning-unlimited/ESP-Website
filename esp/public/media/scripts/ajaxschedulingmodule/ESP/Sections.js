@@ -25,6 +25,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min"), type: "number"},
         classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
+        classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
     };
     this.filter.classLengthMin.valid = function(a) {
         return Math.ceil(a.length) >= this.filter.classLengthMin.val;
@@ -47,6 +48,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         }.bind(this));
         return result;
     }.bind(this);
+    this.filter.classHideUnapproved.valid = function(a) {
+        return a.status > 0;
+    }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
         filterObject.el.change(function() {
@@ -55,8 +59,12 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
                 filterObject.val = parseInt(filterObject.val);
             } else if(filterObject.type==="string") {
                 filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+            } else if(filterObject.type==="boolean") {
+                filterObject.val = filterObject.el.prop('checked');
             }
-            if((filterObject.type==="number" && isNaN(filterObject.val)) || (filterObject.type==="string" && filterObject.val.trim()==="")) {
+            if((filterObject.type==="number" && isNaN(filterObject.val))
+                || (filterObject.type==="string" && filterObject.val.trim()==="")
+                || (filterObject.type==="boolean" && !filterObject.val)) {
                 filterObject.active = false;
             } else {
                 filterObject.active = true;
