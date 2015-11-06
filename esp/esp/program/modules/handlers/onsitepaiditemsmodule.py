@@ -80,4 +80,4 @@ class OnsitePaidItemsModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

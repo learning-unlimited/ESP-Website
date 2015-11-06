@@ -36,11 +36,11 @@ Learning Unlimited, Inc.
 from uuid                        import uuid4 as get_uuid
 from datetime                    import datetime, timedelta
 from collections                 import defaultdict
+import json
 
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
-from django.utils                import simplejson
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
@@ -100,7 +100,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from django.utils import simplejson
+        import json
         from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
@@ -109,7 +109,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
-        open_class_category = mark_safe(simplejson.dumps(open_class_category))
+        open_class_category = mark_safe(json.dumps(open_class_category))
 
         context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
@@ -142,9 +142,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         for item in ordered_timeslots:
             ordered_timeslot_names.append([item.id, item.short_description])
 
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         
-        simplejson.dump(ordered_timeslot_names, resp)
+        json.dump(ordered_timeslot_names, resp)
         
         return resp
 
@@ -184,4 +184,4 @@ class LotteryStudentRegModule(ProgramModuleObj):
     
     class Meta:
         proxy = True
-
+        app_label = 'modules'

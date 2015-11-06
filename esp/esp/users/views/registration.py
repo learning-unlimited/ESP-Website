@@ -22,42 +22,12 @@ from vanilla import CreateView
 from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
+from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
 from esp.web.util.main import render_to_response
 
 
-__all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']
-
-def join_emaillist(request):
-    """
-    View to join our email list.
-    """
-
-    if request.user.is_authenticated():
-        return render_to_response('registration/already_logged_in.html',
-                                  request, {})
-
-
-    if request.method == 'POST':
-        form = EmailUserForm(request.POST)
-
-
-        if form.is_valid():
-            # create a user, which will be used if the email address
-            # is used for a real account
-            ESPUser.objects.get_or_create(email    = form.cleaned_data['email'],
-                                       username = form.cleaned_data['email'],
-                                       password = 'emailuser')
-
-            add_list_member('announcements', form.cleaned_data['email'])
-
-            return HttpResponseRedirect('/')
-    else:
-        form = EmailUserRegForm()    
-
-    return render_to_response('registration/emailuser.html',
-                              request, {'form':form})
+__all__ = ['user_registration_phase1', 'user_registration_phase2','resend_activation_view']
 
 
 def user_registration_validate(request):    

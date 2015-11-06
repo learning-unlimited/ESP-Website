@@ -85,24 +85,6 @@ class SurveyModule(ProgramModuleObj):
     def isStep(self):
         return False
 
-    def getNavBars(self):
-        nav_bars = []
-        if self.module.module_type == 'learn':
-            if self.deadline_met('/Survey'):
-                nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
-                        'text': '%s Survey' % ( self.program.niceSubName() ),
-                        'section': 'learn'})
-        elif self.module.module_type == 'teach':
-            if self.deadline_met('/Survey'):                    
-                nav_bars.append({ 'link': '/teach/%s/survey/' % ( self.program.getUrlBase() ),
-                        'text': '%s Survey' % ( self.program.niceSubName() ),
-                        'section': 'teach'})
-                nav_bars.append({ 'link': '/teach/%s/survey/review' % ( self.program.getUrlBase() ),
-                        'text': '%s Student Surveys' % ( self.program.niceSubName() ),
-                        'section': 'teach'})
-
-        return nav_bars
-    
     @main_call
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
@@ -119,4 +101,4 @@ class SurveyModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

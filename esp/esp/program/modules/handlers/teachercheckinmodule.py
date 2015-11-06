@@ -48,7 +48,7 @@ from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
-import simplejson as json
+import json
 
 
 class TeacherCheckinModule(ProgramModuleObj):
@@ -146,7 +146,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                     json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
                 else:
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
-        return HttpResponse(json.dumps(json_data), mimetype='text/json')
+        return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @staticmethod
     def get_phone(user):
@@ -330,3 +330,4 @@ class TeacherCheckinModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

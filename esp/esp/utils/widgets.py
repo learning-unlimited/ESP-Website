@@ -9,11 +9,9 @@ from django.utils.safestring import mark_safe
 import django.utils.formats
 from django.template import Template, Context
 
-import simplejson as json
+import json
 import datetime
 import time
-
-from esp.utils import captcha
 
 # DATETIMEWIDGET
 calEnable = u"""
@@ -62,7 +60,7 @@ class DateTimeWidget(forms.widgets.TextInput):
         final_attrs = self.prepare_render_attrs(name, value, attrs)
         id = final_attrs['id']
         cal = calEnable % (id, 'datetimepicker', settings.MEDIA_URL, self.dformat, self.tformat)
-        return u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
+        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
@@ -90,7 +88,7 @@ class DateWidget(DateTimeWidget):
         final_attrs = self.prepare_render_attrs(name, value, attrs)
         id = final_attrs['id']
         cal = calEnable % (id, 'datepicker', settings.MEDIA_URL, self.dformat, self.tformat)
-        return u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
+        return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
         
 class ClassAttrMergingSelect(forms.Select):
 
@@ -158,24 +156,6 @@ class SplitDateWidget(forms.MultiWidget):
     def format_output(self, rendered_widgets):
         return '\n'.join(rendered_widgets)
 
-class CaptchaWidget(forms.widgets.TextInput):
-    request = None
-    
-    def render(self, name, value, attrs=None):
-        if self.request:
-            return captcha.displayhtml(self.request, public_key=settings.RECAPTCHA_PUBLIC_KEY)
-        else:
-            raise ESPError('Captcha field initialized without request.  Please set the widget\'s request attribute.', log=True)
-    
-    def value_from_datadict(self, data, files, name):
-        challenge = data.get('recaptcha_challenge_field')
-        response = data.get('recaptcha_response_field')
-        captcha_response = captcha.submit(challenge, response, settings.RECAPTCHA_PRIVATE_KEY, self.request.META['REMOTE_ADDR'])
-
-        if captcha_response.is_valid:
-            return True
-        else:
-            return None
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
@@ -193,7 +173,7 @@ class BlankSelectWidget(forms.Select):
         
         if value is None: value = ''
         final_attrs = self.build_attrs(attrs, name=name)
-        output = [u'<select%s>' % forms.util.flatatt(final_attrs)]
+        output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
         output.append( u'<option value="%s" selected="selected">%s</option>' %
                        (escape(self.blank_value), conditional_escape(force_unicode(self.blank_label))) )
         options = self.render_options(choices, [value])

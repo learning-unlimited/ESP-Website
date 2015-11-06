@@ -3,11 +3,13 @@ import datetime
 from model_mommy import mommy
 
 from django import forms
-from django.contrib.auth import login
-from django.contrib.auth.models import Group
 from django.core import mail
+from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import Group
+from django.test.client import Client, RequestFactory
+from django.http import HttpRequest
 from django.conf import settings
-from django.test.client import Client
+from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
@@ -20,6 +22,7 @@ from esp.users.views import make_user_admin
 
 class ESPUserTest(TestCase):
     def setUp(self):
+        self.factory = RequestFactory()
         user_role_setup()
 
     def testInit(self):
@@ -42,23 +45,18 @@ class ESPUserTest(TestCase):
         self.failUnless( Permission.objects.filter(user=uid).count() == 0 )
 
     def testMorph(self):
-        class scratchCls(object):
-            pass
         class scratchDict(dict):
             def cycle_key(self):
                 pass
             def flush(self):
                 for i in self.keys():
                     del self[i]
-
+    
         # Make up a fake request object
-        # This definitely doesn't meet the spec of the real request object;
-        # if tests fail as a result in the future, it'll need to be fixed.
-        request = scratchCls()
-
+        request = self.factory.get('/')
+        request.session = scratchDict()
         request.backend = 'django.contrib.auth.backends.ModelBackend'
         request.user = None
-        request.session = scratchDict()
 
         # Create a couple users and give them roles
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
@@ -119,6 +117,20 @@ class ESPUserTest(TestCase):
             adminUser.delete()
         if (c2):
             studentUser.delete()
+
+    def test_lazy_user(self):
+        """Test that we can handle a SimpleLazyObject."""
+        u1 = User.objects.create(username='laziness_123',
+                                 last_login=datetime.datetime.now())
+        u2 = ESPUser(u1)
+        u3 = SimpleLazyObject(lambda: u1)
+        u4 = SimpleLazyObject(lambda: u2)
+        u5 = ESPUser(u2)
+        u6 = ESPUser(u3)
+        u7 = ESPUser(u4)
+        for u in [u1, u2, u3, u4, u5, u6, u7]:
+            self.assertEqual(u.username, 'laziness_123')
+            self.assertIsNotNone(u.id)
 
 
 
@@ -302,7 +314,7 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
         
-        import simplejson as json
+        import json
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)

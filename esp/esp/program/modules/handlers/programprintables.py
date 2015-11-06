@@ -50,6 +50,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
+from decimal import Decimal
+import json
 import collections
 
 class ProgramPrintables(ProgramModuleObj):
@@ -855,7 +857,7 @@ Volunteer schedule for %s:
 
         import csv
         from django.http import HttpResponse
-        response = HttpResponse(mimetype='text/csv')
+        response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
         writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:            
@@ -917,16 +919,32 @@ Volunteer schedule for %s:
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
  
+        # TODO: conditional should use Tag.getBooleanTag or somesuch
+        show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
             classes = classes_by_student[student.id]
 
-            # TODO: conditional should use Tag.getBooleanTag or somesuch
-            if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
+            #get the student's last class on each day
+            last_classes = []
+            days = {}
+            for cls in classes:
+                date = cls.end_time_prefetchable().date().isocalendar()
+                if date in days:
+                    days[date].append(cls)
+                else:
+                    days[date]=[cls]
+
+            for day,day_classes in days.items():
+                last_classes.append(day_classes[-1])
+            last_classes.sort()
+
+            if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
                 #   and replace with classes where appropriate.
-                times = list(prog.getTimeSlots())
+                times = timeslots[:]
                 for cls in classes:
                     index = 0
                     for t in cls.meeting_times.all():
@@ -963,6 +981,7 @@ Volunteer schedule for %s:
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
             student.classes = classes
+            student.last_classes = last_classes
             
         context['students'] = students
         context['program'] = prog
@@ -1323,7 +1342,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from django.utils.encoding import smart_str
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_cvs = csv.writer(response)
 
         write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
@@ -1364,7 +1383,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get the list of all the sections, and all the times for this program.
@@ -1447,7 +1466,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get first section of each class
@@ -1519,7 +1538,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
         
         data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
@@ -1531,4 +1550,4 @@ Volunteer schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

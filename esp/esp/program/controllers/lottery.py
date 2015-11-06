@@ -79,7 +79,7 @@ class LotteryAssignmentController(object):
             self.lotteried_students = students['lotteried_students']
         else:
             raise Exception('Cannot retrieve lottery preferences for program, please ensure that it has the lottery module.')
-        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
+        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program').prefetch_related('meeting_times').distinct()
         self.timeslots = self.program.getTimeSlots()
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.lotteried_students)
@@ -252,7 +252,7 @@ class LotteryAssignmentController(object):
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.
-            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(priority_at_least_i,self.section_schedules,out=self.has_priority[i])
@@ -260,7 +260,7 @@ class LotteryAssignmentController(object):
             self.sections_at_same_time = numpy.dot(self.section_schedules, numpy.transpose(self.section_schedules))
 
             #   And the same, overlappingly.
-            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(numpy.dot(priority_at_least_i,self.sections_at_same_time),self.section_schedules,out=self.has_overlapping_priority[i])

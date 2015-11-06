@@ -97,10 +97,6 @@ class Event(models.Model):
         return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
             (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
 
-    def is_happening(self, time=datetime.now()):
-        """ Return True if the specified time is between start and end """
-        return (time > self.start and time < self.end)
-
     @staticmethod
     def total_length(event_list):
         #   Returns the time from the start of the first event to the end of the last.
@@ -182,17 +178,6 @@ class Event(models.Model):
     
     def pretty_start_time(self):
         return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
-    
-    def num_classes_assigned(self):
-        #   Return the number of classes assigned to classrooms in this time slot.
-        from esp.resources.models import ResourceAssignment, ResourceType
-        classroom = ResourceType.get_or_create('Classroom')
-        return ResourceAssignment.objects.filter(resource__event=self, resource__res_type=classroom).count()
-    
-    def num_classes(self):
-        #   Return the number of classes assigned to this time slot.
-        from esp.program.models import ClassSection
-        return ClassSection.objects.filter(meeting_times=self).count()
     
     def parent_program(self):
         return self.program

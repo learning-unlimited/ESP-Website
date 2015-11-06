@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 import colorsys
 from datetime import datetime, timedelta
 
@@ -87,31 +87,31 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def catalog_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         #   Fetch a reduced version of the catalog to save time
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
-            'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
+            'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT array_to_string(array_agg("cal_event"."id"), ',') FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
             'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        simplejson.dump(data, resp)
+        json.dump(data, resp)
 
         return resp
     
     @aux_call
     @needs_onsite
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         #   Try to ensure we don't miss anyone
         students_dict = self.program.students(QObjects=True)
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
@@ -120,37 +120,37 @@ class OnSiteClassList(ProgramModuleObj):
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
         data = students.values_list('id', 'last_name', 'first_name').distinct()
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
         
     @aux_call
     @needs_onsite
     def counts_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call    
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, resourceassignment__resource__res_type__name="Classroom").select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
@@ -159,13 +159,13 @@ class OnSiteClassList(ProgramModuleObj):
         if result['user']:
             result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     @aux_call
     @needs_onsite
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         result = {'user': None, 'sections': [], 'messages': []}
         try:
             user = ESPUser.objects.get(id=int(request.GET['user']))
@@ -173,7 +173,7 @@ class OnSiteClassList(ProgramModuleObj):
             user = None
             result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
         try:
-            desired_sections = simplejson.loads(request.GET['sections'])
+            desired_sections = json.loads(request.GET['sections'])
         except:
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
@@ -234,7 +234,7 @@ class OnSiteClassList(ProgramModuleObj):
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     
@@ -243,7 +243,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
 
         result = {}
 
@@ -260,7 +260,7 @@ class OnSiteClassList(ProgramModuleObj):
         PrintRequest.objects.create(user=user_obj, printer=printer)
         result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
 
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
 
     @aux_call
@@ -273,7 +273,7 @@ class OnSiteClassList(ProgramModuleObj):
         
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
-        context['open_class_category'] = mark_safe(simplejson.dumps(open_class_category))
+        context['open_class_category'] = mark_safe(json.dumps(open_class_category))
         
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 
@@ -469,4 +469,4 @@ class OnSiteClassList(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

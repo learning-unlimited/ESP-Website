@@ -2,7 +2,7 @@
 
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
-from django.utils import simplejson as json
+import json
 
 class JSONField(models.TextField):
     """JSONField is a generic textfield that neatly serializes/unserializes
@@ -35,7 +35,3 @@ class JSONField(models.TextField):
             value = json.dumps(value, cls=DjangoJSONEncoder)
 
         return super(JSONField, self).get_db_prep_save(value, connection=connection)
-
-#   Added to support South migrations
-from south.modelsinspector import add_introspection_rules
-add_introspection_rules([], ["^esp\.utils\.fields\.JSONField"])

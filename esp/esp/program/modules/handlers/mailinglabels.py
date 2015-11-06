@@ -162,7 +162,7 @@ class MailingLabels(ProgramModuleObj):
         output = MailingLabels.gen_addresses(infos, combine)
 
         if 'csv' in extra.strip():
-            response = HttpResponse('\n'.join(output), mimetype = 'text/plain')
+            response = HttpResponse('\n'.join(output), content_type = 'text/plain')
             return response
 
         
@@ -304,4 +304,4 @@ class MailingLabels(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import simplejson
+import json
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, Program
 
@@ -54,7 +54,7 @@ class RegistrationTypeController(object):
                 return set(cls.default_names)
         display_names = Tag.getProgramTag(key=cls.key, program=prog)
         if display_names:
-            display_names = simplejson.loads(display_names) + cls.default_names
+            display_names = json.loads(display_names) + cls.default_names
         else:
             display_names = cls.default_names
         if "All" in display_names:
@@ -75,22 +75,7 @@ class RegistrationTypeController(object):
         try:
             if "All" in display_names:
                 display_names = cls.default_names + ["All"]
-            Tag.setTag(key=cls.key, target=prog, value=simplejson.dumps(display_names))
+            Tag.setTag(key=cls.key, target=prog, value=json.dumps(display_names))
             return True
         except Exception:
             return False
-        
-    def getVisibleRegistrationTypes(cls, prog):
-        return RegistrationType.objects.filter(name__in=cls.getVisibleRegistrationTypeNames(prog=prog)).distinct()
-    
-    @classmethod
-    def getNonUniqueNames(cls):
-        rts = RegistrationType.objects.filter(category='student').distinct().values('pk','name').order_by('name')
-        non_unique_name = set()
-        
-        prev = rts[0]['name']
-        for rt in rts[1:]:
-            if prev == rt['name']:
-                non_unique_name.add(prev)
-            prev = rt['name']
-        return non_unique_name
