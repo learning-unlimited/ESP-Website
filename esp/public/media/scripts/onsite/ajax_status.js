@@ -248,6 +248,7 @@ function print_schedule()
     result = $j.ajax({
         url: printing_url,
         data: student_data,
+        dataType: 'json',
         success: function (data, text_status, jqxhr) {
             add_message(data.message);
         }
@@ -382,6 +383,7 @@ function set_current_student(student_id)
         var schedule_resp = $j.ajax({
             url: program_base_url + "get_schedule_json?user=" + student_id,
             async: false,
+            dataType: 'json',
             success: handle_schedule_response
         });
         render_classchange_table(student_id);
@@ -500,6 +502,7 @@ function add_student(student_id, section_id, size_override)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
+        dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]
     });
@@ -535,6 +538,7 @@ function remove_student(student_id, section_id)
     //  Commit changes to server
     var schedule_resp = $j.ajax({
         url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        dataType: 'json',
         success: handle_schedule_response,
         complete: [update_checkboxes, unlock_schedule]
     });
@@ -1087,6 +1091,7 @@ function fetch_all(avoid_catalog)
     {
         $j.ajax({
             url: program_base_url + "catalog_status",
+            dataType: 'json',
             success: handle_catalog
         });
     }
@@ -1096,22 +1101,27 @@ function fetch_all(avoid_catalog)
     }
     $j.ajax({
         url: program_base_url + "enrollment_status",
+        dataType: 'json',
         success: handle_enrollment
     });
     $j.ajax({
         url: program_base_url + "checkin_status",
+        dataType: 'json',
         success: handle_checkins
     });
     $j.ajax({
         url: program_base_url + "counts_status",
+        dataType: 'json',
         success: handle_counts
     });
     $j.ajax({
         url: program_base_url + "rooms_status",
+        dataType: 'json',
         success: handle_rooms
     });
     $j.ajax({
         url: program_base_url + "students_status",
+        dataType: 'json',
         success: handle_students
     });
 }
