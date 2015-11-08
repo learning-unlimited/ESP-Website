@@ -773,7 +773,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['two'] = two
         context['form'] = reg_form
         context['formset'] = resource_formset
-        context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:
