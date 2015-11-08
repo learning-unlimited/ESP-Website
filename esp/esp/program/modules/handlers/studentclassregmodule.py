@@ -430,9 +430,6 @@ class StudentClassRegModule(ProgramModuleObj):
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
-            regs = Record.objects.filter(user=request.user, program=prog, event="reg_confirmed")
-            if regs.count() == 0 and Tag.getTag('confirm_on_addclass'):
-                r = Record.objects.create(user=request.user, program=prog, event="reg_confirmed")
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
