@@ -740,9 +740,12 @@ function render_table(display_mode, student_id)
             var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
             if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
             tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
+            // TODO: more reliable way to compute friendly_times?
             var first_timeslot = section.timeslots[0];
             var last_timeslot = section.timeslots[section.timeslots.length-1];
-            var friendly_times = data.timeslots[first_timeslot].label.split("--")[0] + "--" + data.timeslots[last_timeslot].label.split("--")[1] + " (" + section.timeslots.length + " hour)"; // TODO: more reliable way to compute this?
+            var start_time = data.timeslots[first_timeslot].label.split("--")[0];
+            var end_time = data.timeslots[last_timeslot].label.split("--")[1];
+            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " hour)";
             tooltip_div.append($j("<div/>").html(friendly_times));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
