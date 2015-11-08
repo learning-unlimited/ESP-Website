@@ -486,12 +486,10 @@ def usercheck_usetl(method):
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
-        allowed_teacher_types = Tag.getTag("allowed_teacher_types", moduleObj.program, default='').split(",")
-        
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
-        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
+        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notateacher.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
