@@ -72,11 +72,9 @@ If you have any questions regarding the program, <br /> please email the
        Add a new class for {{ program.niceName }}!
      </a>
      <br />
-     {% if allow_class_import %}
      <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
        Teach a class from a previous program for {{ program.niceName }}!
      </a>
-     {% endif %}
      {% endif %}
      {% if can_create_open_class %}<br />
      <a href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
