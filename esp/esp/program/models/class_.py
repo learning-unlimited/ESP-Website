@@ -1619,12 +1619,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def cannotAdd(self, user, checkFull=True, which_section=None):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
-        if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
+        if not user.isStudent():
             return u'You are not a student!'
-        
-        blocked_student_types = Tag.getTag("blocked_student_types", target=self)
-        if blocked_student_types and not (set(user.getUserTypes()) & set(blocked_student_types.split(","))):
-            return u"Cannot accept more users of your account type!"
         
         if not self.isAccepted():
             return u'This class is not accepted.'
@@ -1637,11 +1633,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             return scrmi.temporarily_full_text
 
-        if not Tag.getTag("allowed_student_types", target=self.parent_program):
-            if user.getGrade(self.parent_program) < self.grade_min or \
-                   user.getGrade(self.parent_program) > self.grade_max:
-                if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
-                    return u'You are not in the requested grade range for this class.'
+        if user.getGrade(self.parent_program) < self.grade_min or \
+               user.getGrade(self.parent_program) > self.grade_max:
+            if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
+                return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:

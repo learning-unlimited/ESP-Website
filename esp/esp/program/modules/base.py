@@ -556,10 +556,7 @@ def needs_student(method):
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
-            allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
-            matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
-            if not matching_user_types:
-                return render_to_response('errors/program/notastudent.html', request, {})
+            return render_to_response('errors/program/notastudent.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method

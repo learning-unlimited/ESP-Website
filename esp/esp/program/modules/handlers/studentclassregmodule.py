@@ -163,22 +163,10 @@ class StudentClassRegModule(ProgramModuleObj):
         }
 
         if QObject:
-            retVal = qobjects
+            return qobjects
         else:
-            retVal = {k: ESPUser.objects.filter(v).distinct()
-                      for k, v in qobjects.iteritems()}
-        
-        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
-        if allowed_student_types:
-            allowed_student_types = allowed_student_types.split(",")
-            for stutype in allowed_student_types:
-                GroupName = Q(groups__name=stutype)
-                if QObject:
-                    retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
-                else:
-                    retVal[stutype] = ESPUser.objects.filter(Par & Unexpired & Reg & GroupName).distinct()
-
-        return retVal
+            return {k: ESPUser.objects.filter(v).distinct()
+                    for k, v in qobjects.iteritems()}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
@@ -187,17 +175,8 @@ class StudentClassRegModule(ProgramModuleObj):
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who signed up for at least one class""",
-                  'enrolled': """Students who are enrolled in at least one class"""}
-        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
-        if allowed_student_types:
-            allowed_student_types = allowed_student_types.split(",")
-            for stutype in allowed_student_types:
-                if stutype in role_dict:
-                    result[stutype] = role_dict[stutype]
-
-        return result
-
+        return {'classreg': """Students who signed up for at least one class""",
+                'enrolled': """Students who are enrolled in at least one class"""}
     
     def isCompleted(self):
         return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
