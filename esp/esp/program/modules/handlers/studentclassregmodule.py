@@ -500,8 +500,6 @@ class StudentClassRegModule(ProgramModuleObj):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
-            if Tag.getBooleanTag('hide_full_classes', prog, default=False):
-                classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
@@ -535,8 +533,7 @@ class StudentClassRegModule(ProgramModuleObj):
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-        hide_full = Tag.getBooleanTag('hide_full_classes', prog, False)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
         context['register_from_catalog'] = scrmi.register_from_catalog
