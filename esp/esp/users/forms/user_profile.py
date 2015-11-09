@@ -166,7 +166,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     medical_needs = forms.CharField(required=False)
 
-    post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
     schoolsystem_id = forms.CharField(max_length=32, required=False)
     schoolsystem_optout = forms.BooleanField(required=False)
@@ -220,9 +219,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
-
-        if not Tag.getTag('ask_student_about_post_hs_plans'):
-            del self.fields['post_hs']
 
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
@@ -291,11 +287,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['heard_about']
-
-    def clean_post_hs(self):
-        if self.cleaned_data['post_hs'] == 'Other...:':
-            raise forms.ValidationError("If 'Other...', please provide details")
-        return self.cleaned_data['post_hs']
 
     def clean_transportation(self):
         if self.cleaned_data['transportation'] == 'Other...:':

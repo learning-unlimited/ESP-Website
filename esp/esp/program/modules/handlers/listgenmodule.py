@@ -63,7 +63,6 @@ class UserAttributeGetter(object):
                     '16_school': 'School',
                     '17_heard_about': 'Heard about Splash from',
                     '18_transportation': 'Plan to Get to Splash',
-                    '19_post_hs': 'Post-HS plans',
                     '20_schoolsystem_id': 'School system ID',
                     '21_tshirt_size': 'T-Shirt Size',
                     '22_gender': 'Gender',
@@ -181,10 +180,6 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             return self.profile.student_info.transportation
             
-    def get_post_hs(self):
-        if self.profile.student_info:
-            return self.profile.student_info.post_hs
-
     def get_schoolsystem_id(self):
         if self.profile.student_info:
             return self.profile.student_info.schoolsystem_id
