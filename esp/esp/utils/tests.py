@@ -24,7 +24,6 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
-from esp.utils.defaultclass import defaultclass
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
@@ -146,38 +145,6 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
     def runTest(self):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
         self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
-
-
-class DefaultclassTestCase(unittest.TestCase):
-    def testDefaultclass(self):
-        """ Verify that defaultclass correctly lets you select out a custom instance of a class """
-        class kls(object):
-            @classmethod
-            def get_name(cls):
-                return cls.__name__
-            def get_hi(self):
-                return "hi!"
-                
-        kls = defaultclass(kls)
-
-        myKls = kls()
-        self.assertEqual(myKls.get_name(), "kls")
-        self.assertEqual(myKls.get_hi(), "hi!")
-        self.assertEqual(kls.get_name(), "kls")
-
-        myKls2 = kls[0]()
-        self.assertEqual(myKls.get_name(), "kls")
-
-        class otherKls(kls.real):
-            pass
-
-        myOtherKls = otherKls()
-        self.assertEqual(myOtherKls.get_name(), "otherKls")
-        
-        kls[0] = otherKls
-    
-        myOtherKls2 = kls[0]()
-        self.assertEqual(myOtherKls2.get_name(), "otherKls")
 
 
 class TemplateOverrideTest(DjangoTestCase):
