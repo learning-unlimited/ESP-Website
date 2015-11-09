@@ -21,9 +21,12 @@
 from fabric.api import *
 from fabric.contrib import files
 
+import json
 import os
 import pipes
 import platform
+import random
+import string
 
 from os.path import join
 
@@ -38,6 +41,9 @@ env.lbase = os.path.dirname(env.real_fabfile)
 
 # Name of the encrypted volume group in the Vagrant VM
 env.encvg = "ubuntu--12--vg-keep_1"
+
+# Name of the Postgres database
+env.dbname = "devsite_django"
 
 # Configure the Vagrant VM as the default target of our commands, so long as no
 # hosts were specified on the command line. Calling vagrant() is sort of like
@@ -162,3 +168,98 @@ def ensure_environment():
             print "***** Something went wrong when mounting the encrypted partition."
             print "***** Aborting."
             exit(-1)
+
+@task
+def emptydb(owner="esp"):
+    """
+    Delete any existing Postgres database and replace it with an empty one.
+
+    This task additionally rotates the database credentials and regenerates
+    local_settings.py.
+    """
+    ensure_environment()
+
+    # Generate a new local_settings.py file with this database owner
+    password = gen_password(12)
+    context = {
+        "db_user": owner,
+        "db_name": env.dbname,
+        "db_password": password,
+        "secret_key": gen_password(64),
+    }
+    files.upload_template(
+        join(env.lbase, "deploy", "config_templates", "local_settings.py"),
+        env.rbase + "esp/esp/local_settings.py",
+        context,
+        backup=False,
+    )
+
+    # Delete and recreate the Postgres user and database. Note that the PASSWORD
+    # command requires single-quotes, not double-quotes as is usual.
+    psql("DROP DATABASE IF EXISTS %s", env.dbname)
+    psql("DROP ROLE IF EXISTS %s", owner)
+
+    psql("CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)
+    psql("CREATE DATABASE %s OWNER %s TABLESPACE encrypted", env.dbname, owner)
+
+@task
+def loaddb(filename=None):
+    """
+    If filename is given, load the (decrypted, uncompressed) database dump at
+    that local path into the Postgres database.
+
+    If filename is not given, download the dump over HTTP, prompting the user
+    for the URL if one has not been previously provided.
+
+    Automatically detects the dump format and proper username.
+    """
+    ensure_environment()
+
+    # Clean up existing dumpfile, if present
+    run("rm -f ~/dbdump")
+
+    if filename:
+        put(filename, "~/dbdump")
+    else:
+        # Get or prompt for HTTP download settings. These settings are saved in
+        # ~/.dbdownload in the Vagrant VM, which makes it easier for people to
+        # work with different chapters' databasees in different VMs.
+        if files.exists("~/.dbdownload"):
+            contents = run("cat ~/.dbdownload")
+            config = json.loads(contents)
+        else:
+            url = prompt("Download URL:")
+            config = {
+                "url": url,
+            }
+            escaped_config = pipes.quote(json.dumps(config))
+            run("echo " + escaped_config + " > ~/.dbdownload")
+
+        # Download database dump into VM
+        escaped_url = pipes.quote(config["url"])
+        run("wget " + escaped_url + " -O ~/dbdump")
+
+    # HACK: detect the Postgres user used in the dump. We run strings in case
+    # the dump is in binary format, then we look for the grant for arbitrary
+    # table, program_class. The result should be a line like:
+    #
+    #   GRANT ALL ON TABLE program_clas TO esp;
+    #
+    # ...which we can then parse to get the user. :D
+    contents = run("strings dbdump | grep 'GRANT ALL ON TABLE program_class TO'")
+    pg_owner = contents.split()[-1][:-1]
+
+    # Reset the database
+    emptydb(pg_owner)
+
+    # Load the database dump (pg_restore autodetects the dump format)
+    sudo("chgrp postgres ~/dbdump")
+    sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
+         " --exit-on-error --jobs=2 ~/dbdump",
+         user="postgres")
+
+    # Cleanup
+    run("rm -f ~/dbdump")
+
+def gen_password(length):
+    return "".join([random.choice(string.letters + string.digits) for i in range(length)])
