@@ -33,22 +33,37 @@ Learning Unlimited, Inc.
 """
 
 from django.conf import settings
-from django.contrib.auth.middleware import AuthenticationMiddleware, get_user
+from django.contrib import auth
+from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.contrib.auth.models import AnonymousUser
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 
-from esp.users.models import ESPUser
+from esp.users.models import AnonymousESPUser, ESPUser
 
 __all__ = ('ESPAuthMiddleware',)
 
-class ESPAuthMiddleware(object):
-    """ Much like the auth middleware except that this returns an ESPUser. """
+def get_user(request):
+    """ Code modified from django.contrib.auth.middleware.get_user
+    in order to replace the AnonymousUser with our own which has
+    all the ESPUser methods. """
+    if not hasattr(request, '_cached_user'):
+        user = auth.get_user(request)
+        if user.is_authenticated():
+            request._cached_user = user
+        else:
+            request._cached_user = AnonymousESPUser()
+    return request._cached_user
 
+class ESPAuthMiddleware(AuthenticationMiddleware):
+    """ Much like the auth middleware except that this messes with cookie settings and such. """
+
+    # Yes, it's necessary to override this, the get_user() is different
+    # from Django's (see above).
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
         
-        request.user = SimpleLazyObject(lambda: ESPUser(get_user(request)))
+        request.user = SimpleLazyObject(lambda: get_user(request))
 
     def process_response(self, request, response):
         ## This gets set if we're not supposed to modify the cookie

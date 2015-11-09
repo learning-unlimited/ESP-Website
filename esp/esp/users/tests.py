@@ -55,7 +55,7 @@ class ESPUserTest(TestCase):
         # Make up a fake request object
         request = self.factory.get('/')
         request.session = scratchDict()
-        request.backend = 'django.contrib.auth.backends.ModelBackend'
+        request.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         request.user = None
 
         # Create a couple users and give them roles

@@ -100,11 +100,6 @@ def admin_required(func):
         return func(request, *args, **kwargs)
     return wrapped
 
-#   Class to substitute for Django ModelState when necessary
-#   (see end of ESPUser.__init__ for usage)
-class FakeState(object):
-    db = None
-
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
@@ -127,62 +122,34 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(Manager):
+class ESPUserManager(UserManager):
     pass
 
-class ESPUser(User, AnonymousUser):
+class ESPUser(User, BaseESPUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
 
     class Meta:
         proxy = True
         verbose_name = 'ESP User'
-        
+
+class AnonymousESPUser(BaseESPUser, AnonymousUser):
+    pass
+
+class BaseESPUser(object):
+    """ Base class for ESPUser and AnonymousESPUser.
+    Pretty much anything from ESPUser that isn't directly related
+    to being a model should go here. """
+
     objects = ESPUserManager()
-    # this will allow a casting from User to ESPUser:
-    #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
-    def __init__(self, userObj=None, *args, **kwargs):
-        # Set up the storage for instance state
-        self._state = ModelState()
-    
-        # A bit of a hack: if we're passed a SimpleLazyObject, make sure it's
-        # initialized (with `dir` which is proxied), and then grab the __dict__
-        # of the wrapped User or ESPUser.   This is necessary because
-        # SimpleLazyObject doesn't proxy __dict__, so copying it would fail.
-        if isinstance(userObj, SimpleLazyObject):
-            dir(userObj)
-            self.__dict__ = userObj._wrapped.__dict__
-            # This is just a method, so SimpleLazyObj will proxy it just fine.
-            self._is_anonymous = userObj.is_anonymous()
+    other_user = False
 
-        # TODO(benkraft): in the case of an ESPUser, we should consider
-        # overriding __new__ to just return the ESPUser it was passed; I don't
-        # know why you'd call ESPUser on an ESPUser except by accident, but
-        # giving you back your ESPUser should work just fine.  On the other
-        # hand, this might be trickier than it sounds because there are a bunch
-        # of metaclasses flying around, and because if __new__ returns an
-        # ESPUser it will then get __init__ called on it, which might be
-        # unnecessary.
-        elif isinstance(userObj, (ESPUser, User, AnonymousUser)):
-            self.__dict__ = userObj.__dict__
-            self._is_anonymous = userObj.is_anonymous()
-
-        elif userObj is not None or len(args) > 0:
-            # Initializing a model using non-keyworded args is a horrible idea.
-            # No clue why you'd do it, but I won't stop you. -ageng 2009-05-10
-            User.__init__(self, userObj, *args, **kwargs)
-            self._is_anonymous = False
-        else:
-            User.__init__(self, *args, **kwargs)
-            self._is_anonymous = False
-
-        if not hasattr(self, "_state"):
-            ## Django doesn't properly insert this field on proxy models, apparently?
-            ## So, fake it. -- aseering 6/28/2010
-            self._state = FakeState()
-
-        self.other_user = False
-
+    def __init__(self, *args, **kwargs):
+        # This is last in ESPUser's method resolution order, and
+        # AnonymousUser doesn't do anything in its __init__,
+        # so there's no need for a super() call unless you're changing
+        # inheritance structure of this, ESPUser, or AnonymousESPUser,
+        # or if Django has changed something.
         self.create_membership_methods()
 
     @classmethod
@@ -201,9 +168,6 @@ class ESPUser(User, AnonymousUser):
                 setattr(cls, 'is%s' % user_type, lambda user: False)
             for user_type in cls.getTypes() + ['Officer']:
                 setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
-
-    def is_anonymous(self):
-        return self._is_anonymous
 
     @staticmethod
     def grade_options():
@@ -285,9 +249,6 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
-    def is_authenticated(self):
-        return not self.is_anonymous()
-
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
@@ -324,7 +285,7 @@ class ESPUser(User, AnonymousUser):
             raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         login(request, user)
 
         request.session['user_morph'] = user_morph
@@ -353,7 +314,7 @@ class ESPUser(User, AnonymousUser):
         logout(request)
 
         old_user = new_user
-        old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        old_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         
         login(request, old_user)
 
