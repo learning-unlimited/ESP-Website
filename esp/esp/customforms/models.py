@@ -2,15 +2,14 @@ from __future__ import with_statement
 
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError
-#from esp.users.models import ESPUser
-from django.contrib.auth.models import User
+from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(ESPUser)
     link_type = models.CharField(max_length=50, blank=True)
     link_id = models.IntegerField(default=-1)
     anonymous = models.BooleanField(default=False)

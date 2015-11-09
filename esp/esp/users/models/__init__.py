@@ -1328,7 +1328,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         'mail_reimbursement': forms.CheckboxInput,
     }
     
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
@@ -1676,7 +1676,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0] 
         else: return None
 
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
@@ -1990,7 +1990,7 @@ class PasswordRecoveryTicket(models.Model):
     RECOVER_EXPIRE = 2 # number of days before it expires
     SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(ESPUser)
     recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
     expire = models.DateTimeField(null=True)
 
