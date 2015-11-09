@@ -38,10 +38,6 @@ import reversion
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 
-## aseering 11/29/2011
-## HACK to generate a warning on deferred field evaluation
-from esp.utils import deferred_notifier
-
 """ A template override model that stores the contents of a template in the database. """
 class TemplateOverride(models.Model):
 
