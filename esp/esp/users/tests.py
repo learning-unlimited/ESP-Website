@@ -113,29 +113,23 @@ class ESPUserTest(TestCase):
 
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
-        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.user.set_password('forgotten_pw')
         self.user.save()
-        self.espuser, created = ESPUser.objects.get_or_create(username='forgetful2')
-        self.espuser.set_password('forgotten_pw')
-        self.espuser.save()
-        self.other, created = User.objects.get_or_create(username='innocent')
+        self.other, created = ESPUser.objects.get_or_create(username='innocent')
         self.other.set_password('remembered_pw')
         self.other.save()
     def runTest(self):
         # First, make sure both people can log in
         self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
-        self.assertTrue(self.client.login( username='forgetful2', password='forgotten_pw' ), "User forgetful2 cannot login")
         self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")
         
         # Create tickets; both User and ESPUser should work
         one   = PasswordRecoveryTicket.new_ticket( self.user )
         two   = PasswordRecoveryTicket.new_ticket( self.user )
-        three = PasswordRecoveryTicket.new_ticket( self.espuser )
         four  = PasswordRecoveryTicket.new_ticket( self.other )
         self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
         self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
-        self.assertTrue(three.is_valid(), "Recovery ticket three is invalid.")
         self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
         
         # Try expiring #1; trying to validate it should destroy it
