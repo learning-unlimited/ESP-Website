@@ -94,7 +94,7 @@ class ProgramPrintables(ProgramModuleObj):
             lineitems = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
         
         for lineitem in lineitems:
-            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog)
+            lineitem.has_financial_aid = lineitem.user.hasFinancialAid(prog)
 
         def sort_fn(a,b):
             if a.user.last_name.lower() > b.user.last_name.lower():
@@ -693,7 +693,6 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 
     def get_msg_vars(self, user, key):
-        user = ESPUser(user)
         
         if key == 'receipt':
             #   Take the user's most recent registration profile.
@@ -846,7 +845,7 @@ Volunteer schedule for %s:
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
         if onsite:
-            students = [ESPUser(User.objects.get(id=request.GET['userid']))]
+            students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program)
     
@@ -873,7 +872,7 @@ Volunteer schedule for %s:
         context = {'module': self }
 
         if onsite:
-            students = [ESPUser(User.objects.get(id=request.GET['userid']))]
+            students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program)
     
@@ -1229,7 +1228,7 @@ Volunteer schedule for %s:
             of a program. """
         context = {'module': self}
 
-        students= [ ESPUser(user) for user in self.program.students()['confirmed']]
+        students= [ user for user in self.program.students()['confirmed']]
         students.sort()
     
         class_list = []
@@ -1293,7 +1292,6 @@ Volunteer schedule for %s:
 
             for cls in classes:
                 for teacher in cls.get_teachers():
-                    teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'class'  : cls})
             context['scheditems'] = scheditems                    
@@ -1308,7 +1306,6 @@ Volunteer schedule for %s:
             
             for cls in classes:
                 for teacher in cls.get_teachers():
-                    teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'cls'  : cls})
 

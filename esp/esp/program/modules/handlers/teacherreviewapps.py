@@ -196,7 +196,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student = request.POST.get('student','')
 
         try:
-            student = ESPUser(User.objects.get(id = int(student)))
+            student = ESPUser.objects.get(id = int(student))
         except ESPUser.DoesNotExist:
             raise ESPError('Cannot find student, %s' % student, log=False)
 

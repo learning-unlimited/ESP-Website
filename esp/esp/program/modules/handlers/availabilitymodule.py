@@ -138,7 +138,7 @@ class AvailabilityModule(ProgramModuleObj):
         	# They probably want to be check someone's availability instead-
         	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
         else:
-            return self.availabilityForm(request, tl, one, two, prog, ESPUser(request.user), False)
+            return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
     def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
         time_options = self.program.getTimeSlots(types=[self.event_type()])

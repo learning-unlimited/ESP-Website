@@ -225,7 +225,6 @@ class MessageRequest(models.Model):
 
         # prepare variables
         text = unicode(text)
-        user = ESPUser(user)
 
         context = MessageVars.getContext(self, user)
 
@@ -308,7 +307,7 @@ class MessageRequest(models.Model):
             send_from = self.sender
         else:
             if self.creator is not None:
-                send_from = '%s <%s>' % (ESPUser(self.creator).name(), self.creator.email)
+                send_from = '%s <%s>' % (self.creator.name(), self.creator.email)
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 

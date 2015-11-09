@@ -49,7 +49,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
     
     try:
         if tl == '':
-            founduser = ESPUser(request.user)
+            founduser = request.user
         else:
             if username != '':
                 founduser = ESPUser.objects.get(username=username)

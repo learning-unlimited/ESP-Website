@@ -206,7 +206,7 @@ class StudentApplication(models.Model):
         self.set_questions()
 
     def set_questions(self):
-        new_user = ESPUser(self.user)
+        new_user = self.user
         existing_list = self.questions.all().values_list('id', flat=True)
         new_list = list(StudentAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
         new_list += list(StudentAppQuestion.objects.filter(subject__in=new_user.getAppliedClasses(self.program)).values_list('id', flat=True))
@@ -225,7 +225,7 @@ class StudentApplication(models.Model):
         
         #   Get forms for already existing responses.
         forms = []
-        new_user = ESPUser(self.user)
+        new_user = self.user
         applied_classes = new_user.getAppliedClasses(self.program)
         for r in self.responses.filter(question__subject__in=applied_classes):
             f = r.get_form(data)

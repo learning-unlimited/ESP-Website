@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
-from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, Permission
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory

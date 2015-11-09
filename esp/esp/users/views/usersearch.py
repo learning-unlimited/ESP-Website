@@ -277,7 +277,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
     if not usc.updated:
         users = None
     else:
-        users = [ ESPUser(user) for user in QSUsers ]
+        users = [ user for user in QSUsers ]
     
     if users is not None and len(users) == 0:
         error = True

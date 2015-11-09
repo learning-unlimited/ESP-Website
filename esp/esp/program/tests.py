@@ -252,7 +252,7 @@ class ProfileTest(TestCase):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
 
     def testAcctCreate(self):
-        self.u=ESPUser(
+        self.u=ESPUser.objects.create_user(
             first_name='bob',
             last_name='jones',
             username='bjones',
@@ -289,10 +289,10 @@ class ProgramHappenTest(TestCase):
         user_role_setup()
 
         def makeuser(f, l, un, email, p):
-            u = ESPUser(first_name=f, last_name=l, username=un, email=email)
+            u = ESPUser.objects.create_user(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
             u.save()
-            return ESPUser(u)
+            return u
         
         # make people -- presumably we're testing actual account creation elsewhere
         self.admin = makeuser('Ubbad', 'Mubbin', 'ubbadmubbin', 'ubbadmubbin@esp.mit.edu', 'pubbasswubbord')
@@ -590,21 +590,21 @@ class ProgramFrameworkTest(TestCase):
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
-            self.students.append(ESPUser(new_student)) 
+            self.students.append(new_student) 
         for i in range(settings['num_teachers']):
             name = u'teacher%04d' % i
             new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
-            self.teachers.append(ESPUser(new_teacher))
+            self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
             name = u'admin%04d' % i
             new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
-            self.admins.append(ESPUser(new_admin))
+            self.admins.append(new_admin)
             
         #   Establish attributes for program
         prog_form_values = {

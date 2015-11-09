@@ -433,7 +433,7 @@ class AdminClass(ProgramModuleObj):
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
             coteachers = cls.get_teachers()
-            coteachers = [ ESPUser(user) for user in coteachers
+            coteachers = [ user for user in coteachers
                            if user.id != request.user.id           ]
             
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
@@ -442,7 +442,7 @@ class AdminClass(ProgramModuleObj):
             txtTeachers = request.POST['coteachers']
             coteachers = txtTeachers.split(',')
             coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser(User.objects.get(id=userid))
+            coteachers = [ ESPUser.objects.get(id=userid)
                            for userid in coteachers                ]
 
         op = ''

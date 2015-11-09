@@ -40,7 +40,7 @@ import functools
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
-from django.contrib.auth.models import User, AnonymousUser, Group
+from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
 from localflavor.us.models import USStateField, PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
@@ -95,7 +95,7 @@ def admin_required(func):
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        elif not ESPUser(request.user).isAdministrator():
+        elif not request.user.isAdministrator():
             raise PermissionDenied
         return func(request, *args, **kwargs)
     return wrapped
@@ -123,17 +123,6 @@ class UserAvailability(models.Model):
 
 
 class ESPUserManager(UserManager):
-    pass
-
-class ESPUser(User, BaseESPUser):
-    """ Create a user of the ESP Website
-    This user extends the auth.User of django"""
-
-    class Meta:
-        proxy = True
-        verbose_name = 'ESP User'
-
-class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
 class BaseESPUser(object):
@@ -327,7 +316,7 @@ class BaseESPUser(object):
         elif key == 'last_name':
             return otheruser.last_name
         elif key == 'name':
-            return ESPUser(otheruser).name()
+            return otheruser.name()
         elif key == 'username':
             return otheruser.username
         elif key == 'recover_url':
@@ -999,6 +988,17 @@ are a teacher of the class"""
             rank = default
         return rank
 
+class ESPUser(User, BaseESPUser):
+    """ Create a user of the ESP Website
+    This user extends the auth.User of django"""
+
+    class Meta:
+        proxy = True
+        verbose_name = 'ESP User'
+
+class AnonymousESPUser(BaseESPUser, AnonymousUser):
+    pass
+
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
@@ -1048,7 +1048,7 @@ def update_email(**kwargs):
         if new_user.id is None:
             # It's a newly created user, don't do anything.
             return
-        old_user = User.objects.get(id=new_user.id)
+        old_user = ESPUser.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
         new_email = new_user.get_email_sendto_address() if new_user.is_active else None
         if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
@@ -1188,12 +1188,12 @@ class StudentInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'school', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['school'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['school'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
+        return "%s - %s %d" % (self.user.ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1371,12 +1371,12 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = u'%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return u'%s - %s %s' % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+        return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1453,12 +1453,12 @@ class GuardianInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'year_finished', 'num_kids', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['year_finished'], value['num_kids'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['year_finished'], value['num_kids'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.year_finished, self.num_kids)
+        return "%s - %s %d" % (self.user.ajax_str(), self.year_finished, self.num_kids)
 
     def updateForm(self, form_dict):
         form_dict['year_finished'] = self.year_finished
@@ -1514,12 +1514,12 @@ class EducatorInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'position', 'school', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
-        return "%s - %s at %s" % (ESPUser(self.user).ajax_str(), self.position, self.school)
+        return "%s - %s at %s" % (self.user.ajax_str(), self.position, self.school)
 
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
@@ -1976,7 +1976,7 @@ class ESPUser_Profile(models.Model):
         db_table = 'users_espuser_profile'
 
     def prof(self):
-        return ESPUser(self.user)
+        return self.user
 
     class Admin:
         pass

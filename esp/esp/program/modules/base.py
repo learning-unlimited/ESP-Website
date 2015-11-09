@@ -523,7 +523,6 @@ def needs_onsite(method):
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
-            user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
@@ -541,7 +540,6 @@ def needs_onsite_no_switchback(method):
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
-            user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):

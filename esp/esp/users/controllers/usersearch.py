@@ -62,7 +62,7 @@ class UserSearchController(object):
             Q_base = Q()
         else:
             if user_type not in ESPUser.getTypes():
-                raise ESPUser(), 'user_type must be one of '+str(ESPUser.getTypes())
+                raise ESPError('user_type must be one of '+str(ESPUser.getTypes()))
             Q_base = ESPUser.getAllOfType(user_type, True)
             
         Q_include = Q()

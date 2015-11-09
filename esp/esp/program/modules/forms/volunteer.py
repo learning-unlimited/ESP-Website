@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from django.contrib.auth.models import User
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget
@@ -130,7 +129,6 @@ class VolunteerOfferForm(forms.Form):
             del self.fields['comments']
 
     def load(self, user):
-        user = ESPUser(user)
         self.fields['user'].initial = user.id
         self.fields['email'].initial = user.email
         self.fields['name'].initial = user.name()
@@ -173,7 +171,7 @@ class VolunteerOfferForm(forms.Form):
                 user = existing_users[0]
             else:
                 auto_username = ESPUser.get_unused_username(user_data['first_name'], user_data['last_name'])
-                user = ESPUser(User.objects.create_user(auto_username, user_data['email']))
+                user = ESPUser.objects.create_user(auto_username, user_data['email'])
                 user.__dict__.update(user_data)
                 user.save()
                 

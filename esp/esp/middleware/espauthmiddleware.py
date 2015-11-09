@@ -74,7 +74,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
 
         user = getattr(request, '_cached_user', None)
         #   Allow a view to set a newly logged-in user via the response
-        if not user or isinstance(user, AnonymousUser):
+        if not user or not user.is_authenticated():
             new_user = getattr(response, '_new_user', None)
             if isinstance(new_user, ESPUser):
                 user = new_user
@@ -99,9 +99,8 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             encoding = request.encoding
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
-            espuser = ESPUser(user)
 
-            has_qsd_bits = espuser.isAdministrator()
+            has_qsd_bits = user.isAdministrator()
 
             new_values = {'cur_username': user.username,
                           'cur_userid': user.id,
@@ -110,11 +109,11 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
-                          'cur_admin': espuser.isAdministrator() and '1' or '0',
+                          'cur_admin': user.isAdministrator() and '1' or '0',
                           'cur_qsd_bits': has_qsd_bits and '1' or '0',
-                          'cur_yog': espuser.getYOG(),
-                          'cur_grade': espuser.getGrade(),
-                          'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
+                          'cur_yog': user.getYOG(),
+                          'cur_grade': user.getGrade(),
+                          'cur_roles': urllib.quote(",".join(user.getUserTypes())),
                           }
 
             for key, value in new_values.iteritems():

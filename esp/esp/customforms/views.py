@@ -20,12 +20,12 @@ from esp.middleware import ESPError
 from esp.web.util.main import render_to_response
 
 def test_func(user):
-    return user.is_authenticated() and (ESPUser(user).isTeacher() or ESPUser(user).isAdministrator())
+    return user.is_authenticated() and (user.isTeacher() or user.isAdministrator())
 
 @user_passes_test(test_func)
 def landing(request):
     forms = Form.objects.all().order_by('-date_created')
-    if not ESPUser(request.user).isAdministrator():
+    if not request.user.isAdministrator():
         forms = forms.filter(created_by=request.user)
     return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
@@ -33,7 +33,7 @@ def landing(request):
 def formBuilder(request):
     prog_list = Program.objects.all()
     form_list = Form.objects.all().order_by('-date_created')
-    if not ESPUser(request.user).isAdministrator():
+    if not request.user.isAdministrator():
         form_list = form_list.filter(created_by=request.user)
     return render_to_response(
                             'customforms/index.html', request,
@@ -300,7 +300,7 @@ def viewResponse(request, form_id):
     """
     Viewing response data
     """
-    if request.user.is_authenticated and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
+    if request.user.is_authenticated and (request.user.isTeacher() or request.user.isAdministrator()):
         try:
             form_id = int(form_id)
         except ValueError:

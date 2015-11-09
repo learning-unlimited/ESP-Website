@@ -227,10 +227,7 @@ class StudentClassRegModule(ProgramModuleObj):
         prevTimeSlot = None
         blockCount = 0
 
-        if not isinstance(get_current_request().user, ESPUser):
-            user = ESPUser(get_current_request().user)
-        else:
-            user = get_current_request().user
+        user = get_current_request().user
             
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
@@ -381,7 +378,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Can we register for more than one class yet?
         if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
-            enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
+            enrolled_classes = request.user.getEnrolledClasses(prog, request)
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
@@ -507,7 +504,7 @@ class StudentClassRegModule(ProgramModuleObj):
             extra = int(extra)
         except:
             raise ESPError('Please use the link at the main registration page.', log=False)
-        user = ESPUser(request.user)        
+        user = request.user
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()

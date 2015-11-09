@@ -61,7 +61,7 @@ def survey_view(request, tl, program, instance):
     except Program.DoesNotExist:
         raise Http404
 
-    user = ESPUser(request.user)
+    user = request.user
     
     if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
         raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
@@ -142,7 +142,7 @@ def get_survey_info(request, tl, program, instance):
     except Program.DoesNotExist:
         raise Http404
 
-    user = ESPUser(request.user)
+    user = request.user
     
     if (tl == 'teach' and user.isTeacher()):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
@@ -157,7 +157,7 @@ def get_survey_info(request, tl, program, instance):
                 if user.isTeacher():
                     surveys = prog.getSurveys().filter(category = 'learn').select_related()
                 else:
-                    user = ESPUser(request.user)
+                    user = request.user
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
@@ -331,7 +331,7 @@ def survey_review_single(request, tl, program, instance):
         #raise Http404
         raise ESPError("Can't find the program %s/%s" % (program, instance))
 
-    user = ESPUser(request.user)
+    user = request.user
     
     survey_response = None
     ints = request.GET.items()
@@ -369,7 +369,7 @@ def top_classes(request, tl, program, instance):
     except Program.DoesNotExist:
         raise Http404
     
-    user = ESPUser(request.user)
+    user = request.user
     
     if (tl == 'manage' and user.isAdmin(prog)):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()

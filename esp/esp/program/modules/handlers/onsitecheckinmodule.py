@@ -156,7 +156,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             #   Handle submission of student
             form = OnSiteRapidCheckinForm(request.POST)
             if form.is_valid():
-                student = ESPUser(form.cleaned_data['user'])
+                student = form.cleaned_data['user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     recs = Record.objects.filter(user=student, event="attended", program=prog)

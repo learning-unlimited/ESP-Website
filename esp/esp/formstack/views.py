@@ -50,7 +50,7 @@ def medicalsyncapi(request):
     password = request.POST['password']
 
     user = authenticate(username=username, password=password)
-    if user is None or not ESPUser(user).isAdministrator():
+    if user is None or not user.isAdministrator():
         return HttpResponseForbidden("Authentication failed")
 
     # Find Program

@@ -26,7 +26,7 @@ def get_primary_nav(context):
         return {}
 
     page_setup = {}
-    curuser = ESPUser(user)
+    curuser = user
     
     is_admin = curuser.isAdmin()
     
