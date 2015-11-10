@@ -1,5 +1,5 @@
 ============================================
- ESP Website Stable Release 06 release notes
+ ESP Website Stable Release 07 release notes
 ============================================
 
 .. contents:: :local:
@@ -10,7 +10,7 @@ Changelog
 New Django version
 ~~~~~~~~~~~~~~~~~~
 
-TODO(mgersh, lua, benkraft)
+We've updated our code to run on Django 1.8, which is the most recent version. This change should be mostly invisible to non-developers. However, it's a major infrastructure change, so if you see any new issues, please let us know. As always, we recommend testing teacher and student registration before opening them, since your site's configuration might be different from what we're testing on.
 
 Improvements to onsite scheduling grid
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,7 +32,13 @@ This release included several changes which should help improve performance:
 New scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~
 
-TODO(mgersh)
+This release adds three new checks to the scheduling checks module:
+
+- "Hosed teachers", which reports teachers who have registered to teach for at least 2/3 of their available hours. Unlike the other checks on this page, it's intended to be run before scheduling, to give you an idea of who might be tricky to schedule, and will not change as you schedule classes.
+
+- "Classes which are scheduled but aren't approved", which checks for unreviewed, rejected, or cancelled classes that are on the schedule.
+
+- "Classes which are the wrong length or have gaps", which checks for classes where the difference between the start time and end time isn't what it's expected to be.
 
 Sentry integration
 ~~~~~~~~~~~~~~~~~~
