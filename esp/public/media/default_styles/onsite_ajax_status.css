@@ -2,6 +2,52 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+#side_area {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 240px;
+    background-color: #FFFFFF;
+    z-index: 20;
+    overflow: auto;
+}
+
+#main_area {
+    position: relative;
+    left: 240px;
+}
+
+#hide_sidebar {
+    display: block;
+    width: 100%;
+}
+
+#show_sidebar {
+    display: none;
+}
+
+#side_area.sidebar_hidden {
+    width: 40px;
+}
+
+#main_area.sidebar_hidden {
+    left: 40px;
+}
+
+#side_area.sidebar_hidden table {
+    display: none;
+}
+
+#side_area.sidebar_hidden #hide_sidebar {
+    display: none;
+}
+
+#side_area.sidebar_hidden #show_sidebar {
+    display: block;
+    width: 100%;
+}
+
 #student_selector_area {
     position: relative;
 }
@@ -93,7 +139,19 @@ table.narrow {
     border: 0px;
 }
 
+.section_search_hidden {
+    visibility: hidden;
+    height: 0px;
+    border: 0px;
+}
+
 .section_category_hidden {
+    visibility: hidden;
+    height: 0px;
+    border: 0px;
+}
+
+.section_conflict_hidden {
     visibility: hidden;
     height: 0px;
     border: 0px;
@@ -124,32 +182,19 @@ span {
     font-style: italic;
 }
 
-#messages {
+#messages, #category_controls, #settings_controls, #class_search_controls {
     text-align: left;
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;
-    height: 80px;
-    width: 600px;
     padding: 6px;
-    margin-right: 20px;
-    float: left;
-    overflow: auto;
     box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
     font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
 }
 
-#category_controls, #settings_controls {
-    text-align: left;
-    background-color: #EEF3FF;
-    border: 1px solid #99CCFF;
-    height: 80px;
-    width: 400px;
-    padding: 6px;
+#messages {
+    height: 200px;
     overflow: auto;
-    box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.9em;
 }
 
 #student_selector {
@@ -184,22 +229,16 @@ span {
     font-size: 0.8em;
 }
 
-#category_controls p {
-    columns: 2;
-}
-
 #category_list {
-    width: 320px;
+    width: 200px;
 }
 
 .category_item {
     width: 150px;
-    float: left;
 }
 
 .tooltip {
     position: relative; /*this is the key*/
-    z-index: 24;
     color: #000000 !important;
     text-decoration: none !important;
 }
