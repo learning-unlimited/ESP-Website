@@ -46,7 +46,13 @@ __all__ = ('ESPAuthMiddleware',)
 def get_user(request):
     """ Code modified from django.contrib.auth.middleware.get_user
     in order to replace the AnonymousUser with our own which has
-    all the ESPUser methods. """
+    all the ESPUser methods. This mirrors Django's structure, where
+    the auth backend only returns either a User or None, and
+    AnonymousUser is inserted in auth.get_user(). In our case, the auth
+    backend returns either an ESPUser or None, but auth.get_user() is less
+    convenient to override since I'd still have to override this and the
+    middleware's process_request() to use it, so I replace its AnonymousUser
+    with an AnonymousESPUser here instead. """
     if not hasattr(request, '_cached_user'):
         user = auth.get_user(request)
         if user.is_authenticated():
@@ -62,7 +68,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
     # from Django's (see above).
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
-        
+
         request.user = SimpleLazyObject(lambda: get_user(request))
 
     def process_response(self, request, response):
