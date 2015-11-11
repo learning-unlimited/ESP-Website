@@ -170,7 +170,7 @@ def ensure_environment():
             exit(-1)
 
 @task
-def emptydb(owner="esp"):
+def emptydb(owner="esp", interactive=True):
     """
     Delete any existing Postgres database and replace it with an empty one.
 
@@ -201,6 +201,15 @@ def emptydb(owner="esp"):
 
     psql("CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)
     psql("CREATE DATABASE %s OWNER %s TABLESPACE encrypted", env.dbname, owner)
+
+    # Run Django migrations, etc. (unless being called from loaddb, below)
+    if interactive:
+        refresh()
+        print "***** "
+        print "***** Creating the first admin account on the website."
+        print "***** Please configure credentials when prompted."
+        print "***** "
+        manage("createsuperuser")
 
 @task
 def loaddb(filename=None):
@@ -250,13 +259,16 @@ def loaddb(filename=None):
     pg_owner = contents.split()[-1][:-1]
 
     # Reset the database
-    emptydb(pg_owner)
+    emptydb(pg_owner, interactive=False)
 
     # Load the database dump (pg_restore autodetects the dump format)
     sudo("chgrp postgres ~/dbdump")
     sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
          " --exit-on-error --jobs=2 ~/dbdump",
          user="postgres")
+
+    # Run Django migrations, etc.
+    refresh()
 
     # Cleanup
     run("rm -f ~/dbdump")
