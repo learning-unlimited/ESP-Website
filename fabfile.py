@@ -263,3 +263,26 @@ def loaddb(filename=None):
 
 def gen_password(length):
     return "".join([random.choice(string.letters + string.digits) for i in range(length)])
+
+@task
+def manage(cmd):
+    """
+    Run a manage.py command in the remote host.
+    """
+    ensure_environment()
+
+    if cmd in ["shell", "shell_plus"]:
+        # cd() doesn't work with open_shell
+        open_shell("(cd " + env.rbase + "esp && python manage.py " + cmd + "); exit")
+    else:
+        with cd(env.rbase + "esp"):
+            run("python manage.py " + cmd)
+
+@task
+def runserver():
+    """
+    A shortcut for 'manage.py runserver' with the appropriate settings.
+    """
+    ensure_environment()
+
+    manage("runserver 0.0.0.0:8000")
