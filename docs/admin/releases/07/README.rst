@@ -12,15 +12,25 @@ New Django version
 
 We've updated our code to run on Django 1.8, which is the most recent version. This change should be mostly invisible to non-developers. However, it's a major infrastructure change, so if you see any new issues, please let us know. As always, we recommend testing teacher and student registration before opening them, since your site's configuration might be different from what we're testing on.
 
-Improvements to onsite scheduling grid
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Improvements to onsite class changes grid
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(lua)
+This release includes several updates to the onsite class changes interface:
+
+- New layout with settings in a collapsible sidebar
+
+- New filter to only show classes that fit in a student's schedule
+
+- Search bar to find a class by title or code
+
+- Fixed a behavior where the browser would temporarily freeze while loading a student's data
+
+- Small updates to wording and styling
 
 Performance improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-This release included several changes which should help improve performance:
+This release includes several changes which should help improve performance:
 
 - Improved caching on student registration main page
 
@@ -48,7 +58,9 @@ This release adds integration with the Sentry exception logging platform (https:
 Student schedule extra information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(taylors, lua)
+The template that generates student schedules now has a new parameter ``student.last_classes`` available as a template variable. It is a list of classes, one per day from the program, of the student's last class on that day.
+
+By default, this is not shown on the schedule, but it is now possible to write a template override that uses this variable to display the last classes.
 
 Minor feature additions and bugfixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
