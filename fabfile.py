@@ -73,6 +73,8 @@ def setup():
     """
     Perform initial configuration of a brand-new VM. May fail if run again.
     """
+    env.setup_running = True
+
     # Install Ubuntu packages, create a virtualenv and install Python packages.
     # The script uses sudo to elevate as needed, so we can use run() here
     # instead of sudo().
@@ -126,6 +128,10 @@ def ensure_environment():
     run of fab. We assume that an already-configured environment will not become
     un-configured.
     """
+    # Are we running setup() right now? If so, skip this check.
+    if env.get("setup_running", False):
+        return
+
     # Has setup() been run?
     if not files.exists("/fab-setup-done"):
         print ""
