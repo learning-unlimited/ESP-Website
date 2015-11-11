@@ -1,4 +1,4 @@
-""" Quick commands for managing a development environment """
+""" Quick commands for managing an ESP website development environment """
 
 #
 # Warning to fabfile developers.
@@ -36,7 +36,7 @@ env.rbase = "/home/vagrant/devsite/"
 # Remote virtualenv directory, with trailing /
 env.venv = "/home/vagrant/venv/"
 
-# Local base directory
+# Local base directory, e.g. C:\Users\Tim\ESP-Website
 env.lbase = os.path.dirname(env.real_fabfile)
 
 # Name of the encrypted volume group in the Vagrant VM
@@ -73,11 +73,20 @@ def setup():
     """
     Perform initial configuration of a brand-new VM. May fail if run again.
     """
-    update_deps()
+    # Install Ubuntu packages, create a virtualenv and install Python packages.
+    # The script uses sudo to elevate as needed, so we can use run() here
+    # instead of sudo().
+    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
 
     # Create and mount the encrypted partition (requires user input)
     from fabtools import require
     require.deb.package("cryptsetup")
+
+    print "***** "
+    print "***** Creating the encrypted partition for data storage."
+    print "***** Please choose a passphrase and type it at the three prompts."
+    print "***** "
+
     sudo("cryptsetup luksFormat /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
     sudo("mkfs.ext4 /dev/mapper/encrypted")
@@ -88,7 +97,8 @@ def setup():
     sudo("chown -R postgres /mnt/encrypted")
     psql("CREATE TABLESPACE encrypted LOCATION '/mnt/encrypted'")
 
-    # Automatically activate virtualenv
+    # Automatically activate virtualenv. We rely on this so that we don't have
+    # to activate the virtualenv as part of every fab command.
     files.append("~/.bash_login", "source %sbin/activate" % env.venv)
 
     # Symlink media
@@ -104,33 +114,6 @@ def setup():
                 run("ln -s -T default_styles styles")
 
     sudo("touch /fab-setup-done")
-
-def update_deps():
-    """
-    Run update_deps.sh to:
-      - install Ubuntu packages
-      - configure a virtualenv
-      - install Python packages
-
-    This script should be safe to run multiple times. It will use sudo to gain
-    elevated permissions as needed, so we can use run() here instead of sudo().
-    """
-    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
-
-@task
-def psql(cmd=None, *args):
-    """
-    Run the given Postgres command as user postgres. If no command is
-    specified, open an interactive psql shell.
-
-    When called from Python code, performs string interpolation on the command
-    with the subsequent arguments.
-    """
-    ensure_environment()
-    if cmd:
-        sudo("psql -c " + pipes.quote(cmd % args), user="postgres")
-    else:
-        open_shell("sudo -u postgres psql; exit")
 
 @runs_once
 def ensure_environment():
@@ -168,6 +151,21 @@ def ensure_environment():
             print "***** Something went wrong when mounting the encrypted partition."
             print "***** Aborting."
             exit(-1)
+
+@task
+def psql(cmd=None, *args):
+    """
+    Run the given Postgres command as user postgres. If no command is
+    specified, open an interactive psql shell.
+
+    When called from Python code, performs string interpolation on the command
+    with the subsequent arguments.
+    """
+    ensure_environment()
+    if cmd:
+        sudo("psql -c " + pipes.quote(cmd % args), user="postgres")
+    else:
+        open_shell("sudo -u postgres psql; exit")
 
 @task
 def emptydb(owner="esp", interactive=True):
@@ -277,29 +275,6 @@ def gen_password(length):
     return "".join([random.choice(string.letters + string.digits) for i in range(length)])
 
 @task
-def manage(cmd):
-    """
-    Run a manage.py command in the remote host.
-    """
-    ensure_environment()
-
-    if cmd in ["shell", "shell_plus"]:
-        # cd() doesn't work with open_shell
-        open_shell("(cd " + env.rbase + "esp && python manage.py " + cmd + "); exit")
-    else:
-        with cd(env.rbase + "esp"):
-            run("python manage.py " + cmd)
-
-@task
-def runserver():
-    """
-    A shortcut for 'manage.py runserver' with the appropriate settings.
-    """
-    ensure_environment()
-
-    manage("runserver 0.0.0.0:8000")
-
-@task
 def refresh():
     """
     Re-synchronize the remote environment with the codebase. For use when
@@ -332,3 +307,26 @@ def refresh():
         # Recompile theme (run twice, to work around bug)
         manage("recompile_theme")
         manage("recompile_theme")
+
+@task
+def manage(cmd):
+    """
+    Run a manage.py command in the remote host.
+    """
+    ensure_environment()
+
+    if cmd in ["shell", "shell_plus"]:
+        # cd() doesn't work with open_shell
+        open_shell("(cd " + env.rbase + "esp && python manage.py " + cmd + "); exit")
+    else:
+        with cd(env.rbase + "esp"):
+            run("python manage.py " + cmd)
+
+@task
+def runserver():
+    """
+    A shortcut for 'manage.py runserver' with the appropriate settings.
+    """
+    ensure_environment()
+
+    manage("runserver 0.0.0.0:8000")
