@@ -43,7 +43,7 @@ This release adds three new checks to the scheduling checks module:
 Sentry integration
 ~~~~~~~~~~~~~~~~~~
 
-TODO(btidor)
+This release adds integration with the Sentry exception logging platform (https://getsentry.com/). This change is most useful for developers and system administrators. To copy exceptions to Sentry, configure ``SENTRY_DSN`` with your DSN in ``local_settings.py``. This will not interfere with existing error-reporting mechanisms.
 
 Student schedule extra information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
