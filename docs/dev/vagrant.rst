@@ -30,8 +30,8 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Git <http://git-scm.com/downloads>`_
 * `Virtualbox <https://www.virtualbox.org/wiki/Downloads>`_
 * `Vagrant <http://www.vagrantup.com/downloads.html>`_
-* `Python 2.7 <http://www.python.org/download/releases/2.7.6/>`_ and `pip <http://www.pip-installer.org/en/latest/installing.html>`_.
-* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip)
+* `Python 2.7 <https://www.python.org/downloads/>`_
+* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
 If you are on a Linux system, it's likely that everything except Vagrant and Virtualbox can be installed using a package manager on the command line.
 
