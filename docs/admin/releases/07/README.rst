@@ -34,7 +34,7 @@ This release includes several changes which should help improve performance:
 
 - Improved caching on student registration main page
 
-- Improved documentation of program cap, which will improve performance
+- Documented the fact that setting program cap to 0 will improve performance when no program cap is needed
 
 - Further improvements to the performance of student schedule generation
 
@@ -76,9 +76,6 @@ Minor feature additions and bugfixes
 - Fixed "any flag" filter in class search
 
 - Added resource requests to class search results page
-
-- Added ``created_at`` field to comm panel email models to aid in debugging
-  issues
 
 - Removed all usages of "QSD" and "quasi-static data" and replaced with
   "Editable" and "editable text"
