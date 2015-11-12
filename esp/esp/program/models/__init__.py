@@ -630,7 +630,7 @@ class Program(models.Model, CustomFormsLinkModel):
         Returns a dict with tuples of valid grades as keys, and caps as values,
         or an empty dict if the Tag does not exist.
         """
-        size_tag = Tag.getProgramTag("program_size_by_grade", self) or "{}"
+        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
         size_dict = {}
         for k, v in json.loads(size_tag).iteritems():
             if '-' in k:
