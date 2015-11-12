@@ -265,11 +265,16 @@ def loaddb(filename=None):
     # Reset the database
     emptydb(pg_owner, interactive=False)
 
-    # Load the database dump (pg_restore autodetects the dump format)
+    # Load the database dump using the appropriate command for the format
     sudo("chgrp postgres ~/dbdump")
-    sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
-         " --exit-on-error --jobs=2 ~/dbdump",
-         user="postgres")
+    if "PostgreSQL custom database dump" in run("file ~/dbdump"):
+        sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
+             " --exit-on-error --jobs=2 ~/dbdump",
+             user="postgres")
+    else:
+        sudo("psql --dbname=" + pipes.quote(env.dbname) +
+             " --set='ON_ERROR_STOP=on' -f ~/dbdump",
+             user="postgres")
 
     # Run Django migrations, etc.
     refresh()
