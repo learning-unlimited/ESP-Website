@@ -1001,6 +1001,13 @@ class ESPUser(User, BaseESPUser):
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
+@dispatch.receiver(signals.post_save, sender=User,
+                     dispatch_uid='make_admin_save')
+def make_admin_save(sender, instance, **kwargs):
+    if instance.is_superuser:
+        from esp.users.views.make_admin import make_user_admin
+        make_user_admin(ESPUser(instance))
+
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
@@ -2593,4 +2600,3 @@ from esp.users.models.forwarder import UserForwarder # Don't delete, needed for 
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
-
