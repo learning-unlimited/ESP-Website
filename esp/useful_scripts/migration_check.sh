@@ -3,7 +3,7 @@
 # Pipe the output of "manage.py migrate --list" to this script.
 # It will say whether there are unapplied django-south migrations.
 
-MIGRATIONS="$(grep -vF '[X]' | grep -F '[ ]')"
+MIGRATIONS="$(grep -vF '[X]' | grep -B 1 -F '[ ]')"
 
 if [ -z "$MIGRATIONS" ]; then
     echo "Database migrations are up to date."
