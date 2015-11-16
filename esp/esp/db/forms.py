@@ -58,40 +58,41 @@ class AjaxForeignKeyFieldBase:
         javascript = """
 <script type="text/javascript">
 <!--
-
-$j("#id_%(fn)s").val("%(init_val)s");
-$j("#id_%(fn)s_data").val("%(data)s");
-$j("#id_%(fn)s").autocomplete({
-    source: function(request, response) {
-        $j.ajax({
-            url: "/admin/ajax_autocomplete/",
-            dataType: "json",
-            data: {
-                model_module: "%(model_module)s",
-                model_name: "%(model_name)s",
-                ajax_func: "%(ajax_func)s",
-                ajax_data: request.term
-            },
-            success: function(data) {
-                var output = $j.map(data.result, function(item) {
-                    return {
-                        label: item.ajax_str,
-                        value: item.ajax_str,
-                        id: item.id
-                    };
-                });
-                response(output);
-            }
-        });
-    },
-    select: function(event, ui) {
-        $j("#id_%(fn)s_data").val(ui.item.id);
-        %(shadow_field_javascript)s
-    },
-    change: function(event, ui) {
-        $j("#id_%(fn)s_data").val(ui.item ? ui.item.id : null);
-        $j("#id_%(shadow_field)s").val($j("#id_%(fn)s").val());
-    }
+$j(function () {
+    $j("#id_%(fn)s").val("%(init_val)s");
+    $j("#id_%(fn)s_data").val("%(data)s");
+    $j("#id_%(fn)s").autocomplete({
+        source: function(request, response) {
+            $j.ajax({
+                url: "/admin/ajax_autocomplete/",
+                dataType: "json",
+                data: {
+                    model_module: "%(model_module)s",
+                    model_name: "%(model_name)s",
+                    ajax_func: "%(ajax_func)s",
+                    ajax_data: request.term
+                },
+                success: function(data) {
+                    var output = $j.map(data.result, function(item) {
+                        return {
+                            label: item.ajax_str,
+                            value: item.ajax_str,
+                            id: item.id
+                        };
+                    });
+                    response(output);
+                }
+            });
+        },
+        select: function(event, ui) {
+            $j("#id_%(fn)s_data").val(ui.item.id);
+            %(shadow_field_javascript)s
+        },
+        change: function(event, ui) {
+            $j("#id_%(fn)s_data").val(ui.item ? ui.item.id : null);
+            $j("#id_%(shadow_field)s").val($j("#id_%(fn)s").val());
+        }
+    });
 });
 
 
@@ -104,20 +105,20 @@ $j("#id_%(fn)s").autocomplete({
               shadow_field_javascript=shadow_field_javascript)
 
         html = """
-<input type="text" id="id_%s" name="%s_raw" value="%s" class="span6" />
-<input type="hidden" id="id_%s_data" name="%s" />
 <div class="raw_id_admin" style="display: none;">
-  <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
+  <a href="../" class="related-lookup" id="lookup_%(fn)s" onclick="return showRelatedObjectLookupPopup(this);">
   <img src="/static/admin/img/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
-   &nbsp;<strong>%s</strong>
+   &nbsp;<strong>%(old_init_val)s</strong>
 </div>
-""" % (fn,fn,addslashes(data or ''),fn,fn,fn,old_init_val)
+<input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="span6" />
+<input type="hidden" id="id_%(fn)s_data" name="%(fn)s" />
+""" % dict(fn=fn, data=addslashes(data or ''), old_init_val=old_init_val)
        
         #   Add HTML for shadow field if desired
         if self.shadow_field:
             html += '<input type="hidden" id="id_%s" name="%s" value="%s"/>' % (self.shadow_field, self.shadow_field, old_init_val)
 
-        return mark_safe(html + javascript)
+        return mark_safe(javascript + html)
     
 class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     choices = ()
