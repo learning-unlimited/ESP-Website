@@ -24,7 +24,8 @@ if os.environ.get('VIRTUAL_ENV') is None:
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     execfile(activate_this, dict(__file__=activate_this))
 
-from esp import cache_loader # Needed to block an annoying circular-dependency issue
+import django
+django.setup()
 from esp.dbmail.models import EmailList
 from django.conf import settings
 
