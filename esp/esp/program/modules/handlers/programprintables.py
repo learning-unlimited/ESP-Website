@@ -890,6 +890,24 @@ Volunteer schedule for %s:
         """ generate student schedules """
         context = {}
 
+        if extra:
+            file_type = extra.strip()
+        elif 'img_format' in request.GET:
+            file_type = request.GET['img_format']
+        else:
+            if onsite:
+                file_type = 'png'
+            else:
+                file_type = 'pdf'
+
+        if len(student) > 1 and file_type == 'png':
+            # Generating PNG schedules for a lot of students will cause
+            # `convert` to use a huge amount of memory and make the server sad.
+            # It also doesn't work, since we just return the first page of the
+            # PNG anyway.  So don't let people do that.
+            raise ESPError("Generating multi-page schedules in PNG format is "
+                           "not supported.")
+
         # to avoid a query per student, get all the classes and SRs upfront
         all_classes = ClassSection.objects.filter(
             nest_Q(StudentRegistration.is_valid_qobject(),
@@ -985,16 +1003,6 @@ Volunteer schedule for %s:
             
         context['students'] = students
         context['program'] = prog
-
-        if extra:
-            file_type = extra.strip()
-        elif 'img_format' in request.GET:
-            file_type = request.GET['img_format']
-        else:
-            if onsite:
-                file_type = 'png'
-            else:
-                file_type = 'pdf'
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
