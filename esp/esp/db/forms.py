@@ -108,7 +108,7 @@ $j("#id_%(fn)s").autocomplete({
 <input type="hidden" id="id_%s_data" name="%s" />
 <div class="raw_id_admin" style="display: none;">
   <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
-  <img src="/media/admin/img/admin/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
+  <img src="/static/admin/img/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
    &nbsp;<strong>%s</strong>
 </div>
 """ % (fn,fn,addslashes(data or ''),fn,fn,fn,old_init_val)
