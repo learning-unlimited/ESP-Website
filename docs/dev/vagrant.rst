@@ -102,6 +102,7 @@ To run your dev server: ::
 Other useful command examples: ::
 
     fab manage:shell_plus
+    fab psql:"SELECT * FROM pg_stat_activity"
 
 Once you're done: ::
 
