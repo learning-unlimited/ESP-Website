@@ -326,7 +326,7 @@ def manage(cmd):
     """
     ensure_environment()
 
-    if cmd in ["shell", "shell_plus"]:
+    if cmd.split(" ")[0] in ["shell", "shell_plus"]:
         # cd() doesn't work with open_shell
         open_shell("(cd " + env.rbase + "esp && python manage.py " + cmd + "); exit")
     else:
