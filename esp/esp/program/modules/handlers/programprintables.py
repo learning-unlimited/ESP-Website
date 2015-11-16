@@ -900,7 +900,7 @@ Volunteer schedule for %s:
             else:
                 file_type = 'pdf'
 
-        if len(student) > 1 and file_type == 'png':
+        if len(students) > 1 and file_type == 'png':
             # Generating PNG schedules for a lot of students will cause
             # `convert` to use a huge amount of memory and make the server sad.
             # It also doesn't work, since we just return the first page of the
