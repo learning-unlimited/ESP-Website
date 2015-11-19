@@ -1,4 +1,4 @@
-from esp.cache.registry import dump_all_caches
+from argcache.registry import dump_all_caches
 
 from django.core.cache import cache
 from django.test import TestCase

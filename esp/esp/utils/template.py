@@ -40,7 +40,7 @@ from django.template.base import Template
 from django.template import TemplateDoesNotExist
 
 from esp.utils.models import TemplateOverride
-from esp.cache import cache_function
+from argcache import cache_function
 
 import hashlib
 

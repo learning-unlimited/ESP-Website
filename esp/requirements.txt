@@ -42,3 +42,5 @@ raven
 stripe==1.12.2
 pyinotify
 django-formtools==1.0
+
+git+https://github.com/luac/django-argcache.git@0.1

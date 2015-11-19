@@ -38,7 +38,7 @@ from django.db import models
 
 from markdown import markdown
 from esp.db.fields import AjaxForeignKey
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 

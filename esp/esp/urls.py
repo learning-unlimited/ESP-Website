@@ -95,7 +95,7 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^cache/', include('argcache.urls')),
                         (r'^varnish/', include('esp.varnish.urls'))
                         )
 

@@ -38,7 +38,7 @@ from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.tagdict.models          import Tag
 
 from django.db import models

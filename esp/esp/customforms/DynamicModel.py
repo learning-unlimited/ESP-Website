@@ -5,7 +5,7 @@ from django.db import models
 from django.apps import apps
 from django.db import connection, transaction
 from esp.customforms.models import Field
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache

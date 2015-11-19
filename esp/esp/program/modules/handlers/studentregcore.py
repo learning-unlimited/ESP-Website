@@ -31,7 +31,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.cache           import cache_function
+from argcache            import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper
 from esp.program.modules import module_ext
 from esp.program.models  import Program

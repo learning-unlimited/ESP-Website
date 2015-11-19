@@ -238,11 +238,11 @@ INSTALLED_APPS = (
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.cache',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
+    'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
     'form_utils',
@@ -347,7 +347,7 @@ DEBUG_TOOLBAR_CONFIG = {
     ]),
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
-        'esp.cache.signals.cache_deleted',
+        'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',

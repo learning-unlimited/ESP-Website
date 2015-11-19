@@ -40,7 +40,7 @@ from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
 
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.users.models import ESPUser
 
 #	Function for previewing announcements  - Michael P

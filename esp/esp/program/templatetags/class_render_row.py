@@ -1,7 +1,7 @@
 from django import template
 from django.conf import settings
 from esp.web.util.template import cache_inclusion_tag
-from esp.cache.key_set import wildcard
+from argcache import wildcard
 from esp.program.models import ClassSubject, ClassSection
 from esp.tagdict.models import Tag
 

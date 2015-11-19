@@ -63,7 +63,7 @@ from django.utils.functional import SimpleLazyObject
 
 
 from esp.cal.models import Event
-from esp.cache import cache_function, wildcard
+from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
 from esp.db.fields import AjaxForeignKey

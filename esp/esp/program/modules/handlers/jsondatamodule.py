@@ -240,7 +240,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
-    from esp.cache.key_set import wildcard
+    from argcache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
     sections.cached_function.depend_on_cache(ClassSection.friendly_times, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
     sections.cached_function.depend_on_cache(ClassSection._get_capacity, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})

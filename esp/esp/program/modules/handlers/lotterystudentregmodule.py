@@ -53,7 +53,7 @@ from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.cache                   import cache_function
+from argcache                    import cache_function
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 

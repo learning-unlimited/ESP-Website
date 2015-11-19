@@ -46,7 +46,7 @@ from esp.resources.models        import Resource, ResourceRequest, ResourceType,
 from datetime                    import timedelta, time
 import json
 from collections                 import defaultdict
-from esp.cache                   import cache_function
+from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators         import json_response
 import calendar, time, datetime
