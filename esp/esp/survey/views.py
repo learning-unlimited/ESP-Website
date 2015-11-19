@@ -44,7 +44,7 @@ from esp.users.models import ESPUser, Record, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
-from esp.web.util.latex import render_to_latex
+from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
 from django.http import Http404, HttpResponseRedirect, HttpResponse

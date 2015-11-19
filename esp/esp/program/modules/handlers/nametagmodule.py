@@ -40,7 +40,7 @@ from esp.users.models import ESPUser, User
 from django.db.models.query import Q
 from esp.users.views  import get_user_list
 from esp.middleware import ESPError
-from esp.web.util.latex import render_to_latex
+from esp.utils.latex import render_to_latex
 from esp.tagdict.models import Tag
 from django.conf import settings
 class NameTagModule(ProgramModuleObj):

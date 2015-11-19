@@ -39,7 +39,7 @@ from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
-from esp.web.util.latex  import render_to_latex
+from esp.utils.latex  import render_to_latex
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
