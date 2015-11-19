@@ -4,6 +4,7 @@ import sys
 import os
 import fcntl
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
 
 import os.path
 project = os.path.dirname(os.path.realpath(__file__))

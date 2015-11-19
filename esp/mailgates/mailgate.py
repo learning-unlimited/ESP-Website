@@ -8,6 +8,7 @@ new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
 
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

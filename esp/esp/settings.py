@@ -37,6 +37,9 @@ import os
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT
+# set by shell_plus and script_setup (via esp.utils.shell_utils); should also
+# be set in any other scripts that get called manually.
+IS_IN_SCRIPT = os.environ.get("DJANGO_IS_IN_SCRIPT", "False") == "True"
 
 # Configure Django to support ESP
 from django_settings import *
@@ -72,6 +75,119 @@ SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 # compute some derived settings
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
 STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
+
+# We log to LOG_FILE always at level LOG_LEVEL (INFO by default), log to the
+# console at level LOG_LEVEL if DEBUG=True, mail admins (i.e. serverlog) at
+# level ERROR if DEBUG=False, and log to sentry at level WARNING if set up.
+# DisallowedHost errors and deprecation warnings don't go to email ever.
+# In scripts, we log to the console in a shorter format, and to LOG_FILE as
+# usual, and nothing else.
+if SENTRY_DSN:
+    sentry_handler = {
+        'level': 'ERROR',
+        'filters': ['require_not_in_script'],
+        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        'dsn': SENTRY_DSN,
+    }
+else:
+    sentry_handler = {
+        'class': 'logging.NullHandler',
+    }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s',
+        },
+        'brief': {
+            'format': '%(levelname)s: %(message)s',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_in_script': {
+            '()': 'esp.utils.log.RequireInScript',
+        },
+        'require_not_in_script': {
+            '()': 'esp.utils.log.RequireNotInScript',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': LOG_LEVEL,
+            # logrotate will take care of rotation if desired
+            'class': 'logging.FileHandler',
+            # LOG_FILE is set in django_settings or overridden in
+            # local_settings
+            'filename': LOG_FILE,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': LOG_LEVEL,
+            'filters': ['require_debug_true', 'require_not_in_script'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'consolescript': {
+            'level': LOG_LEVEL,
+            'filters': ['require_in_script'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'brief',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false', 'require_not_in_script'],
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+            'formatter': 'verbose',
+        },
+        'sentry': sentry_handler,
+    },
+    # We don't have a root logger, because it for various reasons ends up
+    # confusing runserver_plus and getting doubled log output.  I can't figure
+    # out a good way around that, and we should ideally be logging everything
+    # under 'esp' anyway.
+    'loggers': {
+        'django.security.DisallowedHost': {
+            # Don't bother with the DisallowedHost errors.
+            'handlers': ['file', 'console'],
+            'propagate': False,
+        },
+        # TODO(benkraft): until 1.9 we need to have the following two handlers
+        # around to override django's.  In 1.9 we will be able to remove them,
+        # and just override 'django'.
+        'django.security': {
+            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
+                         'sentry'],
+            'level': 'DEBUG',
+        },
+        'django.request': {
+            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
+                         'sentry'],
+            'level': 'DEBUG',
+        },
+        'django': {
+            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
+                         'sentry'],
+            'level': 'DEBUG',
+        },
+        'py.warnings': {
+            'handlers': ['file', 'console', 'consolescript', 'sentry'],
+        },
+        'esp': {
+            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
+                         'sentry'],
+            'level': 'DEBUG',
+        },
+    }
+}
 
 #   Search directories for LESS (customizable stylesheet) files
 LESS_SEARCH_PATH = [

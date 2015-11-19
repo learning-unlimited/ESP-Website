@@ -68,6 +68,9 @@ STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
+LOG_FILE = "/tmp/esp-website.log"
+LOG_LEVEL = 'INFO' # Set to DEBUG for more spam or WARNING for less
+
 
 ###########################
 # Default debug settings  #
@@ -281,16 +284,6 @@ USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
 SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
-
-if False:
-    import logging
-    logging.basicConfig(
-        level = logging.DEBUG,
-        format = '%(asctime)s %(levelname)s %(message)s',
-        filename = '/tmp/mit-esp.log',
-        filemode = 'w'
-    )
-
 
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',
