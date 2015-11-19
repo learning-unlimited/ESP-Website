@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Record
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController

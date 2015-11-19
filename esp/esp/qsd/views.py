@@ -37,7 +37,7 @@ from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, Permission
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from os.path import basename, dirname

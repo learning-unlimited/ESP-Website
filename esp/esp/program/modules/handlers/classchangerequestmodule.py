@@ -40,7 +40,7 @@ from esp.program.models import Program, StudentAppResponse, StudentRegistration,
 from esp.program.models.class_ import ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.base import main_call, aux_call, needs_admin, needs_student, meets_grade
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q
 

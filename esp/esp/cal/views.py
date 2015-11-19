@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.cal.models import Event
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from django.http import Http404, HttpResponseRedirect
 from django.forms import ModelForm
 

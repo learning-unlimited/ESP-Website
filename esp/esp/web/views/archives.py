@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.users.models import ContactInfo, ESPUser
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required

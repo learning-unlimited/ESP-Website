@@ -39,7 +39,7 @@ from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.web.util        import render_to_response
+from esp.utils.web               import render_to_response
 
 class TeacherPreviewModule(ProgramModuleObj):
     """ This program module allows teachers to view classes already added to the program.

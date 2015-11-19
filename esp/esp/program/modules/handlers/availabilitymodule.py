@@ -37,7 +37,7 @@ from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSection
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django                      import forms
 from esp.cal.models              import Event, EventType

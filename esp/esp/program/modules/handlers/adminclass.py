@@ -41,7 +41,7 @@ from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheck
 from esp.users.models import ESPUser, User
 from esp.cal.models              import Event
 
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
 from django import forms

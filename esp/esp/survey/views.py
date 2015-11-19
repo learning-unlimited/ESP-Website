@@ -43,7 +43,7 @@ from django.db.models import Q
 from esp.users.models import ESPUser, Record, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
