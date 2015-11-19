@@ -1,6 +1,6 @@
 from django import template
 from django.utils.http import urlquote as urlencode
-from esp.web.util.template import cache_inclusion_tag
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/web/navbar_left.html')
