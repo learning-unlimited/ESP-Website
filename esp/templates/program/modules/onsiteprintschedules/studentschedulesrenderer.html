@@ -4,42 +4,62 @@
 <html>
 <head>
 <title>On-Site Schedule Printer</title>
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
 <!--
 
 var timer;
 
-function reset_reload()
+function reset_reload(millis)
 {
     clearTimeout(timer);
-    timer = setTimeout(plain_refresh, 2000);
+    timer = setTimeout(fetch_img, millis);
 }
 
-function plain_refresh()
+function fetch_img()
 {
-    var auto_reload_img = document.getElementById("auto_reload_img");
-    if (!auto_reload_img.complete) {
-        // if the image hasn't finished loading yet, postpone the next reload another 2s.
-        // note: we can't wait for img.onload because that does not fire if the response was empty
-        reset_reload();
-    } else {
-        auto_reload_img.src = '?gen_img&q='+ new Date().getTime();
-        reset_reload();
+    $j.getJSON('?gen_img=json&q='+ new Date().getTime(), process_img);
+}
+
+function process_img(data)
+{
+    if (data !== null) {
+        var auto_reload_img = $j('#auto_reload_img');
+        var page_rest = $j('#page_rest');
+        page_rest.hide();
+        auto_reload_img.attr('src', data.src);
+        auto_reload_img.show();
+        printself();
+
+        auto_reload_img.hide();
+        var entry = $j('<div>').text("[" + data.time_executed + "] Executed print request #" + data.id + " for " + data.user + " (requested at " + data.time_requested + ")");
+        entry.insertAfter("#log");
+        page_rest.show();
+        reset_reload(1000);
+    }
+    else {
+        reset_reload(5000);
     }
 }
 
 function printself() {
    self.focus();
    window.print();
-   reset_reload();
 }
 
-reset_reload();
+fetch_img();
 
 //-->
 </script>
 </head>
 <body>
-<img id="auto_reload_img" src="?gen_img" onload="javascript:printself();" />
+<div id="page_rest">
+<h1 id="banner">I AM THE THING THAT MAKES SCHEDULE PRINTING WORK, DON'T TOUCH ME</h1>
+<div style="height: 20em; overflow-y: auto; border: 1px solid black; padding: 0.5em">
+<div id="log">Log of print requests (view <a href="/admin/utils/printrequest/?o=-3">all print requests on the admin panel</a>):</div>
+</div>
+</div>
+<img id="auto_reload_img" src="about:blank" style="display: none" />
 </body>
 </html>
