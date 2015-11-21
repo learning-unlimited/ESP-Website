@@ -152,7 +152,7 @@ class AdminClass(ProgramModuleObj):
                     return (cls, False)
 
                 
-        return (render_to_response(self.baseDir()+'cannotfindclass.html', {}), False)
+        return (render_to_response(self.baseDir()+'cannotfindclass.html', request, {}), False)
 
     @aux_call
     @needs_admin
