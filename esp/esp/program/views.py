@@ -274,9 +274,6 @@ def find_user(userstr):
     """
 
 
-    if not userstr:
-        return
-
     userstr_parts = userstr.strip().split(' ')
 
     # single search token, could be username, id or email
@@ -318,7 +315,7 @@ def usersearch(request):
     do our best to find that user.
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
-    if not request.GET.has_key('userstr'):
+    if not request.GET.has_key('userstr') or not request.GET['userstr']:
         raise ESPError("You didn't specify a user to search for!", log=False)
                                
     userstr = request.GET['userstr']
