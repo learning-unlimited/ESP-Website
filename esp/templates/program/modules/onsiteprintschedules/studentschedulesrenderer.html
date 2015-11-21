@@ -30,13 +30,15 @@ function process_img(data)
         page_rest.hide();
         auto_reload_img.attr('src', data.src);
         auto_reload_img.show();
-        printself();
+        setTimeout(function () {
+            printself();
 
-        auto_reload_img.hide();
-        var entry = $j('<div>').text("[" + data.time_executed + "] Executed print request #" + data.id + " for " + data.user + " (requested at " + data.time_requested + ")");
-        entry.insertAfter("#log");
-        page_rest.show();
-        reset_reload(1000);
+            auto_reload_img.hide();
+            var entry = $j('<div>').text("[" + data.time_executed + "] Executed print request #" + data.id + " for " + data.user + " (requested at " + data.time_requested + ")");
+            entry.insertAfter("#log");
+            page_rest.show();
+            fetch_img();
+        }, 1000);
     }
     else {
         reset_reload(5000);
