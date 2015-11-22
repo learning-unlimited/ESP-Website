@@ -104,10 +104,14 @@ class CommModule(ProgramModuleObj):
             htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
         else:
             htmlbody = body
-
+            
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
 
+        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
+                     'user': ActionHandler(firstuser, firstuser)
+                     'program': ActionHandler(self.program, firstuser)})))
+  
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
@@ -174,7 +178,10 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext    = body,
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                                                                                                       {'msgbdy': body,
+                                                                                                                                        'user': request.user,
+                                                                                                                                        'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
