@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.forms.utils import ErrorList
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
@@ -254,8 +255,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_max = int(grade_max)
             if grade_min > grade_max:
                 msg = u'Minimum grade must be less than the maximum grade.'
-                self._errors['grade_min'] = forms.util.ErrorList([msg])
-                self._errors['grade_max'] = forms.util.ErrorList([msg])
+                self._errors['grade_min'] = ErrorList([msg])
+                self._errors['grade_max'] = ErrorList([msg])
                 del cleaned_data['grade_min']
                 del cleaned_data['grade_max']
 
@@ -267,8 +268,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
                 msg = u'Optimal class size must be less than or equal to the maximum class size.'
-                self._errors['class_size_optimal'] = forms.util.ErrorList([msg])
-                self._errors['class_size_max'] = forms.util.ErrorList([msg])
+                self._errors['class_size_optimal'] = ErrorList([msg])
+                self._errors['class_size_max'] = ErrorList([msg])
                 del cleaned_data['class_size_optimal']
                 del cleaned_data['class_size_max']
 
