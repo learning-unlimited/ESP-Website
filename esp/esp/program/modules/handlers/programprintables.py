@@ -1003,7 +1003,6 @@ Volunteer schedule for %s:
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
-            from esp.utils.web.latex import render_to_latex
             return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
     @aux_call
@@ -1318,8 +1317,6 @@ Volunteer schedule for %s:
     @aux_call
     @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
-        from esp.utils.web.latex import render_to_latex
-        
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user
