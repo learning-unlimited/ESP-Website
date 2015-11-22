@@ -44,6 +44,7 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
+from django.template import loader
 
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
