@@ -289,6 +289,7 @@ def find_user(userstr):
         #try e-mail?
         if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
+            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
         #try phone
         cleaned = userstr.replace("-", "").replace(".", "")
         if cleaned.isnumeric() and len(cleaned) == 10:
