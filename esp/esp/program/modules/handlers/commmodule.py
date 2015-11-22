@@ -111,7 +111,7 @@ class CommModule(ProgramModuleObj):
                        'program': ActionHandler(self.program, esp_firstuser) }
 
         htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
-                     'user': ActionHandler(esp_firstuser, esp_firstuser)
+                     'user': ActionHandler(esp_firstuser, esp_firstuser),
                      'program': ActionHandler(self.program, esp_firstuser)})))
   
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
