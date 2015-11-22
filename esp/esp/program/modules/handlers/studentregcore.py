@@ -51,7 +51,6 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template, select_template
 import operator
-from esp.cache import cache_function
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
