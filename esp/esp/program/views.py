@@ -288,7 +288,7 @@ def find_user(userstr):
             user_q = user_q | Q(id=userstr)
         #try e-mail?
         if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
-            user_q = user_q | Q(email=userstr)
+            user_q = user_q | Q(email__iexact=userstr)
 
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q)
