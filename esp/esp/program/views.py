@@ -297,14 +297,14 @@ def find_user(userstr):
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
 
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        found_users = ESPUser.objects.filter(user_q)
+        found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
         for i in xrange(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
         q = reduce(operator.or_, q_list)
-        found_users = ESPUser.objects.filter( q )
+        found_users = ESPUser.objects.filter( q ).distinct()
 
     #if the previous search attempt failed, try titles of courses a teacher has taught?
     if not found_users.exists():
