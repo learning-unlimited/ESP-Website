@@ -721,7 +721,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Take the student out if constraints allow
         for sec in oldclasses:
             result = sec.cannotRemove(request.user)
-            if result:
+            if result and not hasattr(request.user, "onsite_local"):
                 return result
             else:
                 sec.unpreregister_student(request.user)
