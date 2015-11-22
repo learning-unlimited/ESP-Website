@@ -280,7 +280,7 @@ def find_user(userstr):
     #worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        userstr = userstr_parts[0]
+        userstr = userstr_parts[0].strip()
         #try username?
         user_q = Q(username=userstr)
         #try pk
