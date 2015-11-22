@@ -109,6 +109,11 @@ class CommModule(ProgramModuleObj):
         esp_firstuser = ESPUser(firstuser)
         contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
                        'program': ActionHandler(self.program, esp_firstuser) }
+
+        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
+                     'user': ActionHandler(esp_firstuser, esp_firstuser)
+                     'program': ActionHandler(self.program, esp_firstuser)})))
+  
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
         
         return render_to_response(self.baseDir()+'preview.html', request,
@@ -175,7 +180,10 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext    = body,
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                                                                                                       {'msgbdy': body,
+                                                                                                                                        'user': request.user,
+                                                                                                                                        'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
