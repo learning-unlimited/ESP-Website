@@ -32,17 +32,15 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models import ESPUser, User
-from django.db.models.query import Q
-from esp.users.views  import get_user_list
-from esp.middleware import ESPError
-from esp.web.util.latex import render_to_latex
-from esp.tagdict.models import Tag
 from django.conf import settings
+
+from esp.middleware import ESPError
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
+from esp.web.util import render_to_response
+
+
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
     @classmethod
@@ -61,29 +59,6 @@ class NameTagModule(ProgramModuleObj):
         context = {'module': self}
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
-
-    @aux_call
-    @needs_admin
-    def generatestickers(self, request, tl, one, two, module, extra, prog):
-        timeslots = prog.getTimeSlots()
-        students = prog.students()['confirmed']
-        context = {'timeslots': timeslots, 'students': students}
-        if request.GET.has_key("format"):
-            format = request.GET["format"]
-        else:
-            format = "pdf"
-            
-        zipped_list = []
-
-        students = list(students)
-        
-        while students != []:
-            zipped_list.append(students[:3])
-            students = students[3:]
-
-        context['zipped_list'] = zipped_list
-            
-        return render_to_latex(self.baseDir()+'stickers.tex', context, format)
 
     @aux_call
     @needs_admin
@@ -122,7 +97,7 @@ class NameTagModule(ProgramModuleObj):
             teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
 #            teachers =ESPUser.objects.filter(teacher_dict['teacher_profile'] | teacher_dict['class_rejected']).distinct()
 
-	    teachers = [ ESPUser(teacher) for teacher in teachers ]
+            teachers = [ ESPUser(teacher) for teacher in teachers ]
             teachers = filter(lambda x: len(x.first_name+x.last_name), teachers)
             teachers.sort()
 
