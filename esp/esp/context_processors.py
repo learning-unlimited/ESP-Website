@@ -1,4 +1,3 @@
-import esp.utils.globaltags
 from django.contrib.sites.models import Site
 from django.conf import settings
 
