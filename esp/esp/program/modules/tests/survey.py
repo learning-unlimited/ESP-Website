@@ -73,9 +73,11 @@ class SurveyTest(ProgramFrameworkTest):
         
         #   Create a survey
         (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
-        (qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
-        (question_base, created) = Question.objects.get_or_create(survey=survey, name='Question1', question_type=qtype, per_class=False, seq=0)
-        (question_perclass, created) = Question.objects.get_or_create(survey=survey, name='Question2', question_type=qtype, per_class=True, seq=1)
+        (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
+        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True)
+        (question_base, created) = Question.objects.get_or_create(survey=survey, name='Question1', question_type=text_qtype, per_class=False, seq=0)
+        (question_perclass, created) = Question.objects.get_or_create(survey=survey, name='Question2', question_type=text_qtype, per_class=True, seq=1)
+        (question_number, created) = Question.objects.get_or_create(survey=survey, name='Question3', question_type=number_qtype, per_class=True, seq=2)
 
         #   Make sure the user is marked as not having completed it
         self.assertFalse(Record.user_completed(student, 'student_survey', self.program))
@@ -84,6 +86,8 @@ class SurveyTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/survey' % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question1', response.content)
+        self.assertIn('Question2', response.content)
+        self.assertIn('Question3', response.content)
         
         #   Check that there is a field to select a class for each timeslot
         for timeslot in self.program.getTimeSlots():
@@ -95,6 +99,7 @@ class SurveyTest(ProgramFrameworkTest):
             'attendance_%d' % sec_timeslot.id: '%s' % sec.id,
             'question_%d' % question_base.id: 'Yes',
             'question_%d_%d' % (question_perclass.id, sec_timeslot.id): 'No',
+            'question_%d_%d' % (question_number.id, sec_timeslot.id): '3',
         }
         
         #   Submit the survey
@@ -116,6 +121,9 @@ class SurveyTest(ProgramFrameworkTest):
         answer_perclass = Answer.objects.filter(question=question_perclass)[0]
         self.assertEqual(answer_perclass.answer, 'No')
         self.assertEqual(answer_perclass.target, sec)
+        answer_number = Answer.objects.filter(question=question_number)[0]
+        self.assertEqual(answer_number.answer, '3')
+        self.assertEqual(answer_number.target, sec)
         
         #   Check that the student is marked as having filled out the survey
         self.assertTrue(Record.user_completed(student, 'student_survey', self.program))
@@ -125,5 +133,13 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 500)
         self.assertIn('already filled out', response.content)
         
-        
+        # student logs out, teacher logs in
+        self.client.logout()
+        teacher = sec.parent_class.get_teachers()[0]
+        self.client.login(username=teacher.username, password='password')
 
+        # teacher should see per-class questions only
+        response = self.client.get('/teach/%s/survey/review' % self.program.url)
+        self.assertContains(response, 'Question2')
+        self.assertContains(response, 'Question3')
+        self.assertNotContains(response, 'Question1')
