@@ -63,6 +63,8 @@ from esp.mailman import create_list, load_list_settings, apply_list_settings, ad
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
+
+import re
 import pickle
 import operator
 import json
@@ -273,14 +275,19 @@ def find_user(userstr):
     returns: queryset containing ESPUser instances.
     """
 
+    userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
-    userstr_parts = userstr.strip().split(' ')
+    if len(userstr_parts) == 2 and \
+       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+       re.match("[^A-Za-z]*", userstr_parts[1]):
+        # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
+        # first branch of the if statement gets taken
+        userstr_parts = ["".join(userstr_parts)]
 
     # single search token, could be username, id or email
     #worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        userstr = userstr_parts[0].strip()
         #try username?
         user_q = Q(username=userstr)
         #try pk
@@ -291,7 +298,9 @@ def find_user(userstr):
             user_q = user_q | Q(email__iexact=userstr)
             user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
         #try phone
-        cleaned = userstr.replace("-", "").replace(".", "")
+        cleaned = userstr
+        for char in "-.() ":
+            cleaned = cleaned.replace(char, "")
         if cleaned.isnumeric() and len(cleaned) == 10:
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
