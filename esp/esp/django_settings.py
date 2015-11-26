@@ -233,7 +233,6 @@ INSTALLED_APPS = (
     'esp.qsd',
     'esp.qsdmedia',
     'esp.resources.apps.ResourcesConfig',
-    'esp.gen_media',
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',

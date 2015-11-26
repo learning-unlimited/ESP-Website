@@ -2,13 +2,6 @@
 
 {% block title %}Make Program Happen{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "ESP Management"|subsection }}{% endautoescape %}
-{% endblock %}
-
-{% block subsection_name %}Welcome{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
