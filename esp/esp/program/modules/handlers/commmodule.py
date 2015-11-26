@@ -275,7 +275,6 @@ class CommModule(ProgramModuleObj):
         
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
-        
         return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
     @aux_call
