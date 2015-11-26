@@ -100,28 +100,9 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 
     guard_first_name = StrippedCharField(length=25, max_length=64)
     guard_last_name = StrippedCharField(length=30, max_length=64)
-    guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = USPhoneNumberField()
     guard_phone_cell = USPhoneNumberField(required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(GuardContactForm, self).__init__(*args, **kwargs)
-    
-        if not Tag.getTag('allow_guardian_no_email'):
-            if Tag.getTag('require_guardian_email'):
-                self.fields['guard_e_mail'].required = True
-            del self.fields['guard_no_e_mail']
-
-    def clean_guard_e_mail(self):
-        if 'guard_e_mail' not in self.cleaned_data or len(self.cleaned_data['guard_e_mail']) < 3:
-            if Tag.getTag('require_guardian_email') and not self.cleaned_data['guard_no_e_mail']:
-                if Tag.getTag('allow_guardian_no_email'):
-                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.  If they do not have access to e-mail, check the appropriate box.")
-                else:
-                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.")
-        else:
-            return self.cleaned_data['guard_e_mail']
 
     def clean(self):
         super(GuardContactForm, self).clean()
@@ -185,7 +166,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     medical_needs = forms.CharField(required=False)
 
-    post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
     schoolsystem_id = forms.CharField(max_length=32, required=False)
     schoolsystem_optout = forms.BooleanField(required=False)
@@ -239,9 +219,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
-
-        if not Tag.getTag('ask_student_about_post_hs_plans'):
-            del self.fields['post_hs']
 
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
@@ -310,11 +287,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['heard_about']
-
-    def clean_post_hs(self):
-        if self.cleaned_data['post_hs'] == 'Other...:':
-            raise forms.ValidationError("If 'Other...', please provide details")
-        return self.cleaned_data['post_hs']
 
     def clean_transportation(self):
         if self.cleaned_data['transportation'] == 'Other...:':

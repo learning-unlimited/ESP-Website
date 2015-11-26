@@ -238,8 +238,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
             self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
-        if Tag.getTag('teacherreg_difficulty_label'):
-            self.fields['hardness_rating'].label = Tag.getTag('teacherreg_difficulty_label')
                 
         # plus subprogram section wizard
     

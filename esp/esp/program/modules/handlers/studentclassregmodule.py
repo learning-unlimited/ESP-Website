@@ -163,22 +163,10 @@ class StudentClassRegModule(ProgramModuleObj):
         }
 
         if QObject:
-            retVal = qobjects
+            return qobjects
         else:
-            retVal = {k: ESPUser.objects.filter(v).distinct()
-                      for k, v in qobjects.iteritems()}
-        
-        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
-        if allowed_student_types:
-            allowed_student_types = allowed_student_types.split(",")
-            for stutype in allowed_student_types:
-                GroupName = Q(groups__name=stutype)
-                if QObject:
-                    retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
-                else:
-                    retVal[stutype] = ESPUser.objects.filter(Par & Unexpired & Reg & GroupName).distinct()
-
-        return retVal
+            return {k: ESPUser.objects.filter(v).distinct()
+                    for k, v in qobjects.iteritems()}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form
@@ -187,17 +175,8 @@ class StudentClassRegModule(ProgramModuleObj):
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who signed up for at least one class""",
-                  'enrolled': """Students who are enrolled in at least one class"""}
-        allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
-        if allowed_student_types:
-            allowed_student_types = allowed_student_types.split(",")
-            for stutype in allowed_student_types:
-                if stutype in role_dict:
-                    result[stutype] = role_dict[stutype]
-
-        return result
-
+        return {'classreg': """Students who signed up for at least one class""",
+                'enrolled': """Students who are enrolled in at least one class"""}
     
     def isCompleted(self):
         return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
@@ -451,9 +430,6 @@ class StudentClassRegModule(ProgramModuleObj):
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
-            regs = Record.objects.filter(user=request.user, program=prog, event="reg_confirmed")
-            if regs.count() == 0 and Tag.getTag('confirm_on_addclass'):
-                r = Record.objects.create(user=request.user, program=prog, event="reg_confirmed")
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
@@ -524,8 +500,6 @@ class StudentClassRegModule(ProgramModuleObj):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
-            if Tag.getBooleanTag('hide_full_classes', prog, default=False):
-                classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
@@ -559,8 +533,7 @@ class StudentClassRegModule(ProgramModuleObj):
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-        hide_full = Tag.getBooleanTag('hide_full_classes', prog, False)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
         context['register_from_catalog'] = scrmi.register_from_catalog

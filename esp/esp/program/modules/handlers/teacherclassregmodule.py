@@ -84,7 +84,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
-        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
@@ -613,7 +612,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
         context['noclasses'] = (len(context['all_class_list']) == 0)
-        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
         return render_to_response(self.baseDir()+'listcopyclasses.html', request, context)
 
     @aux_call
@@ -775,7 +773,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['two'] = two
         context['form'] = reg_form
         context['formset'] = resource_formset
-        context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:

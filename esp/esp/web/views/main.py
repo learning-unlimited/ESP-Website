@@ -226,25 +226,13 @@ def registration_redirect(request):
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         regperm = 'Teacher/Classes'
-    else:
-        #   Default to student registration (this will only show if the program
-        #   is found via the 'allowed_student_types' Tag)
-        userrole['name'] = user.getUserTypes()[0]
-        userrole['base'] = 'learn'
-        userrole['reg'] = 'studentreg'
     ctxt['userrole'] = userrole
 
     if regperm:
-        progs_deadline = list(Permission.program_by_perm(user,regperm))
+        progs = list(Permission.program_by_perm(user,regperm))
     else:
-        progs_deadline = []
+        progs = []
 
-    progs_tag = list(t.target \
-            for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
-            if isinstance(t.target, Program) \
-                and (set(user.getUserTypes()) & set(t.value.split(","))))
-    progs = list(set(progs_deadline + progs_tag)) #distinct ones
-    
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):

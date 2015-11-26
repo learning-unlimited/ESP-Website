@@ -1202,6 +1202,7 @@ class StudentInfo(models.Model):
 
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     schoolsystem_optout = models.BooleanField(default=False)
+    # Deprecated, but left here so as not to remove Chicago's existing data.
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
 
@@ -1255,7 +1256,6 @@ class StudentInfo(models.Model):
         form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
         form_dict['schoolsystem_optout'] = self.schoolsystem_optout
-        form_dict['post_hs'] = self.post_hs
         form_dict['transportation'] = self.transportation
         return form_dict
 
@@ -1305,7 +1305,6 @@ class StudentInfo(models.Model):
 
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
-        studentInfo.post_hs = new_data.get('post_hs', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
@@ -1796,12 +1795,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         for key, val in newkey.items():
             if val and key != 'id':
                 form_data[prepend+key] = val
-        #   Hack: If the 'no guardian e-mail' Tag is on, check the box for 
-        #   "my parent/guardian doesn't have e-mail" if the e-mail field is blank.
-        if Tag.getTag('allow_guardian_no_email') and prepend == 'guard_':
-            print 'Testing: %s' % self.e_mail
-            if not self.e_mail or len(self.e_mail) < 3:
-                form_data['guard_no_e_mail'] = True
         return form_data
 
     def save(self, *args, **kwargs):
