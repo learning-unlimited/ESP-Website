@@ -6,7 +6,7 @@ from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
 from datetime import date
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 

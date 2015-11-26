@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from operator import __or__ as OR
 
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect

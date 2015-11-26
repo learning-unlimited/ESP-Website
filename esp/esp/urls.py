@@ -45,8 +45,8 @@ import debug_toolbar
 autodiscover(admin_site)
 
 # Override error pages
-handler404 = 'esp.web.util.main.error404'
-handler500 = 'esp.web.util.main.error500'
+handler404 = 'esp.utils.web.error404'
+handler500 = 'esp.utils.web.error500'
 
 # Static media
 urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()

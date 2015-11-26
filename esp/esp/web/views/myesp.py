@@ -43,7 +43,7 @@ from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.db.models.query import Q
 
 @login_required

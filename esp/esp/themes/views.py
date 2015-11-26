@@ -37,7 +37,7 @@ from esp.users.models import admin_required
 from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
 
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
 from django.conf import settings
 

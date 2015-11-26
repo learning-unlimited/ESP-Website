@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag

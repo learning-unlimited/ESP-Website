@@ -2,7 +2,7 @@ from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.utils.forms import FormWithRequiredCss
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.web.views.main import registration_redirect
 from esp.users.models import ESPUser
 from esp.users.views.login_byschool import StudentSelectForm, BarePasswordForm

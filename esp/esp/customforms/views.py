@@ -17,7 +17,7 @@ from django.contrib.auth.decorators import user_passes_test
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 def test_func(user):
     return user.is_authenticated() and (ESPUser(user).isTeacher() or ESPUser(user).isAdministrator())

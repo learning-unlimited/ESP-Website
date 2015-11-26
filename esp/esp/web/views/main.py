@@ -51,7 +51,7 @@ import re
 import json
 
 from esp.web.models import NavBarCategory
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.web.views.navBar import makeNavBar
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError

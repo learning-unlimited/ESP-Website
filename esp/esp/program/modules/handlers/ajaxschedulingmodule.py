@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string

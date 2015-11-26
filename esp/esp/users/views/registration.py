@@ -24,7 +24,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 
 __all__ = ['user_registration_phase1', 'user_registration_phase2','resend_activation_view']
@@ -227,7 +227,7 @@ class GradeChangeRequestView(CreateView):
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
-        from esp.web.util.main import render_to_response as render_to_response_base
+        from esp.utils.web import render_to_response as render_to_response_base
         return render_to_response_base(self.template_name, self.request, context)
 
     @method_decorator(login_required)

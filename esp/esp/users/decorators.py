@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 import functools
 
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 def anonymous_only(message="Sorry, you don't need this page -- you're logged in."):
     def _decorator(method):

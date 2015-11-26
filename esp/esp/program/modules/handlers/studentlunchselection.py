@@ -39,7 +39,7 @@ from esp.users.models            import Record
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.middleware              import ESPError
 
 from django                      import forms

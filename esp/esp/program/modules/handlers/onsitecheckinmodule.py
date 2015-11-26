@@ -37,7 +37,7 @@ from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarco
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.accounting.controllers import IndividualAccountingController
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, User, Record
 from django              import forms

@@ -44,7 +44,7 @@ from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
 from esp.users.models import ESPUser, Record

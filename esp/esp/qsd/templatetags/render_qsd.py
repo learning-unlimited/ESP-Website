@@ -1,6 +1,6 @@
 from django import template
 from django.shortcuts import render_to_response
-from esp.web.util.template import cache_inclusion_tag
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
 from esp.tagdict.models import Tag
 

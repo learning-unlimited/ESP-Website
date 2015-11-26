@@ -10,7 +10,7 @@ from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 
 class BigBoardModule(ProgramModuleObj):

@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.middleware   import ESPError
 from django.db.models.query    import Q
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User
-from esp.web.util     import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query import QuerySet
 from django.conf import settings

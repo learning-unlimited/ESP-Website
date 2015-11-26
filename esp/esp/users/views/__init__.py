@@ -14,7 +14,7 @@ from esp.users.views.make_admin import *
 from esp.users.views.password_reset import *
 from esp.users.views.registration import *
 from esp.users.views.usersearch import *
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 
 def filter_username(username, password):

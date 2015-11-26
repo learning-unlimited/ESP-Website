@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext

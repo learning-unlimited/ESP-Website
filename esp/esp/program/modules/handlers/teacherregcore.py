@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
