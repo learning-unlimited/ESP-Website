@@ -38,7 +38,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 
 
 class NameTagModule(ProgramModuleObj):
