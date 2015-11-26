@@ -34,11 +34,12 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
+from esp.web.util import render_to_response
 from esp.dbmail.models import MessageRequest
-from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.models import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
-from django.db.models.query   import Q
+from django.db.models.query import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
 from django.template import Context as DjangoContext
@@ -164,11 +165,8 @@ class CommModule(ProgramModuleObj):
             raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
-
         variable_modules = {'user': request.user, 'program': self.program}
-
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                       subject    = subject,
                                                       recipients = filterobj,
@@ -188,6 +186,7 @@ class CommModule(ProgramModuleObj):
         numusers = self.approx_num_of_recipients(filterobj, sendto_fn)
 
         from django.conf import settings
+
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
             est_time = settings.EMAILTIMEOUT * numusers
@@ -268,8 +267,7 @@ class CommModule(ProgramModuleObj):
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
-                return render_to_response(self.baseDir()+'step2.html', request, context)
-                
+                return render_to_response(self.baseDir()+'step2.html', request, context)                
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
         
