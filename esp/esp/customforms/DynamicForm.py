@@ -406,7 +406,7 @@ class ComboForm(SessionWizardView):
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
-        from esp.web.util.main import render_to_response as render_to_response_base
+        from esp.utils.web import render_to_response as render_to_response_base
         return render_to_response_base(self.template_name, self.request, context)
 
     def get_form_prefix(self, step, form):

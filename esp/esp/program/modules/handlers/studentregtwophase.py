@@ -44,7 +44,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.users.models import Record, ESPUser
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):

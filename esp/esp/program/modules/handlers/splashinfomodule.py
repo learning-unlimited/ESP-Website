@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_student, main_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo

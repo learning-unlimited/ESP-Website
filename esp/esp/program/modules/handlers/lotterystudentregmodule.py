@@ -48,7 +48,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError

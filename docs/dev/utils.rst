@@ -5,7 +5,7 @@ The ESP website has a bunch of other things in it that are useful to know.  Here
 
 Rendering and Templates
 -----------------------
-* We use a modified ``esp.web.util.main.render_to_response`` instead of django's; it takes the template path, the request, and the context, and inserts useful things into the context, like information needed to render navbars, and the request.
+* We use a modified ``esp.utils.web.render_to_response`` instead of django's; it takes the template path, the request, and the context, and inserts useful things into the context, like information needed to render navbars, and the request.
 * To render a block of text that will be editable by admins, put a ``{% load render_qsd %}`` somewhere, and then put a ``{% render_inline_qsd name %}`` or ``{% render_inline_program_qsd program name %}`` in where you want the block.  If you want it to have default text, put it between the tags ``{% inline_qsd_block name %}`` and ``{% end_inline_qsd_block %}`` or ``{% inline_program_qsd_block program name %}`` and ``{% end_inline_program_qsd_block %}``.
 * You almost always want your template to begin with ``{% extends "main.html" %}``, to inherit from the main site layout; then put the content between ``{% block content %}`` and ``{% endblock content %}`` tags.  Even if you don't want the main site layout, you may want to inherit ``{% extends "elements/html" %}`` to get our standard JS and CSS and such.
 * We have a model in the database, ``esp.utils.TemplateOverride``, that makes it possible to override a template on a particular site by saving a new one in the database.  It's terrifying but also kind of useful. The theme editor uses these, and we often use them to customize printables.

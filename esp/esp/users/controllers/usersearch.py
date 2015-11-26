@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.middleware import ESPError
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.program.models import Program
 from esp.dbmail.models import MessageRequest
 

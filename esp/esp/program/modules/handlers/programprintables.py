@@ -33,13 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
-from esp.web.util.latex  import render_to_latex
+from esp.utils.latex  import render_to_latex
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
@@ -1011,7 +1011,6 @@ Volunteer schedule for %s:
         if file_type == 'html':
             return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
-            from esp.web.util.latex import render_to_latex
             return render_to_latex(basedir+'studentschedule.tex', context, file_type)
 
     @aux_call
@@ -1326,8 +1325,6 @@ Volunteer schedule for %s:
     @aux_call
     @needs_admin
     def certificate(self, request, tl, one, two, module, extra, prog):
-        from esp.web.util.latex import render_to_latex
-        
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user

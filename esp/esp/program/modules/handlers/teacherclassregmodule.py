@@ -41,7 +41,7 @@ from esp.program.models          import ClassSubject, ClassSection, Program, Pro
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser

@@ -1,7 +1,7 @@
 from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
 from django.http import HttpResponseRedirect
 from esp.users.models import ESPUser, PasswordRecoveryTicket
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
 

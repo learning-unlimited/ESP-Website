@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppReview, StudentRegistration, RegistrationType
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect

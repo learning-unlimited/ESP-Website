@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib.auth.decorators import login_required
 
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource, ResourceAssignment

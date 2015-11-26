@@ -3,7 +3,7 @@ from django import template
 from django.core.cache import cache
 from esp.users.models import ESPUser, AnonymousUser
 from urllib import quote as urlencode
-from esp.web.util.template import cache_inclusion_tag
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True)

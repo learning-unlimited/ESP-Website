@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponse
 import csv
 

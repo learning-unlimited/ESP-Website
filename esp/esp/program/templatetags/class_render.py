@@ -1,7 +1,8 @@
 from django import template
 from django.template.loader import render_to_string
+
 from argcache import cache_function, wildcard
-from esp.web.util.template import cache_inclusion_tag
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo

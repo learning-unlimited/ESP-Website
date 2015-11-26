@@ -38,7 +38,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.program.models.class_ import ClassSubject
 from esp.program.models.flags import ClassFlagType
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, Record, ContactInfo
 from esp.cal.models import Event

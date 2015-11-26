@@ -75,7 +75,7 @@ def json_response(field_map={}):
     """
     
     # Here instead of at the top because of circular imports
-    from esp.web.util.main import render_to_response
+    from esp.utils.web import render_to_response
 
     def map_fields(item):
         if isinstance(item, Model):
