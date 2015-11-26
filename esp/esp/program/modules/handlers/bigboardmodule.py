@@ -42,6 +42,8 @@ class BigBoardModule(ProgramModuleObj):
         numbers = [
             ("students registering in the last 10 minutes",
              self.num_active_users(prog)),
+            ("students checked in",
+             self.num_checked_in_users(prog)),
             ("students with lottery preferences",
              self.num_users_with_lottery(prog)),
             ("students enrolled in a class",
@@ -163,6 +165,11 @@ class BigBoardModule(ProgramModuleObj):
     def num_medical(self, prog):
         return Record.objects.filter(program=prog,
                                      event__in=['med', 'med_bypass']).count()
+
+
+    @cache_function_for(105)
+    def num_checked_in_users(self, prog):
+        return Record.objects.filter(program=prog, event='attended').count()
 
     @cache_function_for(105)
     def popular_classes(self, prog, num=5):
