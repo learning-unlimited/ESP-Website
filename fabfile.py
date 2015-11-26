@@ -103,6 +103,11 @@ def setup():
     # to activate the virtualenv as part of every fab command.
     files.append("~/.bash_login", "source %sbin/activate" % env.venv)
 
+    # Configure memcached item size
+    addendum = "\n# Item size limit\n-I 2M"
+    files.append("/etc/memcached.conf", addendum, use_sudo=True)
+    sudo("service memcached restart")
+
     # Symlink media
     if platform.system() == "Windows":
         # Creating symlinks inside the guest will fail if the host is running
