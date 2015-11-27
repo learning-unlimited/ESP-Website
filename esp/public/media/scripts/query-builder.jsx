@@ -30,6 +30,9 @@ function BuildQueryError() {
  *           filter.  Each must have a key `reactClass` which should be the
  *           name of the React class that displays the input.  They may also
  *           have more keys as specified by that class.
+ *   `query`: Optionally, a query to preload into the query builder.  This
+ *   should be a stringified JSON object similar to that which would be passed
+ *   as the GET parameter `query` (see below).
  *
  * Note that the boolean operations `and` and `or` need not be included in the
  * list of filters.
@@ -39,7 +42,10 @@ function BuildQueryError() {
  * methods, it must have a method `asJSON` which returns a value that will be
  * passed through to the corresponding python class to be interpreted.  The
  * method may alternately raise a BuildQueryError if the user's input is
- * invalid, in which case it should show the invalid input.
+ * invalid, in which case it should show the invalid input.  Finally, it must
+ * have a method `fromJSON`, which should take a value of the same type, and
+ * call the appropriate `setState()` operations on the class.  (If it can't
+ * understand the value, `fromJSON` may fail silently or error.)
  *
  * When the submit button is pressed, this generates a JSON object representing
  * the query, and sends it to the current URL as the GET parameter `query`.
@@ -64,10 +70,37 @@ var QueryBuilder = React.createClass({
         })).isRequired,
       })).isRequired,
     }).isRequired,
+    query: React.PropTypes.shape({
+      filter: React.PropTypes.string.isRequired,
+      negated: React.PropTypes.bool.isRequired,
+      values: React.PropTypes.array.isRequired,
+    }),
+  },
+
+  /**
+   * If we just mounted, set up the initial query from this.props.query.
+   *
+   * TODO(benkraft): this really wants to be a getInitialState, but since it's
+   * not actually modifying state, and the children might not be mounted at
+   * call-time of getInitialState, that won't work.  See also the TODO in
+   * QueryBuilder.asJSON below.
+   */
+  componentDidMount: function () {
+    if (this.props.query) {
+      this.fromJSON(this.props.query);
+    }
   },
 
   asJSON: function () {
+    // TODO(benkraft): this pattern of using refs to access the child's asJSON
+    // and fromJSON might not work in React 0.14; figure out another way to do
+    // it, probably by storing all the state on this component and propagating
+    // everything down.
     return this.refs.queryNode.asJSON();
+  },
+
+  fromJSON: function (data) {
+    return this.refs.queryNode.fromJSON(data);
   },
 
   /**
@@ -189,6 +222,15 @@ var QueryNode = React.createClass({
     }
   },
 
+  fromJSON: function (data) {
+    this.setState({
+      currentFilterName: data.filter,
+      negated: data.negated,
+    }, function () {
+      this.refs.filter.fromJSON(data.values);
+    }.bind(this));
+  },
+
   render: function () {
     var filterBody = null;
     if (this.state.currentFilterName) {
@@ -293,6 +335,12 @@ var Filter = React.createClass({
                  }.bind(this));
   },
 
+  fromJSON: function (data) {
+    return _.map(data, function (datum, i) {
+      return this.refs[i].fromJSON(datum);
+    }.bind(this));
+  },
+
   render: function () {
     var inputs = _.map(this.props.filter.inputs,
                        function (input, i) {
@@ -322,6 +370,9 @@ var ConstantInput = React.createClass({
 
   asJSON: function () {
     return null;
+  },
+
+  fromJSON: function (data) {
   },
 
   render: function () {
@@ -367,6 +418,10 @@ var SelectInput = React.createClass({
       this.setState({error: null});
       return val;
     }
+  },
+
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.select).value = data;
   },
 
   render: function () {
@@ -421,6 +476,18 @@ var OptionalInput = React.createClass({
     }
   },
 
+  fromJSON: function(data) {
+    if (data) {
+      this.setState(
+        {show: true},
+        function () {
+          this.refs.inner.fromJSON(data);
+        });
+    } else {
+      this.setState({show: false});
+    }
+  },
+
   handleClick: function () {
     this.setState({show: !this.state.show});
   },
@@ -469,6 +536,11 @@ var DatetimeInput = React.createClass({
     };
   },
 
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.comparison).value = data.comparison;
+    React.findDOMNode(this.refs.datetime).value = data.datetime;
+  },
+
   componentDidMount: function () {
     this.componentDidUpdate();
   },
@@ -509,6 +581,10 @@ var TextInput = React.createClass({
 
   asJSON: function () {
     return React.findDOMNode(this.refs.input).value;
+  },
+
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.input).value = data;
   },
 
   render: function () {
@@ -566,6 +642,19 @@ var BooleanOp = React.createClass({
                      return this.refs[key].asJSON();
                    }.bind(this));
     }
+  },
+
+  fromJSON: function (data) {
+    this.setState({
+      // Remove any existing children and create new ones before trying to
+      // update them.
+      childKeys: _.map(data, function () { return _.uniqueId() }),
+    }, function () {
+      _.map(_.zip(data, this.state.childKeys), 
+            function (datumKey) {
+              this.refs[datumKey[1]].fromJSON(datumKey[0]);
+            }.bind(this));
+    }.bind(this));
   },
 
   handleAdd: function () {

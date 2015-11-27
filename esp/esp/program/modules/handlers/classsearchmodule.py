@@ -37,7 +37,7 @@ class ClassSearchModule(ProgramModuleObj):
                 field_name='flags__%s_time' % t, english_name=''))
             for t in ['created', 'modified']]
         flag_select_input = SelectInput(
-            field_name='flags__flag_type', english_name='type',
+            field_name='flags__flag_type',
             options={str(ft.id): ft.name for ft in flag_types})
         any_flag_input = ConstantInput(Q(flags__isnull=False))
         flag_filter = SearchFilter(name='flag', title='the flag',
@@ -52,13 +52,13 @@ class ClassSearchModule(ProgramModuleObj):
             categories.append(self.program.open_class_category)
         category_filter = SearchFilter(
             name='category', title='the category',
-            inputs=[SelectInput(field_name='category', english_name='',
+            inputs=[SelectInput(field_name='category',
                                 options={str(cat.id): cat.category
                                          for cat in categories})])
 
         status_filter = SearchFilter(
             name='status', title='the status',
-            inputs=[SelectInput(field_name='status', english_name='', options={
+            inputs=[SelectInput(field_name='status', options={
                 str(k): v for k, v in STATUS_CHOICES})])
         title_filter = SearchFilter(
             name='title', title='title containing',
@@ -98,15 +98,12 @@ class ClassSearchModule(ProgramModuleObj):
     def classsearch(self, request, tl, one, two, module, extra, prog):
         data = request.GET.get('query')
         query_builder = self.query_builder()
-        if data is None:
-            # Display a blank query builder
-            context = {
-                'query_builder': query_builder,
-                'program': self.program,
-            }
-            return render_to_response(self.baseDir()+'query_builder.html',
-                                      request, context)
-        else:
+        context = {
+            'query_builder': query_builder,
+            'program': self.program,
+            'query': None,
+        }
+        if data is not None:
             decoded = json.loads(data)
             queryset = query_builder.as_queryset(decoded)
             queryset = queryset.distinct().order_by('id').prefetch_related(
@@ -117,12 +114,8 @@ class ClassSearchModule(ProgramModuleObj):
                 random.shuffle(queryset)
             if request.GET.get('lucky'):
                 return HttpResponseRedirect(queryset[0].get_absolute_url())
-            english = query_builder.as_english(decoded)
-            context = {
-                'queryset': queryset,
-                'english': english,
-                'program': self.program,
-                'flag_types': self.program.flag_types.all(),
-            }
-            return render_to_response(self.baseDir()+'search_results.html',
-                                      request, context)
+            context['query'] = decoded
+            context['queryset'] = queryset
+            context['flag_types'] = self.program.flag_types.all()
+        return render_to_response(self.baseDir()+'class_search.html',
+                                  request, context)
