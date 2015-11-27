@@ -2,11 +2,6 @@
 
 {% block title %}User Information{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />

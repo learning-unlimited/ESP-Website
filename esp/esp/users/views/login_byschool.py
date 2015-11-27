@@ -4,7 +4,7 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from esp.utils.forms import FormWithRequiredCss
 from esp.utils.widgets import BlankSelectWidget
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.web.views.main import registration_redirect
 from esp.users.models import ESPUser, K12School
 
@@ -16,7 +16,7 @@ class SchoolSelectForm(FormWithRequiredCss):
         self.fields['school'].choices = K12School.choicelist()
 
 class StudentSelectForm(FormWithRequiredCss):
-    """ Form that lets a student pick themselves from a list. """    
+    """ Form that lets a student pick themselves from a list. """
     username = forms.ChoiceField(label='Your name', choices=[], widget=BlankSelectWidget(attrs={'id': 'id_selectusername'}, blank_choice=('','Pick your name from this list...')))
     def __init__(self, students=[], *args, **kwargs):
         super(StudentSelectForm, self).__init__(*args, **kwargs)
@@ -28,15 +28,15 @@ class BarePasswordForm(FormWithRequiredCss):
 
 def login_byschool(request, *args, **kwargs):
     """ Let a student pick their school. """
-    
+
     if request.user.is_authenticated():
         return registration_redirect(request)
-        
+
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
-    
+
     if request.method == 'POST':
         form = SchoolSelectForm(request.POST)
         if form.is_valid():
@@ -44,26 +44,26 @@ def login_byschool(request, *args, **kwargs):
             return HttpResponseRedirect(u'/myesp/login/byschool/%s/%s' % (sid, redirect_str))
     else:
         form = SchoolSelectForm()
-    
+
     return render_to_response('registration/login_byschool.html', request,
         { 'form': form, 'action': request.get_full_path(), 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'pwform': BarePasswordForm().as_table() })
 
 def login_byschool_pickname(request, school_id, *args, **kwargs):
     """ Let a student pick their name. """
-    
+
     if request.user.is_authenticated():
         return registration_redirect(request)
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
-    
+
     # Get the school
     school_set = K12School.objects.filter(id=school_id)
     if school_set.count() < 1:
         return HttpResponseRedirect( '/myesp/login/byschool/%s' % redirect_str )
     school = school_set[0]
-    
+
     if request.method == 'POST' and request.POST.has_key('username'):
         preset_username = request.POST['username']
         if preset_username == '-1':
@@ -78,7 +78,7 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
         action = request.get_full_path()
         if request.REQUEST.has_key('dynamic'):
             return HttpResponse( form.as_table() )
-    
+
     return render_to_response('registration/login_byschool_pickname.html', request,
         { 'form': form, 'action': action, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'preset_username': preset_username })
 

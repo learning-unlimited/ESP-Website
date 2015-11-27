@@ -2,7 +2,7 @@ from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.utils.forms import FormWithRequiredCss
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.web.views.main import registration_redirect
 from esp.users.models import ESPUser
 from esp.users.views.login_byschool import StudentSelectForm, BarePasswordForm
@@ -20,15 +20,15 @@ class BirthdaySelectForm(FormWithRequiredCss):
 
 def login_by_bday(request, *args, **kwargs):
     """ Let a student pick their school. """
-    
+
     if request.user.is_authenticated():
         return registration_redirect(request)
-        
+
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
-    
+
     if request.method == 'POST':
         form = BirthdaySelectForm(request.POST)
         if form.is_valid():
@@ -37,16 +37,16 @@ def login_by_bday(request, *args, **kwargs):
             return HttpResponseRedirect(u'/myesp/login/bybday/%s/%s/%s' % (month, day, redirect_str))
     else:
         form = BirthdaySelectForm()
-    
+
     return render_to_response('registration/login_by_bday.html', request,
         { 'form': form, 'action': request.get_full_path(), 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'pwform': BarePasswordForm().as_table() })
 
 def login_by_bday_pickname(request, month, day, *args, **kwargs):
     """ Let a student pick their name. """
-    
+
     if request.user.is_authenticated():
         return registration_redirect(request)
-        
+
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
@@ -62,7 +62,7 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
         #   Add the birthday information to the user's session
         request.session['birth_month'] = month
         request.session['birth_day'] = day
-        
+
         # Prepare a new student-select box
         user_filter = Q(registrationprofile__student_info__dob__month=month, registrationprofile__student_info__dob__day=day)
         candidate_users = ESPUser.objects.filter(is_active=True).filter(user_filter).distinct().order_by('first_name', 'id')
@@ -71,7 +71,7 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
         action = request.get_full_path()
         if request.REQUEST.has_key('dynamic'):
             return HttpResponse( form.as_table() )
-    
+
     return render_to_response('registration/login_by_bday_pickname.html', request,
         { 'form': form, 'action': action, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'preset_username': preset_username })
 

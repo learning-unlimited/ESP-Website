@@ -52,7 +52,7 @@ Now go to /admin/application/formstackappsettings/ and find your program.
 Student Workflow
 ================
 
-Visit /learn///studentapp. If you're logged in as an admin, you should see a page (provided that you set things up correctly). Probably, the only thing there is an empty QSD block and a button that says "Continue".
+Visit /learn///studentapp. If you're logged in as an admin, you should see a page (provided that you set things up correctly). Probably, the only thing there is an empty editable text area and a button that says "Continue".
 
 Verify that pressing "Continue" takes you to your application form, and fills in the username field with your username.
 

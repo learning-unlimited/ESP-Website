@@ -33,15 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.forms.forms import Form, Field, BoundField
 from django import forms
-from django.forms.utils import ErrorList
-from django.utils.html import escape, mark_safe
-from django.template import loader
-from django.core.mail import send_mail
 
 from esp.tagdict.models import Tag
-from esp.utils.widgets import CaptchaWidget, DummyWidget
+from esp.utils.widgets import DummyWidget
 
 
 class SizedCharField(forms.CharField):
@@ -67,11 +62,11 @@ class FormWithRequiredCss(forms.Form):
                     field.widget.attrs['class'] += ' required'
                 else:
                     field.widget.attrs['class'] = 'required'
-                    
+
 class FormWithTagInitialValues(forms.Form):
     def __init__(self, *args, **kwargs):
-    
-        #   Get tag data in the form of a dictionary: 
+
+        #   Get tag data in the form of a dictionary:
         #     field name -> tag to look up for initial value
         if 'tag_map' in kwargs:
             tag_map = kwargs['tag_map']
@@ -90,7 +85,7 @@ class FormWithTagInitialValues(forms.Form):
                     kwargs['initial'][key] = tag_defaults[key]
             #   Remove the tag_map so as not to confuse other functions
             del kwargs['tag_map']
-    
+
         super(FormWithTagInitialValues, self).__init__(*args, **kwargs)
 
 class FormUnrestrictedOtherUser(FormWithRequiredCss):
@@ -106,58 +101,6 @@ class FormUnrestrictedOtherUser(FormWithRequiredCss):
                 if field.required:
                     field.required = False
                     field.widget.attrs['class'] = None # GAH!
-
-class CaptchaField(Field):
-    """ A Captcha form element which evaluates to True or raises a validation
-    error depending on whether the user entered the correct text. """
-    widget = CaptchaWidget
-    detect_login = False
-    
-    def __init__(self, *args, **kwargs):
-        if 'detect_login' in kwargs:
-            self.detect_login = kwargs['detect_login']
-            del kwargs['detect_login']
-        if 'help_text' not in kwargs:
-            kwargs['help_text'] = 'If you have an ESP user account, you can log in to make this go away.'
-        if 'label' not in kwargs:
-            kwargs['label'] = 'Prove you\'re human'
-
-        error_messages = {'required' : 'Please enter the two words displayed.'}
-        if 'error_messages' in kwargs:
-            error_messages = error_messages.update(kwargs['error_messages'])
-        kwargs['error_messages'] = error_messages
-            
-        local_request = kwargs['request']
-        del kwargs['request']
-        
-        super(CaptchaField, self).__init__(*args, **kwargs)
-        
-        self.widget.request = local_request
-        
-        
-class CaptchaForm(Form):
-    def __init__(self, *args, **kwargs):
-        local_request = None
-        if 'request' in kwargs:
-            local_request = kwargs['request']
-            del kwargs['request']
-            
-        super(CaptchaForm, self).__init__(*args, **kwargs)
-
-        if local_request and not local_request.user.is_authenticated():
-            self.fields['captcha'] = CaptchaField(request=local_request, required=True)
-
-class CaptchaModelForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        local_request = None
-        if 'request' in kwargs:
-            local_request = kwargs['request']
-            del kwargs['request']
-
-        forms.ModelForm.__init__(self, *args, **kwargs)
-
-        if local_request and not local_request.user.is_authenticated():
-            self.fields['captcha'] = CaptchaField(request=local_request, required=True)
 
 class DummyField(forms.Field):
     widget = DummyWidget

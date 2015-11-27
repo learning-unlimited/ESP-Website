@@ -36,7 +36,7 @@ from django.core.files.base import ContentFile
 
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
-from esp.web.util         import get_from_id, render_to_response
+from esp.utils.web        import get_from_id, render_to_response
 from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
@@ -46,10 +46,10 @@ from django.conf import settings
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
     """ Edits a teacher bio, given user and program identification information """
-    
+
     try:
         if tl == '':
-            founduser = ESPUser(request.user)
+            founduser = request.user
         else:
             if username != '':
                 founduser = ESPUser.objects.get(username=username)
@@ -57,7 +57,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
     except:
         raise Http404
-    
+
     foundprogram = get_from_id(progid, Program, 'program', False)
 
     return bio_edit_user_program(request, founduser, foundprogram, external)
@@ -78,10 +78,10 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     if request.user.id != founduser.id and request.user.is_staff != True:
         raise ESPError('You are not authorized to edit this biography.', log=False)
-        
+
     lastbio      = TeacherBio.getLastBio(founduser)
-        
-    
+
+
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
     if request.method == 'POST' and request.POST.has_key('bio_submitted'):
@@ -98,7 +98,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             # the slug bio and bio
             progbio.slugbio  = form.cleaned_data['slugbio']
             progbio.bio      = form.cleaned_data['bio']
-            
+
             progbio.save()
             # save the image
             if form.cleaned_data['picture'] is not None:
@@ -109,19 +109,19 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             if external:
                 return True
             return HttpResponseRedirect(progbio.url())
-        
+
     else:
-        formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio, 
+        formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio,
                     'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
-        
+
     return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
 
-    
-    
+
+
 def bio_not_found(request, user=None, edit_url=None):
     response = render_to_response('users/teacherbionotfound.html', request,
                                   {'biouser': user,
@@ -144,21 +144,21 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
 
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
-    
+
     if founduser is None or founduser.is_active == False:
         return bio_not_found(request)
 
     if not founduser.isTeacher():
         raise ESPError('%s is not a teacher of ESP.' % \
                                (founduser.name()), log=False)
-    
+
     teacherbio = TeacherBio.getLastBio(founduser)
     if teacherbio.hidden:
         return bio_not_found(request, founduser, teacherbio.edit_url())
 
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
-        
+
     if teacherbio.slugbio is None or len(teacherbio.slugbio.strip()) == 0:
         teacherbio.slugbio = 'ESP Teacher'
     if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:

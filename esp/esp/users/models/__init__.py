@@ -40,7 +40,7 @@ import functools
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
-from django.contrib.auth.models import User, AnonymousUser, Group
+from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
 from localflavor.us.models import USStateField, PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
@@ -63,7 +63,7 @@ from django.utils.functional import SimpleLazyObject
 
 
 from esp.cal.models import Event
-from esp.cache import cache_function, wildcard
+from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
 from esp.db.fields import AjaxForeignKey
@@ -95,15 +95,10 @@ def admin_required(func):
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        elif not ESPUser(request.user).isAdministrator():
+        elif not request.user.isAdministrator():
             raise PermissionDenied
         return func(request, *args, **kwargs)
     return wrapped
-
-#   Class to substitute for Django ModelState when necessary
-#   (see end of ESPUser.__init__ for usage)
-class FakeState(object):
-    db = None
 
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
@@ -127,62 +122,25 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(Manager):
+class ESPUserManager(UserManager):
     pass
 
-class ESPUser(User, AnonymousUser):
-    """ Create a user of the ESP Website
-    This user extends the auth.User of django"""
+class BaseESPUser(object):
+    """ Base class for ESPUser and AnonymousESPUser.
+    Pretty much anything from ESPUser that isn't directly related
+    to being a model should go here. """
 
-    class Meta:
-        proxy = True
-        verbose_name = 'ESP User'
-        
     objects = ESPUserManager()
-    # this will allow a casting from User to ESPUser:
-    #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
-    def __init__(self, userObj=None, *args, **kwargs):
-        # Set up the storage for instance state
-        self._state = ModelState()
-    
-        # A bit of a hack: if we're passed a SimpleLazyObject, make sure it's
-        # initialized (with `dir` which is proxied), and then grab the __dict__
-        # of the wrapped User or ESPUser.   This is necessary because
-        # SimpleLazyObject doesn't proxy __dict__, so copying it would fail.
-        if isinstance(userObj, SimpleLazyObject):
-            dir(userObj)
-            self.__dict__ = userObj._wrapped.__dict__
-            # This is just a method, so SimpleLazyObj will proxy it just fine.
-            self._is_anonymous = userObj.is_anonymous()
+    other_user = False
 
-        # TODO(benkraft): in the case of an ESPUser, we should consider
-        # overriding __new__ to just return the ESPUser it was passed; I don't
-        # know why you'd call ESPUser on an ESPUser except by accident, but
-        # giving you back your ESPUser should work just fine.  On the other
-        # hand, this might be trickier than it sounds because there are a bunch
-        # of metaclasses flying around, and because if __new__ returns an
-        # ESPUser it will then get __init__ called on it, which might be
-        # unnecessary.
-        elif isinstance(userObj, (ESPUser, User, AnonymousUser)):
-            self.__dict__ = userObj.__dict__
-            self._is_anonymous = userObj.is_anonymous()
-
-        elif userObj is not None or len(args) > 0:
-            # Initializing a model using non-keyworded args is a horrible idea.
-            # No clue why you'd do it, but I won't stop you. -ageng 2009-05-10
-            User.__init__(self, userObj, *args, **kwargs)
-            self._is_anonymous = False
-        else:
-            User.__init__(self, *args, **kwargs)
-            self._is_anonymous = False
-
-        if not hasattr(self, "_state"):
-            ## Django doesn't properly insert this field on proxy models, apparently?
-            ## So, fake it. -- aseering 6/28/2010
-            self._state = FakeState()
-
-        self.other_user = False
-
+    def __init__(self, *args, **kwargs):
+        # This is last in ESPUser's method resolution order, and
+        # AnonymousUser doesn't do anything in its __init__,
+        # so there's no need for a super() call unless you're changing
+        # inheritance structure of this, ESPUser, or AnonymousESPUser,
+        # or if Django has changed something. Adding it anyway in case
+        # AnonymousUser changes in the future.
+        super(BaseESPUser, self).__init__()
         self.create_membership_methods()
 
     @classmethod
@@ -201,9 +159,6 @@ class ESPUser(User, AnonymousUser):
                 setattr(cls, 'is%s' % user_type, lambda user: False)
             for user_type in cls.getTypes() + ['Officer']:
                 setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
-
-    def is_anonymous(self):
-        return self._is_anonymous
 
     @staticmethod
     def grade_options():
@@ -285,9 +240,6 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
-    def is_authenticated(self):
-        return not self.is_anonymous()
-
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
@@ -324,7 +276,7 @@ class ESPUser(User, AnonymousUser):
             raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         login(request, user)
 
         request.session['user_morph'] = user_morph
@@ -353,8 +305,8 @@ class ESPUser(User, AnonymousUser):
         logout(request)
 
         old_user = new_user
-        old_user.backend = 'django.contrib.auth.backends.ModelBackend'
-        
+        old_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
+
         login(request, old_user)
 
         return retUrl
@@ -366,7 +318,7 @@ class ESPUser(User, AnonymousUser):
         elif key == 'last_name':
             return otheruser.last_name
         elif key == 'name':
-            return ESPUser(otheruser).name()
+            return otheruser.name()
         elif key == 'username':
             return otheruser.username
         elif key == 'recover_url':
@@ -395,7 +347,7 @@ class ESPUser(User, AnonymousUser):
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
         else:
-            if include_rejected: 
+            if include_rejected:
                 return self.classsubject_set.filter(parent_program = program)
             else:
                 return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
@@ -550,16 +502,10 @@ class ESPUser(User, AnonymousUser):
             role = Group.objects.get_or_create(name='Teacher')[0]
         new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
-        
-    def convertAvailability(self):
-        resources = Resource.objects.filter(user=self)
-        for res in resources:
-            self.addAvailableTime(Program.objects.all()[0], res.event)
-        resources.delete()
 
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
-        
+
         apps = list(StudentApplication.objects.filter(user=self, program=program)[:1])
         if len(apps) == 0:
             if create:
@@ -573,7 +519,7 @@ class ESPUser(User, AnonymousUser):
 
     def listAppResponses(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
-        
+
         apps = StudentApplication.objects.filter(user=self, program=program)
         if apps.count() == 0:
             return []
@@ -585,7 +531,7 @@ class ESPUser(User, AnonymousUser):
         csl = self.getSections(program, verbs)
         pc_ids = [c.parent_class.id for c in csl]
         return ClassSubject.objects.filter(id__in=pc_ids)
-    
+
     def getAppliedClasses(self, program=None):
         #   If priority registration is enabled, add in more verbs.
         if program:
@@ -593,10 +539,10 @@ class ESPUser(User, AnonymousUser):
             verb_list = [v.name for v in scrmi.reg_verbs()]
         else:
             verb_list = ['Applied']
-            
+
         return self.getClasses(program, verbs=verb_list)
 
-    def getEnrolledClasses(self, program=None, request=None):
+    def getEnrolledClasses(self, program=None):
         if program is None:
             return self.getEnrolledClassesAll()
         else:
@@ -612,7 +558,7 @@ class ESPUser(User, AnonymousUser):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
-        
+
         if verbs:
             rts = RegistrationType.objects.filter(name__in=verbs)
         else:
@@ -655,19 +601,19 @@ class ESPUser(User, AnonymousUser):
             else:
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
-    
+
     def getRegistrationPriority(self, prog, timeslots):
-        """ Finds the highest available priority level for this user across the supplied timeslots. 
+        """ Finds the highest available priority level for this user across the supplied timeslots.
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
         if len(timeslots) < 1:
             return 0
-        
+
         prereg_sections = self.getSectionsFromProgram(prog)
-        
+
         priority_dict = {}
         for t in timeslots:
             priority_dict[t.id] = []
-            
+
         for sec in prereg_sections:
             cv = sec.getRegVerbs(self)
             smt = sec.meeting_times.all()
@@ -687,7 +633,7 @@ class ESPUser(User, AnonymousUser):
         all_priorities = []
         for key in priority_dict:
             all_priorities += priority_dict[key]
-            
+
         priority = 1
         while priority in all_priorities:
             priority += 1
@@ -825,7 +771,7 @@ class ESPUser(User, AnonymousUser):
     def getUserTypes(self):
         """ Return the set of types for this user """
         return self.groups.all().order_by('name').values_list("name",flat=True)
-        
+
     @staticmethod
     def create_membership_method(user_class):
         """
@@ -858,7 +804,7 @@ class ESPUser(User, AnonymousUser):
                 i += 1
                 username = base_uname + str(i)
         return username
-        
+
     def makeVolunteer(self):
         self.groups.add(Group.objects.get_or_create(name="Volunteer")[0])
 
@@ -881,10 +827,6 @@ are a teacher of the class"""
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
-
-    @staticmethod
-    def isUserNameTaken(username):
-        return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
     def current_schoolyear(now=None):
@@ -1048,6 +990,17 @@ are a teacher of the class"""
             rank = default
         return rank
 
+class ESPUser(User, BaseESPUser):
+    """ Create a user of the ESP Website
+    This user extends the auth.User of django"""
+
+    class Meta:
+        proxy = True
+        verbose_name = 'ESP User'
+
+class AnonymousESPUser(BaseESPUser, AnonymousUser):
+    pass
+
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
@@ -1065,7 +1018,7 @@ def update_email_delete(**kwargs):
 @enable_with_setting(settings.USE_MAILMAN)
 def update_email(**kwargs):
     """Update a user if they changed their email.
-    
+
     With the exception of separate mailman-only subscriptions, we want the
     mailman announcements list to consist of the email addresses of all active users.
     When there is only one user with a given email address, this is easy.  When
@@ -1097,7 +1050,7 @@ def update_email(**kwargs):
         if new_user.id is None:
             # It's a newly created user, don't do anything.
             return
-        old_user = User.objects.get(id=new_user.id)
+        old_user = ESPUser.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
         new_email = new_user.get_email_sendto_address() if new_user.is_active else None
         if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
@@ -1212,6 +1165,7 @@ class StudentInfo(models.Model):
 
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     schoolsystem_optout = models.BooleanField(default=False)
+    # Deprecated, but left here so as not to remove Chicago's existing data.
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
 
@@ -1237,12 +1191,12 @@ class StudentInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'school', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['school'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['school'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
+        return "%s - %s %d" % (self.user.ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1265,7 +1219,6 @@ class StudentInfo(models.Model):
         form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
         form_dict['schoolsystem_optout'] = self.schoolsystem_optout
-        form_dict['post_hs'] = self.post_hs
         form_dict['transportation'] = self.transportation
         return form_dict
 
@@ -1291,15 +1244,15 @@ class StudentInfo(models.Model):
                     studentInfo.k12school = K12School.objects.get(id=int(new_data['k12school']))
                 else:
                     studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
-                    
+
         except:
             print 'Error, could not find k12school for "%s"' % new_data['k12school']
             studentInfo.k12school = None
-            
+
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
         studentInfo.gender          = new_data.get('gender', None)
-        
+
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
         if 'shirt_size' in new_data and 'shirt_type' in new_data:
@@ -1309,13 +1262,12 @@ class StudentInfo(models.Model):
         if 'food_preference' in new_data:
             studentInfo.food_preference      = new_data['food_preference']
 
-        
+
         studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
-        studentInfo.post_hs = new_data.get('post_hs', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
@@ -1354,7 +1306,7 @@ class StudentInfo(models.Model):
 
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
-    
+
     #customforms definitions
     form_link_name = 'TeacherInfo'
     link_fields_list = [
@@ -1372,12 +1324,12 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         ('mail_reimbursement', 'Reimbursement checkbox'),
     ]
     link_fields_widgets = {
-        'from_here': NullRadioSelect, 
+        'from_here': NullRadioSelect,
         'is_graduate_student': NullCheckboxSelect,
         'mail_reimbursement': forms.CheckboxInput,
     }
-    
-    user = AjaxForeignKey(User, blank=True, null=True)
+
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
@@ -1400,9 +1352,9 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
         queryset=cls.objects.filter(user=request.user).order_by('-id')
-        if queryset: return queryset[0] 
+        if queryset: return queryset[0]
         else: return None
-        
+
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -1420,12 +1372,12 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = u'%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return u'%s - %s %s' % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+        return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1502,12 +1454,12 @@ class GuardianInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'year_finished', 'num_kids', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['year_finished'], value['num_kids'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['year_finished'], value['num_kids'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.year_finished, self.num_kids)
+        return "%s - %s %d" % (self.user.ajax_str(), self.year_finished, self.num_kids)
 
     def updateForm(self, form_dict):
         form_dict['year_finished'] = self.year_finished
@@ -1563,12 +1515,12 @@ class EducatorInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'position', 'school', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
-        return "%s - %s at %s" % (ESPUser(self.user).ajax_str(), self.position, self.school)
+        return "%s - %s at %s" % (self.user.ajax_str(), self.position, self.school)
 
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
@@ -1693,7 +1645,7 @@ class ZipCodeSearches(models.Model):
 
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
-    
+
     #customforms definitions
     form_link_name = 'ContactInfo'
     link_fields_list = [
@@ -1722,10 +1674,10 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
         queryset=cls.objects.filter(user=request.user).order_by('-id')
-        if queryset: return queryset[0] 
+        if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
@@ -1743,14 +1695,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
         db_table = 'users_contactinfo'
-
-    def _distance_from(self, zip):
-        try:
-            myZip = ZipCode.objects.get(zip_code = self.address_zip)
-            remoteZip = ZipCode.objects.get(zip_code = zip)
-            return myZip.distance(remoteZip)
-        except:
-            return -1
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
@@ -1814,12 +1758,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         for key, val in newkey.items():
             if val and key != 'id':
                 form_data[prepend+key] = val
-        #   Hack: If the 'no guardian e-mail' Tag is on, check the box for 
-        #   "my parent/guardian doesn't have e-mail" if the e-mail field is blank.
-        if Tag.getTag('allow_guardian_no_email') and prepend == 'guard_':
-            print 'Testing: %s' % self.e_mail
-            if not self.e_mail or len(self.e_mail) < 3:
-                form_data['guard_no_e_mail'] = True
         return form_data
 
     def save(self, *args, **kwargs):
@@ -1836,7 +1774,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
                 pass
         if self.address_postal != None:
             self.address_postal = str(self.address_postal)
-            
+
         super(ContactInfo, self).save(*args, **kwargs)
 
 
@@ -1865,11 +1803,11 @@ class K12School(models.Model):
     """
     All the schools that we know about.
     """
-    contact = AjaxForeignKey(ContactInfo, null=True,blank=True, 
+    contact = AjaxForeignKey(ContactInfo, null=True,blank=True,
         help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.')
-    school_type = models.TextField(blank=True, null=True, 
+    school_type = models.TextField(blank=True, null=True,
         help_text='i.e. Public, Private, Charter, Magnet, ...')
-    grades      = models.TextField(blank=True, null=True, 
+    grades      = models.TextField(blank=True, null=True,
         help_text='i.e. "PK, K, 1, 2, 3"')
     school_id   = models.CharField(max_length=128, blank=True, null=True,
         help_text='An 8-digit ID number.')
@@ -1926,7 +1864,7 @@ class PersistentQueryFilter(models.Model):
         """ The main constructor, please call this. """
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        
+
         # Deal with multiple instances
         query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
         pqfs = PersistentQueryFilter.objects.filter(query_q)
@@ -2033,7 +1971,7 @@ class ESPUser_Profile(models.Model):
         db_table = 'users_espuser_profile'
 
     def prof(self):
-        return ESPUser(self.user)
+        return self.user
 
     class Admin:
         pass
@@ -2047,7 +1985,7 @@ class PasswordRecoveryTicket(models.Model):
     RECOVER_EXPIRE = 2 # number of days before it expires
     SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(ESPUser)
     recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
     expire = models.DateTimeField(null=True)
 
@@ -2212,7 +2150,7 @@ class Record(models.Model):
         ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
         ("twophase_reg_done", "Completed two-phase registration"),
     )
-        
+
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)
     program = models.ForeignKey("program.Program",blank=True,null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
@@ -2261,7 +2199,7 @@ class Record(models.Model):
 
     def __unicode__(self):
         return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
-        
+
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -2275,7 +2213,7 @@ class Permission(ExpirableModel):
     #a permission can be assigned to a user, or a role
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
                           help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
-    role = models.ForeignKey("auth.Group", blank=True, null=True, 
+    role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).")
 
     #For now, we'll use plain text for a description of what permission it is
@@ -2331,7 +2269,7 @@ class Permission(ExpirableModel):
     PERMISSION_CHOICES_FLAT = flatten(PERMISSION_CHOICES)
 
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
-     
+
 
     implications = {
         "Administer": PERMISSION_CHOICES_FLAT,
@@ -2349,8 +2287,8 @@ class Permission(ExpirableModel):
 
     #optionally, a permission may be tied to a program
     program = models.ForeignKey("program.Program", blank=True, null=True)
-    #note that the ability to do things will not always be determined by 
-    #a permission object, such as teachers automatically having access to 
+    #note that the ability to do things will not always be determined by
+    #a permission object, such as teachers automatically having access to
     #their classes
     #it may, however, be the case that this model is not general enough,
     #in which case program may need to be replaced by a generic foreignkey
@@ -2421,7 +2359,7 @@ class Permission(ExpirableModel):
             qprogram |= Q(program=None)
         initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
         return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
-    
+
     #list of all the permission types which are deadlines
     deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
 
@@ -2443,7 +2381,7 @@ class Permission(ExpirableModel):
             program = self.program.niceName()
         else:
             program = "None"
-        
+
         return "GRANT %s ON %s TO %s" % (self.permission_type,
                                          program, user)
 
@@ -2455,7 +2393,7 @@ class Permission(ExpirableModel):
                 if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
-        
+
         for x in squash(cls.PERMISSION_CHOICES):
             if x[0] == perm_type: return x[1]
 
@@ -2466,10 +2404,10 @@ class Permission(ExpirableModel):
                 if not isinstance(x[1], tuple): l.append(x)
                 else: l=l+squash(x[1])
             return l
-        
+
         for x in squash(self.PERMISSION_CHOICES):
             if x[0] == self.permission_type: return x[1]
-        
+
     @classmethod
     def program_by_perm(cls,user,perm):
         """Find all program that user has perm"""
@@ -2535,7 +2473,7 @@ def install_groups(additional_names=None):
 def install():
     """
     Installs some initial users and permissions.
-    """    
+    """
     print "Installing esp.users initial data..."
     from esp.users.views.make_admin import make_user_admin
     install_groups()
@@ -2554,17 +2492,17 @@ def install():
 from esp.dbmail.models import send_mail
 
 class GradeChangeRequest(TimeStampedModel):
-    """ 
+    """
         A grade change request is issued by a student when it is felt
         that the current grade is incorrect.
     """
-  
+
     claimed_grade = models.PositiveIntegerField()
     grade_before_request = models.PositiveIntegerField()
     reason = models.TextField()
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)
-    
+
     requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
     acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
 
@@ -2584,7 +2522,7 @@ class GradeChangeRequest(TimeStampedModel):
         if is_new:
             self.send_request_email()
             return
-            
+
         if self.approved is not None and not self.acknowledged_time:
             self.acknowledged_time = datetime.now()
             self.send_confirmation_email()
@@ -2649,7 +2587,7 @@ class GradeChangeRequest(TimeStampedModel):
 
     def __unicode__(self):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
-        
+
 # We can't import these earlier because of circular stuff...
 from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event

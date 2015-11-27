@@ -6,7 +6,7 @@ from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
 from datetime import date
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 
@@ -63,7 +63,7 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = [] # no headings
-        
+
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
         return json.dumps(output)
@@ -80,7 +80,7 @@ class JSONFormatter:
             else:
                 next_row.append(str(r))
         return next_row
-        
+
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
@@ -91,11 +91,11 @@ class JSONFormatter:
     def _format_dict_table(self, d, headings, help_text=""): #needs verify
         headings = [""] + headings[:]
         output = {}
-        output["help_text"] = help_text        
+        output["help_text"] = help_text
         output["headings"] = map(str, headings)
         output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
         return output
-        
+
 class SchedulingCheckRunner:
 #Generate html report and generate text report functions?lingCheckRunner:
      def __init__(self, program, formatter=JSONFormatter()):
@@ -136,7 +136,7 @@ class SchedulingCheckRunner:
           if diagnostics is None:
                diagnostics = self.all_diagnostics
           return [getattr(self, diag)() for diag in diagnostics]
-         
+
 
      # Update this to add a scheduling check.
      all_diagnostics = [
@@ -202,7 +202,7 @@ class SchedulingCheckRunner:
                     self.all_nonwalkins = list(qs)
                     self.listed_nonwalkins = True
                     return self.all_nonwalkins
-          
+
 
 
      #################################################
@@ -325,7 +325,7 @@ class SchedulingCheckRunner:
 
           self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
 
-          #not regular class categories          
+          #not regular class categories
           open_class_cat = self.p.open_class_category.category
           if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
           lunch_cat = "Lunch"
@@ -360,13 +360,13 @@ class SchedulingCheckRunner:
      def capacity_by_category(self):
          self._calculate_d_categories()
          return  self.formatter.format_table(self.d_categories["capacity"], {"headings": self.class_categories})
-        
+
 
      def classes_by_category(self):
          self._calculate_d_categories()
          return  self.formatter.format_table(self.d_categories["classes"], {"headings": self.class_categories})
 
-         
+
      def _calculate_d_grades(self):
           if len(self.d_grades) > 0:
              return self.d_grades
@@ -382,7 +382,7 @@ class SchedulingCheckRunner:
           d_classes = self._timeslot_dict(slot=grade_dict)
           d_capacity = self._timeslot_dict(slot=grade_dict)
           for s in self._all_class_sections(include_walkins=False):
-               cls = s.parent_class 
+               cls = s.parent_class
                mt =  s.get_meeting_times()
                for t in mt:
                     for grade in range(cls.grade_min, cls.grade_max + 1, 1):
@@ -394,7 +394,7 @@ class SchedulingCheckRunner:
      def capacity_by_grade(self):
          self._calculate_d_grades()
          return  self.formatter.format_table(self.d_grades["capacity"], {"headings": self.grades})
-        
+
 
      def classes_by_grade(self):
          self._calculate_d_grades()
@@ -432,7 +432,7 @@ class SchedulingCheckRunner:
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
                  for u in unsatisfied_requests:
-                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work 
+                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":

@@ -59,7 +59,6 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 # Debug settings  #
 ###################
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = False
 USE_PROFILER = False

@@ -46,10 +46,10 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     to modules in the list will be deleted.
     """
     from esp.program.models import ProgramModule
-    
+
     if model is None:
         model = ProgramModule
-    
+
     #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
     global_defaults = {'seq': 0, 'required': False}
@@ -67,7 +67,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
             new_obj_defaults = global_defaults.copy()
             new_obj_defaults.update(datum)
             query_kwargs['defaults'] = new_obj_defaults
-            
+
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
@@ -85,16 +85,15 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         ProgramModule.objects.exclude(id__in=ids).delete()
 
     for (datum, (mod, created)) in mods:
-        #   If the module exists but the provided data adds fields that 
+        #   If the module exists but the provided data adds fields that
         #   are null or blank, go ahead and add them.
         #   This simplifies data migrations where the default module properties
         #   are changed.
         for key in datum:
             if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
                 if datum[key] is not None and datum[key] != u'':
-                    #print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
-                    mod.__dict__[key] = datum[key] 
-                
+                    mod.__dict__[key] = datum[key]
+
         mod.save()
 
 def install(model=None):
@@ -108,5 +107,5 @@ def install(model=None):
         table_data += module.module_properties_autopopulated()
 
     updateModules(table_data, deleteExtra=True, model=model)
-    
+
 from esp.program.modules.module_ext import *

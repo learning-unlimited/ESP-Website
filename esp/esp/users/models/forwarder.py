@@ -30,7 +30,7 @@ class UserForwarder(models.Model):
                 the user to which target ultimately forwards
             else (if target forwards to self.source):
                 target, as given
-        
+
         If save is set, saves self. You basically always want this set.
 
         If flatten is set, rewrites intervening forwarders to point directly

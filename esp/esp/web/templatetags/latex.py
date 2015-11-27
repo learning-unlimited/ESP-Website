@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 """
 
 from django import template
-from esp.gen_media.inlinelatex import InlineLatex
 from django.utils.encoding import force_unicode
 register = template.Library()
 

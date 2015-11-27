@@ -17,11 +17,7 @@ try:
 except:
     import pickle
 
-FAILFAST = getattr(settings, "DEBUG", True)
-
-# Is there any way to introspect this?
 CACHE_WARNING_SIZE = 1 * 1024**2
-CACHE_SIZE = 2 * 1024**2
 MAX_KEY_LENGTH = 250
 NO_HASH_PREFIX = "NH_"
 HASH_PREFIX = "H_"
@@ -44,11 +40,12 @@ class CacheClass(BaseCache):
             return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
-        if FAILFAST:
+        if settings.DEBUG:
+            # Make a guess as to the size of the object as seen by Memcache,
+            # after serializtion. This guess can be an overestimate, since some
+            # backends can apply zlib compression in addition to pickling.
             data_size = len(pickle.dumps(value))
-            if data_size > CACHE_SIZE:
-                assert False, "Data size for key '%s' too large: %d bytes" % (key, data_size)
-            elif data_size > CACHE_WARNING_SIZE:
+            if data_size > CACHE_WARNING_SIZE:
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
 
     @try_multi(8)

@@ -23,7 +23,7 @@ from esp.program.models import Program
 
 import random
 import string
-        
+
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
@@ -72,23 +72,23 @@ class TestUserSearchController(TestCase):
         self.assertGreater(qobject.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = {u'username': u'', 
-                     u'zipdistance_exclude': u'', 
-                     u'first_name': u'', 
-                     u'last_name': u'', 
-                     u'use_checklist': u'0', 
-                     u'gradyear_max': u'', 
-                     u'userid': u'', 
-                     u'school': u'', 
-                     u'combo_base_list': u'Teacher:teacher_res_150_8', 
-                     u'zipcode': u'', 
-                     u'states': u'', 
-                     u'student_sendto_self': u'1', 
-                     u'checkbox_and_teacher_res_152_0': u'', 
-                     u'grade_min': u'', 
-                     u'gradyear_min': u'', 
+        post_data = {u'username': u'',
+                     u'zipdistance_exclude': u'',
+                     u'first_name': u'',
+                     u'last_name': u'',
+                     u'use_checklist': u'0',
+                     u'gradyear_max': u'',
+                     u'userid': u'',
+                     u'school': u'',
+                     u'combo_base_list': u'Teacher:teacher_res_150_8',
+                     u'zipcode': u'',
+                     u'states': u'',
+                     u'student_sendto_self': u'1',
+                     u'checkbox_and_teacher_res_152_0': u'',
+                     u'grade_min': u'',
+                     u'gradyear_min': u'',
                      u'zipdistance': u'',
-                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw', 
+                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw',
                       u'grade_max': u'', u'email': u''}
 
         query =  self.controller.query_from_postdata(self.program, post_data)

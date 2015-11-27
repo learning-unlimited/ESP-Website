@@ -39,7 +39,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
-from esp.web.util     import render_to_response
+from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
 from datetime         import datetime
 from django.db.models.query   import Q
@@ -77,7 +77,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             req = requests[0]
             req.time_executed = datetime.now()
             req.save()
-            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)       
+            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             return response
         else:
             # No response if no users
