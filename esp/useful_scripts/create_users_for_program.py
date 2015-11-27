@@ -74,24 +74,9 @@ def create_user_with_profile(username, password, program, groups):
     print "creating", username
     user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
-    profile = RegistrationProfile.objects.create(user=user, program=program)
-
-    # Set the `last_ts` field of the profile to be a long time ago. If
-    # the `last_ts` field is too recent, the user won't be prompted to
-    # edit their profile when they log in and register for the program,
-    # and they'll forever have a blank, useless profile.
-    #
-    # NOTE(jmoldow): But we can't set `last_ts` with `create()` or
-    # `save()`, because the custom `RegistrationProfile.save()` always
-    # sets that field using `datetime.now()`. So we must use
-    # `update()`.
-    RegistrationProfile.objects.filter(id=profile.id).update(last_ts=(datetime.datetime.now() - datetime.timedelta(days=20)))
-
-    profile = RegistrationProfile.objects.get(id=profile.id)
     return {
         'username': username,
         'password': password,
         'user': user,
-        'profile': profile,
     }
 
