@@ -72,7 +72,7 @@ def get_group(group):
 
 def create_user_with_profile(username, password, program, groups):
     print "creating", username
-    user = ESPUser(User.objects.create_user(username=username, password=password))
+    user = ESPUser.objects.create_user(username=username, password=password)
     user.groups.add(*groups)
     profile = RegistrationProfile.objects.create(user=user, program=program)
 
