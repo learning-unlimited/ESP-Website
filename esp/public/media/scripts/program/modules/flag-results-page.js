@@ -49,6 +49,11 @@ function showAll () {
     $j(".flag-detail:not(.flag-extra)").show();
 }
 
+function showWithComments () {
+    $j(".fqr-class-detail").show();
+    $j(".flag-detail.flag-has-comment").show();
+}
+
 function hideAll () {
     $j(".fqr-class-detail").hide();
     $j(".flag-detail").hide();
