@@ -112,7 +112,7 @@ def survey_view(request, tl, program, instance):
         
         classes = sections = timeslots = []
         if tl == 'learn':
-            classes = user.getEnrolledClasses(prog, request)
+            classes = user.getEnrolledClasses(prog)
             timeslots = prog.getTimeSlots().order_by('start')
             for ts in timeslots:
                 # The order by string really means "title"

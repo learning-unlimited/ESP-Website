@@ -590,7 +590,7 @@ class ESPUser(User, AnonymousUser):
             
         return self.getClasses(program, verbs=verb_list)
 
-    def getEnrolledClasses(self, program=None, request=None):
+    def getEnrolledClasses(self, program=None):
         if program is None:
             return self.getEnrolledClassesAll()
         else:

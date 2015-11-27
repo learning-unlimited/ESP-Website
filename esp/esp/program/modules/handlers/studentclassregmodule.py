@@ -360,7 +360,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Can we register for more than one class yet?
         if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
-            enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
+            enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog)
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
             for cls in enrolled_classes:
