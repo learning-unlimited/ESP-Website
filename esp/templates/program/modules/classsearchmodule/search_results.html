@@ -40,6 +40,7 @@ You asked for {{english}}; {{queryset|length}} of {{program.classsubject_set.cou
                 <button class="btn btn-default" onclick="unreview({{class.id}});">unreview</button>
                 <button class="btn btn-default" onclick="reject({{class.id}});">reject</button>
                 <button class="btn btn-default" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+                <button class="btn btn-default" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
                 <button class="add-flag btn btn-default">add flag</button>
             </div>
             <div class="fqr-class-detail" style="display: none;">
