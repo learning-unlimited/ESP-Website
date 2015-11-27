@@ -40,7 +40,7 @@ from collections import defaultdict
 
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
@@ -480,7 +480,7 @@ class StudentClassRegModule(ProgramModuleObj):
         except:
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
-        ts = Event.objects.filter(id=extra)
+        ts = Event.objects.filter(id=extra, program=prog)
         if len(ts) < 1:
             raise Http404()
 
