@@ -46,7 +46,7 @@ function emailTeachers (emailAddress, subject) {
 
 function showAll () {
     $j(".fqr-class-detail").show();
-    $j(".flag-detail:not(#flag-extra)").show();
+    $j(".flag-detail:not(.flag-extra)").show();
 }
 
 function hideAll () {
