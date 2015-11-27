@@ -38,9 +38,10 @@ Learning Unlimited, Inc.
 import datetime
 from django.db import models
 from django.template import loader
-from django.core.cache import cache
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+
+from argcache import cache_function
 
 try:
     import cPickle as pickle
@@ -277,6 +278,7 @@ class Question(models.Model):
 
         return loader.render_to_string(self.question_type.template_file, params)
 
+    @cache_function
     def global_average(self):
         def pretty_val(val):
             if val == 0:
@@ -290,23 +292,19 @@ class Question(models.Model):
         try:
             average_key = 'question_%d_avg' % self.id
             
-            test_val = cache.get(average_key)
-            if test_val is None:
-                ans = Answer.objects.filter(question=self)
-                ans_count = ans.count()
-                ans_sum = 0.0
-                for a in ans:
-                    ans_sum += float(a.answer)
-                if ans_count == 0:
-                    new_val = 0
-                else:
-                    new_val = ans_sum / ans_count;
-                cache.set(average_key, new_val)
-                return pretty_val(new_val)
+            ans = Answer.objects.filter(question=self)
+            ans_count = ans.count()
+            ans_sum = 0.0
+            for a in ans:
+                ans_sum += float(a.answer)
+            if ans_count == 0:
+                new_val = 0
             else:
-                return pretty_val(test_val)
+                new_val = ans_sum / ans_count;
+            return pretty_val(new_val)
         except:
             return 'N/A'
+    global_average.depend_on_row('survey.Answer', lambda ans: {'self': ans.question})
     
     class Meta:
         ordering = ['seq']
