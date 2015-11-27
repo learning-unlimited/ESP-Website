@@ -58,7 +58,7 @@ def login_checked(request, *args, **kwargs):
     # Check for user forwarders
     if request.user.is_authenticated():
         old_username = request.user.username
-        user, forwarded = UserForwarder.follow(ESPUser(request.user))
+        user, forwarded = UserForwarder.follow(request.user)
         if forwarded:
             auth_logout(request)
             auth_login(request, user)
@@ -79,7 +79,6 @@ def login_checked(request, *args, **kwargs):
     if reply.get('Location', '') in mask_locations:
         # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
-        request.user = ESPUser(request.user)
         if request.user.isTeacher():
             reply = HttpMetaRedirect("/teach/index.html")
         else:
@@ -87,7 +86,6 @@ def login_checked(request, *args, **kwargs):
     elif reply.status_code == 302:
         #   Even if the redirect was going to a reasonable place, we need to
         #   turn it into a 200 META redirect in order to set the cookies properly.
-        request.user = ESPUser(request.user)
         reply = HttpMetaRedirect(reply.get('Location', ''))
 
     #   Stick the user in the response in order to set cookies if necessary

@@ -53,7 +53,8 @@ This function is overloaded to handle either one or two phase reg"""
                     is_active = False).latest('date_joined')
 
             except ESPUser.DoesNotExist:
-                user = ESPUser(email = form.cleaned_data['email'])
+                user = ESPUser.objects.create_user(username=form.cleaned_data['username'],
+                                                   email=form.cleaned_data['email'])
 
         user.username   = form.cleaned_data['username']
         user.last_name  = form.cleaned_data['last_name']

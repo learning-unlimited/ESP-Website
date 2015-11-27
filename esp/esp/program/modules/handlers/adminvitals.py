@@ -37,8 +37,7 @@ from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
-from esp.users.models import ESPUser, shirt_sizes, shirt_types
-from django.contrib.auth.models import User
+from esp.users.models import shirt_sizes, shirt_types
 from django.core.cache import cache
 from django.db.models import Count, Sum
 from django.db.models.query      import Q

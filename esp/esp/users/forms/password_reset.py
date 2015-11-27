@@ -1,8 +1,7 @@
 
 
 from django import forms
-from django.contrib.auth.models import User
-from esp.users.models import PasswordRecoveryTicket
+from esp.users.models import ESPUser, PasswordRecoveryTicket
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
@@ -27,8 +26,8 @@ class PasswordResetForm(forms.Form):
         if self.cleaned_data['username'].strip() == '': return ''
 
         try:
-            user = User.objects.get(username=self.cleaned_data['username'])
-        except User.DoesNotExist:
+            user = ESPUser.objects.get(username=self.cleaned_data['username'])
+        except ESPUser.DoesNotExist:
             raise forms.ValidationError, "User '%s' does not exist." % self.cleaned_data['username']
 
         return self.cleaned_data['username'].strip()
@@ -37,7 +36,7 @@ class PasswordResetForm(forms.Form):
         if self.cleaned_data['email'].strip() == '':
             return ''
 
-        if len(User.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
+        if len(ESPUser.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
             return self.cleaned_data['email'].strip()
 
         raise forms.ValidationError('No user has email %s' % self.cleaned_data['email'])

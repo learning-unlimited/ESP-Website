@@ -62,10 +62,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if ESPUser(request.user).isAdmin() and 'user' in request.GET:
+            if request.user.isAdmin() and 'user' in request.GET:
                 teacher = ESPUser.objects.get(id=request.GET['user'])
             else:
-                teacher = ESPUser(request.user)
+                teacher = request.user
             scheditems = []
             for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
                 if cls.isAccepted():

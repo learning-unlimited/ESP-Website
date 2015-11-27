@@ -294,7 +294,7 @@ if False:
 
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
+    'esp.utils.auth_backend.ESPAuthBackend',
     )
 
 CONTACTFORM_EMAIL_CHOICES = (

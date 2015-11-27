@@ -909,7 +909,7 @@ class ClassSection(models.Model):
 
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
-        user = ESPUser(teacher)
+        user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
         for sec in user.getTaughtSections(self.parent_program).exclude(id=self.id):
@@ -1204,7 +1204,7 @@ class ClassSection(models.Model):
             signals.post_save.send(sender=StudentRegistration, instance=qs[0])
 
         #   If the student had blank application question responses for this class, remove them.
-        app = ESPUser(user).getApplication(self.parent_program, create=False)
+        app = user.getApplication(self.parent_program, create=False)
         if app:
             blank_responses = app.responses.filter(question__subject=self.parent_class, response='')
             unneeded_questions = StudentAppQuestion.objects.filter(studentappresponse__in=blank_responses)
@@ -1248,7 +1248,7 @@ class ClassSection(models.Model):
 
             if self.parent_program.isUsingStudentApps():
                 #   Clear completion bit on the student's application if the class has app questions.
-                app = ESPUser(user).getApplication(self.parent_program, create=False)
+                app = user.getApplication(self.parent_program, create=False)
                 if app:
                     app.set_questions()
                     if app.questions.count() > 0:
@@ -1619,8 +1619,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if not self.isAccepted():
             return u'This class is not accepted.'
 
-#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull() and not ESPUser(user).canRegToFullProgram(self.parent_program):
+#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not user.canRegToFullProgram(self.parent_program):
+        if checkFull and self.parent_program.isFull() and not user.canRegToFullProgram(self.parent_program):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
@@ -1669,8 +1669,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
-        user = ESPUser(teacher)
-
+        user = teacher
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for section in cls.get_sections():
                 for time in section.meeting_times.all():
@@ -1899,7 +1898,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
-                if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
+                if t.getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
                     mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)

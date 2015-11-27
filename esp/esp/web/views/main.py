@@ -209,8 +209,7 @@ def registration_redirect(request):
     from esp.users.models import ESPUser
     from esp.program.models import Program
 
-    #   Make sure we have an ESPUser
-    user = ESPUser(request.user)
+    user = request.user
 
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}

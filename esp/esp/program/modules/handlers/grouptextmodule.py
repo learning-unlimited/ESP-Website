@@ -143,7 +143,6 @@ class GroupTextModule(ProgramModuleObj):
         send_log.append('Sending message to ' + str(users.count()) + ' users')
 
         for user in users:
-            user = ESPUser(user)
 
             contactInfo = None
             try:

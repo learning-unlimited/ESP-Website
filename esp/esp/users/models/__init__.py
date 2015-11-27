@@ -40,7 +40,7 @@ import functools
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
-from django.contrib.auth.models import User, AnonymousUser, Group
+from django.contrib.auth.models import User, AnonymousUser, Group, UserManager
 from localflavor.us.models import USStateField, PhoneNumberField
 from localflavor.us.forms import USStateSelect
 
@@ -95,15 +95,10 @@ def admin_required(func):
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        elif not ESPUser(request.user).isAdministrator():
+        elif not request.user.isAdministrator():
             raise PermissionDenied
         return func(request, *args, **kwargs)
     return wrapped
-
-#   Class to substitute for Django ModelState when necessary
-#   (see end of ESPUser.__init__ for usage)
-class FakeState(object):
-    db = None
 
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
@@ -127,62 +122,25 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
-class ESPUserManager(Manager):
+class ESPUserManager(UserManager):
     pass
 
-class ESPUser(User, AnonymousUser):
-    """ Create a user of the ESP Website
-    This user extends the auth.User of django"""
-
-    class Meta:
-        proxy = True
-        verbose_name = 'ESP User'
+class BaseESPUser(object):
+    """ Base class for ESPUser and AnonymousESPUser.
+    Pretty much anything from ESPUser that isn't directly related
+    to being a model should go here. """
 
     objects = ESPUserManager()
-    # this will allow a casting from User to ESPUser:
-    #      foo = ESPUser(bar)   <-- foo is now an ``ESPUser''
-    def __init__(self, userObj=None, *args, **kwargs):
-        # Set up the storage for instance state
-        self._state = ModelState()
+    other_user = False
 
-        # A bit of a hack: if we're passed a SimpleLazyObject, make sure it's
-        # initialized (with `dir` which is proxied), and then grab the __dict__
-        # of the wrapped User or ESPUser.   This is necessary because
-        # SimpleLazyObject doesn't proxy __dict__, so copying it would fail.
-        if isinstance(userObj, SimpleLazyObject):
-            dir(userObj)
-            self.__dict__ = userObj._wrapped.__dict__
-            # This is just a method, so SimpleLazyObj will proxy it just fine.
-            self._is_anonymous = userObj.is_anonymous()
-
-        # TODO(benkraft): in the case of an ESPUser, we should consider
-        # overriding __new__ to just return the ESPUser it was passed; I don't
-        # know why you'd call ESPUser on an ESPUser except by accident, but
-        # giving you back your ESPUser should work just fine.  On the other
-        # hand, this might be trickier than it sounds because there are a bunch
-        # of metaclasses flying around, and because if __new__ returns an
-        # ESPUser it will then get __init__ called on it, which might be
-        # unnecessary.
-        elif isinstance(userObj, (ESPUser, User, AnonymousUser)):
-            self.__dict__ = userObj.__dict__
-            self._is_anonymous = userObj.is_anonymous()
-
-        elif userObj is not None or len(args) > 0:
-            # Initializing a model using non-keyworded args is a horrible idea.
-            # No clue why you'd do it, but I won't stop you. -ageng 2009-05-10
-            User.__init__(self, userObj, *args, **kwargs)
-            self._is_anonymous = False
-        else:
-            User.__init__(self, *args, **kwargs)
-            self._is_anonymous = False
-
-        if not hasattr(self, "_state"):
-            ## Django doesn't properly insert this field on proxy models, apparently?
-            ## So, fake it. -- aseering 6/28/2010
-            self._state = FakeState()
-
-        self.other_user = False
-
+    def __init__(self, *args, **kwargs):
+        # This is last in ESPUser's method resolution order, and
+        # AnonymousUser doesn't do anything in its __init__,
+        # so there's no need for a super() call unless you're changing
+        # inheritance structure of this, ESPUser, or AnonymousESPUser,
+        # or if Django has changed something. Adding it anyway in case
+        # AnonymousUser changes in the future.
+        super(BaseESPUser, self).__init__()
         self.create_membership_methods()
 
     @classmethod
@@ -201,9 +159,6 @@ class ESPUser(User, AnonymousUser):
                 setattr(cls, 'is%s' % user_type, lambda user: False)
             for user_type in cls.getTypes() + ['Officer']:
                 setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
-
-    def is_anonymous(self):
-        return self._is_anonymous
 
     @staticmethod
     def grade_options():
@@ -285,9 +240,6 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
-    def is_authenticated(self):
-        return not self.is_anonymous()
-
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
@@ -324,7 +276,7 @@ class ESPUser(User, AnonymousUser):
             raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
+        user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         login(request, user)
 
         request.session['user_morph'] = user_morph
@@ -353,7 +305,7 @@ class ESPUser(User, AnonymousUser):
         logout(request)
 
         old_user = new_user
-        old_user.backend = 'django.contrib.auth.backends.ModelBackend'
+        old_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
 
         login(request, old_user)
 
@@ -366,7 +318,7 @@ class ESPUser(User, AnonymousUser):
         elif key == 'last_name':
             return otheruser.last_name
         elif key == 'name':
-            return ESPUser(otheruser).name()
+            return otheruser.name()
         elif key == 'username':
             return otheruser.username
         elif key == 'recover_url':
@@ -1038,6 +990,17 @@ are a teacher of the class"""
             rank = default
         return rank
 
+class ESPUser(User, BaseESPUser):
+    """ Create a user of the ESP Website
+    This user extends the auth.User of django"""
+
+    class Meta:
+        proxy = True
+        verbose_name = 'ESP User'
+
+class AnonymousESPUser(BaseESPUser, AnonymousUser):
+    pass
+
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
@@ -1087,7 +1050,7 @@ def update_email(**kwargs):
         if new_user.id is None:
             # It's a newly created user, don't do anything.
             return
-        old_user = User.objects.get(id=new_user.id)
+        old_user = ESPUser.objects.get(id=new_user.id)
         old_email = old_user.email if old_user.is_active else None
         new_email = new_user.get_email_sendto_address() if new_user.is_active else None
         if (old_user.email == new_user.email) and (old_user.is_active == new_user.is_active):
@@ -1228,12 +1191,12 @@ class StudentInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'school', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['school'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['school'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
+        return "%s - %s %d" % (self.user.ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1366,7 +1329,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         'mail_reimbursement': forms.CheckboxInput,
     }
 
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
@@ -1409,12 +1372,12 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'college', 'graduation_year', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = u'%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['college'], value['graduation_year'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = u'%s - %s %s' % (value['user'].ajax_str(), value['college'], value['graduation_year'])
         return values
 
     def ajax_str(self):
-        return u'%s - %s %s' % (ESPUser(self.user).ajax_str(), self.college, self.graduation_year)
+        return u'%s - %s %s' % (self.user.ajax_str(), self.college, self.graduation_year)
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
@@ -1491,12 +1454,12 @@ class GuardianInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'year_finished', 'num_kids', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %d' % (ESPUser(value['user']).ajax_str(), value['year_finished'], value['num_kids'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %d' % (value['user'].ajax_str(), value['year_finished'], value['num_kids'])
         return values
 
     def ajax_str(self):
-        return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.year_finished, self.num_kids)
+        return "%s - %s %d" % (self.user.ajax_str(), self.year_finished, self.num_kids)
 
     def updateForm(self, form_dict):
         form_dict['year_finished'] = self.year_finished
@@ -1552,12 +1515,12 @@ class EducatorInfo(models.Model):
         #   values = query_set.order_by('user__last_name','user__first_name','id').values('user', 'position', 'school', 'id')
 
         for value in values:
-            value['user'] = User.objects.get(id=value['user'])
-            value['ajax_str'] = '%s - %s %s' % (ESPUser(value['user']).ajax_str(), value['position'], value['school'])
+            value['user'] = ESPUser.objects.get(id=value['user'])
+            value['ajax_str'] = '%s - %s %s' % (value['user'].ajax_str(), value['position'], value['school'])
         return values
 
     def ajax_str(self):
-        return "%s - %s at %s" % (ESPUser(self.user).ajax_str(), self.position, self.school)
+        return "%s - %s at %s" % (self.user.ajax_str(), self.position, self.school)
 
     def updateForm(self, form_dict):
         form_dict['subject_taught'] = self.subject_taught
@@ -1714,7 +1677,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if queryset: return queryset[0]
         else: return None
 
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
@@ -2008,7 +1971,7 @@ class ESPUser_Profile(models.Model):
         db_table = 'users_espuser_profile'
 
     def prof(self):
-        return ESPUser(self.user)
+        return self.user
 
     class Admin:
         pass
@@ -2022,7 +1985,7 @@ class PasswordRecoveryTicket(models.Model):
     RECOVER_EXPIRE = 2 # number of days before it expires
     SYMBOLS = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(ESPUser)
     recover_key = models.CharField(max_length=RECOVER_KEY_LEN)
     expire = models.DateTimeField(null=True)
 

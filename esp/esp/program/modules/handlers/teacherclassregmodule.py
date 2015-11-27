@@ -268,7 +268,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 sec.cache['students'] = None
                 sec.cache['num_students'] = None
                 for item in sections_dict[sec_id]:
-                    student = ESPUser(User.objects.get(id=item['id']))
+                    student = ESPUser.objects.get(id=item['id'])
                     ignore = False
                     value = item['status']
                     if value == 'enroll':
@@ -452,7 +452,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
             coteachers = cls.get_teachers()
-            coteachers = [ ESPUser(user) for user in coteachers
+            coteachers = [ user for user in coteachers
                            if user.id != request.user.id           ]
 
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
@@ -461,7 +461,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             txtTeachers = request.POST['coteachers']
             coteachers = txtTeachers.split(',')
             coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser(User.objects.get(id=userid))
+            coteachers = [ ESPUser.objects.get(id=userid)
                            for userid in coteachers                ]
             add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
 
@@ -882,7 +882,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         return JsonResponse(obj_list)
 
     def get_msg_vars(self, user, key):
-        user = ESPUser(user)
         if key == 'full_classes':
             return user.getFullClasses_pretty(self.program)
 

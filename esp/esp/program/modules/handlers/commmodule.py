@@ -106,9 +106,9 @@ class CommModule(ProgramModuleObj):
         else:
             htmlbody = body
 
-        esp_firstuser = ESPUser(firstuser)
-        contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
-                       'program': ActionHandler(self.program, esp_firstuser) }
+        contextdict = {'user'   : ActionHandler(firstuser, firstuser),
+                       'program': ActionHandler(self.program, firstuser) }
+
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,

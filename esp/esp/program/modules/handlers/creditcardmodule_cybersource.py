@@ -82,7 +82,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
 
         # Force users to pay for non-optional stuffs
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
         context = {}

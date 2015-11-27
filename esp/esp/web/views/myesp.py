@@ -73,7 +73,6 @@ def myesp_passwd(request):
 @login_required
 def myesp_switchback(request):
 	user = request.user
-	user = ESPUser(user)
 	user.updateOnsite(request)
 
 	if not user.other_user:
@@ -84,7 +83,7 @@ def myesp_switchback(request):
 @login_required
 def edit_profile(request):
 
-    curUser = ESPUser(request.user)
+    curUser = request.user
 
     if curUser.isStudent():
         return profile_editor(request, None, True, 'student')
@@ -119,7 +118,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     context['user'] = request.user
     context['program'] = prog
 
-    curUser = ESPUser(curUser)
     curUser.updateOnsite(request)
 
     #   Get the profile form from the user's type, although we need to handle
@@ -237,7 +235,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 @login_required
 def myesp_onsite(request):
 	
-	user = ESPUser(request.user)
+	user = request.user
 	if not user.isOnsite():
 		raise ESPError('You are not a valid on-site user, please go away.', log=False)
 	

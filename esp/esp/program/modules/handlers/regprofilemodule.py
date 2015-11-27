@@ -88,7 +88,7 @@ class RegProfileModule(ProgramModuleObj):
         #   Check user role.  Some users may have multiple roles; if one of them
         #   is 'student' or 'teacher' then use that to set up the profile.
         #   Otherwise, make a wild guess.
-        user_roles = ESPUser(request.user).getUserTypes()
+        user_roles = request.user.getUserTypes()
         user_roles = [x.lower() for x in user_roles]
         if 'teacher' in user_roles or 'student' in user_roles:
             role = {'teach': 'teacher','learn': 'student'}[tl]

@@ -111,7 +111,7 @@ class DonationModule(ProgramModuleObj):
     @meets_deadline('/ExtraCosts')
     def donation(self, request, tl, one, two, module, extra, prog):
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, user)
 

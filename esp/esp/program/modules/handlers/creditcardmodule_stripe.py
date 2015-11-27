@@ -147,7 +147,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
         context = {}

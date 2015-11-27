@@ -160,7 +160,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context['itemizedcosts'] = iac.get_transfers()
 
-        user = ESPUser(request.user)
+        user = request.user
         context['finaid'] = user.hasFinancialAid(prog)
         if user.appliedFinancialAid(prog):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]

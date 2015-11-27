@@ -83,7 +83,7 @@ class UserAttributeGetter(object):
         return result
 
     def __init__(self, user, program):
-        self.user = ESPUser(user)
+        self.user = user
         self.program = program
         self.profile = self.user.getLastProfile()
 
@@ -350,7 +350,6 @@ class ListGenModule(ProgramModuleObj):
             generating a list of users.     """
 
         from esp.users.views     import get_user_list
-        from esp.users.models    import User
         from esp.users.models import PersistentQueryFilter
 
         if not request.GET.has_key('filterid'):

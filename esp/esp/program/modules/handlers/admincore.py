@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models import User, Permission
+from esp.users.models import Permission
 from django import forms
 from django.forms.formsets import formset_factory
 

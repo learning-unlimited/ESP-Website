@@ -193,7 +193,6 @@ class AdminReviewApps(ProgramModuleObj):
         return True
 
     def get_msg_vars(self, user, key):
-        user = ESPUser(user)
         if key == 'schedule_app':
             return AdminReviewApps.getSchedule(self.program, user)
 

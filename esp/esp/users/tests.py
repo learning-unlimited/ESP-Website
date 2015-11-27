@@ -25,13 +25,6 @@ class ESPUserTest(TestCase):
         self.factory = RequestFactory()
         user_role_setup()
 
-    def testInit(self):
-        one = ESPUser()
-        two = User()
-        three = ESPUser(two)
-        four = ESPUser(three)
-        self.failUnless( three.__dict__ == four.__dict__ )
-
     def testDelete(self):
         # Create a user and a permission
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
@@ -55,7 +48,7 @@ class ESPUserTest(TestCase):
         # Make up a fake request object
         request = self.factory.get('/')
         request.session = scratchDict()
-        request.backend = 'django.contrib.auth.backends.ModelBackend'
+        request.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         request.user = None
 
         # Create a couple users and give them roles
@@ -79,7 +72,7 @@ class ESPUserTest(TestCase):
 
         blocked_illegal_morph = True
         try:
-            ESPUser(request.user).switch_to_user(request, self.basic_user, None, None)
+            request.user.switch_to_user(request, self.basic_user, None, None)
             self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
         except ESPError():
             blocked_illegal_morph = True
@@ -118,28 +111,12 @@ class ESPUserTest(TestCase):
         if (c2):
             studentUser.delete()
 
-    def test_lazy_user(self):
-        """Test that we can handle a SimpleLazyObject."""
-        u1 = User.objects.create(username='laziness_123',
-                                 last_login=datetime.datetime.now())
-        u2 = ESPUser(u1)
-        u3 = SimpleLazyObject(lambda: u1)
-        u4 = SimpleLazyObject(lambda: u2)
-        u5 = ESPUser(u2)
-        u6 = ESPUser(u3)
-        u7 = ESPUser(u4)
-        for u in [u1, u2, u3, u4, u5, u6, u7]:
-            self.assertEqual(u.username, 'laziness_123')
-            self.assertIsNotNone(u.id)
-
-
-
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
-        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.user.set_password('forgotten_pw')
         self.user.save()
-        self.other, created = User.objects.get_or_create(username='innocent')
+        self.other, created = ESPUser.objects.get_or_create(username='innocent')
         self.other.set_password('remembered_pw')
         self.other.save()
     def runTest(self):
@@ -150,11 +127,9 @@ class PasswordRecoveryTicketTest(TestCase):
         # Create tickets; both User and ESPUser should work
         one   = PasswordRecoveryTicket.new_ticket( self.user )
         two   = PasswordRecoveryTicket.new_ticket( self.user )
-        three = PasswordRecoveryTicket.new_ticket( ESPUser(self.user) )
         four  = PasswordRecoveryTicket.new_ticket( self.other )
         self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
         self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
-        self.assertTrue(three.is_valid(), "Recovery ticket three is invalid.")
         self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
 
         # Try expiring #1; trying to validate it should destroy it

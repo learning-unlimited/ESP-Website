@@ -37,13 +37,12 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import Record
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
-from django.contrib.auth.models import User
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
@@ -226,7 +225,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
 
     class Meta:

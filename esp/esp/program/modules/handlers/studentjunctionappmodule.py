@@ -41,7 +41,6 @@ from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
-from django.contrib.auth.models import User
 from esp.middleware.threadlocalrequest import get_current_request
 
 # student class picker module

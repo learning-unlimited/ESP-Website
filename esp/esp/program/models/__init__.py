@@ -40,7 +40,6 @@ import random
 import json
 
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericRelation
 from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
@@ -1228,7 +1227,7 @@ class RegistrationProfile(models.Model):
             return regProf
 
         regProf = RegistrationProfile()
-        regProf.user = ESPUser(user)
+        regProf.user = user
 
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
@@ -1296,7 +1295,7 @@ class RegistrationProfile(models.Model):
 
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self,verbs=None):
-        return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
+        return self.user.getSectionsFromProgram(self.program,verbs=verbs)
 
 
 class TeacherBio(models.Model):
@@ -1393,7 +1392,7 @@ class FinancialAidRequest(models.Model):
 
 
         string = u"%s (%s@%s) for %s (%s, %s) %s"%\
-                 (ESPUser(self.user).name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
+                 (self.user.name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
             string = u"Finished: [" + string + u"]"
@@ -1555,8 +1554,6 @@ class ScheduleMap:
         schedule change.
     """
     def __init__(self, user, program):
-        if not isinstance(user, ESPUser):
-            user = ESPUser(user)
         self.program = program
         self.user = user
         self.populate()
