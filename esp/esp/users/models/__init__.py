@@ -138,7 +138,9 @@ class BaseESPUser(object):
         # AnonymousUser doesn't do anything in its __init__,
         # so there's no need for a super() call unless you're changing
         # inheritance structure of this, ESPUser, or AnonymousESPUser,
-        # or if Django has changed something.
+        # or if Django has changed something. Adding it anyway in case
+        # AnonymousUser changes in the future.
+        super(BaseESPUser, self).__init__()
         self.create_membership_methods()
 
     @classmethod
