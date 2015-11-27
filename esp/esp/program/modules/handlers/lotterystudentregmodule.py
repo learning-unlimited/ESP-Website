@@ -81,11 +81,11 @@ class LotteryStudentRegModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 7
             }
-    
+
         """ def prepare(self, context={}):
         if context is None: context = {}
 
-        context['schedulingmodule'] = self 
+        context['schedulingmodule'] = self
         return context """
 
     @main_call
@@ -142,9 +142,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
             ordered_timeslot_names.append([item.id, item.short_description])
 
         resp = HttpResponse(content_type='application/json')
-        
+
         json.dump(ordered_timeslot_names, resp)
-        
+
         return resp
 
 
@@ -180,7 +180,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         else: context['iempty'] = False
 
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
-    
+
     class Meta:
         proxy = True
         app_label = 'modules'

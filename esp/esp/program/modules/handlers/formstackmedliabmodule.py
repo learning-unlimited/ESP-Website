@@ -123,7 +123,7 @@ class FormstackMedliabModule(ProgramModuleObj):
     @needs_admin
     def medicalbypass(self, request, tl, one, two, module, extra, prog):
         status = None
-        
+
         if request.method == 'POST':
             form = GenericSearchForm(request.POST)
             if form.is_valid():

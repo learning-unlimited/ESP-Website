@@ -104,7 +104,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
-        
+
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
@@ -154,11 +154,11 @@ class StudentExtraCosts(ProgramModuleObj):
         if request.method == 'POST':
 
             #   Initialize a list of forms using the POST data
-            costs_db = [ { 'LineItemType': x, 
+            costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
                          [ x for x in \
-                           [ { 'LineItemType': x, 
+                           [ { 'LineItemType': x,
                                'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
                              for x in multicosts_list ] \
                            if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \

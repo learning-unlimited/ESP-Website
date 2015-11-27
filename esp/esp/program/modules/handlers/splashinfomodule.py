@@ -134,7 +134,7 @@ class SplashInfoModule(ProgramModuleObj):
         else:
             spi = SplashInfo.getForUser(request.user, self.program)
             form.load(spi)
-            
+
         context = {}
         context['form'] = form
         context['missing_siblingname'] = missing_siblingname

@@ -61,7 +61,7 @@ class StudentRegSanityController(object):
 
     def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=None):
         """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
-        if verbose == None: 
+        if verbose == None:
             verbose = self.options['verbosity']
         closeatend = False
         category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
@@ -133,7 +133,7 @@ class StudentRegSanityController(object):
         Set fake=False if you actually want something to happen.
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
-        if verbose == None: 
+        if verbose == None:
             verbose = self.options['verbosity']
         if checks==None:
             print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
@@ -155,7 +155,7 @@ class StudentRegSanityController(object):
             if directory==None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
             csvfile = open(filefullname, 'ab+')
-            csvwriter = csv.writer(csvfile) 
+            csvwriter = csv.writer(csvfile)
         self.reports = {}
         for ck in checks:
             if verbose > 3: print "Now running " + ck

@@ -62,7 +62,7 @@ class ClassManageForm(ManagementForm):
             prefix+'clsid': cls.id,
             prefix+'progress': [cm.id for cm in cls.checklist_progress.all()]}
         return self.initial
-         
+
     def save_data(self, cls):
         cls.status = self.cleaned_data['status']
         #   If the section's status has not already been marked, apply the subject's status.
@@ -159,20 +159,20 @@ class ClassCancellationForm(forms.Form):
     unschedule = forms.BooleanField(help_text='Check this box to unschedule all sections of this class, in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
-    
+
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
         initial['target'] = kwargs.pop('subject', None)
         kwargs['initial'] = initial
         super(ClassCancellationForm, self).__init__(*args, **kwargs)
-    
+
 class SectionCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
-    
+
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
         initial['target'] = kwargs.pop('section', None)

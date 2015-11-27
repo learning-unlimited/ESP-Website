@@ -105,7 +105,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.program.grade_max = 8
         self.program.save()
         Tag.setTag('grade_range_popup', self.program, 'True')
- 
+
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
         self.failUnless(not "check_grade_range" in response.content)
@@ -206,7 +206,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.delete_resource_request(sec, new_res_type1)
         self.failUnless(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-    
+
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]
@@ -217,9 +217,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Get the instance of StudentClassRegModule
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
         ProgramModuleObj.getFromProgModule(self.program, pm)
-        
+
         d = self.moduleobj.teachers()
-        
+
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
         cls1.status = -1

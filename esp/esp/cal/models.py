@@ -71,19 +71,19 @@ class Event(models.Model):
 
     def duration(self):
         return self.end - self.start
-    
+
     def duration_str(self):
         dur = self.end - self.start
         hours = int(dur.seconds / 3600)
         minutes = int(dur.seconds / 60) - hours * 60
         return u'%d hr %d min' % (hours, minutes)
-    
+
     def __unicode__(self):
         return self.start.strftime('%a %b %d: ').decode('utf-8') + self.short_time()
 
     def short_time(self):
         day_list = [u'Mon', u'Tue', u'Wed', u'Thu', u'Fri', u'Sat', u'Sun']
-        
+
         start_minutes = u''
         end_minutes = u''
         start_ampm = u''
@@ -93,7 +93,7 @@ class Event(models.Model):
             end_minutes = u':%02d' % self.end.minute
         if (self.start.hour < 12) != (self.end.hour < 12):
             start_ampm = self.start.strftime(' %p').decode('utf-8')
-        
+
         return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
             (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
 
@@ -122,41 +122,41 @@ class Event(models.Model):
         newList = [ x for x in sortedList if x != None ]
 
         return newList
-            
+
     @staticmethod
     def contiguous(event1, event2):
         """ Returns true if the second argument is less than 20 minutes apart from the first one. """
         tol = timedelta(minutes=20)
-        
+
         if (event2.start - event1.end) < tol:
             return True
         else:
             return False
-        
+
     @staticmethod
     def group_contiguous(event_list):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
         sorted_list = copy(event_list)
         sorted_list.sort()
-        
+
         grouped_list = []
         current_group = []
         last_event = None
-        
+
         for event in sorted_list:
-            
+
             if last_event is None or Event.contiguous(last_event, event):
                 current_group.append(event)
             else:
                 grouped_list.append(copy(current_group))
                 current_group = [event]
-                
+
             last_event = event
-        
+
         if len(current_group) > 0:
             grouped_list.append(current_group)
-        
+
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
@@ -172,16 +172,16 @@ class Event(models.Model):
         else:
             return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
                + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
-    
+
     def pretty_date(self):
         return self.start.strftime('%A, %B %d').decode('utf-8')
-    
+
     def pretty_start_time(self):
         return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
-    
+
     def parent_program(self):
         return self.program
-    
+
     def __cmp__(self, other):
         try:
             return cmp(self.start, other.start)

@@ -72,7 +72,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
-                    
+
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
@@ -93,21 +93,21 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         for module in modules:
             context = module.prepare(context)
- 
+
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
 
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def registrationtype_management(self, request, tl, one, two, module, extra, prog):
-        
+
         from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
         from django.conf import settings
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        
+
         context = {}
         context['one'] = one
         context['two'] = two
@@ -115,17 +115,17 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['POST'] = False
         context['saved'] = False
         context['support'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
-        
+
         if request.method == 'POST':
             context['POST'] = True
             form = VRTF(request.POST)
             if form.is_valid():
                 context['saved'] = RTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
-        
+
         display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
         return render_to_response(self.baseDir()+'registrationtype_management.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def lunch_constraints(self, request, tl, one, two, module, extra, prog):
@@ -143,7 +143,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             form = LunchConstraintsForm(prog)
         context['form'] = form
         return render_to_response(self.baseDir()+'lunch_constraints.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
@@ -152,7 +152,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         #   Define a status message
         message = ''
-    
+
         #   Handle 'open' / 'close' actions
         if extra == 'open' and 'id' in request.GET:
             perm = Permission.objects.get(id=request.GET['id'])
@@ -174,7 +174,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if request.method == 'POST':
             edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
             create_form = NewPermissionForm(request.POST.copy())
-            if edit_formset.is_valid(): 
+            if edit_formset.is_valid():
                 num_forms = 0
                 for form in edit_formset.forms:
                     #   Check if the permission with the specified ID exists.
@@ -201,7 +201,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     message = 'Deadline created: %s.' % perm.nice_name()
             else:
                 message = 'No activities selected.  Please select a deadline type from the list before creating a deadline.'
-    
+
         #   find all the existing permissions with this program
         #   Only consider global permissions -- those that apply to all users
         #   of a particular role.  Permissions added for individual users
@@ -218,7 +218,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 perm.open_now = True
             else:
                 perm.open_now = False
-            
+
 
         #   For each permission, determine which other ones it implies
         for perm in perms:
@@ -243,15 +243,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['manage_form'] = formset.management_form
         context['perms'] = perms
         context['create_form'] = NewPermissionForm()
-        
-        return render_to_response(self.baseDir()+'deadlines.html', request, context) 
-        
+
+        return render_to_response(self.baseDir()+'deadlines.html', request, context)
+
     #   Alias for deadline management
     deadlines = deadline_management
-        
+
     def isStep(self):
         return True
-    
+
     class Meta:
         proxy = True
         app_label = 'modules'

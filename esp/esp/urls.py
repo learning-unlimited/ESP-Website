@@ -147,11 +147,11 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True)),)
 
-urlpatterns += patterns('esp.qsdmedia.views', 
-    (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
+urlpatterns += patterns('esp.qsdmedia.views',
+    (r'^download\/([^/]+)/?$', 'qsdmedia2'),
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
 
-urlpatterns += patterns('', 
+urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
@@ -181,6 +181,6 @@ urlpatterns +=patterns('esp.customforms.views',
 	)	
 
 #   Theme editor
-urlpatterns += patterns('', 
-                        (r'^themes', include('esp.themes.urls')) 
+urlpatterns += patterns('',
+                        (r'^themes', include('esp.themes.urls'))
                        )

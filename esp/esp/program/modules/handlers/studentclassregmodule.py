@@ -81,7 +81,7 @@ def json_encode(obj):
                  'session_count': obj.session_count,
                  'num_students': obj.num_students(),
                  'teachers': obj._teachers,
-                 'get_sections': obj._sections,                         
+                 'get_sections': obj._sections,
                  'num_questions': obj.numStudentAppQuestions()
                  }
     elif isinstance(obj, ClassSection):
@@ -147,7 +147,7 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        
+
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
         sr_ids = StudentRegistration.valid_objects().filter(
@@ -156,7 +156,7 @@ class StudentClassRegModule(ProgramModuleObj):
         ssi_ids = StudentSubjectInterest.valid_objects().filter(
             subject__parent_program=self.program).values('user').distinct()
         any_reg_q = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
-        
+
         qobjects = {
             'enrolled': Enrolled & Par & Unexpired,
             'classreg': any_reg_q,
@@ -174,10 +174,10 @@ class StudentClassRegModule(ProgramModuleObj):
         role_dict = {}
         for item in role_choices:
             role_dict[item[0]] = item[1]
-    
+
         return {'classreg': """Students who signed up for at least one class""",
                 'enrolled': """Students who are enrolled in at least one class"""}
-    
+
     def isCompleted(self):
         return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
 
@@ -210,13 +210,13 @@ class StudentClassRegModule(ProgramModuleObj):
             user = ESPUser(get_current_request().user)
         else:
             user = get_current_request().user
-            
+
         is_onsite = user.isOnsite(self.program)
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
-        
+
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
-        
+
         schedule = []
         timeslot_dict = {}
         for sec in classList:
@@ -227,7 +227,7 @@ class StudentClassRegModule(ProgramModuleObj):
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
             sec.verb_names = [v.name for v in sec.verbs]
             sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
-            
+
             # While iterating through the meeting times for a section,
             # we use this variable to keep track of the first timeslot.
             # In the section_dict appended to timeslot_dict,
@@ -246,7 +246,7 @@ class StudentClassRegModule(ProgramModuleObj):
                     timeslot_dict[mt.id].append(section_dict)
                 else:
                     timeslot_dict[mt.id] = [section_dict]
-                    
+
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             daybreak = False
@@ -261,11 +261,11 @@ class StudentClassRegModule(ProgramModuleObj):
                                                  for sec in cls_list)
                 schedule.append((timeslot, cls_list, blockCount + 1,
                                  doesnt_have_enrollment))
-            else:                
+            else:
                 schedule.append((timeslot, [], blockCount + 1, False))
 
             prevTimeSlot = timeslot
-                
+
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
@@ -288,7 +288,7 @@ class StudentClassRegModule(ProgramModuleObj):
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
-        
+
         #   Look at the 'extra' data and act appropriately:
         #   -   List, query set, or comma-separated ID list of class sections:
         #       Add the buttons for those class sections to the returned data.
@@ -307,7 +307,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 sec_ids = [int(x) for x in extra.split(',')]
             except:
                 pass
-            
+
         for sec_id in sec_ids:
             try:
                 section = ClassSection.objects.get(id=sec_id)
@@ -323,7 +323,7 @@ class StudentClassRegModule(ProgramModuleObj):
             except Exception, inst:
                 raise AjaxError('Encountered an error retrieving updated buttons: %s' % inst)
 
-                
+
         return HttpResponse(json.dumps(json_data))
 
     def addclass_logic(self, request, tl, one, two, module, extra, prog):
@@ -344,10 +344,10 @@ class StudentClassRegModule(ProgramModuleObj):
                 prereg_verb = proposed_verb
             else:
                 prereg_verb = None
-                
+
         else:
             prereg_verb = None
-        
+
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
@@ -424,16 +424,16 @@ class StudentClassRegModule(ProgramModuleObj):
                         raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error), log=False)
                     else:
                         raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error), log=False)
-                    
+
         if error and not request.user.onsite_local:
             raise ESPError(error, log=False)
-        
+
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
-    
+
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
@@ -441,7 +441,7 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
-            
+
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
@@ -474,7 +474,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')    
+    @meets_deadline('/Classes/OneClass')
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
         from esp.cal.models import Event
@@ -483,7 +483,7 @@ class StudentClassRegModule(ProgramModuleObj):
             extra = int(extra)
         except:
             raise ESPError('Please use the link at the main registration page.', log=False)
-        user = ESPUser(request.user)        
+        user = ESPUser(request.user)
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
             raise Http404()
@@ -494,7 +494,7 @@ class StudentClassRegModule(ProgramModuleObj):
         user_grade = user.getGrade(self.program)
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
-        
+
         #   Override both grade limits and size limits during onsite registration
         if is_onsite and not request.GET.has_key('filter'):
             classes = list(ClassSubject.objects.catalog(self.program, ts))
@@ -529,7 +529,7 @@ class StudentClassRegModule(ProgramModuleObj):
         categories = {}
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
-            
+
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
@@ -572,7 +572,7 @@ class StudentClassRegModule(ProgramModuleObj):
                 'two':        two,
                 })
 
-    
+
     """@cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ """Return the program timeslot names for the tabs in the lottery inteface""" """
@@ -580,23 +580,23 @@ class StudentClassRegModule(ProgramModuleObj):
         timeslots = self.program.getTimeSlots()
 
         resp = HttpResponse(content_type='application/json')
-        
+
         json.dump(list(timeslots), resp, default=json_encode)
-        
+
         return resp"""
 
-    
+
     @cache_control(public=True, max_age=3600)
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
-        classes = ClassSubject.objects.catalog(self.program)        
-        
+        classes = ClassSubject.objects.catalog(self.program)
+
         resp = HttpResponse(content_type='application/json')
-        
+
         json.dump(list(classes), resp, default=json_encode)
-        
+
         return resp
 
 
@@ -632,11 +632,11 @@ class StudentClassRegModule(ProgramModuleObj):
               'type': b.relationship.name
               }
             for b in reg_bits ]
-        
+
         resp = HttpResponse(content_type='application/json')
         json.dump(reg_bits_data, resp)
         return resp
-    
+
     # This function exists only to apply the @meets_deadline decorator.
     @meets_deadline('/Catalog')
     def catalog_student(self, request, tl, one, two, module, extra, prog, timeslot=None):
@@ -673,19 +673,19 @@ class StudentClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-            
+
         classes = ClassSubject.objects.filter(id = clsid)
-        
+
         target_class = classes[0]
 
         context = {'cls': target_class, 'module': self}
-        
+
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
 
     def clearslot_logic(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
-        
+
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
@@ -719,28 +719,28 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
         if not request.is_ajax():
             return self.clearslot(request, tl, one, two, module, extra, prog)
-        
+
         cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(content_type='application/json')
             json.dump({'status': True, 'cleared_ids': cleared_ids}, resp)
             return resp
-        
+
         if len(cleared_ids) > 0:
             #   The 'extra' value should be the ID list
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
     def openclasses(self, request, tl, one, two, module, extra, prog):
-        """ A publicly viewable version of the onsite class list. 
+        """ A publicly viewable version of the onsite class list.
             Should be revisited in the future, as this was a temporary
             hack created for Stanford Splash in fall 2013. """
 
         module = prog.getModule('OnSiteClassList')
         if module:
             return module.classList_base(request, tl, one, two, module, 'by_time', prog, options={}, template_name='allclass_fragment.html')
-        
+
         #  Otherwise this will be a 404
         return None
 

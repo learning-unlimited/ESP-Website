@@ -77,7 +77,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             req = requests[0]
             req.time_executed = datetime.now()
             req.save()
-            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)       
+            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             return response
         else:
             # No response if no users

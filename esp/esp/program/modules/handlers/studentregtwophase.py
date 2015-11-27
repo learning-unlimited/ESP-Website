@@ -50,8 +50,8 @@ from esp.utils.query_utils import nest_Q
 class StudentRegTwoPhase(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
-        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest') 
+        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
         if QObject:
             return {'twophase_star_students': q_ssi,
                     'twophase_priority_students' : q_sr}

@@ -92,4 +92,4 @@ class Command(BaseCommand):
                         for index in index_sql[table]:
                             if table in index:
                                 print index
-        
+

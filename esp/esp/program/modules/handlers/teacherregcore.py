@@ -58,7 +58,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if not module.isCompleted() and module.required:
                 context['completedAll'] = False
-                
+
             context = module.prepare(context)
 
         context['modules'] = modules
@@ -70,7 +70,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
-    
+
     class Meta:
         proxy = True
         app_label = 'modules'

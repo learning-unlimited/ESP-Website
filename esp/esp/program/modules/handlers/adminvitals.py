@@ -62,7 +62,7 @@ class AdminVitals(ProgramModuleObj):
             "inline_template": "vitals.html",
             "seq": -2,
             }
-    
+
     def prepare(self, context=None):
         return context
 

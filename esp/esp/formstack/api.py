@@ -30,7 +30,7 @@ class Formstack(object):
 
         self.__api_url = 'https://www.formstack.com/api'
         self.__api_key = api_key
-        
+
     def forms(self):
         """
         Returns a list of forms in an account. The response includes all of the
@@ -38,24 +38,24 @@ class Formstack(object):
         information about each form field and the HTML or JavaScript required to
         display the form.
         """
-        
+
         return self.__request('forms')
 
     def form(self, id, args = {}):
         """Returns detailed information about a form."""
-        
+
         args['id'] = id
         return self.__request('form', args)
 
     def data(self, id, args = {}):
         """Returns data collected for a form."""
-        
+
         args['id'] = id
         return self.__request('data', args)
 
     def submission(self, id, args = {}):
         """Returns a single submission collected for a form."""
-        
+
         args['id'] = id
         return self.__request('submission', args)
 
@@ -68,7 +68,7 @@ class Formstack(object):
         database. An error will be returned if the maximum number of submissions
         for the account has been reached.
         """
-        
+
         args['id'] = id
         return self.__request('submit', args)
 
@@ -80,10 +80,10 @@ class Formstack(object):
 
         args['id'] = id
         return self.__request('edit', args)
-    
+
     def delete(self, id, args = {}):
         """Deletes an existing submission."""
-        
+
         args['id'] = id
         return self.__request('delete', args)
 
@@ -91,8 +91,8 @@ class Formstack(object):
         """ Creates a field."""
 
         args['form'] = form
-        return self.__request('createField', args) 
-    
+        return self.__request('createField', args)
+
     def __request(self, method, args = {}):
         """ Makes a Formstack API call and returns the response as an array."""
 
@@ -101,10 +101,10 @@ class Formstack(object):
         req = urllib2.Request(self.__api_url + '/' + method, \
                               urllib.urlencode(args))
         try:
-            
+
             res = urllib2.urlopen(req)
             res = json.load(res)
-            
+
             if len(res) and res['status'] == 'ok':
                 return res['response']
             elif len(res) and res['status'] == 'error':

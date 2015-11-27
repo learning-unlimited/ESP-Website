@@ -67,27 +67,27 @@ class StudentJunctionAppModule(ProgramModuleObj):
         else:
             return {'studentapps_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
                     'studentapps':          ESPUser.objects.filter(Q_students)}
-        
+
     def studentDesc(self):
         return {'studentapps_complete': """Students who have completed the student application.""",
                 'studentapps':          """Students who have started the student application."""}
-    
+
     def isCompleted(self):
         """ This step is completed if the student has marked their application as complete or answered questions for
         all of their classes.  I know this is slow sometimes.  -Michael P"""
-        
+
         app = get_current_request().user.getApplication(self.program)
-        
+
         #   Check if the application is empty or marked as completed.
         if app.done:
-            return True 
+            return True
         app.set_questions()
         if app.questions.all().count() == 0:
             return True
-            
-        #   Code below here may be unnecessary; it's just to save students the trouble 
+
+        #   Code below here may be unnecessary; it's just to save students the trouble
         #   of clicking through to mark their application complete before they can confirm.
-            
+
         #   Get the student's responses to application questions.
         responses = app.responses.all()
         response_question_ids = [x.question.id for x in responses]
@@ -104,7 +104,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
                 elif (not response_dict[i].complete) and len(response_dict[i].response) == 0:
                     return False
         return True
-        
+
     def deadline_met(self):
         return super(StudentClassRegModule, self).deadline_met('/Applications')
 
@@ -131,7 +131,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
             forms = app.get_forms()
 
         return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
-    
+
 
     class Meta:
         proxy = True

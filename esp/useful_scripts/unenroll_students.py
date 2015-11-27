@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Kick students out of their classes (or only next hour's classes, if the 
+Kick students out of their classes (or only next hour's classes, if the
 --per-hour option is used) if they haven't checked in yet.
 """
 
@@ -29,7 +29,7 @@ students = ESPUser.objects.filter(studentregistration__in=StudentRegistration.va
 upcoming_sections = relevant_sections.filter(begin_time__gt=datetime.now())
 if args.per_hour:
     upcoming_sections = upcoming_sections.filter(begin_time__lt=datetime.now() + timedelta(minutes=60))
-    
+
 # registrations of missing students for upcoming classes
 registrations = StudentRegistration.valid_objects().filter(user__in=students, section__in=upcoming_sections, relationship=1)
 print "Candidate Registrations to Delete:", len(registrations)

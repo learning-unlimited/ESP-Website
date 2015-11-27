@@ -45,7 +45,7 @@ class EventForm(ModelForm):
 
 def createevent(request):
     """ Create an Event, via a Web form """
-    
+
     # If we're POSTed to, we're trying to receive an update
     if request.method == 'POST':
         f = EventForm(request.POST)
@@ -56,17 +56,17 @@ def createevent(request):
     # Otherwise, generate a blank new-page form
     else:
         f = EventForm()
-    
+
     return render_to_response('events/create_update', request, {'form': f } )
 
 
 def updateevent(request, id=None):
     """ Update an Event, via a Web form """
     # aseering 8-9-2006: Code blatantly copied from myesp_createevnt; see that function for reference
-    
+
     # We don't have a generic list page yet; work on that
     if id == None:
         raise Http404
-    
+
     # Because we're lazy like that.
     return createevent(request)

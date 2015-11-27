@@ -62,13 +62,13 @@ def survey_view(request, tl, program, instance):
         raise Http404
 
     user = ESPUser(request.user)
-    
+
     if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
         raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if request.GET.has_key('done'):
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
-    
+
     if tl == 'learn':
         event = "student_survey"
     else:
@@ -99,17 +99,17 @@ def survey_view(request, tl, program, instance):
         response = SurveyResponse()
         response.survey = survey
         response.save()
-        
+
         r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
         r.save()
-        
+
         response.set_answers(request.POST, save=True)
 
         return HttpResponseRedirect(request.path + "?done")
     else:
         questions = survey.questions.filter(per_class = False).order_by('seq')
         perclass_questions = survey.questions.filter(per_class = True)
-        
+
         classes = sections = timeslots = []
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog, request)
@@ -143,7 +143,7 @@ def get_survey_info(request, tl, program, instance):
         raise Http404
 
     user = ESPUser(request.user)
-    
+
     if (tl == 'teach' and user.isTeacher()):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     elif (tl == 'manage' and user.isAdmin(prog)):
@@ -160,35 +160,35 @@ def get_survey_info(request, tl, program, instance):
                     user = ESPUser(request.user)
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
-    
+
     if request.GET.has_key('survey_id'):
         try:
             s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
-    
+
     if len(surveys) < 1:
         raise ESPError("Sorry, no such survey exists for this program!", log=False)
 
     return (user, prog, surveys)
-    
+
 
 def display_survey(user, prog, surveys, request, tl, format):
     """ Wrapper doing the necessary work for the survey output. """
     from esp.program.models import ClassSubject, ClassSection
-    
+
     perclass_data = []
-    
+
     def getByIdOrNone(model, key):
         q = model.objects.filter(id = request.GET.get(key, None))[:1]
         if q:
             return q[0]
         return None
-    
+
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
-    
+
     if tl == 'manage' and not request.GET.has_key('teacher_id') and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
@@ -211,9 +211,9 @@ def display_survey(user, prog, surveys, request, tl, format):
         subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
-    
+
     context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data}
-    
+
     #   Choose+use appropriate output format
     if format == 'html':
         return render_to_response('survey/review.html', request, context)
@@ -318,7 +318,7 @@ def survey_review(request, tl, program, instance):
 @login_required
 def survey_graphical(request, tl, program, instance):
     """ A PDF view of the survey results with histograms. """
-    
+
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl,'tex')
 
@@ -332,7 +332,7 @@ def survey_review_single(request, tl, program, instance):
         raise ESPError("Can't find the program %s/%s" % (program, instance))
 
     user = ESPUser(request.user)
-    
+
     survey_response = None
     ints = request.GET.items()
     if len(ints) == 1:
@@ -341,7 +341,7 @@ def survey_review_single(request, tl, program, instance):
             survey_response = srs[0]
     if survey_response is None:
         raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
-    
+
     if tl == 'manage' and user.isAdmin(prog):
         answers = survey_response.answers.order_by('content_type','object_id', 'question')
         classes_only = False
@@ -356,9 +356,9 @@ def survey_review_single(request, tl, program, instance):
         other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
-    
+
     context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
-    
+
     return render_to_response('survey/review_single.html', request, context)
 
 # To be replaced with something more useful, eventually.
@@ -368,37 +368,37 @@ def top_classes(request, tl, program, instance):
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
         raise Http404
-    
+
     user = ESPUser(request.user)
-    
+
     if (tl == 'manage' and user.isAdmin(prog)):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
-    
+
     if request.GET.has_key('survey_id'):
         try:
             s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
-    
+
     if len(surveys) < 1:
         raise ESPError('Sorry, no such survey exists for this program!', log=False)
 
     if len(surveys) > 1:
         return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
-    
+
     survey = surveys[0]
-    
-    
+
+
     if tl == 'manage':
         classes = prog.classes()
         rating_questions = survey.questions.filter(name__contains='overall rating')
         if len(rating_questions) < 1:
             raise ESPError('Couldn\'t find an "overall rating" question in this survey.', log=False)
         rating_question = rating_questions[0]
-        
+
         rating_cut = 0.0
         try:
             rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
@@ -409,16 +409,16 @@ def top_classes(request, tl, program, instance):
                 rating_cut = float( request.GET['rating_cut'] )
             except ValueError:
                 pass
-            
+
         num_cut = 1
         if request.GET.has_key('num_cut'):
             try:
                 num_cut = int( request.GET['num_cut'] )
             except ValueError:
                 pass
-        
+
         categories = prog.class_categories.all().order_by('category')
-        
+
         subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
 
         perclass_data = []
@@ -438,5 +438,5 @@ def top_classes(request, tl, program, instance):
             del c['ratings']
             perclass_data.append(c)
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
-    
+
     return render_to_response('survey/top_classes.html', request, context)

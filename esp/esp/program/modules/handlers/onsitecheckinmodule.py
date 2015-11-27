@@ -58,7 +58,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "seq": 1
             }
 
-    def updatePaid(self, paid=True):   
+    def updatePaid(self, paid=True):
         """ Close off the student's invoice and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
@@ -93,7 +93,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         iac = IndividualAccountingController(self.program, self.student)
         return Record.user_completed(self.student, "paid", self.program) or \
             iac.has_paid(in_full=True)
-    
+
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
 
@@ -108,13 +108,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
         students = ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id')
-        
+
         #   Populate some stats
         if 'snippets' in request.GET:
             snippet_list = request.GET['snippets'].split(',')
         else:
             snippet_list = ['grades']
-        
+
         if 'grades' in snippet_list:
             grade_levels = {}
             for student in students:
@@ -125,23 +125,23 @@ class OnSiteCheckinModule(ProgramModuleObj):
             context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
         else:
             context['grade_levels'] = None
-            
+
         if 'times' in snippet_list:
             start_times = {}
             for student in students:
                 start_time = student.getFirstClassTime(prog)
                 if start_time not in start_times:
                     start_times[start_time] = 0
-                start_times[start_time] += 1    
+                start_times[start_time] += 1
             context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
         else:
             context['start_times'] = None
-         
+
         if 'students' in snippet_list:
             context['students'] = students
         else:
             context['students'] = None
-        
+
         context['module'] = self
 
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
@@ -171,11 +171,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
         else:
             form = OnSiteRapidCheckinForm()
-        
+
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
-        
+
     @aux_call
     @needs_onsite
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
@@ -213,7 +213,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context['form'] = form
         context['results'] = results
         return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
-        
+
 
 
     @aux_call
@@ -222,16 +222,16 @@ class OnSiteCheckinModule(ProgramModuleObj):
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user
-        
+
         self.student = user
-            
+
         if request.method == 'POST':
             for key in ['attended','paid','liab','med']:
                 if request.POST.has_key(key):
                     self.create_record(key)
                 else:
                     self.delete_record(key)
-                
+
 
             return self.goToCore(tl)
 

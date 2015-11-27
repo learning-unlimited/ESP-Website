@@ -49,7 +49,7 @@ class SurveyTest(ProgramFrameworkTest):
             'num_rooms': 6,
             } )
         super(SurveyTest, self).setUp(*args, **kwargs)
-        
+
         self.add_student_profiles()
         self.schedule_randomly()
 
@@ -65,12 +65,12 @@ class SurveyTest(ProgramFrameworkTest):
         sec = random.choice(self.program.sections())
         sec.preregister_student(student)
         self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-    
+
         #   Access the survey page - there should be no surveys and we should get an error
         response = self.client.get('/learn/%s/survey' % self.program.url)
         self.assertEqual(response.status_code, 500)
         self.assertIn('no such survey', response.content)
-        
+
         #   Create a survey
         (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
         (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
@@ -88,11 +88,11 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertIn('Question1', response.content)
         self.assertIn('Question2', response.content)
         self.assertIn('Question3', response.content)
-        
+
         #   Check that there is a field to select a class for each timeslot
         for timeslot in self.program.getTimeSlots():
             self.assertIn('attendance_%d' % (timeslot.id), response.content)
-        
+
         #   Fill out the survey with some arbitrary answers
         sec_timeslot = sec.get_meeting_times()[0]
         form_settings = {
@@ -101,7 +101,7 @@ class SurveyTest(ProgramFrameworkTest):
             'question_%d_%d' % (question_perclass.id, sec_timeslot.id): 'No',
             'question_%d_%d' % (question_number.id, sec_timeslot.id): '3',
         }
-        
+
         #   Submit the survey
         response = self.client.post('/learn/%s/survey' % self.program.url, form_settings, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -109,7 +109,7 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertTrue(response.redirect_chain[0][0].endswith('/learn/%s/survey?done' % self.program.url))
         self.assertEqual(response.redirect_chain[0][1], 302)
         self.assertIn('have been saved', response.content)
-        
+
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
         record = SurveyResponse.objects.filter(survey=survey)[0]
@@ -124,15 +124,15 @@ class SurveyTest(ProgramFrameworkTest):
         answer_number = Answer.objects.filter(question=question_number)[0]
         self.assertEqual(answer_number.answer, '3')
         self.assertEqual(answer_number.target, sec)
-        
+
         #   Check that the student is marked as having filled out the survey
         self.assertTrue(Record.user_completed(student, 'student_survey', self.program))
-        
+
         #   Check that we get an error if we try to visit the survey again
         response = self.client.get('/learn/%s/survey' % self.program.url)
         self.assertEqual(response.status_code, 500)
         self.assertIn('already filled out', response.content)
-        
+
         # student logs out, teacher logs in
         self.client.logout()
         teacher = sec.parent_class.get_teachers()[0]

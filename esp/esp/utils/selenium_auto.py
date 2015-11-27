@@ -21,10 +21,10 @@ class SeleniumDriverHandler(object):
                 _instances[name] = driver
             except:
                 pass
-    
+
     if len(_instances) == 0:
         warnings.warn("No Selenium browsers available!  Selenium tests will all pass without executing.", RuntimeWarning)
-    
+
     def _closeAll(instances):
         for i in instances.itervalues():
             try:
@@ -46,7 +46,7 @@ class SeleniumDriverHandler(object):
     def getDriver(cls, name):
         return cls._instances[name]
 
-    
+
 
 def selenium_test(fn):
     """
@@ -57,7 +57,7 @@ def selenium_test(fn):
     """
     @with_runserver
     def _wrapped(url):
-        for driver in SeleniumDriverHandler.getDrivers():            
+        for driver in SeleniumDriverHandler.getDrivers():
             fn(driver, url)
 
     return _wrapped

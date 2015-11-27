@@ -57,14 +57,14 @@ class AdminMaterials(ProgramModuleObj):
     @main_call
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
-        from esp.web.forms.fileupload_form import FileUploadForm_Admin    
-        from esp.qsdmedia.models import Media            
+        from esp.web.forms.fileupload_form import FileUploadForm_Admin
+        from esp.qsdmedia.models import Media
         context_form = FileUploadForm_Admin()
         new_choices = [(a.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
         new_choices.append((0, 'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)
-    
+
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
                 docid = request.POST['docid']
@@ -73,7 +73,7 @@ class AdminMaterials(ProgramModuleObj):
             elif request.POST['command'] == 'add':
                 form = FileUploadForm_Admin(request.POST, request.FILES)
                 form.set_choices(new_choices)
-                
+
                 if form.is_valid():
                     media = Media(friendly_name=form.cleaned_data['title'])
 
@@ -97,11 +97,11 @@ class AdminMaterials(ProgramModuleObj):
                     context_form = form
 
         context = {'prog': self.program, 'module': self, 'uploadform': context_form}
-        
+
         classes = ClassSubject.objects.filter(parent_program = prog)
-    
+
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
-    
+
 
 
 

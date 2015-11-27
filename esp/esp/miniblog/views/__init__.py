@@ -52,12 +52,12 @@ def preview_miniblog(request, section = None):
 
     if request.user != None:
         curUser = ESPUser(request.user)
-    
+
     else:
         curUser = ESPUser(AnonymousUser())
 
     return curUser.getMiniBlogEntries()
-    
+
 @cache_function
 def get_visible_announcements(user, limit, tl):
     models_to_search = [Entry, AnnouncementLink]

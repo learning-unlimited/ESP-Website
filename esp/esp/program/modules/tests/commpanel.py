@@ -48,7 +48,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         - more complex user lists
         - 'smart text' like {{ program.schedule }} in e-mail content
     """
-    
+
     def setUp(self, *args, **kwargs):
         from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -68,7 +68,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     def runTest(self):
         #   Log in an administrator
         self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
-       
+
         #   Select users to fetch
         post_data = {
             'submit_user_list': 'true',
@@ -79,13 +79,13 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
         self.assertEqual(response.status_code, 200)
-        
+
         #   Extract filter ID from response
         s = re.search(r'<input type="hidden" name="filterid" value="([0-9]+)" />', response.content)
         filterid = s.groups()[0]
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content)
         listcount = s.groups()[0]
-        
+
         #   Enter e-mail information
         post_data = {
             'subject': 'Test Subject 123',
@@ -96,16 +96,16 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
         self.assertEqual(response.status_code, 200)
-        
+
         #   Check that a MessageRequest has been created
         m = MessageRequest.objects.filter(recipients__id=filterid, subject='Test Subject 123')
         self.assertTrue(m.count() == 1)
         self.assertFalse(m[0].processed)
-        
+
         #   Send out e-mail
         msgs = process_messages()
         send_email_requests()
-        
+
         #   Check that the e-mail was sent to all students
         self.assertEqual(len(mail.outbox), len(self.students))
 

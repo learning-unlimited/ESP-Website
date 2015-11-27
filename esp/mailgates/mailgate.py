@@ -81,7 +81,7 @@ try:
 
             send_mail(str(message))
             continue
-        
+
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
@@ -96,7 +96,7 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-            
+
         del message['Message-ID']
 
         # get a new message id

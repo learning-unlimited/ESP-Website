@@ -27,7 +27,7 @@ def filter_username(username, password):
                 matches.append(u)
         if len(matches) > 0:
             username = matches[0].username
-            
+
     return username
 
 #   This is a huge hack while we figure out what to do about logins and cookies.
@@ -106,7 +106,7 @@ def signout(request):
     redirect_path = request.GET.get('redirect')
     if redirect_path:
         return HttpResponseRedirect(redirect_path)
-    
+
     return render_to_response('registration/logged_out.html', request, {})
 
 
@@ -116,13 +116,13 @@ def signed_out_message(request):
         return HttpResponseRedirect('/')
 
     return render_to_response('registration/logged_out.html', request, {})
-            
+
 
 @login_required
 def disable_account(request):
-    
+
     curUser = request.user
-    
+
     if 'enable' in request.GET:
         curUser.is_active = True
         curUser.save()
@@ -131,7 +131,7 @@ def disable_account(request):
         curUser.save()
 
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
-        
+
     context = {
             'user': curUser,
             'other_users': other_users,
@@ -139,7 +139,7 @@ def disable_account(request):
             # address if we are using mailman.
             'will_deactivate_others': curUser.is_active and other_users and settings.USE_MAILMAN,
     }
-        
+
     return render_to_response('users/disable_account.html', request, context)
 
 

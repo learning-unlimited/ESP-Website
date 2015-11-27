@@ -74,7 +74,7 @@ class FormstackAppModule(ProgramModuleObj):
         result = {}
         result['applied'] = """Students who submitted an application"""
         return result
-    
+
     def isCompleted(self):
         # TODO
         return False

@@ -57,7 +57,7 @@ class Media(models.Model):
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
     file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
     hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # randomized filename
-    
+
     #   Generic Foreign Key to object this media is associated with.
     #   Currently limited to be either a ClassSubject or Program.
     owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to={'model__in': ['classsubject', 'program']})
@@ -74,32 +74,32 @@ class Media(models.Model):
             self.file_extension = splitname[-1]
         else:
             self.file_extension = ''
-        
+
         # get list of allowed file extensions
         if hasattr(settings, 'ALLOWED_EXTENSIONS'):
             allowed_extensions = [x.lower() for x in settings.ALLOWED_EXTENSIONS]
         else:
             allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
-        
+
         if not self.file_extension.lower() in allowed_extensions:
             raise ESPError("The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),), log=False)
 
         self.mime_type = file.content_type
         self.size = file.size
-        
+
         # hash the filename, easy way to prevent bad filename attacks
         self.file_name = filename
         self.hashed_name = str(uuid.uuid4())
-        
+
         while not self.test_upload_filename():
             self.hashed_name = str(uuid.uuid4())
-        
+
         self.target_file.save(self.hashed_name, file)
-    
+
     # returns an absolute path to this file
     def get_uploaded_filename(self):
         return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip('/'))
-    
+
     # returns an absolute path to this file
     def test_upload_filename(self):
         return not os.path.isfile(os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name))
