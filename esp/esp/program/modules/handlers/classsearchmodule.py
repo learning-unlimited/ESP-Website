@@ -1,5 +1,7 @@
 import json
+import random
 
+from django.http import HttpResponseRedirect
 from django.db.models.query import Q
 
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
@@ -110,6 +112,11 @@ class ClassSearchModule(ProgramModuleObj):
             queryset = queryset.distinct().order_by('id').prefetch_related(
                 'flags', 'flags__flag_type', 'teachers', 'category',
                 'sections', 'sections__resourcerequest_set')
+            if request.GET.get('randomize'):
+                queryset = list(queryset)
+                random.shuffle(queryset)
+            if request.GET.get('lucky'):
+                return HttpResponseRedirect(queryset[0].get_absolute_url())
             english = query_builder.as_english(decoded)
             context = {
                 'queryset': queryset,

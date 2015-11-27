@@ -72,11 +72,17 @@ var QueryBuilder = React.createClass({
 
   /**
    * Handler to submit the query.
+   *
+   * params, a string, should be extra query parameters, formatted as a string.
+   *     It may be the empty string.
    */
-  submit: function () {
+  _submit: function (params) {
     try {
       json = JSON.stringify(this.asJSON());
-      window.location.href = "?query=" + encodeURIComponent(json);
+      if (params) {
+        params = params + "&";
+      }
+      window.location.href = "?" + params + "query=" + encodeURIComponent(json);
     } catch (e) {
       if (e.name != "BuildQueryError") {
         alert("There was an error, recheck your query or poke web support.");
@@ -87,6 +93,18 @@ var QueryBuilder = React.createClass({
         return;
       }
     }
+  },
+  
+  submit: function () {
+    this._submit("");
+  },
+
+  submitRandom: function () {
+    this._submit("randomize=1");
+  },
+
+  submitLucky: function () {
+    this._submit("randomize=1&lucky=1");
   },
 
   allFilterNames: function () {
@@ -106,7 +124,17 @@ var QueryBuilder = React.createClass({
                  filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
       <button onClick={this.submit} className="qb-input btn btn-primary">
-        Go
+        Search
+      </button>
+      <button title="search and randomize results"
+              onClick={this.submitRandom}
+              className="qb-input btn btn-default">
+        Randomize
+      </button>
+      <button title="jump to manage page for a random result"
+              onClick={this.submitLucky}
+              className="qb-input btn btn-default">
+        I'm Feeling Lucky
       </button>
     </div>;
   },
