@@ -33,29 +33,29 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.cache import cache_function
-from esp.cache.function import get_containing_class
+from argcache import cache_function
+from argcache.function import get_containing_class
 
 from django.http import HttpResponse
 from django.db.models import Model
 
 from inspect import getargspec
 from functools import wraps
-import simplejson
+import json
 
 class OptionalDecorator(object):
     """ A simple decorator to turn a function into a no-op.  If the argument evaluates
         to true, it's transparent.  Otherwise it generates a decorator that causes
         the function to always return False. """
-    
+
     def __init__(self, value, *args, **kwargs):
         self.value = value
 
     def __call__(self, func, *args, **kwargs):
-    
+
         def _do_nothing(*args, **kwargs):
             return False
-    
+
         if hasattr(self, 'value'):
             if self.value:
                 return func
@@ -69,13 +69,13 @@ class OptionalDecorator(object):
 enable_with_setting = OptionalDecorator
 
 def json_response(field_map={}):
-    """ Converts a serializable data structure into the appropriate HTTP response. 
+    """ Converts a serializable data structure into the appropriate HTTP response.
         Allows changing the field names using field_map, which might be complicated
-        if related lookups were used. 
+        if related lookups were used.
     """
-    
+
     # Here instead of at the top because of circular imports
-    from esp.web.util.main import render_to_response
+    from esp.utils.web import render_to_response
 
     def map_fields(item):
         if isinstance(item, Model):
@@ -96,11 +96,11 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             elif 'json_debug' in request.GET:
-                data = simplejson.dumps(result, sort_keys=True,
+                data = json.dumps(result, sort_keys=True,
                                         indent = '    ')
                 return render_to_response('utils/jsondebug.html',
                                           request, {'data': data},
-                                          mimetype="text/html")
+                                          content_type="text/html")
             else:
                 if field_map is None:
                     new_result = result
@@ -111,19 +111,19 @@ def json_response(field_map={}):
                         for item in result[key]:
                             new_list.append(map_fields(item))
                         new_result[key] = new_list
-                resp = HttpResponse(mimetype='application/json')
-                simplejson.dump(new_result, resp)
+                resp = HttpResponse(content_type='application/json')
+                json.dump(new_result, resp)
                 return resp
-                
+
         return _evaluate
-        
+
     return dec
 
 
 class CachedModuleViewDecorator(object):
-    """ Employs some of the techniques used by the cached inclusion tag to 
+    """ Employs some of the techniques used by the cached inclusion tag to
         make caching a simple program module view easier. """
-    
+
     def __init__(self, func):
         parent_obj = self
         # NOTE: get_containing_class inspects the stack, so we have to
@@ -143,14 +143,14 @@ class CachedModuleViewDecorator(object):
                     if param_name_list[i] in parent_obj.params:
                         args_for_func.append(param_list[i])
                 return parent_obj.cached_function(*args_for_func)
-            
+
             return actual_func
-            
+
         self.inner_func = prepare_dec(func)
 
     def __call__(self, *args):
         return self.inner_func(*args)
-        
+
     def __getattr__(self, attr):
         return getattr(self.inner_func, attr)
 

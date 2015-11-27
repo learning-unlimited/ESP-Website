@@ -9,8 +9,6 @@
         $j.getScriptWithCaching("/media/scripts/csrf_init.js");
         $j.getScriptWithCaching("/media/scripts/csrf_check.js");
     });
-    function set_compact_classes() {
-    }
 </script>
 <script type="text/javascript" src="/media/scripts/onsite/hsl_colors.js"></script>
 <script type="text/javascript" src="/media/scripts/onsite/ajax_status.js"></script>
@@ -28,13 +26,39 @@
 
 <body>
 
-<p align="center">
+<div id="side_area">
+<input id="hide_sidebar" type="button" value="<< Hide sidebar"/>
+<input id="show_sidebar" type="button" value=">>"/>
 <table>
 <tr>
 <td>
     <div id="messages">
     </div>
 </td>
+</tr>
+<tr>
+<td>
+    <div id="settings_controls">
+    <!-- make sure to update onsite/ajax_status.js when changing this -->
+    <div><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</div>
+    <div><input type="checkbox" id="override_control"/>Override size limits</div>
+    <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
+    <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
+    <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
+    <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
+    <div><input type="checkbox" id="hide_conflicting"/>Show only classes that fit in student's schedule</div>
+    </div>
+</td>
+</tr>
+<tr>
+<td>
+  <div id="class_search_controls">
+    <b>Find a class</b>
+    <input type="text" id="class_search" placeholder="class ID or title"/></input>
+  </div>
+</td>
+</tr>
+<tr>
 <td>
     <div id="category_controls">
         <b>Categories to display</b>
@@ -46,22 +70,11 @@
         </div>
     </div>
 </td>
-<td>
-    <div id="settings_controls">
-    <!-- make sure to update onsite/ajax_status.js when changing this -->
-    <div><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</div>
-    <div><input type="checkbox" id="override_control"/>Override size limits</div>
-    <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
-    <div><input type="checkbox" id="compact_classes" checked="checked" />Display only class numbers</div>
-    <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
-     <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
-    </div>
-</td>
 </tr>
 </table>
-</p>
+</div>
 
-<p>
+<div id="main_area">
 <div id="student_selector_area" class="ui-widget">Select a student:
 <input type="text" id="student_selector"/> 
 <input id="schedule_print" class="control_button" type="button" value="Print schedule"/>
@@ -82,6 +95,7 @@
     <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
 </tr>
 </table>
+</div>
 </div>
 
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>

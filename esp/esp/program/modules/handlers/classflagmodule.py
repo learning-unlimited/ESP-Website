@@ -37,7 +37,7 @@ from django.http import HttpResponseRedirect
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.base import main_call, aux_call, needs_admin
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 
 from esp.program.models import ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
@@ -58,6 +58,7 @@ class ClassFlagModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
     def teachers(self, QObject = False):
         fts = ClassFlagType.get_flag_types(self.program)

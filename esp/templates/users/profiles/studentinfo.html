@@ -175,17 +175,6 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 </div>
 {% endif %}
 
-{% if form.post_hs %}
-<div class="control-group">
-    <label for="id_post_hs" class="control-label">What are your plans after you graduate from high school?</label>
-    <div class="controls">
-    {{ form.post_hs }} {% if form.post_hs.errors %}
-    <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
 {% if form.transportation %}
 <div class="control-group">
     <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>

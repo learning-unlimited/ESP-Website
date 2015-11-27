@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-        
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -68,7 +67,7 @@ class ViewUserInfoTest(TestCase):
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
-        
+
         #   May fail once in a while, but it's not critical.
         self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
         self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
@@ -88,7 +87,7 @@ class ViewUserInfoTest(TestCase):
 
         self.admin.makeRole('Administrator')
 
-        
+
     def assertStringContains(self, string, contents):
         if not (contents in string):
             self.assert_(False, "'%s' not in '%s'" % (contents, string))
@@ -101,14 +100,14 @@ class ViewUserInfoTest(TestCase):
         """
         Test for issue: https://github.com/learning-unlimited/ESP-Website/issues/1448
 
-        If someone creates an account with a username that is also someone else's first name or last name, 
-        then you can't search by that first name or last name in the admin toolbar, because you'll just be 
+        If someone creates an account with a username that is also someone else's first name or last name,
+        then you can't search by that first name or last name in the admin toolbar, because you'll just be
         taken to the first account rather than the search page with the list of accounts having that name.
 
-        This was probably considered a feature at one point. But right now it's more of a bug. 
-        If we really want to maintain some functionality for exact matching, maybe the results page can be 
-        organized so that, when there's an exact match, it says something like: "found user with username "foo", 
-        also found other matching users" followed by the current results page. And if there is nothing but the exact 
+        This was probably considered a feature at one point. But right now it's more of a bug.
+        If we really want to maintain some functionality for exact matching, maybe the results page can be
+        organized so that, when there's an exact match, it says something like: "found user with username "foo",
+        also found other matching users" followed by the current results page. And if there is nothing but the exact
         match, then we can have the current behavior of redirecting directly to that profile.
 
         Steps to reproduce:
@@ -198,7 +197,7 @@ class ViewUserInfoTest(TestCase):
         self.assertStringContains(response.content, self.fake_admin.username)
         self.assertNotStringContains(response.content, self.user.username)
         self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
-        
+
         # Partial first name and last name, not unique
         response = c.get("/manage/usersearch", { "userstr": "Adm User" })
         self.assertEqual(response.status_code, 200)
@@ -206,16 +205,16 @@ class ViewUserInfoTest(TestCase):
         self.assertStringContains(response.content, self.fake_admin.username)
         self.assertNotStringContains(response.content, self.user.username)
         self.assertStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
-        
+
         # Now, make sure we properly do nothing when there're no users to do anything to
         response = c.get("/manage/usersearch", { "userstr": "NotAUser9283490238" })
         self.assertStringContains(response.content, "No user found by that name!")
         self.assertNotStringContains(response.content, self.admin.username)
         self.assertNotStringContains(response.content, self.fake_admin.username)
         self.assertNotStringContains(response.content, self.user.username)
-        self.assertNotStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')        
+        self.assertNotStringContains(response.content, 'href="/manage/userview?username=adminuser124353"')
 
-        
+
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
         c = Client()
@@ -245,16 +244,16 @@ class ViewUserInfoTest(TestCase):
         self.user.delete()
         self.admin.delete()
         self.fake_admin.delete()
-        
-        
-        
+
+
+
 class ProfileTest(TestCase):
 
     def setUp(self):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
 
     def testAcctCreate(self):
-        self.u=ESPUser(
+        self.u=ESPUser.objects.create_user(
             first_name='bob',
             last_name='jones',
             username='bjones',
@@ -268,8 +267,6 @@ class ProfileTest(TestCase):
         self.u.groups.add(self.group)
         self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
-        #print self.u.__dict__
-        #print self.u.groups.all()
 
 
 class ProgramHappenTest(TestCase):
@@ -278,29 +275,29 @@ class ProgramHappenTest(TestCase):
     This test case runs through a bunch of essential pages.
     It mostly just makes sure they don't error out.
     """
-    
+
     def loginAdmin(self):
         self.assertEqual( self.client.login(username='ubbadmubbin', password='pubbasswubbord'), True, u'Oops, login failed!' )
     def loginTeacher(self):
         self.assertEqual( self.client.login(username='tubbeachubber', password='pubbasswubbord'), True, u'Oops, login failed!' )
     def loginStudent(self):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
-    
+
     def setUp(self):
         #create Groups for userroles
         user_role_setup()
 
         def makeuser(f, l, un, email, p):
-            u = ESPUser(first_name=f, last_name=l, username=un, email=email)
+            u = ESPUser.objects.create_user(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
             u.save()
-            return ESPUser(u)
-        
+            return u
+
         # make people -- presumably we're testing actual account creation elsewhere
         self.admin = makeuser('Ubbad', 'Mubbin', 'ubbadmubbin', 'ubbadmubbin@esp.mit.edu', 'pubbasswubbord')
         self.student = makeuser('Stubbu', 'Dubbent', 'stubbudubbent', 'stubbudubbent@esp.mit.edu', 'pubbasswubbord')
         self.teacher = makeuser('Tubbea', 'Chubber', 'tubbeachubber', 'tubbeachubber@esp.mit.edu', 'pubbasswubbord')
-        
+
         self.admin.makeRole("Administrator")
         self.student.makeRole("Student")
         self.teacher.makeRole("Teacher")
@@ -317,7 +314,7 @@ class ProgramHappenTest(TestCase):
             seq=10, required=True)
         ProgramModule.objects.create(link_title='Sign up for a Program', admin_title='Student Registration Core', module_type='learn', handler='StudentRegCore',
             seq=-9999, required=False)
-        
+
         # Admin logs in
         self.loginAdmin()
         # Admin prepares program
@@ -344,7 +341,7 @@ class ProgramHappenTest(TestCase):
         # TODO: Use the following line once we're officially on Django 1.1
         # self.client.post('/manage/newprogram?checked=1', {})
         self.client.get('/manage/newprogram', {'checked': '1'})
-        
+
         # Now test correctness...
         self.prog = Program.by_prog_inst('Prubbogrubbam', prog_dict['term'])
         # Name
@@ -363,7 +360,7 @@ class ProgramHappenTest(TestCase):
             Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
             Decimal(prog_dict['base_cost']),
             'Program admission cost not set properly.' )
-    
+
     def teacherreg(self):
         """ Test teacher registration (currently just class reg) through the web form. """
 
@@ -374,7 +371,7 @@ class ProgramHappenTest(TestCase):
         user_obj = ESPUser.objects.get(username='tubbeachubber')
         self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
-        
+
         timeslot_type = EventType.get_from_desc('Class Time Block')
         now = datetime.now()
         self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
@@ -391,7 +388,7 @@ class ProgramHappenTest(TestCase):
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
             description='Each classroom or location is a resource; almost all classes need one.')
         self.classroom = Resource.objects.create(name='Nowhere', num_students=50, res_type=classroom_type, event=self.timeslot)
-        
+
         # Teacher logs in and posts class
         self.loginTeacher()
         num_sections = 3
@@ -410,19 +407,19 @@ class ProgramHappenTest(TestCase):
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
             'hardness_rating': '**',
-        }
-        """
             #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
+            'request-MAX_NUM_FORMS': '1000',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
             'request-0-desired_value': 'Lecture',
             'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-        """
-        
+            'restype-MAX_NUM_FORMS': '1000',
+        }
+
         #   Fill in required fields from any custom forms used by the program
         #   This should be improved in the future (especially if we have dynamic forms)
         custom_fields_dict = get_custom_fields()
@@ -431,10 +428,10 @@ class ProgramHappenTest(TestCase):
                 class_dict[field] = custom_fields_dict[field].choices[0][0]
             else:
                 class_dict[field] = 'foo'
-        
+
         # Check that stuff went through correctly
         response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
-        
+
         # check prog.classes
         classes = self.prog.classes()
         self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
@@ -481,25 +478,25 @@ class ProgramHappenTest(TestCase):
 
             response = self.client.get('/teach/%s/deleteclass/%d' % (self.prog.getUrlBase(), class_to_delete.id))
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
-    
+
     def studentreg(self):
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
-        
+
         # Approve and schedule a class, because I'm too lazy to have this run as a test just yet.
         self.classsubject.accept()
         sec = self.classsubject.sections.all()[0]
         sec.meeting_times.add(self.timeslot)
         sec.assignClassRoom(self.classroom)
-        
+
         # shortcut student profile creation -- presumably we're also testing this elsewhere
-        thisyear = datetime.now().year
+        thisyear = ESPUser.program_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
         prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10, ESPUser.program_schoolyear(self.prog)), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
-        
+
         # Student logs in and signs up for classes
         self.loginStudent()
         response = self.client.get('%sstudentreg' % self.prog.get_learn_url())
@@ -507,12 +504,11 @@ class ProgramHappenTest(TestCase):
             'class_id': self.classsubject.id,
             'section_id': sec.id,
         }
-        
+
         # Try signing up for a class.
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
 
         sr = StudentRegistration.objects.all()[0]
-        #print "StudentRegTest", StudentRegistration.valid_objects().all(), self.student.id, sec.id, self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb.id, sr.user.id, sr.section.id, sr.relationship.id, StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count(), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0
 
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
             relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
@@ -520,7 +516,7 @@ class ProgramHappenTest(TestCase):
         # Check that you're in it now
         self.assertEqual( self.student.getEnrolledClasses().count(), 1, "Student not enrolled in exactly one class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 1, "Student not enrolled in exactly one section" )
-        
+
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
@@ -537,19 +533,19 @@ class ProgramHappenTest(TestCase):
         self.teacherreg_delete_classes()
 
 class ProgramFrameworkTest(TestCase):
-    """ A test case that initializes a program with the parameters passed to setUp(). 
+    """ A test case that initializes a program with the parameters passed to setUp().
         Everything is done with get_or_create so it can be run multiple times in the
         same session.
-        
+
         This is intended to facilitate the writing of unit tests for program modules
         and other functions that deal with program-specific data.  Once the setUp()
         function is called, you can use self.students, self.teachers, self.program
         and the settings.
     """
-    
+
     def setUp(self, *args, **kwargs):
         user_role_setup()
-        
+
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -573,7 +569,7 @@ class ProgramFrameworkTest(TestCase):
         for key in settings:
             if key in kwargs:
                 settings[key] = kwargs[key]
-                
+
         self.settings = settings
 
         #   Create class categories
@@ -592,22 +588,22 @@ class ProgramFrameworkTest(TestCase):
             new_student.set_password('password')
             new_student.save()
             new_student.makeRole("Student")
-            self.students.append(ESPUser(new_student)) 
+            self.students.append(new_student)
         for i in range(settings['num_teachers']):
             name = u'teacher%04d' % i
             new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_teacher.set_password('password')
             new_teacher.save()
             new_teacher.makeRole("Teacher")
-            self.teachers.append(ESPUser(new_teacher))
+            self.teachers.append(new_teacher)
         for i in range(settings['num_admins']):
             name = u'admin%04d' % i
             new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+u'@learningu.org')
             new_admin.set_password('password')
             new_admin.save()
             new_admin.makeRole("Administrator")
-            self.admins.append(ESPUser(new_admin))
-            
+            self.admins.append(new_admin)
+
         #   Establish attributes for program
         prog_form_values = {
                 'term': settings['program_instance_name'],
@@ -627,7 +623,7 @@ class ProgramFrameworkTest(TestCase):
                 'publish_start':     '2000-01-01 00:00:00',
                 'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
-            }        
+            }
 
         #   Create the program much like the /manage/newprogram view does
         pcf = ProgramCreationForm(prog_form_values)
@@ -637,10 +633,10 @@ class ProgramFrameworkTest(TestCase):
             print pcf.errors
             print prog_form_values
             raise Exception("Program form creation errors")
-        
+
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
-        
+
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
@@ -649,7 +645,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
         pcf.save_m2m()
-        
+
         commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
 
         #   Add recursive permissions to open registration to the appropriate people
@@ -669,7 +665,7 @@ class ProgramFrameworkTest(TestCase):
             for ts in self.timeslots:
                 res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
         self.rooms = self.program.getClassrooms()
-                   
+
         #   Create classes and sections
         subject_count = 0
         for t in self.teachers:
@@ -681,7 +677,7 @@ class ProgramFrameworkTest(TestCase):
                 for j in range(settings['sections_per_class']):
                     if new_class.get_sections().count() <= j:
                         new_class.add_section(duration=settings['timeslot_length']/60.0)
-                new_class.accept() 
+                new_class.accept()
 
         #   Give the program its own QSD main-page
         (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
@@ -689,7 +685,7 @@ class ProgramFrameworkTest(TestCase):
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
-                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
@@ -711,7 +707,6 @@ class ProgramFrameworkTest(TestCase):
                     vr = sec.viable_rooms()
                     if len(vr) > 0:
                         sec.assign_room(random.choice(vr))
-                        #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
     def add_user_profiles(self):
         """Helper function to give each user a profile so they can register.
@@ -799,10 +794,10 @@ class ProgramFrameworkTest(TestCase):
             print pcf.errors
             print prog_form_values
             raise Exception()
-        
+
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
-        
+
         new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
 
         #   Filter out unwanted characters from program type to form URL
@@ -811,7 +806,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
         pcf.save_m2m()
-        
+
         commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
 
         self.new_prog = new_prog
@@ -936,7 +931,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
                 if len(map[key]) > 0:
                     result.append(key)
             return result
-        
+
         #   Initialize
         student = self.students[0]
         program = self.program
@@ -947,11 +942,11 @@ class ScheduleMapTest(ProgramFrameworkTest):
         ts2 = timeslot_list[1]
         modules = program.getModules()
         scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
-        
+
         #   Check that the map starts out empty
         sm = ScheduleMap(student, program)
         self.assertTrue(len(occupied_slots(sm.map)) == 0, 'Initial schedule map not empty.')
-        
+
         #   Put the student in a class and check that it's there
         section1.assign_start_time(ts1)
         section1.preregister_student(student)
@@ -962,20 +957,20 @@ class ScheduleMapTest(ProgramFrameworkTest):
         sm = ScheduleMap(student, program)
         self.assertTrue(occupied_slots(sm.map) == [ts1.id], 'Schedule map not occupied at specified timeslot.')
         self.assertTrue(sm.map[ts1.id] == [section1], 'Schedule map contains incorrect value at specified timeslot.')
-        
+
         #   Reschedule the section and check
         section1.assign_start_time(ts2)
         sm = ScheduleMap(student, program)
         self.assertTrue(occupied_slots(sm.map) == [ts2.id], 'Schedule map incorrectly handled rescheduled section.')
         self.assertTrue(sm.map[ts2.id] == [section1], 'Schedule map contains incorrect section in rescheduled timeslot.')
-        
+
         #   Double-book the student and make sure both classes show up
         section2.assign_start_time(ts2)
         section2.preregister_student(student)
         sm = ScheduleMap(student, program)
         self.assertTrue(occupied_slots(sm.map) == [ts2.id], 'Schedule map did not identify double-booked timeslot.')
         self.assertTrue(set(sm.map[ts2.id]) == set([section1, section2]), 'Schedule map contains incorrect sections in double-booked timeslot.')
-        
+
         #   Remove the student and check that the map is empty again
         section1.unpreregister_student(student)
         section2.unpreregister_student(student)
@@ -985,10 +980,10 @@ class ScheduleMapTest(ProgramFrameworkTest):
         self.assertEqual(section1.num_students(), section1.enrolled_students, "Triggers error, didn't update enrolled_students with the new un-enrollee")
         sm = ScheduleMap(student, program)
         self.assertTrue(len(occupied_slots(sm.map)) == 0, 'Schedule map did not clear properly.')
-        
-        
+
+
 class BooleanLogicTest(TestCase):
-    """ Verify that the Boolean logic models underlying schedule constraints are 
+    """ Verify that the Boolean logic models underlying schedule constraints are
         working correctly.
     """
     def runTest(self):
@@ -1006,21 +1001,21 @@ class BooleanLogicTest(TestCase):
         exp.add_token('and')
         exp.add_token('not')
         exp.add_token('or')
-        
+
         #   Verify that it returns the right result
         self.assertTrue(exp.evaluate(), 'Incorrect Boolean logic result')
-        
+
         #   Change some values and check again
         e.text = '1'
         e.save()
         self.assertFalse(exp.evaluate(), 'Incorrect Boolean logic result')
-        
+
 class ScheduleConstraintTest(ProgramFrameworkTest):
     """ This unit test has 2 purposes:
-        1. Test the ScheduleTest* classes that act as BooleanTokens and 
-           compute whether certain conditions on a student's schedule are true. 
+        1. Test the ScheduleTest* classes that act as BooleanTokens and
+           compute whether certain conditions on a student's schedule are true.
         2. Test whether ScheduleConstraints can track relationships
-           between the results of these tests. 
+           between the results of these tests.
     """
     def runTest(self):
         #   Initialize
@@ -1029,7 +1024,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         (section_list, timeslot_list) = randomized_attrs(program)
         modules = program.getModules()
         scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
- 
+
         #   Prepare two sections
         section1 = section_list[0]
         section1.assign_start_time(timeslot_list[0])
@@ -1038,8 +1033,8 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         section2 = section_list[1]
         section2.assign_start_time(timeslot_list[0])
         section2.parent_class.category = self.categories[0]
-        section2.parent_class.save()      
- 
+        section2.parent_class.save()
+
         #   Create boolean tokens
         exp1, created = BooleanExpression.objects.get_or_create(label='exp1')
         token1 = ScheduleTestOccupied(exp=exp1, timeblock=timeslot_list[0])
@@ -1050,7 +1045,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         exp3, created = BooleanExpression.objects.get_or_create(label='exp3')
         token3 = ScheduleTestSectionList(exp=exp3, timeblock=timeslot_list[0], section_ids='%s' % section_list[0].id)
         token3.save()
-        
+
         #   Create constraints which say "if you have a class in this timeslot, it must match my {category, section list}"
         sc1 = ScheduleConstraint(program=program, condition=exp1, requirement=exp2)
         sc1.save()
@@ -1073,7 +1068,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertTrue(token3.boolean_value(map=sm.map), 'ScheduleTestSectionList broken')
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
-        
+
         #   Change the category and check the category constraint
         section1.parent_class.category = self.categories[1]
         section1.parent_class.save()
@@ -1083,7 +1078,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertTrue(token3.boolean_value(map=sm.map), 'ScheduleTestSectionList broken')
         self.assertFalse(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
-        
+
         #   Change the section and check the section list constraint
         section1.unpreregister_student(student)
         section2.preregister_student(student)
@@ -1093,7 +1088,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertFalse(token3.boolean_value(map=sm.map), 'ScheduleTestSectionList broken')
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertFalse(sc2.evaluate(sm), 'ScheduleConstraint broken')
-        
+
         #   Change timeslot and check that occupied is false
         section2.assign_start_time(timeslot_list[1])
         sm.populate()
@@ -1109,7 +1104,7 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         initial_capacity = 37
         mult_test = 0.6
         offset_test = 4
-    
+
         #   Get class capacity
         self.program.getModules()
         options = self.program.getModuleExtension('StudentClassRegModuleInfo')
@@ -1118,7 +1113,7 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         sec.parent_class.save()
         sec.max_class_capacity = initial_capacity
         sec.save()
-        
+
         #   Check that initially the capacity is correct
         sec.parent_class._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
@@ -1155,30 +1150,30 @@ class ModuleControlTest(ProgramFrameworkTest):
         #   Pick a student and log in; fill out profile
         student = random.choice(self.students)
         self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        
+
         #   Check that the main student reg page displays as usual in the initial state.
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
-        
+
         #   Set a student module to be required and make sure we are shown it.
         fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
         moduleobj = ProgramModuleObj.getFromProgModule(self.program, fa_module)
         moduleobj.__class__ = ProgramModuleObj
         moduleobj.required = True
         moduleobj.save()
-        
+
         response = self.client.get(
                     '/learn/%s/studentreg' % self.program.getUrlBase(),
                     **{'wsgi.url_scheme': 'https'})
         self.assertTrue('Financial Aid' in response.content)
-        
+
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(fa_module)
         self.program.save()
-        
+
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
-        
+
 class MeetingTimesTest(ProgramFrameworkTest):
     def assertSetEquals(self, a, b):
         self.assertTrue(set(a) == set(b), 'set(%s) != set(%s)' % (a, b))
@@ -1186,17 +1181,17 @@ class MeetingTimesTest(ProgramFrameworkTest):
     def runTest(self):
         #   Get a class section
         section = self.program.sections()[0]
-        
+
         #   Make sure it is not scheduled
         section.meeting_times.clear()
         section.classroomassignments().delete()
         self.assertSetEquals(section.get_meeting_times(), [])
-        
+
         #   Assign a meeting times
         ts_list = self.program.getTimeSlots()
         ts1 = ts_list[0]
         ts2 = ts_list[1]
-        
+
         #   Check whether changes appear as we make them
         section.meeting_times.add(ts1)
         self.assertSetEquals(section.get_meeting_times(), [ts1])
@@ -1219,7 +1214,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         while True:
             self.schedule_randomly()
             self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
-            # We need three timeslots with classes in them 
+            # We need three timeslots with classes in them
             # for the multiple lunch constraints test
             if len(self.timeslots) >= 3:
                 break
@@ -1243,7 +1238,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
-        
+
             for e in es:
                 # 0.5 prob of adding a class in the timeblock as priority
                 if random.random() < 0.5:
@@ -1259,13 +1254,13 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
                 pri = random.choice(self.program.sections())
                 StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
-                
+
     def testLottery(self):
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
-        
+
 
         # Now go through and check that the assignments make sense
         for student in self.students:
@@ -1382,7 +1377,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
-    
+
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
         self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')

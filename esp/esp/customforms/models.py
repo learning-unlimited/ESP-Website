@@ -2,38 +2,37 @@ from __future__ import with_statement
 
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError
-#from esp.users.models import ESPUser
-from django.contrib.auth.models import User
+from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=True)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
-    created_by = models.ForeignKey(User)
+    created_by = models.ForeignKey(ESPUser)
     link_type = models.CharField(max_length=50, blank=True)
     link_id = models.IntegerField(default=-1)
     anonymous = models.BooleanField(default=False)
     perms = models.CharField(max_length=200, blank=True)
     success_message = models.CharField(max_length=500, blank=True)
     success_url = models.CharField(max_length=200, blank=True)
-    
+
     def __unicode__(self):
         return u'%s (created by %s)' % (self.title, self.created_by.username)
-    
+
 class Page(models.Model):
     form = models.ForeignKey(Form)
     seq = models.IntegerField(default=-1)
-    
+
     def __unicode__(self):
         return u'Page %d of %s' % (self.seq, self.form.title)
-    
+
 class Section(models.Model):
     page = models.ForeignKey(Page)
     title = models.CharField(max_length=40)
     description = models.CharField(max_length=140, blank=True)
     seq = models.IntegerField()
-    
+
     def __unicode__(self):
         return u'Sec. %d: %s' % (self.seq, unicode(self.title))
 
@@ -44,11 +43,11 @@ class Field(models.Model):
     seq = models.IntegerField()
     label = models.CharField(max_length=200)
     help_text = models.TextField(blank=True)
-    required = models.BooleanField()
-    
+    required = models.BooleanField(default=False)
+
     def __unicode__(self):
         return u'%s' % (self.label)
-        
+
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
         if Attribute.objects.filter(field=self, attr_type=atype).exists():
@@ -58,11 +57,11 @@ class Field(models.Model):
         else:
             attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
         return attr
-    
+
 class Attribute(models.Model):
     field = models.ForeignKey(Field)
     attr_type = models.CharField(max_length=80)
-    value = models.TextField()                
+    value = models.TextField()
 
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
@@ -74,7 +73,7 @@ def install():
 
 def create_schema(db):
     """ Create customforms schema.
-    
+
     :param db:
         The database backend you want to use (e.g. Django cursor object, or south.db.db).
     """
@@ -86,11 +85,11 @@ def create_schema(db):
     # block" errors.
     # Warning: This overrides the transaction management of any surrounding code.
 
-    with transaction.commit_manually():
-        transaction.commit()    # flush any existing transaction
-        try:
-            db.execute("CREATE SCHEMA customforms")
-        except:
-            transaction.rollback()
-        else:
-            transaction.commit()
+    transaction.set_autocommit(False)
+    try:
+        db.execute("CREATE SCHEMA customforms")
+    except:
+        transaction.rollback()
+    else:
+        transaction.commit()
+    transaction.set_autocommit(True)

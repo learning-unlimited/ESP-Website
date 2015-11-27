@@ -49,11 +49,11 @@ register = template.Library()
 @register.filter
 def intrange(min_val, max_val):
     return range(int(min_val), int(max_val) + 1)
-    
+
 @register.filter
 def field_width(min_val, max_val):
     return '%d%%' % (70 / (int(max_val) - int(min_val) + 1))
-    
+
 @register.filter
 def substitute(input_str, item):
     #   Puts all of the attributes of the given item in the context dictionary
@@ -89,7 +89,7 @@ def average(lst):
         return str(round(sum / len(lst), 2))
     except:
         return 'N/A'
-    
+
 @register.filter
 def stdev(lst):
     if len(lst) == 0:
@@ -105,7 +105,7 @@ def stdev(lst):
         return str(round(std_sum / len(lst), 2))
     except:
         return 'N/A'
-    
+
 @register.filter
 def histogram(answer_list, format='html'):
     """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
@@ -113,9 +113,9 @@ def histogram(answer_list, format='html'):
     HISTOGRAM_PATH = 'images/histograms/'
     HISTOGRAM_DIR = settings.MEDIA_ROOT + HISTOGRAM_PATH
     import tempfile
-    
+
     image_width = 2.75
-    
+
     processed_list = []
     for ans in answer_list:
         if isinstance(ans, list):
@@ -123,12 +123,12 @@ def histogram(answer_list, format='html'):
         else:
             processed_list.append(ans)
     answer_list = processed_list
-    
+
     #   Place results in key, value pairs where keys contain values and values contain frequencies.
     context = {}
     context['title'] = 'Results of survey'
     context['num_responses'] = len(answer_list)
-    
+
     context['results'] = []
     max_answer_length = 0
     for ans in answer_list:
@@ -139,9 +139,9 @@ def histogram(answer_list, format='html'):
             context['results'].append({'value': ans, 'freq': 1})
         if len(ans) > max_answer_length:
             max_answer_length = len(ans)
-    
+
     context['results'].sort(key=lambda x: x['value'])
-    
+
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
     context['num_keys'] = len(context['results'])
@@ -149,7 +149,7 @@ def histogram(answer_list, format='html'):
         if item['freq'] > max_freq:
             max_freq = item['freq']
             context['max_freq'] = max_freq
-    
+
     #   Might we have trouble making text not overlap? 36 is an arbitrary limit.
     if context['num_keys'] * max_answer_length > 36:
         context['crowded'] = True
@@ -159,17 +159,17 @@ def histogram(answer_list, format='html'):
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
-    template_file = os.path.join(settings.TEMPLATE_DIRS[0],
+    template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
                                  'survey', 'histogram_base.eps')
 
     context['file_name'] = file_name # This guy depends on the SHA-1
-    
+
     #  No point in SHA-1 caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
     file_obj = open(file_name, 'w')
     file_obj.write(file_contents)
     file_obj.close()
-    
+
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     png_filename = "%s.png" % file_base
@@ -186,7 +186,7 @@ def histogram(answer_list, format='html'):
         return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
     if format == 'html':
         return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
-    
+
 @register.filter
 def answer_to_list(ans):
     # If the answer is not a list, turn it into a one-element list.
@@ -195,17 +195,17 @@ def answer_to_list(ans):
         value = ans.answer
     else:
         value = [ ans.answer ]
-    
+
     if ans.question.question_type.name == 'Favorite Class':
         return [ c.emailcode() + ': ' + c.title for c in ClassSubject.objects.filter(id__in=value) ]
-    
+
     return value
 
 @register.filter
 def favorite_classes(answer_list, limit=20):
     result_list = []
     class_dict = {}
-    
+
     for a in answer_list:
         if isinstance(a, list):
             l = a
@@ -217,12 +217,12 @@ def favorite_classes(answer_list, limit=20):
                 class_dict[ind] += 1
             else:
                 class_dict[ind] = 1
-    
+
     key_list = class_dict.keys()
     key_list.sort(key=lambda x: -class_dict[x])
-   
+
     max_count = min(limit, len(key_list))
-   
+
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:

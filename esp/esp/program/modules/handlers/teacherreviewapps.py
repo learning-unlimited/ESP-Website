@@ -36,7 +36,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
 from esp.users.models import ESPUser, User
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentRegistration
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
@@ -56,7 +56,7 @@ class TeacherReviewApps(ProgramModuleObj):
             "seq": 1000,
             "inline_template": "teacherreviewapp.html",
             }
-    
+
     @aux_call
     @needs_teacher
     @meets_deadline("/AppReview")
@@ -95,7 +95,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 student.app_reviewed = reviews[0]
             else:
                 student.app_reviewed = None
-            
+
             student.app_completed = False
             for i in questions:
                 for j in i.studentappresponse_set.all():
@@ -104,7 +104,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         students = list(students)
         students.sort(lambda x,y: cmp(x.added_class,y.added_class))
-        
+
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
             prev = students[0]
@@ -114,9 +114,9 @@ class TeacherReviewApps(ProgramModuleObj):
                     from django.shortcuts import redirect
                     url = "/%s/%s/%s/review_student/%s/?student=%s" % (tl, one, two, extra, current.id)
                     return redirect(url)
-                if prev.id != prev_id: 
+                if prev.id != prev_id:
                     prev = current
-            
+
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
@@ -142,7 +142,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 for i in range(0, clrmi.num_teacher_questions - existing_questions.count()):
                     q = StudentAppQuestion(subject=s)
                     question_list.append(q)
-        
+
         #   Initialize forms with nonstandard prefixes if they correspond to questions
         #   that have not yet been saved.
         form_list = []
@@ -155,14 +155,14 @@ class TeacherReviewApps(ProgramModuleObj):
             form.app_question = q
             form_list.append(form)
             i += 1
-        
+
         if request.method == 'POST':
             data = request.POST
             for f in form_list:
                 #   Reinitialize the form with a bound one having the same prefix.
                 q = f.app_question
                 form = f.app_question.get_form(data, form_prefix=f.prefix)
-                
+
                 #   If the form is valid, save the question.  If not, delete it.
                 if form.is_valid():
                     q.update(form)
@@ -172,7 +172,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         q.delete()
 
             return self.goToCore(tl)
-            
+
         context = {'clrmi': clrmi, 'prog': prog, 'forms': form_list}
         return render_to_response(self.baseDir()+'questions.html', request, context)
 
@@ -196,7 +196,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student = request.POST.get('student','')
 
         try:
-            student = ESPUser(User.objects.get(id = int(student)))
+            student = ESPUser.objects.get(id = int(student))
         except ESPUser.DoesNotExist:
             raise ESPError('Cannot find student, %s' % student, log=False)
 
@@ -224,14 +224,14 @@ class TeacherReviewApps(ProgramModuleObj):
             form = this_review.get_form(request.POST)
             if form.is_valid():
                 form.target.update(form)
-                if 'submit_next' in request.POST or 'submit_return' in request.POST: 
+                if 'submit_next' in request.POST or 'submit_return' in request.POST:
                     url = '/%s/%s/%s/review_students/%s/' % (tl, one, two, extra)
                     if 'submit_next' in request.POST:
                         url += '?prev=%s' % student.id
                     from django.shortcuts import redirect
                     return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
-                    
-                
+
+
         else:
             form = this_review.get_form()
 
@@ -255,4 +255,4 @@ class TeacherReviewApps(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

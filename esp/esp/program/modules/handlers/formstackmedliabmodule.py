@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web       import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, Permission, Record, User
 from esp.tagdict.models import Tag
@@ -124,7 +124,7 @@ class FormstackMedliabModule(ProgramModuleObj):
     @needs_admin
     def medicalbypass(self, request, tl, one, two, module, extra, prog):
         status = None
-        
+
         if request.method == 'POST':
             form = GenericSearchForm(request.POST)
             if form.is_valid():
@@ -152,4 +152,4 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

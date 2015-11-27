@@ -1,13 +1,13 @@
 from django import template
 from django.template.loader import render_to_string
-from esp.web.util.template import cache_inclusion_tag
-from esp.cache import cache_function
+
+from argcache import cache_function, wildcard
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
-from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
-    
+
 register = template.Library()
 
 def get_smallest_section(cls, timeslot=None):
@@ -56,7 +56,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
         colorstring = prog.getColor()
         if colorstring is not None:
             colorstring = ' background-color:#' + colorstring + ';'
-    
+
     # HACK for Harvard HSSP -- show application counts with enrollment
     #if cls.studentappquestion_set.count():
     #    cls._sections = list(cls.get_sections())
@@ -73,9 +73,9 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}           
+            'show_meeting_times': scrmi.visible_meeting_times}
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
@@ -85,6 +85,7 @@ render_class.cached_function.get_or_create_token(('cls',))
 # of things like lunch constraints -- a change made in another block could
 # affect whether you can add a class in this one.  So we depend on all SRs for
 # this user.
+# TODO(benkraft): do these need to also get copied elsewhere?
 render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class.cached_function.get_or_create_token(('user',))
 
@@ -96,7 +97,7 @@ render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cl
 
 def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     errormsg = None
-    
+
     if timeslot:
         section = cls.get_section(timeslot=timeslot)
     else:
@@ -113,9 +114,9 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
 
     if user and prereg_url and timeslot:
         errormsg = cls.cannotAdd(user, which_section=section)
-        
+
     show_class =  (not filter) or (not errormsg)
-    
+
     return {'class':      cls,
             'section':    section,
             'user':       user,
@@ -123,7 +124,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class,
-            'hide_full': Tag.getBooleanTag('hide_full_classes', cls.parent_program, False)}
+            }
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')
@@ -138,13 +139,13 @@ def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False)
                 for time in currentclass.meeting_times.all():
                     if cls.meeting_times.filter(id = time.id).count() > 0:
                         errormsg = 'Conflicts with your schedule!'
-    
+
     if cls.id == swap_class.id:
         errormsg = '(You are currently registered for this class.)'
-    
+
     show_class =  (not filter) or (not errormsg)
-    
-    
+
+
     return {'class':      cls,
             'user':       user,
             'prereg_url': prereg_url,
@@ -159,14 +160,14 @@ def render_class_minimal(cls, user=None, prereg_url=None, filter=False):
         errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
-    
-    
+
+
     return {'class':      cls,
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'show_class': show_class}
-            
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html')
 def render_class_current(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
@@ -178,8 +179,8 @@ def render_class_current(cls, user=None, prereg_url=None, filter=False):
 
     return {'class':      cls,
             'show_class': show_class}
-                        
-            
+
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html')
 def render_class_preview(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
@@ -188,8 +189,8 @@ def render_class_preview(cls, user=None, prereg_url=None, filter=False):
         errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
-    
-    
+
+
     return {'class':      cls,
             'user':       user,
             'prereg_url': prereg_url,
@@ -204,11 +205,11 @@ def render_class_row(cls, user=None, prereg_url=None, filter=False):
         errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
-    
-    
+
+
     return {'class':      cls,
             'user':       user,
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'show_class': show_class}
-           
+

@@ -17,11 +17,13 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 
-from django.db.models.loading import get_models
+from django.apps import apps
 from django.conf import settings as S
+import django
 
-# http://sontek.net/blog/detail/tips-and-tricks-for-the-python-interpreter
-for m in get_models():
+django.setup()
+
+for m in apps.get_models():
     globals()[m.__name__] = m
 
 from esp.utils.shell_utils import *

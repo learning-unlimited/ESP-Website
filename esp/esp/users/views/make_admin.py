@@ -1,6 +1,6 @@
 from esp.users.models import admin_required
 from esp.users.forms.make_admin import MakeAdminForm
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 @admin_required
 def make_admin(request):

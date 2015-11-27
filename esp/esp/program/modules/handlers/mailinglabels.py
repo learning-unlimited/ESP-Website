@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import PersistentQueryFilter, K12School, ContactInfo, ESPUser, User, ESPError, ZipCode
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
@@ -78,7 +78,7 @@ class MailingLabels(ProgramModuleObj):
             form = BanZipsForm()
 
         return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, {'form': form})
-                
+
 
     @main_call
     @needs_admin
@@ -87,14 +87,14 @@ class MailingLabels(ProgramModuleObj):
         from esp.users.views     import get_user_list
 
         combine = True
-        
+
         if extra is None or extra.strip() == '':
             return render_to_response(self.baseDir()+'mailinglabel_index.html',request, {})
 
         if 'nocombine' in extra.strip().lower():
             combine = False
 
-        if 'schools' in extra.strip():                  
+        if 'schools' in extra.strip():
             if request.method == 'POST':
 
                 if request.POST.has_key('filter_id'):
@@ -116,7 +116,7 @@ class MailingLabels(ProgramModuleObj):
                         zipcodes = zipc.close_zipcodes(form.cleaned_data['proximity'])
 
                         combine = form.cleaned_data['combine_addresses']
-                        
+
                         Q_infos = Q(k12school__id__isnull = False,
                                     address_zip__in = zipcodes)
 
@@ -125,7 +125,7 @@ class MailingLabels(ProgramModuleObj):
                             grades_exclude = []
                         else:
                             grades_exclude = form.cleaned_data['grades_exclude'].strip().split(',')
-                        
+
                         if len(grades) > 0:
                             Q_grade = reduce(operator.or_, [Q(k12school__grades__contains = grade) for grade in grades])
                             Q_infos &= Q_grade
@@ -162,10 +162,10 @@ class MailingLabels(ProgramModuleObj):
         output = MailingLabels.gen_addresses(infos, combine)
 
         if 'csv' in extra.strip():
-            response = HttpResponse('\n'.join(output), mimetype = 'text/plain')
+            response = HttpResponse('\n'.join(output), content_type = 'text/plain')
             return response
 
-        
+
     @staticmethod
     def gen_addresses(infos, combine = True):
         """ Takes a iterable list of infos and returns a lits of addresses. """
@@ -188,7 +188,7 @@ class MailingLabels(ProgramModuleObj):
             use_title = True
         else:
             use_title = False
-        
+
         for info in infos:
             if info == None:
                 continue
@@ -207,14 +207,12 @@ class MailingLabels(ProgramModuleObj):
                 name = "'%s %s','%s'" % (info.first_name.strip(), info.last_name.strip(), title)
             else:
                 name = '%s %s' % (info.first_name.strip(), info.last_name.strip())
-            
+
             if info.address_postal != None:
                 key = info.address_postal
             else:
 
                 ids_zipped.append(info.id)
-
-                #print info.__dict__
 
                 post_data =  {'visited' : 1,
                               'pagenumber': 0,
@@ -272,7 +270,7 @@ class MailingLabels(ProgramModuleObj):
                         addresses[key].append(name)
                 else:
                     addresses[key] = [name]
-            
+
 
                 #time.sleep(1)
         if use_title:
@@ -296,12 +294,12 @@ class MailingLabels(ProgramModuleObj):
                         else:
                             output.append("'%s','%s',%s" % (i, name, key))
                         i += 1
-            
+
         return output
 
 
-        
+
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -12,8 +12,6 @@ class UserEmail(BaseHandler):
         except ESPUser.DoesNotExist:
             return
 
-        user = ESPUser(user)
-
         # DIRTY HACK to allow mailing aliases to still work for local Mailman messages
         if user.isTeacher() or self.message['List-Id']:
             del(self.message['to'])

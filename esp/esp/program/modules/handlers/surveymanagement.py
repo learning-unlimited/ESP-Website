@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from django.db.models.query   import Q
 from esp.middleware     import ESPError
@@ -52,30 +52,22 @@ class SurveyManagement(ProgramModuleObj):
             "module_type": "manage",
             "seq": 25
             }
-                 
+
     def isStep(self):
         return False
 
-    def getNavBars(self):
-        nav_bars = []
-        if self.module.module_type == 'learn':
-            nav_bars.append({ 'link': '/learn/%s/survey/' % ( self.program.getUrlBase() ),
-                    'text': '%s Survey' % ( self.program.niceSubName() ),
-                    'section': 'learn'})
-        return nav_bars
-    
     @needs_admin
     def survey_create(self, request, tl, one, two, module, extra, prog):
-       
+
         context = {'program': prog}
-        
+
         return render_to_response('program/modules/surveymanagement/create.html', request, context)
-    
+
     @needs_admin
     def survey_edit(self, request, tl, one, two, module, extra, prog):
 
         context = {'program': prog}
-        
+
         return render_to_response('program/modules/surveymanagement/edit.html', request, context)
 
     @main_call
@@ -102,4 +94,4 @@ class SurveyManagement(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

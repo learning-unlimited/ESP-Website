@@ -1,11 +1,8 @@
 from django import template
 from django.shortcuts import render_to_response
-from django.core.cache import cache
-from esp.web.util.template import cache_inclusion_tag, DISABLED
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData
-from esp.qsd.models import qsd_cache_key, qsd_edit_id
 from esp.tagdict.models import Tag
-from urllib import quote
 
 register = template.Library()
 
@@ -46,14 +43,14 @@ def program_qsd_key_set(qsd):
         (program, name) = prog_and_name
         return {'program': program, 'name': name}
 render_inline_program_qsd.cached_function.depend_on_row(QuasiStaticData, program_qsd_key_set)
-    
+
 
 class InlineQSDNode(template.Node):
     def __init__(self, nodelist, url, program_variable):
         self.nodelist = nodelist
         self.url = url
         self.program_variable = template.Variable(program_variable) if program_variable is not None else None
-        
+
     def render(self, context):
         try:
             program = self.program_variable.resolve(context) if self.program_variable is not None else None
@@ -82,10 +79,10 @@ def inline_qsd_block(parser, token):
         iqb, url = tokens
     else:
         raise Exception("Wrong number of inputs for %s, 1 expected" % (tokens))
-    
+
     nodelist = parser.parse(("end_inline_qsd_block",))
     parser.delete_first_token()
-    
+
     return InlineQSDNode(nodelist, url, None)
 
 
@@ -96,9 +93,9 @@ def inline_program_qsd_block(parser, token):
         iqb, program, url = tokens
     else:
         raise Exception("Wrong number of inputs for %s, 2 expected" % (tokens))
-    
+
     nodelist = parser.parse(("end_inline_program_qsd_block",))
     parser.delete_first_token()
-    
+
     return InlineQSDNode(nodelist, url, program)
 

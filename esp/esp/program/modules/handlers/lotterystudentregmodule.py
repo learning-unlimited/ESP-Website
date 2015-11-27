@@ -36,11 +36,11 @@ Learning Unlimited, Inc.
 from uuid                        import uuid4 as get_uuid
 from datetime                    import datetime, timedelta
 from collections                 import defaultdict
+import json
 
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
-from django.utils                import simplejson
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
@@ -48,12 +48,12 @@ from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.cache                   import cache_function
+from argcache                    import cache_function
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 
@@ -81,11 +81,11 @@ class LotteryStudentRegModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 7
             }
-    
+
         """ def prepare(self, context={}):
         if context is None: context = {}
 
-        context['schedulingmodule'] = self 
+        context['schedulingmodule'] = self
         return context """
 
     @main_call
@@ -101,7 +101,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from django.utils import simplejson
+        import json
         from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
@@ -110,7 +110,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
-        open_class_category = mark_safe(simplejson.dumps(open_class_category))
+        open_class_category = mark_safe(json.dumps(open_class_category))
 
         context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
@@ -118,7 +118,6 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            print "using priority"
             return render_to_response('program/modules/lotterystudentregmodule/student_reg_hssp.html', request, context)
         #Splark/Spash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)
@@ -143,10 +142,10 @@ class LotteryStudentRegModule(ProgramModuleObj):
         for item in ordered_timeslots:
             ordered_timeslot_names.append([item.id, item.short_description])
 
-        resp = HttpResponse(mimetype='application/json')
-        
-        simplejson.dump(ordered_timeslot_names, resp)
-        
+        resp = HttpResponse(content_type='application/json')
+
+        json.dump(ordered_timeslot_names, resp)
+
         return resp
 
 
@@ -182,7 +181,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         else: context['iempty'] = False
 
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
-    
+
     class Meta:
         proxy = True
-
+        app_label = 'modules'

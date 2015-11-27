@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from operator import __or__ as OR
 
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect
@@ -63,11 +63,14 @@ from esp.mailman import create_list, load_list_settings, apply_list_settings, ad
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
 from django.conf import settings
+
+import re
 import pickle
 import operator
-import simplejson as json
+import json
 from collections import defaultdict
 from decimal import Decimal
+import reversion
 
 try:
     from cStringIO import StringIO
@@ -89,7 +92,7 @@ def lottery_student_reg(request, program = None):
         raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
-    
+
     return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
 
 @login_required
@@ -106,19 +109,19 @@ def lottery_student_reg_simple(request, program = None):
         raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
-    
+
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 
-#@transaction.commit_manually
+#@transaction.atomic
 @login_required
-def lsr_submit(request, program = None): 
-    
+def lsr_submit(request, program = None):
+
     priority_limit = program.priorityLimit()
 
     data = json.loads(request.POST['json_data'])
-    
-    if priority_limit > 1: 
+
+    if priority_limit > 1:
         return lsr_submit_HSSP(request, program, priority_limit, data) # temporary function. will merge the two later -jmoldow 05/31
 
     classes_interest = set()
@@ -149,15 +152,14 @@ def lsr_submit(request, program = None):
 
     already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority.name]).annotate(first_block=Min('meeting_times__start'))
     already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
-    
+
     flag_related_sections = classes_flagged | classes_not_flagged
     flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).annotate(first_block=Min('meeting_times__start'))
-    
+
     sections_by_block = defaultdict(list)
-    sections_by_id = {}   
+    sections_by_id = {}
     for s in list(flagworthy_sections) + list(already_flagged_sections):
         sections_by_id[int(s.id)] = s
-        print s.first_block
         if int(s.id) not in classes_not_flagged:
             sections_by_block[s.first_block].append(s)
 
@@ -184,7 +186,6 @@ def lsr_submit(request, program = None):
     for s_id in (already_interested_secids - classes_interest):
         sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_interested.name)
     for s_id in classes_interest - already_interested_secids:
-        print s_id
         if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_interested.name, overridefull=True):
             errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
 
@@ -196,16 +197,16 @@ def lsr_submit(request, program = None):
     cfe = ConfirmationEmailController()
     cfe.send_confirmation_email(request.user, program)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
-#@transaction.commit_manually
+#@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
-    
+
     classes_flagged = [set() for i in range(0,priority_limit+1)] # 1-indexed
     sections_by_block = [defaultdict(set) for i in range(0,priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
-    
+
     for section_id, (priority, block_id) in data.iteritems():
         section_id = int(section_id)
         priority = int(priority)
@@ -215,24 +216,24 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
         sections_by_block[priority][block_id].add(section_id)
 
     errors = []
-    
+
     for i in range(1, priority_limit+1):
         for block in sections_by_block[i].keys():
             if len(sections_by_block[i][block]) > 1:
                 errors.append({"text": "Can't flag two classes with the same priority at the same time!", "cls_sections": list(sections_by_block[i][block]), "block": block, "priority": i, "doubled_priority": True})
-    
-    if len(errors): 
-        return HttpResponse(json.dumps(errors), mimetype='application/json')
+
+    if len(errors):
+        return HttpResponse(json.dumps(errors), content_type='application/json')
 
     reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
-    reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)] 
-    
+    reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)]
+
     allStudentRegistrations = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=request.user)
     oldRegistrations = [] #[[] for i in range(0, priority_limit+1)] # 1-indexed for priority registrations, the 0-index is for interested registrations
-    
+
     for i in range(1, priority_limit+1):
-        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]).select_related(depth=3))]
-    
+        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]))]
+
     for (oldRegistration, priority) in oldRegistrations:
         if oldRegistration.section.id not in classes_flagged[0]:
             oldRegistration.expire()
@@ -245,9 +246,9 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                     classes_flagged[i].remove(oldRegistration.section.id)
                     classes_flagged[0].remove(oldRegistration.section.id)
                 break
-    
-    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
-    
+
+    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
+
     for i in range(1, priority_limit + 1):
         for s in list(flagworthy_sections[i]):
             if not s.preregister_student(request.user, prereg_verb=reg_priority[i].name, overridefull=True):
@@ -258,7 +259,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
         pprint(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
 def find_user(userstr):
@@ -272,17 +273,19 @@ def find_user(userstr):
     returns: queryset containing ESPUser instances.
     """
 
+    userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
-    if not userstr:
-        return
-
-    userstr_parts = userstr.strip().split(' ')
+    if len(userstr_parts) == 2 and \
+       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+       re.match("[^A-Za-z]*", userstr_parts[1]):
+        # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
+        # first branch of the if statement gets taken
+        userstr_parts = ["".join(userstr_parts)]
 
     # single search token, could be username, id or email
     #worth noting that a username may be an integer or an email so we will just check them all
     found_users = None
     if len(userstr_parts) == 1:
-        userstr = userstr_parts[0]
         #try username?
         user_q = Q(username=userstr)
         #try pk
@@ -290,21 +293,29 @@ def find_user(userstr):
             user_q = user_q | Q(id=userstr)
         #try e-mail?
         if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
-            user_q = user_q | Q(email=userstr)
+            user_q = user_q | Q(email__iexact=userstr)
+            user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
+        #try phone
+        cleaned = userstr
+        for char in "-.() ":
+            cleaned = cleaned.replace(char, "")
+        if cleaned.isnumeric() and len(cleaned) == 10:
+            formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
+            user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
 
         user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        found_users = ESPUser.objects.filter(user_q)
+        found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
         for i in xrange(len(userstr_parts)):
             q_list.append( Q( first_name__icontains = ' '.join(userstr_parts[:i]), last_name__icontains = ' '.join(userstr_parts[i:]) ) )
         # Allow any of the above permutations
         q = reduce(operator.or_, q_list)
-        found_users = ESPUser.objects.filter( q )
-      
+        found_users = ESPUser.objects.filter( q ).distinct()
+
     #if the previous search attempt failed, try titles of courses a teacher has taught?
-    if not found_users.exists(): 
-        # lastly, 
+    if not found_users.exists():
+        # lastly,
         found_users = ESPUser.objects.filter(classsubject__title__icontains=userstr).distinct()
 
     return found_users
@@ -317,9 +328,9 @@ def usersearch(request):
     do our best to find that user.
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
-    if not request.GET.has_key('userstr'):
+    if not request.GET.has_key('userstr') or not request.GET['userstr']:
         raise ESPError("You didn't specify a user to search for!", log=False)
-                               
+
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
     num_users = found_users.count()
@@ -328,7 +339,7 @@ def usersearch(request):
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })   
+        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
     else:
         raise ESPError("No user found by that name!", log=False)
 
@@ -344,18 +355,18 @@ def userview(request):
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
-    
+
     from esp.users.forms.user_profile import StudentInfoForm
-    
+
     if 'graduation_year' in request.GET:
         user.set_student_grad_year(request.GET['graduation_year'])
-    
+
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
     change_grade_form.fields['graduation_year'].initial = user.getYOG()
     change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
-    
+
     context = {
         'user': user,
         'taught_classes' : user.getTaughtClasses().order_by('parent_program', 'id'),
@@ -418,7 +429,7 @@ def newprogram(request):
         template_prog["term"] = tprogram.program_instance()
         template_prog["term_friendly"] = tprogram.niceName()
         '''
-        
+
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
@@ -449,7 +460,7 @@ def newprogram(request):
         if pcf.is_valid():
 
             new_prog = pcf.save(commit = True)
-            
+
             commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
@@ -457,10 +468,10 @@ def newprogram(request):
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
-            
+
             #   Force all ProgramModuleObjs and their extensions to be created now
             new_prog.getModules()
-            
+
             manage_url = '/manage/' + new_prog.url + '/resources'
 
             if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
@@ -474,19 +485,19 @@ def newprogram(request):
 
                 load_list_settings(teachers_list_name, "lists/program_mailman.config")
                 load_list_settings(students_list_name, "lists/program_mailman.config")
-        
+
                 apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
                 apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
                 if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
                     add_list_members(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
                     add_list_members(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-            
+
 
             return HttpResponseRedirect(manage_url)
         else:
             raise ESPError("Improper form data submitted.", log=False)
-          
+
 
     #   If the form has been submitted, process it.
     if request.method == 'POST':
@@ -500,9 +511,9 @@ def newprogram(request):
 
             context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
             request.session['context_str'] = context_pickled
-            
+
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
-        
+
     else:
         #   Otherwise, the default view is a blank form.
         if template_prog:
@@ -516,7 +527,7 @@ def newprogram(request):
 @login_required
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
-    
+
     if request.POST.has_key("decision") and request.POST["decision"] != "REJECT" and request.POST["decision"] != "ERROR":
 
         #   Figure out which user and program the payment are for.
@@ -529,7 +540,7 @@ def submit_transaction(request):
         if prev_payments.count() > 0 and iac.amount_due() <= 0:
             from django.conf import settings
             recipient_list = [contact[1] for contact in settings.ADMINS]
-            recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
+            recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury'])
             refs = 'Cybersource request ID: %s' % post_identifier
 
             subject = 'Possible Duplicate Postback/Payment'
@@ -560,6 +571,7 @@ def submit_transaction(request):
     return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
+@reversion.create_revision()
 @admin_required
 def manage_pages(request):
     if request.method == 'POST':
@@ -583,7 +595,7 @@ def manage_pages(request):
                 common_path = form.load_data(qsd_list)
                 if common_path:
                     return render_to_response('qsd/bulk_move.html', request, {'common_path': common_path, 'qsd_list': qsd_list, 'form': form})
-        
+
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
         if request.GET['cmd'] == 'move':
             #   Handle submission of move form
@@ -617,8 +629,8 @@ def manage_pages(request):
             form = QSDMoveForm()
             form.load_data(qsd)
             return render_to_response('qsd/move.html', request, {'qsd': qsd, 'form': form})
-            
-    #   Show QSD listing 
+
+    #   Show QSD listing
     qsd_ids = []
     qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'url', 'name')
     seen_keys = set()
@@ -630,7 +642,7 @@ def manage_pages(request):
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url)
     return render_to_response('qsd/list.html', request, {'qsd_list': qsd_list})
-    
+
 @admin_required
 def flushcache(request):
     context = {}
@@ -650,7 +662,7 @@ def flushcache(request):
             context['error'] = "Sorry, that doesn't count as a reason."
 
     return render_to_response('admin/cache_flush.html', request, context)
-                         
+
 
 @admin_required
 def statistics(request, program=None):
@@ -665,7 +677,7 @@ def statistics(request, program=None):
             else:
                 field_ids.append(field_name)
         return field_ids
-                    
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -674,7 +686,7 @@ def statistics(request, program=None):
         for field_name in multiselect_fields:
             if field_name in post_data and post_data[field_name] == '':
                 del post_data[field_name]
-        
+
         form = StatisticsQueryForm(post_data, program=program)
 
         #   Handle case where all we want is a new form
@@ -688,8 +700,8 @@ def statistics(request, program=None):
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
             result['script'] = render_to_string('program/statistics/script.js', context)
-            return HttpResponse(json.dumps(result), mimetype='application/json')
-            
+            return HttpResponse(json.dumps(result), content_type='application/json')
+
         if form.is_valid():
             #   A dictionary for template rendering the results of this query
             result_dict = {}
@@ -703,13 +715,13 @@ def statistics(request, program=None):
             if not form.cleaned_data['program_instance_all']:
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
-            
+
             #   Get list of students the query applies to
             students_q = Q()
             for program in programs:
                 for reg_type in form.cleaned_data['reg_types']:
                     students_q = students_q | program.students(QObjects=True)[reg_type]
-                    
+
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
                 students_q = students_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
@@ -722,7 +734,7 @@ def statistics(request, program=None):
                     elif item.startwith('Sch:'):
                         school_names.append(item[4:])
                 students_q = students_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
-            
+
             #   Narrow down by Zip code, simply using the latest profile
             #   Note: it would be harder to track students better (i.e. zip code A in fall 2008, zip code B in fall 2009)
             if form.cleaned_data['zip_query_type'] == 'exact':
@@ -733,29 +745,29 @@ def statistics(request, program=None):
                 zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 students_q = students_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
-                
+
             students = ESPUser.objects.filter(students_q).distinct()
             result_dict['num_students'] = students.count()
             profiles = [student.getLastProfile() for student in students]
-            
+
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
             if hasattr(statistics_functions, form.cleaned_data['query']):
                 context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, students, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
-                
+
             #   Generate response
             form.hide_unwanted_fields()
             context['form'] = form
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
-            
+
             if request.is_ajax():
                 result = {}
                 result['result_html'] = context['result']
                 result['script'] = render_to_string('program/statistics/script.js', context)
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
         else:
@@ -765,7 +777,7 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
 
@@ -777,7 +789,7 @@ def statistics(request, program=None):
     context['field_ids'] = get_field_ids(form)
 
     if request.is_ajax():
-        return HttpResponse(json.dumps(context), mimetype='application/json')
+        return HttpResponse(json.dumps(context), content_type='application/json')
     else:
         return render_to_response('program/statistics.html', request, context)
 
@@ -788,8 +800,7 @@ def template_preview(request):
         template = request.GET['template']
     else:
         template = 'main.html'
-        
+
     context = {}
 
     return render_to_response(template, request, context)
-    

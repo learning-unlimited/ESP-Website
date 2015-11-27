@@ -6,7 +6,7 @@ from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
 from datetime import date
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 
@@ -37,6 +37,7 @@ class SchedulingCheckModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
 #For formatting output.  The default is to use JSONFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures
@@ -62,7 +63,7 @@ class JSONFormatter:
         output = {}
         output["help_text"] = help_text
         output["headings"] = [] # no headings
-        
+
         # might be redundant, but it makes sure things aren't in a weird format
         output["body"] = [self._table_row([row]) for row in l]
         return json.dumps(output)
@@ -79,7 +80,7 @@ class JSONFormatter:
             else:
                 next_row.append(str(r))
         return next_row
-        
+
     def _format_list_table(self, d, headings, help_text=""): #needs verify
         output = {}
         output["help_text"] = help_text
@@ -90,11 +91,11 @@ class JSONFormatter:
     def _format_dict_table(self, d, headings, help_text=""): #needs verify
         headings = [""] + headings[:]
         output = {}
-        output["help_text"] = help_text        
+        output["help_text"] = help_text
         output["headings"] = map(str, headings)
         output["body"] = [self._table_row([key] + [row[h] for h in headings if h]) for key, row in sorted(d.iteritems())]
         return output
-        
+
 class SchedulingCheckRunner:
 #Generate html report and generate text report functions?lingCheckRunner:
      def __init__(self, program, formatter=JSONFormatter()):
@@ -135,7 +136,7 @@ class SchedulingCheckRunner:
           if diagnostics is None:
                diagnostics = self.all_diagnostics
           return [getattr(self, diag)() for diag in diagnostics]
-         
+
 
      # Update this to add a scheduling check.
      all_diagnostics = [
@@ -148,6 +149,8 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
+          ('classes_wrong_length', 'Classes which are the wrong length or have gaps'),
+          ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
           ('capacity_by_category', 'Total capacity in each block by category'),
@@ -157,7 +160,8 @@ class SchedulingCheckRunner:
           ('teachers_who_like_running', 'Teachers who like running'),
           ('hungry_teachers', 'Hungry Teachers'),
           ('no_overlap_classes', "Classes which shouldn't overlap"),
-          ('special_classroom_types', "Special Classroom Types")
+          ('special_classroom_types', 'Special Classroom Types'),
+          ('hosed_teachers', 'Hosed Teachers')
      ]
 
      #################################################
@@ -198,7 +202,7 @@ class SchedulingCheckRunner:
                     self.all_nonwalkins = list(qs)
                     self.listed_nonwalkins = True
                     return self.all_nonwalkins
-          
+
 
 
      #################################################
@@ -231,6 +235,24 @@ class SchedulingCheckRunner:
                     elif not (False in [b in mt for b in lunch]):
                          l.append(s)
           return self.formatter.format_list(l)
+
+     def classes_wrong_length(self):
+         output = []
+         for sec in self._all_class_sections():
+             start_time = sec.start_time_prefetchable()
+             end_time = sec.end_time_prefetchable()
+             length = end_time - start_time
+             if abs(length.total_seconds()/float(3600) - float(sec.duration)) > 0.3:
+                 output.append(sec)
+         return self.formatter.format_list(output)
+
+     def unapproved_scheduled_classes(self):
+         output = []
+         sections = ClassSection.objects.filter(status__lt=10, parent_class__parent_program=self.p)
+         for sec in sections:
+             if sec.get_meeting_times() or sec.getResources():
+                 output.append(sec)
+         return self.formatter.format_list(output)
 
      def teachers_teaching_two_classes_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
@@ -281,7 +303,7 @@ class SchedulingCheckRunner:
                  for block in lunch:
                      q=q.filter(classsubject__sections__meeting_times=block)
                  for t in q.distinct():
-                     classes = [ClassSection.objects.get(parent_class__teachers=t,meeting_times=block) for block in lunch]
+                     classes = [ClassSection.objects.filter(parent_class__teachers=t,meeting_times=block)[0] for block in lunch]
                      if open_class_cat.id not in [c.category.id for c in classes]:
                          bads.append({
                              'Teacher': t,
@@ -303,7 +325,7 @@ class SchedulingCheckRunner:
 
           self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
 
-          #not regular class categories          
+          #not regular class categories
           open_class_cat = self.p.open_class_category.category
           if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
           lunch_cat = "Lunch"
@@ -338,13 +360,13 @@ class SchedulingCheckRunner:
      def capacity_by_category(self):
          self._calculate_d_categories()
          return  self.formatter.format_table(self.d_categories["capacity"], {"headings": self.class_categories})
-        
+
 
      def classes_by_category(self):
          self._calculate_d_categories()
          return  self.formatter.format_table(self.d_categories["classes"], {"headings": self.class_categories})
 
-         
+
      def _calculate_d_grades(self):
           if len(self.d_grades) > 0:
              return self.d_grades
@@ -360,7 +382,7 @@ class SchedulingCheckRunner:
           d_classes = self._timeslot_dict(slot=grade_dict)
           d_capacity = self._timeslot_dict(slot=grade_dict)
           for s in self._all_class_sections(include_walkins=False):
-               cls = s.parent_class 
+               cls = s.parent_class
                mt =  s.get_meeting_times()
                for t in mt:
                     for grade in range(cls.grade_min, cls.grade_max + 1, 1):
@@ -372,7 +394,7 @@ class SchedulingCheckRunner:
      def capacity_by_grade(self):
          self._calculate_d_grades()
          return  self.formatter.format_table(self.d_grades["capacity"], {"headings": self.grades})
-        
+
 
      def classes_by_grade(self):
          self._calculate_d_grades()
@@ -410,7 +432,7 @@ class SchedulingCheckRunner:
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
                  for u in unsatisfied_requests:
-                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work 
+                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work
                      #on other ESPs' websites
                      if str.lower(str(u.res_type.name)) == "classroom space":
                          if not u.desired_value == "No preference":
@@ -553,3 +575,33 @@ class SchedulingCheckRunner:
          return self.formatter.format_table(mismatches,
                                             {'headings': HEADINGS},
                                             help_text=self.special_classroom_types.__doc__)
+
+     # This isn't really a scheduling check. It's a check that's useful
+     # to run before scheduling. But it works well with the format and
+     # this way everyone else doesn't have to rediscover the round_to
+     # argument to ESPUser.getTaughtTime() every year.
+     def hosed_teachers(self):
+         """
+         Teachers who have registered almost as many hours of classes
+         as hours of availability. Intended to be run before scheduling,
+         and will not change as classes are scheduled.
+         """
+         teachers = self.p.teachers()['class_submitted']
+         hosed = []
+         for teacher in teachers:
+             # This will break if we ever start having class blocks
+             # that aren't an hour long
+             availability = len(teacher.getAvailableTimes(self.p, ignore_classes=True))
+             class_hours = teacher.getTaughtTime(program=self.p, round_to=1).seconds/3600
+             delta = availability - class_hours
+             # Arbitrary formula, seems to do a good job of catching the cases I care about
+             if class_hours/float(availability) >= 2/float(3):
+                 hosed.append({'Teacher': teacher.username,
+                               'Class hours': class_hours,
+                               'Available hours': availability,
+                               'Free hours': delta})
+         return self.formatter.format_table(hosed,
+                                            {'headings': ['Teacher', 'Class hours',
+                                                          'Available hours',
+                                                          'Free hours']},
+                                            help_text=self.hosed_teachers.__doc__)

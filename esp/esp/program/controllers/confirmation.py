@@ -58,4 +58,4 @@ class ConfirmationEmailController(object):
                       receipt_template.render(Context({'user': user, 'program': program}, autoescape=False)), \
                       ("%s <%s>" %(program.niceName() + " Directors", program.director_email)), \
                       [user.email], True)
-    
+

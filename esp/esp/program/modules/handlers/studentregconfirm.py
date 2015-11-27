@@ -47,7 +47,7 @@ class StudentRegConfirm(ProgramModuleObj):
             "module_type": "learn",
             "seq": 99999
             }
-    
+
     @main_call
     def do_confirmreg(self, request, tl, one, two, module, extra, prog):
         return HttpResponseRedirect("confirmreg")
@@ -60,4 +60,4 @@ class StudentRegConfirm(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

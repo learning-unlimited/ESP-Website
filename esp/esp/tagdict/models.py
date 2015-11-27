@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
-from esp.cache import cache_function
+from django.contrib.contenttypes.fields import GenericForeignKey
+from argcache import cache_function
 
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
@@ -16,7 +16,7 @@ class Tag(models.Model):
     ## Generic ForeignKey ##
     content_type = models.ForeignKey(ContentType, blank=True, null=True)
     object_id = models.PositiveIntegerField(blank=True, null=True)
-    target = generic.GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
     ## End Generic ForeignKey ##
 
     class Meta:
@@ -35,7 +35,7 @@ class Tag(models.Model):
 
     @cache_function
     def getTag(cls, key, target=None, default=None):
-        """ 
+        """
         Given a key (as a slug) and a target row from any database table,
         return the corresponding value as a string,
         or the value specified by the 'default' argument if no such value exists.
@@ -70,12 +70,12 @@ class Tag(models.Model):
             return default
         else:
             return res
-    
+
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
-            
+
         tag_val = Tag.getProgramTag(key, program)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
             return default
@@ -83,7 +83,7 @@ class Tag(models.Model):
             return True
         else:
             return False
-    
+
     @classmethod
     def setTag(cls, key, target=None, value=EMPTY_TAG):
         """
@@ -93,7 +93,7 @@ class Tag(models.Model):
         If value is not specified, it is taken to be the magic value EMPTY_TAG, which is
         guaranteed to evaluate to True.  This allows
         "contentless" tags s.t. no data is stored, but "if getTag(foo)" will indicate
-        that the tag has been set (or not).        
+        that the tag has been set (or not).
         """
 
         if target != None:

@@ -4,26 +4,24 @@
 # Michael Price, December 2010
 
 # Parameters
-GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
+GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+GIT_BRANCH="stable/1.5.x"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 LOGDIR="/lu/logs"
-DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-MAILMAN_LIST_PASSWORD="oobleck"
-MAILMAN_ADMIN="price@kilentra.net"
 CRON_FILE="/etc/crontab"
 
 #CURDIR=`dirname $0`
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,apache,mailman,cron,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,apache,cron,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
   echo "Usage: $0 -(option) [-(option) ...] [sitename]"
   echo "Type '$0 -h' for help."
   exit $E_OPTERR
-fi  
+fi
 
 eval set -- "$OPTSETTINGS"
 
@@ -39,7 +37,6 @@ do
     --db) MODE_DB=true;;
     --settings) MODE_SETTINGS=true;;
     --apache) MODE_APACHE=true;;
-    --mailman) MODE_MAILMAN=true;;
     --cron) MODE_CRON=true;;
      *) break;;
   esac
@@ -60,7 +57,6 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    --mailman:  Create a Mailman support list
     --cron:     Add appropriate entry to cron for comm panel e-mail sending
 "
     exit 0
@@ -115,7 +111,7 @@ echo "#!/bin/bash" > $BASEDIR/.espsettings
 
 # Collect settings
 # To manually reset: Remove '.espsettings' file in site directory
-while [[ ! -n $ESPHOSTNAME ]]; do 
+while [[ ! -n $ESPHOSTNAME ]]; do
     echo
     echo -n "Enter your site's hostname (without the http://) --> "
     read ESPHOSTNAME
@@ -149,7 +145,7 @@ echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
-    echo 
+    echo
     echo "Enter the hostname you will be using for e-mail"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
@@ -159,7 +155,7 @@ echo "Selected e-mail host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $ADMINEMAIL ]]; do
-    echo 
+    echo
     echo "Please enter the e-mail address of the initial site administrator"
     echo -n "  --> "
     read ADMINEMAIL
@@ -169,7 +165,7 @@ echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
 
 TIMEZONE_DEFAULT="America/New_York"
 while [[ ! -n $TIMEZONE ]]; do
-    echo 
+    echo
     echo "Please enter your group's time zone"
     echo -n "  (default $TIMEZONE_DEFAULT) --> "
     read TIMEZONE
@@ -200,12 +196,16 @@ echo "DBUSER=\"$DBUSER\"" >> $BASEDIR/.espsettings
 
 if [[ ! -n $DBPASS ]]
 then
-    DBPASS=`$CURDIR/random_password.sh`
+    DBPASS=`openssl rand -base64 12`
     echo "Generated random password for database"
 else
     echo "Preserved saved database password"
 fi
 echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
+
+SECRET_KEY = `openssl rand -base64 48`
+echo "Generated random secret key"
+echo "SECRET_KEY=\"$SECRET_KEY\"" >> $BASEDIR/.espsettings
 
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
@@ -220,7 +220,7 @@ then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
         cd $BASEDIR
         git stash
-        git pull origin main
+        git pull origin ${GIT_BRANCH}
         git stash apply
     else
         cd $CURDIR
@@ -238,8 +238,14 @@ then
             cp $CURDIR/$SITENAME.old/.espsettings $CURDIR/$SITENAME/
         fi
     fi
-    echo "Git repository has been checked out.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+
+    cd $BASEDIR
+    ./esp/make_virtualenv.sh
+    ./esp/update_deps.sh --prod
+
+    echo "Git repository has been checked out, and dependencies have been installed"
+    echo "with Python libraries in a local virtualenv.  Please check them by looking"
+    echo -n "over the output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 
@@ -249,7 +255,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -264,18 +270,20 @@ ADMINS = (
     ('LU Web group','serverlog@learningu.org'),
 )
 CACHE_PREFIX = "${SITENAME}ESP"
+SECRET_KEY = '$SECRET_KEY'
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
         'archive': 'learninguarchive@gmail.com',
         'bounces': 'learningubounces@gmail.com',
-        'support': '$SITENAME-websupport@learningu.org',
+        'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
         }
 ORGANIZATION_SHORT_NAME = '$GROUPNAME'
 INSTITUTION_NAME = '$INSTITUTION'
 EMAIL_HOST = '$EMAILHOST'
+EMAIL_HOST_SENDER = EMAIL_HOST
 
 # E-mail addresses for contact form
 email_choices = (
@@ -297,8 +305,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = False
-DISPLAYSQL = False
-TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
 USE_PROFILER = False
@@ -307,25 +313,18 @@ USE_PROFILER = False
 DEFAULT_CACHE_TIMEOUT = 120
 DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_ENGINE = 'esp.db.prepared'
-SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
+
+VARNISH_HOST = 'localhost'
+VARNISH_PORT = '80'
 
 from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
-# E-mails for contact form
-email_choices = (
-    ('general', 'General Inquiries'),
-    ('web',     'Web Site Problems'),
-    )
-# Corresponding email addresses                                                                                                                                 
-email_addresses = {
-    'general': '$GROUPEMAIL',
-    'web':     '$SITENAME-websupport@learningu.org',
-    }
+SECRET_KEY = '`openssl rand -base64 48`'
 
 EOF
 
@@ -340,6 +339,16 @@ EOF
 
 fi
 
+MEDIADIR=${BASEDIR}/esp/public/media
+ln -s $MEDIADIR/default_images $MEDIADIR/images
+ln -s $MEDIADIR/default_styles $MEDIADIR/styles
+
+mkdir -p $MEDIADIR/uploaded
+chmod -R 777 $MEDIADIR
+mkdir -p /tmp/esptmp__${SITENAME}ESP
+chmod -R 777 /tmp/esptmp__${SITENAME}ESP
+echo "Default images and styles have been symlinked."
+
 # Database setup
 # To reset: remove user and DB in SQL
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
@@ -348,34 +357,20 @@ then
     sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
     sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
     echo "Created a PostgreSQL login role and empty database."
-    
+
     echo "Django's manage.py scripts will now be used to initialize the"
     echo "$DBNAME database.  Please follow their directions."
 
-    cd $BASEDIR/esp/esp
+    cd $BASEDIR/esp
     ./manage.py syncdb
     ./manage.py migrate
+    ./manage.py collectstatic
     cd $CURDIR
-    
+
     #   Set initial Site (used in password recovery e-mail)
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 
     echo "Database has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
-    read THROWAWAY
-fi
-
-# Mailman setup
-# To reset: remove list manually
-if [[ "$MODE_MAILMAN" || "$MODE_ALL" ]]
-then
-    newlist -q $SITENAME-websupport $ADMINEMAIL $MAILMAN_LIST_PASSWORD
-    add_members -r - granite-websupport <<EOF
-$ADMINEMAIL
-EOF
-    echo "Created Mailman list $SITENAME-websupport with initial member $ADMINEMAIL."
-    
-    echo "Support list has been created.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
@@ -386,7 +381,7 @@ if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
     cat >>$APACHE_CONF_FILE <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
-WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
+WSGIDaemonProcess $SITENAME processes=4 threads=1 maximum-requests=1000
 <VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
     ServerAlias $SITENAME-orig.learningu.org
@@ -397,19 +392,15 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
     #   Caching - should use Squid if performance is really important
     # CacheEnable disk /
 
+    #   Redirect HTTP requests to HTTPS for security
+    RewriteEngine On
+    RewriteCond %{HTTP:X-Forwarded-Proto} !^https
+    RewriteCond %{REQUEST_URI} !^/media
+    RewriteRule ^(.*)$ https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
+
     #   Static files
     Alias /media $BASEDIR/esp/public/media
-    <Location /media>
-        DAV on
-        <LimitExcept GET HEAD OPTIONS PROPFIND>
-            AuthType Basic
-            AuthUserFile /lu/auth/dav_auth
-            AuthName "$INSTITUTION $GROUPNAME media files"
-            Require valid-user
-        </LimitExcept>
-        ExpiresActive on
-        ExpiresDefault "now plus 1 hour"
-    </Location>
+    Alias /static $BASEDIR/esp/public/static
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
@@ -423,7 +414,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 EOF
     /etc/init.d/apache2 reload
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -445,4 +436,6 @@ echo "  $SITENAME-orig.learningu.org -> $IP_ADDRESS"
 echo "  $SITENAME-backup.learningu.org -> $IP_ADDRESS"
 echo "You may also want to add some template overrides that establish"
 echo "the initial look and feel of the site."
+echo "Please also configure e-mail by adjusting the exim4 configuration as"
+echo "necessary."
 echo

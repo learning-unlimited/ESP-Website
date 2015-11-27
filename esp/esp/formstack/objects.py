@@ -4,7 +4,7 @@ A somewhat higher-level interface to the Formstack API.
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.formstack.api import Formstack
 
 CACHE_TIMEOUT = 3600 # seconds to keep things cached

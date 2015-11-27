@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
@@ -44,9 +44,9 @@ from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from datetime                    import timedelta, time
-from django.utils                import simplejson
+import json
 from collections                 import defaultdict
-from esp.cache                   import cache_function
+from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators         import json_response
 import calendar, time, datetime
@@ -64,7 +64,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def prepare(self, context={}):
         if context is None: context = {}
 
-        context['schedulingmodule'] = self 
+        context['schedulingmodule'] = self
         return context
 
     @main_call
@@ -77,15 +77,15 @@ class AJAXSchedulingModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
 
-        #trim the log here.  
-        #Nothing special about right here, but putting it here makes sure it's done regularly, without 
+        #trim the log here.
+        #Nothing special about right here, but putting it here makes sure it's done regularly, without
         #doing it really really often, and without having an extra thread just for that.
-    
+
         self.get_change_log(prog).prune()
 
         #actually return the page
         context = {}
-        
+
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
     @aux_call
@@ -96,7 +96,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @cache_function
     def ajax_sections_cached(self, prog, accepted_only=False):
         if accepted_only:
-            sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0).select_related() 
+            sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0).select_related()
         else:
             sections = prog.sections().select_related()
 
@@ -105,7 +105,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-        
+
         sections_dicts = [
             {   'id': s.id,
                 'class_id': s.parent_class_id,
@@ -129,7 +129,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             } for s in sections ]
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(sections_dicts, response)
+        json.dump(sections_dicts, response)
         return response
     ajax_sections_cached.get_or_create_token(('prog',))
     ajax_sections_cached.depend_on_model('program.ClassSubject')
@@ -160,11 +160,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
             } for room_id in classrooms_grouped.keys() ]
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(classrooms_dicts, response)
+        json.dump(classrooms_dicts, response)
         return response
     ajax_rooms_cached.get_or_create_token(('prog',))
     ajax_rooms_cached.depend_on_model('resources.Resource')
-    
+
 
     @aux_call
     @needs_admin
@@ -179,7 +179,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         for resource in resources:
             resources_for_user[resource['user_id']].append(resource['event_id'])
-        
+
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
@@ -187,12 +187,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
             } for t in teachers ]
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(teacher_dicts, response)
+        json.dump(teacher_dicts, response)
         return response
     ajax_teachers_cached.get_or_create_token(('prog',))
     ajax_teachers_cached.depend_on_model(UserAvailability)
     ajax_teachers_cached.depend_on_m2m(ClassSubject, 'teachers', lambda sub, teacher: {'prog': sub.parent_program})
-    
+
     @aux_call
     @needs_admin
     def ajax_times(self, request, tl, one, two, module, extra, prog):
@@ -205,9 +205,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         for t in times:
             t['start'] = t['start'].timetuple()[:6]
             t['end'] = t['end'].timetuple()[:6]
-        
+
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(times, response)
+        json.dump(times, response)
         return response
     ajax_times_cached.get_or_create_token(('prog',))
     ajax_times_cached.depend_on_model(Event)
@@ -235,7 +235,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(resourcetypes_dicts, response)
+        json.dump(resourcetypes_dicts, response)
         return response
     ajax_times_cached.get_or_create_token(('prog',))
     ajax_times_cached.depend_on_model(ResourceType)
@@ -262,7 +262,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             } for rsrc_id in resources_grouped.keys() ]
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(classrooms_dicts, response)
+        json.dump(classrooms_dicts, response)
         return response
     ajax_resources_cached.get_or_create_token(('prog',))
     ajax_resources_cached.depend_on_model('resources.Resource')
@@ -282,9 +282,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
               } for r in resource_assignments ]
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(resassign_dicts, response)
+        json.dump(resassign_dicts, response)
         return response
-    
+
     @aux_call
     @needs_admin
     def ajax_schedule_assignments_csv(self, request, tl, one, two, module, extra, prog):
@@ -294,7 +294,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
                 lst.append((s.id, ra.resource.name, ra.resource.event.id))
 
-        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), mimetype='text/csv')
+        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
 
     #helper functions for ajax_schedule_class
     #seperated out here to make code more readeable and enable testing
@@ -302,8 +302,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
         kwargs['val'] = last_changed['val']
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(kwargs, response)
-        return response            
+        json.dump(kwargs, response)
+        return response
 
     def ajax_schedule_deletereg(self, prog, cls, user=None):
         cls.clearRooms()
@@ -321,13 +321,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if len(classrooms) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        #TODO:  this loom modifies classrooms from within the loop.  That seems like a bad idea.  
+        #TODO:  this loom modifies classrooms from within the loop.  That seems like a bad idea.
         #we should figure out why
         basic_cls = classrooms[0]
         for c in classrooms:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
-            
+
             times = Event.objects.filter(id__in=times).order_by('start')
             if len(times) < 1:
                 return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
@@ -341,14 +341,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
             cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
             if cannot_schedule:
                 return self.makeret(prog, ret=False, msg=cannot_schedule)
-            
+
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)
 
             if not status: # If we failed any of the scheduling-constraints checks in assign_room()
                 cls.clear_meeting_times()
                 return self.makeret(prog, ret=False, msg=" | ".join(errors))
-            
+
             #add things to the change log here
             self.get_change_log(prog).append([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
 
@@ -360,10 +360,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         cl = self.get_change_log(prog)
         last_fetched_index = int(request.GET['last_fetched_index'])
-        
-        #print "schedule_time", cl[0]['schedule_time']
-        #print "last fetched time", last_fetched_time
-        #print "len(cl)", len(cl)
 
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
@@ -376,8 +372,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_clear_change_log(self, request, tl, one, two, module, extra, prog):
-        """ This call exists for debugging and testing purposes.  It's not a disaster if it's 
-        called in production, but it is annoying.  
+        """ This call exists for debugging and testing purposes.  It's not a disaster if it's
+        called in production, but it is annoying.
         Clears the change log for this program. """
 
         self.get_change_log(prog).entries.all().delete()
@@ -407,7 +403,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         cls_id = request.POST['cls']
         cls = ClassSection.objects.get(id=cls_id)
         action = request.POST['action']
-        
+
         if action == 'deletereg':
             times = []
             classrooms = [ None ]
@@ -417,7 +413,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             blockrooms = request.POST['block_room_assignments'].split("\n")
             blockrooms = [b.split(",") for b in blockrooms if b]
             blockrooms = [{'time_id': b[0], 'room_id': b[1]} for b in blockrooms]
-            
+
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
             retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms, request.user)
@@ -425,7 +421,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
         return retval
-    
+
     @aux_call
     @needs_admin
     def ajax_schedule_last_changed(self, request, tl, one, two, module, extra, prog):
@@ -438,7 +434,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'latest_index' : self.get_change_log(prog).get_latest_index() }
 
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(ret, response)
+        json.dump(ret, response)
         response.raw_value = ret  # So that other functions can call this view and get the original return value back
         return response
 
@@ -462,19 +458,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_lunch_timeslots_cached(self, prog):
         data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(data, response)
+        json.dump(data, response)
         return response
     ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
-    
+
     @aux_call
     @needs_admin
     def ajax_lunch_timeslots(self, request, tl, one, two, module, extra, prog):
         return self.ajax_lunch_timeslots_cached(prog)
-        
+
     @aux_call
     @needs_admin
     def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):
@@ -483,18 +479,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
             Be very careful using this view since it can sometimes work quite well,
             and there is currently no backup.
         """
-        
+
         try:
             lock_level = int(request.GET.get('lock_level', '0'))
         except:
             lock_level = 0
-        print lock_level
-            
+
         num_affected_sections = self.clear_schedule_logic(prog, lock_level)
 
         data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
         response = HttpResponse(content_type="application/json")
-        simplejson.dump(data, response)
+        json.dump(data, response)
         return response
 
     def clear_schedule_logic(self, prog, lock_level=0):
@@ -504,8 +499,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
         for section in affected_sections:
             section.meeting_times.clear()
-        
+
         return num_affected_sections
 
     class Meta:
         proxy = True
+        app_label = 'modules'

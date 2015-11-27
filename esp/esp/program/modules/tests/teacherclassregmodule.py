@@ -105,7 +105,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.program.grade_max = 8
         self.program.save()
         Tag.setTag('grade_range_popup', self.program, 'True')
- 
+
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
         self.failUnless(not "check_grade_range" in response.content)
@@ -190,7 +190,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         teacher_list = ESPUser.objects.filter(self.moduleobj.get_resource_pairs()[i][2])
         return teacher in teacher_list
 
-    @transaction.commit_manually
+    @transaction.atomic
     def test_get_resource_pairs(self):
         prog = self.program
         new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
@@ -206,21 +206,20 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.delete_resource_request(sec, new_res_type1)
         self.failUnless(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-        transaction.rollback()
 
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]
         return set(teaching_teachers) == set(all_teachers)
 
-    @transaction.commit_manually
+    @transaction.atomic
     def test_teachers(self):
         # Get the instance of StudentClassRegModule
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
         ProgramModuleObj.getFromProgModule(self.program, pm)
-        
+
         d = self.moduleobj.teachers()
-        
+
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
         cls1.status = -1
@@ -253,7 +252,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         classes.remove(cls)
         for c in classes:
             c.removeTeacher(teacher)
-        #print teacher.getTaughtClasses()
         d = self.moduleobj.teachers()
         # Check it
         self.failUnless(teacher not in d['class_full'] and teacher not in d['class_nearly_full'])
@@ -287,9 +285,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         d = self.moduleobj.teachers()
         self.failUnless(self.teacher in d['taught_before'])
 
-        transaction.rollback()
-
-    @transaction.commit_manually
+    @transaction.atomic
     def test_deadline_met(self):
 
         self.failUnless(self.moduleobj.deadline_met())
@@ -301,6 +297,3 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.failUnless(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.failUnless(not self.moduleobj.deadline_met())
-        
-        transaction.rollback()
-

@@ -8,7 +8,6 @@ from django.core.management.sql import sql_indexes
 import re
 from optparse import make_option
 
-INSTALLED = settings.INSTALLED_APPS
 index_re = re.compile('CREATE INDEX \"(.*?)\" ON \"(.*?)\" \(\"(.*?)\"\);')
 #'CREATE INDEX "django_admin_log_user_id" ON "django_admin_log" ("user_id");'
 
@@ -93,4 +92,4 @@ class Command(BaseCommand):
                         for index in index_sql[table]:
                             if table in index:
                                 print index
-        
+

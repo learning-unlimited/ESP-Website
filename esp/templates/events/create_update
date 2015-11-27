@@ -2,8 +2,6 @@
 
 {% block title %}Create an Event{% endblock %}
 
-{% block subsection_name %}Event{% endblock %}
-
 {% block content %}
 <script type="text/javascript" src="/admin/jsi18n/"></script>
 <script type="text/javascript" src="/admin/media/js/core.js"></script>

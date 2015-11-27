@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django import forms
 from esp.middleware import ESPError
 from esp.tagdict.models import Tag
-import simplejson as json
+import json
 
 """
 The SplashInfoForm is customizable for different lunch options.
@@ -63,12 +63,12 @@ class SplashInfoForm(forms.Form):
     default_choices = [['no', 'No'], ['yes', 'Yes']]
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
                         (True, 'I have a brother/sister already enrolled in Splash  (+ $20).')]
-                  
+
     lunchsat = forms.ChoiceField(choices=default_choices)
     lunchsun = forms.ChoiceField(choices=default_choices)
     siblingdiscount = forms.ChoiceField(choices=discount_choices, widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
-    
+
     def __init__(self, *args, **kwargs):
         #   Extract a program if one was provided
         if 'program' in kwargs:
@@ -76,10 +76,10 @@ class SplashInfoForm(forms.Form):
             del kwargs['program']
         else:
             program = None
-            
+
         #   Run default init function
         super(SplashInfoForm, self).__init__(*args, **kwargs)
-        
+
         #   Set choices from Tag data (try to get program-specific choices if they exist)
         tag_data = None
         if program:
@@ -99,7 +99,7 @@ class SplashInfoForm(forms.Form):
 
         if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
             del self.fields['lunchsun']
-    
+
     def load(self, splashinfo):
         self.initial['lunchsat'] = splashinfo.lunchsat
         self.initial['lunchsun'] = splashinfo.lunchsun
@@ -117,4 +117,4 @@ class SplashInfoForm(forms.Form):
             splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
-        
+

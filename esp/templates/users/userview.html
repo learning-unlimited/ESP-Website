@@ -2,12 +2,7 @@
 
 {% block title %}User Information{% endblock %}
 
-{% load subsection %}
 {% load modules %}
-
-{% block subsection %}
-{% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
-{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}

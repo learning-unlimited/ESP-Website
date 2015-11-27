@@ -4,7 +4,7 @@ import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
 from esp.utils.decorators import enable_with_setting
-from esp.users.models import ESPUser, User
+from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -36,7 +36,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 def load_list_settings(list, listfile):
     """
     Load a Mailman list-settings file and configure a list with the specified settings.
-   
+
     If the path specified isn't an absolute path, it will be taken to be relative to the project root.
     """
     if listfile[0] == '/':
@@ -86,7 +86,7 @@ mlist.password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = User.objects.make_random_password()
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 
@@ -106,7 +106,7 @@ mlist.mod_password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = User.objects.make_random_password()
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 
@@ -129,7 +129,7 @@ def add_list_members(list_name, members):
 
     'members' is an iterable of e-mail address strings or ESPUser objects.
     """
-    members = [(ESPUser(x).get_email_sendto_address() if isinstance(x, User) else unicode(x)) for x in members]
+    members = [x.get_email_sendto_address() if isinstance(x, User) else unicode(x) for x in members]
 
     members = u'\n'.join(members)
 
@@ -146,7 +146,7 @@ def add_list_members(list_name, members):
 def remove_list_member(list, member):
     """
     Remove the e-mail address 'member' from the local Mailman mailing list 'list'
-    
+
     "member" may be a list (or other iterable) of e-mail address strings,
     in which case all addresses will be removed.
     """
@@ -156,7 +156,7 @@ def remove_list_member(list, member):
     if hasattr(member, "filter"):
         member = [x.email for x in member]
 
-    if not isinstance(member, basestring):       
+    if not isinstance(member, basestring):
         member = "\n".join(member)
 
     if isinstance(member, unicode):
@@ -172,7 +172,7 @@ def list_contents(lst):
     try:
         # It seems the empty string gets dragged into this list.
         contents.remove('')
-    except: 
+    except:
         pass
 
     return contents

@@ -4,7 +4,6 @@
 
 {% block title %}Teacher Registration{% endblock %}
 
-{% block subsection_name %}Teach for {{one}} <br>{% endblock %}
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -38,7 +37,7 @@
     {% end_inline_program_qsd_block %}
 
     {% if otherclass.reg_open and addoredit == 'Add' %}
-    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
+    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url 'esp.web.views.main.program' tl one two otherclass.link %}">click here</a>.</p>
     {% endif %}
 {% endif %}
 
@@ -79,9 +78,6 @@
     </tr>
     -->
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
-{% with restype_formset as formset %}
-{% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
-{% endwith %}
     {% endif %}
     <tr>
         <td colspan="2">&nbsp;</td>

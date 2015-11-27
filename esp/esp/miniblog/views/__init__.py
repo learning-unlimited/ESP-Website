@@ -35,13 +35,12 @@ Learning Unlimited, Inc.
 
 from datetime import datetime
 
-from django.contrib.auth.models import AnonymousUser
 from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
+from esp.users.models import ESPUser, AnonymousESPUser
 
-from esp.cache import cache_function
-from esp.users.models import ESPUser
+from argcache import cache_function
 
 #	Function for previewing announcements  - Michael P
 #	Generates the block structure used by battle screens
@@ -51,13 +50,12 @@ def preview_miniblog(request, section = None):
     # last update: Axiak
 
     if request.user != None:
-        curUser = ESPUser(request.user)
-    
+        curUser = request.user
     else:
-        curUser = ESPUser(AnonymousUser())
+        curUser = AnonymousESPUser()
 
     return curUser.getMiniBlogEntries()
-    
+
 @cache_function
 def get_visible_announcements(user, limit, tl):
     models_to_search = [Entry, AnnouncementLink]

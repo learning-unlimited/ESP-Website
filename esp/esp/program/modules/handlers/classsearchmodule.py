@@ -8,7 +8,7 @@ from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 
 # TODO: this won't work right without class flags enabled
 
@@ -26,6 +26,7 @@ class ClassSearchModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'
 
     def query_builder(self):
         flag_types = ClassFlagType.get_flag_types(program=self.program)
@@ -36,11 +37,13 @@ class ClassSearchModule(ProgramModuleObj):
         flag_select_input = SelectInput(
             field_name='flags__flag_type', english_name='type',
             options={str(ft.id): ft.name for ft in flag_types})
+        any_flag_input = ConstantInput(Q(flags__isnull=False))
         flag_filter = SearchFilter(name='flag', title='the flag',
                                    inputs=[flag_select_input] +
                                    flag_datetime_inputs)
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
-                                       inputs=flag_datetime_inputs)
+                                       inputs=[any_flag_input] +
+                                       flag_datetime_inputs)
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
@@ -106,7 +109,7 @@ class ClassSearchModule(ProgramModuleObj):
             queryset = query_builder.as_queryset(decoded)
             queryset = queryset.distinct().order_by('id').prefetch_related(
                 'flags', 'flags__flag_type', 'teachers', 'category',
-                'sections')
+                'sections', 'sections__resourcerequest_set')
             english = query_builder.as_english(decoded)
             context = {
                 'queryset': queryset,

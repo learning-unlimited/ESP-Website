@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
 from django.db.models.query import Q
@@ -52,7 +52,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
     @main_call
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
-        
+
         if request.method == 'POST':
             form = VolunteerOfferForm(request.POST, program=prog)
             if form.is_valid():
@@ -67,11 +67,11 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
                 form = VolunteerOfferForm(program=prog)
         else:
             form = VolunteerOfferForm(program=prog)
-            
+
         #   Pre-fill information if possible
         if hasattr(request.user, 'email'):
             form.load(request.user)
-        
+
         #   Override default appearance; template doesn't mind taking a string instead
         context['form'] = form._html_output(
             normal_row = u'<tr%(html_class_attr)s><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
@@ -79,7 +79,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             row_ender = u'</td></tr>',
             help_text_html = u'%s',
             errors_on_separate_row = False)
-        
+
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 
     def volunteers(self, QObject=False):
@@ -88,7 +88,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         for req in requests:
             key = 'volunteer_%d' % req.id
             queries[key] = Q(volunteeroffer__request=req)
-        
+
         result = {}
         for key in queries:
             if QObject:
@@ -96,7 +96,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             else:
                 result[key] = ESPUser.objects.filter(queries[key]).distinct()
         return result
-        
+
     def volunteerDesc(self):
         base_dict = {'volunteer_all': 'All on-site volunteers for %s' % self.program.niceName()}
         requests = self.program.volunteerrequest_set.all()
@@ -107,4 +107,4 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'
