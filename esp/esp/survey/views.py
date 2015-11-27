@@ -113,12 +113,13 @@ def survey_view(request, tl, program, instance):
         classes = sections = timeslots = []
         if tl == 'learn':
             classes = user.getEnrolledClasses(prog)
+            enrolled_secs = user.getEnrolledSections(prog)
             timeslots = prog.getTimeSlots().order_by('start')
             for ts in timeslots:
                 # The order by string really means "title"
                 ts.classsections = prog.sections().filter(meeting_times=ts).exclude(meeting_times__start__lt=ts.start).order_by('parent_class__title').distinct()
                 for sec in ts.classsections:
-                    if user in sec.students():
+                    if sec in enrolled_secs:
                         sec.selected = True
         elif tl == 'teach':
             classes = user.getTaughtClasses(prog)
