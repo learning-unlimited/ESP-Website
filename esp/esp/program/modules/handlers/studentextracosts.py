@@ -35,7 +35,7 @@ from collections import OrderedDict
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import Record
 from django.db.models.query import Q
@@ -103,7 +103,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
-        
+
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
@@ -153,11 +153,11 @@ class StudentExtraCosts(ProgramModuleObj):
         if request.method == 'POST':
 
             #   Initialize a list of forms using the POST data
-            costs_db = [ { 'LineItemType': x, 
+            costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
                          [ x for x in \
-                           [ { 'LineItemType': x, 
+                           [ { 'LineItemType': x,
                                'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
                              for x in multicosts_list ] \
                            if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \

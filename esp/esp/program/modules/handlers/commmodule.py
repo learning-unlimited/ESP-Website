@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -79,7 +79,7 @@ class CommModule(ProgramModuleObj):
         else:
             # String together an address like username@esp.mit.edu
             fromemail = '%s@%s' % (request.user.username, settings.SITE_INFO[1])
-        
+
         # Set Reply-To address
         if request.POST.has_key('replyto') and len(request.POST['replyto'].strip()) > 0:
             replytoemail = request.POST['replyto']
@@ -105,11 +105,12 @@ class CommModule(ProgramModuleObj):
             htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
         else:
             htmlbody = body
-            
+
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
+
         renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
-        
+
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
@@ -148,7 +149,7 @@ class CommModule(ProgramModuleObj):
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
-        
+
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
                                     request.POST['from'],
@@ -156,12 +157,12 @@ class CommModule(ProgramModuleObj):
                                     request.POST['subject'],
                                     request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
-        
+
         try:
             filterid = int(filterid)
         except:
             raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
-        
+
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
@@ -192,7 +193,7 @@ class CommModule(ProgramModuleObj):
             est_time = settings.EMAILTIMEOUT * numusers
         else:
             est_time = 1.5 * numusers
-            
+
 
         #        assert False, self.baseDir()+'finished.html'
         return render_to_response(self.baseDir()+'finished.html', request,
@@ -204,7 +205,7 @@ class CommModule(ProgramModuleObj):
     def commstep2(self, request, tl, one, two, module, extra, prog):
         pass
 
-    
+
     @aux_call
     @needs_admin
     def commpanel_old(self, request, tl, one, two, module, extra, prog):
@@ -227,9 +228,9 @@ class CommModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def commpanel(self, request, tl, one, two, module, extra, prog):
-    
+
         usc = UserSearchController()
-    
+
         context = {}
 
         #   If list information was submitted, continue to prepare a message
@@ -238,11 +239,11 @@ class CommModule(ProgramModuleObj):
             data = {}
             for key in request.POST:
                 data[key] = request.POST[key]
-                
+
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
-        
-                
+
+
                 filterObj = usc.filter_from_postdata(prog, data)
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
@@ -250,12 +251,12 @@ class CommModule(ProgramModuleObj):
                 if data['use_checklist'] == '1':
                     (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
                     return response
-                    
+
                 context['filterid'] = filterObj.id
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
                 return render_to_response(self.baseDir()+'step2.html', request, context)
-                
+
             ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
                 msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
@@ -268,13 +269,13 @@ class CommModule(ProgramModuleObj):
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
                 return render_to_response(self.baseDir()+'step2.html', request, context)
-                
+
             else:
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
-        
+
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
-        
+
         return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
     @aux_call

@@ -38,9 +38,9 @@ from datetime import datetime
 from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
-
-from esp.cache import cache_function
 from esp.users.models import ESPUser, AnonymousESPUser
+
+from argcache import cache_function
 
 #	Function for previewing announcements  - Michael P
 #	Generates the block structure used by battle screens
@@ -51,12 +51,11 @@ def preview_miniblog(request, section = None):
 
     if request.user != None:
         curUser = request.user
-    
     else:
         curUser = AnonymousESPUser()
 
     return curUser.getMiniBlogEntries()
-    
+
 @cache_function
 def get_visible_announcements(user, limit, tl):
     models_to_search = [Entry, AnnouncementLink]

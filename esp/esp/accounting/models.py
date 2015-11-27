@@ -50,22 +50,22 @@ class LineItemType(models.Model):
     max_quantity = models.PositiveIntegerField(default=1)
     for_payments = models.BooleanField(default=False)
     for_finaid = models.BooleanField(default=False)
-    
+
     @property
     def amount(self):
         if self.amount_dec is None:
             return None
         else:
             return float(self.amount_dec)
-    
+
     @property
     def num_options(self):
         return self.lineitemoptions_set.all().count()
-    
+
     @property
     def options(self):
         return self.lineitemoptions_set.all().values_list('id', 'amount_dec', 'description').order_by('amount_dec')
-    
+
     @property
     def option_choices(self):
         """ Return a list of (ID, description) tuples, one for each of the
@@ -106,7 +106,7 @@ class LineItemOptions(models.Model):
             return None
         else:
             return float(self.amount_dec)
-            
+
     def __unicode__(self):
         return u'%s ($%s)' % (self.description, self.amount_dec)
 
@@ -116,26 +116,26 @@ class FinancialAidGrant(models.Model):
     percent = models.PositiveIntegerField(blank=True, null=True, help_text='Enter an integer between 0 and 100 here to grant a certain percentage discount to the program after the above dollar credit is applied.  0 means no additional discount, 100 means no payment required.')
     timestamp = models.DateTimeField(auto_now=True)
     finalized = models.BooleanField(default=False)
-    
+
     @property
     def amount_max(self):
         if self.amount_max_dec is None:
             return None
         else:
             return float(self.amount_max_dec)
-    
+
     @property
     def user(self):
         return self.request.user
     @property
     def program(self):
         return self.request.program
-        
+
     def finalize(self):
         #   Create a transfer for the amount of this grant
         if self.finalized:
             return
-        
+
         from esp.accounting.controllers import IndividualAccountingController
         iac = IndividualAccountingController(self.program, self.user)
         source_account = iac.default_finaid_account()
@@ -146,7 +146,7 @@ class FinancialAidGrant(models.Model):
         self.finalized = True
         self.save()
         return transfer
-        
+
     def __unicode__(self):
         if self.percent and self.amount_max_dec:
             return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
@@ -165,7 +165,7 @@ class Account(models.Model):
     description = models.TextField()
     program = models.ForeignKey(Program, blank=True, null=True)
     balance_dec = models.DecimalField(max_digits=9, decimal_places=2, help_text='The difference between incoming and outgoing transfers that have been executed so far against this account.', default=Decimal('0'))
-    
+
     @property
     def balance(self):
         result = self.balance_dec
@@ -174,15 +174,15 @@ class Account(models.Model):
         if Transfer.objects.filter(destination=self, executed=False).exists():
             result += Transfer.objects.filter(destination=self, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
         return result
-        
+
     @property
     def pending_balance(self):
         return self.balance - self.balance_dec
-        
+
     @property
     def description_title(self):
         return ''.join(self.description.split('\n')[:1])
-        
+
     @property
     def description_contents(self):
         return '\n'.join(self.description.split('\n')[1:])
@@ -196,27 +196,27 @@ class Account(models.Model):
         for transfer in transfers_in:
             target_name = "none"
             target_title = "External payer[s]"
-            
+
             if transfer['source'] is not None:
                 target = Account.objects.get(id=transfer['source'])
                 target_name = target.name
                 target_title = target.description_title
-            
+
             transfers_in_context.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
-            
+
         for transfer in transfers_out:
             target_name = "none"
             target_title = "External payee[s]"
-            
+
             if transfer['destination'] is not None:
                 target = Account.objects.get(id=transfer['destination'])
                 target_name = target.name
                 target_title = target.description_title
-            
+
             transfers_out_context.append({'amount': transfer['amount'], 'target_type': 'destination', 'target_name': target_name, 'target_title': target_title})
-        
+
         return (transfers_out_context, transfers_in_context)
-        
+
     def __unicode__(self):
         return self.name
 
@@ -240,7 +240,7 @@ class Transfer(models.Model):
                       'the processor.')
     timestamp = models.DateTimeField(auto_now=True)
     executed = models.BooleanField(default=False)
-    
+
     def set_amount(self, amount):
         if self.executed:
             raise Exception('Cannot change the amount of this transfer since it was already executed')

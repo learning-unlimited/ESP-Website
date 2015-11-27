@@ -5,9 +5,9 @@ services:
   - memcached
 env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
-  - sudo apt-get update -qq
+  - sudo apt-get update
 install: 
-  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres) -qq
+  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres)
   - esp/packages_base_manual_install.sh
   - pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
 before_script:

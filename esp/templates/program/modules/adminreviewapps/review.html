@@ -2,11 +2,6 @@
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
 
-{% block subsection %}
-{% load subsection %}
-{% autoescape off %}{{ "Review student apps"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css"/>

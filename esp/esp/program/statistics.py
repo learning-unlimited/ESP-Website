@@ -40,7 +40,7 @@ from esp.program.models import Program
 This file contains a set of functions used to perform statistics queries
 specified using a StatisticsQueryForm (esp/program/forms.py).
 The /manage/statistics view function (statistics in esp/program/views.py)
-will try to call one or more of these functions based on the query specified 
+will try to call one or more of these functions based on the query specified
 in the form.
 
 Do not place a top-level function in this file if you would not like it to
@@ -48,7 +48,7 @@ be supported as a type of query.
 """
 
 def zipcodes(form, programs, students, profiles, result_dict={}):
-    
+
     #   Get zip codes
     zip_dict = {}
     for profile in profiles:
@@ -62,7 +62,7 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
             zip_dict['N/A'] += 1
     zip_codes = zip_dict.keys()
     zip_codes.sort()
-    
+
     #   Filter out invalid zip codes
     result_dict['invalid'] = 0
     for code in zip_codes:
@@ -71,7 +71,7 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
             del zip_dict[code]
             zip_codes.remove(code)
     zip_counts = [zip_dict[x] for x in zip_codes]
-    
+
     #   Compile and render
     result_dict['zip_data'] = sorted(zip(zip_codes, zip_counts), key=lambda pair: -pair[1])
     if form.cleaned_data['limit']:
@@ -80,7 +80,7 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
 
 
 def demographics(form, programs, students, profiles, result_dict={}):
-    
+
     #   Get aggregate 'vitals' info
     result_dict['num_classes'] = result_dict['num_sections'] = 0
     result_dict['num_class_hours'] = result_dict['num_student_class_hours'] = 0
@@ -101,12 +101,12 @@ def demographics(form, programs, students, profiles, result_dict={}):
             if profile.student_info.graduation_year and profile.student_info.graduation_year not in gradyear_dict:
                 gradyear_dict[profile.student_info.graduation_year] = 0
             gradyear_dict[profile.student_info.graduation_year] += 1
-            
+
             if profile.student_info.dob:
                 if profile.student_info.dob.year not in birthyear_dict:
                     birthyear_dict[profile.student_info.dob.year] = 0
                 birthyear_dict[profile.student_info.dob.year] += 1
-    
+
     #   Get financial aid info
     finaid_applied = []
     finaid_lunch = []
@@ -119,7 +119,7 @@ def demographics(form, programs, students, profiles, result_dict={}):
                     finaid_lunch.append(student.id)
                 if student.hasFinancialAid(program):
                     finaid_approved.append(student.id)
-                
+
     #   Compile and render
     grad_years = gradyear_dict.keys()
     grad_years.sort()
@@ -151,9 +151,9 @@ def schools(form, programs, students, profiles, result_dict={}):
             elif profile.student_info.school:
                 if profile.student_info.school not in school_dict:
                     school_dict[profile.student_info.school] = 0
-                school_dict[profile.student_info.school] += 1   
+                school_dict[profile.student_info.school] += 1
                 result_dict['num_school'] += 1
-                    
+
     #   Compile and render
     schools = school_dict.keys()
     schools.sort()
@@ -181,13 +181,13 @@ def startreg(form, programs, students, profiles, result_dict={}):
                 if reg_bits[0].start_date.date() not in reg_dict[program]:
                     reg_dict[program][reg_bits[0].start_date.date()] = 0
                 reg_dict[program][reg_bits[0].start_date.date()] += 1
-                
+
             confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-date')
             if confirm_bits.exists():
                 if confirm_bits[0].date.date() not in confirm_dict[program]:
                     confirm_dict[program][confirm_bits[0].date.date()] = 0
                 confirm_dict[program][confirm_bits[0].date.date()] += 1
-    
+
     #   Compile and render
     startreg_list = []
     confirm_list = []
@@ -201,7 +201,7 @@ def startreg(form, programs, students, profiles, result_dict={}):
         confirm_counts = [confirm_dict[program][key] for key in confirm_dates]
         confirm_list.append(zip(confirm_dates, confirm_counts))
     result_dict['program_data'] = zip(programs, startreg_list, confirm_list)
-    
+
     return render_to_string('program/statistics/startreg.html', result_dict)
 
 
@@ -222,7 +222,7 @@ def repeats(form, programs, students, profiles, result_dict={}):
         if id_pair not in repeat_count:
             repeat_count[id_pair] = 0
         repeat_count[id_pair] += 1
-        
+
     #   Compile and render
     key_map = {}
     repeat_labels = []
@@ -255,7 +255,7 @@ def heardabout(form, programs, students, profiles, result_dict={}):
                     case_map[ha_key] = ha_str
                     reasons_dict[ha_str] = 0
                 reasons_dict[case_map[ha_key]] += 1
-                
+
     #   Compile and render
     reasons = reasons_dict.keys()
     counts = [reasons_dict[x] for x in reasons]
@@ -292,7 +292,7 @@ def hours(form, programs, students, profiles, result_dict={}):
         timeslots_list.append(timeslots_dict)
         stats_list.append(stats_dict)
         students_list.append(prog_students)
-        
+
     #   Compile and render
     stats_flat = []
     timeslots_flat = []

@@ -42,7 +42,7 @@ class BCTeacherQuestionsForm(FormWithRequiredCss):
     qualifications = forms.CharField(label='Qualifications', help_text='What are your qualifications for teaching this course?', widget=forms.Textarea(attrs={'cols': 40, 'rows': 4}))
     computer_type = forms.CharField(label='Computer Type', help_text='If you are using a computer to project slides in your class, what kind of computer is it?')
     video_adapter = forms.ChoiceField(label='Video Adapter', help_text='If you have a Mac, do you have a VGA video adapter?', choices=[('yes', 'Yes'), ('no', 'No'), ('pc', 'N/A - I have a PC')])
-    
+
 class ChicagoTeacherQuestionsForm(FormWithRequiredCss):
     room_type = forms.ChoiceField(label='Room type', choices=[('discussion', 'Discussion style'), ('lecture', 'Lecture style'), ('large', 'Large open room'), ('kitchen', 'Kitchen'), ('outdoors', 'Outdoors'), ('other', 'Other (please explain)')])
     discussion_type = forms.ChoiceField(label='', choices=[('', ''), ('carpet', 'Carpeted'), ('nocarpet', 'Not carpeted'), ('dontcare', 'No preference')], help_text='Specify your room preference here if you selected "Large, open room" above.', required=False)

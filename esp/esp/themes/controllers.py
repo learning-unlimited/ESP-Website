@@ -62,7 +62,7 @@ class ThemeController(object):
     """
     def __init__(self, *args, **kwargs):
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
-        
+
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
 
@@ -134,7 +134,7 @@ class ThemeController(object):
                     #   Hack needed for Windows - may not be necessary for other OS
                     result.append(full_name.replace('\\', '/'))
         return result
-        
+
     def get_template_names(self, theme_name):
         return self.list_filenames(self.base_dir(theme_name) + '/templates', r'\.html$', mask_base=True)
 
@@ -161,7 +161,7 @@ class ThemeController(object):
         for dir in search_dirs:
             result += self.list_filenames(dir, r'\.less$')
         return result
-        
+
     def get_less_names(self, theme_name, theme_only=False):
         result = []
         if not theme_only:
@@ -173,7 +173,7 @@ class ThemeController(object):
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables(.*?)\.less')
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'(?<!variables)\.less$')
         return result
-        
+
     def find_less_variables(self, theme_name=None, theme_only=False, flat=False):
         if theme_name is None:
             theme_name = self.get_current_theme()
@@ -202,13 +202,13 @@ class ThemeController(object):
                 results[filename] = local_results
 
         return results
-        
+
     def compile_css(self, theme_name, variable_data, output_filename):
         #   Hack to make things work on Windows systems
         INCLUDE_PATH_SEP = ':'
         if os.name == 'nt':
             INCLUDE_PATH_SEP = ';'
-    
+
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -229,7 +229,6 @@ class ThemeController(object):
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
-            #   print '  Substituted value %s = %s' % (variable_name, variable_value)
 
         if themes_settings.THEME_DEBUG:
             tf1 = open('debug_2.less', 'w')
@@ -303,10 +302,10 @@ class ThemeController(object):
             os.remove(file_path)
 
     def clear_theme(self, theme_name=None, keep_files=None):
-    
+
         if theme_name is None:
             theme_name = self.get_current_theme()
-        
+
         #   Remove template overrides matching the theme name
         if themes_settings.THEME_DEBUG: print 'Clearing theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
@@ -354,7 +353,7 @@ class ThemeController(object):
                 file_data = open(full_filename, 'rb').read()
                 result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
         return result
-        
+
     def get_directory_differences(self, src_dir, dest_dir):
         """ Retrieve a list of relative paths that exist in both src_dir
             and dest_dir but with different file contents.  """
@@ -382,14 +381,14 @@ class ThemeController(object):
                         'source_size': filesize_src,
                         'dest_size': filesize_dest,
                     })
-                
+
         return differences
 
     def check_local_modifications(self, theme_name):
         """ Return a list of relative paths under /media that could be
             to be overwritten by loading the specified theme.   """
         differences = []
-    
+
         img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
         if os.path.exists(img_src_dir):
             img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
@@ -422,12 +421,11 @@ class ThemeController(object):
             template_filename = os.path.join(self.base_dir(theme_name), 'templates', template_name)
             template_file = open(template_filename, 'r')
             to.content = template_file.read()
-            
+
             #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
             if to.name == 'main.html':
                 to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
-            
-            #   print 'Template override %s contents: \n%s' % (to.name, to.content)
+
             to.save()
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
 
@@ -436,7 +434,7 @@ class ThemeController(object):
 
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
-        
+
         #   Copy images and script files to the active theme directory
         img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
         if os.path.exists(img_src_dir):
@@ -524,7 +522,7 @@ class ThemeController(object):
 
         if themes_settings.THEME_DEBUG: print (vars, palette)
         return (vars, palette)
-        
+
     def delete_customizations(self, save_name):
         os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % save_name))
 
@@ -541,7 +539,7 @@ class ThemeController(object):
 
     def get_palette(self):
         palette_base = json.loads(Tag.getTag('current_theme_palette', default='[]'))
-        
+
         #   Augment with the colors from any global LESS variables
         palette = set(palette_base)
         base_vars = self.find_less_variables()
@@ -549,7 +547,7 @@ class ThemeController(object):
             for val in varset.values():
                 if isinstance(val, basestring) and val.startswith('#'):
                     palette.add(val)
-        
+
         palette = list(palette)
         palette.sort()
         return palette

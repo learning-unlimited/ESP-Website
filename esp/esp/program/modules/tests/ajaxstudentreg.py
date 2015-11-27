@@ -47,7 +47,7 @@ import json
 class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
-        
+
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
@@ -56,7 +56,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             } )
         ProgramFrameworkTest.setUp(self, *args, **kwargs)
         SeleniumTestCase.setUp(self)
-        
+
         self.add_student_profiles()
         self.schedule_randomly()
 
@@ -70,7 +70,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
         self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
-    
+
     def expect_sections_in_schedule(self, response, sections=[]):
         resp_data = json.loads(response.content)
         self.assertTrue('student_schedule_html' in resp_data)
@@ -141,9 +141,9 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         #   Get the schedule and check that it's empty
         response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.expect_empty_schedule(response)        
+        self.expect_empty_schedule(response)
 
-        #   Add a class that we know we can take; check that schedule comes back with it 
+        #   Add a class that we know we can take; check that schedule comes back with it
         sec1 = random.choice(program.sections())
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec1.parent_class.id, 'section_id': sec1.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1])
@@ -155,7 +155,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         #   Try adding another section of same class and check that we get an error
         sec3 = random.choice(sec1.parent_class.get_sections().exclude(id=sec1.id))
         self.expect_ajaxerror('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec3.parent_class.id, 'section_id': sec3.id}, 'You are already signed up for a section of this class!')
-        
+
         #   Try adding another class that we can actually take and check that it's there
         sec4 = random.choice(program.sections().exclude(parent_class__id=sec1.parent_class.id).exclude(meeting_times=sec1.meeting_times.all()))
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -187,6 +187,6 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
     def test_lottery(self):
         # TODO(gkanwar): Make this test actually do something, or remove it
         program = self.program
-        
+
         self.webdriver.get('/learn/%s/lotterystudentreg' % program.getUrlBase())
 

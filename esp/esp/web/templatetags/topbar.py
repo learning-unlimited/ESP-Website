@@ -3,7 +3,7 @@ from django import template
 from django.core.cache import cache
 from esp.users.models import ESPUser, AnonymousUser
 from urllib import quote as urlencode
-from esp.web.util.template import cache_inclusion_tag
+from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True)
@@ -19,17 +19,17 @@ def get_primary_nav(context):
         return {}
 
     path = request.path
-    
+
     path_list = path.strip('/').split('/')
-    
+
     if path_list[0] not in known_navlinks:
         return {}
 
     page_setup = {}
     curuser = user
-    
+
     is_admin = curuser.isAdmin()
-    
+
     is_onsite = curuser.isOnsite()
 
     if is_onsite and is_admin:
@@ -45,8 +45,8 @@ def get_primary_nav(context):
     if retVal and cache_key:
         return {'page_setup': retVal,
                 'user':       curuser}
-    
-    
+
+
     # if we are at a level 2 site, like /myesp/home/
     if len(path_list) == 2 and path.lower() in [ x[2] for x in sections.values() ]:
         page_setup['navlinks'] = []
@@ -74,10 +74,10 @@ def get_primary_nav(context):
                                            'href'     : sections[section][2]})
         if cache_key:
             cache.set(cache_key, page_setup, 99999)
-            
+
         return {'page_setup': page_setup,
                 'user':       curuser}
-    
+
     # this is now level 3
     elif path_list[0] in [ x[0] for x in sections.values() ]:
         page_setup['navlinks'] = []
@@ -85,13 +85,13 @@ def get_primary_nav(context):
 
         for section in basic_navlinks:
             if path_list[0] == sections[section][0] and sections[section][4]:
-                
+
                 page_setup['section'] = {'id': section+'/lev3',
                                          'alt': sections[section][1],
                                          'cursection': section}
                 context['page_section'] = page_setup['section']
                 current_section = section
-                
+
         for section in basic_navlinks:
             if path_list[0] == sections[section][0]:
                 curbuttonloc = 'lev3'
@@ -99,13 +99,13 @@ def get_primary_nav(context):
                 curbuttonloc = current_section + '/lev3'
             else:
                 curbuttonloc = 'lev3'
-                
+
             page_setup['navlinks'].append({'id'       : section,
                                            'alt'      : sections[section][1],
                                            'highlight': path_list[0] == sections[section][0] and sections[section][4],
                                            'href'     : sections[section][2],
                                            'buttonloc': curbuttonloc})
-            
+
 
         if is_admin:
             section = 'admin'
@@ -124,7 +124,7 @@ def get_primary_nav(context):
 
         if cache_key:
             cache.set(cache_key, page_setup, 99999)
-            
+
         return {'page_setup': page_setup,
                 'user':       curuser}
 

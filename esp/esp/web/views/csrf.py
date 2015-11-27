@@ -20,7 +20,7 @@ def csrf_failure(request, reason=""):
     # to be able to reliably display the error message.
 
     try:
-        from esp.web.util.main import render_to_response
+        from esp.utils.web import render_to_response
         from esp.program.models import Program
 
         prog_re = r'^[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'

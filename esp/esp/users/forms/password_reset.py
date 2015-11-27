@@ -62,7 +62,7 @@ class NewPasswordSetForm(forms.Form):
             raise forms.ValidationError('Invalid username.')
 
         return username
-    
+
 
     def clean_password_confirm(self):
         new_passwd = self.cleaned_data['password_confirm'].strip()

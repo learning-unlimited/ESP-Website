@@ -19,7 +19,7 @@ def AutoRequestContext(*args, **kwargs):
         if 'autoescape' in kwargs:
             autoescape = kwargs['autoescape']
             del kwargs['autoescape']
-            
+
             retVal = RequestContext(request, *args, **kwargs)
 
             retVal.autoescape = autoescape

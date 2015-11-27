@@ -5,7 +5,7 @@ __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2008 by the individual contributors
+Copyright (c) 2007 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -32,15 +32,17 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-__all__ = ['table_dirty', 'cache_deleted']
 
+from argcache.extras.template import cache_inclusion_tag as argcache_inclusion_tag
 
-from django.dispatch import Signal
+def cache_inclusion_tag(register, file_name, takes_context=False, name=None):
+    """
+    Same as argcache's cache_inclusion_tag, but always depend on TemplateOverride.
+    """
 
-### not used
-### # TODO: Is it worth it making it specify changed fields? How common is this sort of thing?
-### """ Emitted when the entire table should be considered dirty. i.e. every field of every row could potentially be changed. """
-### table_dirty = Signal()
+    def dec(func):
+        func = argcache_inclusion_tag(register, file_name, takes_context, name)(func)
+        func.cached_function.depend_on_model('utils.TemplateOverride')
+        return func
 
-""" Emitted when a cache is deleted. """
-cache_deleted = Signal(providing_args=['key_set'])
+    return dec

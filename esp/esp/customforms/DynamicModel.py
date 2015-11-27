@@ -5,7 +5,7 @@ from django.db import models
 from django.apps import apps
 from django.db import connection, transaction
 from esp.customforms.models import Field
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache
@@ -21,13 +21,13 @@ def get_file_upload_path(instance, filename):
     save_dir = 'uploaded/%s' % instance.__class__.__name__
     save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
-    return save_path 
+    return save_path
 
 class DynamicModelHandler:
     """
     Handler class for creating, modifying and deleting dynamic models
         -Uses Django's SchemaEditor API for db operations
-        - __init__() takes as input two arguments -> 'form', the current Form instance, and 'fields', 
+        - __init__() takes as input two arguments -> 'form', the current Form instance, and 'fields',
             a list of (field_id, field_type) tuples
         -'fields' is optional. If not provided, it is computed automatically.
 
@@ -54,11 +54,11 @@ class DynamicModelHandler:
     or removed all of them. This is why you have to keep track of them and check, and have
     separate add and remove methods from the normal fields.
     """
-    
+
     _app_label = 'customforms'
     _module = 'esp.customforms.models'
     _schema_name = 'customforms'
-    
+
     _field_types = {
         'textField': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args': []},
         'longTextField': {'typeMap': models.CharField, 'attrs': {'max_length': 60,}, 'args': []},
@@ -81,8 +81,8 @@ class DynamicModelHandler:
         'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
         'instructions': {'typeMap': None},
     }
-    
-    
+
+
     def __init__(self, form, fields=[]):
         self.form = form
         self.field_list = []
@@ -90,13 +90,13 @@ class DynamicModelHandler:
         self._tname = 'customforms\".\"customforms_response_%d' % form.id
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
-    
+
     def __marinade__(self):
         """
         Implemented for caching convenience
         """
-        return 'dyn'    
-        
+        return 'dyn'
+
     # CHECK THIS
     @cache_function
     def _getFieldsForForm(self, form):
@@ -107,7 +107,7 @@ class DynamicModelHandler:
         self.fields = Field.objects.filter(form=form).values_list('id', 'field_type')
         return self.fields
     _getFieldsForForm.depend_on_row('customforms.Field', lambda field: {'form': field.form})
-    
+
     def _getModelField(self, field_type):
         """
         Returns the appropriate Django Model Field based on field_type
@@ -116,7 +116,7 @@ class DynamicModelHandler:
             return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
         else:
             return None
-            
+
     def _getLinkModelField(self, model):
         """
         Returns a ForeignKey Field for the given model
@@ -138,16 +138,16 @@ class DynamicModelHandler:
         link_models = []
         if not self.fields:
             self.fields = self._getFieldsForForm(self.form)
-        
+
         self.field_list.append( ('id', models.AutoField(primary_key = True) ) )
         if not self.form.anonymous:
             self.field_list.append( ('user', self._getLinkModelField(ESPUser) ) )
-            
+
         # Checking for only_fkey links
         if self.form.link_type != '-1':
             model_cls = cf_cache.only_fkey_models[self.form.link_type]
             self.field_list.append( ('link_%s' % model_cls.__name__, self._getLinkModelField(model_cls)) )
-            
+
         # Check for linked fields-
         # Insert a foreign-key to the parent model for link fields
         # Insert a regular column for non-link fields
@@ -167,12 +167,12 @@ class DynamicModelHandler:
                 self.link_models_list.append(model.__name__)
 
         return self.field_list
-        
+
     def createTable(self):
         """
         Sets up the database table using self.field_list
         """
-        
+
         if not self.field_list:
             self._getModelFieldList()
 
@@ -183,7 +183,7 @@ class DynamicModelHandler:
         else:
             with connection.schema_editor() as schema_editor:
                 schema_editor.create_model(self.createDynModel())
-        
+
     @transaction.atomic
     def deleteTable(self):
         """
@@ -192,7 +192,7 @@ class DynamicModelHandler:
         with connection.schema_editor() as schema_editor:
             schema_editor.delete_model(self.createDynModel())
         self.purgeDynModel()
-        
+
     def _getFieldToAdd(self, ftype):
         """
         Returns the model field to add, along with a suitable default
@@ -201,8 +201,8 @@ class DynamicModelHandler:
         args = self._field_types[ftype]['args']
         if ftype != "numeric" and ftype  != "boolean":
             attrs['default'] = ''
-        return self._field_types[ftype]['typeMap'](*args, **attrs)    
-    
+        return self._field_types[ftype]['typeMap'](*args, **attrs)
+
     def get_field_name(self, field):
         """
         Returns the field name for this field.
@@ -211,9 +211,9 @@ class DynamicModelHandler:
         if cf_cache.isLinkField(field.field_type):
             model = cf_cache.modelForLinkField(field.field_type)
             return 'link_'+model.__name__
-            
+
         return "question_%d" % field.id
-    
+
     def addField(self, field):
         with connection.schema_editor() as schema_editor:
             model = self.createDynModel()
@@ -226,7 +226,7 @@ class DynamicModelHandler:
             field_name = self.get_field_name(field)
             schema_editor.alter_field(model, self._getModelField(old_field),
                                       model._meta.get_field(field_name))
-        
+
     def removeField(self, field):
         """
         Removes a column (or columns) corresponding to a particular field
@@ -236,7 +236,7 @@ class DynamicModelHandler:
             field_name = self.get_field_name(field)
             #   TODO: Return early if this is a linked field
             schema_editor.remove_field(model, model._meta.get_field(field_name))
-        
+
     def removeLinkField(self, field):
         """
         Removes the FK-column corresponding to a link field if present.
@@ -250,7 +250,7 @@ class DynamicModelHandler:
                 field_name = 'link_%s' % link_model_cls.__name__
                 schema_editor.remove_field(model, model._meta.get_field(field_name))
                 self.link_models_list.remove(link_model_cls.__name__)
-        
+
     def addLinkFieldColumn(self, field):
         """
         Checks if the FK-column corresponding to this link field is already present.
@@ -266,10 +266,10 @@ class DynamicModelHandler:
                 field_name = self.get_field_name(field)
                 schema_editor.add_field(model, model._meta.get_field(field_name))
                 self.link_models_list.append(model_cls.__name__)
-        
+
     def change_only_fkey(self, form, old_link_type, new_link_type, link_id):
         """
-        Used to change the foreign key corresponding to only_fkey_links when a 
+        Used to change the foreign key corresponding to only_fkey_links when a
         form is modified.
         """
         with connection.schema_editor() as schema_editor:
@@ -279,7 +279,7 @@ class DynamicModelHandler:
                 old_model_cls = cf_cache.only_fkey_models[old_link_type]
                 old_field_name = 'link_%s' % old_model_cls.__name__
                 schema_editor.remove_field(model, model._meta.get_field(old_field_name))
-            
+
             form.link_type = new_link_type
             form.link_id = link_id
             form.save()
@@ -290,31 +290,31 @@ class DynamicModelHandler:
                 new_model_cls = cf_cache.only_fkey_models[new_link_type]
                 new_field_name = 'link_%s' % new_model_cls.__name__
                 schema_editor.add_field(model, model._meta.get_field(new_field_name))
-    
+
     def createDynModel(self):
         """
         Creates and returns the dynamic model for this form
         """
-        
+
         _db_table = self._tname
         _model_name = 'Response_%d' % self.form.id
-        
+
         # Removing any existing model definitions from Django's cache
         self.purgeDynModel()
-            
+
         class Meta:
             app_label = self._app_label
             db_table = _db_table
-        
+
         attrs = {'__module__': self._module, 'Meta': Meta}
-        
+
         # Updating attrs with the fields
-        if not self.field_list:                
+        if not self.field_list:
             self._getModelFieldList()
         attrs.update(dict(self.field_list))
-        
+
         dynModel = type(_model_name, (models.Model,), attrs)
-        return dynModel    
+        return dynModel
 
     def purgeDynModel(self):
         """
@@ -328,8 +328,8 @@ class DynamicModelHandler:
             apps.clear_cache()
         except KeyError:
             pass
-                
-        
-# Giving it an alias that's less of a mouthful        
+
+
+# Giving it an alias that's less of a mouthful
 DMH = DynamicModelHandler
 

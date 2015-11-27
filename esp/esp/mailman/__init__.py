@@ -36,7 +36,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 def load_list_settings(list, listfile):
     """
     Load a Mailman list-settings file and configure a list with the specified settings.
-   
+
     If the path specified isn't an absolute path, it will be taken to be relative to the project root.
     """
     if listfile[0] == '/':
@@ -146,7 +146,7 @@ def add_list_members(list_name, members):
 def remove_list_member(list, member):
     """
     Remove the e-mail address 'member' from the local Mailman mailing list 'list'
-    
+
     "member" may be a list (or other iterable) of e-mail address strings,
     in which case all addresses will be removed.
     """
@@ -156,7 +156,7 @@ def remove_list_member(list, member):
     if hasattr(member, "filter"):
         member = [x.email for x in member]
 
-    if not isinstance(member, basestring):       
+    if not isinstance(member, basestring):
         member = "\n".join(member)
 
     if isinstance(member, unicode):
@@ -172,7 +172,7 @@ def list_contents(lst):
     try:
         # It seems the empty string gets dragged into this list.
         contents.remove('')
-    except: 
+    except:
         pass
 
     return contents

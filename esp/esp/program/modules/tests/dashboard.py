@@ -63,7 +63,7 @@ class DashboardTest(ProgramFrameworkTest):
                                                     % self.program.getUrlBase())
 
             self.isSetUp = True  ## Save duplicate sets of queries on setUp
-        
+
     def testStudentStats(self):
         ## Student statistics
         student_labels_dict = {}
@@ -93,14 +93,14 @@ class DashboardTest(ProgramFrameworkTest):
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)
-        
+
 
     def testClasses(self):
         ## Make sure all classes are listed
         json_classes = json.loads(str(self.classes_response.content))
         classes = ClassSubject.objects.filter(parent_program=self.program)
         self.assertEquals(len(json_classes["classes"]), classes.count())
-        
+
         json_classes_dict = dict()
         for json_cls in json_classes["classes"]:
             json_classes_dict[json_cls['id']] = json_cls
