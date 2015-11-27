@@ -118,60 +118,37 @@ class AdminClass(ProgramModuleObj):
         context['classes']   = classes
         return context
 
-    def getClassFromId(self, clsid, tl='teach'):
-        classes = []
+    def getClassFromId(self, request, clsid):
         try:
             clsid = int(clsid)
-        except:
-            return (False, True)
+        except ValueError:
+            message = 'Invalid class ID %s.' % clsid
+            raise ESPError(message, log=False)
 
         classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
 
         if len(classes) == 1:
-            if not get_current_request().user.canEdit(classes[0]):
-                from esp.middleware import ESPError
-                message = 'You do not have permission to edit %s.' % classes[0].title
+            cls = classes[0]
+            if not request.user.canEdit(cls):
+                message = 'You do not have permission to edit %s.' % cls.title
                 raise ESPError(message, log=False)
             else:
-                Found = True
-                return (classes[0], True)
-        return (False, False)
+                return cls
+        else:
+            assert len(classes) == 0
+            message = 'Unable to find class %s.' % clsid
+            raise ESPError(message, log=False)
 
     def getClass(self, request, extra):
-        found = False
-        if not found and extra is not None and len(extra.strip()) > 0:
-            try:
-                clsid = int(extra)
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
+        clsid = None
+        if extra is not None and len(extra.strip()) > 0:
+            clsid = extra
+        elif request.POST.has_key('clsid'):
+            clsid = request.POST['clsid']
+        elif request.GET.has_key('clsid'):
+            clsid = request.GET['clsid']
 
-
-        if not found and request.POST.has_key('clsid'):
-            try:
-                clsid = int(request.POST['clsid'])
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
-
-        if not found and request.GET.has_key('clsid'):
-            try:
-                clsid = int(request.GET['clsid'])
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
-
-
-        return (render_to_response(self.baseDir()+'cannotfindclass.html', request, {}), False)
+        return self.getClassFromId(request, clsid)
 
     @aux_call
     @needs_admin
@@ -234,7 +211,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def addsection(self, request, tl, one, two, module, extra, prog):
         """ A little function to add a section to the class specified in POST. """
-        cls, found = self.getClass(request,extra)
+        cls = self.getClass(request,extra)
         cls.add_section()
 
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
@@ -242,10 +219,8 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request,extra)
+        cls = self.getClass(request,extra)
         sections = cls.sections.all().order_by('id')
-        if not found:
-            return ESPError('Unable to find the requested class.', log=False)
         context = {}
 
         if cls.isCancelled():
@@ -347,9 +322,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.accept()
         if request.GET.has_key('redirect'):
             return HttpResponseRedirect(request.GET['redirect'])
@@ -358,9 +331,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.reject()
         if request.GET.has_key('redirect'):
             return HttpResponseRedirect(request.GET['redirect'])
@@ -369,9 +340,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.propose()
         if request.GET.has_key('redirect'):
             return HttpResponseRedirect(request.GET['redirect'])
