@@ -469,11 +469,6 @@ The scheduling interface will periodically fetch updates from the server so that
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
 
-Managing Check List Items (CheckListModule)
--------------------------------------------
-
-This module is deprecated and will be removed in a future release.  Please consider using the new "class flags" feature described immediately below.
-
 Class Flags (ClassFlagModule)
 -------------------------------------------
 
