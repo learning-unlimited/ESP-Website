@@ -198,7 +198,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
         self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in ESPUser.grade_options()]
-            
+
         #   Add user's current grade if it is out of range and they have already filled out the profile.
         if user and user.registrationprofile_set.count() > 0:
             user_grade = user.getGrade()
@@ -207,7 +207,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
-        if Tag.getTag('show_student_graduation_years_not_grades'):            
+        if Tag.getTag('show_student_graduation_years_not_grades'):
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:
@@ -256,19 +256,19 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
         else:
             del self.fields['medical_needs']
-            
+
         #   Make the schoolsystem_id field non-required if schoolsystem_optout is checked
         if self.data and 'schoolsystem_optout' in self.data and 'schoolsystem_id' in self.data:
             self.data = self.data.copy()
             if self.data['schoolsystem_optout']:
                 self.fields['schoolsystem_id'].required = False
                 self.data['schoolsystem_id'] = ''
-                
+
         #   The unmatched_school field is for students to opt out of selecting a K12School.
         #   If we don't require a K12School to be selected, don't bother showing that field.
         if not Tag.getTag('require_school_field', default=False):
             del self.fields['unmatched_school']
-        
+
         self._user = user
 
     def repress_studentrep_expl_error(self):
@@ -338,14 +338,14 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
-        
+
         if Tag.getTag('require_school_field'):
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
         return cleaned_data
-        
-    
+
+
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
@@ -384,13 +384,13 @@ class TeacherInfoForm(FormWithRequiredCss):
             del self.fields['shirt_type']
         elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
             del self.fields['shirt_type']
-            
+
         if Tag.getTag('teacherinfo_shirt_size_required'):
             self.fields['shirt_size'].required = True
             self.fields['shirt_size'].widget.attrs['class'] = 'required'
         if Tag.getTag('teacherinfo_reimbursement_checks') == 'False':
             del self.fields['mail_reimbursement']
-            
+
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
@@ -476,7 +476,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
             if gy != 'G':
                 gy = 'N/A'
         return gy
-    
+
 class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
     graduation_year = SizedCharField(length=4, max_length=4, required=False)

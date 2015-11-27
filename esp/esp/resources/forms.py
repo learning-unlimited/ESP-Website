@@ -47,21 +47,21 @@ class ResourceRequestForm(forms.Form):
     resource_type = IDBasedModelChoiceField(queryset=ResourceType.objects.all(), widget=forms.HiddenInput)
     desired_value = forms.ChoiceField(choices=(), widget=forms.RadioSelect, required=False)
     #   desired_value = forms.ChoiceField(choices=())
-    
+
     def __init__(self, data=None, **kwargs):
-    
+
         if 'resource_type' in kwargs:
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
 
         super(ResourceRequestForm, self).__init__(data, **kwargs)
-    
+
         if data and ('prefix' in kwargs):
             self.prefix = kwargs['prefix']
             key_name = self.add_prefix('resource_type')
             if key_name in data:
                 self.resource_type = ResourceType.objects.get(id=data[key_name])
-            
+
         if hasattr(self, 'resource_type'):
             self.fields['desired_value'].label = self.resource_type.name
             #   If this is the only form to be displayed, show all options as checkboxes and let the user pick
@@ -72,12 +72,12 @@ class ResourceRequestForm(forms.Form):
                 self.fields['desired_value'] = forms.MultipleChoiceField(choices=(), widget=forms.CheckboxSelectMultiple, required=False)
                 self.fields['desired_value'].label = self.resource_type.name
             #   Don't provide a blank default value
-            #   self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)    
+            #   self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)
             self.fields['desired_value'].choices = zip(self.resource_type.choices, self.resource_type.choices)
-            
+
             self.initial['resource_type'] = self.resource_type.id
 
-        
+
 class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
     """ Like a FormSet, but handles the list of resource_types for the forms to start out with. """
     def __init__(self, *args, **kwargs):
@@ -85,14 +85,14 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
         super(ResourceRequestFormSet, self).__init__(*args, **kwargs)
-    
+
     def initial_form_count(self):
         """Returns the number of forms that are required in this FormSet."""
         if hasattr(self, 'resource_type'):
             return len(self.resource_type)
         else:
             return super(ResourceRequestFormSet, self).initial_form_count()
-    
+
     def _construct_form(self, i, **kwargs):
         #   Adapted from Django 1.1 release.
         """
@@ -110,16 +110,16 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
         # Allow extra forms to be empty.
         if i >= self.initial_form_count():
             defaults['empty_permitted'] = True
-            
+
         #   Update by Michael Price for resource requests (app specific)
         default_args = kwargs.copy()
         if hasattr(self, 'resource_type'):
             #   Select out appropriate list item for the form being constructed.
             if isinstance(self.resource_type, list):
                 default_args['resource_type'] = self.resource_type[i]
-            
+
         defaults.update(default_args)
         form = self.form(**defaults)
         self.add_fields(form, i)
-        
+
         return form

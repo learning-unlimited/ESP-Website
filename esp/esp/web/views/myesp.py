@@ -58,14 +58,14 @@ def myesp_passwd(request):
                         new_data = form.cleaned_data
                         user = authenticate(username=request.user.username,
                                             password=new_data['password'])
-                        
+
                         user.set_password(new_data['newpasswd'])
                         user.save()
                         login(request, user)
                         return render_to_response('users/passwd.html', request, {'Success': True})
         else:
                 form = UserPasswdForm(user=request.user)
-                
+
         return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
                                                     'Success': False})
@@ -108,7 +108,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
-    
+
     if prog_input is None:
         prog = None
     else:
@@ -122,7 +122,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser = ESPUser(curUser)
     curUser.updateOnsite(request)
 
-    #   Get the profile form from the user's type, although we need to handle 
+    #   Get the profile form from the user's type, although we need to handle
     #   a couple of extra possibilities for the 'role' variable.
     user_types = ESPUser.getAllUserTypes()
     additional_types = [['',  {'label': 'Not specified', 'profile_form': 'UserContactForm'}],
@@ -214,7 +214,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
         new_data = regProf.updateForm(new_data, role)
-        
+
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
         elif request.session.has_key('birth_month') and request.session.has_key('birth_day'):

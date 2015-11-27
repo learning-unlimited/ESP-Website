@@ -105,7 +105,7 @@ class TeacherQuizModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """Returns lists of teachers who've completed the teacher quiz."""
 
-        qo = Q(record__event=self.event, 
+        qo = Q(record__event=self.event,
                record__program=self.program)
         if QObject is True:
             return {
@@ -131,16 +131,16 @@ class TeacherQuizModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Quiz')
     def quiz(self, request, tl, one, two, module, extra, prog):
-    
+
         custom_form_id = Tag.getProgramTag('quiz_form_id', prog, None)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
-        
+
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request
-    
+
         if request.method == 'POST':
             form = form_wizard.get_form(0, request.POST, request.FILES)
             if form.is_valid():
@@ -149,7 +149,7 @@ class TeacherQuizModule(ProgramModuleObj):
                 return self.goToCore(tl)
         else:
             form = form_wizard.get_form(0)
-            
+
         return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
 
     class Meta:

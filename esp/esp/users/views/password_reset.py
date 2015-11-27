@@ -20,13 +20,13 @@ def initial_passwd_request(request, success=None):
     if success:
         return render_to_response('users/recovery_request_success.html',
                                   request, {})
-                                  
+
 
     if request.method == 'POST':
         form = PasswordResetForm(request.POST)
 
         if form.is_valid():
-            
+
             username = form.cleaned_data['username']
             if username != '':
                 users = ESPUser.objects.filter(username = username)

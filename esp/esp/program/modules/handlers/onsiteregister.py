@@ -65,7 +65,7 @@ class OnSiteRegister(ProgramModuleObj):
     def createBit(self, extension):
         if extension == 'Paid':
             self.updatePaid(True)
-            
+
         if Record.user_completed(self.student, extension.lower(), self.program):
             return False
         else:
@@ -81,7 +81,7 @@ class OnSiteRegister(ProgramModuleObj):
     def onsite_create(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = OnSiteRegForm(request.POST)
-            
+
             if form.is_valid():
                 new_data = form.cleaned_data
                 username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
@@ -122,7 +122,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-                
+
                 if new_data['paid']:
                     self.createBit('paid')
                     self.updatePaid(True)
@@ -139,13 +139,13 @@ class OnSiteRegister(ProgramModuleObj):
 
                 self.createBit('OnSite')
 
-                
+
                 new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
-                
+
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
-                    'student': new_user, 
+                    'student': new_user,
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
 

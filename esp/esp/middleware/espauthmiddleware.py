@@ -47,7 +47,7 @@ class ESPAuthMiddleware(object):
 
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
-        
+
         request.user = SimpleLazyObject(lambda: ESPUser(get_user(request)))
 
     def process_response(self, request, response):
@@ -63,7 +63,7 @@ class ESPAuthMiddleware(object):
             new_user = getattr(response, '_new_user', None)
             if isinstance(new_user, ESPUser):
                 user = new_user
-                
+
         if user and user.id:
             if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
                 max_age = None
@@ -113,13 +113,13 @@ class ESPAuthMiddleware(object):
             cookies_to_delete = [x for x in ('cur_username','cur_userid','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles', 
+                                         'cur_admin', 'cur_roles',
                                          'cur_yog', 'cur_grade',
                                          'cur_qsd_bits') if request.COOKIES.get(x, False)]
-            
+
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)
-        
+
         request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
         if modified_cookies:
@@ -127,4 +127,4 @@ class ESPAuthMiddleware(object):
 
         return response
 
-        
+

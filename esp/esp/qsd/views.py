@@ -78,10 +78,10 @@ def qsd(request, url):
         action = 'read'
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
-    
+
     # Detect edit authorizations
     have_read = True
-    
+
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
 
@@ -123,14 +123,14 @@ def qsd(request, url):
         action = 'edit'
 
     # Detect the standard read verb
-    if action == 'read':        
+    if action == 'read':
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
             'title': qsd_rec.title,
-            'nav_category': qsd_rec.nav_category, 
+            'nav_category': qsd_rec.nav_category,
             'content': qsd_rec.html(),
             'settings': settings,
             'qsdrec': qsd_rec,
@@ -146,14 +146,14 @@ def qsd(request, url):
 
         return response
 
-            
+
     # Detect POST
     if request.POST.has_key('post_edit'):
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
-        
+
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
@@ -187,14 +187,14 @@ def qsd(request, url):
             'content'      : qsd_rec.content,
             'keywords'     : qsd_rec.keywords,
             'description'  : qsd_rec.description,
-            'nav_category' : qsd_rec.nav_category, 
+            'nav_category' : qsd_rec.nav_category,
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
-            use_request_context=False)  
-    
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
+            use_request_context=False)
+
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
 

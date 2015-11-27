@@ -50,18 +50,18 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "module_type": "onsite",
             "seq": -1000,
             }
-    
+
     @main_call
     @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
         context = {}
         modules = self.program.getModules(request.user, 'onsite')
-        
+
         for module in modules:
             context = module.prepare(context)
 
-                    
+
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
@@ -75,7 +75,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
-    
+
 
 
     class Meta:

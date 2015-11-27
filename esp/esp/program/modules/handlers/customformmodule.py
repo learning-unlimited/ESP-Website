@@ -63,7 +63,7 @@ class CustomFormModule(ProgramModuleObj):
             'admin_title': 'Teacher Custom Form',
             'link_title': 'Additional Profile Information',
             'seq': 4,
-        }, 
+        },
         {
             "module_type": "learn",
             'required': False,
@@ -84,10 +84,10 @@ class CustomFormModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl, log=False)
-        
+
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request
-        
+
         if request.method == 'POST':
             form = form_wizard.get_form(0, request.POST, request.FILES)
             if form.is_valid():
@@ -111,14 +111,14 @@ class CustomFormModule(ProgramModuleObj):
                     for field in plain_form.fields:
                         if isinstance(plain_form.fields[field], forms.MultipleChoiceField):
                             prev_result_data[field] = getattr(prev_results[0], field).split(';')
-                        else:    
+                        else:
                             prev_result_data[field] = getattr(prev_results[0], field)
                     form_wizard = FormHandler(cf, request, request.user).get_wizard(initial_data={0: prev_result_data})
-            
+
             form = form_wizard.get_form(0)
-            
+
         return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
-    
+
     class Meta:
         proxy = True
         app_label = 'modules'

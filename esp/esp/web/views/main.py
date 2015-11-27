@@ -78,7 +78,7 @@ except ImportError:
 def my_import(name):
     from django.core.urlresolvers import get_callable
     return get_callable(name)
-    
+
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
 def home(request):
@@ -90,7 +90,7 @@ def home(request):
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
         from esp.program.models import Program
-        
+
 	try:
 		prog = Program.by_prog_inst(one, two)
 	except Program.DoesNotExist:
@@ -102,7 +102,7 @@ def program(request, tl, one, two, module, extra = None):
             setattr(request, "module", "%s/%s" % (module, extra))
         else:
             setattr(request, "module", module)
-            
+
 	from esp.program.modules.base import ProgramModuleObj
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 
@@ -148,7 +148,7 @@ def contact(request, section='esp'):
             usernames = []
             logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
-            
+
             email = form.cleaned_data['sender']
             usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
@@ -165,7 +165,7 @@ def contact(request, section='esp'):
                 to_email.append(email)
 
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-            
+
             if len(form.cleaned_data['name'].strip()) > 0:
                 email = '%s <%s>' % (form.cleaned_data['name'], email)
 
@@ -173,10 +173,10 @@ def contact(request, section='esp'):
                 t = loader.get_template('email/comment')
 
                 context = {
-                    'form': form, 
-                    'domain': domain, 
-                    'usernames': usernames, 
-                    'logged_in_as': logged_in_as, 
+                    'form': form,
+                    'domain': domain,
+                    'usernames': usernames,
+                    'logged_in_as': logged_in_as,
                     'user_agent_str': user_agent_str
                 }
                 msgtext = t.render(Context(context))
@@ -244,7 +244,7 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        return render_to_response('users/profile_complete.html', request, ctxt)		    
+        return render_to_response('users/profile_complete.html', request, ctxt)		
 
 
 ## QUIRKS
@@ -256,7 +256,7 @@ def quirk_NortonInternetSecurityEngine(err):
     I have no idea why, but there's not much we can do about it in the absence of someone with Norton Security Helper experiencing this bug.
     """
     return ('rfhelper32.js' in err['exception']['message'])
-    
+
 def quirk_ScriptError(err):
     """
     We occasionally get messages with the content "Script error.", and no other useful information.
@@ -288,7 +288,7 @@ def is_quirk_should_be_ignored(err):
         except:
             pass
     return False
-    
+
 @csrf_exempt  ## We want this to work even (especially?) if something's borked with the CSRF cookie logic
 def error_reporter(request):
     """ Grab an error submitted as a GET request """
@@ -300,7 +300,7 @@ def error_reporter(request):
     if url[:4] == 'http' and (domain not in (url[7:(7+len(domain))], url[8:(8+len(domain))])):
         ## Punt responses not from us
         return HttpResponse('')  ## Return something, so we don't trigger an error
-    
+
     cookies = StringIO()
     get = StringIO()
     meta = StringIO()
@@ -316,7 +316,7 @@ def error_reporter(request):
     msg = request.GET.get('msg', "(no message)")
 
     json_flag = ""
-    
+
     if request.POST:
         if request.body.strip()[0] == '[':
             ## Probably a JSON error report
@@ -327,7 +327,7 @@ def error_reporter(request):
                 ## Deal with messages that we don't want to deal with
                 if is_quirk_should_be_ignored(err):
                     return HttpResponse('')
-                
+
                 json_flag = " (JSON-encoded)"
 
                 for e in err:
@@ -364,7 +364,7 @@ def error_reporter(request):
                 print "*** Exception!", e
                 print json.__dict__
                 err = request.body
-                    
+
             pprint(err, post)
 
         else:
@@ -395,11 +395,11 @@ META:
         mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
     except:  ## For dev servers of people who don't have local SMTP
         print "[ESP] JS Error: %s\n\n%s" % (msg[:100].replace("\n", "").replace("\r", ""), err_txt)
-    
+
     return HttpResponse('')  ## Return something, so we don't trigger an error
 
 def set_csrf_token(request):
     # Call get_token to set the CSRF cookie
     from django.middleware.csrf import get_token
     get_token(request)
-    return HttpResponse('') # Return the minimum possible 
+    return HttpResponse('') # Return the minimum possible

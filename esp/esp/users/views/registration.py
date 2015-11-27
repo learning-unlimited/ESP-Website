@@ -30,7 +30,7 @@ from esp.utils.web import render_to_response
 __all__ = ['user_registration_phase1', 'user_registration_phase2','resend_activation_view']
 
 
-def user_registration_validate(request):    
+def user_registration_validate(request):
     """Handle the account creation logic when the form is submitted
 
 This function is overloaded to handle either one or two phase reg"""
@@ -40,7 +40,7 @@ This function is overloaded to handle either one or two phase reg"""
     else:
         form = UserRegForm(request.POST)
 
-    if form.is_valid():         
+    if form.is_valid():
         try:
             #there is an email-only account with that email address to upgrade
             user = ESPUser.objects.get(email=form.cleaned_data['email'],
@@ -59,7 +59,7 @@ This function is overloaded to handle either one or two phase reg"""
         user.last_name  = form.cleaned_data['last_name']
         user.first_name = form.cleaned_data['first_name']
         user.set_password(form.cleaned_data['password'])
-            
+
         #   Append key to password and disable until activation if desired
         if Tag.getBooleanTag('require_email_validation', default=False):
             userkey = random.randint(0,2**31 - 1)
@@ -74,7 +74,7 @@ This function is overloaded to handle either one or two phase reg"""
         if not Tag.getBooleanTag('require_email_validation', default=False):
             user = authenticate(username=form.cleaned_data['username'],
                                     password=form.cleaned_data['password'])
-                
+
             login(request, user)
             return HttpResponseRedirect('/myesp/profile/')
         else:
@@ -94,7 +94,7 @@ When there are already accounts with this email address (depending on some tags)
 """
     form = EmailUserRegForm(request.POST)
 
-    if form.is_valid():         
+    if form.is_valid():
         ## First, check to see if we have any users with the same e-mail
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
             existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
@@ -105,7 +105,7 @@ When there are already accounts with this email address (depending on some tags)
                 return render_to_response(
                     'registration/newuser_phase1.html',
                     request,
-                    { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
+                    { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })
 
         #form is valid, and not caring about multiple accounts
         email = urllib.quote(form.cleaned_data['email'])
@@ -135,14 +135,14 @@ def user_registration_phase1(request):
     #we do want to ask about duplicate accounts
     if request.method == 'POST':
         return user_registration_checkemail(request)
-    
+
     form=EmailUserRegForm()
     return render_to_response('registration/newuser_phase1.html',
                               request,
                               {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase2(request):
-    """Displays the second part of account creation, and when that form is submitted, call a function to handle the actual validation and creation."""   
+    """Displays the second part of account creation, and when that form is submitted, call a function to handle the actual validation and creation."""
     if request.method == 'POST':
         return user_registration_validate(request)
 
@@ -200,7 +200,7 @@ def resend_activation_view(request):
         send_activation_email(user,userkey)
         return render_to_response('registration/resend_done.html',request,
                                   {'form':form, 'site': Site.objects.get_current()})
-    else: 
+    else:
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html',request,
                                   {'form':form, 'site': Site.objects.get_current()})
@@ -220,7 +220,7 @@ class GradeChangeRequestView(CreateView):
         change_request.grade_before_request = self.request.user.getGrade()
         change_request.save()
         messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
-        
+
         log.info('grade change request sent by user %s'%(self.request.user,))
 
         return HttpResponseRedirect(self.success_url)

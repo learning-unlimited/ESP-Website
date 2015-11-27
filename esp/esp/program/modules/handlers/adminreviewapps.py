@@ -86,7 +86,7 @@ class AdminReviewApps(ProgramModuleObj):
         students = []
         for key in students_dict:
             students += students_dict[key]
-            
+
         students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
 
         for student in students:
@@ -156,13 +156,13 @@ class AdminReviewApps(ProgramModuleObj):
     def view_app(self, request, tl, one, two, module, extra, prog):
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
         reg_nodes = scrmi.reg_verbs()
-        
+
         try:
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()
         except ClassSubject.DoesNotExist:
             raise ESPError('Cannot find class.', log=False)
-        
+
         student = request.GET.get('student',None)
         if not student:
             student = request.POST.get('student','')
@@ -174,14 +174,14 @@ class AdminReviewApps(ProgramModuleObj):
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:
             raise ESPError('Student not a student of this class.', log=False)
-        
+
         try:
             student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
-        
+
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
 
     def prepare(self, context):
@@ -213,19 +213,19 @@ Student schedule for %s:
 
         # now we sort them by time/title
         classes.sort()
-        
+
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
                 rooms = u'N/A'
             else:
                 rooms = u", ".join(rooms)
-                
+
             schedule += u"""
 %s|%s|%s""" % (u",".join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
-               
+
         return schedule
 
 

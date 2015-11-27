@@ -17,7 +17,7 @@ class TemplateOverrideAdmin(VersionAdmin):
 
 class PrinterAdmin(admin.ModelAdmin):
     list_display = ['name', 'printer_type']
-    
+
 class PrintRequestAdmin(admin.ModelAdmin):
     list_display = ['user', 'printer', 'time_requested', 'time_executed']
     list_filter = ['printer', 'time_requested', 'time_executed']

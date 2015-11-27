@@ -37,7 +37,7 @@ from django.db.models.query import Q
 
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
-        
+
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
@@ -46,7 +46,7 @@ class NavBarCategory(models.Model):
 
     def get_navbars(self):
         return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
-    
+
     @cache_function
     def from_request(section, path):
         """ A function to guess the appropriate navigation category when one
@@ -70,7 +70,7 @@ class NavBarCategory(models.Model):
 
     from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
-    
+
     def __unicode__(self):
         return u'%s' % self.name
 
@@ -97,7 +97,7 @@ class NavBarEntry(models.Model):
 
     def can_edit(self, user):
         return user.isAdmin()
-    
+
     def __unicode__(self):
         return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
 
@@ -106,10 +106,10 @@ class NavBarEntry(models.Model):
 
     def makeUrl(self):
         return self.link
-    
+
     def is_link(self):
         return (self.link is not None) and (len(self.link) > 0)
-    
+
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
 

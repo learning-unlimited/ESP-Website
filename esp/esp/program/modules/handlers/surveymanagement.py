@@ -52,22 +52,22 @@ class SurveyManagement(ProgramModuleObj):
             "module_type": "manage",
             "seq": 25
             }
-                 
+
     def isStep(self):
         return False
 
     @needs_admin
     def survey_create(self, request, tl, one, two, module, extra, prog):
-       
+
         context = {'program': prog}
-        
+
         return render_to_response('program/modules/surveymanagement/create.html', request, context)
-    
+
     @needs_admin
     def survey_edit(self, request, tl, one, two, module, extra, prog):
 
         context = {'program': prog}
-        
+
         return render_to_response('program/modules/surveymanagement/edit.html', request, context)
 
     @main_call

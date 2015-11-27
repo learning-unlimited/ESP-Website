@@ -78,13 +78,13 @@ class AdminMorph(ProgramModuleObj):
             saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list], Q())
         saved_queries['program'] = reduce(operator.or_, saved_queries.values())
         saved_queries['all'] = Q()
-        
+
         #   Default to using all program participants, if no query type is specified
         if extra in saved_queries:
             query = saved_queries[extra]
         else:
             query = saved_queries['program']
-        
+
         user, found = search_for_user(request, ESPUser.objects.filter(query))
 
         if not found:

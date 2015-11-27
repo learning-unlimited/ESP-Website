@@ -56,7 +56,7 @@ class UserSearchController(object):
         return base_list.filter(self.query_from_criteria('any', criteria)).distinct()
 
     def query_from_criteria(self, user_type, criteria):
-    
+
         """ Get the "base list" consisting of all the users of a specific type. """
         if user_type.lower() == 'any':
             Q_base = Q()
@@ -64,13 +64,13 @@ class UserSearchController(object):
             if user_type not in ESPUser.getTypes():
                 raise ESPUser(), 'user_type must be one of '+str(ESPUser.getTypes())
             Q_base = ESPUser.getAllOfType(user_type, True)
-            
+
         Q_include = Q()
         Q_exclude = Q()
 
         """ Apply the specified criteria to filter the list of users. """
         if criteria.has_key('userid') and len(criteria['userid'].strip()) > 0:
-        
+
             ##  Select users based on their IDs only
             userid = []
             for digit in criteria['userid'].split(','):
@@ -78,15 +78,15 @@ class UserSearchController(object):
                     userid.append(int(digit))
                 except:
                     raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
-                    
+
             if criteria.has_key('userid__not'):
                 Q_exclude &= Q(id__in = userid)
             else:
                 Q_include &= Q(id__in = userid)
             self.updated = True
-                
+
         else:
-        
+
             ##  Select users based on all other criteria that was entered
             for field in ['username','last_name','first_name', 'email']:
                 if criteria.has_key(field) and len(criteria[field].strip()) > 0:
@@ -134,16 +134,16 @@ class UserSearchController(object):
 
             if criteria.has_key('grade_max'):
                 yog = ESPUser.YOGFromGrade(criteria['grade_max'])
-                if yog != 0:                
+                if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
-        
+
             if criteria.has_key('school'):
                 school = criteria['school']
                 if school:
                     Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
                     self.updated = True
-        
+
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = range(1920, 2020)
             if criteria.has_key('gradyear_min') and len(criteria['gradyear_min'].strip()) > 0:
@@ -161,9 +161,9 @@ class UserSearchController(object):
             if criteria.get('gradyear_min', None) or criteria.get('gradyear_max', None):
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
                 self.updated = True
-                
+
         return Q_base & (Q_include & ~Q_exclude)
-        
+
     def query_from_postdata(self, program, data):
         """ Get a Q object for the targeted list of users from the POST data submitted
             on the main "comm panel" page
@@ -193,10 +193,10 @@ class UserSearchController(object):
                         UserBits we cannot store both of these in a single Q object.  To compensate, we
                         ignore the user type when performing a program-specific query.  """
                     recipient_type = 'any'
-                
+
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria(recipient_type, data)
-            
+
         ##  Handle "combination list" submissions
         elif 'combo_base_list' in data:
             #   Get an initial query from the supplied base list
@@ -205,7 +205,7 @@ class UserSearchController(object):
                 q_program = Q()
             else:
                 q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
-            
+
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
             #   with any lists marked 'OR'.
@@ -213,7 +213,7 @@ class UserSearchController(object):
             and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
             or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
             not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
-            #if any keys concern the same field, we will place them into 
+            #if any keys concern the same field, we will place them into
             #a subquery and count occurrences
 
             #for the purpose of experimentation simply fix this to the record__event
@@ -230,7 +230,7 @@ class UserSearchController(object):
 
                     if and_list_name in not_keys:
                         q_program = q_program & ~qobject
-                    else:    
+                    else:
                         qobject_child = qobject.children[1]
                         needs_subquery = False
 
@@ -242,7 +242,7 @@ class UserSearchController(object):
                                 subqry_fieldmap[field_name].append(field_value)
                         if not needs_subquery:
                             q_program = q_program & qobject
-                                    
+
             event_fields = subqry_fieldmap['record__event']
 
             if event_fields:
@@ -271,10 +271,10 @@ class UserSearchController(object):
                         q_program = q_program | qobject
                     else:
                         q_program = q_program | ~qobject
-                    
+
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria(recipient_type, data)
-    
+
         qobject = (q_extra & q_program & Q(is_active=True))
 
         #strip out duplicate clauses
@@ -295,7 +295,7 @@ class UserSearchController(object):
 
     def filter_from_postdata(self, program, data):
         """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
-    
+
         query = self.query_from_postdata(program, data)
 
         #TODO-determine best location to inject subquery
@@ -329,7 +329,7 @@ class UserSearchController(object):
         context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
-        
+
         #   Add in program-specific lists for most common user types
         for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
             raw_lists = getattr(program, list_func)(True)
@@ -337,49 +337,49 @@ class UserSearchController(object):
             for item in category_lists[user_type]:
                 if item['name'] in UserSearchController.preferred_lists:
                     item['preferred'] = True
-                    
+
         #   Add in global lists for each user type
         for user_type in ESPUser.getTypes():
             key = user_type.lower() + 's'
             if user_type not in category_lists:
                 category_lists[user_type] = []
             category_lists[user_type].insert(0, {'name': 'all_%s' % user_type, 'list': ESPUser.getAllOfType(user_type), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
-        
+
         #   Add in mailing list accounts
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
-        
+
         context['lists'] = category_lists
         context['all_list_names'] = []
         for category in category_lists:
             for item in category_lists[category]:
                 context['all_list_names'].append(item['name'])
-                
+
         if target_path is None:
             target_path = '/manage/%s/commpanel' % program.getUrlBase()
         context['action_path'] = target_path
-        
+
         return context
-    
+
     def create_filter(self, request, program, template=None, target_path=None):
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
         """
-        
+
         if template is None:
             template = 'users/usersearch/usersearch_default.html'
-        
+
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
             data = {}
             for key in request.POST:
                 data[key] = request.POST[key]
-                
+
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
                 filterObj = self.filter_from_postdata(program, data)
                 return (filterObj, True)
-                
+
         if target_path is None:
             target_path = request.path
-        
+
         return (render_to_response(template, request, self.prepare_context(program, target_path)), False)

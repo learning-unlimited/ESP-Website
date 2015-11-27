@@ -73,7 +73,7 @@ class NameTagModule(ProgramModuleObj):
         users = []
 
         user_title = idtype
-        
+
         if idtype == 'students':
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
@@ -90,7 +90,7 @@ class NameTagModule(ProgramModuleObj):
                               'name' : '%s %s' % (student.first_name, student.last_name),
                               'id'   : student.id,
                               'username': student.username})
-                
+
         elif idtype == 'teacher':
             teachers = []
             teacher_dict = self.program.teachers(QObjects=True)
@@ -113,14 +113,14 @@ class NameTagModule(ProgramModuleObj):
             volunteers = request.POST['volunteers']
             for user in volunteers.split("\n"):
                 arruser = user.split(",", 1)
-                
+
                 if len(arruser) >= 2:
                     user_title = arruser[1].strip()
                     users.append({'title': user_title,
                                   'name' : arruser[0].strip(),
                                   'id'   : ''})
-                
-                
+
+
         elif idtype == 'blank':
             users = []
             user_title = request.POST['blanktitle']
@@ -128,12 +128,12 @@ class NameTagModule(ProgramModuleObj):
                 users.append({'title': user_title,
                               'name' : '',
                               'id'   : ''})
-                
+
         context = {'module': self,
-                   'programname': request.POST['progname']                   
+                   'programname': request.POST['progname']
                    }
 
-        
+
         numperpage = 6
 
 
@@ -156,9 +156,9 @@ class NameTagModule(ProgramModuleObj):
         context['users'] = users
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
-            
+
         return render_to_response(self.baseDir()+'ids.html', request, context)
-        
+
 
 
     class Meta:

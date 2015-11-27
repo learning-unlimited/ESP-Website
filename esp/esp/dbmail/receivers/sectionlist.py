@@ -80,7 +80,7 @@ class SectionList(BaseHandler):
             })
             if DEBUG: print "Settings applied..."
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
-                      render_to_string("mailman/new_list_intro_teachers.txt", 
+                      render_to_string("mailman/new_list_intro_teachers.txt",
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }),
                       settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])

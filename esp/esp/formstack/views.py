@@ -44,7 +44,7 @@ def medicalsyncapi(request):
     """
     if not request.is_secure():
         return HttpResponseServerError("HTTPS is required when accessing this view")
-   
+
     # Authenticate
     username = request.POST['username']
     password = request.POST['password']
@@ -61,7 +61,7 @@ def medicalsyncapi(request):
         url = chunks[1] + '/' + chunks[0] + '_' + chunks[2]
     else:
         return HttpResponseNotFound("Program could not be parsed")
-    
+
     results = Program.objects.filter(url=url)
 
     if len(results) != 1:

@@ -69,7 +69,7 @@ class UserAttributeGetter(object):
                  }
 
         last_label_index = len(labels)
-        for i in range(3):#replace 3 with call to get_max_applications + fix that method    
+        for i in range(3):#replace 3 with call to get_max_applications + fix that method
             key = str(last_label_index + i + 1) + '_class_application_' + str(i+1)
             labels[key] = 'Class Application ' + str(i+1)
         result = {}
@@ -79,18 +79,18 @@ class UserAttributeGetter(object):
                 label_map[x[3:]] = x
             if item.startswith('get_') and item[4:] in label_map:
                 result[label_map[item[4:]]] = labels[label_map[item[4:]]]
-            
+
         return result
-    
+
     def __init__(self, user, program):
         self.user = ESPUser(user)
         self.program = program
         self.profile = self.user.getLastProfile()
-        
+
     def get(self, attr):
         attr = attr.lstrip('0123456789_')
         #if attr = 'classapplication':
-            
+
         result = getattr(self, 'get_' + attr)()
         if result is None or result == '':
             return 'N/A'
@@ -104,17 +104,17 @@ class UserAttributeGetter(object):
 
     def get_id(self):
         return self.user.id
-        
+
     def get_address(self):
         if self.profile.contact_user:
             return self.profile.contact_user.address()
-    
+
     def get_fullname(self):
         return self.user.name()
-        
+
     def get_lastname(self):
         return self.user.last_name
-        
+
     def get_firstname(self):
         return self.user.first_name
 
@@ -123,10 +123,10 @@ class UserAttributeGetter(object):
 
     def get_email(self):
         return self.user.email
-        
+
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
-        
+
     def get_regdate(self, ordering='start_date'):
         regs = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__parent_program=self.program, relationship__name='Enrolled')
         if regs.exists():
@@ -134,25 +134,25 @@ class UserAttributeGetter(object):
 
     def get_first_regdate(self):
         return self.get_regdate(ordering='start_date')
-        
+
     def get_last_regdate(self):
         return self.get_regdate(ordering='-start_date')
 
     def get_cellphone(self):
         if self.profile.contact_user:
             return self.profile.contact_user.phone_cell
-            
+
     def get_textmsg(self):
         if self.profile.contact_user:
             return self.profile.contact_user.receive_txt_message
-            
+
     def get_studentrep(self):
         if self.profile.student_info:
             return self.profile.student_info.studentrep
 
     def get_classhours(self):
         return sum([x.meeting_times.count() for x in self.user.getEnrolledSections(self.program)])
-        
+
     def get_school(self):
         if self.profile.student_info:
             if self.profile.student_info.k12school:
@@ -167,19 +167,19 @@ class UserAttributeGetter(object):
             return self.profile.teacher_info.shirt_size
         else:
             return None
-                
+
     def get_heard_about(self):
         if self.profile.student_info:
             return self.profile.student_info.heard_about
-            
+
     def get_gradyear(self):
         if self.profile.student_info:
             return self.profile.student_info.graduation_year
-            
+
     def get_transportation(self):
         if self.profile.student_info:
             return self.profile.student_info.transportation
-            
+
     def get_schoolsystem_id(self):
         if self.profile.student_info:
             return self.profile.student_info.schoolsystem_id
@@ -188,31 +188,31 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             return self.profile.student_info.gender
 
-    #Replace this with something based on presence and number of application questions for a particular program 
+    #Replace this with something based on presence and number of application questions for a particular program
     def get_max_applications(self):
         return 3
 
     def get_class_application_1(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 0:
-            return str(responses[0].question.subject) + ':  ' + str(responses[0])   
+            return str(responses[0].question.subject) + ':  ' + str(responses[0])
         else:
             return None
 
     def get_class_application_2(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 1:
-            return str(responses[1].question.subject) + ':  ' + str(responses[0])   
+            return str(responses[1].question.subject) + ':  ' + str(responses[0])
         else:
             return None
     def get_class_application_3(self):
         responses = self.user.listAppResponses(self.program)
         if len(responses) > 2:
-            return str(responses[2].question.subject) + ':  ' + str(responses[0])   
+            return str(responses[2].question.subject) + ':  ' + str(responses[0])
         else:
             return None
 
-            
+
 class ListGenForm(forms.Form):
     attr_choices = choices=UserAttributeGetter.getFunctions().items()
     attr_choices.sort(key=lambda x: x[0])
@@ -296,16 +296,16 @@ class ListGenModule(ProgramModuleObj):
                 )
             else:
                 context = {
-                    'form': form, 
-                    'filterid': filterObj.id, 
+                    'form': form,
+                    'filterid': filterObj.id,
                     'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
                 }
                 return render_to_response(self.baseDir()+'options.html', request, context)
         else:
             #   Otherwise, show a blank form
             context = {
-                'form': form, 
-                'filterid': filterObj.id, 
+                'form': form,
+                'filterid': filterObj.id,
                 'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             }
             form = ListGenForm()
@@ -317,10 +317,10 @@ class ListGenModule(ProgramModuleObj):
         """ Select a group of users and generate a list of information
             about them using the generateList view above. """
         usc = UserSearchController()
-    
+
         context = {}
         context['program'] = prog
-        
+
         #   If list information was submitted, generate a query filter and
         #   show options for generating a user list
         if request.method == 'POST':
@@ -333,7 +333,7 @@ class ListGenModule(ProgramModuleObj):
             #   Display list generation options
             form = ListGenForm()
             context.update({
-                'form': form, 
+                'form': form,
                 'filterid': filterObj.id,
                 'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             })

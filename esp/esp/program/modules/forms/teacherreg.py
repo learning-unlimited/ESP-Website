@@ -60,7 +60,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         ("***",  "***  - Will move quickly and will have many difficult parts.",),
         ("****", "**** - You should not expect to be able to understand most of this class.",),
     ]
-    
+
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
@@ -68,7 +68,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
-    
+
     duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
     num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
@@ -85,12 +85,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
-    allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
+    allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
-    
+
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % settings.INSTITUTION_NAME )
 
@@ -99,14 +99,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
                                          help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt with attached reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
-    
+
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
-    
-    
+
+
     def __init__(self, module, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
-    
+
         def hide_field(field, default=None):
             field.widget = forms.HiddenInput()
             if default is not None:
@@ -115,28 +115,28 @@ class TeacherClassRegForm(FormWithRequiredCss):
             """ Hide a choice field if there's only one choice """
             if len(field.choices) == 1:
                 hide_field(field, default=field.choices[0][0])
-        
+
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
         if isinstance(module, ClassRegModuleInfo):
             crmi = module
         else:
             crmi = module.crmi
-        
+
         prog = crmi.get_program()
-        
+
         section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
-        
+
         class_sizes = crmi.getClassSizes()
         class_sizes = zip(class_sizes, class_sizes)
-        
+
         class_grades = crmi.getClassGrades()
         class_grades = zip(class_grades, class_grades)
 
         class_ranges = ClassSizeRange.get_ranges_for_program(prog)
         class_ranges = [(range.id, range.range_str()) for range in class_ranges]
-        
+
         # num_sections: section_list; hide if useless
         self.fields['num_sections'].choices = section_numbers
         hide_choice_if_useless( self.fields['num_sections'] )
@@ -168,13 +168,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['class_size_optimal']
             del self.fields['optimal_class_size_range']
             del self.fields['allowable_class_size_ranges']
-            
+
         # decide whether to display certain fields
-        
+
         # prereqs
         if not crmi.set_prereqs:
             self.fields['prereqs'].widget = forms.HiddenInput()
-        
+
         # allow_lateness
         if not crmi.allow_lateness:
             self.fields['allow_lateness'].widget = forms.HiddenInput()
@@ -182,28 +182,28 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         self.fields['duration'].choices = sorted(crmi.getDurations())
         hide_choice_if_useless( self.fields['duration'] )
-        
+
         # session_count
         if crmi.session_counts:
             session_count_choices = crmi.session_counts_ints
             session_count_choices = zip(session_count_choices, session_count_choices)
             self.fields['session_count'].choices = session_count_choices
         hide_choice_if_useless( self.fields['session_count'] )
-        
+
         # requested_room
         if not crmi.ask_for_room:
             hide_field( self.fields['requested_room'] )
-            
+
         #   Hide resource fields since separate forms are now being used. - Michael P
         #   Most have now been removed, but this one gets un-hidden by open classes.
         self.fields['requested_special_resources'].widget = forms.HiddenInput()
-        
+
         #   Add program-custom form components (for inlining additional questions without
         #   introducing a separate program module)
         custom_fields = get_custom_fields()
         for field_name in custom_fields:
             self.fields[field_name] = custom_fields[field_name]
-        
+
         #   Modify help text on these fields if necessary.
         custom_helptext_fields = ['duration', 'class_size_max', 'num_sections', 'requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
@@ -213,7 +213,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             tag_data = Tag.getProgramTag('teacherreg_help_text_%s' % field, prog)
             if tag_data:
                 self.fields[field].help_text = tag_data
-                
+
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
@@ -235,12 +235,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
             self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
-                
+
         # plus subprogram section wizard
-    
+
     def clean(self):
         cleaned_data = self.cleaned_data
-        
+
         # Make sure grade_min <= grade_max
         # We need to cast here until we can make the ChoiceFields into TypedChoiceFields.
         grade_min = cleaned_data.get('grade_min')
@@ -270,7 +270,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         if class_size_optimal == '':
             cleaned_data['class_size_optimal'] = None
-        
+
         # Return cleaned data
         return cleaned_data
 
@@ -287,7 +287,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
             field.widget = forms.HiddenInput()
             if default is not None:
                 field.initial = default
-                
+
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
         open_class_category = module.get_program().open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
@@ -300,10 +300,10 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
-                  ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
-                  ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
+        fields = [('category', open_class_category.id),
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max),
+                  ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
+                  ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
         for field, default in fields:
             if field in self.fields:
@@ -315,7 +315,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """
     interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
     training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
-    
+
     def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
         return self.module.entriesBySlot(event).count() > 0
@@ -337,19 +337,19 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
         self.user = get_current_request().user
-        
+
         interview_times = module.getTimes('interview')
         if interview_times.count() > 0:
             self.fields['interview'].choices = [ (x.id, x.description) for x in interview_times if self._slot_is_available(x) ]
         else:
             self.fields['interview'].widget = forms.HiddenInput()
-        
+
         training_times = module.getTimes('training')
         if training_times.count() > 0:
             self.fields['training'].choices = [ (x.id, x.description) for x in training_times if not self._slot_too_late(x) ]
         else:
             self.fields['training'].widget = forms.HiddenInput()
-    
+
     def clean_interview(self):
         event_id = self.cleaned_data['interview']
         try:
