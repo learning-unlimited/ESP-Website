@@ -290,7 +290,6 @@ class Question(models.Model):
             return None
 
         try:
-            average_key = 'question_%d_avg' % self.id
             ans = Answer.objects.filter(question=self)
             ans_count = ans.count()
             ans_sum = 0.0
