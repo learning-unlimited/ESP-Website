@@ -73,7 +73,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
             user = ESPUser.objects.get(id=request.GET['user'])
         else:
             user = request.user
-        
+
         #  onsite=False since we probably want a PDF
         return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
 
@@ -87,7 +87,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         user, found = search_for_user(request, ESPUser.getAllOfType('Student', False))
         if not found:
             return user
-        
+
         request.user.switch_to_user(request,
                                  user,
                                  self.getCoreURL(tl),

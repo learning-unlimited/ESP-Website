@@ -49,8 +49,6 @@ def get_from_id(id, module, strtype = 'object', error = True):
     try:
         newid    = int(id)
         foundobj = module.objects.get(id = newid)
-        if module == ESPUser:
-            foundobj = ESPUser(foundobj)
     except:
         if error:
             raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)

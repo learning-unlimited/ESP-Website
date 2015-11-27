@@ -20,6 +20,6 @@ class AjaxForeignKey(ForeignKey):
     def formfield(self, **kwargs):
         defaults = {'form_class': AjaxForeignKeyNewformField,
                     'field': self}
-        
+
         defaults.update(kwargs)
         return super(AjaxForeignKey, self).formfield(**defaults)

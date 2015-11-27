@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponse
 import csv
 
@@ -56,12 +56,12 @@ class VolunteerManage(ProgramModuleObj):
         See who has signed up for each timeslot
         Invite people to volunteer via comm panel
     """
-    
+
     @main_call
     @needs_admin
     def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
-        
+
         if extra == 'csv':
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
@@ -72,7 +72,7 @@ class VolunteerManage(ProgramModuleObj):
                     write_csv.writerow((request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email))
             response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
             return response
-        
+
         if 'op' in request.GET:
             if request.GET['op'] == 'edit':
                 form = VolunteerRequestForm(program=prog)
@@ -90,7 +90,7 @@ class VolunteerManage(ProgramModuleObj):
                 form = VolunteerRequestForm(program=prog)
         else:
             form = VolunteerRequestForm(program=prog)
-        
+
         context['form'] = form
         context['requests'] = self.program.getVolunteerRequests()
         return render_to_response('program/modules/volunteermanage/main.html', request, context)

@@ -39,19 +39,19 @@ class MiniblogNode(template.Node):
         return ''
 
 def parse_from_re(token, matching_rules):
-    
+
     tag = token.contents.split()[0]
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
         raise template.TemplateSyntaxError, "%r tag requires arguments" % tag_name
-    
+
     match = None
     for rule in matching_rules:
         match = rule[0].match(arg)
         if match:
             return dict( zip( rule[1], match.groups() ) )
-    
+
     raise template.TemplateSyntaxError, "%r tag could not parse arguments" % tag_name
 
 
@@ -65,7 +65,7 @@ def miniblog_for_user(parser, token):
     will return the last 5 miniblog entries in the section tl
     as the context variable entries.
     """
-    
+
     kwargs = parse_from_re(token, arg_re)
     if kwargs.has_key('limit'):
         try:

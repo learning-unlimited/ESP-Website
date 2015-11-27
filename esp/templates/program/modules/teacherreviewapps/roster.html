@@ -3,11 +3,6 @@
 
 {% block title %}Student application review for {{ cls }}{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Junction applications"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css"/>

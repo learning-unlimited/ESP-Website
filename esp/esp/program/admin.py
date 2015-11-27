@@ -58,7 +58,7 @@ class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
 admin_site.register(ProgramModule, ProgramModuleAdmin)
-    
+
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
@@ -83,7 +83,7 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
         return True
 
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
-    
+
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
     search_fields = default_user_search() + ['slugbio', 'bio']
@@ -117,12 +117,12 @@ admin_site.register(SplashInfo, Admin_SplashInfo)
 def subclass_instance_type(obj):
     return type(obj.subclass_instance())._meta.object_name
 subclass_instance_type.short_description = 'Instance type'
-        
+
 class BooleanTokenAdmin(admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
 admin_site.register(BooleanToken, BooleanTokenAdmin)
-    
+
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):

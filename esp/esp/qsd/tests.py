@@ -48,7 +48,7 @@ class QSDCorrectnessTest(TestCase):
         section = 'learn'
         pagename = 'foo'
         self.url = '/%s/%s.html' % (section, pagename)
-        
+
         #   Create user to function as QSD author
         new_admin, created = ESPUser.objects.get_or_create(username='qsd_admin')
         new_admin.set_password('password')
@@ -59,16 +59,16 @@ class QSDCorrectnessTest(TestCase):
         new_student.save()
         self.users = [None, (new_admin, 'password'), (new_student, 'password')]
         self.author = new_admin
-    
+
     def testInlineCorrectness(self):
-        
+
         for user in self.users:
             if user is None:
                 self.client.logout()
             else:
                 self.client.logout()
                 self.client.login(username=user[0], password=user[1])
-        
+
             #   Create an inline QSD
             qsd_rec_new = QuasiStaticData()
             qsd_rec_new.url = 'learn/bar'
@@ -89,32 +89,32 @@ class QSDCorrectnessTest(TestCase):
             template = Template(template_data)
             response_content = template.render(Context({}))
             self.assertTrue("Inline Testing 123" in response_content)
-            
+
             #   Update the template and check again
             qsd_rec_new.content = "Inline Testing 456"
             qsd_rec_new.save()
             response_content = template.render(Context({}))
             self.assertTrue("Inline Testing 456" in response_content)
-            
+
             response_content = template.render(Context({}))
             self.assertTrue("Inline Testing 456" in response_content)
 
             #   Delete it so we can start again
             qsd_rec_new.delete()
-        
+
     def testPageCorrectness(self):
-        
+
         for user in self.users:
             if user is None:
                 self.client.logout()
             else:
                 self.client.logout()
                 self.client.login(username=user[0], password=user[1])
-        
+
             #   Check that QSD with desired URL does not exist
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 404)
-            
+
             #   Create QSD with desired URL
             qsd_rec_new = QuasiStaticData()
             qsd_rec_new.url = 'learn/foo'
@@ -126,12 +126,12 @@ class QSDCorrectnessTest(TestCase):
             qsd_rec_new.description = ""
             qsd_rec_new.keywords = ""
             qsd_rec_new.save()
-            
+
             #   Check that page now exists and has proper content
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
             self.assertTrue('Testing 123' in response.content)
-            
+
             #   Edit QSD and check that page content has updated
             qsd_rec_new.content = "Testing 456"
             qsd_rec_new.save()
@@ -141,6 +141,6 @@ class QSDCorrectnessTest(TestCase):
 
             #   Delete the new QSD so we can start again.
             qsd_rec_new.delete()
-        
-        
-    
+
+
+

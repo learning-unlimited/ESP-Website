@@ -38,7 +38,7 @@ from django.db import models
 
 from markdown import markdown
 from esp.db.fields import AjaxForeignKey
-from esp.cache import cache_function
+from argcache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
@@ -46,7 +46,7 @@ class QSDManager(models.Manager):
 
     @cache_function
     def get_by_url(self, url):
-        #Besides caching, this also handles finding the latest easily, 
+        #Besides caching, this also handles finding the latest easily,
         # and returning none when there isn't any such QSD
         #comment from an older version of this function:
         #    aseering 11-15-2009 -- Punt FileDB for this purpose;
@@ -102,7 +102,7 @@ class QuasiStaticData(models.Model):
     name = models.SlugField(blank=True)
     title = models.CharField(max_length=256)
     content = models.TextField()
-    
+
     nav_category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
@@ -120,7 +120,7 @@ class QuasiStaticData(models.Model):
         This is used by the FileDBManager as a cache key, so be careful when updating.
         Changes here *may* cause caching to break in annoying ways elsewhere. We
         recommend grepping through any related files for "cache".
-        
+
         In particular, IF you change this, update qsd/models.py's QSDManager class
         Otherwise, the cache *may* be used wrong elsewhere."""
         return qsd_cache_key(self.url, None) # DB access cache --- user invariant
@@ -130,7 +130,7 @@ class QuasiStaticData(models.Model):
 
         This could be used for versioning QSDs, for example. It will not be
         saved to the DB until .save is called.
-        
+
         Note that this method maintains the author and created date.
         Client code should probably reset the author to request.user
         and date to datetime.now (possibly with load_cur_user_time)"""
@@ -150,7 +150,7 @@ class QuasiStaticData(models.Model):
         self.author = request.user
         self.create_date = datetime.now()
 
-            
+
     def __unicode__(self):
         return self.url
 
@@ -162,7 +162,7 @@ class QuasiStaticData(models.Model):
     @staticmethod
     def prog_qsd_url(prog, name):
         """Return the url for a program-qsd with given name
-        
+
         Will have .html at the end iff name does"""
         parts = name.split(":")
         if len(parts)>1:
@@ -176,11 +176,11 @@ class QuasiStaticData(models.Model):
             and return a tuple of the Program object and the QSD name.
             Otherwise return None.  """
         from esp.program.models import Program
-        
+
         url_parts = url.split('/')
         #   The first part url_parts[0] could be anything, since prog_qsd_url()
-        #   takes whatever was specified in the old qsd name 
-        #   (e.g. 'learn:extrasteps' results in a URL starting with 'learn/', 
+        #   takes whatever was specified in the old qsd name
+        #   (e.g. 'learn:extrasteps' results in a URL starting with 'learn/',
         #   but you could also have 'foo:extrasteps' etc.)
         #   So, allow any QSD with a program URL in the right place to match.
         if len(url_parts) > 3 and len(url_parts[3]) > 0:
@@ -191,9 +191,9 @@ class QuasiStaticData(models.Model):
                     return (progs[0], '/'.join(url_parts[3:]))
                 else:
                     return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
-            
+
         return None
-    
+
     def get_absolute_url(self):
         return "/"+self.url+".html"
 

@@ -43,8 +43,8 @@ from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
-from esp.web.util import render_to_response
-from esp.cache import cache_function
+from esp.utils.web import render_to_response
+from argcache import cache_function
 from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -95,10 +95,10 @@ class ProgramModuleObj(models.Model):
             current program module to find those that match the list supplied
             in the 'tags' argument. """
         from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-            
+
         result = []
-        
-        #   Filter out attributes that we don't want to look at: 
+
+        #   Filter out attributes that we don't want to look at:
         #   - Attributes of ProgramMdouleObj, including Django stuff
         #   - Module extension attributes
         key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
@@ -112,9 +112,9 @@ class ProgramModuleObj(models.Model):
             if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
                 if item.call_tag in tags:
                     result.append(key)
-            
+
         return result
-    
+
     def get_main_view(self, tl=None):
         if tl or not hasattr(self, '_main_view'):
             main_views = self.get_views_by_call_tag(['Main Call'])
@@ -129,16 +129,16 @@ class ProgramModuleObj(models.Model):
                 self._main_view = None
         return self._main_view
     main_view = property(get_main_view)
-    
+
     def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
         return getattr(self, self.get_main_view(tl))(request, tl, one, two, call_txt, extra, prog)
-    
+
     def get_all_views(self):
         if not hasattr(self, '_views'):
             self._views = self.get_views_by_call_tag(['Main Call', 'Aux Call'])
         return self._views
     views = property(get_all_views)
-    
+
     def get_msg_vars(self, user, key):
         return None
 
@@ -164,19 +164,19 @@ class ProgramModuleObj(models.Model):
         main_call_map = prog.getModuleViews(main_only=True)
         if (tl, call_txt) in main_call_map:
             return main_call_map[(tl, call_txt)]
-            
+
         #   Check for a module that has a matching aux_call
         all_call_map = prog.getModuleViews(main_only=False)
         if (tl, call_txt) in all_call_map:
             return all_call_map[(tl, call_txt)]
-            
+
         #   If no module matched those criteria, we are looking for a page that does not exist.
         raise Http404
-        
+
     #   Program.getModules cache takes care of our dependencies
     findModuleObject.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
     findModuleObject = staticmethod(findModuleObject)
-    
+
     #   The list of modules in a particular category (student reg, teacher reg)
     #   is accessed frequently and should be cached.
     @cache_function
@@ -190,7 +190,7 @@ class ProgramModuleObj(models.Model):
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
     findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
-    
+
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         from esp.program.modules.handlers.regprofilemodule import RegProfileModule
@@ -225,7 +225,7 @@ class ProgramModuleObj(models.Model):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
-        
+
         BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
         if len(BaseModuleList) < 1:
             BaseModule = ProgramModuleObj()
@@ -239,7 +239,7 @@ class ProgramModuleObj(models.Model):
             assert False, 'Too many module objects!'
         else:
             BaseModule = BaseModuleList[0]
-        
+
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
         ModuleObj.fixExtensions()
@@ -259,9 +259,9 @@ class ProgramModuleObj(models.Model):
             clsid = int(clsid)
         except:
             return (False, True)
-        
+
         classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
-            
+
         if len(classes) == 1:
             if not get_current_request().user.canEdit(classes[0]):
                 from esp.middleware import ESPError
@@ -271,15 +271,15 @@ class ProgramModuleObj(models.Model):
                 Found = True
                 return (classes[0], True)
         return (False, False)
-            
+
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 
     def fixExtensions(self):
-        """ Find module extensions that this program module inherits from, and 
+        """ Find module extensions that this program module inherits from, and
         incorporate those into its attributes. """
-        
+
         self._ext_map = {}
         if self.program:
             for key, x in self.extensions().items():
@@ -299,7 +299,7 @@ class ProgramModuleObj(models.Model):
         raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
-    
+
         #   Short-circuit the request middleware during testing, when we call
         #   this function without an actual request.
         if hasattr(self, 'user'):
@@ -313,7 +313,7 @@ class ProgramModuleObj(models.Model):
 
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
-            
+
         canView = user.isOnsite(self.program) or user.isAdministrator(self.program)
 
         if not canView:
@@ -336,15 +336,15 @@ class ProgramModuleObj(models.Model):
         'function' must be a member of 'cls'.  Both 'cls' and 'function' must
         not be anonymous (ie., they musht have __name__ defined).
         """
-        
+
         url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
         return url
-    
+
     def setUser(self, user):
         self.user = user
         self.curUser = user
 
-    
+
     def makeLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
@@ -385,7 +385,7 @@ class ProgramModuleObj(models.Model):
                         return base_template
                 except TemplateDoesNotExist:
                     pass
-            
+
             return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
 
         return None
@@ -401,7 +401,7 @@ class ProgramModuleObj(models.Model):
 
     def students(self,QObject=False):
         return {}
-        
+
     def volunteerDesc(self):
         return {}
 
@@ -453,9 +453,9 @@ class ProgramModuleObj(models.Model):
 
         for prop in props:
             update_props(prop)
-            
+
         return props
-                
+
     class Meta:
         app_label = 'modules'
 
@@ -468,7 +468,7 @@ def not_logged_in(request):
 def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/nota'+tl+'.html'
-    
+
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
@@ -486,12 +486,10 @@ def usercheck_usetl(method):
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
-        allowed_teacher_types = Tag.getTag("allowed_teacher_types", moduleObj.program, default='').split(",")
-        
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-            
-        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
+
+        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notateacher.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
@@ -504,7 +502,7 @@ def needs_admin(method):
             morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None
-            
+
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
@@ -523,7 +521,6 @@ def needs_onsite(method):
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
-            user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
@@ -541,7 +538,6 @@ def needs_onsite_no_switchback(method):
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
-            user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
@@ -556,20 +552,17 @@ def needs_student(method):
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
-            allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
-            matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
-            if not matching_user_types:
-                return render_to_response('errors/program/notastudent.html', request, {})
+            return render_to_response('errors/program/notastudent.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
-    return _checkStudent        
+    return _checkStudent
 
 def needs_account(method):
     def _checkAccount(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-            
+
         return method(moduleObj, request, *args, **kwargs)
     _checkAccount.method = method
     return _checkAccount
@@ -581,7 +574,7 @@ def meets_grade(method):
         # if there's grade override we can just skip everything
         if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
             return method(moduleObj, request, tl, *args, **kwargs)
-        
+
         # now we have to use the grade..
 
         # get the last grade...
@@ -591,7 +584,7 @@ def meets_grade(method):
             return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
 
         return method(moduleObj, request, tl, *args, **kwargs)
-    
+
     return _checkGrade
 
 # Anything you can do, I can do meta
@@ -609,7 +602,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
         canView = request.user.updateOnsite(request)
         if not canView:
             perm_name = {'learn':'Student','teach':'Teacher'}[tl]+extension
-            canView = Permission.user_has_perm(request.user, 
+            canView = Permission.user_has_perm(request.user,
                                                perm_name,
                                                program=request.program)
             #   For now, allow an exception if the user is of the wrong type

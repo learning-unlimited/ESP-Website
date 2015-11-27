@@ -1,4 +1,3 @@
-import esp.web.util.globaltags
 from django.contrib.sites.models import Site
 from django.conf import settings
 
@@ -6,8 +5,8 @@ from esp.program.models import Program
 from esp.users.models import ESPUser
 from esp.web.views.navBar import makeNavBar
 
-def media_url(request): 
-    return {'media_url': settings.MEDIA_URL} 
+def media_url(request):
+    return {'media_url': settings.MEDIA_URL}
 
 def espuserified_request(request):
     return {'request': request, 'user': None, 'messages': None, 'perms': None}
@@ -57,13 +56,13 @@ def preload_images(request):
     return {'preload_images': preload_images_data}
 
 """ This list can be populated with images to be preloaded by the template.
-    
+
     Example:
     preload_images_data = [
         settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
         settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
         (etc.)
-        ] 
+        ]
 """
 
 preload_images_data = [

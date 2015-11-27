@@ -24,7 +24,8 @@ if os.environ.get('VIRTUAL_ENV') is None:
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     execfile(activate_this, dict(__file__=activate_this))
 
-from esp import cache_loader # Needed to block an annoying circular-dependency issue
+import django
+django.setup()
 from esp.dbmail.models import EmailList
 from django.conf import settings
 
@@ -80,7 +81,7 @@ try:
 
             send_mail(str(message))
             continue
-        
+
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
@@ -95,7 +96,7 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-            
+
         del message['Message-ID']
 
         # get a new message id
