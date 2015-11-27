@@ -203,7 +203,7 @@ else
 fi
 echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
 
-SECRET_KEY=`$CURDIR/random_password.sh`
+SECRET_KEY = `openssl rand -base64 48`
 echo "Generated random secret key"
 echo "SECRET_KEY=\"$SECRET_KEY\"" >> $BASEDIR/.espsettings
 
