@@ -135,11 +135,9 @@ class LunchConstraintGenerator(object):
             new_subject.title = 'Lunch Period'
             new_subject.save()
             lunch_subject = new_subject
-            #   print 'Generated subject: %s' % lunch_subject
         else:
             #   Otherwise, return an existing lunch subject
             lunch_subject = lunch_subjects[0]
-            #   print 'Selected subject: %s' % lunch_subject
         return lunch_subject
 
     def get_lunch_sections(self, day):
@@ -150,12 +148,10 @@ class LunchConstraintGenerator(object):
             if lunch_sections.count() == 0:
                 new_section = lunch_subject.add_section(status=10)
                 new_section.meeting_times.add(timeslot)
-                #   print 'Generated section for %s: %s' % (timeslot, new_section)
             else:
                 for sec in lunch_sections:
                     sec.status = 10
                     sec.save()
-                    #   print 'Approved section for %s: %s' % (timeslot, sec)
 
         return self.get_lunch_subject(day).get_sections()
 

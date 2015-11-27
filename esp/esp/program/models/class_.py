@@ -1194,11 +1194,9 @@ class ClassSection(models.Model):
         if prereg_verb:
             qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
             qs.update(end_date=now)
-            #   print 'Expired %s' % qs
         else:
             qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
             qs.update(end_date=now)
-            #   print 'Expired %s' % qs
             
         #   Explicitly fire the signals for saving a StudentRegistration in order to update caches
         #   since it doesn't get sent by update() above
@@ -1234,7 +1232,6 @@ class ClassSection(models.Model):
             if fast_force_create or not qs.exists():
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
-                #   print 'Created %s' % sr
                 if fast_force_create:
                     ## That's the bare minimum to reg someone; we're done!
                     return True
@@ -1246,9 +1243,7 @@ class ClassSection(models.Model):
                     rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
                     sr = StudentRegistration(user=user, section=self, relationship=rt)
                     sr.save()
-                    #   print 'Created %s' % sr
             else:
-                #   print 'Already in class: %s' % qs
                 pass
 
             if self.parent_program.isUsingStudentApps():

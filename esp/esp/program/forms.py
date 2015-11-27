@@ -233,8 +233,6 @@ class StatisticsQueryForm(forms.Form):
         #   self.fields['school_multisel'].choices = StatisticsQueryForm.get_school_choices()
 
     def clean(self):
-        #   print self.cleaned_data
-        
         """ Check that either 'All Programs' is selected or a program is selected   """
         if not self.cleaned_data['program_type_all']:
             if not self.cleaned_data['program_type']:

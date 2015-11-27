@@ -68,7 +68,6 @@ class StudentLunchSelectionForm(forms.Form):
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:
-                print 'Set initial to %s' % section.get_meeting_times()[0]
                 self.initial['timeslot'] = section.get_meeting_times()[0].id
         
     def save_data(self):
@@ -149,9 +148,6 @@ class StudentLunchSelection(ProgramModuleObj):
             for i in range(len(forms)):
                 forms[i].load_data()
           
-        if 'messages' in context:
-            print context['messages']
-        
         context['forms'] = forms
         
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)

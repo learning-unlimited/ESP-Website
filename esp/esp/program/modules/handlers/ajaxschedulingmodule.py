@@ -361,10 +361,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         cl = self.get_change_log(prog)
         last_fetched_index = int(request.GET['last_fetched_index'])
         
-        #print "schedule_time", cl[0]['schedule_time']
-        #print "last fetched time", last_fetched_time
-        #print "len(cl)", len(cl)
-
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
         #note: negative number implies we want to debug dump changelog
@@ -488,7 +484,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
             lock_level = int(request.GET.get('lock_level', '0'))
         except:
             lock_level = 0
-        print lock_level
             
         num_affected_sections = self.clear_schedule_logic(prog, lock_level)
 

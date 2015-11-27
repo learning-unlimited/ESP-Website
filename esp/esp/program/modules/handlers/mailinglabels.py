@@ -214,8 +214,6 @@ class MailingLabels(ProgramModuleObj):
 
                 ids_zipped.append(info.id)
 
-                #print info.__dict__
-
                 post_data =  {'visited' : 1,
                               'pagenumber': 0,
                               'firmname': '',

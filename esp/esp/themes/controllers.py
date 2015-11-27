@@ -229,7 +229,6 @@ class ThemeController(object):
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
-            #   print '  Substituted value %s = %s' % (variable_name, variable_value)
 
         if themes_settings.THEME_DEBUG:
             tf1 = open('debug_2.less', 'w')
@@ -427,7 +426,6 @@ class ThemeController(object):
             if to.name == 'main.html':
                 to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
             
-            #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
 

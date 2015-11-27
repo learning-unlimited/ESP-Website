@@ -252,7 +252,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         classes.remove(cls)
         for c in classes:
             c.removeTeacher(teacher)
-        #print teacher.getTaughtClasses()
         d = self.moduleobj.teachers()
         # Check it
         self.failUnless(teacher not in d['class_full'] and teacher not in d['class_nearly_full'])

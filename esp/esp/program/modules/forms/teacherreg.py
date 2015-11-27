@@ -222,17 +222,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
         if tag_data:
-            print tag_data
             self.fields['grade_min'].initial = tag_data
 
         tag_data = Tag.getProgramTag('teacherreg_default_max_grade', prog)
         if tag_data:
-            print tag_data
             self.fields['grade_max'].initial = tag_data
 
         tag_data = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
         if tag_data:
-            print tag_data
             self.fields['class_size_max'].initial = tag_data
 
         #   Rewrite difficulty label/choices if desired:

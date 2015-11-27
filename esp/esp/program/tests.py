@@ -266,8 +266,6 @@ class ProfileTest(TestCase):
         self.u.groups.add(self.group)
         self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
-        #print self.u.__dict__
-        #print self.u.groups.all()
 
 
 class ProgramHappenTest(TestCase):
@@ -510,7 +508,6 @@ class ProgramHappenTest(TestCase):
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
 
         sr = StudentRegistration.objects.all()[0]
-        #print "StudentRegTest", StudentRegistration.valid_objects().all(), self.student.id, sec.id, self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb.id, sr.user.id, sr.section.id, sr.relationship.id, StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count(), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0
 
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
             relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
@@ -709,7 +706,6 @@ class ProgramFrameworkTest(TestCase):
                     vr = sec.viable_rooms()
                     if len(vr) > 0:
                         sec.assign_room(random.choice(vr))
-                        #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
 
     def add_user_profiles(self):
         """Helper function to give each user a profile so they can register.

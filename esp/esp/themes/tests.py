@@ -80,8 +80,6 @@ class ThemesTest(TestCase):
         #   Test each theme that is available.
         for theme_name in tc.get_theme_names():
         
-            #   print 'Testing theme: %s' % theme_name
-        
             #   Delete the theme_compiled.css file so we force a new one to be generated.
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             if os.path.exists(css_filename):

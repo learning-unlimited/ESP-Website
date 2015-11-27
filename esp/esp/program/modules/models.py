@@ -92,7 +92,6 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         for key in datum:
             if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
                 if datum[key] is not None and datum[key] != u'':
-                    #print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
                     mod.__dict__[key] = datum[key] 
                 
         mod.save()

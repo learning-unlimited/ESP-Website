@@ -286,7 +286,6 @@ class OnSiteClassList(ProgramModuleObj):
             if 'op' in request.GET and request.GET['op'] == 'add' and 'sec_id' in request.GET:
                 try:
                     sec = ClassSection.objects.get(id=request.GET['sec_id'])
-                    print 'Got section %s' % sec
                 except:
                     sec = None
                 user = None
@@ -294,14 +293,12 @@ class OnSiteClassList(ProgramModuleObj):
                     try:
                         user_id = int(request.POST['add_%s' % sec.id])
                         user = ESPUser.objects.get(id=user_id)
-                        print 'Got user %s' % user
                     except:
                         user = None
                 if sec and user:
                     #   Find out what other classes the user was taking during the times of this section
                     removed_classes = []
                     schedule = user.getEnrolledSections(prog)
-                    print 'Got schedule %s' % schedule
                     if sec in schedule:
                         #   If they were in the specified section, take them out.
                         sec.unpreregister_student(user)

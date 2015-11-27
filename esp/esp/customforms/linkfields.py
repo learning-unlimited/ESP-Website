@@ -127,7 +127,6 @@ class CustomFormsCache:
                     backup_type = k       
         
         #   Hm, maybe we should actually check if a custom field has been defined here.
-        #   print 'Warning: Could not find generic type for %s, with attrs %s' % (field_instance, field_instance.widget.attrs)
         return backup_type
     
     def getCustomFieldInstance(self, field, field_name):
