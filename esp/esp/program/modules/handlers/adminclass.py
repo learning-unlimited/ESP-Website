@@ -118,6 +118,25 @@ class AdminClass(ProgramModuleObj):
         context['classes']   = classes
         return context
 
+    def getClassFromId(self, clsid, tl='teach'):
+        classes = []
+        try:
+            clsid = int(clsid)
+        except:
+            return (False, True)
+
+        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
+
+        if len(classes) == 1:
+            if not get_current_request().user.canEdit(classes[0]):
+                from esp.middleware import ESPError
+                message = 'You do not have permission to edit %s.' % classes[0].title
+                raise ESPError(message, log=False)
+            else:
+                Found = True
+                return (classes[0], True)
+        return (False, False)
+
     def getClass(self, request, extra):
         found = False
         if not found and extra is not None and len(extra.strip()) > 0:
