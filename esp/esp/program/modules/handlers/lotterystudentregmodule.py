@@ -48,12 +48,12 @@ from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.cache                   import cache_function
+from argcache                    import cache_function
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
 
@@ -81,11 +81,11 @@ class LotteryStudentRegModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 7
             }
-    
+
         """ def prepare(self, context={}):
         if context is None: context = {}
 
-        context['schedulingmodule'] = self 
+        context['schedulingmodule'] = self
         return context """
 
     @main_call
@@ -117,7 +117,6 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            print "using priority"
             return render_to_response('program/modules/lotterystudentregmodule/student_reg_hssp.html', request, context)
         #Splark/Spash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)
@@ -143,9 +142,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
             ordered_timeslot_names.append([item.id, item.short_description])
 
         resp = HttpResponse(content_type='application/json')
-        
+
         json.dump(ordered_timeslot_names, resp)
-        
+
         return resp
 
 
@@ -181,7 +180,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         else: context['iempty'] = False
 
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
-    
+
     class Meta:
         proxy = True
         app_label = 'modules'

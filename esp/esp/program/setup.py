@@ -54,18 +54,18 @@ def prepare_program(program, data):
     perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
-    
+
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():
         perms += [('Onsite', ESPUser.onsite_user(), None, None)]
-    
+
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
-       
+
     return perms, modules
 
 def commit_program(prog, perms, modules, cost=0, sibling_discount=None):
     #   This function implements the changes suggested by prepare_program.
-    
+
     def gen_perm(tup):
         new_perm=Permission(permission_type=tup[0], program=prog)
 

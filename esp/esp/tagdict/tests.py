@@ -249,7 +249,7 @@ class ProgramTagTest(ProgramFrameworkTest):
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
         Tag.getTag.delete_all()
-        
+
         self.failIf(Tag.getBooleanTag("test"))
         self.failIf(Tag.getBooleanTag("test"))
         self.failIf(Tag.getBooleanTag("test", program=None))

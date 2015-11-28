@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -27,6 +25,7 @@ Please select from the option below to continue.
 
 <!-- Sorry, I know this is a hack.  We need some module reorganization. -->
 <li><a href="/onsite/{{ program.getUrlBase }}/classchange_grid">Grid-based Class Changes Interface</a></li>
+<li><a href="/onsite/{{ program.getUrlBase }}/classList">Scrolling Class List</a></li>
 
 {% for module in modules %}
 {% if module.isStep %}

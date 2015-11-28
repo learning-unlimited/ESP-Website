@@ -8,12 +8,6 @@
 <link rel="stylesheet" href="/media/styles/blog.css" type="text/css" />
 {% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Blog"|subsection }}{% endautoescape %}
-{% endblock %}
-
-
 {% block content %}
 
 {% load render_blog %}

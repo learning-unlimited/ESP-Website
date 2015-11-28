@@ -745,7 +745,7 @@ function render_table(display_mode, student_id)
             var last_timeslot = section.timeslots[section.timeslots.length-1];
             var start_time = data.timeslots[first_timeslot].label.split("--")[0];
             var end_time = data.timeslots[last_timeslot].label.split("--")[1];
-            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " hour)";
+            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
             tooltip_div.append($j("<div/>").html(friendly_times));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));

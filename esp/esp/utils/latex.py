@@ -63,14 +63,14 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
         t = loader.select_template(filepath)
     else:
         t = loader.get_template(filepath)
-    
+
     context = Context(context_dict)
 
     context['MEDIA_ROOT'] = settings.MEDIA_ROOT
     context['file_type'] = filetype
 
     rendered_source = t.render(context)
-    
+
     return gen_latex(rendered_source, filetype)
 
 def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=STDOUT):
@@ -134,7 +134,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     # Get (sometimes-)necessary library files
     from django.conf import settings
     import shutil
-    
+
     #   Set latex options
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
 
@@ -168,13 +168,13 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
 
     else:
         raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))
-    
-    
+
+
     try:
         tex_log_file = open(file_base+'.log')
         tex_log      = tex_log_file.read()
         tex_log_file.close()
-        if remove_files: 
+        if remove_files:
             os.remove(file_base+'.log')
     except:
         tex_log      = ''
@@ -192,7 +192,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
             if remove_files:
                 os.remove(out_file)
                 os.remove(file_base+TEX_EXT)
-        
+
         except:
             raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
 
@@ -201,8 +201,8 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
 
     return HttpResponse(new_contents, content_type=mime)
 
-    
-    
+
+
 
 def get_rand_file_base():
     rand = hashlib.md5(str(random())).hexdigest()
@@ -214,5 +214,5 @@ def get_rand_file_base():
 
 
 
-    
+
 

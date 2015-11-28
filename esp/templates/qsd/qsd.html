@@ -1,13 +1,10 @@
 {% extends "main.html" %}
-{% load subsection %}
 
 {% block title %}{{ title }}{% endblock %}
 {% block content_title %}{{ title }}{% endblock %}
 
 {% block keywords %}{{ qsdrec.keywords|default_if_none:""|escape }}{% endblock %}
 {% block description %}{{ qsdrec.description|default_if_none:""|escape }}{% endblock %}
-
-{% block subsection %}{% autoescape off %}{{ title|subsection }}{% endautoescape %}{% endblock %}
 
 {% block xtrajs %}
 <script type="text/javascript">

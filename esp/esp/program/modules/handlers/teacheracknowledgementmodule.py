@@ -1,6 +1,6 @@
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, Record
 from django import forms
 from django.db.models.query import Q
@@ -28,12 +28,12 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "module_type": "teach",
             "required": False,
         }
-    
+
     def isCompleted(self):
         return Record.objects.filter(user=get_current_request().user,
                                      program=self.program,
                                      event="teacheracknowledgement").exists()
-    
+
     @main_call
     @needs_teacher
     @meets_deadline('/Acknowledgement')
@@ -53,21 +53,21 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
         return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
-    
+
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
         from datetime import datetime
         qo = Q(record__program=self.program, record__event="teacheracknowledgement")
         if QObject is True:
             return {'acknowledgement': self.getQForUser(qo)}
-        
+
         teacher_list = ESPUser.objects.filter(qo).distinct()
-        
+
         return {'acknowledgement': teacher_list }
 
     def teacherDesc(self):
-        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}    
-    
+        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}
+
     class Meta:
         proxy = True
         app_label = 'modules'

@@ -33,22 +33,43 @@ Learning Unlimited, Inc.
 """
 
 from django.conf import settings
-from django.contrib.auth.middleware import AuthenticationMiddleware, get_user
+from django.contrib import auth
+from django.contrib.auth.middleware import AuthenticationMiddleware
 from django.contrib.auth.models import AnonymousUser
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 
-from esp.users.models import ESPUser
+from esp.users.models import AnonymousESPUser, ESPUser
 
 __all__ = ('ESPAuthMiddleware',)
 
-class ESPAuthMiddleware(object):
-    """ Much like the auth middleware except that this returns an ESPUser. """
+def get_user(request):
+    """ Code modified from django.contrib.auth.middleware.get_user
+    in order to replace the AnonymousUser with our own which has
+    all the ESPUser methods. This mirrors Django's structure, where
+    the auth backend only returns either a User or None, and
+    AnonymousUser is inserted in auth.get_user(). In our case, the auth
+    backend returns either an ESPUser or None, but auth.get_user() is less
+    convenient to override since I'd still have to override this and the
+    middleware's process_request() to use it, so I replace its AnonymousUser
+    with an AnonymousESPUser here instead. """
+    if not hasattr(request, '_cached_user'):
+        user = auth.get_user(request)
+        if user.is_authenticated():
+            request._cached_user = user
+        else:
+            request._cached_user = AnonymousESPUser()
+    return request._cached_user
 
+class ESPAuthMiddleware(AuthenticationMiddleware):
+    """ Much like the auth middleware except that this messes with cookie settings and such. """
+
+    # Yes, it's necessary to override this, the get_user() is different
+    # from Django's (see above).
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
-        
-        request.user = SimpleLazyObject(lambda: ESPUser(get_user(request)))
+
+        request.user = SimpleLazyObject(lambda: get_user(request))
 
     def process_response(self, request, response):
         ## This gets set if we're not supposed to modify the cookie
@@ -59,11 +80,11 @@ class ESPAuthMiddleware(object):
 
         user = getattr(request, '_cached_user', None)
         #   Allow a view to set a newly logged-in user via the response
-        if not user or isinstance(user, AnonymousUser):
+        if not user or not user.is_authenticated():
             new_user = getattr(response, '_new_user', None)
             if isinstance(new_user, ESPUser):
                 user = new_user
-                
+
         if user and user.id:
             if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
                 max_age = None
@@ -84,9 +105,8 @@ class ESPAuthMiddleware(object):
             encoding = request.encoding
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
-            espuser = ESPUser(user)
 
-            has_qsd_bits = espuser.isAdministrator()
+            has_qsd_bits = user.isAdministrator()
 
             new_values = {'cur_username': user.username,
                           'cur_userid': user.id,
@@ -95,11 +115,11 @@ class ESPAuthMiddleware(object):
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
-                          'cur_admin': espuser.isAdministrator() and '1' or '0',
+                          'cur_admin': user.isAdministrator() and '1' or '0',
                           'cur_qsd_bits': has_qsd_bits and '1' or '0',
-                          'cur_yog': espuser.getYOG(),
-                          'cur_grade': espuser.getGrade(),
-                          'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
+                          'cur_yog': user.getYOG(),
+                          'cur_grade': user.getGrade(),
+                          'cur_roles': urllib.quote(",".join(user.getUserTypes())),
                           }
 
             for key, value in new_values.iteritems():
@@ -113,13 +133,13 @@ class ESPAuthMiddleware(object):
             cookies_to_delete = [x for x in ('cur_username','cur_userid','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles', 
+                                         'cur_admin', 'cur_roles',
                                          'cur_yog', 'cur_grade',
                                          'cur_qsd_bits') if request.COOKIES.get(x, False)]
-            
+
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)
-        
+
         request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
         if modified_cookies:
@@ -127,4 +147,4 @@ class ESPAuthMiddleware(object):
 
         return response
 
-        
+

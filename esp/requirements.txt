@@ -1,4 +1,4 @@
-Django==1.8.5
+Django==1.8.7
 pillow==2.8.2
 cssutils==1.0
 django-extensions==1.5.5
@@ -42,3 +42,5 @@ raven
 stripe==1.12.2
 pyinotify
 django-formtools==1.0
+
+git+https://github.com/luac/django-argcache.git@0.1
