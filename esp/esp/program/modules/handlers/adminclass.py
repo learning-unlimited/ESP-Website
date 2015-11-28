@@ -131,10 +131,6 @@ class AdminClass(ProgramModuleObj):
             message = 'Unable to find class %s.' % clsid
             raise ESPError(message, log=False)
 
-        if not request.user.canEdit(cls):
-            message = 'You do not have permission to edit %s.' % cls.title
-            raise ESPError(message, log=False)
-
         return cls
 
     def getClass(self, request, extra):
