@@ -19,7 +19,7 @@ class ESPAuthBackend(ModelBackend):
             user = ESPUser.objects.get_by_natural_key(username)
             if user.check_password(password):
                 return user
-        except UserModel.DoesNotExist:
+        except ESPUser.DoesNotExist:
             # Run the default password hasher once to reduce the timing
             # difference between an existing and a non-existing user (#20760).
             ESPUser().set_password(password)
