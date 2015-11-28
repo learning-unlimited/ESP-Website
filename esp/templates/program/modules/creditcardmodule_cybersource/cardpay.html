@@ -107,7 +107,7 @@ function payOnce() {
 </form>
 
 <br />
-{% ifequal itemizedcosttotal 0 %}
+{% if itemizedcosttotal <= 0 %}
 
 <p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
@@ -211,6 +211,6 @@ Autofill contact information:
 
 </form>
 
-{% endifequal %}
+{% endif %}
 
 {% endblock %}
