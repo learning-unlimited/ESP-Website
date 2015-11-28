@@ -34,7 +34,8 @@ Learning Unlimited, Inc.
 """
 from django.template.loader import render_to_string
 
-from esp.program.models import Program
+from esp.program.models import Program, StudentRegistration
+from esp.users.models import Record
 
 """
 This file contains a set of functions used to perform statistics queries

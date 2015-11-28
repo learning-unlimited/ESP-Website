@@ -187,9 +187,9 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if to_field_name is None:
             to_field_name = 'id'
         if to_field_name != 'id':
-            raise NotImplementedException
+            raise NotImplementedError
         if to_field is not None:
-            raise NotImplementedException
+            raise NotImplementedError
         self.show_hidden_initial = show_hidden_initial
         # ---
 

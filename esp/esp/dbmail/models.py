@@ -284,7 +284,7 @@ class MessageRequest(models.Model):
                 'This might be a website bug. Please contact us at %s ' + \
                 'and tell us how you got this error, and we will look into it. ' + \
                 'The error message is: "%s".' % \
-                (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
+                (sendto_fn_name, settings.DEFAULT_EMAIL_ADDRESSES['support'], e))
 
     # Processing a MessageRequest needs to be atomic, so that if the DB falls
     # over halfway through the processing, we don't end up with half of the

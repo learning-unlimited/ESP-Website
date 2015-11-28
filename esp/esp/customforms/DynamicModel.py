@@ -265,7 +265,7 @@ class DynamicModelHandler:
                 model = self.createDynModel()
                 field_name = self.get_field_name(field)
                 schema_editor.add_field(model, model._meta.get_field(field_name))
-                self.link_models_list.append(model_cls.__name__)
+                self.link_models_list.append(link_model_cls.__name__)
 
     def change_only_fkey(self, form, old_link_type, new_link_type, link_id):
         """

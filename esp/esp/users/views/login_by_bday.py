@@ -1,6 +1,7 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from esp.middleware import ESPError
 from esp.utils.forms import FormWithRequiredCss
 from esp.utils.web import render_to_response
 from esp.web.views.main import registration_redirect
@@ -85,5 +86,5 @@ def login_by_bday_new(request):
             request.session['birth_month'] = month
             request.session['birth_day'] = day
         else:
-            raise ESPError(False), str(form.errors)
+            raise ESPError(str(form.errors), log=False)
     return HttpResponseRedirect( '/myesp/register/' )

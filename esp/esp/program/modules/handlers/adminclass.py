@@ -156,9 +156,9 @@ class AdminClass(ProgramModuleObj):
             class_id = request.POST['class_id']
             try:
                 class_subject = ClassSubject.objects.get(pk=class_id)
-            except MultipleObjectsReturned:
+            except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
-            except DoesNotExist:
+            except ClassSubject.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']

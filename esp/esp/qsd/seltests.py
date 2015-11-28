@@ -96,6 +96,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.save()
 
         # Set the port that the webdriver will try to access
+        self._old_port = self.driver.testserver_port
         self.driver.testserver_port = settings.VARNISH_PORT
 
         # Add the varnish_purge tag
@@ -135,4 +136,4 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = getattr(selenium_settings, 'SELENIUM_TESTSERVER_PORT')
+        self.driver.testserver_port = self._old_port

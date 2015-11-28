@@ -114,7 +114,7 @@ def send_email_requests(debug=False):
         exception = mailtxt.send(debug=debug)
         if exception is not None:
             errors.append({'email': mailtxt, 'exception': str(exception)})
-            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
+            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(exception)
         else:
             num_sent += 1
 
