@@ -4,6 +4,7 @@ Test cases for Django-ESP utilities
 
 from __future__ import with_statement
 
+import cStringIO
 import datetime
 import doctest
 try:
@@ -16,6 +17,10 @@ import sys
 import reversion
 import unittest
 
+import pyflakes.api
+import pyflakes.reporter
+
+from django.conf import settings
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
@@ -453,6 +458,30 @@ class QueryBuilderTest(DjangoTestCase):
                          str(Q(a_db_field="foo bar baz")))
         self.assertEqual(text_input.as_english("foo bar baz"),
                          "a db field foo bar baz")
+
+
+class LintTest(unittest.TestCase):
+    """Test for various lint errors.
+
+    For now, just checks that pyflakes can't find any undefined names.  We can
+    add more to this list as we go.
+    """
+    def pyflakes_output(self):
+        # TODO(benkraft): It might be better to use flake8 rather than pyflakes
+        # directly, but this seemed easier for now, and we don't need any # NOQA
+        # lines at the moment.
+        output = cStringIO.StringIO()
+        # The default pyflakes reporter writes to stdout/stderr
+        reporter = pyflakes.reporter.Reporter(output, output)
+        pyflakes.api.checkRecursive(settings.BASE_DIR, reporter)
+        return output.getvalue()
+
+    def noUndefinedNamesTest(self):
+        for line in self.pyflakes_output().split('\n'):
+            # Ignore files where pyflakes complains about not being able to
+            # detect undefined names
+            if 'unable to detect undefined names' not in line:
+                self.assertNotIn('undefined name', line)
 
 
 def suite():
