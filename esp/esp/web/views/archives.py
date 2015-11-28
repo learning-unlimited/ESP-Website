@@ -60,14 +60,14 @@ def compute_range(postvars, num_records):
     default_num_records = 10
     results_start = 0
     results_end = None
-    if postvars.has_key('results_start'):
+    if 'results_start' in postvars:
         results_start = int(postvars['results_start'])
-    if postvars.has_key('results_end'):
+    if 'results_end' in postvars:
         results_end = int(postvars['results_end'])
     if (num_records > default_num_records) and results_end == None:
-        if postvars.has_key('max_num_results') and postvars['max_num_results'] == "Show all":
+        if postvars.get('max_num_results') == "Show all":
             results_end = num_records
-        elif postvars.has_key('max_num_results') and postvars['max_num_results'] != "":
+        elif postvars.get('max_num_results'):
             results_end = results_start + int(postvars['max_num_results'])
         else:
             results_end = results_start + default_num_records
@@ -139,8 +139,8 @@ def archive_classes(request, category, options, sortorder = None):
             'teacher': [{}],
             'description': [{}]
             }
-    if request.POST.has_key('filter_teacher'): filter_keys['teacher'][0]['default_value'] = request.POST['filter_teacher']
-    if request.POST.has_key('filter_description'): filter_keys['description'][0]['default_value'] = request.POST['filter_description']
+    if 'filter_teacher' in request.POST: filter_keys['teacher'][0]['default_value'] = request.POST['filter_teacher']
+    if 'filter_description' in request.POST: filter_keys['description'][0]['default_value'] = request.POST['filter_description']
 
     results = filter_archive(ArchiveClass.objects.all(), criteria_list)
 
@@ -157,7 +157,7 @@ def archive_classes(request, category, options, sortorder = None):
 
     for c in criteria_list:
         for k in filter_keys[c.category]:
-            if k.has_key('name') and k.has_key('value'):
+            if 'name' in k and 'value' in k:
                 if c.options == k['value']:
                     k['selected'] = True
 
@@ -167,7 +167,7 @@ def archive_classes(request, category, options, sortorder = None):
     postvars = request.POST.copy()
     relevant_keys = ['max_num_results', 'results_start', 'results_end']
     for k in relevant_keys:
-        if request.GET.has_key(k):
+        if k in request.GET:
             postvars[k] = request.GET[k]
 
     res_range = compute_range(postvars, results.count())
@@ -198,7 +198,7 @@ def archive_classes(request, category, options, sortorder = None):
     context['results_range']['start'] = context['results_range']['start'] + 1
     if res_range['end'] > context['num_results']:
         context['results_range']['end'] = context['num_results']
-    if request.POST.has_key('max_num_results'):
+    if 'max_num_results' in request.POST:
         context['max_num_results'] = request.POST['max_num_results']
     else:
         context['max_num_results'] = '25'

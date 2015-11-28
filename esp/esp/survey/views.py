@@ -66,7 +66,7 @@ def survey_view(request, tl, program, instance):
     if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
         raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
-    if request.GET.has_key('done'):
+    if 'done' in request.GET:
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
 
     if tl == 'learn':
@@ -80,7 +80,7 @@ def survey_view(request, tl, program, instance):
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
-    if request.GET.has_key('survey_id'):
+    if 'survey_id' in request.GET:
         try:
             s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
@@ -150,7 +150,7 @@ def get_survey_info(request, tl, program, instance):
     elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().select_related()
-        if request.GET.has_key('teacher_id'):
+        if 'teacher_id' in request.GET:
             t_id = int( request.GET['teacher_id'] )
             teachers = ESPUser.objects.filter(id=t_id)
             if len(teachers) > 0:
@@ -162,7 +162,7 @@ def get_survey_info(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
 
-    if request.GET.has_key('survey_id'):
+    if 'survey_id' in request.GET:
         try:
             s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
@@ -190,7 +190,7 @@ def display_survey(user, prog, surveys, request, tl, format):
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
 
-    if tl == 'manage' and not request.GET.has_key('teacher_id') and sec is None and cls is None:
+    if tl == 'manage' and not 'teacher_id' in request.GET and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
@@ -229,7 +229,7 @@ def delist(x):
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
-    if tl == 'manage' and not request.GET.has_key('teacher_id') and not request.GET.has_key('classsection_id') and not request.GET.has_key('classsubject_id'):
+    if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
         # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
         datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
         wb=xlwt.Workbook()
@@ -377,7 +377,7 @@ def top_classes(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
 
-    if request.GET.has_key('survey_id'):
+    if 'survey_id' in request.GET:
         try:
             s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
@@ -405,14 +405,14 @@ def top_classes(request, tl, program, instance):
             rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
         except ValueError:
             pass
-        if request.GET.has_key('rating_cut'):
+        if 'rating_cut' in request.GET:
             try:
                 rating_cut = float( request.GET['rating_cut'] )
             except ValueError:
                 pass
 
         num_cut = 1
-        if request.GET.has_key('num_cut'):
+        if 'num_cut' in request.GET:
             try:
                 num_cut = int( request.GET['num_cut'] )
             except ValueError:

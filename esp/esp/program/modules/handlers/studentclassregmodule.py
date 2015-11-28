@@ -348,7 +348,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if request.POST.has_key('class_id'):
+        if 'class_id' in request.POST:
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
@@ -492,7 +492,7 @@ class StudentClassRegModule(ProgramModuleObj):
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
-        if is_onsite and not request.GET.has_key('filter'):
+        if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
@@ -665,7 +665,7 @@ class StudentClassRegModule(ProgramModuleObj):
         from esp.qsdmedia.models import Media
 
         clsid = 0
-        if request.POST.has_key('clsid'):
+        if 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             clsid = extra
@@ -685,7 +685,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
-        if request.GET.has_key('sec_id'):
+        if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
         #   Take the student out if constraints allow
         for sec in oldclasses:

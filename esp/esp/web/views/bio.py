@@ -84,7 +84,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
-    if request.method == 'POST' and request.POST.has_key('bio_submitted'):
+    if request.method == 'POST' and 'bio_submitted' in request.POST:
         form = BioEditForm(request.POST, request.FILES)
 
         if form.is_valid():

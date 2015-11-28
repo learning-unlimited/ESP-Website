@@ -147,7 +147,7 @@ def qsd(request, url):
 
 
     # Detect POST
-    if request.POST.has_key('post_edit'):
+    if 'post_edit' in request.POST:
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
