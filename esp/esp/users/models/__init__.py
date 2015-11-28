@@ -1006,7 +1006,8 @@ class AnonymousESPUser(BaseESPUser, AnonymousUser):
 def make_admin_save(sender, instance, **kwargs):
     if instance.is_superuser:
         from esp.users.views.make_admin import make_user_admin
-        make_user_admin(ESPUser(instance))
+        espuser = ESPUser.objects.get(id=instance.id)
+        make_user_admin(espuser)
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
