@@ -257,27 +257,6 @@ class ProgramAccountingController(BaseAccountingController):
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
 
-    def execute_pending_transfers(self, users):
-        """ "Close the books" for this program, with the selected users.
-            Typically this will be all students that attended the program. """
-
-        #   Finalize financial aid for these users
-        for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
-            grant.finalize()
-
-        if self.program.sibling_discount:
-            #   Execute sibling discounts for these users
-            for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
-                splashinfo.execute_sibling_discount()
-
-        #   Execute transfers for these users
-        self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
-
-    def remove_pending_transfers(self, users):
-        """ Clear financial records for these users; if they didn't show up,
-            we shouldn't be expecting their money.  """
-        self.all_transfers().filter(user__in=users, executed=False).delete()
-
     def payments_summary(self):
         """ Return a tuple with the number and total dollar amount of payments
             that have been made so far. """
@@ -519,12 +498,6 @@ class IndividualAccountingController(ProgramAccountingController):
         amt_sibling = self.amount_siblingdiscount()
         return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
 
-    def clear_payments(self):
-        #   Remove all payments listed for this user at this program
-        line_item_type = self.default_payments_lineitemtype()
-        target_account = self.default_source_account()
-        Transfer.objects.filter(source=None, destination=target_account, user=self.user, line_item=line_item_type).delete()
-
     def submit_payment(self, amount, transaction_id=''):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
@@ -538,5 +511,3 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())
-
-
