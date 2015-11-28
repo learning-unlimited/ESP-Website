@@ -998,6 +998,16 @@ class ESPUser(User, BaseESPUser):
         proxy = True
         verbose_name = 'ESP User'
 
+    def makeAdmin(self):
+        """
+        Make the user an Adminstrator and a Django superuser.
+        """
+        # Django auth
+        self.is_staff = True
+        self.is_superuser = True
+        self.makeRole("Administrator")
+        self.save()
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
@@ -1005,9 +1015,8 @@ class AnonymousESPUser(BaseESPUser, AnonymousUser):
                      dispatch_uid='make_admin_save')
 def make_admin_save(sender, instance, **kwargs):
     if instance.is_superuser:
-        from esp.users.views.make_admin import make_user_admin
         espuser = ESPUser.objects.get(id=instance.id)
-        make_user_admin(espuser)
+        espuser.makeAdmin()
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
@@ -2483,12 +2492,11 @@ def install():
     Installs some initial users and permissions.
     """
     print "Installing esp.users initial data..."
-    from esp.users.views.make_admin import make_user_admin
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
-        make_user_admin(user)
+        user.makeAdmin()
 
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():
