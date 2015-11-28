@@ -38,6 +38,8 @@ This release includes several changes which should help improve performance:
 
 - Further improvements to the performance of student schedule generation
 
+- Prevented admins from generating all student schedules as PNG, which was causing site downtime
+
 
 New scheduling checks
 ~~~~~~~~~~~~~~~~~~~~~
