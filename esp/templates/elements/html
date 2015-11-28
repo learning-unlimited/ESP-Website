@@ -27,7 +27,6 @@
     {% block javascript %}
     {% block js0 %}
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
-    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
     {% endblock js0 %}
 
     {% block jquery %}
