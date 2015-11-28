@@ -164,11 +164,9 @@ class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     program = models.ForeignKey(Program, blank=True, null=True)
-    balance_dec = models.DecimalField(max_digits=9, decimal_places=2, help_text='The difference between incoming and outgoing transfers that have been executed so far against this account.', default=Decimal('0'))
 
     @property
     def balance(self):
-        result = self.balance_dec
         if Transfer.objects.filter(source=self).exists():
             result -= Transfer.objects.filter(source=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
         if Transfer.objects.filter(destination=self).exists():
@@ -177,7 +175,7 @@ class Account(models.Model):
 
     @property
     def pending_balance(self):
-        return self.balance - self.balance_dec
+        return self.balance
 
     @property
     def description_title(self):
