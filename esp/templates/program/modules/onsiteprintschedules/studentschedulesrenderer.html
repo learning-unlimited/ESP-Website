@@ -30,6 +30,8 @@ function process_img(data)
         page_rest.hide();
         auto_reload_img.attr('src', data.src);
         auto_reload_img.show();
+        // The setTimeout is needed because if we try to print
+        // immediately, the previous schedule is printed instead.
         setTimeout(function () {
             printself();
 
