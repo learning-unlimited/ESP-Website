@@ -125,19 +125,17 @@ class AdminClass(ProgramModuleObj):
             message = 'Invalid class ID %s.' % clsid
             raise ESPError(message, log=False)
 
-        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
-
-        if len(classes) == 1:
-            cls = classes[0]
-            if not request.user.canEdit(cls):
-                message = 'You do not have permission to edit %s.' % cls.title
-                raise ESPError(message, log=False)
-            else:
-                return cls
-        else:
-            assert len(classes) == 0
+        try:
+            cls = ClassSubject.objects.get(id = clsid, parent_program = self.program)
+        except ClassSubject.DoesNotExist:
             message = 'Unable to find class %s.' % clsid
             raise ESPError(message, log=False)
+
+        if not request.user.canEdit(cls):
+            message = 'You do not have permission to edit %s.' % cls.title
+            raise ESPError(message, log=False)
+
+        return cls
 
     def getClass(self, request, extra):
         clsid = None
