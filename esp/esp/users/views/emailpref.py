@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.users.models import EmailPref
 from esp.users.forms.user_reg import EmailPrefForm
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.shortcuts import redirect
 
 __all__ = ['emailpref']

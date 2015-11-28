@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
@@ -74,7 +74,7 @@ class FormstackAppModule(ProgramModuleObj):
         result = {}
         result['applied'] = """Students who submitted an application"""
         return result
-    
+
     def isCompleted(self):
         # TODO
         return False

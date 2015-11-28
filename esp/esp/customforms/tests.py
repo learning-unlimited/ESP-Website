@@ -42,10 +42,10 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
     """ Tests for the backend views/models provided by the custom forms app. """
-    
+
     def setUp(self):
         """ Create a test non-admin account and a test admin account. """
-        
+
         new_admin, created = ESPUser.objects.get_or_create(username='forms_admin')
         new_admin.set_password('password')
         new_admin.save()
@@ -69,7 +69,7 @@ class CustomFormsTest(TestCase):
 
         urls = ['/customforms/', '/customforms/create/']
 
-        self.client.logout()        
+        self.client.logout()
         for url in urls:
             response = self.client.get(url)
             self.assertRedirects(response, '/accounts/login/?next=%s' % url)
@@ -99,7 +99,7 @@ class CustomFormsTest(TestCase):
     def testForms(self):
         """ Test the basic processes of the custom forms app.
             All in a single test function to preserve state.    """
-    
+
         self.client.login(username=self.admin.username, password='password')
 
         #   - Make sure you can get /customforms/create/
@@ -110,28 +110,28 @@ class CustomFormsTest(TestCase):
         #     (Note that this bypasses a *lot* of front-end stuff, that will
         #      need separate tests.)
         form_data = {
-            'title': 'Test Form', 
-            'perms': u'', 
-            'link_id': -1, 
-            'success_url': '/formsuccess.html', 
-            'success_message': 'Thank you!', 
-            'anonymous': False, 
+            'title': 'Test Form',
+            'perms': u'',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
             'pages': [{
-                'parent_id': -1, 
+                'parent_id': -1,
                 'sections': [{
                     'fields': [
-                        {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': 'checked', 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}}, 
-                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}}, 
-                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}}, 
-                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': 'checked', 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': u''}}, 
-                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text':u''}}, 
+                        {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': 'checked', 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
+                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
+                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text': u''}},
+                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': 'checked', 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': u''}},
+                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': 'checked', 'parent_id': -1, 'attrs': {}, 'help_text':u''}},
                         {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'parent_id': -1, 'attrs': {'correct_answer': u'', 'charlimits': ','}, 'help_text': u''}}
                     ],
                 'data': {'help_text': u'', 'question_text': u'', 'seq': 0}
                 }],
                 'seq': 0
-            }], 
-            'link_type': '-1', 
+            }],
+            'link_type': '-1',
             'desc': 'Test'
         }
 

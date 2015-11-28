@@ -50,7 +50,7 @@ class ClassCreationController(object):
         cls = ClassSubject()
         self.attach_class_to_program(cls)
         self.make_class_happen(cls, user, reg_form, resource_formset)
-        
+
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
         self.send_class_mail_to_directors(cls)
@@ -59,7 +59,7 @@ class ClassCreationController(object):
 
     @transaction.atomic
     def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
-        
+
         reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
@@ -72,11 +72,11 @@ class ClassCreationController(object):
             self.require_teacher_has_time(teacher, current_user, extra_time)
 
         self.make_class_happen(cls, None, reg_form, resource_formset, editing=True)
-        
+
         self.send_class_mail_to_directors(cls, False)
 
         return cls
-        
+
 
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
@@ -91,7 +91,7 @@ class ClassCreationController(object):
             raise ClassCreationValidationError, (reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
         return reg_form, resource_formset
-    
+
     def make_class_happen(self, cls, user, reg_form, resource_formset, editing=False):
         self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
@@ -105,22 +105,22 @@ class ClassCreationController(object):
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
         if user in cls.get_teachers():
             cls.propose()
-        
+
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
         custom_data = {}
-    
+
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
             elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
-        
+
         cls.custom_form_data = custom_data
 
         if hasattr(cls, 'duration'):
             cls.duration = Decimal(cls.duration)
-            
+
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
@@ -143,11 +143,11 @@ class ClassCreationController(object):
         if num_sections < len(section_list):
             for class_section in section_list[num_sections:]:
                 class_section.delete()
-                        
+
         # Set duration of sections
         cls.sections.update(duration = cls.duration)
 
-    def attach_class_to_program(self, cls):        
+    def attach_class_to_program(self, cls):
         cls.parent_program = self.program
 
     def associate_teacher_with_class(self, cls, user):
@@ -196,7 +196,7 @@ class ClassCreationController(object):
             if resource_formset:
                 for resform in resource_formset.forms:
                     self.import_resource_formset(sec, resform)
-                    
+
     def import_resource_formset(self, sec, resform):
         if isinstance(resform.cleaned_data['desired_value'], list):
             for val in resform.cleaned_data['desired_value']:
@@ -217,18 +217,18 @@ class ClassCreationController(object):
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
-        
+
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
         mail_ctxt['two'] = cls.parent_program.program_instance
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
-        
+
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
         mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.
-        if new_data.has_key('optimal_class_size_range_id') and (new_data['optimal_class_size_range_id'] is not None):
+        if new_data.get('optimal_class_size_range_id') is not None:
             opt_range = ClassSizeRange.objects.get(id=new_data['optimal_class_size_range_id'])
             mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
         else:
@@ -238,7 +238,7 @@ class ClassCreationController(object):
         except:
             # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
             pass
-        
+
         mail_ctxt['teachers'] = []
         for teacher in cls.get_teachers():
             teacher_ctxt = {'teacher': teacher}
@@ -266,7 +266,7 @@ class ClassCreationController(object):
 
         # add program email tag
         subject = '['+self.program.niceName()+'] ' + subject
-        
+
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
             send_mail(subject, \

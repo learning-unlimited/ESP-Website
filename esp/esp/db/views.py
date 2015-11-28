@@ -7,7 +7,7 @@ from django.db.models.query import QuerySet
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
     can call ajax_autocomplete on K12School but not on User or DataTree (for example).
-    
+
 user_is_staff = user_passes_test(lambda u: u.is_authenticated() and u.is_staff and u.is_authenticated())
 @user_is_staff
 """
@@ -54,7 +54,7 @@ def ajax_autocomplete(request):
         output2 = []
         for item in output:
             output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
-        
+
         content = json.dumps({'result':output2})
 
     return HttpResponse(content,

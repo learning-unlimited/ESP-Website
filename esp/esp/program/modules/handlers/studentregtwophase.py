@@ -44,14 +44,14 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.users.models import Record, ESPUser
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
-        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest') 
+        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
         if QObject:
             return {'twophase_star_students': q_ssi,
                     'twophase_priority_students' : q_sr}
@@ -318,10 +318,21 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        data = json.loads(request.POST['json_data'])
-        timeslot_id = data.keys()[0]
+        if not 'json_data' in request.POST:
+            return HttpResponseBadRequest('JSON data not included in request.')
+        try:
+            json_data = json.loads(request.POST['json_data'])
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        try:
+            [timeslot_id] = json_data.keys()
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        if not isinstance(json_data[timeslot_id], dict):
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+
         timeslot = Event.objects.get(pk=timeslot_id)
-        priorities = data[timeslot_id]
+        priorities = json_data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
             rel = RegistrationType.objects.get(name=rel_name, category='student')

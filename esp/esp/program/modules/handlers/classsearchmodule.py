@@ -8,7 +8,7 @@ from esp.program.models.flags import ClassFlagType
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 
 # TODO: this won't work right without class flags enabled
 

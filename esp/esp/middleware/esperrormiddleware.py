@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import datetime
 import json
+import sys
 
 from django.conf import settings
 from django.template import RequestContext, Context
@@ -75,7 +76,7 @@ def ESPError(message=None, log=True):
         return cls
     else:
         return cls(message)
- 
+
 """ Adapted from http://www.djangosnippets.org/snippets/802/ """
 class AjaxErrorMiddleware(object):
     '''Return AJAX errors to the browser in a sensible way.
@@ -107,7 +108,7 @@ class AjaxErrorMiddleware(object):
             return self.bad_request(request, exception)
 
         return None
-    
+
 
     def serialize_error(self, status, message):
         return HttpResponse(json.dumps({
@@ -115,11 +116,11 @@ class AjaxErrorMiddleware(object):
                     'error': message}),
                             status=status)
 
-    
+
     def not_found(self, request, exception):
         return self.serialize_error(404, str(exception))
 
-    
+
     def bad_request(self, request, exception):
         return self.serialize_error(200, exception.message)
 
@@ -130,7 +131,7 @@ class AjaxErrorMiddleware(object):
             (exc_type, exc_info, tb) = sys.exc_info()
             message = "%s\n" % exc_type.__name__
             message += "%s\n\n" % exc_info
-            message += "TRACEBACK:\n"    
+            message += "TRACEBACK:\n"
             for tb in traceback.format_tb(tb):
                 message += "%s\n" % tb
             return self.serialize_error(500, message)
@@ -150,23 +151,23 @@ class ESPErrorMiddleware(object):
         from django.shortcuts import render_to_response
         from django.conf import settings
         from django.core.mail import mail_admins
-        
+
         import sys
 
         debug = settings.DEBUG  # get the debug value
-        
+
         exc_info = sys.exc_info()
         if isinstance(exception, ESPError_Log) or exception == ESPError_Log:
             # Subject of the email
             subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in \
                                               settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), \
                                               getattr(request, 'path', ''))
-                
+
             try:
                 request_repr = repr(request)
             except:
                 request_repr = "Request repr() unavailable"
-                        
+
 
             # get a friendly traceback
             traceback = self._get_traceback(exc_info)
@@ -222,7 +223,7 @@ class ESPErrorMiddleware(object):
             return response
         return None
 
-            
+
     def _get_traceback(self, exc_info=None):
         "Helper function to return the traceback as a string"
         import traceback

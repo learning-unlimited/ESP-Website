@@ -75,7 +75,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
     """
-    
+
     @aux_call
     @json_response()
     @needs_admin
@@ -84,7 +84,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'sections': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values('id', 'enrolled_students'))}
     counts.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     counts.method.cached_function.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
-    
+
     @aux_call
     @json_response()
     @needs_admin
@@ -131,20 +131,17 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'resource_types': res_types_dicts}
     resource_types.cached_function.depend_on_model(ResourceType)
-    
+
     @aux_call
     @json_response({'resourceassignment__resource__name': 'room_name'})
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT array_agg(resources_resource.event_id) FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
-        for i in range(len(data)):
-            if not data[i]['timeslots']:
-                data[i]['timeslots'] = []
+        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'ARRAY(SELECT resources_resource.event_id FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id)'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         return {'schedule_assignments': list(data)}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     schedule_assignments.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
-    
+
     @aux_call
     @json_response()
     @cached_module_view
@@ -214,7 +211,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'].append(s.id)
                     continue
                 teacher = {
@@ -240,7 +237,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
-    from esp.cache.key_set import wildcard
+    from argcache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
     sections.cached_function.depend_on_cache(ClassSection.friendly_times, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
     sections.cached_function.depend_on_cache(ClassSection._get_capacity, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
@@ -320,7 +317,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'] += cls['sections']
                     continue
                 teacher = {
@@ -393,7 +390,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['lottery_priority'] = False
         return {'sections': sections}
 
-    def lottery_preferences_usepriority(self, request, prog): 
+    def lottery_preferences_usepriority(self, request, prog):
         sections = list(prog.sections().values('id'))
         for i in range(1, prog.priorityLimit()+1, 1):
             priority_name = 'Priority/' + str(i)
@@ -404,8 +401,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 #else:
                 #   item['lottery_priority'] = False
         return {'sections': sections}
-        
-        
+
+
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
@@ -452,10 +449,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'status': cls.status,
             'emailcode': cls.emailcode(),
             'title': cls.title,
-            'class_info': cls.class_info, 
-            'category': cls.category.category, 
+            'class_info': cls.class_info,
+            'category': cls.category.category,
             'difficulty': cls.hardness_rating,
-            'prereqs': cls.prereqs, 
+            'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -499,21 +496,21 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
-        
+
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'class_size_min': cls.class_size_min,
             'class_size_max': cls.class_size_max,
             'optimal_class_size': cls.class_size_optimal,
             'optimal_class_size_ranges': cls.optimal_class_size_range.range_str() if cls.optimal_class_size_range else None,
-            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]            
+            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]
         }
 
         if return_key == 'sections':
             return_dict['max_class_capacity'] = section.max_class_capacity
-        
+
         return {return_key: [return_dict]}
-            
+
     # This is separate from class_info because students shouldn't see it
     @aux_call
     @cache_control(public=True, max_age=300)
@@ -574,10 +571,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'status': cls.status,
             'emailcode': cls.emailcode(),
             'title': cls.title,
-            'class_info': cls.class_info, 
-            'category': cls.category.category, 
+            'class_info': cls.class_info,
+            'category': cls.category.category,
             'difficulty': cls.hardness_rating,
-            'prereqs': cls.prereqs, 
+            'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -593,7 +590,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {return_key: [return_dict]}
 
-        
+
     @aux_call
     @json_response()
     @cached_module_view
@@ -603,7 +600,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for item in data:
             if isinstance(item['processed_by'], datetime):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
-        
+
         return {'message_requests': data}
     message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
@@ -641,14 +638,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teachers = prog.teachers()
         for key in teachers.keys():
             if key in teacher_labels_dict:
-                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
+                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately,
 teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['teachernum'].append((key, teachers[key].filter(is_active = True).distinct().count()))
-                
+
         student_labels_dict = {}
         for module in prog.getModules():
-            student_labels_dict.update(module.studentDesc())      
+            student_labels_dict.update(module.studentDesc())
         vitals['studentnum'] = []
 
         ## Ew, another set of queries in a for loop...
@@ -662,7 +659,7 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
-        
+
 
         shours = 0.0
         chours = 0.0
@@ -704,7 +701,7 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         for timeslot in timeslots:
             curTimeslot = {'slotname': timeslot.short_description}
-            
+
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             def student_count(clslist):
@@ -719,7 +716,7 @@ teachers[key].filter(is_active = True).distinct().count()))
                 'count': student_count(timeslot_dict[timeslot]),
                 'max_count': student_max_count(timeslot_dict[timeslot])
                 }
-            
+
             vitals['timeslots'].append(curTimeslot)
 
         dictOut["stats"].append(vitals)
@@ -778,7 +775,7 @@ teachers[key].filter(is_active = True).distinct().count()))
                 'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
-        
+
         #   Add accounting stats
         pac = ProgramAccountingController(prog)
         (num_payments, total_payment) = pac.payments_summary()
@@ -792,7 +789,7 @@ teachers[key].filter(is_active = True).distinct().count()))
             'total_payments': float(total_payment or 0),
         }
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
-    
+
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})

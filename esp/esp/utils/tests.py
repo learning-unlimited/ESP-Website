@@ -70,7 +70,7 @@ class DependenciesTestCase(unittest.TestCase):
         except Exception, e:
             print "Error importing required module '%s': %s" % (mod, e)
             self._failed_import = True
-    
+
     def tryExecutable(self, exe):
         if not find_executable(exe):
             print "Executable not found:  '%s'" % exe
@@ -79,7 +79,7 @@ class DependenciesTestCase(unittest.TestCase):
     def testDeps(self):
         self._failed_import = False
         self._exe_not_found = False
-        
+
         self.tryImport("django")  # If this fails, we lose.
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
@@ -108,7 +108,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("dvipng")  # Used to convert LaTeX output (.dvi) to .png files
         self.tryExecutable("ps2pdf")  # Used to convert LaTeX output (.dvi) to .pdf files (must go to .ps first because we use some LaTeX packages that depend on Postscript)
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
-        
+
         self.assert_(not self._exe_not_found)
 
 class MemcachedTestCase(unittest.TestCase):
@@ -126,14 +126,14 @@ class MemcachedTestCase(unittest.TestCase):
         caches = [ x.split(':') for x in self.CACHES ]
         self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
-        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
+        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
 
     def tearDown(self):
         """ Terminate all the server processes that we launched with setUp() """
         for client in self.clients:
             client.disconnect_all()
 
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes 
+        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes
             for server in self.servers:
                 server.terminate()  # Sends SIGTERM, telling the servers to terminate
             for server in self.servers:
@@ -377,7 +377,7 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(search_filter_1.as_english(['1', None]),
                          "the instance with a db field 'option 1'")
 
-        
+
     def test_select_input(self):
         select_input = query_builder.SelectInput(
             "a_db_field", {str(i): "option %s" % i for i in range(10)})
@@ -418,7 +418,7 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(str(optional_input.as_q(None)), str(Q()))
         self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
         self.assertEqual(optional_input.as_english(None), "")
-        self.assertEqual(optional_input.as_english('5'), 
+        self.assertEqual(optional_input.as_english('5'),
                          "with a db field 'option 5'")
 
     def test_datetime_input(self):
@@ -444,7 +444,7 @@ class QueryBuilderTest(DjangoTestCase):
             datetime_input.as_english(
                 {'comparison': 'before', 'datetime': '11/30/2015 23:59'}),
             'a db field before 11/30/2015 23:59')
-    
+
     def test_text_input(self):
         text_input = query_builder.TextInput("a_db_field")
         self.assertEqual(text_input.spec(),

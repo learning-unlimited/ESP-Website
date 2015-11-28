@@ -1,8 +1,6 @@
 {% extends "main.html" %}
 
 {% block title %}{% if teacher_name %}Teacher availability: {{ teacher_name }}{% else %}Check teacher availability{% endif %}{% endblock %}
-{% block subsection_name %}{% if teacher_name %}{{ teacher_name }}: availability in {{program.niceName}}{% else %}Check teacher availability{% endif %}{% endblock %}
-
 {% block content %}
 
 {% load main %}

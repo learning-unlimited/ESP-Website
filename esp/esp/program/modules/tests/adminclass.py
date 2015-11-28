@@ -27,7 +27,7 @@ class CancelClassTest(ProgramFrameworkTest):
     def testCancelClass(self):
         # Login with the admin account
         self.client.login(username='admin', password='password')
-        
+
         # Cancel the class
         cancelMsg = 'Testing cancel class'
         self.client.post("/manage/"+self.program.url+"/manageclass/"+str(self.cls.id)+"?action=cancel_cls", { 'acknowledgement': 'on', 'explanation': cancelMsg, 'target': self.cls.id })
@@ -59,4 +59,4 @@ class CancelClassTest(ProgramFrameworkTest):
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
         self.failUnless(self.cls.emailcode() in r.content)
-                
+

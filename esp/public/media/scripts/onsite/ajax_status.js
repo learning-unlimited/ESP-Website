@@ -726,7 +726,22 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("room").html(section.rooms));
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-            
+
+            //  Hide the class if it started in the past (and we're not showing past timeblocks)
+            if (settings.hide_past_time_blocks && section.timeslots.length > 1)
+            {
+                for (var j in section.timeslots)
+                {
+                    var sec_ts_id = section.timeslots[j];
+                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+                    //excludes timeslots that have a start time 20 minutes prior to the current time
+                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+                    if (differenceInMinutes > minMinutesToHideTimeSlot)
+                        new_div.addClass("section_hidden");
+                }
+            }
+
             // Show the class title if we're not in compact mode
             if (settings.show_class_titles)
             {
@@ -745,7 +760,7 @@ function render_table(display_mode, student_id)
             var last_timeslot = section.timeslots[section.timeslots.length-1];
             var start_time = data.timeslots[first_timeslot].label.split("--")[0];
             var end_time = data.timeslots[last_timeslot].label.split("--")[1];
-            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " hour)";
+            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
             tooltip_div.append($j("<div/>").html(friendly_times));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
@@ -943,7 +958,7 @@ function populate_classes()
             new_sec.capacity = parent_class.class_size_max_optimal;
         if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
             new_sec.capacity = new_sec.max_class_capacity;
-        new_sec.timeslots = new_sec.event_ids.split(",");
+        new_sec.timeslots = new_sec.event_ids;
         for (var j in new_sec.timeslots)
         {
             if (data.timeslots[parseInt(new_sec.timeslots[j])])

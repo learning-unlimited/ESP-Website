@@ -114,7 +114,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.assertTrue('<span class="form_error">This field is required.</span>' in lines[i+j+1])
 
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
-        found_default = False        
+        found_default = False
         for line in lines[i:i+j]:
             found_default = found_default or ('<option value="" selected="selected"></option>' in line)
         self.assertTrue(found_default)

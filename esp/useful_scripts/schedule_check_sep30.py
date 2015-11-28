@@ -15,8 +15,8 @@ for r in rooms:
         print 'ERROR: %s at %s has conflict: %s' % (r.name, r.event.pretty_time(), r.resourceassignment_set.all().values_list('target', flat=True))
         num_conflicts += 1
 
-    
-    
-    
+
+
+
 print ' '
 print 'Found %d conflicts.' % num_conflicts

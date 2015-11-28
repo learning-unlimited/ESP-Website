@@ -12,7 +12,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='StudentClassRegModule').id)
         modules.append(ProgramModule.objects.get(handler='StudentRegCore').id)
         modules.append(ProgramModule.objects.get(handler='AdminCore').id)
-        
+
         super(RegistrationTypeManagementTest, self).setUp(modules=modules)
         self.schedule_randomly()
 
@@ -27,11 +27,11 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.adminUser.set_password('password')
         make_user_admin(self.adminUser)
 
-        
+
     def testAdminInterface(self):
         # Login as admin
         self.client.login(username='admin', password='password')
-        
+
         # Try to set the values
         r = self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
 

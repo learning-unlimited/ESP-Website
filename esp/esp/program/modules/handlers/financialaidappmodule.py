@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response, secure_required
+from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, User
 from django.db.models.query       import Q
@@ -73,13 +73,13 @@ class FinancialAidAppModule(ProgramModuleObj):
             return {'studentfinaid_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
                     'studentfinaid':          ESPUser.objects.filter(Q_students),
                     'studentfinaid_approved': ESPUser.objects.filter(Q_students & Q_students_approved)}
-        
+
 
     def studentDesc(self):
         return {'studentfinaid_complete': """Students who have completed a financial aid application""",
                 'studentfinaid':          """Students who have started a financial aid application""",
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
-    
+
     def isCompleted(self):
         return get_current_request().user.appliedFinancialAid(self.program)
 
@@ -93,7 +93,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         """
         from datetime import datetime
         from esp.dbmail.models import send_mail
-                
+
         app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
                                                                 program = self.program)
 
@@ -105,19 +105,19 @@ class FinancialAidAppModule(ProgramModuleObj):
                     fields = tuple(tag_data.split(','))
                 else:
                     fields = '__all__'
-      
+
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
                 app.__dict__.update(form.cleaned_data)
-               
-                if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
+
+                if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False
                 else:
                     raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
-                
+
                 app.save()
 
                 # Automatically accept apps for people with subsidized lunches
@@ -152,7 +152,7 @@ This request can be (re)viewed at:
 <http://%s/admin/program/financialaidrequest/%s/>
 
 
-""") % (request.user.first_name, 
+""") % (request.user.first_name,
     request.user.last_name,
     prog.niceName(),
     date_str,
@@ -166,15 +166,15 @@ This request can be (re)viewed at:
     str(app.student_prepare),
     app.extra_explaination,
     settings.DEFAULT_HOST, # server hostname
-    str(app.id)), 
+    str(app.id)),
                             settings.SERVER_EMAIL,
                             [ prog.getDirectorConfidentialEmail() ] )
-                              
+
                 return self.goToCore(tl)
-            
+
         else:
             form = Form(initial = app.__dict__)
-            
+
         return render_to_response(self.baseDir()+'application.html',
                                   request,
                                   {'form': form, 'app': app})

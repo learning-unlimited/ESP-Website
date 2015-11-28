@@ -47,10 +47,10 @@ _ONE_WEEK = timedelta(weeks=1)
 
 def process_messages(debug=False):
     """Go through all unprocessed messages and process them.
-    
+
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
-    
+
     now = datetime.now()
     one_week_ago = now - _ONE_WEEK
 
@@ -78,7 +78,7 @@ def process_messages(debug=False):
 # atomic.
 def send_email_requests(debug=False):
     """Go through all email requests that aren't sent and send them.
-    
+
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
     called in more than one thread simultaneously."""
 
@@ -106,7 +106,7 @@ def send_email_requests(debug=False):
     wait = getattr(settings, 'EMAILTIMEOUT', None)
     if wait is None:
         wait = 1.5
-    
+
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
@@ -114,7 +114,7 @@ def send_email_requests(debug=False):
         exception = mailtxt.send(debug=debug)
         if exception is not None:
             errors.append({'email': mailtxt, 'exception': str(exception)})
-            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
+            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(exception)
         else:
             num_sent += 1
 

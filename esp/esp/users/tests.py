@@ -25,13 +25,6 @@ class ESPUserTest(TestCase):
         self.factory = RequestFactory()
         user_role_setup()
 
-    def testInit(self):
-        one = ESPUser()
-        two = User()
-        three = ESPUser(two)
-        four = ESPUser(three)
-        self.failUnless( three.__dict__ == four.__dict__ )
-
     def testDelete(self):
         # Create a user and a permission
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
@@ -51,11 +44,11 @@ class ESPUserTest(TestCase):
             def flush(self):
                 for i in self.keys():
                     del self[i]
-    
+
         # Make up a fake request object
         request = self.factory.get('/')
         request.session = scratchDict()
-        request.backend = 'django.contrib.auth.backends.ModelBackend'
+        request.backend = 'esp.utils.auth_backend.ESPAuthBackend'
         request.user = None
 
         # Create a couple users and give them roles
@@ -75,11 +68,11 @@ class ESPUserTest(TestCase):
         self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
 
         request.user.switch_back(request)
-        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)        
+        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)
 
         blocked_illegal_morph = True
         try:
-            ESPUser(request.user).switch_to_user(request, self.basic_user, None, None)
+            request.user.switch_to_user(request, self.basic_user, None, None)
             self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
         except ESPError():
             blocked_illegal_morph = True
@@ -118,45 +111,27 @@ class ESPUserTest(TestCase):
         if (c2):
             studentUser.delete()
 
-    def test_lazy_user(self):
-        """Test that we can handle a SimpleLazyObject."""
-        u1 = User.objects.create(username='laziness_123',
-                                 last_login=datetime.datetime.now())
-        u2 = ESPUser(u1)
-        u3 = SimpleLazyObject(lambda: u1)
-        u4 = SimpleLazyObject(lambda: u2)
-        u5 = ESPUser(u2)
-        u6 = ESPUser(u3)
-        u7 = ESPUser(u4)
-        for u in [u1, u2, u3, u4, u5, u6, u7]:
-            self.assertEqual(u.username, 'laziness_123')
-            self.assertIsNotNone(u.id)
-
-
-
 class PasswordRecoveryTicketTest(TestCase):
     def setUp(self):
-        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.user.set_password('forgotten_pw')
         self.user.save()
-        self.other, created = User.objects.get_or_create(username='innocent')
+        self.other, created = ESPUser.objects.get_or_create(username='innocent')
         self.other.set_password('remembered_pw')
         self.other.save()
     def runTest(self):
         # First, make sure both people can log in
         self.assertTrue(self.client.login( username='forgetful', password='forgotten_pw' ), "User forgetful cannot login")
         self.assertTrue(self.client.login( username='innocent', password='remembered_pw' ), "User innocent cannot login")
-        
+
         # Create tickets; both User and ESPUser should work
         one   = PasswordRecoveryTicket.new_ticket( self.user )
         two   = PasswordRecoveryTicket.new_ticket( self.user )
-        three = PasswordRecoveryTicket.new_ticket( ESPUser(self.user) )
         four  = PasswordRecoveryTicket.new_ticket( self.other )
         self.assertTrue(one.is_valid(), "Recovery ticket one is invalid.")
         self.assertTrue(two.is_valid(), "Recovery ticket two is invalid.")
-        self.assertTrue(three.is_valid(), "Recovery ticket three is invalid.")
         self.assertTrue(four.is_valid(), "Recovery ticket four is invalid.")
-        
+
         # Try expiring #1; trying to validate it should destroy it
         one.cancel()
         self.assertFalse(one.is_valid(), "Expired ticket is still valid.")
@@ -164,7 +139,7 @@ class PasswordRecoveryTicketTest(TestCase):
         # Try using #1; it shouldn't work
         self.assertFalse(one.change_password( 'forgetful', 'bad_pw' ), "Expired ticket still changed password.")
         self.assertFalse(self.client.login( username='forgetful', password='bad_pw' ), "User forgetful logged in with incorrect password.")
-        
+
         # Try using #2
         # Make sure it doesn't work for the wrong user
         self.assertFalse(two.change_password( 'innocent', 'bad_pw' ), "Recovery ticket two used for the wrong user.")
@@ -206,7 +181,7 @@ class TeacherInfo__validationtest(TestCase):
                 return True
             except:
                 return False
-            
+
         # There's some data-cleaning going on here, so
         # ti.graduation_year may have been edited to drop
         # invalid values.
@@ -214,7 +189,7 @@ class TeacherInfo__validationtest(TestCase):
                         or (ti.graduation_year.strip() == "N/A"
                             and not (is_int(tif.cleaned_data['graduation_year'].strip())
                                  or tif.cleaned_data['graduation_year'].strip() == 'G')))
-        
+
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
         self.failUnless(tifnew.is_valid())
@@ -288,7 +263,7 @@ class MakeAdminTest(TestCase):
 
     def runTest(self):
         # Make sure user starts off with no administrator priviliges
-        self.assertFalse(self.user.is_staff)        
+        self.assertFalse(self.user.is_staff)
         self.assertFalse(self.user.is_superuser)
         self.assertFalse(self.user.groups.filter(name="Administrator").exists())
 
@@ -306,21 +281,21 @@ class MakeAdminTest(TestCase):
 
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
-        in the response. 
+        in the response.
     """
     def runTest(self):
         #   Quit if path and keys are not provided.  This ensures nothing will
         #   break if this is invoked without those attributes.
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
-        
+
         import json
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
-        
+            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
+
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
         self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
@@ -330,7 +305,7 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         super(AjaxScheduleExistenceTest, self).runTest()
 
 class AccountCreationTest(TestCase):
-    
+
     def setUp(self):
         user_role_setup()
 
@@ -341,7 +316,7 @@ class AccountCreationTest(TestCase):
         self.phase_1()
         Tag.setTag('ask_about_duplicate_accounts',value='false')
         self.phase_1()
-        
+
 
     def phase_1(self):
         """Testing the phase 1 of registration, the email address page"""
@@ -353,7 +328,7 @@ class AccountCreationTest(TestCase):
             return
 
         self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
-        
+
         #next, make a user with that email and try the same
         u=ESPUser.objects.create(email="tsutton125@gmail.com")
         response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com"},follow=True)
@@ -396,7 +371,7 @@ class AccountCreationTest(TestCase):
                                          "email":"tsutton125@gmail.com",
                                          "confirm_email":"tsutton125@gmail.com",
                                          "initial_role":"Teacher"})
-        
+
         #test that the user was created properly
         try:
             u=ESPUser.objects.get(username="username",
@@ -435,8 +410,8 @@ class TestChangeRequestModel(TestCase):
         return change_request
 
     def test_acknowledged_time_set(self):
-        """ Tests assignment of current time to acknowledged_time when 
-        request approval flag is set"""        
+        """ Tests assignment of current time to acknowledged_time when
+        request approval flag is set"""
         change_request = self._create_change_request()
         self.assertIsNone(change_request.acknowledged_time)
 
@@ -456,7 +431,7 @@ class TestChangeRequestModel(TestCase):
 
     def test_confirmation_email_content(self):
         """Verifies content in confirmation email"""
-        change_request = self._create_change_request()   
+        change_request = self._create_change_request()
         student = change_request.requesting_student
         subject, message  = change_request._confirmation_email_content()
 
@@ -467,7 +442,7 @@ class TestChangeRequestModel(TestCase):
 
     def test_request_email_content(self):
         """Verifies content in request email"""
-        change_request = self._create_change_request()   
+        change_request = self._create_change_request()
         student = change_request.requesting_student
         subject, message  = change_request._request_email_content()
 
@@ -483,7 +458,7 @@ class TestChangeRequestView(TestCase):
 
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
-        
+
         #   May fail once in a while, but it's not critical.
         self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
         self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
@@ -506,7 +481,7 @@ class TestChangeRequestView(TestCase):
 
         #   Submit a valid grade change request
         response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
-        
+
         #   Check that an e-mail was sent with the right from/to
         self.assertEqual(len(mail.outbox), 1)
         msg = mail.outbox[0]

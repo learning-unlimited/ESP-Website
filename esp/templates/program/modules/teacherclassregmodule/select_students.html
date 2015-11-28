@@ -2,11 +2,6 @@
 
 {% block title %}Student selection for {{ sec }}{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Teacher Panel"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />

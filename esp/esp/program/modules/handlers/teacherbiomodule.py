@@ -53,7 +53,7 @@ class TeacherBioModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         if QObject:
             return {'teacher_biographies': self.getQForUser(Q(teacherbio__program = self.program))}
-                    
+
         teachers = ESPUser.objects.filter(teacherbio__program = self.program).distinct()
         return {'teacher_biographies': teachers }
 
@@ -69,7 +69,7 @@ class TeacherBioModule(ProgramModuleObj):
 
         if result is not True:
             return result
-        
+
         return self.goToCore(tl)
 
     def isCompleted(self):

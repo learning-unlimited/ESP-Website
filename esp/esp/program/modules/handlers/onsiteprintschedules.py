@@ -40,7 +40,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from datetime         import datetime
-from esp.web.util     import render_to_response
+from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
 from datetime         import datetime
 from django.db.models.query   import Q
@@ -60,13 +60,13 @@ class OnsitePrintSchedules(ProgramModuleObj):
 #    @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not request.GET.has_key('sure') and not request.GET.has_key('gen_img'):
+        if not 'sure' in request.GET and not 'gen_img' in request.GET:
             printers = Printer.objects.all().values_list('name', flat=True)
 
             return render_to_response(self.baseDir()+'instructions.html',
                                     request, {'printers': printers})
 
-        if request.GET.has_key('sure'):
+        if 'sure' in request.GET:
             return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
                             request, {})
 
