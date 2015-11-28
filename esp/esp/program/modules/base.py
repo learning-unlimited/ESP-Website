@@ -246,33 +246,6 @@ class ProgramModuleObj(models.Model):
 
         return ModuleObj
 
-
-
-    def getClassFromId(self, clsid, tl='teach'):
-        """ This function can be called from a view to get a class object from an id. The id can be given
-            with request or extra, but it will try to get it in any way. """
-
-        from esp.program.models import ClassSubject
-
-        classes = []
-        try:
-            clsid = int(clsid)
-        except:
-            return (False, True)
-
-        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
-
-        if len(classes) == 1:
-            if not get_current_request().user.canEdit(classes[0]):
-                from esp.middleware import ESPError
-                message = 'You do not have permission to edit %s.' % classes[0].title
-                raise ESPError(message, log=False)
-            else:
-                Found = True
-                return (classes[0], True)
-        return (False, False)
-
-
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 

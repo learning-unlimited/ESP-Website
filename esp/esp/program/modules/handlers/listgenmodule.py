@@ -238,14 +238,14 @@ class ListGenModule(ProgramModuleObj):
         """ Generate an HTML or CSV format user list using a query filter
             specified in request.GET or a separate argument. """
 
+        if filterObj is None:
+            if 'filterid' in request.GET:
+                filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+            else:
+                raise ESPError('Could not determine the query filter ID.', log=False)
+
         if request.method == 'POST' and 'fields' in request.POST:
             #   If list information was submitted, continue to prepare a list
-            if filterObj is None:
-                if 'filterid' in request.GET:
-                    filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
-                else:
-                    raise ESPError('Could not determine the query filter ID.', log=False)
-
             #   Parse the contents of the form
             form = ListGenForm(request.POST)
             if form.is_valid():
@@ -303,12 +303,12 @@ class ListGenModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'options.html', request, context)
         else:
             #   Otherwise, show a blank form
+            form = ListGenForm()
             context = {
                 'form': form,
                 'filterid': filterObj.id,
                 'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             }
-            form = ListGenForm()
             return render_to_response(self.baseDir()+'options.html', request, context)
 
     @main_call

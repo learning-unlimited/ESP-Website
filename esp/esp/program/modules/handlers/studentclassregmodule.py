@@ -484,7 +484,7 @@ class StudentClassRegModule(ProgramModuleObj):
         except:
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
-        ts = Event.objects.filter(id=extra)
+        ts = Event.objects.filter(id=extra, program=prog)
         if len(ts) < 1:
             raise Http404()
 

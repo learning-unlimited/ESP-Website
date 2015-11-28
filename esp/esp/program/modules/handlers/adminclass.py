@@ -109,41 +109,31 @@ class AdminClass(ProgramModuleObj):
         context['classes']   = classes
         return context
 
+    def getClassFromId(self, request, clsid):
+        try:
+            clsid = int(clsid)
+        except ValueError:
+            message = 'Invalid class ID %s.' % clsid
+            raise ESPError(message, log=False)
+
+        try:
+            cls = ClassSubject.objects.get(id = clsid, parent_program = self.program)
+        except ClassSubject.DoesNotExist:
+            message = 'Unable to find class %s.' % clsid
+            raise ESPError(message, log=False)
+
+        return cls
+
     def getClass(self, request, extra):
-        found = False
-        if not found and extra is not None and len(extra.strip()) > 0:
-            try:
-                clsid = int(extra)
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
+        clsid = None
+        if extra is not None and len(extra.strip()) > 0:
+            clsid = extra
+        elif 'clsid' in request.POST:
+            clsid = request.POST['clsid']
+        elif 'clsid' in request.GET:
+            clsid = request.GET['clsid']
 
-
-        if not found and 'clsid' in request.POST:
-            try:
-                clsid = int(request.POST['clsid'])
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
-
-        if not found and 'clsid' in request.GET:
-            try:
-                clsid = int(request.GET['clsid'])
-            finally:
-                cls, found = self.getClassFromId(clsid)
-                if found:
-                    return (cls, True)
-                elif cls is not False:
-                    return (cls, False)
-
-
-        return (render_to_response(self.baseDir()+'cannotfindclass.html', request, {}), False)
+        return self.getClassFromId(request, clsid)
 
     @aux_call
     @needs_admin
@@ -206,7 +196,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def addsection(self, request, tl, one, two, module, extra, prog):
         """ A little function to add a section to the class specified in POST. """
-        cls, found = self.getClass(request,extra)
+        cls = self.getClass(request,extra)
         cls.add_section()
 
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
@@ -214,10 +204,8 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request,extra)
+        cls = self.getClass(request,extra)
         sections = cls.sections.all().order_by('id')
-        if not found:
-            return ESPError('Unable to find the requested class.', log=False)
         context = {}
 
         if cls.isCancelled():
@@ -319,9 +307,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.accept()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
@@ -330,9 +316,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.reject()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
@@ -341,9 +325,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
-        cls, found = self.getClass(request, extra)
-        if not found:
-            return cls
+        cls = self.getClass(request, extra)
         cls.propose()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
