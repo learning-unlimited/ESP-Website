@@ -222,20 +222,19 @@ class Account(models.Model):
         unique_together = ('name',)
 
 class Transfer(models.Model):
-    source = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_source', help_text='Source account; where the money is coming from.  Leave blank if this is a payment from outside.')
-    destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
+    source = models.ForeignKey(
+        Account, blank=True, null=True, related_name='transfer_source',
+        help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.')
+    destination = models.ForeignKey(
+        Account, blank=True, null=True, related_name='transfer_destination',
+        help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.')
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
-                      'credit card processor transaction ID number',
-                      max_length=64,
-                      blank=True,
-                      default='',
-                      help_text='If this transfer is from a credit card ' +
-                      'transaction, stores the transaction ID number from ' +
-                      'the processor.')
+        'Transaction ID', max_length=64, blank=True, default='',
+        help_text='If this transfer is from a credit card transaction, stores the transaction ID number from the processor.')
     timestamp = models.DateTimeField(auto_now=True)
 
     def set_amount(self, amount):
