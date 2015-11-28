@@ -726,7 +726,22 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("room").html(section.rooms));
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-            
+
+            //  Hide the class if it started in the past (and we're not showing past timeblocks)
+            if (settings.hide_past_time_blocks && section.timeslots.length > 1)
+            {
+                for (var j in section.timeslots)
+                {
+                    var sec_ts_id = section.timeslots[j];
+                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+                    //excludes timeslots that have a start time 20 minutes prior to the current time
+                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+                    if (differenceInMinutes > minMinutesToHideTimeSlot)
+                        new_div.addClass("section_hidden");
+                }
+            }
+
             // Show the class title if we're not in compact mode
             if (settings.show_class_titles)
             {
