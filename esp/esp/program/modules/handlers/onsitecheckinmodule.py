@@ -76,7 +76,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                                      program=self.program)
         return created
 
-    def delete_record(self, extension):
+    def delete_record(self, event):
         if event=="paid":
             self.updatePaid(False)
 
@@ -187,25 +187,20 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 codes=form.cleaned_data['uids'].split()
                 for code in codes:
                     try:
-                        result=ESPUser.objects.filter(id=code)
-                    except ValueError:
+                        student = ESPUser.objects.get(id=code)
+                    except (ValueError, ESPUser.DoesNotExist):
                         results['not_found'].append(code)
-                    if len(result) > 1:
-                        raise ESPError("Something weird happened, there are two students with ID %s." % code, log=False)
-                    elif len(result) == 0:
-                        results['not_found'].append(code)
-                    else:
-                        student=result[0]
-                        if student.isStudent():
-                            existing = Record.user_completed(student, 'attended', prog)
-                            if existing:
-                                results['existing'].append(code)
-                            else:
-                                new = Record(user=student, program=prog, event='attended')
-                                new.save()
-                                results['new'].append(code)
+
+                    if student.isStudent():
+                        existing = Record.user_completed(student, 'attended', prog)
+                        if existing:
+                            results['existing'].append(code)
                         else:
-                            results['not_student'].append(code)
+                            new = Record(user=student, program=prog, event='attended')
+                            new.save()
+                            results['new'].append(code)
+                    else:
+                        results['not_student'].append(code)
         else:
             results = {}
             form=OnsiteBarcodeCheckinForm()

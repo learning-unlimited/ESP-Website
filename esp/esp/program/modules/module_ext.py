@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 import time
 from datetime import timedelta
 from django.db import models
+from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from django.conf import settings
@@ -364,11 +365,6 @@ class AJAXChangeLog(models.Model):
 
     def get_earliest_index(self):
         return self.entries.all().aggregate(models.Min('index'))['index__min']
-
-        if index is None:
-            index = 0
-
-        return index
 
     def get_log(self, last_index):
         new_entries = self.entries.filter(index__gt=last_index).order_by('index')

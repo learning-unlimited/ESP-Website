@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from operator import __or__ as OR
+from pprint import pprint
 
 from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode

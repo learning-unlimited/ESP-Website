@@ -56,12 +56,7 @@ class OptionalDecorator(object):
         def _do_nothing(*args, **kwargs):
             return False
 
-        if hasattr(self, 'value'):
-            if self.value:
-                return func
-            else:
-                return _do_nothing
-        elif value:
+        if hasattr(self, 'value') and self.value:
             return func
         else:
             return _do_nothing

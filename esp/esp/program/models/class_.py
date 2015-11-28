@@ -46,6 +46,7 @@ from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site

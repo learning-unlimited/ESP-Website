@@ -34,13 +34,15 @@ Learning Unlimited, Inc.
 """
 
 import json
+import sys
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
+from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
@@ -295,7 +297,9 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
         sec_ids = []
         if extra == 'all':
-            sec_ids = user_sections.values_list('id', flat=True)
+            # TODO(benkraft): this branch of the if was broken for 5 years and
+            # nobody noticed, so we may be able to remove it entirely.
+            sec_ids = self.user.getSections(self.program).values_list('id', flat=True)
         elif isinstance(extra, list) or isinstance(extra, QuerySet):
             sec_ids = list(extra)
         else:
