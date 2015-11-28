@@ -46,6 +46,7 @@ from django.db.models.query import Q
 from django.core.cache import cache
 
 import pickle
+import warnings
 
 ########################################
 #   New resource stuff (Michael P)
@@ -63,8 +64,6 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
-DISTANCE_FUNC_REGISTRY = {}
-
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     from esp.survey.models import ListField
@@ -80,11 +79,6 @@ class ResourceType(models.Model):
     choices = ListField('attributes_pickled')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
-    distancefunc = models.TextField(
-        blank=True,
-        null=True,
-        help_text="Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.",
-        )               #   Defines a way to compare this resource type with others.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
@@ -203,30 +197,15 @@ class Resource(models.Model):
 
         super(Resource, self).save(*args, **kwargs)
 
+    # I'd love to kill this, but since it's set as the __sub__, it's hard to
+    # grep to be sure it's not used.
     def distance(self, other):
         """
-        Using the custom distance function defined in the ResourceType,
-        compute the distance between this resource and another.
-        Bear in mind that this is cached using a python global registry.
+        Deprecated.
         """
-        if self.res_type_id != other.res_type_id:
-            raise ValueError("Both resources must be of the same type to compare!")
-
-        if self.res_type_id in DISTANCE_FUNC_REGISTRY:
-            return DISTANCE_FUNC_REGISTRY[self.res_type_id](self, other)
-
-        distancefunc = self.res_type.distancefunc
-
-        if distancefunc and distancefunc.strip():
-            funcstr = distancefunc.strip().replace('\r\n', '\n')
-        else:
-            funcstr = "return 0"
-        funcstr = """def _cmpfunc(r1, r2):\n%s""" % (
-            '\n'.join('    %s' % l for l in funcstr.split('\n'))
-            )
-        exec funcstr
-        DISTANCE_FUNC_REGISTRY[self.res_type_id] = _cmpfunc
-        return _cmpfunc(self, other)
+        warnings.warn("Resource.distance() is deprecated.",
+                      DeprecationWarning)
+        return 0
 
     __sub__ = distance
 

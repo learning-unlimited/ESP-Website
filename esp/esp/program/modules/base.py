@@ -263,7 +263,7 @@ class ProgramModuleObj(models.Model):
 
     def __getattr__(self, attr):
         # backward compatibility
-        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
+        if hasattr(self, '_ext_map') and attr in self._ext_map:
             key = self._ext_map[attr]
             ext = getattr(self, key)
             import warnings
@@ -471,7 +471,7 @@ def needs_teacher(method):
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if request.session.has_key('user_morph'):
+        if 'user_morph' in request.session:
             morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None

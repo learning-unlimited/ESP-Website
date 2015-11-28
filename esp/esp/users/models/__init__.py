@@ -1746,7 +1746,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if contactInfo is None:
             contactInfo = ContactInfo()
         for i in contactInfo.__dict__.keys():
-            if i != 'user_id' and i != 'id' and new_data.has_key(prefix+i):
+            if i != 'user_id' and i != 'id' and prefix+i in new_data:
                 contactInfo.__dict__[i] = new_data[prefix+i]
         if curUser is not None:
             contactInfo.user = curUser

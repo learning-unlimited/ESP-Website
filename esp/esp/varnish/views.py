@@ -1,6 +1,7 @@
 from esp.users.models import ESPUser
 from esp.varnish import purge_page
 from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
 
 def varnish_purge(request):
     # Authenticate

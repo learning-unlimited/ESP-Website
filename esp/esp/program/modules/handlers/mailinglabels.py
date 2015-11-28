@@ -97,7 +97,7 @@ class MailingLabels(ProgramModuleObj):
         if 'schools' in extra.strip():
             if request.method == 'POST':
 
-                if request.POST.has_key('filter_id'):
+                if 'filter_id' in request.POST:
                     """
                     A filter was passed.
                     """
@@ -265,7 +265,7 @@ class MailingLabels(ProgramModuleObj):
 
             if key != 'FAILED':
 
-                if addresses.has_key(key):
+                if key in addresses:
                     if name.upper() not in [n.upper() for n in addresses[key]]:
                         addresses[key].append(name)
                 else:

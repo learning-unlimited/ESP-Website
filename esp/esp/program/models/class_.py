@@ -46,6 +46,7 @@ from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
@@ -77,7 +78,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
-__all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
+__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
 CANCELLED = -20
 REJECTED = -10
@@ -133,28 +134,6 @@ class ClassSizeRange(models.Model):
     class Meta:
         app_label='program'
 
-class ProgramCheckItem(models.Model):
-    program = models.ForeignKey(Program, related_name='checkitems')
-    title   = models.CharField(max_length=512)
-    seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
-                                          help_text = 'Lower is earlier')
-
-    def save(self, *args, **kwargs):
-        if self.seq is None:
-            try:
-                item = ProgramCheckItem.objects.filter(program = self.program).order_by('-seq')[0]
-                self.seq = item.seq + 5
-            except IndexError:
-                self.seq = 0
-        super(ProgramCheckItem, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        return u'%s for "%s"' % (self.title, unicode(self.program).strip())
-
-    class Meta:
-        ordering = ('seq',)
-        app_label = 'program'
-        db_table = 'program_programcheckitem'
 
 class ClassManager(Manager):
     def __repr__(self):
@@ -316,7 +295,6 @@ class ClassSection(models.Model):
     registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
-    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
@@ -479,14 +457,8 @@ class ClassSection(models.Model):
         self.getResourceRequests().delete()
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
-        self.checklist_progress.clear()
 
         super(ClassSection, self).delete()
-
-    @cache_function
-    def checklist_progress_all_cached(self):
-        return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
         return self.resourceassignment_set.all()
@@ -1304,7 +1276,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     prereqs  = models.TextField(blank=True, null=True)
     requested_special_resources = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
-    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
     session_count = models.IntegerField(default=1)
 
@@ -1460,11 +1431,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    @cache_function
-    def checklist_progress_all_cached(self):
-        return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m('program.ClassSubject', 'checklist_progress', lambda cs, cp: {'self': cs})
-
     def friendly_times(self):
         collapsed_times = []
         for s in self.get_sections():
@@ -1549,7 +1515,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         #   Remove indirect dependencies
         self.documents.clear()
-        self.checklist_progress.clear()
 
         super(ClassSubject, self).delete()
 

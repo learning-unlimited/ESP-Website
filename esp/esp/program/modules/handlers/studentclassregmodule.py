@@ -34,10 +34,12 @@ Learning Unlimited, Inc.
 """
 
 import json
+import sys
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
+from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
 from django.http import HttpResponse, Http404
@@ -295,7 +297,9 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
         sec_ids = []
         if extra == 'all':
-            sec_ids = user_sections.values_list('id', flat=True)
+            # TODO(benkraft): this branch of the if was broken for 5 years and
+            # nobody noticed, so we may be able to remove it entirely.
+            sec_ids = self.user.getSections(self.program).values_list('id', flat=True)
         elif isinstance(extra, list) or isinstance(extra, QuerySet):
             sec_ids = list(extra)
         else:
@@ -348,7 +352,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if request.POST.has_key('class_id'):
+        if 'class_id' in request.POST:
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
@@ -492,7 +496,7 @@ class StudentClassRegModule(ProgramModuleObj):
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
-        if is_onsite and not request.GET.has_key('filter'):
+        if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
@@ -665,7 +669,7 @@ class StudentClassRegModule(ProgramModuleObj):
         from esp.qsdmedia.models import Media
 
         clsid = 0
-        if request.POST.has_key('clsid'):
+        if 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             clsid = extra
@@ -685,7 +689,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
-        if request.GET.has_key('sec_id'):
+        if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
         #   Take the student out if constraints allow
         for sec in oldclasses:

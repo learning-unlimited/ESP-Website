@@ -112,7 +112,7 @@ class BaseAppElement(object):
     def update(self, form):
         self.date = datetime.datetime.now()
         for field_name in self._field_names:
-            if form.cleaned_data.has_key(field_name):
+            if field_name in form.cleaned_data:
                 setattr(self, field_name, form.cleaned_data[field_name])
         self.save()
 

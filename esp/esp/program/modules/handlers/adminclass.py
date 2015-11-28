@@ -32,25 +32,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
+from esp.program.models import ClassSubject, ClassSection, ClassFlagType
 from esp.users.models import ESPUser, User
-from esp.cal.models              import Event
 
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
-from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
-from django.utils.datastructures import MultiValueDict
-from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
 from esp.middleware import ESPError
-from django.db.models.query import Q
 from esp.program.controllers.classreg import ClassCreationController
 
 """ Module in the middle of a rewrite. -Michael """
@@ -71,7 +64,7 @@ class AdminClass(ProgramModuleObj):
             "seq": 1,
             }
 
-    form_choice_types = ['status', 'reg_status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
+    form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade']
     def getFormChoices(self, field_str):
         """ A more compact function for zipping up the options available on class
         management forms. """
@@ -83,8 +76,6 @@ class AdminClass(ProgramModuleObj):
         if field_str == 'room':
             room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
-        if field_str == 'progress':
-            return self.program.checkitems.all().values_list('id', 'title')
         if field_str == 'resources':
             resources = self.program.getFloatingResources()
             return ((x.name, x.name) for x in resources)
@@ -137,9 +128,9 @@ class AdminClass(ProgramModuleObj):
         clsid = None
         if extra is not None and len(extra.strip()) > 0:
             clsid = extra
-        elif request.POST.has_key('clsid'):
+        elif 'clsid' in request.POST:
             clsid = request.POST['clsid']
-        elif request.GET.has_key('clsid'):
+        elif 'clsid' in request.GET:
             clsid = request.GET['clsid']
 
         return self.getClassFromId(request, clsid)
@@ -149,15 +140,15 @@ class AdminClass(ProgramModuleObj):
     def reviewClass(self, request, tl, one, two, module, extra, prog):
         """ Set the review status of a class """
         if request.method == 'POST':
-            if not (request.POST.has_key('class_id') and request.POST.has_key('review_status')):
+            if not ('class_id' in request.POST and 'review_status' in request.POST):
                 raise ESPError("Error: missing data on request")
 
             class_id = request.POST['class_id']
             try:
                 class_subject = ClassSubject.objects.get(pk=class_id)
-            except MultipleObjectsReturned:
+            except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
-            except DoesNotExist:
+            except ClassSubject.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']
@@ -187,7 +178,7 @@ class AdminClass(ProgramModuleObj):
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
         if request.method == 'POST':
-            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
+            if request.POST.get('sure') == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
                     s.delete()
@@ -318,7 +309,7 @@ class AdminClass(ProgramModuleObj):
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.accept()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
@@ -327,7 +318,7 @@ class AdminClass(ProgramModuleObj):
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.reject()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
@@ -336,45 +327,8 @@ class AdminClass(ProgramModuleObj):
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.propose()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
-
-    def change_checkmark(self, class_id, check_id):
-        cls = ClassSubject.objects.get(id = class_id)
-        check = ProgramCheckItem.objects.get(id = check_id)
-
-        if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
-            cls.checklist_progress.remove(check)
-            return False
-        else:
-            cls.checklist_progress.add(check)
-            return True
-
-    @aux_call
-    @needs_admin
-    def alter_checkmark(self, request, *args, **kwargs):
-        """
-        Change the status of a check mark for a given class.
-        """
-        class_id = request.POST.get('class_id','')
-        check_id = request.POST['check_id']
-
-        result = self.change_checkmark(class_id, check_id)
-
-        if result:
-            return HttpResponse('On');
-        else:
-            return HttpResponse('Off');
-
-    @aux_call
-    @needs_admin
-    def changeoption(self, request,tl,one,two,module,extra,prog):
-        check_id = request.GET['step']
-        class_id = extra
-
-        self.change_checkmark(class_id, check_id)
-
         return self.goToCore(tl)
 
     @aux_call
@@ -394,9 +348,9 @@ class AdminClass(ProgramModuleObj):
         from esp.users.models import ESPUser
 
         #   Allow submitting class ID via either GET or POST.
-        if request.GET.has_key('clsid'):
+        if 'clsid' in request.GET:
             clsid = request.GET['clsid']
-        elif request.POST.has_key('clsid'):
+        elif 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             return self.goToCore(tl) # just fails.
@@ -413,7 +367,7 @@ class AdminClass(ProgramModuleObj):
         cls = classes[0]
 
         # set txtTeachers and coteachers....
-        if not request.POST.has_key('coteachers'):
+        if not 'coteachers' in request.POST:
             coteachers = cls.get_teachers()
             coteachers = [ user for user in coteachers
                            if user.id != request.user.id           ]
@@ -428,7 +382,7 @@ class AdminClass(ProgramModuleObj):
                            for userid in coteachers                ]
 
         op = ''
-        if request.POST.has_key('op'):
+        if 'op' in request.POST:
             op = request.POST['op']
 
         conflictingusers = []
@@ -518,7 +472,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         # Search for teachers with names that start with search string
-        if not request.GET.has_key('name') or request.POST.has_key('name'):
+        if not 'name' in request.GET or 'name' in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)

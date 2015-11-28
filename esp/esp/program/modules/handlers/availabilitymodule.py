@@ -238,9 +238,9 @@ class AvailabilityModule(ProgramModuleObj):
                 teacher = form.cleaned_data['target_user']
 
         if teacher is None:
-            if request.GET.has_key('user'):
+            if 'user' in request.GET:
                 target_id = request.GET['user']
-            elif request.POST.has_key('user'):
+            elif 'user' in request.POST:
                 target_id = request.POST['user']
             else:
                 form = GenericSearchForm()
@@ -309,9 +309,9 @@ class AvailabilityModule(ProgramModuleObj):
 
         target_id = None
 
-        if request.GET.has_key('user'):
+        if 'user' in request.GET:
             target_id = request.GET['user']
-        elif request.POST.has_key('user'):
+        elif 'user' in request.POST:
             target_id = request.POST['user']
         else:
             context = {}

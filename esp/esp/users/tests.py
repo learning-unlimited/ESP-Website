@@ -294,7 +294,7 @@ class AjaxExistenceChecker(TestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
+            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):

@@ -63,7 +63,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         super(TeacherCheckinModuleTest, self).tearDown()
 
     def addCoteacher(self, cls, coteacher):
-        ccc.associate_teacher_with_class(cls, coteacher)
+        self.ccc.associate_teacher_with_class(cls, coteacher)
 
     # Aliases so full set of args don't need to be typed each time.
     # 'when' defaults to self.now (the datetime of the program), and

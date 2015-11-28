@@ -213,7 +213,7 @@ def favorite_classes(answer_list, limit=20):
             l = [ a ]
         for i in l:
             ind = int(i)
-            if class_dict.has_key(ind):
+            if ind in class_dict:
                 class_dict[ind] += 1
             else:
                 class_dict[ind] = 1

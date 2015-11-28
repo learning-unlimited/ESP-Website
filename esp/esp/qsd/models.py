@@ -114,17 +114,6 @@ class QuasiStaticData(models.Model):
     def edit_id(self):
         return qsd_edit_id(self.url)
 
-    def get_file_id(self):
-        """Get the file_id of the object.
-
-        This is used by the FileDBManager as a cache key, so be careful when updating.
-        Changes here *may* cause caching to break in annoying ways elsewhere. We
-        recommend grepping through any related files for "cache".
-
-        In particular, IF you change this, update qsd/models.py's QSDManager class
-        Otherwise, the cache *may* be used wrong elsewhere."""
-        return qsd_cache_key(self.url, None) # DB access cache --- user invariant
-
     def copy(self,):
         """Returns a copy of the current QSD.
 
@@ -199,13 +188,3 @@ class QuasiStaticData(models.Model):
 
     class Meta:
         verbose_name = 'Editable'
-
-def qsd_cache_key(path, user=None,):
-    # IF you change this, update qsd/models.py's QSDManager class
-    # Otherwise, the wrong cache path will be invalidated
-    # Also, make sure the qsd/models.py's get_file_id method
-    # is also updated. Otherwise, other things might break.
-    if user and user.is_authenticated():
-        return hashlib.md5('%s-%s' % (path, name, user.id)).hexdigest()
-    else:
-        return hashlib.md5('%s' % (path, ) ).hexdigest()
