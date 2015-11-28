@@ -88,36 +88,6 @@ function payOnce() {
   return true;
 }
 
-
-// test the form...make sure it's valid.
-function formTest() {
-  errormsg = "You have errors with your form.\n\n";
-  errors = false;
-
-  blankcheck = [['billTo_firstName', 'cardholder\'s first name'],
-                ['billTo_lastName', 'cardholder\'s last name'],
-                ['billTo_street1', 'address line 1'],
-                ['billTo_city', 'city'],
-                ['billTo_state', 'state'],
-                ['billTo_postalCode', 'zipcode'],
-                ['billTo_email', 'e-mail']
-                ];
-
-  for (var i=0; i<blankcheck.length; i++) {
-
-     if (document.getElementById(blankcheck[i][0]).value == '') {
-          errormsg += "  -The "+blankcheck[i][1]+" is not filled in.\n";
-          errors = true;
-     }
-  }
-
-  if (errors) {
-    alert(errormsg);
-    return false;
-  }
-  payOnce();
-  return true;
-}
 //-->
 </script>
 {% endblock %}
@@ -145,7 +115,7 @@ function formTest() {
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
-<form onsubmit="return formTest();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off">
+<form onsubmit="return payOnce();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off">
 
 <br />
 <p>Please fill out the form below.  Required fields are boxed in a red border and marked with an asterisk.</p>
@@ -177,14 +147,14 @@ Autofill contact information:
 <tr>
  <th><label>Name *</label></th>
  <td>
-    <label for="billTo_firstName">First: </label><input class="required" type="text" id="billTo_firstName" name="billTo_firstName" maxlength="60" size="40"> <br />
-    <label for="billTo_lastName">Last: </label><input class="required" type="text" id="billTo_lastName" name="billTo_lastName" maxlength="60" size="40">
+    <label for="billTo_firstName">First: </label><input class="required" type="text" id="billTo_firstName" name="billTo_firstName" maxlength="60" size="40" required> <br />
+    <label for="billTo_lastName">Last: </label><input class="required" type="text" id="billTo_lastName" name="billTo_lastName" maxlength="60" size="40" required>
  </td>
 </tr>
 
 <tr>
  <th><label for="billTo_street1">Address Line 1 *</label></th>
- <td><input class="required" type="text" id="billTo_street1" name="billTo_street1" maxlength=60 size=40></td>
+ <td><input class="required" type="text" id="billTo_street1" name="billTo_street1" maxlength=60 size=40 required></td>
 </tr>
 
 <tr>
@@ -195,17 +165,17 @@ Autofill contact information:
 
 <tr>
  <th><label for="billTo_city">City *</label></th>
- <td><input class="required" type="text" id="billTo_city" name="billTo_city" maxlength=25 size=25></td>
+ <td><input class="required" type="text" id="billTo_city" name="billTo_city" maxlength=25 size=25 required></td>
 </tr>
 
 <tr>
  <th><label for="billTo_state">State *</label></th>
- <td><input class="required" type="text" id="billTo_state" name="billTo_state" maxlength=2 size=2></td>
+ <td><input class="required" type="text" id="billTo_state" name="billTo_state" maxlength=2 size=2 required></td>
 </tr>
 
 <tr>
  <th><label for="billTo_postalCode">Zipcode *</label></th>
- <td><input class="required" type="text" id="billTo_postalCode" name="billTo_postalCode" maxlength=10 size=15></td>
+ <td><input class="required" type="text" id="billTo_postalCode" name="billTo_postalCode" maxlength=10 size=15 required></td>
 </tr>
 
 <tr>
@@ -216,7 +186,7 @@ Autofill contact information:
 
 <tr>
  <th><label for="billTo_email">Email Address*</label></th>
- <td><input class="required" type="text" id="billTo_email" name="billTo_email" maxlength=64 size=34></td>
+ <td><input class="required" type="text" id="billTo_email" name="billTo_email" maxlength=64 size=34 required></td>
 </tr>
 
 
