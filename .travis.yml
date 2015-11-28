@@ -18,5 +18,6 @@ before_script:
   - psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
 script: 
   - cd esp
+  - useful_scripts/run_lint.sh
   - ./manage.py collectstatic --noinput -v 0
   - ./manage.py test
