@@ -52,42 +52,6 @@ class BaseAccountingController(object):
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
 
-    def execute_transfers(self, transfers, reverse=False):
-        """ Simultaneously execute a set of transfers. """
-
-        accounts_source = transfers.order_by('source').distinct('source').values_list('source', flat=True)
-        accounts_dest = transfers.order_by('destination').distinct('destination').values_list('destination', flat=True)
-
-        total_change = Decimal('0')
-
-        for account_id in accounts_source:
-            if account_id is not None:
-                account = Account.objects.get(id=account_id)
-                outflow = transfers.filter(source=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
-                if reverse:
-                    account.balance_dec += outflow
-                    total_change += outflow
-                else:
-                    account.balance_dec -= outflow
-                    total_change -= outflow
-                account.save()
-        for account_id in accounts_dest:
-            if account_id is not None:
-                account = Account.objects.get(id=account_id)
-                inflow = transfers.filter(destination=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
-                if reverse:
-                    account.balance_dec -= inflow
-                    total_change -= inflow
-                else:
-                    account.balance_dec += inflow
-                    total_change += inflow
-                account.save()
-
-        transfers.update(executed=not reverse)
-
-        return total_change
-
-
 class GlobalAccountingController(BaseAccountingController):
 
     def setup_accounts(self):
@@ -109,7 +73,6 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.execute_transfers(self.all_transfers(), reverse=True)
         self.all_transfers().delete()
         self.get_lineitemtypes().delete()
         self.all_accounts().delete()
