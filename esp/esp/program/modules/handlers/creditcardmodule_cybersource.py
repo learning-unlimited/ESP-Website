@@ -71,13 +71,13 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
         return render_to_response(self.baseDir() + 'cardstart.html', request, {})
 
     @aux_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
 

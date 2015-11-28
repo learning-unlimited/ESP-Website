@@ -307,7 +307,7 @@ class ProgramModuleObj(models.Model):
         Returns the base url of a view function
 
         'function' must be a member of 'cls'.  Both 'cls' and 'function' must
-        not be anonymous (ie., they musht have __name__ defined).
+        not be anonymous (ie., they must have __name__ defined).
         """
 
         url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
@@ -454,8 +454,12 @@ def usercheck_usetl(method):
 
         return method(moduleObj, request, tl, *args, **kwargs)
 
+    _checkUser.has_auth_check = True
     return _checkUser
 
+def no_auth(method):
+    method.has_auth_check = True
+    return method
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
@@ -467,6 +471,7 @@ def needs_teacher(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
     _checkTeacher.method = method
+    _checkTeacher.has_auth_check = True
     return _checkTeacher
 
 def needs_admin(method):
@@ -485,6 +490,7 @@ def needs_admin(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite(method):
@@ -502,6 +508,7 @@ def needs_onsite(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -518,6 +525,7 @@ def needs_onsite_no_switchback(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_student(method):
@@ -529,6 +537,7 @@ def needs_student(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
+    _checkStudent.has_auth_check = True
     return _checkStudent
 
 def needs_account(method):
@@ -538,6 +547,7 @@ def needs_account(method):
 
         return method(moduleObj, request, *args, **kwargs)
     _checkAccount.method = method
+    _checkAccount.has_auth_check = True
     return _checkAccount
 
 def meets_grade(method):

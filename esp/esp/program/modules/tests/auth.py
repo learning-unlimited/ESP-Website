@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 by the individual contributors
+Copyright (c) 2015 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -33,32 +32,23 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, aux_call
-from esp.middleware.threadlocalrequest import get_current_request
-from django.http import HttpResponseRedirect
+from esp.program.tests import ProgramFrameworkTest
 
-class StudentRegConfirm(ProgramModuleObj):
-    """ Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg """
-    @classmethod
-    def module_properties(cls):
-        return {
-            "admin_title": 'Add "Confirm Registration" link',
-            "link_title": "Confirm Registration",
-            "module_type": "learn",
-            "seq": 99999
-            }
+class ProgramModuleAuthTest(ProgramFrameworkTest):
+    """Validate that all program modules have some property."""
 
-    @main_call
-    @needs_student
-    def do_confirmreg(self, request, tl, one, two, module, extra, prog):
-        return HttpResponseRedirect("confirmreg")
+    def testViewsHaveAuths(self):
+        """Test that all views of all program modules have some sort of auth decorator,
+        e.g., @needs_admin, @needs_student, @needs_account, @no_auth"""
 
-    def isCompleted(self):
-        return self.program.isConfirmed(get_current_request().user)
-
-    def hideNotRequired(self):
-        return True
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'
+        # self.program has all possible modules
+        modules = self.program.getModules()
+        for module in modules:
+            view_names = module.get_all_views()
+            for view_name in view_names:
+                view = getattr(module, view_name)
+                assert hasattr(view, 'has_auth_check') and view.has_auth_check, \
+                    'Module "{}" is missing an auth check for view "{}"'.format(
+                        module,
+                        view_name
+                    )
