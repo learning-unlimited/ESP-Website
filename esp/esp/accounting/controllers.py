@@ -236,24 +236,27 @@ class IndividualAccountingController(ProgramAccountingController):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
 
-        result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes(required_only=True)
+        required_line_items = self.get_lineitemtypes(required_only=True)
 
-        #   Clear existing transfers that are not executed
-        unexecuted_items = Transfer.objects.filter(user=self.user, line_item__in=line_items)
-        unexecuted_items.delete()
+        existing_transfers_by_li = {t.line_item.id: t for t in Transfer.objects.filter(
+            user=self.user, line_item__in=required_line_items)}
 
-        #   Identify item types that have been executed
-        executed_items = Transfer.objects.filter(user=self.user, line_item__in=line_items)
-        executed_item_types = executed_items.values_list('line_item__id', flat=True)
-
-        #   Create transfers for required line item types that have not already been executed
-        for lit in line_items:
-            if lit.id not in executed_item_types:
-                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
-        return result
+        for item in required_line_items:
+            transfer = existing_transfers_by_li.get(item.id)
+            if transfer is None:
+                # A Transfer for this Line Item Type does not exist.
+                # Create it now.
+                Transfer.objects.create(source=source_account,
+                                        destination=program_account,
+                                        user=self.user,
+                                        line_item=item,
+                                        amount_dec=item.amount_dec)
+            else:
+                # A Transfer for this Line Item Type already exists.
+                # Do nothing.
+                pass
 
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
