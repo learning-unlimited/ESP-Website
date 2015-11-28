@@ -253,10 +253,16 @@ class IndividualAccountingController(ProgramAccountingController):
                                         user=self.user,
                                         line_item=item,
                                         amount_dec=item.amount_dec)
-            else:
-                # A Transfer for this Line Item Type already exists.
-                # Do nothing.
+            elif transfer.paid_in:
+                # A Transfer for this Line Item Type already exists
+                # *and* has already been paid. It's too late, so do
+                # nothing.
                 pass
+            else:
+                # Adjust the amount of the Transfer to match the new
+                # value.
+                transfer.amount_dec = item.amount_dec
+                transfer.save()
 
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
