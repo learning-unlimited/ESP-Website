@@ -241,6 +241,8 @@ class Transfer(models.Model):
         help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
 
     def set_amount(self, amount):
+        if self.paid_in:
+            raise Exception('Cannot change the amount of this transfer since it was already paid')
         self.amount_dec = Decimal('%.2f' % amount)
     def get_amount(self):
         return float(self.amount_dec)
