@@ -169,10 +169,10 @@ class Account(models.Model):
     @property
     def balance(self):
         result = self.balance_dec
-        if Transfer.objects.filter(source=self, executed=False).exists():
-            result -= Transfer.objects.filter(source=self, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        if Transfer.objects.filter(destination=self, executed=False).exists():
-            result += Transfer.objects.filter(destination=self, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        if Transfer.objects.filter(source=self).exists():
+            result -= Transfer.objects.filter(source=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        if Transfer.objects.filter(destination=self).exists():
+            result += Transfer.objects.filter(destination=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
         return result
 
     @property
@@ -239,22 +239,15 @@ class Transfer(models.Model):
                       'transaction, stores the transaction ID number from ' +
                       'the processor.')
     timestamp = models.DateTimeField(auto_now=True)
-    executed = models.BooleanField(default=False)
 
     def set_amount(self, amount):
-        if self.executed:
-            raise Exception('Cannot change the amount of this transfer since it was already executed')
         self.amount_dec = Decimal('%.2f' % amount)
     def get_amount(self):
         return float(self.amount_dec)
     amount = property(get_amount, set_amount)
 
     def __unicode__(self):
-        base_result = u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
-        if self.executed:
-            return base_result + u' (executed)'
-        else:
-            return base_result
+        return u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
 
 
 def install():

@@ -52,7 +52,7 @@ class TransferAdmin(admin.ModelAdmin):
             return obj.option.description
         else:
             return u'--'
-    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description', 'executed']
+    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description']
     search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
     list_filter = ['source', 'destination']
 admin_site.register(Transfer, TransferAdmin)
@@ -70,4 +70,3 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
     search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
-

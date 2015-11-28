@@ -242,11 +242,11 @@ class IndividualAccountingController(ProgramAccountingController):
         line_items = self.get_lineitemtypes(required_only=True)
 
         #   Clear existing transfers that are not executed
-        unexecuted_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False)
+        unexecuted_items = Transfer.objects.filter(user=self.user, line_item__in=line_items)
         unexecuted_items.delete()
 
         #   Identify item types that have been executed
-        executed_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=True)
+        executed_items = Transfer.objects.filter(user=self.user, line_item__in=line_items)
         executed_item_types = executed_items.values_list('line_item__id', flat=True)
 
         #   Create transfers for required line item types that have not already been executed
@@ -268,7 +268,7 @@ class IndividualAccountingController(ProgramAccountingController):
         line_items = self.get_lineitemtypes(optional_only=True)
 
         #   Clear existing transfers
-        Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False).delete()
+        Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
         #   Create transfers for optional line item types
         for item_tup in optional_items:
