@@ -290,7 +290,7 @@ class IndividualAccountingController(ProgramAccountingController):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
         self.user = user
 
-    def add_required_transfers(self):
+    def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
 
@@ -462,7 +462,7 @@ class IndividualAccountingController(ProgramAccountingController):
         FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).delete()
 
     def amount_requested(self):
-        self.add_required_transfers()
+        self.ensure_required_transfers()
         program_account = self.default_program_account()
 
         #   Compute sum of all transfers into program that are for this user
