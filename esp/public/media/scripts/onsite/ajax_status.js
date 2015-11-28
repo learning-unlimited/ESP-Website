@@ -730,9 +730,9 @@ function render_table(display_mode, student_id)
             //  Hide the class if it started in the past (and we're not showing past timeblocks)
             if (settings.hide_past_time_blocks && section.timeslots.length > 1)
             {
-                for (var i in section.timeslots)
+                for (var j in section.timeslots)
                 {
-                    var sec_ts_id = section.timeslots[i];
+                    var sec_ts_id = section.timeslots[j];
                     var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
                     //excludes timeslots that have a start time 20 minutes prior to the current time
                     var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
