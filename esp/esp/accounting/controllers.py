@@ -468,12 +468,44 @@ class IndividualAccountingController(ProgramAccountingController):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
-        return Transfer.objects.create(source=None,
-                                       destination=target_account,
-                                       user=self.user,
-                                       line_item=line_item_type,
-                                       amount_dec=Decimal('%.2f' % amount),
-                                       transaction_id=transaction_id)
+        payment = Transfer.objects.create(source=None,
+                                          destination=target_account,
+                                          user=self.user,
+                                          line_item=line_item_type,
+                                          amount_dec=Decimal('%.2f' % amount),
+                                          transaction_id=transaction_id)
+        self.link_paid_transfers(payment)
+        return payment
+
+    def link_paid_transfers(self, payment):
+        # Given a Transfer representing a payment (e.g. a credit card payment),
+        # find all of the Transfers representing the items that were paid for
+        # and add a link back to the payment.
+
+        # Find the paid transfers by examining Transfers in order of creation
+        # until they sum to the given amount.
+        total = 0
+        target = payment.get_amount()
+        paid_transfers = []
+
+        for transfer in self.get_transfers():
+            if not (transfer.line_item and transfer.line_item.is_purchasable) \
+               or transfer.paid_in:
+                # Filter out payment-related Transfers and already-paid Transfers
+                continue
+
+            total += transfer.get_amount()
+            paid_transfers.append(transfer)
+            if total >= target:
+                break
+
+        if total != target:
+            raise ValueError("Transfers do not sum to target: %.2f" % target)
+
+        # Link the paid transfers back to the payment.
+        for transfer in paid_transfers:
+            transfer.paid_in = payment
+            transfer.save()
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

@@ -236,6 +236,9 @@ class Transfer(models.Model):
         'Transaction ID', max_length=64, blank=True, default='',
         help_text='If this transfer is from a credit card transaction, stores the transaction ID number from the processor.')
     timestamp = models.DateTimeField(auto_now=True)
+    paid_in = models.ForeignKey(
+        'self', blank=True, null=True, on_delete=models.PROTECT,
+        help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
 
     def set_amount(self, amount):
         self.amount_dec = Decimal('%.2f' % amount)
