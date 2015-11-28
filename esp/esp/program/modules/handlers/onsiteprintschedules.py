@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import json
 from django.http      import HttpResponse
 from esp.users.views  import search_for_user
 from esp.program.models import SplashInfo
@@ -78,7 +79,21 @@ class OnsitePrintSchedules(ProgramModuleObj):
             req.time_executed = datetime.now()
             req.save()
             response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
-            return response
+            if request.GET['gen_img'] == 'json':
+                import base64
+                src = "data:image/png;base64,{}".format(base64.b64encode(response.content))
+                data = {
+                    'src': src,
+                    'id': req.id,
+                    'user': req.user.username,
+                    'time_requested': str(req.time_requested),
+                    'time_executed': str(req.time_executed),
+                }
+                resp = HttpResponse(content_type='application/json')
+                json.dump(data, resp)
+                return resp
+            else:
+                return response
         else:
             # No response if no users
             return HttpResponse('')
