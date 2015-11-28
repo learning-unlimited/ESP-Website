@@ -4,76 +4,40 @@ from django.template.loader import render_to_string
 from argcache import cache_function, wildcard
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsdmedia.models import Media as QSDMedia
-from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
-from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
+from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
 from esp.tagdict.models import Tag
 
 register = template.Library()
 
-def get_smallest_section(cls, timeslot=None):
-    if timeslot:
-        sections = cls.sections.filter(meeting_times=timeslot)
-    else:
-        sections = cls.sections.all()
-
-    if sections.count() > 0:
-        min_count = 9999
-        min_index = -1
-        for i in range(0, sections.count()):
-            q = sections[i].num_students()
-            if q < min_count:
-                min_index = i
-                min_count = q
-        section = sections[min_index]
-    else:
-        section = None
-
-    return section
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html')
 def render_class_core(cls):
-    return render_class_core_helper(cls)
+    prog = cls.parent_program
+    scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+    colorstring = prog.getColor()
+    if colorstring is not None:
+        colorstring = ' background-color:#' + colorstring + ';'
+
+    # Allow tag configuration of whether class descriptions get collapsed
+    # when the class is full (default: yes)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+
+    return {'class': cls,
+            'collapse_full': collapse_full,
+            'colorstring': colorstring,
+            'show_enrollment': scrmi.visible_enrollments,
+            'show_emailcodes': scrmi.show_emailcodes}
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
+render_class_core.cached_function.depend_on_m2m(ClassSubject, 'teachers', lambda cls, user: {'cls': cls})
 render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.owner}, lambda media: isinstance(media.owner, ClassSubject))
 render_class_core.cached_function.depend_on_model('modules.StudentClassRegModuleInfo')
 render_class_core.cached_function.depend_on_model('modules.ClassRegModuleInfo')
 render_class_core.cached_function.depend_on_model('tagdict.Tag')
 
-def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
-    if not prog:
-        prog = cls.parent_program
-
-    #   Show e-mail codes?  We need to look in the settings.
-    if not scrmi:
-        scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-
-    # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
-    if not colorstring:
-        colorstring = prog.getColor()
-        if colorstring is not None:
-            colorstring = ' background-color:#' + colorstring + ';'
-
-    # HACK for Harvard HSSP -- show application counts with enrollment
-    #if cls.studentappquestion_set.count():
-    #    cls._sections = list(cls.get_sections())
-    #    for sec in cls._sections:
-    #        sec.num_apps = sec.num_students(verbs=['Applied'])
-
-    # Allow tag configuration of whether class descriptions get collapsed
-    # when the class is full (default: yes)
-    if collapse_full_classes is None:
-        collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-
-    return {'class': cls,
-            'collapse_full': collapse_full_classes,
-            'colorstring': colorstring,
-            'show_enrollment': scrmi.visible_enrollments,
-            'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
@@ -84,38 +48,38 @@ render_class.cached_function.get_or_create_token(('cls',))
 # section, but in fact on their StudentRegistrations for all sections, because
 # of things like lunch constraints -- a change made in another block could
 # affect whether you can add a class in this one.  So we depend on all SRs for
-# this user.
-# TODO(benkraft): do these need to also get copied elsewhere?
+# this user.  This only applies to tags that can depend on a user.
 render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class.cached_function.get_or_create_token(('user',))
 
+
 @cache_function
-def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
+def render_class_direct(cls):
     return render_to_string('inclusion/program/class_catalog.html', render_class_helper(cls))
-render_class_direct.get_or_create_token(('cls',))
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
-def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=None):
-    errormsg = None
+
+def render_class_helper(cls, user=None, filter=False, timeslot=None):
+    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
 
     if timeslot:
         section = cls.get_section(timeslot=timeslot)
     else:
         section = None
 
-    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
-
-    #   Ensure cached catalog shows buttons and fillslots don't
-
-    prereg_url = None
-    if not (crmi.open_class_registration and cls.category == cls.parent_program.open_class_category):
+    if (crmi.open_class_registration and
+            cls.category == cls.parent_program.open_class_category):
+        prereg_url = None
+    else:
         prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
         errormsg = cls.cannotAdd(user, which_section=section)
+    else:
+        errormsg = None
 
-    show_class =  (not filter) or (not errormsg)
+    show_class = (not filter) or (not errormsg)
 
     return {'class':      cls,
             'section':    section,
@@ -123,68 +87,23 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
-            'show_class': show_class,
-            }
-render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
-
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html')
-def render_class_minimal(cls, user=None, prereg_url=None, filter=False):
-    errormsg = None
-
-    if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True)
-
-    show_class =  (not filter) or (not errormsg)
-
-
-    return {'class':      cls,
-            'user':       user,
-            'prereg_url': prereg_url,
-            'errormsg':   errormsg,
-            'show_class': show_class}
-
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html')
-def render_class_current(cls, user=None, prereg_url=None, filter=False):
-    errormsg = None
-
-    if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True)
-
-    show_class =  (not filter) or (not errormsg)
-
-    return {'class':      cls,
             'show_class': show_class}
 
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html')
-def render_class_preview(cls, user=None, prereg_url=None, filter=False):
-    errormsg = None
+def render_class_preview(cls):
+    return {'class': cls}
+render_class_preview.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
+render_class_preview.cached_function.depend_on_m2m(ClassSubject, 'teachers', lambda cls, user: {'cls': cls})
 
-    if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True)
-
-    show_class =  (not filter) or (not errormsg)
-
-
-    return {'class':      cls,
-            'user':       user,
-            'prereg_url': prereg_url,
-            'errormsg':   errormsg,
-            'show_class': show_class}
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_row.html')
-def render_class_row(cls, user=None, prereg_url=None, filter=False):
-    errormsg = None
-
-    if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True)
-
-    show_class =  (not filter) or (not errormsg)
-
-
-    return {'class':      cls,
-            'user':       user,
-            'prereg_url': prereg_url,
-            'errormsg':   errormsg,
-            'show_class': show_class}
-
+def render_class_row(cls):
+    return {'class': cls}
+render_class_row.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
+render_class_row.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
+render_class_row.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
+render_class_row.cached_function.depend_on_m2m(ClassSubject, 'teachers', lambda cls, user: {'cls': cls})
+render_class_row.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
+render_class_row.cached_function.depend_on_model('modules.StudentClassRegModuleInfo')
+render_class_row.cached_function.depend_on_row('resources.ResourceAssignment', lambda ra: {'cls': ra.target.parent_class})

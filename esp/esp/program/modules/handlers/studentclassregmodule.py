@@ -490,7 +490,6 @@ class StudentClassRegModule(ProgramModuleObj):
 
         ts = ts[0]
 
-        prereg_url = self.program.get_learn_url() + 'addclass/'
         user_grade = user.getGrade(self.program)
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
@@ -517,8 +516,7 @@ class StudentClassRegModule(ProgramModuleObj):
                                                                             'one':        one,
                                                                             'two':        two,
                                                                             'categories': categories.values(),
-                                                                            'timeslot':   ts,
-                                                                            'prereg_url': prereg_url})
+                                                                            'timeslot': ts})
 
     # This function actually renders the catalog
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):

@@ -42,10 +42,8 @@ Learning Unlimited, Inc.
 from esp.miniblog.templatetags.render_blog import render_blog
 from esp.miniblog.templatetags.render_blog import render_comments
 
-from esp.program.templatetags.class_render import render_class_core
 from esp.program.templatetags.class_render import render_class
-from esp.program.templatetags.class_render import render_class_minimal
-from esp.program.templatetags.class_render import render_class_current
+from esp.program.templatetags.class_render import render_class_core
 from esp.program.templatetags.class_render import render_class_preview
 from esp.program.templatetags.class_render import render_class_row
 
