@@ -64,19 +64,21 @@ function getItem(arr, key) {
 
 // autofill with contact information
 function autofill(ci) {
-   document.getElementById('billTo_firstName').value = 
-          getItem(ci, 'first_name') + ' ' + getItem(ci, 'last_name');
-   document.getElementById('billTo_street1').value = 
+   document.getElementById('billTo_firstName').value =
+          getItem(ci, 'first_name');
+   document.getElementById('billTo_lastName').value =
+          getItem(ci, 'last_name');
+   document.getElementById('billTo_street1').value =
           getItem(ci, 'address_street');
-   document.getElementById('billTo_city').value = 
+   document.getElementById('billTo_city').value =
           getItem(ci, 'address_city');
-   document.getElementById('billTo_postalCode').value = 
-          getItem(ci, 'address_zip');   
-   document.getElementById('billTo_phoneNumber').value = 
+   document.getElementById('billTo_postalCode').value =
+          getItem(ci, 'address_zip');
+   document.getElementById('billTo_phoneNumber').value =
           getItem(ci, 'phone_day');
-   document.getElementById('billTo_state').value = 
+   document.getElementById('billTo_state').value =
           getItem(ci, 'address_state');
-   document.getElementById('billTo_email').value = 
+   document.getElementById('billTo_email').value =
           getItem(ci, 'e_mail');
 }
 
@@ -91,15 +93,16 @@ function payOnce() {
 function formTest() {
   errormsg = "You have errors with your form.\n\n";
   errors = false;
-  
-  blankcheck = [['billTo_firstName', 'cardholder\'s name'],
+
+  blankcheck = [['billTo_firstName', 'cardholder\'s first name'],
+                ['billTo_lastName', 'cardholder\'s last name'],
                 ['billTo_street1', 'address line 1'],
                 ['billTo_city', 'city'],
                 ['billTo_state', 'state'],
                 ['billTo_postalCode', 'zipcode'],
                 ['billTo_email', 'e-mail']
                 ];
-                
+
   for (var i=0; i<blankcheck.length; i++) {
 
      if (document.getElementById(blankcheck[i][0]).value == '') {
@@ -111,7 +114,7 @@ function formTest() {
   if (errors) {
     alert(errormsg);
     return false;
-  } 
+  }
   payOnce();
   return true;
 }
@@ -142,7 +145,7 @@ function formTest() {
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
-<form onsubmit="return formTest();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off"> 
+<form onsubmit="return formTest();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off">
 
 <br />
 <p>Please fill out the form below.  Required fields are boxed in a red border and marked with an asterisk.</p>
@@ -248,4 +251,3 @@ Autofill contact information:
 {% endifequal %}
 
 {% endblock %}
-
