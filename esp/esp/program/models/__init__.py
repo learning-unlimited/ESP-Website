@@ -292,14 +292,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
     isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
 
-    @cache_function
-    def checkitems_all_cached(self):
-        """  The main Manage page requests checkitems.all() O(n) times in
-        the number of classes in the program.  Minimize the number of these
-        calls that actually hit the db. """
-        return self.checkitems.all()
-    checkitems_all_cached.depend_on_row('program.ProgramCheckItem', lambda item: {'self': item.program})
-
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
     get_manage_url = _get_type_url("manage")

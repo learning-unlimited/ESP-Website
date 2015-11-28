@@ -45,7 +45,7 @@ from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstrai
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
 
-from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 from esp.program.models import ClassFlag, ClassFlagType
@@ -179,10 +179,6 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
 
-class ProgramCheckItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'program')
-admin_site.register(ProgramCheckItem, ProgramCheckItemAdmin)
-
 class Admin_RegistrationType(admin.ModelAdmin):
     list_display = ('name', 'category', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
@@ -246,7 +242,7 @@ class SubjectAdmin(admin.ModelAdmin):
                 {'classes': ('collapse',),
                  'fields':('requested_room', 'requested_special_resources', ('allowable_class_size_ranges', 'optimal_class_size_range'), ('class_size_min', 'class_size_optimal', 'class_size_max', 'session_count'))}),
             ('Advanced',
-                {'fields': ('schedule','checklist_progress', 'custom_form_data')}),
+                {'fields': ('schedule', 'custom_form_data')}),
             )
 admin_site.register(ClassSubject, SubjectAdmin)
 
