@@ -50,11 +50,11 @@ class Command(BaseCommand):
                 try:
                     match = index_re.search(ind)
                     name, table, field = match.groups()
-                    if proposed_indexes.has_key(table):
+                    if table in proposed_indexes:
                         proposed_indexes[table].append(name)
                     else:
                         proposed_indexes[table] = [name]
-                    if index_sql.has_key(name):
+                    if name in index_sql:
                         index_sql[name].append(ind)
                     else:
                         index_sql[name] = [ind]
@@ -68,7 +68,7 @@ class Command(BaseCommand):
         sql_back = cursor.fetchall()
         for row in sql_back:
             name, table = row
-            if indexes.has_key(table):
+            if table in indexes:
                 indexes[table].append(name)
             else:
                 indexes[table] = [name]

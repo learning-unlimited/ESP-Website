@@ -211,7 +211,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'].append(s.id)
                     continue
                 teacher = {
@@ -317,7 +317,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'] += cls['sections']
                     continue
                 teacher = {

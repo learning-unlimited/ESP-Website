@@ -77,7 +77,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
         pac = ProgramAccountingController(prog)
-        if request.GET.has_key('filter'):
+        if 'filter' in request.GET:
             try:
                 ids = [ int(x) for x in request.GET.getlist('filter') ]
                 single_select = ( len(ids) == 1 )
@@ -105,7 +105,7 @@ class ProgramPrintables(ProgramModuleObj):
         lineitems_list.sort(sort_fn)
 
         context = { 'lineitems': lineitems_list,
-                    'hide_paid': request.GET.has_key('hide_paid') and request.GET['hide_paid'] == 'True',
+                    'hide_paid': request.GET.get('hide_paid') == 'True',
                     'prog': prog,
                     'single_select': single_select }
 
@@ -171,8 +171,8 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [cls for cls in classes
                    if cls.isAccepted() ]
 
-        if request.GET.has_key('ids') and request.GET.has_key('op') and \
-           request.GET.has_key('clsid'):
+        if 'ids' in request.GET and 'op' in request.GET and \
+           'clsid' in request.GET:
             try:
                 clsid = int(request.GET['clsid'])
                 cls   = ClassSubject.objects.get(parent_program = self.program,
@@ -215,7 +215,7 @@ class ProgramPrintables(ProgramModuleObj):
                                       request,
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
-        if request.GET.has_key("only_nonfull"):
+        if "only_nonfull" in request.GET:
             classes = [x for x in classes if not x.isFull()]
 
         sort_list_reversed = sort_list
@@ -237,18 +237,18 @@ class ProgramPrintables(ProgramModuleObj):
         from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if request.GET.has_key('mingrade'):
+        if 'mingrade' in request.GET:
             mingrade=int(request.GET['mingrade'])
             classes = classes.filter(grade_max__gte=mingrade)
 
-        if request.GET.has_key('maxgrade'):
+        if 'maxgrade' in request.GET:
             maxgrade=int(request.GET['maxgrade'])
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if request.GET.has_key('open'):
+        if 'open' in request.GET:
             classes = [cls for cls in classes if not cls.isFull()]
 
-        if request.GET.has_key('sort_name_list') and len(request.GET['sort_name_list']) != 0:
+        if request.GET.get('sort_name_list'):
             sort_order = request.GET['sort_name_list'].split(',')
         else:
             sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
@@ -277,12 +277,12 @@ class ProgramPrintables(ProgramModuleObj):
         classes = unique_classes
 
         #   Reorder classes if an ordering was specified by request.GET['clsids']
-        if request.GET.has_key('clsids'):
+        if 'clsids' in request.GET:
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
             for cls in classes:
                 cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
+            classes = [cls_dict[clsid] for clsid in clsids if clsid in cls_dict]
 
         context = {'classes': classes, 'program': self.program}
 
@@ -297,7 +297,7 @@ class ProgramPrintables(ProgramModuleObj):
             template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes:
-                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (request.GET.has_key('open') and x.isFull()))
+                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not ('open' in request.GET and x.isFull()))
             sections.sort(key=lambda x: x.start_time())
             context['sections'] = sections
 
@@ -315,13 +315,13 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes = filter(filt_exp, classes)
 
-        if request.GET.has_key('grade_min'):
+        if 'grade_min' in request.GET:
             classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
 
-        if request.GET.has_key('grade_max'):
+        if 'grade_max' in request.GET:
             classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
 
-        if request.GET.has_key('clsids'):
+        if 'clsids' in request.GET:
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
             for cls in classes:
@@ -347,13 +347,13 @@ class ProgramPrintables(ProgramModuleObj):
             sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)
 
-        if request.GET.has_key('grade_min'):
+        if 'grade_min' in request.GET:
             sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
 
-        if request.GET.has_key('grade_max'):
+        if 'grade_max' in request.GET:
             sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
 
-        if request.GET.has_key('secids'):
+        if 'secids' in request.GET:
             clsids = request.GET['secids'].split(',')
             cls_dict = {}
             for cls in sections:
@@ -432,7 +432,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         sort_exp = lambda x,y: ((x.title != y.title) and cmp(x.title.upper().lstrip().strip('"\',.<![($'), y.title.upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
 
-        if request.GET.has_key('clsids'):
+        if 'clsids' in request.GET:
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
             for cls in classes:
@@ -647,7 +647,7 @@ class ProgramPrintables(ProgramModuleObj):
         from esp.accounting.models import Transfer
         #   Determine line item
         student_ids = []
-        if request.GET.has_key('id'):
+        if 'id' in request.GET:
             lit_id = request.GET['id']
             request.session['li_type_id'] = lit_id
         else:
@@ -1066,7 +1066,7 @@ Volunteer schedule for %s:
                     update_dict = {'room': room.name,
                                    'cls': cls,
                                    'timeblock': event_group}
-                    if rooms.has_key(room.name):
+                    if room.name in rooms:
                         rooms[room.name].append(update_dict)
                     else:
                         rooms[room.name] = [update_dict]

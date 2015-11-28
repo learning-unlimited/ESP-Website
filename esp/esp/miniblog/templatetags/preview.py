@@ -67,7 +67,7 @@ def miniblog_for_user(parser, token):
     """
 
     kwargs = parse_from_re(token, arg_re)
-    if kwargs.has_key('limit'):
+    if 'limit' in kwargs:
         try:
             kwargs['limit'] = int( kwargs['limit'] )
         except ValueError:

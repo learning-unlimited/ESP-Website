@@ -153,7 +153,7 @@ class SurveyResponse(models.Model):
                 try:
                     qid = int(str_list[1])
                     cid = int(str_list[2])
-                    if attendances.has_key(cid):
+                    if cid in attendances:
                         cid = attendances[cid]
                     if not cid:
                         continue

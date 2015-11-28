@@ -181,7 +181,7 @@ class TeacherEventsModule(ProgramModuleObj):
                     # decide type
                     type = "training"
 
-                    if data.has_key('submit') and data['submit'] == "Add Interview":
+                    if 'submit' in data and data['submit'] == "Add Interview":
                         type = "interview"
 
                     form.save_timeslot(self.program, new_timeslot, type)

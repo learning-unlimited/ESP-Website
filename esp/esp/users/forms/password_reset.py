@@ -54,7 +54,7 @@ class NewPasswordSetForm(forms.Form):
     def clean_username(self):
         from esp.middleware import ESPError
         username = self.cleaned_data['username'].strip()
-        if not self.cleaned_data.has_key('code'):
+        if not 'code' in self.cleaned_data:
             raise ESPError("The form that you submitted does not contain a valid password-reset code.  If you arrived at this form from an e-mail, are you certain that you used the entire URL from the e-mail (including the bit after '?code=')?", log=False)
         try:
             ticket = PasswordRecoveryTicket.objects.get(recover_key = self.cleaned_data['code'], user__username = username)
@@ -67,7 +67,7 @@ class NewPasswordSetForm(forms.Form):
     def clean_password_confirm(self):
         new_passwd = self.cleaned_data['password_confirm'].strip()
 
-        if not self.cleaned_data.has_key('password'):
+        if not 'password' in self.cleaned_data:
             raise forms.ValidationError('Invalid password; confirmation failed')
 
         if self.cleaned_data['password'] != new_passwd:
@@ -94,7 +94,7 @@ class UserPasswdForm(FormWithRequiredCss):
     def clean_newpasswdconfirm(self):
         new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
 
-        if not self.cleaned_data.has_key('newpasswd'):
+        if not 'newpasswd' in self.cleaned_data:
             raise forms.ValidationError('Invalid password; confirmation failed')
 
         if self.cleaned_data['newpasswd'] != new_passwd:

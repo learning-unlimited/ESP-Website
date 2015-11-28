@@ -76,13 +76,13 @@ class ResourceModule(ProgramModuleObj):
 
         controller = ResourceController(prog)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = Event.objects.get(id=request.GET['id'])
             context['timeslot_form'] = TimeslotForm()
             context['timeslot_form'].load_timeslot(current_slot)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['timeslot'] = Event.objects.get(id=request.GET['id'])
@@ -110,13 +110,13 @@ class ResourceModule(ProgramModuleObj):
 
         controller = ResourceController(prog)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = ResourceType.objects.get(id=request.GET['id'])
             context['restype_form'] = ResourceTypeForm()
             context['restype_form'].load_restype(current_slot)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['restype'] = ResourceType.objects.get(id=request.GET['id'])
@@ -144,13 +144,13 @@ class ResourceModule(ProgramModuleObj):
 
         controller = ResourceController(prog)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_room = Resource.objects.get(id=request.GET['id'])
             context['classroom_form'] = ClassroomForm(self.program)
             context['classroom_form'].load_classroom(self.program, current_room)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['classroom'] = Resource.objects.get(id=request.GET['id'])
@@ -303,13 +303,13 @@ class ResourceModule(ProgramModuleObj):
 
         controller = ResourceController(prog)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             equip = Resource.objects.get(id=request.GET['id'])
             context['equipment_form'] = EquipmentForm(self.program)
             context['equipment_form'].load_equipment(self.program, equip)
 
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['equipment'] = Resource.objects.get(id=request.GET['id'])

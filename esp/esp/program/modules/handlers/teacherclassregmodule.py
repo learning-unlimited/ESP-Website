@@ -372,7 +372,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline("/Classes/View")
     def class_status(self, request, tl, one, two, module, extra, prog):
         clsid = 0
-        if request.POST.has_key('clsid'):
+        if 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             clsid = extra
@@ -394,7 +394,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         from esp.qsdmedia.models import Media
 
         clsid = 0
-        if request.POST.has_key('clsid'):
+        if 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             clsid = extra
@@ -435,7 +435,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/MainPage')
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        if not request.POST.has_key('clsid'):
+        if not 'clsid' in request.POST:
             return self.goToCore(tl) # just fails.
 
         if extra == 'nojs':
@@ -450,7 +450,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         cls = classes[0]
 
         # set txtTeachers and coteachers....
-        if not request.POST.has_key('coteachers'):
+        if not 'coteachers' in request.POST:
             coteachers = cls.get_teachers()
             coteachers = [ user for user in coteachers
                            if user.id != request.user.id           ]
@@ -466,7 +466,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             add_list_members("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
 
         op = ''
-        if request.POST.has_key('op'):
+        if 'op' in request.POST:
             op = request.POST['op']
 
         conflictingusers = []
@@ -580,12 +580,12 @@ class TeacherClassRegModule(ProgramModuleObj):
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             action = 'create'
-            if request.POST.has_key('category'):
+            if 'category' in request.POST:
                 category = request.POST['category']
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
-        if not request.GET.has_key('cls'):
+        if not 'cls' in request.GET:
             raise ESPError("No class specified!", log=False)
 
         # Select the class
@@ -643,7 +643,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         context = {'module': self}
 
-        if request.method == 'POST' and request.POST.has_key('class_reg_page'):
+        if request.method == 'POST' and 'class_reg_page' in request.POST:
             if not self.deadline_met():
                 return self.goToCore(tl)
 
@@ -663,7 +663,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 if do_question:
                     return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
-                if request.POST.has_key('manage') and request.POST['manage'] == 'manage':
+                if request.POST.get('manage') == 'manage':
                     if request.POST['manage_submit'] == 'reload':
                         return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
                     elif request.POST['manage_submit'] == 'manageclass':
@@ -808,8 +808,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['qsd_name'] = 'classedit_' + context['classtype']
 
         context['manage'] = False
-        if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or
-            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage') or
+        if ((request.method == "POST" and request.POST.get('manage') == 'manage') or
+            (request.method == "GET" and request.GET.get('manage') == 'manage') or
             (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
             context['manage'] = True
             if self.program.program_modules.filter(handler='ClassFlagModule').exists():
@@ -824,7 +824,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
 
         # Search for teachers with names that start with search string
-        if not request.GET.has_key('name') or request.POST.has_key('name'):
+        if not 'name' in request.GET or 'name' in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
@@ -838,7 +838,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         queryset = ESPUser.objects.filter(Q_teacher)
 
-        if not request.GET.has_key('name'):
+        if not 'name' in request.GET:
             startswith = request.POST['name']
         else:
             startswith = request.GET['name']

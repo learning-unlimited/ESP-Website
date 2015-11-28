@@ -69,7 +69,7 @@ class UserSearchController(object):
         Q_exclude = Q()
 
         """ Apply the specified criteria to filter the list of users. """
-        if criteria.has_key('userid') and len(criteria['userid'].strip()) > 0:
+        if criteria.get('userid', '').strip():
 
             ##  Select users based on their IDs only
             userid = []
@@ -79,7 +79,7 @@ class UserSearchController(object):
                 except:
                     raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
 
-            if criteria.has_key('userid__not'):
+            if 'userid__not' in criteria:
                 Q_exclude &= Q(id__in = userid)
             else:
                 Q_include &= Q(id__in = userid)
@@ -89,20 +89,20 @@ class UserSearchController(object):
 
             ##  Select users based on all other criteria that was entered
             for field in ['username','last_name','first_name', 'email']:
-                if criteria.has_key(field) and len(criteria[field].strip()) > 0:
+                if criteria.get(field, '').strip():
                     #   Check that it's a valid regular expression
                     try:
                         rc = re.compile(criteria[field])
                     except:
                         raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}
-                    if criteria.has_key('%s__not' % field):
+                    if '%s__not' % field in criteria:
                         Q_exclude &= Q(**filter_dict)
                     else:
                         Q_include &= Q(**filter_dict)
                     self.updated = True
 
-            if criteria.has_key('zipcode') and criteria.has_key('zipdistance') and \
+            if 'zipcode' in criteria and 'zipdistance' in criteria and \
                 len(criteria['zipcode'].strip()) > 0 and len(criteria['zipdistance'].strip()) > 0:
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
@@ -111,34 +111,34 @@ class UserSearchController(object):
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
-                if criteria.has_key('zipdistance_exclude') and len(criteria['zipdistance_exclude'].strip()) > 0:
+                if criteria.get('zipdistance_exclude', '').strip():
                     zipcodes_exclude = zipc.close_zipcodes(criteria['zipdistance_exclude'])
                     zipcodes = [ zipcode for zipcode in zipcodes if zipcode not in zipcodes_exclude ]
                 if len(zipcodes) > 0:
                     Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if criteria.has_key('states') and len(criteria['states'].strip()) > 0:
+            if criteria.get('states', '').strip():
                 state_codes = criteria['states'].strip().upper().split(',')
-                if criteria.has_key('states__not'):
+                if 'states__not' in criteria:
                     Q_exclude &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 else:
                     Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
                 self.updated = True
 
-            if criteria.has_key('grade_min'):
+            if 'grade_min' in criteria:
                 yog = ESPUser.YOGFromGrade(criteria['grade_min'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if criteria.has_key('grade_max'):
+            if 'grade_max' in criteria:
                 yog = ESPUser.YOGFromGrade(criteria['grade_max'])
                 if yog != 0:
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
                     self.updated = True
 
-            if criteria.has_key('school'):
+            if 'school' in criteria:
                 school = criteria['school']
                 if school:
                     Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
@@ -146,13 +146,13 @@ class UserSearchController(object):
 
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = range(1920, 2020)
-            if criteria.has_key('gradyear_min') and len(criteria['gradyear_min'].strip()) > 0:
+            if criteria.get('gradyear_min', '').strip():
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
                 except:
                     raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x >= gradyear_min, possible_gradyears)
-            if criteria.has_key('gradyear_max') and len(criteria['gradyear_min'].strip()) > 0:
+            if criteria.get('gradyear_max', '').strip():
                 try:
                     gradyear_max = int(criteria['gradyear_max'])
                 except:

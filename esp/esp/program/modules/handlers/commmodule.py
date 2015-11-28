@@ -73,15 +73,14 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
 
         # Set From address
-        if request.POST.has_key('from') and \
-           len(request.POST['from'].strip()) > 0:
+        if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
         else:
             # String together an address like username@esp.mit.edu
             fromemail = '%s@%s' % (request.user.username, settings.SITE_INFO[1])
 
         # Set Reply-To address
-        if request.POST.has_key('replyto') and len(request.POST['replyto'].strip()) > 0:
+        if request.POST.get('replyto', '').strip():
             replytoemail = request.POST['replyto']
         else:
             replytoemail = fromemail

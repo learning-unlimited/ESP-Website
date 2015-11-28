@@ -383,7 +383,7 @@ class OnSiteClassList(ProgramModuleObj):
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}
         for key_option in defaults.keys():
-            if options.has_key(key_option):
+            if key_option in options:
                 context[key_option] = options[key_option]
             else:
                 context[key_option] = defaults[key_option]

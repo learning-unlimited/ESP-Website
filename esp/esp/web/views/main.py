@@ -115,14 +115,14 @@ def archives(request, selection, category = None, options = None):
 	""" Return a page with class archives """
 	
 	sortparams = []
-	if request.POST and request.POST.has_key('newparam'):
+	if request.POST and 'newparam' in request.POST:
 		if request.POST['newparam']:
 			sortparams.append(request.POST['newparam'])
 		for key in request.POST:
 			if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
 	#	The selection variable is the type of data they want to see:
 	#	classes, programs, teachers, etc.
-	if archive_handlers.has_key(selection):
+	if selection in archive_handlers:
 		return archive_handlers[selection](request, category, options, sortparams)
 	
 	return render_to_response('users/construction', request, {})
@@ -133,7 +133,7 @@ def contact(request, section='esp'):
     """
     from django.core.mail import send_mail
 
-    if request.GET.has_key('success'):
+    if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})
 
     if request.method == 'POST':

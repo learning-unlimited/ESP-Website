@@ -227,7 +227,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         if request.method == 'POST':
             for key in ['attended','paid','liab','med']:
-                if request.POST.has_key(key):
+                if key in request.POST:
                     self.create_record(key)
                 else:
                     self.delete_record(key)

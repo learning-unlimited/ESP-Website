@@ -64,7 +64,7 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
         return HttpResponseRedirect( '/myesp/login/byschool/%s' % redirect_str )
     school = school_set[0]
 
-    if request.method == 'POST' and request.POST.has_key('username'):
+    if request.method == 'POST' and 'username' in request.POST:
         preset_username = request.POST['username']
         if preset_username == '-1':
             return HttpResponseRedirect( '/myesp/register/' )
@@ -76,7 +76,7 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
         form = StudentSelectForm( students=[ (s.username, '%s (%s)' % (s.name(), s.username)) for s in candidate_users ] + [('-1', 'I don\'t see my name in this list...')] )
         preset_username = ''
         action = request.get_full_path()
-        if request.REQUEST.has_key('dynamic'):
+        if 'dynamic' in request.REQUEST:
             return HttpResponse( form.as_table() )
 
     return render_to_response('registration/login_byschool_pickname.html', request,

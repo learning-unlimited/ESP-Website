@@ -523,7 +523,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return False
 
         students_dict = self.students(QObjects = True)
-        if students_dict.has_key('classreg'):
+        if 'classreg' in students_dict:
             students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(record__event="reg_confirmed",record__program=self).distinct().count()
@@ -963,7 +963,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def getShirtInfo(self):
         shirt_count = defaultdict(lambda: defaultdict(int))
         teacher_dict = self.teachers()
-        if teacher_dict.has_key('class_approved'):
+        if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
             query = query.values_list('registrationprofile__teacher_info__shirt_type',

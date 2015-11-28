@@ -122,7 +122,7 @@ class AdminClass(ProgramModuleObj):
                     return (cls, False)
 
 
-        if not found and request.POST.has_key('clsid'):
+        if not found and 'clsid' in request.POST:
             try:
                 clsid = int(request.POST['clsid'])
             finally:
@@ -132,7 +132,7 @@ class AdminClass(ProgramModuleObj):
                 elif cls is not False:
                     return (cls, False)
 
-        if not found and request.GET.has_key('clsid'):
+        if not found and 'clsid' in request.GET:
             try:
                 clsid = int(request.GET['clsid'])
             finally:
@@ -150,7 +150,7 @@ class AdminClass(ProgramModuleObj):
     def reviewClass(self, request, tl, one, two, module, extra, prog):
         """ Set the review status of a class """
         if request.method == 'POST':
-            if not (request.POST.has_key('class_id') and request.POST.has_key('review_status')):
+            if not ('class_id' in request.POST and 'review_status' in request.POST):
                 raise ESPError("Error: missing data on request")
 
             class_id = request.POST['class_id']
@@ -188,7 +188,7 @@ class AdminClass(ProgramModuleObj):
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
         if request.method == 'POST':
-            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
+            if request.POST.get('sure') == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
                     s.delete()
@@ -323,7 +323,7 @@ class AdminClass(ProgramModuleObj):
         if not found:
             return cls
         cls.accept()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
@@ -334,7 +334,7 @@ class AdminClass(ProgramModuleObj):
         if not found:
             return cls
         cls.reject()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
@@ -345,7 +345,7 @@ class AdminClass(ProgramModuleObj):
         if not found:
             return cls
         cls.propose()
-        if request.GET.has_key('redirect'):
+        if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
         return self.goToCore(tl)
 
@@ -366,9 +366,9 @@ class AdminClass(ProgramModuleObj):
         from esp.users.models import ESPUser
 
         #   Allow submitting class ID via either GET or POST.
-        if request.GET.has_key('clsid'):
+        if 'clsid' in request.GET:
             clsid = request.GET['clsid']
-        elif request.POST.has_key('clsid'):
+        elif 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             return self.goToCore(tl) # just fails.
@@ -385,7 +385,7 @@ class AdminClass(ProgramModuleObj):
         cls = classes[0]
 
         # set txtTeachers and coteachers....
-        if not request.POST.has_key('coteachers'):
+        if not 'coteachers' in request.POST:
             coteachers = cls.get_teachers()
             coteachers = [ user for user in coteachers
                            if user.id != request.user.id           ]
@@ -400,7 +400,7 @@ class AdminClass(ProgramModuleObj):
                            for userid in coteachers                ]
 
         op = ''
-        if request.POST.has_key('op'):
+        if 'op' in request.POST:
             op = request.POST['op']
 
         conflictingusers = []
@@ -490,7 +490,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         # Search for teachers with names that start with search string
-        if not request.GET.has_key('name') or request.POST.has_key('name'):
+        if not 'name' in request.GET or 'name' in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
