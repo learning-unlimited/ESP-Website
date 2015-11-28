@@ -217,23 +217,23 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
-
-        section = ClassSection.objects.filter(id=extra)
-        if section.count() != 1:
+        try:
+            section = ClassSection.objects.get(id=extra)
+        except (ValueError, ClassSection.DoesNotExist):
             raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
 
-        return render_to_response(self.baseDir()+'class_students.html', request, {'section': section[0], 'cls': section[0]})
+        return render_to_response(self.baseDir()+'class_students.html', request, {'section': section, 'cls': section})
 
     @aux_call
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
-
-        cls = ClassSubject.objects.filter(id=extra)
-        if cls.count() != 1:
+        try:
+            cls = ClassSubject.objects.get(id=extra)
+        except (ValueError, ClassSubject.DoesNotExist):
             raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
 
-        return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls[0]})
+        return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls})
 
 
     @aux_call
@@ -242,8 +242,8 @@ class TeacherClassRegModule(ProgramModuleObj):
     def select_students(self, request, tl, one, two, module, extra, prog):
         #   Get preregistered and enrolled students
         try:
-            sec = ClassSection.objects.filter(id=extra)[0]
-        except:
+            sec = ClassSection.objects.get(id=extra)
+        except (ValueError, ClassSection.DoesNotExist):
             raise ESPError('Class section not found.  If you came from a link on our site, please notify the webmasters.', log=False)
 
         students_list = sec.students_prereg()
