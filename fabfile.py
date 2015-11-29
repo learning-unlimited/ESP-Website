@@ -137,6 +137,12 @@ def ensure_environment():
     if env.get("setup_running", False):
         return
 
+    # Are we running ensure_environment() already? If so, skip this check to
+    # prevent infinite loops.
+    if env.get("ensure_environment_running", False):
+        return
+    env.ensure_environment_running = True
+
     # Has setup() been run?
     if not files.exists("/fab-setup-done"):
         print ""
