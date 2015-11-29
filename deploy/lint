@@ -1,6 +1,11 @@
 #!/bin/bash -e
 
-BASE_DIR="$(dirname "$(dirname "$(readlink -e "$0")")")" # /esp
+# http://stackoverflow.com/a/4774063
+pushd "$(dirname "$0")" > /dev/null
+SCRIPTDIR="$(pwd -P)"
+popd > /dev/null
+
+BASEDIR="$(dirname "$SCRIPTDIR")" # /esp
 
 echo "Running lint checks..."
 
@@ -19,6 +24,6 @@ echo "Running lint checks..."
 #   W191: indentation contains tabs
 #   W291: whitespace at end of line
 #   W293: whitespace on blank line
-flake8 --ignore "E,F,W" --select "F82,F831,W601,W603,W604" $BASE_DIR
+flake8 --ignore "E,F,W" --select "F82,F831,W601,W603,W604" "$BASEDIR"
 
-echo "done."
+echo "...success!"
