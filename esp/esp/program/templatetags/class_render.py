@@ -40,8 +40,8 @@ render_class_core.cached_function.depend_on_model('tagdict.Tag')
 
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
-def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
-    return render_class_helper(cls, user, prereg_url, filter, timeslot)
+def render_class(cls, user=None, filter=False, timeslot=None):
+    return render_class_helper(cls, user, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 render_class.cached_function.get_or_create_token(('cls',))
 # We need to depend on not only the user's StudentRegistrations for this
