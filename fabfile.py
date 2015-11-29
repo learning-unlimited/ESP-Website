@@ -296,22 +296,14 @@ def refresh():
     Re-synchronize the remote environment with the codebase. For use when
     switching branches or jumping around the history in git.
 
-      - upgrades and downgrades Python packages
-      - removes orphaned *.pyc files
-      - runs Django database migrations
+      - upgrades and downgrades Python and Ubuntu packages
+      - removes orphaned *.pyc files, runs Django migrations and does whatever
+        else the update management command does
     """
     ensure_environment()
 
-    with cd(env.rbase):
-        # Update the virtualenv with correct packages
-        run("pip install --upgrade -r " + env.rbase + "esp/requirements.txt")
-
-        # Run Django migrations
-        manage("migrate")
-
-        # Recompile theme (run twice, to work around bug)
-        manage("recompile_theme")
-        manage("recompile_theme")
+    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
+    manage("update")
 
 @task
 def manage(cmd):
