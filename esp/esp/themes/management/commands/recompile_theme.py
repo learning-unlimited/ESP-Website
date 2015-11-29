@@ -39,4 +39,9 @@ class Command(NoArgsCommand):
     """Recompile the current theme."""
     def handle_noargs(self, **options):
         from esp.themes.controllers import ThemeController
-        ThemeController().recompile_theme()
+        try:
+            ThemeController().recompile_theme()
+        except Exception:
+            print "recompile_theme failed the first time. Trying again..."
+            print "We should really fix that bug."
+            ThemeController().recompile_theme()
