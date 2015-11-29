@@ -170,11 +170,11 @@ def psql(cmd=None, *args):
     specified, open an interactive psql shell.
 
     When called from Python code, performs string interpolation on the command
-    with the subsequent arguments.
+    with the subsequent arguments, and produces machine-readable output.
     """
     ensure_environment()
     if cmd:
-        sudo("psql -c " + pipes.quote(cmd % args), user="postgres")
+        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres")
     else:
         open_shell("sudo -u postgres psql; exit")
 
