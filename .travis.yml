@@ -3,21 +3,17 @@ python:
   - "2.7"
 services:
   - memcached
-env: DJANGO_SETTINGS_MODULE=esp.settings
+env:
+  global:
+    - DJANGO_SETTINGS_MODULE=esp.settings
+  matrix:
+    - TRAVIS_JOB="lint"
+    - TRAVIS_JOB="test"
 before_install:
-  - sudo apt-get update
-install: 
-  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres)
-  - esp/packages_base_manual_install.sh
-  - pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
+  - deploy/travis/before_install
+install:
+  - deploy/travis/install
 before_script:
-  - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
-  - ln -s `pwd`/esp/public/media/default_images esp/public/media/images
-  - ln -s `pwd`/esp/public/media/default_styles esp/public/media/styles
-  - psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
-  - psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
-script: 
-  - cd esp
-  - useful_scripts/run_lint.sh
-  - ./manage.py collectstatic --noinput -v 0
-  - ./manage.py test
+  - deploy/travis/before_script
+script:
+  - deploy/travis/script

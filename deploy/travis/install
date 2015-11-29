@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euf -o pipefail
+
+if [ "$TRAVIS_JOB" = "test" ]; then
+    sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres)
+    esp/packages_base_manual_install.sh
+    pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
+elif [ "$TRAVIS_JOB" = "lint" ]; then
+    pip install flake8
+else
+    echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
+    exit 1
+fi
