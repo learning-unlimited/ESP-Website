@@ -306,17 +306,6 @@ def refresh():
         # Update the virtualenv with correct packages
         run("pip install --upgrade -r " + env.rbase + "esp/requirements.txt")
 
-        # Clean up *.pyc files that contain stale code. In practice, the only
-        # files that cause problems are orphaned *.pyc's where the corresponding
-        # *.py file has been deleted (git leaves the *.pyc in place). Other than
-        # this, *.pyc files cannot be stale because git updates the lastmod time
-        # when changing a file, so a freshly checked out *.py file will always
-        # be newer than its *.pyc, triggering a recompile. This is an optimization
-        # over 'manage.py clean_pyc', which deletes all *pyc's in the source
-        # tree.. Note that this command is run in the Vagrant VM, since the host
-        # may not have find installed.
-        run("""find . -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
-
         # Run Django migrations
         manage("migrate")
 
