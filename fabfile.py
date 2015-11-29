@@ -199,7 +199,7 @@ def psql(cmd=None, *args):
     if cmd:
         return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres")
     else:
-        open_shell("sudo -u postgres psql; exit")
+        interactive("sudo -u postgres psql; exit")
 
 @task
 def emptydb(owner="esp", interactive=True):
@@ -328,6 +328,16 @@ def refresh():
     run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
     manage("update")
 
+def interactive(cmd):
+    """
+    Open an interactive shell running the given command.
+
+    Fabric doesn't do a good job with interactive shells, so use vagrant ssh
+    instead. This is a hack, and makes the assumption that our target is the
+    default vagrant VM, which  may not be true in the future.
+    """
+    local("vagrant ssh -c '" + cmd + "'")
+
 @task
 def manage(cmd):
     """
@@ -336,8 +346,7 @@ def manage(cmd):
     ensure_environment()
 
     if cmd.split(" ")[0] in ["shell", "shell_plus"]:
-        # cd() doesn't work with open_shell
-        open_shell("(cd " + env.rbase + "esp && python manage.py " + cmd + "); exit")
+        interactive(env.rbase + "esp/esp/manage.py " + cmd)
     else:
         with cd(env.rbase + "esp"):
             run("python manage.py " + cmd)
