@@ -12,6 +12,7 @@ register = template.Library()
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html')
 def render_class_core(cls):
+    """Render non-user-specific parts of a class for the catalog."""
     prog = cls.parent_program
     scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
     colorstring = prog.getColor()
@@ -41,7 +42,11 @@ render_class_core.cached_function.depend_on_model('tagdict.Tag')
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, filter=False, timeslot=None):
-    return render_class_helper(cls, user, filter, timeslot)
+    """Render the entire class for the catalog, including user-specific parts.
+
+    Calls render_class_core for non-user-specific parts.  Used in fillslot.
+    """
+    return _render_class_helper(cls, user, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 render_class.cached_function.get_or_create_token(('cls',))
 # We need to depend on not only the user's StudentRegistrations for this
@@ -55,11 +60,16 @@ render_class.cached_function.get_or_create_token(('user',))
 
 @cache_function
 def render_class_direct(cls):
-    return render_to_string('inclusion/program/class_catalog.html', render_class_helper(cls))
+    """Like render_class, but as a function instead of an inclusion tag.
+
+    Used in the main catalog.
+    """
+    return render_to_string('inclusion/program/class_catalog.html', _render_class_helper(cls))
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 
-def render_class_helper(cls, user=None, filter=False, timeslot=None):
+def _render_class_helper(cls, user=None, filter=False, timeslot=None):
+    """Computes the context for render_class and render_class_direct."""
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
     crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
 
@@ -90,8 +100,11 @@ def render_class_helper(cls, user=None, filter=False, timeslot=None):
             'show_class': show_class}
 
 
+# The following two need to be inclusion tags rather than template includes
+# because we want to cache them.
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html')
 def render_class_preview(cls):
+    """Render a class for the teacherreg class preview."""
     return {'class': cls}
 render_class_preview.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_preview.cached_function.depend_on_m2m(ClassSubject, 'teachers', lambda cls, user: {'cls': cls})
@@ -99,6 +112,7 @@ render_class_preview.cached_function.depend_on_m2m(ClassSubject, 'teachers', lam
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_row.html')
 def render_class_row(cls):
+    """Render a class for the onsite class list."""
     return {'class': cls}
 render_class_row.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_row.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})

@@ -11,6 +11,7 @@ register = template.Library()
 
 @cache_inclusion_tag(register, 'inclusion/program/class_teacher_list_row.html')
 def render_class_teacher_list_row(cls):
+    """Render a class for the teacher list of classes in teacherreg."""
     return {'cls': cls,
             'program': cls.parent_program,
             'crmi': cls.parent_program.getModuleExtension('ClassRegModuleInfo'),
@@ -26,6 +27,10 @@ render_class_teacher_list_row.cached_function.depend_on_row('resources.ResourceA
 
 @cache_inclusion_tag(register, 'inclusion/program/class_copy_row.html')
 def render_class_copy_row(cls):
+    """Render a class for the list of classes that can be copied in teacherreg.
+
+    Similar to render_class_teacher_list_row, but with a few differences.
+    """
     return {'cls': cls,
             'program': cls.parent_program,
             'crmi': cls.parent_program.getModuleExtension('ClassRegModuleInfo')}
