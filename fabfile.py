@@ -147,6 +147,23 @@ def ensure_environment():
         print "***** "
         exit(-1)
 
+    # Has some database been loaded?
+    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
+    if dbs < 4:
+        print ""
+        print "***** "
+        print "***** A database has not been loaded. Please run either:"
+        print "***** "
+        print "*****   $ fab emptydb"
+        print "***** "
+        print "***** to install an empty database, or:"
+        print "***** "
+        print "*****   $ fab loaddb"
+        print "***** "
+        print "***** to load a database dump."
+        print "***** "
+        exit(-1)
+
     # Ensure that the encrypted partition has been mounted (must be done after
     # every boot, and can't be done automatically by Vagrant :/)
     if sudo("df | grep encrypted | wc -l").strip() != "1":
