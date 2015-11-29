@@ -30,10 +30,12 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Git <http://git-scm.com/downloads>`_
 * `Virtualbox <https://www.virtualbox.org/wiki/Downloads>`_
 * `Vagrant <http://www.vagrantup.com/downloads.html>`_
-* `Python 2.7 <http://www.python.org/download/releases/2.7.6/>`_ and `pip <http://www.pip-installer.org/en/latest/installing.html>`_.
-* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip)
+* `Python 2.7 <https://www.python.org/downloads/>`_
+* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
 If you are on a Linux system, it's likely that everything except Vagrant and Virtualbox can be installed using a package manager on the command line.
+
+If you are on a Windows system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you may need to run ``setx path "%path%;C:\Python27;C:\Python27\Scripts;"`` in order to put ``python``, ``pip`` and ``fab`` on your PATH. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
 Installation
 ~~~~~~~~~~~~
@@ -51,31 +53,27 @@ Note that you will not be able to see the VM, since it runs in a "headless" mode
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    fab update_deps
+    fab setup
 
-Finally, you should use Fabric to deploy the development environment.
+The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The ``loaddb`` task accepts an optional argument to load a database dump in .sql or any other Potgres-supported dump format. ::
 
-The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
+    fab loaddb:/path/to/dump
 
-    fab vagrant_dev_setup:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+Alternatively, database dumps can be downloaded automatically over HTTP. If you've been provided with a download URL, run: ::
 
-Typically the user name for the database is typically the lowercase name of the chapter; however, for MIT's system it is simply "esp".  Please ask the Web team for assistance if you need to know the user name, or obtain a database dump.
+    fab loaddb
 
-Alternatively, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
+Finally, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
-    fab vagrant_dev_setup
+    fab emptydb
 
-If you would like to load a database dump to a system that has already been set up, you may do so with the "load_db_dump" task (which overwrites the existing database on the dev server): ::
-
-    fab load_db_dump:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+These commands can also be used on a system that has already been set up to bring your database up to date. They will overwrite the existing database on your dev server.
 
 Now you can run the dev server: ::
 
-    fab run_devserver
+    fab runserver
 
 Once this is running, you should be able to open a Web browser on your computer (not within the VM) and navigate to http://localhost:8000, where you will see the site.
-
-If you are using encrypted databases, you will need to run 'fab open_db' after each time you start the VM ('vagrant up'), and enter the passphrase that you specified during the setup process.
 
 Usage
 -----
@@ -85,17 +83,8 @@ The working copy you checked out with Git at the beginning contains the code you
 If you need to debug things inside of the VM, you can open your shell, go to the directory where you checked out the code, and run ``vagrant ssh``.
 
 * The location of the working copy within the VM is ``/home/vagrant/devsite``
-* The location of the virtualenv used by the VM is ``/home/vagrant/devsite_virtualenv``
-  This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links.
-
-For example, if you want to run a shell: ::
-
-    vagrant ssh
-    source ~/devsite_virtualenv/bin/activate
-    cd ~/devsite/esp
-    ./manage.py shell_plus
-
-An Apache2 server is also set up; you can access it from http://localhost:8080.  Note that whenever you change the code, you will need to run ``fab reload_apache`` to reload Apache2 inside the VM so that your changes take effect.
+* The location of the virtualenv used by the VM is ``/home/vagrant/venv``
+  This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links. The virtualenv is loaded automatically when you log in to the dev server.
 
 Usual workflow
 -----------------------------
@@ -105,26 +94,20 @@ Once you have everything set up, normal usage of your vagrant dev server should 
 Before you start anything: ::
 
     vagrant up
-    fab open_db
 
 To run your dev server: ::
 
-    fab run_devserver
+    fab runserver
 
 Other useful command examples: ::
 
     fab manage:shell_plus
-    fab manage:'migrate program'
+    fab psql:"SELECT * FROM pg_stat_activity"
 
 Once you're done: ::
 
     vagrant halt
 
-Functionality that is lacking
------------------------------
+One last command! When your devserver gets out of date, this command will update the dependencies, run migrations, and generally make things work again: ::
 
-This is a TODO list for the developers:
-
-* Support deploying to other targets (other than Vagrant VMs) - could be useful for deployment
-* Make things more customizable
-* Reduce number of setup steps
+    fab refresh

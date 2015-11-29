@@ -1,38 +1,60 @@
-"""
-ESP-Website dev server management via Fabric
-"""
+""" Quick commands for managing an ESP website development environment """
+
+#
+# Warning to fabfile developers.
+#
+# This file is executed by Fabric on the developer's host machine. Host machines
+# may run Windows, Mac OS or Linux and may not have all of the esp-website
+# dependencies installed. Therefore:
+#
+#   - Take care when importing Python modules in this file. The only modules we
+#     know are present come from the standard library, Fabric, and fabtools.
+#
+#   - Take care when using local() to run commands locally. Make sure to
+#     construct local paths using os.path.join() (here imported as join()), and
+#     do not assume the presence of Unix utilies like find and sed.
+#
+#     In addition, use env.lbase to construct absolute paths when referring to
+#     local files, since fab may be invoked from anywhere in the source tree.
+#
 
 from fabric.api import *
-
-from fabtools.vagrant import vagrant
-
-import os
-
 from fabric.contrib import files
-from fabric.contrib import django as fabric_django
-from fabric.context_managers import settings
-from fabric.operations import get
-from fabric.state import default_channel
 
-import fabtools
-
-from contextlib import contextmanager
-import posixpath
-import string
+import json
+import os
+import pipes
+import platform
 import random
-import getpass
-import subprocess
-import socket
+import string
+
+from os.path import join
+
+# Remote base directory, with trailing /
+env.rbase = "/home/vagrant/devsite/"
+
+# Remote virtualenv directory, with trailing /
+env.venv = "/home/vagrant/venv/"
+
+# Local base directory, e.g. C:\Users\Tim\ESP-Website
+env.lbase = os.path.dirname(env.real_fabfile)
+
+# Name of the encrypted volume group in the Vagrant VM
+env.encvg = "ubuntu--12--vg-keep_1"
+
+# Name of the Postgres database
+env.dbname = "devsite_django"
 
 # Configure the Vagrant VM as the default target of our commands, so long as no
-# hosts were specified on the command line. Calling `vagrant()` is sort of like
-# writing `env.hosts = ['vagrant']`, but it handles the hostname and SSH config
+# hosts were specified on the command line. Calling vagrant() is sort of like
+# writing env.hosts = ["vagrant"], but it handles the hostname and SSH config
 # properly.
 #
 # This means that run() and sudo() will execute on the Vagrant VM by default.
 #
 if not env.hosts:
     try:
+        from fabtools.vagrant import vagrant
         vagrant()
     except SystemExit:
         print ""
@@ -46,258 +68,301 @@ if not env.hosts:
 
         raise
 
-fabric_django.project('esp')
+@task
+def setup():
+    """
+    Perform initial configuration of a brand-new VM. May fail if run again.
+    """
+    env.setup_running = True
 
-REMOTE_USER = 'vagrant'
-REMOTE_PROJECT_DIR = '/home/vagrant/devsite'
-REMOTE_VIRTUALENV_DIR = '/home/vagrant/devsite_virtualenv'
-ENCRYPTED_VG_NAME = 'ubuntu--12--vg-keep_1'
+    # Install Ubuntu packages, create a virtualenv and install Python packages.
+    # The script uses sudo to elevate as needed, so we can use run() here
+    # instead of sudo().
+    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
 
-"""
-The following remote_pipe() function is from:
-  https://github.com/goncalopp/btrfs-send-snapshot
+    # Create and mount the encrypted partition (requires user input)
+    from fabtools import require
+    require.deb.package("cryptsetup")
 
-The code has been adapted only for style.
-"""
-def remote_pipe(local_command, remote_command, buf_size=1024*1024):
-    """ Executes a local command and a remove command (with fabric), and
-        sends the local's stdout to the remote's stdin.  """
-    local_p = subprocess.Popen(local_command, shell=True, stdout=subprocess.PIPE)
-    channel = default_channel()
-    channel.set_combine_stderr(True)
-    channel.settimeout(2)
-    channel.exec_command(remote_command)
-    try:
-        read_bytes = local_p.stdout.read(buf_size)
-        while read_bytes:
-            channel.sendall(read_bytes)
-            read_bytes = local_p.stdout.read(buf_size)
-    except socket.error:
-        local_p.kill()
-        #   fail to send data, let's see the return codes and received data...
-    local_ret = local_p.wait()
-    received = channel.recv(buf_size)
-    channel.shutdown_write()
-    channel.shutdown_read()
-    remote_ret = channel.recv_exit_status()
-    if local_ret != 0 or remote_ret != 0:
-        raise Exception("remote_pipe failed. Local retcode: {0} Remote retcode: {1} output: {2}".format(local_ret, remote_ret, received))
+    print "***** "
+    print "***** Creating the encrypted partition for data storage."
+    print "***** Please choose a passphrase and type it at the three prompts."
+    print "***** "
 
-def relative(path):
-    """ Expresses a relative path as an absolute path using `env.real_fabfile`.
-        Paths are relative to the directory containing this file. """
-    directory = os.path.dirname(env.real_fabfile)
-    return os.path.join(directory, path)
+    sudo("cryptsetup luksFormat /dev/mapper/%s" % env.encvg)
+    sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
+    sudo("mkfs.ext4 /dev/mapper/encrypted")
+    sudo("mkdir -p /mnt/encrypted")
+    sudo("mount /dev/mapper/encrypted /mnt/encrypted")
 
-@contextmanager
-def esp_env():
-    with cd('%s/esp' % REMOTE_PROJECT_DIR):
-        with prefix('source %s/bin/activate' % REMOTE_VIRTUALENV_DIR):
-            yield
+    # Create the encrypted tablegroup in Postgres
+    sudo("chown -R postgres /mnt/encrypted")
+    psql("CREATE TABLESPACE encrypted LOCATION '/mnt/encrypted'")
+
+    # Automatically activate virtualenv. We rely on this so that we don't have
+    # to activate the virtualenv as part of every fab command.
+    files.append("~/.bash_login", "source %sbin/activate" % env.venv)
+
+    # Configure memcached item size
+    addendum = "\n# Item size limit\n-I 2M"
+    files.append("/etc/memcached.conf", addendum, use_sudo=True)
+    sudo("service memcached restart")
+
+    # Symlink media
+    if platform.system() == "Windows":
+        # Creating symlinks inside the guest will fail if the host is running
+        # Windows. We need to create the symlinks on the host, which requires
+        # administrator privileges. This script takes care of the whole process.
+        local(join(env.lbase, "deploy", "windows_symlink_media.bat"))
+    else:
+        with cd(env.rbase + "esp/public/media"):
+            with settings(warn_only=True):
+                run("ln -s -T default_images images")
+                run("ln -s -T default_styles styles")
+
+    sudo("touch /fab-setup-done")
+
+@runs_once
+def ensure_environment():
+    """
+    Ensure that the environment is fully configured. If so, print no output and
+    return. If not, attempt to fix the problem (e.g. some things need to be done
+    every time the VM boots) or else print instructions and terminate fab.
+
+    For efficiency, the result of this function is cached for the duration of a
+    run of fab. We assume that an already-configured environment will not become
+    un-configured.
+    """
+    # Are we running setup() right now? If so, skip this check.
+    if env.get("setup_running", False):
+        return
+
+    # Are we running ensure_environment() already? If so, skip this check to
+    # prevent infinite loops.
+    if env.get("ensure_environment_running", False):
+        return
+    env.ensure_environment_running = True
+
+    # Has setup() been run?
+    if not files.exists("/fab-setup-done"):
+        print ""
+        print "***** "
+        print "***** The Vagrant VM has not been configured. Please run:"
+        print "***** "
+        print "*****   $ fab setup"
+        print "***** "
+        exit(-1)
+
+    # Ensure that the encrypted partition has been mounted (must be done after
+    # every boot, and can't be done automatically by Vagrant :/)
+    if sudo("df | grep encrypted | wc -l").strip() != "1":
+        if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
+            print "***** "
+            print "***** Opening the encrypted partition for data storage."
+            print "***** Please enter your passphrase when prompted."
+            print "***** "
+            sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
+            sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+        else:
+            print "***** "
+            print "***** Something went wrong when mounting the encrypted partition."
+            print "***** Aborting."
+            exit(-1)
+
+    # Are we running emptydb() or loaddb() right now? If so, skip the database
+    # check.
+    if env.get("db_running", False):
+        return
+
+    # Has some database been loaded?
+    dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
+    if dbs < 4:
+        print ""
+        print "***** "
+        print "***** A database has not been loaded. Please run either:"
+        print "***** "
+        print "*****   $ fab emptydb"
+        print "***** "
+        print "***** to install an empty database, or:"
+        print "***** "
+        print "*****   $ fab loaddb"
+        print "***** "
+        print "***** to load a database dump."
+        print "***** "
+        exit(-1)
+
+@task
+def psql(cmd=None, *args):
+    """
+    Run the given Postgres command as user postgres. If no command is
+    specified, open an interactive psql shell.
+
+    When called from Python code, performs string interpolation on the command
+    with the subsequent arguments, and produces machine-readable output.
+    """
+    ensure_environment()
+    if cmd:
+        return sudo("psql -AXqt -c " + pipes.quote(cmd % args), user="postgres")
+    else:
+        interactive("sudo -u postgres psql; exit")
+
+@task
+def emptydb(owner="esp", interactive=True):
+    """
+    Delete any existing Postgres database and replace it with an empty one.
+
+    This task additionally rotates the database credentials and regenerates
+    local_settings.py.
+    """
+    env.db_running = True
+    ensure_environment()
+
+    # Generate a new local_settings.py file with this database owner
+    password = gen_password(12)
+    context = {
+        "db_user": owner,
+        "db_name": env.dbname,
+        "db_password": password,
+        "secret_key": gen_password(64),
+    }
+    files.upload_template(
+        join(env.lbase, "deploy", "config_templates", "local_settings.py"),
+        env.rbase + "esp/esp/local_settings.py",
+        context,
+        backup=False,
+    )
+
+    # Delete and recreate the Postgres user and database. Note that the PASSWORD
+    # command requires single-quotes, not double-quotes as is usual.
+    psql("DROP DATABASE IF EXISTS %s", env.dbname)
+    psql("DROP ROLE IF EXISTS %s", owner)
+
+    psql("CREATE ROLE %s CREATEDB LOGIN PASSWORD '" + password + "'", owner)
+    psql("CREATE DATABASE %s OWNER %s TABLESPACE encrypted", env.dbname, owner)
+
+    # Run Django migrations, etc. (unless being called from loaddb, below)
+    if interactive:
+        refresh()
+        print "***** "
+        print "***** Creating the first admin account on the website."
+        print "***** Please configure credentials when prompted."
+        print "***** "
+        manage("createsuperuser")
+
+@task
+def loaddb(filename=None):
+    """
+    If filename is given, load the (decrypted, uncompressed) database dump at
+    that local path into the Postgres database.
+
+    If filename is not given, download the dump over HTTP, prompting the user
+    for the URL if one has not been previously provided.
+
+    Automatically detects the dump format and proper username.
+    """
+    env.db_running = True
+    ensure_environment()
+
+    # Clean up existing dumpfile, if present
+    run("rm -f ~/dbdump")
+
+    if filename:
+        put(filename, "~/dbdump")
+    else:
+        # Get or prompt for HTTP download settings. These settings are saved in
+        # ~/.dbdownload in the Vagrant VM, which makes it easier for people to
+        # work with different chapters' databasees in different VMs.
+        if files.exists("~/.dbdownload"):
+            contents = run("cat ~/.dbdownload")
+            config = json.loads(contents)
+        else:
+            url = prompt("Download URL:")
+            config = {
+                "url": url,
+            }
+            escaped_config = pipes.quote(json.dumps(config))
+            run("echo " + escaped_config + " > ~/.dbdownload")
+
+        # Download database dump into VM
+        escaped_url = pipes.quote(config["url"])
+        run("wget " + escaped_url + " -O ~/dbdump")
+
+    # HACK: detect the Postgres user used in the dump. We run strings in case
+    # the dump is in binary format, then we look for the grant for arbitrary
+    # table, program_class. The result should be a line like:
+    #
+    #   GRANT ALL ON TABLE program_clas TO esp;
+    #
+    # ...which we can then parse to get the user. :D
+    contents = run("strings dbdump | grep 'GRANT ALL ON TABLE program_class TO'")
+    pg_owner = contents.split()[-1][:-1]
+
+    # Reset the database
+    emptydb(pg_owner, interactive=False)
+
+    # Load the database dump using the appropriate command for the format
+    sudo("chgrp postgres ~/dbdump")
+    if "PostgreSQL custom database dump" in run("file ~/dbdump"):
+        sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
+             " --exit-on-error --jobs=2 ~/dbdump",
+             user="postgres")
+    else:
+        sudo("psql --dbname=" + pipes.quote(env.dbname) +
+             " --set='ON_ERROR_STOP=on' -f ~/dbdump",
+             user="postgres")
+
+    # Run Django migrations, etc.
+    refresh()
+
+    # Cleanup
+    run("rm -f ~/dbdump")
 
 def gen_password(length):
-    return ''.join([random.choice(string.letters + string.digits) for i in range(length)])
-
-def create_settings():
-    context = {
-        'db_user': 'ludev',
-        'db_name': 'devsite_django',
-        'db_password': gen_password(8),
-        'secret_key': gen_password(64),
-    }
-
-    #   Initialize the database as specified in the settings
-    fabtools.require.postgres.server()
-    fabtools.require.postgres.user(context['db_user'], context['db_password'])
-    fabtools.require.postgres.database(context['db_name'], context['db_user'])
-
-    #   Create the local_settings.py file on the target
-    files.upload_template(relative('deploy/config_templates/local_settings.py'), '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
-
-def setup_apache():
-    context = {
-        'APACHE_PORT': 80,
-        'SERVER_NAME': 'devsite.learningu.org',
-        'SERVER_ADMIN': 'devsite@learningu.org',
-        'INSTANCE_NAME': 'devsite',
-        'USER': REMOTE_USER,
-        'PROCESSES': '1',
-        'THREADS': '1',
-        'PROJECT_DIR': REMOTE_PROJECT_DIR,
-    }
-
-    #   Note: Apache2 isn't installed for base config (but we don't want all of the
-    #   production stuff); fabtools provides a convenient interface
-    fabtools.require.apache.server()
-    fabtools.require.deb.package('libapache2-mod-wsgi')
-    fabtools.require.apache.module_enabled('wsgi')
-    fabtools.require.apache.site_disabled('default')
-    fabtools.require.apache.site('devsite', template_source=relative('deploy/config_templates/apache2_vhost.conf'), **context)
-
-def initialize_db():
-    #   Activate virtualenv
-    with esp_env():
-        run('python manage.py migrate')
-        run('python manage.py createsuperuser')
-
-def post_db_load():
-    with esp_env():
-        # Trying to load a db dump with migrations ahead of your branch
-        # was probably a bad idea anyway
-        run('python manage.py migrate')
-        with settings(warn_only=True):
-            # Work around a themes bug. Running twice is intentional.
-            run('python manage.py recompile_theme')
-            run('python manage.py recompile_theme')
-
-def link_media():
-    #   Don't do this if the host is Windows (no symlinks).
-    import platform
-    if platform.system() == 'Windows':
-        print 'Cannot link media directories on Windows.  Please copy them yourself, if this is what you want:'
-        print '  cd %s' % os.path.join(os.path.dirname(__file__), 'public', 'media')
-        print '  cp -r default_images images'
-        print '  cp -r default_styles styles'
-        return
-
-    with cd('%s/esp/public/media' % REMOTE_PROJECT_DIR):
-        with settings(warn_only=True):
-            run('ln -s -T default_images images')
-            run('ln -s -T default_styles styles')
-
-def mount_encrypted_partition():
-    if sudo('df | grep encrypted | wc -l').strip() == '1':
-        print 'Encrypted partition is already mounted; not doing anything.'
-        return
-    if sudo('ls -l /dev/mapper/encrypted &> /dev/null ; echo $?').strip() != '0':
-        print 'Opening the encrypted partition for data storage.'
-        print 'Please enter your passphrase when prompted.'
-        sudo('cryptsetup luksOpen /dev/mapper/%s encrypted' % (ENCRYPTED_VG_NAME,))
-    sudo('mount /dev/mapper/encrypted /mnt/encrypted')
-
-def unmount_encrypted_partition():
-    if sudo('df | grep encrypted | wc -l').strip() == '1':
-        sudo('umount /mnt/encrypted')
-    if sudo('ls -l /dev/mapper/encrypted &> /dev/null ; echo $?').strip() == '0':
-        sudo('cryptsetup luksClose encrypted')
-
-def ensure_encrypted_partition():
-    #   Check for the encrypted partition already existing on the
-    #   VM, and quit if it does.
-    if sudo('cryptsetup isLuks /dev/mapper/%s ; echo $?' % (ENCRYPTED_VG_NAME,)).strip() == '0':
-        print 'Encrypted partition already exists; mounting.'
-        mount_encrypted_partition()
-        return
-    create_encrypted_partition()
-
-def create_encrypted_partition():
-    print 'Now creating encrypted partition for data storage.'
-    print 'Please make up a passphrase and enter it when prompted.'
-
-    #   Get cryptsetup and create the encrypted filesystem
-    sudo('apt-get install -y -qq cryptsetup')
-    unmount_encrypted_partition()  # unmount in case it already exists
-    sudo('cryptsetup luksFormat /dev/mapper/%s' % (ENCRYPTED_VG_NAME,))
-    sudo('cryptsetup luksOpen /dev/mapper/%s encrypted' % (ENCRYPTED_VG_NAME,))
-    sudo('mkfs.ext4 /dev/mapper/encrypted')
-    sudo('mkdir -p /mnt/encrypted')
-    sudo('mount /dev/mapper/encrypted /mnt/encrypted')
-
-    #   Get postgres and create the tablespace on that filesystem
-    fabtools.require.postgres.server()
-    sudo('chown -R postgres /mnt/encrypted')
-    run('sudo -u postgres psql -c "CREATE TABLESPACE encrypted LOCATION \'/mnt/encrypted\'"')
-
-def load_encrypted_database(db_owner, db_filename):
-    """ Load an encrypted database dump (.sql.gz.gpg) into the VM.
-        Expects to receive the Postgres username of the role
-        that "owns" the objects in the database (typically
-        this matches the chapter's site directory name, or 'esp'
-        in the case of MIT).    """
-
-    #   Generate a new local_settings.py file with this database owner
-    context = {
-        'db_user': db_owner,
-        'db_name': 'devsite_django',
-        'db_password': gen_password(8),
-        'secret_key': gen_password(64),
-    }
-    files.upload_template(relative('deploy/config_templates/local_settings.py'), '%s/esp/esp/local_settings.py' % REMOTE_PROJECT_DIR, context)
-
-    #   Set up the user (with blank DB) in Postgres
-    run('sudo -u postgres psql -c "DROP DATABASE IF EXISTS devsite_django"')
-    run('sudo -u postgres psql -c "DROP ROLE IF EXISTS %s"' % (db_owner,))
-    run('sudo -u postgres psql -c "CREATE ROLE %s CREATEDB LOGIN PASSWORD \'%s\'"' % (db_owner, context['db_password']))
-    run('sudo -u postgres psql -c "CREATE DATABASE devsite_django OWNER %s TABLESPACE encrypted"' % (db_owner,))
-
-    #   Decrypt the DB dump (if needed) and send to the VM's Postgres install.
-    #   This sends the SQL commands to the VM via the remote_pipe function.
-    if db_filename.endswith('.gpg'):
-        local_cmd = 'gpg -d %s | gunzip -c' % (db_filename,)
-    else:
-        local_cmd = 'gunzip -c %s' % (db_filename,)
-    remote_cmd = 'sudo -u postgres psql devsite_django'
-    remote_pipe(local_cmd, remote_cmd)
+    return "".join([random.choice(string.letters + string.digits) for i in range(length)])
 
 @task
-def load_db_dump(dbuser, dbfile):
-    """ Create an encrypted partition on the VM and load a database dump
-        using that encrypted storage.   """
+def refresh():
+    """
+    Re-synchronize the remote environment with the codebase. For use when
+    switching branches or jumping around the history in git.
 
-    ensure_encrypted_partition()
-    load_encrypted_database(dbuser, dbfile)
-    post_db_load()
+      - upgrades and downgrades Python and Ubuntu packages
+      - removes orphaned *.pyc files, runs Django migrations and does whatever
+        else the update management command does
+    """
+    ensure_environment()
 
-@task
-def recreate_encrypted_partition():
-    """ Blow away any previous encrypted partition and create a new one. """
+    run(env.rbase + "esp/update_deps.sh --virtualenv=" + env.venv)
+    manage("update")
 
-    create_encrypted_partition()
+def interactive(cmd):
+    """
+    Open an interactive shell running the given command.
 
-@task
-def vagrant_dev_setup(dbuser=None, dbfile=None):
-    """ Set up the development environment.
-        If the dbuser and dbfile arguments are supplied, sets up
-        encrypted database storage and loads a DB dump. """
-
-    if dbuser is not None and dbfile is None:
-        raise Exception('You must provide a database dump file to load in the dbfile argument.')
-    if dbuser is None and dbfile is not None:
-        raise Exception('You must specify the PostgreSQL user that your database belongs to in the dbuser argument.')
-    using_db_dump = (dbuser is not None and dbfile is not None)
-
-    if using_db_dump:
-        load_db_dump(dbuser, dbfile)
-    else:
-        create_settings()
-        initialize_db()
-    setup_apache()
-    link_media()
-
-@task
-def run_devserver():
-    """ Run Django dev server on port 8000. """
-    with esp_env():
-        sudo('python manage.py runserver 0.0.0.0:8000')
+    Fabric doesn't do a good job with interactive shells, so use vagrant ssh
+    instead. This is a hack, and makes the assumption that our target is the
+    default vagrant VM, which  may not be true in the future.
+    """
+    local("vagrant ssh -c '" + cmd + "'")
 
 @task
 def manage(cmd):
-    """ Run a manage.py command """
-    with esp_env():
-        sudo('python manage.py '+cmd)
+    """
+    Run a manage.py command in the remote host.
+    """
+    ensure_environment()
+
+    if cmd.split(" ")[0] in ["shell", "shell_plus"]:
+        interactive(env.rbase + "esp/esp/manage.py " + cmd)
+    else:
+        with cd(env.rbase + "esp"):
+            run("python manage.py " + cmd)
 
 @task
-def update_deps():
-    sudo('%s/esp/update_deps.sh --virtualenv=%s' % (REMOTE_PROJECT_DIR, REMOTE_VIRTUALENV_DIR))
+def runserver():
+    """
+    A shortcut for 'manage.py runserver' with the appropriate settings.
+    """
+    ensure_environment()
 
-@task
-def open_db():
-    """ Mounts the encrypted filesystem containing any loaded database
-        dumps.  Should be executed after 'vagrant up' and before any
-        other operations such as run_devserver. """
-    mount_encrypted_partition()
-
-@task
-def reload_apache():
-    """ Reload apache2 server. """
-    sudo('service apache2 reload')
+    manage("runserver 0.0.0.0:8000")
