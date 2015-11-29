@@ -153,6 +153,27 @@ def ensure_environment():
         print "***** "
         exit(-1)
 
+    # Ensure that the encrypted partition has been mounted (must be done after
+    # every boot, and can't be done automatically by Vagrant :/)
+    if sudo("df | grep encrypted | wc -l").strip() != "1":
+        if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
+            print "***** "
+            print "***** Opening the encrypted partition for data storage."
+            print "***** Please enter your passphrase when prompted."
+            print "***** "
+            sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
+            sudo("mount /dev/mapper/encrypted /mnt/encrypted")
+        else:
+            print "***** "
+            print "***** Something went wrong when mounting the encrypted partition."
+            print "***** Aborting."
+            exit(-1)
+
+    # Are we running emptydb() or loaddb() right now? If so, skip the database
+    # check.
+    if env.get("db_running", False):
+        return
+
     # Has some database been loaded?
     dbs = int(psql("SELECT COUNT(*) FROM pg_stat_database;").strip())
     if dbs < 4:
@@ -169,22 +190,6 @@ def ensure_environment():
         print "***** to load a database dump."
         print "***** "
         exit(-1)
-
-    # Ensure that the encrypted partition has been mounted (must be done after
-    # every boot, and can't be done automatically by Vagrant :/)
-    if sudo("df | grep encrypted | wc -l").strip() != "1":
-        if sudo("ls -l /dev/mapper/encrypted &> /dev/null ; echo $?").strip() != "0":
-            print "***** "
-            print "***** Opening the encrypted partition for data storage."
-            print "***** Please enter your passphrase when prompted."
-            print "***** "
-            sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
-            sudo("mount /dev/mapper/encrypted /mnt/encrypted")
-        else:
-            print "***** "
-            print "***** Something went wrong when mounting the encrypted partition."
-            print "***** Aborting."
-            exit(-1)
 
 @task
 def psql(cmd=None, *args):
@@ -209,6 +214,7 @@ def emptydb(owner="esp", interactive=True):
     This task additionally rotates the database credentials and regenerates
     local_settings.py.
     """
+    env.db_running = True
     ensure_environment()
 
     # Generate a new local_settings.py file with this database owner
@@ -254,6 +260,7 @@ def loaddb(filename=None):
 
     Automatically detects the dump format and proper username.
     """
+    env.db_running = True
     ensure_environment()
 
     # Clean up existing dumpfile, if present
