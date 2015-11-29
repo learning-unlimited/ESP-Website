@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 from esp.qsd.models import QuasiStaticData
 from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
 from esp.tagdict.models import Tag
-from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
 from esp.web.models import NavBarCategory, default_navbarcategory
 
@@ -72,7 +71,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
         self.admin_user.set_password(self.PASSWORD_STRING)
-        make_user_admin(self.admin_user)
+        self.admin_user.makeAdmin()
         self.qsd_user, created = ESPUser.objects.get_or_create(username='qsd', first_name='Aylik', last_name='Kewesd')
         self.qsd_user.set_password(self.PASSWORD_STRING)
         self.qsd_user.save()
