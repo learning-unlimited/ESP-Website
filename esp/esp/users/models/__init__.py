@@ -1014,6 +1014,15 @@ class AnonymousESPUser(BaseESPUser, AnonymousUser):
 @dispatch.receiver(signals.post_save, sender=User,
                      dispatch_uid='make_admin_save')
 def make_admin_save(sender, instance, **kwargs):
+    """
+    External scripts like the createsuperuser management command sometimes add
+    the is_superuser flag to a User object. This receiver intercepts saves of
+    User objects and ensures that ESPUser-specific actions, such as adding the
+    user to the Administrators group, are also applied.
+
+    Code that references ESPUser instead of User does not trigger this receiver.
+    These callers should be explicit and call ESPUser.make_admin() if needed.
+    """
     if instance.is_superuser:
         espuser = ESPUser.objects.get(id=instance.id)
         espuser.makeAdmin()
