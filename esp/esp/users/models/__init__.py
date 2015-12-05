@@ -1989,22 +1989,6 @@ class PersistentQueryFilter(models.Model):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
 
-class ESPUser_Profile(models.Model):
-    user = AjaxForeignKey(ESPUser, unique=True)
-
-    class Meta:
-        app_label = 'users'
-        db_table = 'users_espuser_profile'
-
-    def prof(self):
-        return self.user
-
-    class Admin:
-        pass
-
-    def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % unicode(self.user)
-
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """
     RECOVER_KEY_LEN = 30
