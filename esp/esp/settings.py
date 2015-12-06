@@ -231,9 +231,8 @@ CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
     # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware
-    # and PrettyErrorEmailMiddlware) will remain enabled and will receive
-    # exceptions before Raven does.
+    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
+    # will remain enabled and will receive exceptions before Raven does.
     import raven
 
     INSTALLED_APPS += (

@@ -206,7 +206,6 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
-    (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
