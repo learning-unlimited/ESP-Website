@@ -65,9 +65,10 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 import pickle
 import operator
-import simplejson as json
+import json
 from collections import defaultdict
 from decimal import Decimal
+import reversion
 
 try:
     from cStringIO import StringIO
@@ -110,7 +111,7 @@ def lottery_student_reg_simple(request, program = None):
     return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 
-#@transaction.commit_manually
+#@transaction.atomic
 @login_required
 def lsr_submit(request, program = None): 
     
@@ -196,10 +197,10 @@ def lsr_submit(request, program = None):
     cfe = ConfirmationEmailController()
     cfe.send_confirmation_email(request.user, program)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
-#@transaction.commit_manually
+#@transaction.atomic
 @login_required
 def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary function. will merge the two later -jmoldow 05/31
     
@@ -222,7 +223,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                 errors.append({"text": "Can't flag two classes with the same priority at the same time!", "cls_sections": list(sections_by_block[i][block]), "block": block, "priority": i, "doubled_priority": True})
     
     if len(errors): 
-        return HttpResponse(json.dumps(errors), mimetype='application/json')
+        return HttpResponse(json.dumps(errors), content_type='application/json')
 
     reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
     reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)] 
@@ -231,7 +232,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
     oldRegistrations = [] #[[] for i in range(0, priority_limit+1)] # 1-indexed for priority registrations, the 0-index is for interested registrations
     
     for i in range(1, priority_limit+1):
-        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]).select_related(depth=3))]
+        oldRegistrations += [(oldRegistration, i) for oldRegistration in list(allStudentRegistrations.filter(relationship=reg_priority[i]))]
     
     for (oldRegistration, priority) in oldRegistrations:
         if oldRegistration.section.id not in classes_flagged[0]:
@@ -246,7 +247,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                     classes_flagged[0].remove(oldRegistration.section.id)
                 break
     
-    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
+    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
     
     for i in range(1, priority_limit + 1):
         for s in list(flagworthy_sections[i]):
@@ -258,7 +259,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
         pprint(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
-    return HttpResponse(json.dumps(errors), mimetype='application/json')
+    return HttpResponse(json.dumps(errors), content_type='application/json')
 
 
 def find_user(userstr):
@@ -560,6 +561,7 @@ def submit_transaction(request):
     return render_to_response( 'accounting/credit_rejected.html', request, {} )
 
 # This really should go in qsd
+@reversion.create_revision()
 @admin_required
 def manage_pages(request):
     if request.method == 'POST':
@@ -688,7 +690,7 @@ def statistics(request, program=None):
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
             result['script'] = render_to_string('program/statistics/script.js', context)
-            return HttpResponse(json.dumps(result), mimetype='application/json')
+            return HttpResponse(json.dumps(result), content_type='application/json')
             
         if form.is_valid():
             #   A dictionary for template rendering the results of this query
@@ -755,7 +757,7 @@ def statistics(request, program=None):
                 result = {}
                 result['result_html'] = context['result']
                 result['script'] = render_to_string('program/statistics/script.js', context)
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
         else:
@@ -765,7 +767,7 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
-                return HttpResponse(json.dumps(result), mimetype='application/json')
+                return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
 
@@ -777,7 +779,7 @@ def statistics(request, program=None):
     context['field_ids'] = get_field_ids(form)
 
     if request.is_ajax():
-        return HttpResponse(json.dumps(context), mimetype='application/json')
+        return HttpResponse(json.dumps(context), content_type='application/json')
     else:
         return render_to_response('program/statistics.html', request, context)
 

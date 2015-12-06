@@ -105,6 +105,8 @@ class FinancialAidAppModule(ProgramModuleObj):
                 tag_data = Tag.getTag('finaid_form_fields')
                 if tag_data:
                     fields = tuple(tag_data.split(','))
+                else:
+                    fields = '__all__'
       
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
@@ -182,3 +184,4 @@ This request can be (re)viewed at:
 
     class Meta:
         proxy = True
+        app_label = 'modules'

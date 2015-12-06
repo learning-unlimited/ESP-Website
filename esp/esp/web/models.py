@@ -39,7 +39,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
-    include_auto_links = models.BooleanField()
+    include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
     long_explanation = models.TextField()
@@ -66,22 +66,24 @@ class NavBarCategory(models.Model):
                 return categories[0]
 
         #   If all else fails, make something up.
-        return NavBarCategory.default()
+        return default_navbarcategory()
 
     from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
     
-    @classmethod
-    def default(cls):
-        """ Default navigation category.  For now, the one with the lowest ID. """
-        if not hasattr(cls, '_default'):
-            if not cls.objects.exists():
-                install()
-            cls._default = cls.objects.all().order_by('id')[0]
-        return cls._default
-    
     def __unicode__(self):
         return u'%s' % self.name
+
+def default_navbarcategory():
+    """ Default navigation category. """
+    if not hasattr(NavBarCategory, '_default'):
+        if not NavBarCategory.objects.exists():
+            # We shouldn't need this before we've had a chance to run install()
+            # But Django was trying to call it anyway
+            return None
+        NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
+    return NavBarCategory._default
+
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
@@ -89,9 +91,9 @@ class NavBarEntry(models.Model):
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
-    indent = models.BooleanField()
+    indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
+    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
 
     def can_edit(self, user):
         return user.isAdmin()

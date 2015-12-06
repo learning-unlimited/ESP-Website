@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import datetime
-import simplejson as json
+import json
 
 from django.conf import settings
 from django.template import RequestContext, Context

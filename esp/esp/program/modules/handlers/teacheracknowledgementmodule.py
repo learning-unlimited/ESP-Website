@@ -74,6 +74,6 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
     
     class Meta:
         proxy = True
-    
+        app_label = 'modules'
 
 

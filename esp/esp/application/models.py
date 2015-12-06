@@ -1,5 +1,5 @@
 from django.db import models, transaction
-from django.db.models.loading import get_model
+from django.apps import apps
 from django.template import Template, Context
 from django.dispatch import receiver
 from esp.cache import cache_function
@@ -108,7 +108,7 @@ class StudentProgramApp(models.Model):
         super(StudentProgramApp, self).__init__(*args, **kwargs)
 
         if self.__class__ == StudentProgramApp:
-            model = get_model('application', self.app_type + self.__class__.__name__)
+            model = apps.get_model('application', self.app_type + self.__class__.__name__)
             if model is not None:
                 self.__class__ = model
 
@@ -177,7 +177,7 @@ class StudentClassApp(models.Model):
         super(StudentClassApp, self).__init__(*args, **kwargs)
 
         if self.__class__ == StudentClassApp:
-            model = get_model('application', self.app.app_type + self.__class__.__name__)
+            model = apps.get_model('application', self.app.app_type + self.__class__.__name__)
             if model is not None:
                 self.__class__ = model
 
@@ -267,7 +267,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         submissions = settings.form().submissions(use_cache=False)
 
         # parse submitted data and make model instances
-        with transaction.commit_on_success():
+        with transaction.atomic():
             apps = []
             for submission in submissions:
                 try:

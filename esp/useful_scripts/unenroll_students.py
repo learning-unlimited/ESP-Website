@@ -21,7 +21,7 @@ args = parser.parse_args()
 
 prog = Program.objects.get(id=args.program_id)
 # classes that started more than 60 minutes ago
-#passed_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10, begin_time__start__lt=datetime.now() - timedelta(minutes=60))
+#passed_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10, begin_time__lt=datetime.now() - timedelta(minutes=60))
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in
 
 

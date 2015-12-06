@@ -51,6 +51,7 @@ from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from django.http import HttpResponse
 from django.template.loader import render_to_string, get_template, select_template
 import operator
+from esp.cache import cache_function
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
     @classmethod
@@ -62,10 +63,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "seq": -9999
             }
 
+    @cache_function
     def have_paid(self, user):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.amount_due() <= 0)
+    have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
+    have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
+    have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
 
     def students(self, QObject = False):
         now = datetime.now()
@@ -290,22 +295,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def isStep(self):
         return False
 
-
-    def getNavBars(self):
-        nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and Permission.objects.user_has_perms(self.request.user, "Student/Classes/OneClass", program=self.program)):
-             nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
-                      'text': '%s Student Registration' % ( self.program.niceSubName() ),
-                      'section': ''})
-
-        if self.request.user.isAdmin(self.program):
-            nav_bars.append({'link':'/learn/%s/studentreg/' % (self.program.getUrlBase()),
-                             'text':'%s Student Reg Inline Text' % self.program.niceSubName(),
-                             'section': 'learn'})
-
-        return nav_bars
-    
-
     class Meta:
         proxy = True
-
+        app_label = 'modules'

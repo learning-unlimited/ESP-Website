@@ -34,15 +34,16 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta, date
+import json
 import functools
-import simplejson as json
 
 from django import forms, dispatch
 from django.conf import settings
 from django.contrib.auth import logout, login, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
-from django.contrib.localflavor.us.forms import USStateSelect
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.forms import USStateSelect
+
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
@@ -57,6 +58,7 @@ from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
+from django.utils.functional import SimpleLazyObject
 
 
 
@@ -143,14 +145,26 @@ class ESPUser(User, AnonymousUser):
         # Set up the storage for instance state
         self._state = ModelState()
     
-        if isinstance(userObj, ESPUser):
-            self.__olduser = userObj.getOld()
-            self.__dict__.update(self.__olduser.__dict__)
+        # A bit of a hack: if we're passed a SimpleLazyObject, make sure it's
+        # initialized (with `dir` which is proxied), and then grab the __dict__
+        # of the wrapped User or ESPUser.   This is necessary because
+        # SimpleLazyObject doesn't proxy __dict__, so copying it would fail.
+        if isinstance(userObj, SimpleLazyObject):
+            dir(userObj)
+            self.__dict__ = userObj._wrapped.__dict__
+            # This is just a method, so SimpleLazyObj will proxy it just fine.
             self._is_anonymous = userObj.is_anonymous()
 
-        elif isinstance(userObj, (User, AnonymousUser)):
+        # TODO(benkraft): in the case of an ESPUser, we should consider
+        # overriding __new__ to just return the ESPUser it was passed; I don't
+        # know why you'd call ESPUser on an ESPUser except by accident, but
+        # giving you back your ESPUser should work just fine.  On the other
+        # hand, this might be trickier than it sounds because there are a bunch
+        # of metaclasses flying around, and because if __new__ returns an
+        # ESPUser it will then get __init__ called on it, which might be
+        # unnecessary.
+        elif isinstance(userObj, (ESPUser, User, AnonymousUser)):
             self.__dict__ = userObj.__dict__
-            self.__olduser = userObj
             self._is_anonymous = userObj.is_anonymous()
 
         elif userObj is not None or len(args) > 0:
@@ -240,12 +254,6 @@ class ESPUser(User, AnonymousUser):
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
 
-    def getOld(self):
-        if not hasattr(self, "_ESPUser__olduser"):
-            self.__olduser = User()
-        self.__olduser.__dict__.update(self.__dict__)
-        return self.__olduser
-
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
@@ -277,15 +285,8 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
-    def __eq__(self, other):
-        """Extends equality to support User object == ESPUser object."""
-        if type(other) == User:
-            return self.getOld() == other or self.id == other.id
-        else:
-            return super(ESPUser, self).__eq__(other)
-
     def is_authenticated(self):
-        return self.getOld().is_authenticated()
+        return not self.is_anonymous()
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
@@ -550,12 +551,6 @@ class ESPUser(User, AnonymousUser):
         new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
-    def convertAvailability(self):
-        resources = Resource.objects.filter(user=self)
-        for res in resources:
-            self.addAvailableTime(Program.objects.all()[0], res.event)
-        resources.delete()
-
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
         
@@ -880,10 +875,6 @@ are a teacher of the class"""
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
-
-    @staticmethod
-    def isUserNameTaken(username):
-        return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
     def current_schoolyear(now=None):
@@ -1393,7 +1384,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     full_legal_name = models.CharField(max_length=128, blank=True, null=True)
-    university_email = models.EmailField(blank=True, null=True)
+    university_email = models.EmailField(blank=True, null=True, max_length=75)
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
@@ -1733,7 +1724,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    e_mail = models.EmailField('E-mail address', blank=True, null=True)
+    e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
     phone_day = PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
@@ -1748,14 +1739,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'users'
         db_table = 'users_contactinfo'
-
-    def _distance_from(self, zip):
-        try:
-            myZip = ZipCode.objects.get(zip_code = self.address_zip)
-            remoteZip = ZipCode.objects.get(zip_code = zip)
-            return myZip.distance(remoteZip)
-        except:
-            return -1
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
@@ -2652,14 +2635,14 @@ class GradeChangeRequest(TimeStampedModel):
 
     def get_admin_url(self):
         return urlresolvers.reverse("admin:%s_%s_change" %
-        (self._meta.app_label, self._meta.module_name), args=(self.id,))
+        (self._meta.app_label, self._meta.model_name), args=(self.id,))
 
 
     def __unicode__(self):
         return  "%s requests a grade change to %s" % (self.requesting_student, self.claimed_grade) + (" (Approved)" if self.approved else "")
         
 # We can't import these earlier because of circular stuff...
-from esp.users.models.forwarder import UserForwarder
+from esp.users.models.forwarder import UserForwarder # Don't delete, needed for app loading
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource

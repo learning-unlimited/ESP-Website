@@ -54,9 +54,6 @@ from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
-from south.models import MigrationHistory
-
-
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
@@ -298,7 +295,7 @@ class MessageRequest(models.Model):
     # I think we'll be okay, since nothing should block on it except other
     # instances of the same function (which should probably be locked out
     # anyway at a higher level).
-    @transaction.commit_on_success
+    @transaction.atomic
     def process(self, debug=False):
         """Process this request, creating TextOfEmail and EmailRequest objects.
 
@@ -527,30 +524,6 @@ class MessageVars(models.Model):
         
 
         return True
-            
-    @staticmethod
-    def getModuleVar(msgrequest, varstring, user):
-        """ This is used to get the module variable from a string representation. """
-
-        try:
-            module, varname = varstring.split('.')
-        except:
-            raise ESPError('Variable %s not a valid module.var name' % varstring, log=False)
-
-        try:
-            msgVar = MessageVars.objects.get(provider_name = module, messagerequest = msgrequest)
-        except:
-            #raise ESPError("Could not get the variable provider... %s is an invalid variable module." % module, log=False)
-            # instead of erroring, I'm just going to ignore it.
-            return '{{%s}}' % varstring
-    
-
-        result = msgVar.getVar(varname, user)
-
-        if result is None:
-            return '{{%s}}' % varstring
-        else:
-            return result
 
     def __unicode__(self):
         return "Message Variables for %s" % self.messagerequest

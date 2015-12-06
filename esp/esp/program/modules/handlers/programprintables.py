@@ -50,6 +50,8 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 
+from decimal import Decimal
+import json
 import collections
 
 class ProgramPrintables(ProgramModuleObj):
@@ -856,7 +858,7 @@ Volunteer schedule for %s:
 
         import csv
         from django.http import HttpResponse
-        response = HttpResponse(mimetype='text/csv')
+        response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
         writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:            
@@ -888,6 +890,24 @@ Volunteer schedule for %s:
     def get_student_schedules(request, students, prog, extra='', onsite=False):
         """ generate student schedules """
         context = {}
+
+        if extra:
+            file_type = extra.strip()
+        elif 'img_format' in request.GET:
+            file_type = request.GET['img_format']
+        else:
+            if onsite:
+                file_type = 'png'
+            else:
+                file_type = 'pdf'
+
+        if len(students) > 1 and file_type == 'png':
+            # Generating PNG schedules for a lot of students will cause
+            # `convert` to use a huge amount of memory and make the server sad.
+            # It also doesn't work, since we just return the first page of the
+            # PNG anyway.  So don't let people do that.
+            raise ESPError("Generating multi-page schedules in PNG format is "
+                           "not supported.")
 
         # to avoid a query per student, get all the classes and SRs upfront
         all_classes = ClassSection.objects.filter(
@@ -925,6 +945,20 @@ Volunteer schedule for %s:
             student.updateOnsite(request)
             # get list of valid classes
             classes = classes_by_student[student.id]
+
+            #get the student's last class on each day
+            last_classes = []
+            days = {}
+            for cls in classes:
+                date = cls.end_time_prefetchable().date().isocalendar()
+                if date in days:
+                    days[date].append(cls)
+                else:
+                    days[date]=[cls]
+
+            for day,day_classes in days.items():
+                last_classes.append(day_classes[-1])
+            last_classes.sort()
 
             if show_empty_blocks:
                 #   If you want to show empty blocks, start with a list of blocks instead
@@ -968,19 +1002,10 @@ Volunteer schedule for %s:
             student.has_paid = ( student.itemizedcosttotal == 0 )
             student.payment_info = True
             student.classes = classes
-
+            student.last_classes = last_classes
+            
         context['students'] = students
         context['program'] = prog
-
-        if extra:
-            file_type = extra.strip()
-        elif 'img_format' in request.GET:
-            file_type = request.GET['img_format']
-        else:
-            if onsite:
-                file_type = 'png'
-            else:
-                file_type = 'pdf'
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
@@ -1328,7 +1353,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from django.utils.encoding import smart_str
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_cvs = csv.writer(response)
 
         write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
@@ -1369,7 +1394,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get the list of all the sections, and all the times for this program.
@@ -1452,7 +1477,7 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
 
         # get first section of each class
@@ -1524,7 +1549,7 @@ Volunteer schedule for %s:
         import csv
         from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
-        response = HttpResponse(mimetype="text/csv")
+        response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
         
         data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
@@ -1536,4 +1561,4 @@ Volunteer schedule for %s:
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

@@ -81,9 +81,9 @@ def survey_view(request, tl, program, instance):
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
-    if request.REQUEST.has_key('survey_id'):
+    if request.GET.has_key('survey_id'):
         try:
-            s_id = int( request.REQUEST['survey_id'] )
+            s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
@@ -150,8 +150,8 @@ def get_survey_info(request, tl, program, instance):
     elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().select_related()
-        if request.REQUEST.has_key('teacher_id'):
-            t_id = int( request.REQUEST['teacher_id'] )
+        if request.GET.has_key('teacher_id'):
+            t_id = int( request.GET['teacher_id'] )
             teachers = ESPUser.objects.filter(id=t_id)
             if len(teachers) > 0:
                 user = teachers[0]
@@ -162,9 +162,9 @@ def get_survey_info(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
-    if request.REQUEST.has_key('survey_id'):
+    if request.GET.has_key('survey_id'):
         try:
-            s_id = int( request.REQUEST['survey_id'] )
+            s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
@@ -182,7 +182,7 @@ def display_survey(user, prog, surveys, request, tl, format):
     perclass_data = []
     
     def getByIdOrNone(model, key):
-        q = model.objects.filter(id = request.REQUEST.get(key, None))[:1]
+        q = model.objects.filter(id = request.GET.get(key, None))[:1]
         if q:
             return q[0]
         return None
@@ -190,7 +190,7 @@ def display_survey(user, prog, surveys, request, tl, format):
     sec = getByIdOrNone(ClassSection, 'classsection_id')
     cls = getByIdOrNone(ClassSubject, 'classsubject_id')
     
-    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and sec is None and cls is None:
+    if tl == 'manage' and not request.GET.has_key('teacher_id') and sec is None and cls is None:
         #   In the manage category, pack the data in as extra attributes to the surveys
         surveys = list(surveys)
         for s in surveys:
@@ -241,7 +241,7 @@ def _worksheet_write(worksheet, r, c, label="", style=None):
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
-    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and not request.REQUEST.has_key('classsection_id') and not request.REQUEST.has_key('classsubject_id'):
+    if tl == 'manage' and not request.GET.has_key('teacher_id') and not request.GET.has_key('classsection_id') and not request.GET.has_key('classsubject_id'):
         # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
         datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
         wb=xlwt.Workbook()
@@ -354,7 +354,7 @@ def survey_review_single(request, tl, program, instance):
     user = ESPUser(request.user)
     
     survey_response = None
-    ints = request.REQUEST.items()
+    ints = request.GET.items()
     if len(ints) == 1:
         srs = SurveyResponse.objects.filter(id=ints[0][0])
         if len(srs) == 1:
@@ -396,9 +396,9 @@ def top_classes(request, tl, program, instance):
     else:
         raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
     
-    if request.REQUEST.has_key('survey_id'):
+    if request.GET.has_key('survey_id'):
         try:
-            s_id = int( request.REQUEST['survey_id'] )
+            s_id = int( request.GET['survey_id'] )
             surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
@@ -424,16 +424,16 @@ def top_classes(request, tl, program, instance):
             rating_cut = float( rating_question.get_params()['number_of_ratings'] ) - 1
         except ValueError:
             pass
-        if request.REQUEST.has_key('rating_cut'):
+        if request.GET.has_key('rating_cut'):
             try:
-                rating_cut = float( request.REQUEST['rating_cut'] )
+                rating_cut = float( request.GET['rating_cut'] )
             except ValueError:
                 pass
             
         num_cut = 1
-        if request.REQUEST.has_key('num_cut'):
+        if request.GET.has_key('num_cut'):
             try:
-                num_cut = int( request.REQUEST['num_cut'] )
+                num_cut = int( request.GET['num_cut'] )
             except ValueError:
                 pass
         

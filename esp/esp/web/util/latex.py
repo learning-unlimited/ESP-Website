@@ -123,7 +123,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
-        return HttpResponse(texcode, mimetype='text/plain')
+        return HttpResponse(texcode, content_type='text/plain')
 
     # write to the LaTeX file
     with open(file_base+TEX_EXT, 'w') as texfile:
@@ -200,7 +200,7 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     if type=='log':
         new_contents = tex_log
 
-    return HttpResponse(new_contents, mimetype=mime)
+    return HttpResponse(new_contents, content_type=mime)
 
     
     

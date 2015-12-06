@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse
-from django.utils import simplejson
+import json
 from django.db.models.query import QuerySet
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
@@ -55,7 +55,7 @@ def ajax_autocomplete(request):
         for item in output:
             output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
         
-        content = simplejson.dumps({'result':output2})
+        content = json.dumps({'result':output2})
 
     return HttpResponse(content,
-                        mimetype = 'javascript/javascript')
+                        content_type = 'javascript/javascript')

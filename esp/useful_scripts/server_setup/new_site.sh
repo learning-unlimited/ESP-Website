@@ -207,6 +207,10 @@ else
 fi
 echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
 
+SECRET_KEY=`$CURDIR/random_password.sh`
+echo "Generated random secret key"
+echo "SECRET_KEY=\"$SECRET_KEY\"" >> $BASEDIR/.espsettings
+
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
@@ -264,6 +268,7 @@ ADMINS = (
     ('LU Web group','serverlog@learningu.org'),
 )
 CACHE_PREFIX = "${SITENAME}ESP"
+SECRET_KEY = '$SECRET_KEY'
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
@@ -297,8 +302,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = False
-DISPLAYSQL = False
-TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
 USE_PROFILER = False
@@ -307,7 +310,6 @@ USE_PROFILER = False
 DEFAULT_CACHE_TIMEOUT = 120
 DATABASE_ENGINE = 'postgresql_psycopg2'
 #DATABASE_ENGINE = 'esp.db.prepared'
-SOUTH_DATABASE_ADAPTERS = {'default': 'south.db.postgresql_psycopg2'}
 DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
@@ -353,8 +355,8 @@ then
     echo "$DBNAME database.  Please follow their directions."
 
     cd $BASEDIR/esp/esp
-    ./manage.py syncdb
     ./manage.py migrate
+    ./manage.py createsuperuser
     cd $CURDIR
     
     #   Set initial Site (used in password recovery e-mail)

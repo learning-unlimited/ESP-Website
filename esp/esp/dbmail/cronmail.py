@@ -37,7 +37,6 @@ import time
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
 from django.db.models.query import Q
-from django.db import transaction
 from django.template.loader import render_to_string
 
 from django.conf import settings
@@ -46,7 +45,6 @@ from django.conf import settings
 _ONE_WEEK = timedelta(weeks=1)
 
 
-@transaction.autocommit
 def process_messages(debug=False):
     """Go through all unprocessed messages and process them.
     
@@ -76,7 +74,8 @@ def process_messages(debug=False):
         message.process(debug=debug)
     return messages
 
-@transaction.autocommit
+# Deliberately uses transaction autocommitting -- we don't need this to be
+# atomic.
 def send_email_requests(debug=False):
     """Go through all email requests that aren't sent and send them.
     

@@ -1,7 +1,7 @@
 from django import forms
 from django.forms.models import fields_for_model
-from django.db.models.loading import get_models
-from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
+from django.apps import apps
+from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.utils.forms import DummyField
 
@@ -60,7 +60,7 @@ class CustomFormsCache:
         if self.loaded:
             return
             
-        for model in get_models():
+        for model in apps.get_models():
             if CustomFormsLinkModel in model.__bases__:
                 if not hasattr(model, 'link_fields_list'):
                     # only_fkey model

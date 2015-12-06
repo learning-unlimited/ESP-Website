@@ -243,7 +243,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         if 'error_type' not in context:
             try:
-                with transaction.commit_on_success():
+                with transaction.atomic():
                     # Save a record of the charge if we can uniquely identify the user/program.
                     # If this causes an error, the user will get a 500 error
                     # page, and the card will NOT be charged.
@@ -301,4 +301,4 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

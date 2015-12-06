@@ -99,7 +99,8 @@ class PrettyErrorEmailMiddleware(object):
             message = "%s\n\n%s" % (self._get_traceback(exc_info), request_repr)
 
             # We have to register a new pprint function.
-            defaultfilters.register.filter(safe_filter(defaultfilters.pprint))
+            safe_pprint = safe_filter(defaultfilters.pprint)
+            defaultfilters.register.filter(safe_pprint, is_safe=safe_pprint.is_safe)
 
             debug_response = debug.technical_500_response(request, *exc_info)
 

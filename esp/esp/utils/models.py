@@ -33,16 +33,10 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
-from django.template.loaders.cached import Loader as CachedLoader
-from django.template.loader import find_template
 import reversion
 
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
-
-## aseering 11/29/2011
-## HACK to generate a warning on deferred field evaluation
-from esp.utils import deferred_notifier
 
 """ A template override model that stores the contents of a template in the database. """
 class TemplateOverride(models.Model):
@@ -67,15 +61,6 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
-
-        #   Reset all Django template loaders
-        #   (our own template loader will be reset through the caching API)
-        from django.template.loader import template_source_loaders
-        from django.template.loaders.cached import Loader as cached_loader
-        if isinstance(template_source_loaders, list):
-            for tloader in filter(lambda x: isinstance(x, cached_loader), template_source_loaders):
-                tloader.reset()
-
         super(TemplateOverride, self).save(*args, **kwargs)
 
 class Printer(models.Model):

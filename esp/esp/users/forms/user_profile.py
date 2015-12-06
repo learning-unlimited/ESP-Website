@@ -4,12 +4,11 @@ from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestricte
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import K12School, StudentInfo
-from esp.utils.defaultclass import defaultclass
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
-import simplejson as json
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+import json
+from localflavor.us.forms import USPhoneNumberField
 
 _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
 
@@ -459,7 +458,6 @@ GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
     """ Form for student profiles """
-StudentProfileForm = defaultclass(StudentProfileForm)
 
 class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """

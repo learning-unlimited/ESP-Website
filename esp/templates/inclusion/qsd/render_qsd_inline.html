@@ -3,9 +3,9 @@
 <div class="qsd_bits hidden">
     <div class="qsd_header qsd_bits hidden" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
         {% if qsdrec.id %}
-            This is quasi-static content.  Click here to edit the text; click outside the box to save changes.
+            This is editable text.  Click here to edit the text; click outside the box to save changes.
         {% else %}
-            This is a placeholder for quasi-static content that has not yet been added.  Click here to edit the text; click outside the box to save changes.
+            This is a placeholder for editable text that has not yet been added.  Click here to edit the text; click outside the box to save changes.
         {% endif %}
     </div>
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">

@@ -63,7 +63,7 @@ class VolunteerManage(ProgramModuleObj):
         context = {}
         
         if extra == 'csv':
-            response = HttpResponse(mimetype="text/csv")
+            response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
             write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
@@ -97,4 +97,4 @@ class VolunteerManage(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

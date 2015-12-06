@@ -13,6 +13,14 @@
    This probably means we messed up. Please email us at
      <pre>{{ DEFAULT_EMAIL_ADDRESSES.support }}</pre>
    explaining to us how you got this message, and we'll try to fix it.
+
+   {% if request.sentry %}
+   <br />
+   <br />
+   Please include the following error ID:
+     <pre>{{ request.sentry.id }}</pre>
+   {% endif %}
+
    <br />
    <br />
    <br />

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.handlers import *
+from esp.program.modules.handlers import * # Needed for app loading, don't delete
 from django.db.models import Q
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
@@ -52,6 +52,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     
     #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
+    global_defaults = {'seq': 0, 'required': False}
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
         qs = model.objects.filter(**query_kwargs)
@@ -62,7 +63,11 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
                 datum.pop('main_call')
             if 'aux_calls' in datum:
                 datum.pop('aux_calls')
-            query_kwargs['defaults'] = datum            
+            #   Ensure that all of the required fields are present when calling get_or_create
+            new_obj_defaults = global_defaults.copy()
+            new_obj_defaults.update(datum)
+            query_kwargs['defaults'] = new_obj_defaults
+            
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:

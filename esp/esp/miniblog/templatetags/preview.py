@@ -28,7 +28,7 @@ class MiniblogNode(template.Node):
         try:
             user_obj = template.resolve_variable(self.user, context)
         except template.VariableDoesNotExist:
-            if self.user == "AnonymousUser" or self.user == "None":
+            if self.user == "AnonymousUser":
                 user_obj = AnonymousUser()
             else:
                 raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user

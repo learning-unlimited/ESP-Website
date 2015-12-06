@@ -43,10 +43,10 @@ from django.db import models
 from django.db.models.query import Q
 from django.db.models import signals, Sum
 from django.db.models.manager import Manager
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 
@@ -211,13 +211,13 @@ class ClassManager(Manager):
             classes = classes.filter(sections__meeting_times=ts)
 
         classes = classes.annotate(_num_students=Sum('sections__enrolled_students'))
+        classes = classes.prefetch_related('teachers')
         
         #   Retrieve the content type for finding class documents (generic relation)
         content_type_id = ContentType.objects.get_for_model(ClassSubject).id
         
-        select = SortedDict([('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
-                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
-                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
+        select = OrderedDict([('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
+                             ('_index_qsd', 'SELECT COUNT(*) FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ content_type_id,
@@ -276,23 +276,13 @@ class ClassManager(Manager):
         for s in sections:
             sections_by_parent_id[s.parent_class_id].append(s)
         
-        # We got classes.  Now get teachers...
-        if program != None:
-            teachers = ESPUser.objects.filter(classsubject__parent_program=program).distinct()
-        else:
-            teachers = ESPUser.objects.filter(classsubject__isnull=False)
-
-        teachers_by_id = {}
-        for t in teachers: 
-            teachers_by_id[t.id] = t
-
         # Now, to combine all of the above
 
         if len(classes) >= 1:
             p = Program.objects.get(id=classes[0].parent_program_id)
             
         for c in classes:
-            c._teachers = [teachers_by_id[int(x)] for x in c.teacher_ids.split(',')] if c.teacher_ids != '' else []
+            c._teachers = list(c.teachers.all())
             c._teachers.sort(cmp=lambda t1, t2: cmp(t1.last_name, t2.last_name))
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
@@ -369,30 +359,21 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         enrolled_type = RegistrationType.get_map()['Enrolled']
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
-                             ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
+        select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
         
         select_params = [ enrolled_type.id,
                           now,
                           now,
                          ]
 
+        sections = queryset.prefetch_related('meeting_times')
         sections = queryset.extra(select=select, select_params=select_params)
         sections = list(sections)
-        section_ids = map(lambda x: x.id, sections)
-
-        # Now, go get some events...
-
-        events = Event.objects.filter(meeting_times__in=section_ids).distinct()
-
-        events_by_id = {}
-        for e in events:
-            events_by_id[e.id] = e
             
         # Now, to combine all of the above:
 
         for s in sections:
-            s._events = [events_by_id[int(x)] for x in s.event_ids.split(',')] if s.event_ids != '' else []
+            s._events = list(s.meeting_times.all())
             s._events.sort(cmp=lambda e1, e2: cmp(e1.start, e2.start))
 
         return sections
@@ -523,8 +504,7 @@ class ClassSection(models.Model):
             rr.delete()
     
     def classroomassignments(self):
-        cls_restype = ResourceType.get_or_create('Classroom')
-        return self.getResourceAssignments().filter(target=self, resource__res_type=cls_restype)
+        return self.getResourceAssignments().filter(target=self, resource__res_type__name="Classroom")
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
@@ -557,24 +537,6 @@ class ClassSection(models.Model):
     def emailcode(self):
         return self.parent_class.emailcode() + u's' + unicode(self.index())
    
-    def starts_soon(self):
-        #   Return true if the class's start time is less than 50 minutes after the current time
-        #   and less than 10 minutes before the current time.
-        first_block = self.start_time()
-        if first_block is None:
-            return False
-        else:
-            st = first_block.start
-            
-        if st is None:
-            return False
-        else:
-            td = time.time() - time.mktime(st.timetuple())
-            if td < 600 and td > -3000:
-                return True
-            else:
-                return False
-            
     def already_passed(self):
         start_time = self.start_time()
         if start_time is None:
@@ -711,6 +673,25 @@ class ClassSection(models.Model):
         if availability:
             for room in current_rooms:
                 self.assign_room(room)
+
+    def end_time(self):
+        """Returns the meeting time for this section with the latest end time"""
+        all_times = self.meeting_times.order_by("-end")
+        if all_times:
+            return all_times[0]
+        else:
+            return None
+
+    def end_time_prefetchable(self):
+        """Like self.end_time().end, but can be prefetched.
+
+        See self.start_time_prefetchable().
+        """
+        mts = self.meeting_times.all()
+        if mts:
+            return max(mt.end for mt in mts)
+        else:
+            return None
     
     def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
@@ -766,10 +747,6 @@ class ClassSection(models.Model):
             return base_list
 
         teachers = self.parent_class.get_teachers()
-        try:
-            num_teachers = teachers.count()
-        except:
-            num_teachers = len(teachers)
 
         timeslot_list = []
         for t in teachers:
@@ -1127,13 +1104,6 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def room_capacity(self):
-        ir = self.initial_rooms()
-        if ir.count() == 0:
-            return 0
-        else:
-            return reduce(lambda x,y: x+y, [r.num_students for r in ir])
-            
     def isFull(self, ignore_changes=False):
         if (self.num_students() == self._get_capacity(ignore_changes) == 0):
             return False
@@ -1347,7 +1317,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     purchase_requests = models.TextField(blank=True, null=True)
     custom_form_data = JSONField(blank=True, null=True)
     
-    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
     
     objects = ClassManager()
 
@@ -1553,12 +1523,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def max_students(self):
         return self.sections.count()*self.class_size_max
 
-    def fraction_full(self):
-        try:
-            return (self.num_students()*1.0)/self.max_students()
-        except ZeroDivisionError:
-            return 1.0
-
     def emailcode(self):
         """ Return the emailcode for this class.
 
@@ -1569,14 +1533,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def url(self):
         return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
 
-    def got_qsd(self):
-        """ Returns if this class has any associated QSD. """
-        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url()).exists()
-
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
         if hasattr(self, "_index_qsd"):
-            return (self._index_qsd != '')
+            return (self._index_qsd != 0)
         
         return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
 
@@ -1606,10 +1566,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             
         return self._studentapps_count
         
-        
-    def cache_time(self):
-        return 99999
-    
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
@@ -1915,19 +1871,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         return result
 
     @staticmethod
-    def catalog_sort(one, other):
-        cmp1 = cmp(one.category.category, other.category.category)
-        if cmp1 != 0:
-            return cmp1
-        cmp2 = ClassSubject.class_sort_by_timeblock(one, other)
-        if cmp2 != 0:
-            return cmp2
-        cmp3 = ClassSubject.class_sort_by_title(one, other)
-        if cmp3 != 0:
-            return cmp3
-        return cmp(one, other)
-    
-    @staticmethod
     def class_sort_by_category(one, other):
         return cmp(one.category.category, other.category.category)
         
@@ -1959,16 +1902,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     @staticmethod
     def class_sort_noop(one, other):
         return 0
-
-    @staticmethod
-    def sort_muxer(sorters):
-        def sort_fn(one, other):
-            for fn in sorters:
-                val = fn(one, other)
-                if val != 0:
-                    return val
-            return 0
-        return sort_fn
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
@@ -2079,17 +2012,6 @@ class ClassCategories(models.Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.category, self.symbol)
         
-        
-    @staticmethod
-    def category_string(letter):
-        
-        results = ClassCategories.objects.filter(category__startswith = letter)
-        
-        if results.count() == 1:
-            return results[0].category
-        else:
-            return None
-
     class Admin:
         pass
 

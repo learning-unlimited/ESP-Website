@@ -37,18 +37,19 @@ from collections import defaultdict, OrderedDict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
-import simplejson as json
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.contenttypes import generic
-from django.contrib.localflavor.us.models import PhoneNumberField
+from django.contrib.contenttypes.fields import GenericRelation
+from localflavor.us.models import PhoneNumberField
 from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.utils import timezone
 
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
@@ -61,19 +62,6 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
-
-
-#   A function to lazily import models that is occasionally needed for cache dependencies.
-def get_model(module_name, model_name):
-    parent_module_name = '.'.join(module_name.split('.')[:-1])
-    module = __import__(module_name, (), (), parent_module_name)
-    try:
-        module_class = getattr(module, model_name)
-        if issubclass(module_class, models.Model):
-            return module_class
-    except:
-        pass
-    return None
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -100,7 +88,7 @@ class ProgramModule(models.Model):
     seq = models.IntegerField()
     
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField()
+    required = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'program'
@@ -255,10 +243,10 @@ class Program(models.Model, CustomFormsLinkModel):
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.EmailField() # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
-    program_size_max = models.IntegerField(null=True)
+    director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
+    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
+    program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
@@ -276,7 +264,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     'Add flag types in <a href="%s">the admin panel</a>.',
                     urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
 
-    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     class Meta:
         app_label = 'program'
@@ -757,13 +745,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return ans
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
-        
-    def addClassroom(self, classroom_form):
-        from esp.program.modules.forms.resources import ClassroomForm
-        
-        #   Parse classroom form to create classroom and associated resources, group them,
-        #   and save them.
-        assert False, 'todo'
         
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
@@ -1306,7 +1287,7 @@ class RegistrationProfile(models.Model):
     teacher_info = AjaxForeignKey(TeacherInfo, blank=True, null=True, related_name='as_teacher')
     guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
-    last_ts = models.DateTimeField(default=datetime.now())
+    last_ts = models.DateTimeField(default=timezone.now)
     emailverifycode = models.TextField(blank=True, null=True)
     email_verified  = models.BooleanField(default=False, blank=True)
     most_recent_profile = models.BooleanField(default=False)
@@ -1354,12 +1335,6 @@ class RegistrationProfile(models.Model):
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
-
-    def confirmStudentReg(self, user):
-        """ Confirm the specified user's registration in the program """
-        records = Record.objects.filter(user=self.user, event="reg_confirmed")
-        if records.count() == 0:
-            record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
 
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1424,9 +1399,6 @@ class RegistrationProfile(models.Model):
     #   Note: these functions return ClassSections, not ClassSubjects.
     def preregistered_classes(self,verbs=None):
         return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
-    
-    def registered_classes(self):
-        return ESPUser(self.user).getEnrolledSections(program=self.program)
 
 
 class TeacherBio(models.Model):
@@ -1855,10 +1827,6 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 
         return cls.objects.filter( reduce(operator.or_, q_list) )
            
-def schedule_constraint_test(prog):
-    sc = ScheduleConstraint(program=prog)
-    return True
-    
 
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
@@ -1879,13 +1847,13 @@ class VolunteerRequest(models.Model):
 
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
-    confirmed = models.BooleanField()
+    confirmed = models.BooleanField(default=False)
 
     #   Fill out this if you're logged in...
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     
     #   ...or this if you haven't.
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True, max_length=75)
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
     
@@ -1990,7 +1958,8 @@ class StudentSubjectInterest(ExpirableModel):
 
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
-    
+
+# Needed for app loading, don't delete
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
@@ -1998,6 +1967,8 @@ from esp.program.models.flags import *
 def install():
     from esp.program.models.class_ import install as install_class
     print "Installing esp.program initial data..."
+    if not RegistrationType.objects.exists():
+        RegistrationType.objects.create(name='Enrolled', category='student')
     install_class()
 
 # The following are only so that we can refer to them in caching
