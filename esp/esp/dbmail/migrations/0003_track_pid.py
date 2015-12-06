@@ -1,44 +1,21 @@
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
 
-_TWO_WEEKS = datetime.timedelta(weeks=2)
-
-
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        """Add the created_at field to MessageRequest and TextOfEmail.
 
-        For the already existing objects, set the value to be equal to two
-        weeks ago. Since cronmail will now ignore requests that are over a week
-        old, this is a way of expiring old, unsent messages, so that the recent
-        improvements to dbmail do not cause out-of-date emails to be sent.
-        """
-        now = datetime.datetime.now()
-        two_weeks_ago = now - _TWO_WEEKS
-
-        # Adding field 'MessageRequest.created_at'
-        db.add_column('dbmail_messagerequest', 'created_at',
-                      self.gf('django.db.models.fields.DateTimeField')(default=two_weeks_ago, auto_now_add=False, null=False, blank=False),
-                      keep_default=False)
-
-        # Adding field 'TextOfEmail.created_at'
-        db.add_column('dbmail_textofemail', 'created_at',
-                      self.gf('django.db.models.fields.DateTimeField')(default=two_weeks_ago, auto_now_add=False, null=False, blank=False),
-                      keep_default=False)
-
+        # Adding field 'MessageRequest.processed_pid'
+        db.add_column('dbmail_messagerequest', 'processed_pid', self.gf('django.db.models.fields.IntegerField')(null=True), keep_default=False)
 
     def backwards(self, orm):
-        # Deleting field 'MessageRequest.created_at'
-        db.delete_column('dbmail_messagerequest', 'created_at')
 
-        # Deleting field 'TextOfEmail.created_at'
-        db.delete_column('dbmail_textofemail', 'created_at')
-
+        # Deleting field 'MessageRequest.processed_pid'
+        db.delete_column('dbmail_messagerequest', 'processed_pid')
 
     models = {
         'auth.group': {
@@ -98,16 +75,16 @@ class Migration(SchemaMigration):
         },
         'dbmail.messagerequest': {
             'Meta': {'object_name': 'MessageRequest'},
-            'created_at': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now_add': 'False', 'null': 'False', 'blank': 'False'}),
             'creator': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
+            'email_all': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'msgtext': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'priority_level': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'processed': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'processed_by': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'db_index': 'True'}),
+            'processed_pid': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'recipients': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.PersistentQueryFilter']"}),
             'sender': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'sendto_fn_name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128'}),
             'special_headers': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'subject': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
         },
@@ -126,15 +103,16 @@ class Migration(SchemaMigration):
         },
         'dbmail.textofemail': {
             'Meta': {'object_name': 'TextOfEmail'},
-            'created_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'False', 'null': 'False', 'blank': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'msgtext': ('django.db.models.fields.TextField', [], {}),
             'send_from': ('django.db.models.fields.CharField', [], {'max_length': '1024'}),
             'send_to': ('django.db.models.fields.CharField', [], {'max_length': '1024'}),
             'sent': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'sent_by': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'db_index': 'True'}),
-            'subject': ('django.db.models.fields.TextField', [], {}),
-            'tries': ('django.db.models.fields.IntegerField', [], {'default': '0'})
+            'subject': ('django.db.models.fields.TextField', [], {})
+        },
+        'users.espuser': {
+            'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
         },
         'users.persistentqueryfilter': {
             'Meta': {'object_name': 'PersistentQueryFilter'},

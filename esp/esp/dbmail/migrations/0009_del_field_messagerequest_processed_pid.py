@@ -5,40 +5,14 @@ from south.v2 import SchemaMigration
 from django.db import models
 
 
-_TWO_WEEKS = datetime.timedelta(weeks=2)
-
-
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        """Add the created_at field to MessageRequest and TextOfEmail.
-
-        For the already existing objects, set the value to be equal to two
-        weeks ago. Since cronmail will now ignore requests that are over a week
-        old, this is a way of expiring old, unsent messages, so that the recent
-        improvements to dbmail do not cause out-of-date emails to be sent.
-        """
-        now = datetime.datetime.now()
-        two_weeks_ago = now - _TWO_WEEKS
-
-        # Adding field 'MessageRequest.created_at'
-        db.add_column('dbmail_messagerequest', 'created_at',
-                      self.gf('django.db.models.fields.DateTimeField')(default=two_weeks_ago, auto_now_add=False, null=False, blank=False),
-                      keep_default=False)
-
-        # Adding field 'TextOfEmail.created_at'
-        db.add_column('dbmail_textofemail', 'created_at',
-                      self.gf('django.db.models.fields.DateTimeField')(default=two_weeks_ago, auto_now_add=False, null=False, blank=False),
-                      keep_default=False)
-
+        # Deleting field 'MessageRequest.processed_pid'
+        db.delete_column('dbmail_messagerequest', 'processed_pid')
 
     def backwards(self, orm):
-        # Deleting field 'MessageRequest.created_at'
-        db.delete_column('dbmail_messagerequest', 'created_at')
-
-        # Deleting field 'TextOfEmail.created_at'
-        db.delete_column('dbmail_textofemail', 'created_at')
-
+        pass  # This field was never used / never existed in main.
 
     models = {
         'auth.group': {
