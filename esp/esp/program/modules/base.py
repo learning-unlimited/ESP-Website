@@ -439,20 +439,28 @@ def not_logged_in(request):
     return (not request.user or not request.user.is_authenticated() or not request.user.id)
 
 def usercheck_usetl(method):
+    """
+    Check that the user has the correct role based on tl.
+    Will error if used on json or volunteer modules.
+    """
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/nota'+tl+'.html'
+        error_map = {'learn': 'notastudent.html',
+                     'teach': 'notateacher.html',
+                     'manage': 'notanadmin.html',
+                     'onsite': 'notonsite.html'
+                     }
+        errorpage = 'errors/program/' + error_map[tl]
 
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if ((not request.user.isAdmin(moduleObj.program))
-             and (
-                 (tl == 'learn' and not request.user.isStudent())
-                 or (tl == 'teach' and not request.user.isTeacher())
-                 or (tl == 'manage'))):
+        if request.user.isAdmin(moduleObj.program) or \
+           (tl == 'learn' and request.user.isStudent()) or \
+           (tl == 'teach' and request.user.isTeacher()) or \
+           (tl == 'onsite' and request.user.isOnsite()):
+            return method(moduleObj, request, tl, *args, **kwargs)
+        else:
             return render_to_response(errorpage, request, {})
-
-        return method(moduleObj, request, tl, *args, **kwargs)
 
     return _checkUser
 
