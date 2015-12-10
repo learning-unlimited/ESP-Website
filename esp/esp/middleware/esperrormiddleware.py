@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import json
 import logging
+logger = logging.getLogger(__name__)
 import sys
 
 from django.conf import settings
@@ -183,7 +184,7 @@ class ESPErrorMiddleware(object):
             return None
 
         exc_info = sys.exc_info()
-        logging.log(log_level, exc_info[1], exc_info=exc_info)
+        logger.log(log_level, exc_info[1], exc_info=exc_info)
         context = {'error': exc_info[1]}
         context_instance = self._get_context(request)
         # TODO(benkraft): merge our various error templates (403, 500, error).

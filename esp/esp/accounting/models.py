@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.users.models import ESPUser
 from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
@@ -289,7 +292,7 @@ class Transfer(models.Model):
 
 def install():
     """Set up the default accounts."""
-    print "Installing esp.accounting initial data..."
+    logger.info("Installing esp.accounting initial data...")
     from esp.accounting.controllers import GlobalAccountingController
     gac = GlobalAccountingController()
     gac.setup_accounts()

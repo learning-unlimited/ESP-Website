@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models
 from datetime import datetime, timedelta
 from argcache import cache_function
@@ -196,7 +199,7 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    print "Installing esp.cal initial data..."
+    logger.info("Installing esp.cal initial data...")
     for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
         if not EventType.objects.filter(description=x).exists():
             EventType.objects.create(description=x)

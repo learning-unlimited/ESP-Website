@@ -1,4 +1,8 @@
 "Memcached cache backend"
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.core.cache.backends.base import BaseCache
 try:
     #   Test whether we have pylibmc, and if it works, use the real pylibmc backend;
@@ -46,7 +50,7 @@ class CacheClass(BaseCache):
             # backends can apply zlib compression in addition to pickling.
             data_size = len(pickle.dumps(value))
             if data_size > CACHE_WARNING_SIZE:
-                print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
+                logger.warning("Data size for key '%s' is dangerously large: %d bytes", key, data_size)
 
     @try_multi(8)
     def add(self, key, value, timeout=None, version=None):

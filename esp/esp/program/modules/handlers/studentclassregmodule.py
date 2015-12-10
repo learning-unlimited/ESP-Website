@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 """
 
 import json
+import logging
+logger = logging.getLogger(__name__)
 import sys
 from datetime import datetime
 from decimal import Decimal
@@ -461,14 +463,9 @@ class StudentClassRegModule(ProgramModuleObj):
                 except:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
-        except ESPError_NoLog, inst:
-            print inst
-            if inst[0]:
-                msg = inst[0]
-                raise AjaxError(msg)
-            else:
-                ec = sys.exc_info()[1]
-                raise AjaxError(ec[1])
+        except ESPError_NoLog as inst:
+            # TODO(benkraft): we shouldn't need to do this.  find a better way.
+            raise AjaxError(inst)
 
     @aux_call
     @needs_student

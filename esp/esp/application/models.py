@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models, transaction
 from django.apps import apps
 from django.template import Template, Context
@@ -279,9 +282,7 @@ class FormstackStudentProgramAppManager(models.Manager):
                     app = self.create_from_submission(submission, settings)
                     apps.append(app)
                 except Exception as e:
-                    # catch and print exceptions
-                    import traceback
-                    print traceback.format_exc()
+                    logger.exception("Failed to get submissions: %s", e)
 
         return apps
 

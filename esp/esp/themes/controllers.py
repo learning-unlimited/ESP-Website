@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import logging
+logger = logging.getLogger(__name__)
 import os
 import os.path
 import shutil
@@ -183,7 +185,7 @@ class ThemeController(object):
         for filename in self.get_less_names(theme_name, theme_only=theme_only):
             local_results = {}
 
-            if themes_settings.THEME_DEBUG: print 'find_less_variables: including file %s' % filename
+            logger.debug('find_less_variables: including file %s', filename)
 
             #   Read less file
             less_file = open(filename)
@@ -213,11 +215,13 @@ class ThemeController(object):
         less_data = ''
         for filename in self.get_less_names(theme_name):
             less_file = open(filename)
-            if themes_settings.THEME_DEBUG: print 'Including LESS source %s' % filename
+            logger.debug('Including LESS source %s', filename)
             less_data += '\n' + less_file.read()
             less_file.close()
 
         if themes_settings.THEME_DEBUG:
+            # TODO(benkraft): should this and its friend below get removed now?
+            # I think they're the last users of THEME_DEBUG.
             tf1 = open('debug_1.less', 'w')
             tf1.write(less_data)
             tf1.close()
@@ -236,7 +240,7 @@ class ThemeController(object):
             tf1.close()
 
         less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
-        if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
+        logger.debug('LESS search path is "%s"', less_search_path)
 
         #   Compile to CSS
         lessc_args = ['lessc', '--include-path="%s"' % less_search_path, '-']
@@ -249,7 +253,7 @@ class ThemeController(object):
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
-        if themes_settings.THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+        logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
 
     def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
         """
@@ -307,10 +311,10 @@ class ThemeController(object):
             theme_name = self.get_current_theme()
 
         #   Remove template overrides matching the theme name
-        if themes_settings.THEME_DEBUG: print 'Clearing theme: %s' % theme_name
+        logger.debug('Clearing theme: %s', theme_name)
         for template_name in self.get_template_names(theme_name):
             TemplateOverride.objects.filter(name=template_name).delete()
-            if themes_settings.THEME_DEBUG: print '-- Removed template override: %s' % template_name
+            logger.debug('-- Removed template override: %s', template_name)
 
         #   Clear template override cache
         TemplateOverrideLoader.get_template_hash.delete_all()
@@ -414,7 +418,7 @@ class ThemeController(object):
     def load_theme(self, theme_name, **kwargs):
 
         #   Create template overrides using data provided (our models handle versioning)
-        if themes_settings.THEME_DEBUG: print 'Loading theme: %s' % theme_name
+        logger.debug('Loading theme: %s', theme_name)
         for template_name in self.get_template_names(theme_name):
             #   Read default template override contents provided by theme
             to = TemplateOverride(name=template_name)
@@ -427,7 +431,7 @@ class ThemeController(object):
                 to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
 
             to.save()
-            if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
+            logger.debug('-- Created template override: %s', template_name)
 
         #   Clear template override cache
         TemplateOverrideLoader.get_template_hash.delete_all()
@@ -458,15 +462,15 @@ class ThemeController(object):
         varnish.purge_all()
 
     def customize_theme(self, vars):
-        if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
+        logger.debug('Customizing theme with variables: %s', vars)
         self.compile_css(self.get_current_theme(), vars, self.css_filename)
         vars_available = self.find_less_variables(self.get_current_theme(), flat=True)
         vars_diff = {}
         for key in vars:
             if key in vars_available and len(vars[key].strip()) > 0 and vars[key] != vars_available[key]:
-                if themes_settings.THEME_DEBUG: print 'Customizing: %s -> %s' % (key, vars[key])
+                logger.debug('Customizing: %s -> %s', key, vars[key])
                 vars_diff[key] = vars[key]
-        if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
+        logger.debug('Customized %d variables for theme %s', len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
 
         #   Clear the Varnish cache
@@ -520,7 +524,8 @@ class ThemeController(object):
 
         self.set_current_customization(save_name)
 
-        if themes_settings.THEME_DEBUG: print (vars, palette)
+        logger.debug("vars: %s", vars)
+        logger.debug("palette: %s", palette)
         return (vars, palette)
 
     def delete_customizations(self, save_name):

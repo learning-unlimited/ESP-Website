@@ -10,6 +10,10 @@ sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
 
+import logging
+# Make sure we end up in our logger even though this file is outside esp
+logger = logging.getLogger('esp.mailgate')
+
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
@@ -126,6 +130,7 @@ except Exception as e:
     if DEBUG:
         raise
     else:
+        logger.warning("Couldn't find user '%s'", user)
         print """
 ESP MAIL SERVER
 ===============
