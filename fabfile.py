@@ -89,10 +89,10 @@ def setup():
 
     print "***** "
     print "***** Creating the encrypted partition for data storage."
-    print "***** Please choose a passphrase and type it at the three prompts."
+    print "***** Please choose a passphrase and type it at the prompts."
     print "***** "
 
-    sudo("cryptsetup luksFormat /dev/mapper/%s" % env.encvg)
+    sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
     sudo("mkfs.ext4 /dev/mapper/encrypted")
     sudo("mkdir -p /mnt/encrypted")
