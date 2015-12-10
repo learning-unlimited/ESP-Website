@@ -349,8 +349,5 @@ class Answer(models.Model):
 
     answer = property(_answer_getter, _answer_setter)
 
-    class Admin:
-        pass
-
     def __unicode__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

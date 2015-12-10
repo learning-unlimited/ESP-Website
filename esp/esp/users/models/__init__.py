@@ -1815,9 +1815,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
-    class Admin:
-        search_fields = ['first_name','last_name','user__username']
-
 
 class K12SchoolManager(models.Manager):
     def other(self):

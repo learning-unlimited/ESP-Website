@@ -1895,9 +1895,6 @@ class ClassImplication(models.Model):
         app_label = 'program'
         db_table = 'program_classimplications'
 
-    class Admin:
-        pass
-
     def __unicode__(self):
         return u'Implications for %s' % self.cls
 
@@ -1965,9 +1962,6 @@ class ClassCategories(models.Model):
 
     def __unicode__(self):
         return u'%s (%s)' % (self.category, self.symbol)
-
-    class Admin:
-        pass
 
 
 @cache_function
