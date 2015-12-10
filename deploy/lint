@@ -5,7 +5,7 @@ pushd "$(dirname "$0")" > /dev/null
 SCRIPTDIR="$(pwd -P)"
 popd > /dev/null
 
-BASEDIR="$(dirname "$SCRIPTDIR")" # /esp
+BASEDIR="$(dirname "$SCRIPTDIR")"
 
 echo "Running lint checks..."
 
@@ -24,6 +24,8 @@ echo "Running lint checks..."
 #   W191: indentation contains tabs
 #   W291: whitespace at end of line
 #   W293: whitespace on blank line
-flake8 --ignore "E,F,W" --select "F82,F831,W601,W603,W604" "$BASEDIR"
+# Ignore /env, since that's where we by default put the virtualenv, which has
+# lots of code that's not ours.  Also exclude .git, for speed.
+flake8 --ignore "E,F,W" --select "F82,F831,W601,W603,W604" "$BASEDIR" --exclude=.git,env
 
 echo "...success!"
