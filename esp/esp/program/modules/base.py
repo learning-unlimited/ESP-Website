@@ -245,7 +245,8 @@ class ProgramModuleObj(models.Model):
         # module extension in some more reasonable fashion, or handle it better
         # if we don't.
         if ModuleObj.module_ext:
-            ModuleObj.module_ext.objects.get_or_create(module=ModuleObj)
+            ModuleObj.module_ext.objects.get_or_create(module=ModuleObj,
+                                                       program=prog)
 
         return ModuleObj
 

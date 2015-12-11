@@ -17,6 +17,7 @@ class FormstackAppSettings(models.Model):
     """
 
     module = models.ForeignKey(ProgramModuleObj)
+    program = models.OneToOneField(Program)
 
     # formstack settings
     form_id = models.IntegerField(null=True)

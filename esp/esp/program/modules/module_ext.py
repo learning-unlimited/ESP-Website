@@ -63,6 +63,7 @@ class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
     module               = models.ForeignKey(ProgramModuleObj, editable=False)
+    program = models.OneToOneField(Program)
 
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
@@ -141,6 +142,8 @@ class StudentClassRegModuleInfo(models.Model):
 
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
+    program = models.OneToOneField(Program)
+
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
 
