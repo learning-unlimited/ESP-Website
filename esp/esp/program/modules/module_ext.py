@@ -245,16 +245,8 @@ class ClassRegModuleInfo(models.Model):
 
         return range(min_grade, max_grade+1)
 
-    def getTimes(self):
-        times = self.module.program.getTimeSlots()
-        return [(str(x.id),x.short_description) for x in times]
-
     def getDurations(self):
         return self.module.program.getDurations()
-
-    def getResources(self):
-        resources = self.module.program.getResources()
-        return [(str(x.id), x.name) for x in resources]
 
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
