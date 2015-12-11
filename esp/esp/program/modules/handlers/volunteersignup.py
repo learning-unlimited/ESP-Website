@@ -92,7 +92,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         result = {}
         for key in queries:
             if QObject:
-                result[key] = self.getQForUser(queries[key])
+                result[key] = queries[key]
             else:
                 result[key] = ESPUser.objects.filter(queries[key]).distinct()
         return result
