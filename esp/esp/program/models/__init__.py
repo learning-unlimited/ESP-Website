@@ -893,45 +893,17 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
 
-    def getModuleExtension(self, ext_name_or_cls, module_id=None):
+    def getModuleExtension(self, ext_name_or_cls):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
         This avoids actually looking up the program module first. """
-        # We don't actually want to cache this in memcached:
-        # If its value changes in the middle of a page load, we don't want to switch to the new value.
-        # Also, the method is called quite often, so it adds cache load.
-        # Program objects are assumed to not persist across page loads generally,
-        # so the following should be marginally safer:
-
-        if not hasattr(self, "_moduleExtension"):
-            self._moduleExtension = {}
-
-        key = (ext_name_or_cls, module_id)
-        if key in self._moduleExtension:
-            return self._moduleExtension[key]
-
-        ext_cls = None
+        # TODO(benkraft): this is no longer necessary; update all callers to
+        # use the related lookup and remove.
         if isinstance(ext_name_or_cls, basestring):
-            mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
-            ext_cls = getattr(mod, ext_name_or_cls)
+            ext_name = ext_name_or_cls
         else:
-            ext_cls = ext_name_or_cls
+            ext_name = ext_name_or_cls.__name__
 
-        if module_id:
-            try:
-                extension = ext_cls.objects.filter(module__id=module_id).select_related()[0]
-            except:
-                extension = ext_cls()
-                extension.module_id = module_id
-                extension.save()
-        else:
-            try:
-                extension = ext_cls.objects.filter(module__program__id=self.id).select_related()[0]
-            except:
-                extension = None
-
-        self._moduleExtension[key] = extension
-
-        return extension
+        return getattr(self, ext_name.lower(), None)
 
     @cache_function
     def getColor(self):

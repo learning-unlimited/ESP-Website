@@ -71,7 +71,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @property
     def crmi(self):
-        return self.program.getModuleExtension('ClassRegModuleInfo', self.id)
+        return self.program.getModuleExtension('ClassRegModuleInfo')
 
     module_ext = ClassRegModuleInfo
 

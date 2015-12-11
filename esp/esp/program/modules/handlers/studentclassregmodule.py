@@ -141,7 +141,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @property
     def scrmi(self):
-        return self.program.getModuleExtension('StudentClassRegModuleInfo', self.id)
+        return self.program.getModuleExtension('StudentClassRegModuleInfo')
 
     module_ext = StudentClassRegModuleInfo
 

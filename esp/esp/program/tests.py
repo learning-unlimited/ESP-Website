@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import decimal
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
@@ -999,40 +1000,39 @@ class DynamicCapacityTest(ProgramFrameworkTest):
     def runTest(self):
         #   Parameters
         initial_capacity = 37
-        mult_test = 0.6
+        mult_test = decimal.Decimal('0.6')
         offset_test = 4
 
         #   Get class capacity
         self.program.getModules()
-        options = self.program.getModuleExtension('StudentClassRegModuleInfo')
         sec = random.choice(list(self.program.sections()))
+        # Load the SCRMI off the section, to make sure that the section doesn't
+        # have a separate unupdated copy of it around when we update it.
+        # (Since self.program is a different copy of the same instance from
+        # sec.parent_program, if we update one SCRMI, the other won't update.)
+        options = sec.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         sec.parent_class.class_size_max = initial_capacity
         sec.parent_class.save()
         sec.max_class_capacity = initial_capacity
         sec.save()
 
         #   Check that initially the capacity is correct
-        sec.parent_class._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
         #   Check that multiplier works
-        options.class_cap_multiplier = str(mult_test)
+        options.class_cap_multiplier = mult_test
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
         #   Check that multiplier and offset work
         options.class_cap_offset = offset_test
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec._get_capacity(), int(initial_capacity * mult_test + offset_test))
         #   Check that offset only works
-        options.class_cap_multiplier = '1.0'
+        options.class_cap_multiplier = decimal.Decimal('1.0')
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
         #   Check that we can go back to normal
         options.class_cap_offset = 0
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
 
