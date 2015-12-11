@@ -37,7 +37,6 @@ import time
 from datetime import timedelta
 from django.db import models
 from esp.middleware import ESPError
-from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from django.conf import settings
 from esp.users.models import ESPUser
@@ -62,7 +61,6 @@ def get_regtype_enrolled():
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    module               = models.ForeignKey(ProgramModuleObj, editable=False)
     program = models.OneToOneField(Program)
 
     #   Set to true to prevent students from registering from full classes.
@@ -121,6 +119,12 @@ class StudentClassRegModuleInfo(models.Model):
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
     force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
 
+    @property
+    def module(self):
+        """Deprecated; you probably shouldn't need this."""
+        # TODO(benkraft): remove.
+        return self.program.getModule('StudentClassRegModule')
+
     def reg_verbs(self):
         verb_list = [self.signup_verb]
 
@@ -141,7 +145,6 @@ class StudentClassRegModuleInfo(models.Model):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
 class ClassRegModuleInfo(models.Model):
-    module               = models.ForeignKey(ProgramModuleObj)
     program = models.OneToOneField(Program)
 
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
@@ -192,6 +195,12 @@ class ClassRegModuleInfo(models.Model):
     #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
     progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checkboxes, 2=progress bar, 0=neither.')
+
+    @property
+    def module(self):
+        """Deprecated; you probably shouldn't need this."""
+        # TODO(benkraft): remove.
+        return self.program.getModule('TeacherClassRegModule')
 
     def allowed_sections_ints_get(self):
         return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]

@@ -5,7 +5,6 @@ from django.dispatch import receiver
 from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
-from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
 from esp.formstack.objects import FormstackForm, FormstackSubmission
 from esp.formstack.signals import formstack_post_signal
@@ -16,7 +15,6 @@ class FormstackAppSettings(models.Model):
     module.
     """
 
-    module = models.ForeignKey(ProgramModuleObj)
     program = models.OneToOneField(Program)
 
     # formstack settings
@@ -44,6 +42,12 @@ include the content of a field, use {{field.12345}} where 12345 is the
 field id.""")
 
     app_is_open = models.BooleanField(default=False, verbose_name="Application is currently open")
+
+    @property
+    def module(self):
+        """Deprecated; you probably shouldn't need this."""
+        # TODO(benkraft): remove.
+        return self.program.getModule('FormstackAppModule')
 
     def formstack(self):
         """
