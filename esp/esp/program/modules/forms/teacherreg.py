@@ -104,7 +104,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 
 
-    def __init__(self, module, *args, **kwargs):
+    def __init__(self, crmi, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
 
         def hide_field(field, default=None):
@@ -118,13 +118,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
-        # TODO(benkraft): clean this up and do one or the other.
-        if isinstance(module, ClassRegModuleInfo):
-            crmi = module
-            prog = module.module.program
-        else:
-            crmi = module.crmi
-            prog = module.program
+        prog = crmi.module.program
 
         section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
@@ -282,15 +276,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
 class TeacherOpenClassRegForm(TeacherClassRegForm):
 
-    def __init__(self, module, *args, **kwargs):
+    def __init__(self, crmi, *args, **kwargs):
         """ Initialize the teacher class reg form, and then remove irrelevant fields. """
         def hide_field(field, default=None):
             field.widget = forms.HiddenInput()
             if default is not None:
                 field.initial = default
 
-        super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = module.program.open_class_category
+        super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
+        program = crmi.module.program
+        open_class_category = program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -302,7 +297,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.program.grade_min), ('grade_max', module.program.grade_max),
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]

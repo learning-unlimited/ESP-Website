@@ -737,10 +737,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self, current_data)
+                    reg_form = TeacherClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self, current_data)
+                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
 
                 #   Todo...
@@ -762,9 +762,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             else:
                 if action=='create':
-                    reg_form = TeacherClassRegForm(self)
+                    reg_form = TeacherClassRegForm(self.crmi)
                 elif action=='createopenclass':
-                    reg_form = TeacherOpenClassRegForm(self)
+                    reg_form = TeacherOpenClassRegForm(self.crmi)
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
