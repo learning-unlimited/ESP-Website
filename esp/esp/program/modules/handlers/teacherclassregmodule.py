@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
-from esp.program.modules         import module_ext
+from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
@@ -69,10 +69,11 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             }
 
-    @classmethod
-    def extensions(cls):
-        return {'crmi': module_ext.ClassRegModuleInfo}
+    @property
+    def crmi(self):
+        return self.program.getModuleExtension('ClassRegModuleInfo', self.id)
 
+    module_ext = ClassRegModuleInfo
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """
