@@ -180,7 +180,7 @@ class TeacherReviewApps(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/AppReview")
     def review_student(self, request, tl, one, two, module, extra, prog):
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         reg_nodes = scrmi.reg_verbs()
 
         try:

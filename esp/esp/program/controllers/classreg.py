@@ -38,7 +38,7 @@ class ClassCreationValidationError(Exception):
 class ClassCreationController(object):
     def __init__(self, prog):
         self.program = prog
-        self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        self.crmi = prog.classregmoduleinfo
 
     @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):

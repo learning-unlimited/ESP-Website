@@ -268,7 +268,7 @@ class FormstackStudentProgramAppManager(models.Manager):
         """ Get apps for a particular program from the Formstack API. """
 
         # get submissions from the API
-        settings = program.getModuleExtension('FormstackAppSettings')
+        settings = program.formstackappsettings
         submissions = settings.form().submissions(use_cache=False)
 
         # parse submitted data and make model instances
@@ -306,7 +306,7 @@ class FormstackStudentProgramApp(StudentProgramApp):
         self.app_type = 'Formstack'
 
     def program_settings(self):
-        return self.program.getModuleExtension('FormstackAppSettings')
+        return self.program.formstackappsettings
 
     def submission(self):
         return FormstackSubmission(self.submission_id, self.program_settings().formstack())

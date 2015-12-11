@@ -77,7 +77,7 @@ class FormstackAppModule(ProgramModuleObj):
     @main_call
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
-        fsas = prog.getModuleExtension(FormstackAppSettings)
+        fsas = prog.formstackappsettings
         context = {}
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
@@ -99,7 +99,7 @@ class FormstackAppModule(ProgramModuleObj):
     @aux_call
     @needs_student
     def finaidapp(self, request, tl, one, two, module, extra, prog):
-        fsas = prog.getModuleExtension(FormstackAppSettings)
+        fsas = prog.formstackappsettings
         if not fsas.finaid_form():
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)

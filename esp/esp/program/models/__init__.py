@@ -539,7 +539,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def open_class_registration(self):
-        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
+        return self.classregmoduleinfo.open_class_registration
     open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
     open_class_registration = property(open_class_registration)
 
@@ -773,7 +773,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
         else:
@@ -895,24 +895,12 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
 
-    def getModuleExtension(self, ext_name_or_cls):
-        """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
-        This avoids actually looking up the program module first. """
-        # TODO(benkraft): this is no longer necessary; update all callers to
-        # use the related lookup and remove.
-        if isinstance(ext_name_or_cls, basestring):
-            ext_name = ext_name_or_cls
-        else:
-            ext_name = ext_name_or_cls.__name__
-
-        return getattr(self, ext_name.lower(), None)
-
     @cache_function
     def getColor(self):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        modinfo = self.getModuleExtension(ClassRegModuleInfo)
+        modinfo = self.classregmoduleinfo
         retVal = None
         if modinfo:
             retVal = modinfo.color_code
@@ -927,7 +915,7 @@ class Program(models.Model, CustomFormsLinkModel):
         This originally returned true if class registration was fully open.
         Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.studentclassregmoduleinfo
         return options.visible_enrollments
 
     def getVolunteerRequests(self):
@@ -971,14 +959,14 @@ class Program(models.Model, CustomFormsLinkModel):
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else:
             return 1
 
     def useGradeRangeExceptions(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule:
             return studentregmodule.use_grade_range_exceptions
         else:

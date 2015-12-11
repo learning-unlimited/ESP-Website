@@ -70,7 +70,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @property
     def crmi(self):
-        return self.program.getModuleExtension('ClassRegModuleInfo')
+        return self.program.classregmoduleinfo
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """

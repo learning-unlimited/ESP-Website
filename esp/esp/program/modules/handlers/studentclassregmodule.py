@@ -140,7 +140,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @property
     def scrmi(self):
-        return self.program.getModuleExtension('StudentClassRegModuleInfo')
+        return self.program.studentclassregmoduleinfo
 
     def students(self, QObject = False):
 
@@ -208,7 +208,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         user = get_current_request().user
         is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -329,7 +329,7 @@ class StudentClassRegModule(ProgramModuleObj):
             Return True if there are no errors.
         """
         reg_perm = 'Student/Classes'
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         if 'prereg_verb' in request.POST:
             proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
@@ -533,7 +533,7 @@ class StudentClassRegModule(ProgramModuleObj):
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
@@ -600,7 +600,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @cache_control(public=True, max_age=3600)
     def catalog_allowed_reg_verbs(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         signup_verb_uri = scrmi.signup_verb.get_uri().replace('V/Flags/Registration/', '')
 
         if scrmi.use_priority:

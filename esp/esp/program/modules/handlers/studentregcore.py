@@ -224,7 +224,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             rec.delete()
 
         #   If the appropriate flag is set, remove the student from their classes.
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         if scrmi.cancel_button_dereg:
             sections = request.user.getSections()
             for sec in sections:
@@ -275,7 +275,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
-        context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['scrmi'] = prog.studentclassregmoduleinfo
         context['can_confirm'] = _checkDeadline_helper(None, '/Confirm', self, request, tl)[0]
         context['isConfirmed'] = self.program.isConfirmed(request.user)
         context['have_paid'] = self.have_paid(request.user)

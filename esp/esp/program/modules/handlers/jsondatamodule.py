@@ -729,7 +729,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         dictOut["stats"].append(shirt_data);
 
         Q_categories = Q(program=prog)
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        crmi = prog.classregmoduleinfo
         if crmi.open_class_registration:
             Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
