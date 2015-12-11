@@ -301,22 +301,9 @@ class ProgramModuleObj(models.Model):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
-    @classmethod
-    def get_summary_path(cls, function):
-        """
-        Returns the base url of a view function
-
-        'function' must be a member of 'cls'.  Both 'cls' and 'function' must
-        not be anonymous (ie., they musht have __name__ defined).
-        """
-
-        url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
-        return url
-
     def setUser(self, user):
         self.user = user
         self.curUser = user
-
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
