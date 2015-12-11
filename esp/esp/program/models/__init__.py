@@ -538,7 +538,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def open_class_registration(self):
         return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
-    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.get_program()})
+    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.module.program})
     open_class_registration = property(open_class_registration)
 
     @cache_function

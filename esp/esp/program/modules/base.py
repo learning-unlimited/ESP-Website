@@ -83,10 +83,6 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def get_program(self):
-        """ Backward compatibility; see ClassRegModuleInfo.get_program """
-        return self.program
-
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with

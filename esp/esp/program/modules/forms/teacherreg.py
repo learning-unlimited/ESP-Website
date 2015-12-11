@@ -118,12 +118,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
+        # TODO(benkraft): clean this up and do one or the other.
         if isinstance(module, ClassRegModuleInfo):
             crmi = module
+            prog = module.module.program
         else:
             crmi = module.crmi
-
-        prog = crmi.get_program()
+            prog = module.program
 
         section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
@@ -289,7 +290,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = module.get_program().open_class_category
+        open_class_category = module.program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -301,7 +302,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max),
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.program.grade_min), ('grade_max', module.program.grade_max),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
