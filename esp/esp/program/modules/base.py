@@ -245,13 +245,10 @@ class ProgramModuleObj(models.Model):
         """ Find module extensions that this program module inherits from, and
         incorporate those into its attributes. """
 
-        self._ext_map = {}
         if self.program:
             for key, x in self.extensions().items():
                 ext = self.program.getModuleExtension(x, module_id=self.id)
                 setattr(self, key, ext)
-                for attr in dir(ext):
-                    self._ext_map[attr] = key
 
     def deadline_met(self, extension=''):
 
