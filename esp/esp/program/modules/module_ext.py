@@ -33,14 +33,25 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import time
 from datetime import timedelta
+import time
+
 from django.db import models
-from esp.middleware import ESPError
+
 from esp.db.fields import AjaxForeignKey
-from django.conf import settings
-from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
+from esp.users.models import ESPUser
+
+# If this module is a little confusingly named, or has some cruft in it, it's
+# because it used to work differently.  Back in the day, certain program
+# modules inherited from one of the below models in addition to
+# ProgramModuleObj, thus the name "module extensions".  These days, they're
+# basically just a settings model that may be attached to the program, which
+# happens to have a name that suggests it has something to do with a program
+# module.  They still have a little to do with modules -- they're autocreated
+# when the corresponding program modules get added to a program (see
+# esp.program.models.maybe_create_module_ext), but that's about it.
+# TODO(benkraft): rename this to "program settings" or something.
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
@@ -328,7 +339,7 @@ class AJAXChangeLog(models.Model):
         entry.update(next_index, timeslots, room_name, cls_id)
 
         if user:
-        	entry.user = user
+            entry.user = user
 
         entry.save()
         self.save()
@@ -358,5 +369,3 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
-
-from esp.application.models import FormstackAppSettings

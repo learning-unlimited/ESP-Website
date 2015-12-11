@@ -45,20 +45,15 @@ from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
 from esp.utils.web import render_to_response
 from argcache import cache_function
-from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
-from django.db.models.query import Q
-from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-
-from os.path import exists
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -94,12 +89,9 @@ class ProgramModuleObj(models.Model):
 
         result = []
 
-        #   Filter out attributes that we don't want to look at:
-        #   - Attributes of ProgramMdouleObj, including Django stuff
-        #   - Module extension attributes
+        #   Filter out attributes that we don't want to look at: attributes of
+        #   ProgramModuleObj, including Django stuff
         key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
-        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo]:
-            key_set = filter(lambda key: key not in dir(exclude_class), key_set)
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
