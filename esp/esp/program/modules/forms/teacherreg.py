@@ -118,7 +118,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
-        prog = crmi.module.program
+        prog = crmi.program
 
         section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
@@ -284,7 +284,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
 
         super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
-        program = crmi.module.program
+        program = crmi.program
         open_class_category = program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 

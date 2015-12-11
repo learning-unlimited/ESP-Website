@@ -204,7 +204,7 @@ class StudentClassApp(models.Model):
 class FormstackStudentProgramAppManager(models.Manager):
     def create_from_submission(self, submission, settings):
         """ Takes a FormstackSubmission and creates an app from it. """
-        program = settings.module.program
+        program = settings.program
         data_dict = { int(entry['field']): entry['value']
                       for entry in submission.data() }
 

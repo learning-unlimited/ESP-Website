@@ -839,7 +839,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         ts1 = timeslot_list[0]
         ts2 = timeslot_list[1]
         modules = program.getModules()
-        scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
+        scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
 
         #   Check that the map starts out empty
         sm = ScheduleMap(student, program)
@@ -921,7 +921,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         program = self.program
         (section_list, timeslot_list) = randomized_attrs(program)
         modules = program.getModules()
-        scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
+        scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
 
         #   Prepare two sections
         section1 = section_list[0]

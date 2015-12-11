@@ -130,7 +130,7 @@ class TeacherReviewApps(ProgramModuleObj):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
         subjects = request.user.getTaughtClasses(prog)
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
+        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
         question_list = []
 
         #   Provide forms to modify existing questions, and also blank forms for new questions
@@ -244,7 +244,7 @@ class TeacherReviewApps(ProgramModuleObj):
                                    'form': form})
 
     def prepare(self, context):
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
+        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
         context['num_teacher_questions'] = clrmi.num_teacher_questions;
         context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
         return context

@@ -203,7 +203,7 @@ class ClassRegModuleInfo(models.Model):
         if self.allowed_sections:
             return self.allowed_sections_ints_get()
         else:
-            return range( 1, self.module.program.getTimeSlots().count()+1 )
+            return range( 1, self.program.getTimeSlots().count()+1 )
 
     # TODO: rename allowed_sections to... something and this to allowed_sections
     allowed_sections_actual = property( allowed_sections_actual_get, allowed_sections_ints_set )
@@ -241,15 +241,15 @@ class ClassRegModuleInfo(models.Model):
 
     def getClassGrades(self):
         min_grade, max_grade = (6, 12)
-        if self.module.program.grade_min:
-            min_grade = self.module.program.grade_min
-        if self.module.program.grade_max:
-            max_grade = self.module.program.grade_max
+        if self.program.grade_min:
+            min_grade = self.program.grade_min
+        if self.program.grade_max:
+            max_grade = self.program.grade_max
 
         return range(min_grade, max_grade+1)
 
     def getDurations(self):
-        return self.module.program.getDurations()
+        return self.program.getDurations()
 
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
