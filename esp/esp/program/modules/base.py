@@ -253,16 +253,6 @@ class ProgramModuleObj(models.Model):
                 for attr in dir(ext):
                     self._ext_map[attr] = key
 
-    def __getattr__(self, attr):
-        # backward compatibility
-        if hasattr(self, '_ext_map') and attr in self._ext_map:
-            key = self._ext_map[attr]
-            ext = getattr(self, key)
-            import warnings
-            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
-            return getattr(ext, attr)
-        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
-
     def deadline_met(self, extension=''):
 
         #   Short-circuit the request middleware during testing, when we call
