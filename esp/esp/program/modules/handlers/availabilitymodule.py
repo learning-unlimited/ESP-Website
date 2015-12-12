@@ -108,7 +108,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         qf = Q(useravailability__event__program=self.program, useravailability__role__name='Teacher')
         if QObject is True:
-            return {'availability': self.getQForUser(qf)}
+            return {'availability': qf}
 
         teacher_list = ESPUser.objects.filter(qf).distinct()
 
@@ -238,9 +238,9 @@ class AvailabilityModule(ProgramModuleObj):
                 teacher = form.cleaned_data['target_user']
 
         if teacher is None:
-            if request.GET.has_key('user'):
+            if 'user' in request.GET:
                 target_id = request.GET['user']
-            elif request.POST.has_key('user'):
+            elif 'user' in request.POST:
                 target_id = request.POST['user']
             else:
                 form = GenericSearchForm()
@@ -309,9 +309,9 @@ class AvailabilityModule(ProgramModuleObj):
 
         target_id = None
 
-        if request.GET.has_key('user'):
+        if 'user' in request.GET:
             target_id = request.GET['user']
-        elif request.POST.has_key('user'):
+        elif 'user' in request.POST:
             target_id = request.POST['user']
         else:
             context = {}

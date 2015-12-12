@@ -70,7 +70,6 @@ urlpatterns += patterns('',
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
-                        (r'^error_reporter', 'error_reporter'),
                         (r'^$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
@@ -136,12 +135,6 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-
-    # Event-generation
-    # Needs to get fixed (axiak)
-    #(r'^events/create/$', 'esp.cal.views.createevent'),
-    #(r'^events/edit/$', 'esp.cal.views.updateevent'),
-    #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 )
 
 urlpatterns += patterns('',

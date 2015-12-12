@@ -46,6 +46,7 @@ from django.db.models.query import Q
 from django.core.cache import cache
 
 import pickle
+import warnings
 
 ########################################
 #   New resource stuff (Michael P)
@@ -63,8 +64,6 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
-DISTANCE_FUNC_REGISTRY = {}
-
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     from esp.survey.models import ListField
@@ -80,11 +79,6 @@ class ResourceType(models.Model):
     choices = ListField('attributes_pickled')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
-    distancefunc = models.TextField(
-        blank=True,
-        null=True,
-        help_text="Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.",
-        )               #   Defines a way to compare this resource type with others.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
@@ -141,9 +135,6 @@ class ResourceType(models.Model):
     def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
 
-    class Admin:
-        pass
-
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -155,17 +146,11 @@ class ResourceRequest(models.Model):
     def __unicode__(self):
         return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
 
-    class Admin:
-        pass
-
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
     def __unicode__(self):
         return 'Resource group %d' % (self.id,)
-
-    class Admin:
-        pass
 
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
@@ -203,30 +188,15 @@ class Resource(models.Model):
 
         super(Resource, self).save(*args, **kwargs)
 
+    # I'd love to kill this, but since it's set as the __sub__, it's hard to
+    # grep to be sure it's not used.
     def distance(self, other):
         """
-        Using the custom distance function defined in the ResourceType,
-        compute the distance between this resource and another.
-        Bear in mind that this is cached using a python global registry.
+        Deprecated.
         """
-        if self.res_type_id != other.res_type_id:
-            raise ValueError("Both resources must be of the same type to compare!")
-
-        if self.res_type_id in DISTANCE_FUNC_REGISTRY:
-            return DISTANCE_FUNC_REGISTRY[self.res_type_id](self, other)
-
-        distancefunc = self.res_type.distancefunc
-
-        if distancefunc and distancefunc.strip():
-            funcstr = distancefunc.strip().replace('\r\n', '\n')
-        else:
-            funcstr = "return 0"
-        funcstr = """def _cmpfunc(r1, r2):\n%s""" % (
-            '\n'.join('    %s' % l for l in funcstr.split('\n'))
-            )
-        exec funcstr
-        DISTANCE_FUNC_REGISTRY[self.res_type_id] = _cmpfunc
-        return _cmpfunc(self, other)
+        warnings.warn("Resource.distance() is deprecated.",
+                      DeprecationWarning)
+        return 0
 
     __sub__ = distance
 
@@ -349,9 +319,6 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
 
-    class Admin:
-        pass
-
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -376,9 +343,6 @@ class ResourceAssignment(models.Model):
 
     def resources(self):
         return Resource.objects.filter(res_group=self.resource.res_group)
-
-    class Admin:
-        pass
 
 
 def install():

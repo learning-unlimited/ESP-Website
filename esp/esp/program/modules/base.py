@@ -152,10 +152,6 @@ class ProgramModuleObj(models.Model):
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
 
-    def getQForUser(self, QRestriction):
-        # Let's not do anything and say we did...
-        return QRestriction
-
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
@@ -246,33 +242,6 @@ class ProgramModuleObj(models.Model):
 
         return ModuleObj
 
-
-
-    def getClassFromId(self, clsid, tl='teach'):
-        """ This function can be called from a view to get a class object from an id. The id can be given
-            with request or extra, but it will try to get it in any way. """
-
-        from esp.program.models import ClassSubject
-
-        classes = []
-        try:
-            clsid = int(clsid)
-        except:
-            return (False, True)
-
-        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
-
-        if len(classes) == 1:
-            if not get_current_request().user.canEdit(classes[0]):
-                from esp.middleware import ESPError
-                message = 'You do not have permission to edit %s.' % classes[0].title
-                raise ESPError(message, log=False)
-            else:
-                Found = True
-                return (classes[0], True)
-        return (False, False)
-
-
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
 
@@ -290,7 +259,7 @@ class ProgramModuleObj(models.Model):
 
     def __getattr__(self, attr):
         # backward compatibility
-        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
+        if hasattr(self, '_ext_map') and attr in self._ext_map:
             key = self._ext_map[attr]
             ext = getattr(self, key)
             import warnings
@@ -328,22 +297,9 @@ class ProgramModuleObj(models.Model):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
-    @classmethod
-    def get_summary_path(cls, function):
-        """
-        Returns the base url of a view function
-
-        'function' must be a member of 'cls'.  Both 'cls' and 'function' must
-        not be anonymous (ie., they musht have __name__ defined).
-        """
-
-        url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
-        return url
-
     def setUser(self, user):
         self.user = user
         self.curUser = user
-
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
@@ -466,20 +422,28 @@ def not_logged_in(request):
     return (not request.user or not request.user.is_authenticated() or not request.user.id)
 
 def usercheck_usetl(method):
+    """
+    Check that the user has the correct role based on tl.
+    Will error if used on json or volunteer modules.
+    """
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/nota'+tl+'.html'
+        error_map = {'learn': 'notastudent.html',
+                     'teach': 'notateacher.html',
+                     'manage': 'notanadmin.html',
+                     'onsite': 'notonsite.html'
+                     }
+        errorpage = 'errors/program/' + error_map[tl]
 
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if ((not request.user.isAdmin(moduleObj.program))
-             and (
-                 (tl == 'learn' and not request.user.isStudent())
-                 or (tl == 'teach' and not request.user.isTeacher())
-                 or (tl == 'manage'))):
+        if request.user.isAdmin(moduleObj.program) or \
+           (tl == 'learn' and request.user.isStudent()) or \
+           (tl == 'teach' and request.user.isTeacher()) or \
+           (tl == 'onsite' and request.user.isOnsite()):
+            return method(moduleObj, request, tl, *args, **kwargs)
+        else:
             return render_to_response(errorpage, request, {})
-
-        return method(moduleObj, request, tl, *args, **kwargs)
 
     return _checkUser
 
@@ -498,7 +462,7 @@ def needs_teacher(method):
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if request.session.has_key('user_morph'):
+        if 'user_morph' in request.session:
             morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None

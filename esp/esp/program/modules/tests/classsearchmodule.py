@@ -6,7 +6,6 @@ from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
-from esp.users.views import make_user_admin
 
 
 class ClassSearchModuleTest(ProgramFrameworkTest):
@@ -20,7 +19,7 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
 
         self.admin, created = ESPUser.objects.get_or_create(username='admin')
         self.admin.set_password('password')
-        make_user_admin(self.admin)
+        self.admin.makeAdmin()
 
     def test_can_render(self):
         rendered = Template("""

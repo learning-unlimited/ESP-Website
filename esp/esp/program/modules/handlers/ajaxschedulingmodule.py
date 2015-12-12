@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_sections_cached(prog, request.GET.has_key('accepted_only'))
+        return self.ajax_sections_cached(prog, 'accepted_only' in request.GET)
 
     @cache_function
     def ajax_sections_cached(self, prog, accepted_only=False):
@@ -396,7 +396,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not request.POST.has_key('action'):
+        if not 'action' in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure

@@ -284,7 +284,7 @@ class MessageRequest(models.Model):
                 'This might be a website bug. Please contact us at %s ' + \
                 'and tell us how you got this error, and we will look into it. ' + \
                 'The error message is: "%s".' % \
-                (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
+                (sendto_fn_name, settings.DEFAULT_EMAIL_ADDRESSES['support'], e))
 
     # Processing a MessageRequest needs to be atomic, so that if the DB falls
     # over halfway through the processing, we don't end up with half of the
@@ -358,10 +358,6 @@ class MessageRequest(models.Model):
         self.save()
 
         if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
-
-
-    class Admin:
-        pass
 
 
 class TextOfEmail(models.Model):
@@ -443,9 +439,6 @@ class TextOfEmail(models.Model):
             orm_class = cls
         now = datetime.now()
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
-
-    class Admin:
-        pass
 
     class Meta:
         verbose_name_plural = 'Email Texts'
@@ -539,9 +532,6 @@ class EmailRequest(models.Model):
 
     def __unicode__(self):
         return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
-
-    class Admin:
-        pass
 
 class EmailList(models.Model):
     """

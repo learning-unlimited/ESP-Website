@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from operator import __or__ as OR
+from pprint import pprint
 
 from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode
@@ -328,7 +329,7 @@ def usersearch(request):
     do our best to find that user.
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
-    if not request.GET.has_key('userstr') or not request.GET['userstr']:
+    if not request.GET.get('userstr'):
         raise ESPError("You didn't specify a user to search for!", log=False)
 
     userstr = request.GET['userstr']
@@ -528,7 +529,7 @@ def newprogram(request):
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
 
-    if request.POST.has_key("decision") and request.POST["decision"] != "REJECT" and request.POST["decision"] != "ERROR":
+    if request.POST.get("decision") not in ("REJECT", "ERROR"):
 
         #   Figure out which user and program the payment are for.
         post_identifier = request.POST['req_merchant_defined_data1']
@@ -577,7 +578,7 @@ def manage_pages(request):
     if request.method == 'POST':
         data = request.POST
         if request.GET['cmd'] == 'bulk_move':
-            if data.has_key('confirm'):
+            if 'confirm' in data:
                 form = QSDBulkMoveForm(data)
                 #   Handle submission of bulk move form
                 if form.is_valid():
@@ -613,7 +614,7 @@ def manage_pages(request):
                     q.save()
         return HttpResponseRedirect('/manage/pages')
 
-    elif request.GET.has_key('cmd'):
+    elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
         if request.GET['cmd'] == 'delete':
             #   Show confirmation of deletion
@@ -647,7 +648,7 @@ def manage_pages(request):
 def flushcache(request):
     context = {}
     if request.POST:
-        if request.POST.has_key("reason") and len(request.POST['reason']) > 5:
+        if "reason" in request.POST and len(request.POST['reason']) > 5:
             reason = request.POST['reason']
             _cache = cache
             while hasattr(_cache, "_wrapped_cache"):

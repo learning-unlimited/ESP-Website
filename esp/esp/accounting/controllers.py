@@ -352,7 +352,7 @@ class IndividualAccountingController(ProgramAccountingController):
                         result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
-                raise Exception('Could not find a line item type matching "%s"' % item[0])
+                raise Exception('Could not find a line item type matching "%s"' % item_name)
 
         return result
 

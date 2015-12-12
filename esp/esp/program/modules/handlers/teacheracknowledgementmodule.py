@@ -59,7 +59,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         from datetime import datetime
         qo = Q(record__program=self.program, record__event="teacheracknowledgement")
         if QObject is True:
-            return {'acknowledgement': self.getQForUser(qo)}
+            return {'acknowledgement': qo}
 
         teacher_list = ESPUser.objects.filter(qo).distinct()
 

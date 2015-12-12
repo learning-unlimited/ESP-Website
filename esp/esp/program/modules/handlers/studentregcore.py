@@ -74,9 +74,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def students(self, QObject = False):
         now = datetime.now()
 
-        q_confirmed = self.getQForUser(Q(record__event = "reg_confirmed", record__program=self.program))
-        q_attended = self.getQForUser(Q(record__event= "attended", record__program=self.program))
-        q_studentrep = self.getQForUser(Q(groups__name="StudentRep"))
+        q_confirmed = Q(record__event = "reg_confirmed", record__program=self.program)
+        q_attended = Q(record__event= "attended", record__program=self.program)
+        q_studentrep = Q(groups__name="StudentRep")
 
         if QObject:
             retVal = {'confirmed': q_confirmed,
@@ -85,7 +85,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = self.getQForUser(Q(record__event="waitlist",record__program=self.program))
+                retVal['waitlisted_students'] = Q(record__event="waitlist",record__program=self.program)
 
             return retVal
 

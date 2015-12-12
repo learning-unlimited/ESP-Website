@@ -109,7 +109,7 @@ class TeacherQuizModule(ProgramModuleObj):
                record__program=self.program)
         if QObject is True:
             return {
-                'quiz_done': self.getQForUser(qo),
+                'quiz_done': qo,
             }
         else:
             return {

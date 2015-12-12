@@ -51,7 +51,7 @@ class DateTimeWidget(forms.widgets.TextInput):
             except:
                 final_attrs['value'] = value
 
-        if not final_attrs.has_key('id'):
+        if not 'id' in final_attrs:
             final_attrs['id'] = u'%s_id' % (name)
         id = final_attrs['id']
         return final_attrs

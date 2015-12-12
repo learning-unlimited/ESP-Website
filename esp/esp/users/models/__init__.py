@@ -998,8 +998,34 @@ class ESPUser(User, BaseESPUser):
         proxy = True
         verbose_name = 'ESP User'
 
+    def makeAdmin(self):
+        """
+        Make the user an Adminstrator and a Django superuser.
+        """
+        # Django auth
+        self.is_staff = True
+        self.is_superuser = True
+        self.makeRole("Administrator")
+        self.save()
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
+
+@dispatch.receiver(signals.post_save, sender=User,
+                     dispatch_uid='make_admin_save')
+def make_admin_save(sender, instance, **kwargs):
+    """
+    External scripts like the createsuperuser management command sometimes add
+    the is_superuser flag to a User object. This receiver intercepts saves of
+    User objects and ensures that ESPUser-specific actions, such as adding the
+    user to the Administrators group, are also applied.
+
+    Code that references ESPUser instead of User does not trigger this receiver.
+    These callers should be explicit and call ESPUser.make_admin() if needed.
+    """
+    if instance.is_superuser:
+        espuser = ESPUser.objects.get(id=instance.id)
+        espuser.makeAdmin()
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
                    dispatch_uid='update_email_save')
@@ -1746,7 +1772,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if contactInfo is None:
             contactInfo = ContactInfo()
         for i in contactInfo.__dict__.keys():
-            if i != 'user_id' and i != 'id' and new_data.has_key(prefix+i):
+            if i != 'user_id' and i != 'id' and prefix+i in new_data:
                 contactInfo.__dict__[i] = new_data[prefix+i]
         if curUser is not None:
             contactInfo.user = curUser
@@ -1788,9 +1814,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         if self.last_name is not None:
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
-
-    class Admin:
-        search_fields = ['first_name','last_name','user__username']
 
 
 class K12SchoolManager(models.Manager):
@@ -1962,22 +1985,6 @@ class PersistentQueryFilter(models.Model):
     def __unicode__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-
-class ESPUser_Profile(models.Model):
-    user = AjaxForeignKey(ESPUser, unique=True)
-
-    class Meta:
-        app_label = 'users'
-        db_table = 'users_espuser_profile'
-
-    def prof(self):
-        return self.user
-
-    class Admin:
-        pass
-
-    def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % unicode(self.user)
 
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """
@@ -2477,12 +2484,11 @@ def install():
     Installs some initial users and permissions.
     """
     print "Installing esp.users initial data..."
-    from esp.users.views.make_admin import make_user_admin
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
-        make_user_admin(user)
+        user.makeAdmin()
 
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():
@@ -2595,4 +2601,3 @@ from esp.users.models.forwarder import UserForwarder # Don't delete, needed for 
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
-

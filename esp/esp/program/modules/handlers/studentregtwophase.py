@@ -323,10 +323,21 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        data = json.loads(request.POST['json_data'])
-        timeslot_id = data.keys()[0]
+        if not 'json_data' in request.POST:
+            return HttpResponseBadRequest('JSON data not included in request.')
+        try:
+            json_data = json.loads(request.POST['json_data'])
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        try:
+            [timeslot_id] = json_data.keys()
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        if not isinstance(json_data[timeslot_id], dict):
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+
         timeslot = Event.objects.get(pk=timeslot_id)
-        priorities = data[timeslot_id]
+        priorities = json_data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
             rel = RegistrationType.objects.get(name=rel_name, category='student')

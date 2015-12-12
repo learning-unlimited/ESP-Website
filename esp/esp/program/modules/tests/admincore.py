@@ -1,5 +1,4 @@
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.views import make_user_admin
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
@@ -25,7 +24,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         # Create an admin account
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
         self.adminUser.set_password('password')
-        make_user_admin(self.adminUser)
+        self.adminUser.makeAdmin()
 
 
     def testAdminInterface(self):

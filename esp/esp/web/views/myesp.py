@@ -138,7 +138,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['profiletype'] = role
 
-    if request.method == 'POST' and request.POST.has_key('profile_page'):
+    if request.method == 'POST' and 'profile_page' in request.POST:
         form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
@@ -166,7 +166,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
             regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
 
-            if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
+            if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
@@ -215,10 +215,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
-        elif request.session.has_key('birth_month') and request.session.has_key('birth_day'):
+        elif 'birth_month' in request.session and 'birth_day' in request.session:
             new_data['dob'] = datetime.date(1998, int(request.session['birth_month']), int(request.session['birth_day']))
 
-        if request.session.has_key('school_id'):
+        if 'school_id' in request.session:
             new_data['k12school'] = request.session['school_id']
 
         #   Set default values for state fields

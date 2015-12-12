@@ -292,14 +292,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
     isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
 
-    @cache_function
-    def checkitems_all_cached(self):
-        """  The main Manage page requests checkitems.all() O(n) times in
-        the number of classes in the program.  Minimize the number of these
-        calls that actually hit the db. """
-        return self.checkitems.all()
-    checkitems_all_cached.depend_on_row('program.ProgramCheckItem', lambda item: {'self': item.program})
-
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
     get_manage_url = _get_type_url("manage")
@@ -1072,7 +1064,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def getShirtInfo(self):
         shirt_count = defaultdict(lambda: defaultdict(int))
         teacher_dict = self.teachers()
-        if teacher_dict.has_key('class_approved'):
+        if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
             query = query.values_list('registrationprofile__teacher_info__shirt_type',

@@ -127,31 +127,6 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             }
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')
-def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False):
-    errormsg = None
-
-    if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
-        if errormsg == 'Conflicts with your schedule!':
-            errormsg = None
-            for currentclass in user.getEnrolledClasses(cls.parent_program).exclude(id=swap_class.id):
-                for time in currentclass.meeting_times.all():
-                    if cls.meeting_times.filter(id = time.id).count() > 0:
-                        errormsg = 'Conflicts with your schedule!'
-
-    if cls.id == swap_class.id:
-        errormsg = '(You are currently registered for this class.)'
-
-    show_class =  (not filter) or (not errormsg)
-
-
-    return {'class':      cls,
-            'user':       user,
-            'prereg_url': prereg_url,
-            'errormsg':   errormsg,
-            'show_class': show_class}
-
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html')
 def render_class_minimal(cls, user=None, prereg_url=None, filter=False):
     errormsg = None

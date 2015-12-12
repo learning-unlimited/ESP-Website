@@ -18,7 +18,6 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
-from esp.users.views import make_user_admin
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -83,7 +82,7 @@ class ESPUserTest(TestCase):
         # Create the admin user
         adminUser, c1 = ESPUser.objects.get_or_create(username='admin')
         adminUser.set_password('password')
-        make_user_admin(adminUser)
+        adminUser.makeAdmin()
         # Create the student user
         studentUser, c2 = ESPUser.objects.get_or_create(username='student')
         # Make it a student
@@ -268,7 +267,7 @@ class MakeAdminTest(TestCase):
         self.assertFalse(self.user.groups.filter(name="Administrator").exists())
 
         # Now make admin_test into an admin using make_admin
-        make_user_admin(self.user)
+        self.user.makeAdmin()
 
         # Make sure user now has administrator privileges
         self.assertTrue(self.user.is_staff)
@@ -294,7 +293,7 @@ class AjaxExistenceChecker(TestCase):
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)
         for key in self.keys:
-            self.assertTrue(content.has_key(key), "Key %s missing from Ajax response to %s" % (key, self.path))
+            self.assertTrue(key in content, "Key %s missing from Ajax response to %s" % (key, self.path))
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def runTest(self):
