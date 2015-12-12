@@ -235,22 +235,7 @@ class ProgramModuleObj(models.Model):
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
 
-        # This used to make sure that every module had an appropriate
-        # module extension created if it wanted one, because this was where the
-        # module extension's attributes got populated onto the PMO.  We no
-        # longer want the attributes, but we need to make sure the thing still
-        # gets created, because other things may depend on it.  For now, do
-        # that manually.
-        # TODO(benkraft): Remove this, and make sure we always create the
-        # module extension in some more reasonable fashion, or handle it better
-        # if we don't.
-        if ModuleObj.module_ext:
-            ModuleObj.module_ext.objects.get_or_create(program=prog)
-
         return ModuleObj
-
-    # A hack, see the comment in getFromProgModule.
-    module_ext = None
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'

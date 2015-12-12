@@ -37,7 +37,7 @@ from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
-from esp.application.models import FormstackStudentProgramApp, FormstackAppSettings
+from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
 
 class FormstackAppModule(ProgramModuleObj):
@@ -56,8 +56,6 @@ class FormstackAppModule(ProgramModuleObj):
             "seq": 10,
             "required": True,
             }]
-
-    module_ext = FormstackAppSettings
 
     def students(self, QObject = False):
         result = {}

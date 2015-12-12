@@ -48,6 +48,8 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 from django.utils import timezone
 
 from argcache import cache_function, wildcard
@@ -1816,6 +1818,41 @@ class StudentSubjectInterest(ExpirableModel):
 
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
+
+
+# Hooked up in program.modules.signals and formstack.signals
+def maybe_create_module_ext(handler, ext):
+    """Registers a signal handler which creates program module extensions.
+
+    When the module specified by "handler" is added to a program, the signal
+    handler will automatically get_or_create an instance of the model "ext" for
+    that program.
+
+    Note: we don't remove the settings when we remove the module; there's
+    generally no harm to having them around and we don't want to make it easy
+    to accidentally delete them, since they're potentially harder to
+    reconfigure than just adding back the program module.
+
+    TODO(benkraft): Should we just do this on program creation instead?  We'll
+    end up with a bunch of unused settings, but maybe that's fine.
+    """
+    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
+    @receiver(m2m_changed, sender=Program.program_modules.through,
+              weak=False, dispatch_uid=uid)
+    def signal_handler(sender, **kwargs):
+        if kwargs['action'] == 'post_add':
+            if kwargs['reverse']:
+                if kwargs['instance'].handler == handler:
+                    # We've added some programs to the relevant module
+                    for prog in Program.objects.filter(pk__in=kwargs['pk_set']):
+                        ext.objects.get_or_create(program=prog)
+            else:
+                if ProgramModule.objects.filter(
+                        handler=handler, pk__in=kwargs['pk_set']).exists():
+                    # We've added some modules including the relevant one to a
+                    # program
+                    ext.objects.get_or_create(program=kwargs['instance'])
+
 
 # Needed for app loading, don't delete
 from esp.program.models.class_ import *

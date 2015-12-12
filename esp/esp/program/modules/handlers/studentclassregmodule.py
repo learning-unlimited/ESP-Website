@@ -50,7 +50,6 @@ from django.core.cache import cache
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.module_ext import StudentClassRegModuleInfo
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -142,8 +141,6 @@ class StudentClassRegModule(ProgramModuleObj):
     @property
     def scrmi(self):
         return self.program.getModuleExtension('StudentClassRegModuleInfo')
-
-    module_ext = StudentClassRegModuleInfo
 
     def students(self, QObject = False):
 
