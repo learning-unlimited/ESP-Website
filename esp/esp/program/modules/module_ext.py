@@ -213,28 +213,16 @@ class ClassRegModuleInfo(models.Model):
         # TODO(benkraft): remove.
         return self.program.getModule('TeacherClassRegModule')
 
-    def allowed_sections_ints_get(self):
-        return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]
-
-    def allowed_sections_ints_set(self, value):
-        self.allowed_sections = ",".join([ str(n) for n in value ])
-
-    def allowed_sections_actual_get(self):
+    @property
+    def allowed_sections_actual(self):
         if self.allowed_sections:
-            return self.allowed_sections_ints_get()
+            return [int(s) for s in self.allowed_sections.split(',') if s.strip()]
         else:
-            return range( 1, self.program.getTimeSlots().count()+1 )
+            return range(1, self.program.getTimeSlots().count()+1)
 
-    # TODO: rename allowed_sections to... something and this to allowed_sections
-    allowed_sections_actual = property( allowed_sections_actual_get, allowed_sections_ints_set )
-
-    def session_counts_ints_get(self):
-        return [ int(s) for s in self.session_counts.split(',') ]
-
-    def session_counts_ints_set(self, value):
-        self.session_counts = ",".join([ str(n) for n in value ])
-
-    session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
+    @property
+    def session_counts_ints(self):
+        return [int(s) for s in self.session_counts.split(',')]
 
     def getClassSizes(self):
         #   Default values
