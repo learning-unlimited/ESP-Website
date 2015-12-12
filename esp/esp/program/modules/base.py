@@ -152,10 +152,6 @@ class ProgramModuleObj(models.Model):
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
 
-    def getQForUser(self, QRestriction):
-        # Let's not do anything and say we did...
-        return QRestriction
-
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object

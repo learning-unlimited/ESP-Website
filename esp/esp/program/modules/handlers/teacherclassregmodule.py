@@ -140,16 +140,16 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         if QObject:
             result = {
-                'class_submitted': self.getQForUser(Q_isteacher),
-                'class_approved': self.getQForUser(Q_approved_teacher),
-                'class_proposed': self.getQForUser(Q_proposed_teacher),
-                'class_rejected': self.getQForUser(Q_rejected_teacher),
-                'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
-                'class_full': self.getQForUser(Q_full_teacher),
-                'taught_before': self.getQForUser(Q_taught_before),     #   not exactly correct, see above
+                'class_submitted': Q_isteacher,
+                'class_approved': Q_approved_teacher,
+                'class_proposed': Q_proposed_teacher,
+                'class_rejected': Q_rejected_teacher,
+                'class_nearly_full': Q_nearly_full_teacher,
+                'class_full': Q_full_teacher,
+                'taught_before': Q_taught_before,     #   not exactly correct, see above
             }
             for key in additional_qs:
-                result[key] = self.getQForUser(additional_qs[key])
+                result[key] = additional_qs[key]
         else:
             result = {
                 'class_submitted': ESPUser.objects.filter(Q_isteacher).distinct(),

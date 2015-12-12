@@ -108,7 +108,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         qf = Q(useravailability__event__program=self.program, useravailability__role__name='Teacher')
         if QObject is True:
-            return {'availability': self.getQForUser(qf)}
+            return {'availability': qf}
 
         teacher_list = ESPUser.objects.filter(qf).distinct()
 

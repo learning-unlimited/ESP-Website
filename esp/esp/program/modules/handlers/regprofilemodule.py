@@ -59,7 +59,7 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False))
+            return {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)
                     }
         students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
@@ -69,8 +69,8 @@ class RegProfileModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
-                               Q(registrationprofile__teacher_info__isnull = False))}
+            return {'teacher_profile': Q(registrationprofile__program=self.program) & 
+                                       Q(registrationprofile__teacher_info__isnull=False)}
         teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
 
