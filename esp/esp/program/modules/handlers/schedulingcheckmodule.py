@@ -371,7 +371,7 @@ class SchedulingCheckRunner:
           if len(self.d_grades) > 0:
              return self.d_grades
 
-          self.grades = self.p.getModuleExtension('ClassRegModuleInfo').getClassGrades()
+          self.grades = self.p.classregmoduleinfo.getClassGrades()
           grades_d = {}
           for grade in self.grades:
                grades_d[grade] = 0

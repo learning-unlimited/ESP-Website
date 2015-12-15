@@ -49,7 +49,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 
     #   Show e-mail codes?  We need to look in the settings.
     if not scrmi:
-        scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = cls.parent_program.studentclassregmoduleinfo
 
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     if not colorstring:
@@ -103,8 +103,8 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
     else:
         section = None
 
-    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
+    scrmi = cls.parent_program.studentclassregmoduleinfo
+    crmi = cls.parent_program.classregmoduleinfo
 
     #   Ensure cached catalog shows buttons and fillslots don't
 
