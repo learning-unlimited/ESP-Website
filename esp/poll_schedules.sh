@@ -23,7 +23,7 @@ echo "Logged in!"
 
 while (true); do
 	TMPFILE="`mktemp`"
-	curl -b "${CURL_COOKIE_STORE}" "https://esp.mit.edu/onsite/${PROGRAM}/${INSTANCE}/printschedules?gen_img&img_format=ps" -o "${TMPFILE}" 2>/dev/null
+	curl -b "${CURL_COOKIE_STORE}" "https://esp.mit.edu/onsite/${PROGRAM}/${INSTANCE}/printschedules?gen_img&img_format=pdf" -o "${TMPFILE}" 2>/dev/null
 
 	if [ -n "`cat "${TMPFILE}"`" ]; then
 		lpr -P "${PRINTERNAME}" < "${TMPFILE}"
