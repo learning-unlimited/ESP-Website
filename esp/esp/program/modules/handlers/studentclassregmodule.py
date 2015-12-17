@@ -47,7 +47,7 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, no_auth, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
@@ -585,6 +585,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @cache_control(public=True, max_age=3600)
+    @no_auth
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
@@ -644,6 +645,7 @@ class StudentClassRegModule(ProgramModuleObj):
     # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
@@ -651,6 +653,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
@@ -730,6 +733,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
+    @no_auth
     def openclasses(self, request, tl, one, two, module, extra, prog):
         """ A publicly viewable version of the onsite class list.
             Should be revisited in the future, as this was a temporary

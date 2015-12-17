@@ -71,7 +71,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
     def cybersource(self, request, tl, one, two, module, extra, prog):
 
