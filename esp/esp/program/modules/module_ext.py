@@ -33,15 +33,25 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import time
 from datetime import timedelta
+import time
+
 from django.db import models
-from esp.middleware import ESPError
-from esp.program.modules.base import ProgramModuleObj
+
 from esp.db.fields import AjaxForeignKey
-from django.conf import settings
-from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
+from esp.users.models import ESPUser
+
+# If this module is a little confusingly named, or has some cruft in it, it's
+# because it used to work differently.  Back in the day, certain program
+# modules inherited from one of the below models in addition to
+# ProgramModuleObj, thus the name "module extensions".  These days, they're
+# basically just a settings model that may be attached to the program, which
+# happens to have a name that suggests it has something to do with a program
+# module.  They still have a little to do with modules -- they're autocreated
+# when the corresponding program modules get added to a program (see
+# esp.program.models.maybe_create_module_ext), but that's about it.
+# TODO(benkraft): rename this to "program settings" or something.
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
@@ -62,7 +72,7 @@ def get_regtype_enrolled():
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    module               = models.ForeignKey(ProgramModuleObj, editable=False)
+    program = models.OneToOneField(Program)
 
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
@@ -120,6 +130,12 @@ class StudentClassRegModuleInfo(models.Model):
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
     force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
 
+    @property
+    def module(self):
+        """Deprecated; you probably shouldn't need this."""
+        # TODO(benkraft): remove.
+        return self.program.getModule('StudentClassRegModule')
+
     def reg_verbs(self):
         verb_list = [self.signup_verb]
 
@@ -140,7 +156,8 @@ class StudentClassRegModuleInfo(models.Model):
         return 'Student Class Reg Ext. for %s' % str(self.module)
 
 class ClassRegModuleInfo(models.Model):
-    module               = models.ForeignKey(ProgramModuleObj)
+    program = models.OneToOneField(Program)
+
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
     set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
 
@@ -190,52 +207,22 @@ class ClassRegModuleInfo(models.Model):
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
     progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checkboxes, 2=progress bar, 0=neither.')
 
-    def allowed_sections_ints_get(self):
-        return [ int(s.strip()) for s in self.allowed_sections.split(',') if s.strip() != '' ]
+    @property
+    def module(self):
+        """Deprecated; you probably shouldn't need this."""
+        # TODO(benkraft): remove.
+        return self.program.getModule('TeacherClassRegModule')
 
-    def allowed_sections_ints_set(self, value):
-        self.allowed_sections = ",".join([ str(n) for n in value ])
-
-    def get_program(self):
-        # Unfortunately, it turns out the ProgramModule system does obscene
-        # things with __dict__, so the class specification up there is a
-        # blatant lie. Why the designer didn't think of giving two
-        # different fields different names is a mystery sane people have no
-        # hope of fathoming. (Seriously, these models are INTENDED to be
-        # subclassed together with ProgramModuleObj! What were you
-        # thinking!?)
-        #
-        # see ProgramModuleObj.module, ClassRegModuleInfo.module, and
-        # ProgramModuleObj.fixExtensions
-        #
-        # TODO: Look into renaming the silly field and make sure no black
-        # magic depends on it
-        if hasattr(self, 'program'):
-            program = self.program
-        elif isinstance(self.module, ProgramModuleObj):
-            # Sadly, this probably never happens, but this function is
-            # going to work when called by a sane person, dammit!
-            program = self.module.program
-        else:
-            raise ESPError("Can't find program from ClassRegModuleInfo")
-        return program
-
-    def allowed_sections_actual_get(self):
+    @property
+    def allowed_sections_actual(self):
         if self.allowed_sections:
-            return self.allowed_sections_ints_get()
+            return [int(s) for s in self.allowed_sections.split(',') if s.strip()]
         else:
-            return range( 1, self.get_program().getTimeSlots().count()+1 )
+            return range(1, self.program.getTimeSlots().count()+1)
 
-    # TODO: rename allowed_sections to... something and this to allowed_sections
-    allowed_sections_actual = property( allowed_sections_actual_get, allowed_sections_ints_set )
-
-    def session_counts_ints_get(self):
-        return [ int(s) for s in self.session_counts.split(',') ]
-
-    def session_counts_ints_set(self, value):
-        self.session_counts = ",".join([ str(n) for n in value ])
-
-    session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
+    @property
+    def session_counts_ints(self):
+        return [int(s) for s in self.session_counts.split(',')]
 
     def getClassSizes(self):
         #   Default values
@@ -262,23 +249,15 @@ class ClassRegModuleInfo(models.Model):
 
     def getClassGrades(self):
         min_grade, max_grade = (6, 12)
-        if self.get_program().grade_min:
-            min_grade = self.get_program().grade_min
-        if self.get_program().grade_max:
-            max_grade = self.get_program().grade_max
+        if self.program.grade_min:
+            min_grade = self.program.grade_min
+        if self.program.grade_max:
+            max_grade = self.program.grade_max
 
         return range(min_grade, max_grade+1)
 
-    def getTimes(self):
-        times = self.get_program().getTimeSlots()
-        return [(str(x.id),x.short_description) for x in times]
-
     def getDurations(self):
-        return self.get_program().getDurations()
-
-    def getResources(self):
-        resources = self.get_program().getResources()
-        return [(str(x.id), x.name) for x in resources]
+        return self.program.getDurations()
 
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
@@ -348,7 +327,7 @@ class AJAXChangeLog(models.Model):
         entry.update(next_index, timeslots, room_name, cls_id)
 
         if user:
-        	entry.user = user
+            entry.user = user
 
         entry.save()
         self.save()
@@ -378,5 +357,3 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
-
-from esp.application.models import FormstackAppSettings

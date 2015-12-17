@@ -194,7 +194,6 @@ TEMPLATES = [
 MIDDLEWARE_GLOBAL = [
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-   #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
@@ -250,7 +249,7 @@ INSTALLED_APPS = (
     'bootstrapform',
     'django_nose',
     'esp.formstack',
-    'esp.application',
+    'esp.application.apps.ApplicationConfig',
 )
 
 import os

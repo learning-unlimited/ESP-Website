@@ -108,7 +108,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         qf = Q(useravailability__event__program=self.program, useravailability__role__name='Teacher')
         if QObject is True:
-            return {'availability': self.getQForUser(qf)}
+            return {'availability': qf}
 
         teacher_list = ESPUser.objects.filter(qf).distinct()
 
@@ -116,11 +116,6 @@ class AvailabilityModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
-
-    def getTimes(self):
-        #   Get a list of tuples with the id and name of each of the program's timeslots
-        times = self.program.getTimeSlots(types=[self.event_type()])
-        return [(str(t.id), t.short_description) for t in times]
 
     def prettyTime(self, time, inc_date=True):
         if inc_date:

@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
-from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
@@ -69,10 +68,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             }
 
-    @classmethod
-    def extensions(cls):
-        return {'crmi': module_ext.ClassRegModuleInfo}
-
+    @property
+    def crmi(self):
+        return self.program.classregmoduleinfo
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """
@@ -140,16 +138,16 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         if QObject:
             result = {
-                'class_submitted': self.getQForUser(Q_isteacher),
-                'class_approved': self.getQForUser(Q_approved_teacher),
-                'class_proposed': self.getQForUser(Q_proposed_teacher),
-                'class_rejected': self.getQForUser(Q_rejected_teacher),
-                'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
-                'class_full': self.getQForUser(Q_full_teacher),
-                'taught_before': self.getQForUser(Q_taught_before),     #   not exactly correct, see above
+                'class_submitted': Q_isteacher,
+                'class_approved': Q_approved_teacher,
+                'class_proposed': Q_proposed_teacher,
+                'class_rejected': Q_rejected_teacher,
+                'class_nearly_full': Q_nearly_full_teacher,
+                'class_full': Q_full_teacher,
+                'taught_before': Q_taught_before,     #   not exactly correct, see above
             }
             for key in additional_qs:
-                result[key] = self.getQForUser(additional_qs[key])
+                result[key] = additional_qs[key]
         else:
             result = {
                 'class_submitted': ESPUser.objects.filter(Q_isteacher).distinct(),
@@ -736,10 +734,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self, current_data)
+                    reg_form = TeacherClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self, current_data)
+                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
 
                 #   Todo...
@@ -761,9 +759,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             else:
                 if action=='create':
-                    reg_form = TeacherClassRegForm(self)
+                    reg_form = TeacherClassRegForm(self.crmi)
                 elif action=='createopenclass':
-                    reg_form = TeacherOpenClassRegForm(self)
+                    reg_form = TeacherOpenClassRegForm(self.crmi)
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')

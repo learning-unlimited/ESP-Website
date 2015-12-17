@@ -73,12 +73,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-
-# get_callable might not actually be public API. Django's nice and well-documented like that.
-def my_import(name):
-    from django.core.urlresolvers import get_callable
-    return get_callable(name)
-
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
 def home(request):

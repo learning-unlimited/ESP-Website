@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, needs_account, usercheck_usetl, main_call, aux_call, meets_deadline
 from esp.program.models import RegistrationProfile
-from esp.users.models   import ESPUser, User
+from esp.users.models   import ESPUser
 from django.db.models.query import Q
 from django.contrib.auth.decorators import login_required
 from esp.middleware.threadlocalrequest import get_current_request
@@ -59,7 +59,7 @@ class RegProfileModule(ProgramModuleObj):
 
     def students(self, QObject = False):
         if QObject:
-            return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False))
+            return {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)
                     }
         students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
@@ -69,8 +69,8 @@ class RegProfileModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
-                               Q(registrationprofile__teacher_info__isnull = False))}
+            return {'teacher_profile': Q(registrationprofile__program=self.program) & 
+                                       Q(registrationprofile__teacher_info__isnull=False)}
         teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
 
@@ -78,9 +78,9 @@ class RegProfileModule(ProgramModuleObj):
         return {'teacher_profile': """Teachers who have filled out a profile"""}
 
     @main_call
-    @needs_account
+    @usercheck_usetl
     @meets_deadline("/Profile")
-    def profile(self, request, tl, one, two, module, extra, prog, check_role=True):
+    def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
         from esp.web.views.myesp import profile_editor
@@ -94,14 +94,6 @@ class RegProfileModule(ProgramModuleObj):
             role = {'teach': 'teacher','learn': 'student'}[tl]
         else:
             role = user_roles[0]
-
-        # Make sure we are editing the right type of profile, otherwise
-        # display a helpful "wrong user type" message
-        if check_role:
-            if role == 'teacher' and not request.user.isTeacher():
-                return needs_teacher(RegProfileModule.profile)(self, request, tl, one, two, module, extra, prog, False)
-            if role == 'student' and not request.user.isStudent():
-                return needs_student(RegProfileModule.profile)(self, request, tl, one, two, module, extra, prog, False)
 
         #   Reset e-mail address for program registrations.
         if prog is None:
@@ -124,8 +116,6 @@ class RegProfileModule(ProgramModuleObj):
     def isCompleted(self):
         regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         return regProf.id is not None
-
-
 
     class Meta:
         proxy = True

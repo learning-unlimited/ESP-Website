@@ -40,9 +40,6 @@ from django_selenium.testcases import SeleniumTestCase
 import random
 import json
 
-#from esp.utils.selenium_auto import selenium_test
-
-
 # TODO(gkanwar): Remove non-selenium tests from this TestCase
 class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
     def setUp(self, *args, **kwargs):

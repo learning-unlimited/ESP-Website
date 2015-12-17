@@ -103,7 +103,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         import json
         from django.utils.safestring import mark_safe
 
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        crmi = prog.classregmoduleinfo
 
         open_class_category = prog.open_class_category
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
@@ -113,7 +113,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
-        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
+        ProgInfo = prog.studentclassregmoduleinfo
 
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:

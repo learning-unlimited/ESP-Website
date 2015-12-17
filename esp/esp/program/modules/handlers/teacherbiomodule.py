@@ -52,7 +52,7 @@ class TeacherBioModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_biographies': self.getQForUser(Q(teacherbio__program = self.program))}
+            return {'teacher_biographies': Q(teacherbio__program = self.program)}
 
         teachers = ESPUser.objects.filter(teacherbio__program = self.program).distinct()
         return {'teacher_biographies': teachers }
