@@ -7,6 +7,8 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     ./manage.py test
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     deploy/lint
+elif [ "$TRAVIS_JOB" = "future" ]; then
+    deploy/future
 else
     echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
     exit 1

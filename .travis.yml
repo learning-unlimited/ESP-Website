@@ -8,6 +8,7 @@ env:
     - DJANGO_SETTINGS_MODULE=esp.settings
   matrix:
     - TRAVIS_JOB="lint"
+    - TRAVIS_JOB="future"
     - TRAVIS_JOB="test"
 before_install:
   - deploy/travis/before_install

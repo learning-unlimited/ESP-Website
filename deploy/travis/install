@@ -7,6 +7,8 @@ if [ "$TRAVIS_JOB" = "test" ]; then
     pip install -r esp/requirements.txt --use-mirrors -q --log pip.log || (tail pip.log && exit 1)
 elif [ "$TRAVIS_JOB" = "lint" ]; then
     pip install flake8
+elif [ "$TRAVIS_JOB" = "future" ]; then
+    :
 else
     echo "Unknown TRAVIS_JOB: $TRAVIS_JOB"
     exit 1

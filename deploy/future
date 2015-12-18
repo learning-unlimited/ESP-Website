@@ -1,0 +1,172 @@
+#!/bin/bash
+# Don't run this with -e, grep exits with 1 when it finds no results
+
+function check_py () {
+# This is a bit janky. If you know how to get the output
+# to go on separate lines, please tell me.
+    results=`git --no-pager grep $1|grep "\.py"|grep -v "future-ok"`
+    if [ "$results" ]; then
+	echo $results
+	EXIT=1
+    fi
+}
+
+function check_html () {
+    results=`git --no-pager grep $1|grep "\.html:"|grep -v "future-ok"`
+    if [ "$results" ]; then
+	echo $results
+	EXIT=1
+    fi
+}
+
+EXIT=0
+
+# http://stackoverflow.com/a/4774063
+pushd "$(dirname "$0")" > /dev/null
+SCRIPTDIR="$(pwd -P)"
+popd > /dev/null
+
+BASEDIR="$(dirname "$SCRIPTDIR")"
+cd $BASEDIR
+
+echo "Running future Django lint checks..."
+
+# Uncomment checks here once you've deleted all the uses from the codebase,
+# or checked that we never used the feature in the first place,
+# or checked that future changes won't break your use of this feature.
+# Add more checks once a new version of Django is released,
+# and delete them once we've upgraded main to a new version and
+# cleared out old pull requests.
+# Only push to future-django-support if what you're doing won't work
+# on our current Django version. Otherwise, make a pull request to
+# main and add the check as part of your pull request.
+
+# A lot of these are impossible or annoying to write without some
+# false positives, and some ungreppable things are left out entirely.
+# Many of them should be considered warnings rather than errors: check
+# that a future behavior change won't break your code.
+# Add "#future-ok" to the end of a line if you've checked,
+# or rewrite the check to avoid the false positives.
+
+# Django 1.9 backwards incompatibility checks
+#check_py is_usable
+#check_py "\.add(" # warning
+check_py get_request_repr
+check_py add_to_builtins
+check_py simple_tag # warning
+check_py page_range
+check_py REASON_PHRASES
+check_py STATUS_CODE_TEXT
+check_py ValuesQuerySet
+#check_py ValuesListQuerySet
+#check_py get_context_data
+check_py SimpleTestCase # see also 1.10
+check_py app_name
+check_py total_ordering
+#check_html url # warning
+check_py enable_comments
+check_py setup_databases # warning
+check_py teardown_databases # warning
+check_py models.fields.related
+
+# Deprecated, removed in 1.9
+# (if we had logging for deprecation warnings, we wouldn't need these)
+# a lot of the commented out checks are just false positives
+check_py dictconfig
+check_py importlib
+check_py tzinfo
+#check_py utils.unittest
+#check_py syncdb # also catches pre_syncdb and post_syncdb
+check_py IPAddressField
+check_py handle_app
+check_py RequestSite
+check_py get_current_site
+check_py runfcgi
+check_py SortedDict
+check_py declared_fieldsets
+check_py django.contrib.admin.util
+check_py django.contrib.gis.db.backends.util
+check_py django.db.backends.util
+#check_py django.forms.util
+check_py get_formsets
+check_py _get_memcache_timeout
+check_py dumpdata # warning
+check_py use_natural_keys
+check_py get_declared_fields
+check_py SplitDateTimeWidget
+#check_py REQUEST
+check_py MergeDict
+#check_py memoize
+#check_py get_cache
+#check_py django.db.models.loading
+#check_py QuerySet # warning
+check_py requires_model_validation
+check_py validator_class
+#check_py validate
+check_py validate_field
+check_py import_by_path
+#check_html future # see also 1.10
+check_py javascript_quote
+#check_py TEST_
+check_py cache_choices
+#check_py RedirectView # warning
+check_py FlatPageSitemap
+check_py TestTemplateLoader
+check_py contenttypes.generic
+
+# Deprecated, removed in 1.10
+check_py SQLCompiler
+#check_py patterns
+#check_py reverse
+#check_py optparse
+#check_py NoArgsCommand
+#check_py context_processors
+#check_py aggregates
+check_py aggregate_select
+check_py add_aggregate
+check_py set_aggregate_mask
+check_py append_aggregate_mask
+#check_py resolve_variable
+#check_py get_field_by_name
+#check_py get_all_field_names
+check_py get_fields_with_model
+check_py get_concrete_fields_with_model
+check_py get_m2m_with_model
+#check_py get_all_related_objects
+#check_py get_all_related_many
+check_py get_all_related_m2m
+#check_py error_message
+check_py unordered_list
+check_py _has_changed
+check_py removetags
+check_py remove_tags
+check_py strip_entities
+check_py is_admin_site
+#check_py SubfieldBase
+check_py checksums
+check_py original_content_type_id
+check_py FormMixin
+check_py ALLOWED_INCLUDE_ROOTS
+#check_py TEMPLATE_
+#check_py BaseLoader
+check_py current_app
+#check_py dictionary
+#check_py context_instance
+#check_py dirs
+check_py "\.related"
+#check_py "\-\-list"
+#check_html ssi
+#check_py Storage
+#check_py success_url
+check_py GeoQuerySet
+#check_py ContentType
+check_py allow_migrate
+#check_html cycle
+check_py Signer
+
+if [ $EXIT = 0 ]; then
+    echo "success!"
+else
+    echo "Some errors or warnings were found. Check the Django release notes for information."
+fi
+exit $EXIT
