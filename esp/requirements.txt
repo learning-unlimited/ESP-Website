@@ -3,7 +3,7 @@ pillow==2.8.2
 cssutils==1.0
 django-extensions==1.5.5
 django-form-utils==1.0.3
-django-reversion==1.8.7
+django-reversion==1.10.0
 django-selenium==0.9.8
 django-localflavor==1.1
 flup==1.0.2
