@@ -307,7 +307,6 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
-USE_PROFILER = False
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120
