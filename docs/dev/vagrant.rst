@@ -111,3 +111,5 @@ Once you're done: ::
 One last command! When your devserver gets out of date, this command will update the dependencies, run migrations, and generally make things work again: ::
 
     fab refresh
+
+If you want to add some custom shortcuts that don't need to go in the main fabfile, you can add them in a file called  ``local_fabfile.py`` in the same directory as ``fabfile.py``. Just add ``from fabfile import *`` at the top, and then write whatever commands you want.

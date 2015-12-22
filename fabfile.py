@@ -376,3 +376,8 @@ def runserver():
     ensure_environment()
 
     manage("runserver 0.0.0.0:8000")
+
+try:
+    from local_fabfile import *
+except ImportError:
+    pass
