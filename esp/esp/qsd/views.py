@@ -52,7 +52,7 @@ from esp.varnish import purge_page
 
 from django.conf import settings
 
-import reversion
+from reversion import revisions as reversion
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
