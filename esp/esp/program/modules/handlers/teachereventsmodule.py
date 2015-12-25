@@ -83,8 +83,8 @@ class TeacherEventsModule(ProgramModuleObj):
         """ Returns lists of teachers who've signed up for interviews and for teacher training. """
         if QObject is True:
             return {
-                'interview': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program )),
-                'training': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ))
+                'interview': Q(useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program),
+                'training': Q(useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program)
             }
         else:
             return {

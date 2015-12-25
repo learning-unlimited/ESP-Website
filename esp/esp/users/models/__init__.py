@@ -535,7 +535,7 @@ class BaseESPUser(object):
     def getAppliedClasses(self, program=None):
         #   If priority registration is enabled, add in more verbs.
         if program:
-            scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = program.studentclassregmoduleinfo
             verb_list = [v.name for v in scrmi.reg_verbs()]
         else:
             verb_list = ['Applied']
@@ -1815,9 +1815,6 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
-    class Admin:
-        search_fields = ['first_name','last_name','user__username']
-
 
 class K12SchoolManager(models.Manager):
     def other(self):
@@ -1988,22 +1985,6 @@ class PersistentQueryFilter(models.Model):
     def __unicode__(self):
         return str(self.useful_name) + " (" + str(self.id) + ")"
 
-
-class ESPUser_Profile(models.Model):
-    user = AjaxForeignKey(ESPUser, unique=True)
-
-    class Meta:
-        app_label = 'users'
-        db_table = 'users_espuser_profile'
-
-    def prof(self):
-        return self.user
-
-    class Admin:
-        pass
-
-    def __unicode__(self):
-        return "ESPUser_Profile for user: %s" % unicode(self.user)
 
 class PasswordRecoveryTicket(models.Model):
     """ A ticket for changing your password. """

@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 
 import os.path
 import os
-from subprocess import check_call, STDOUT
+import subprocess
 from random import random
 from functools import partial
 import hashlib
@@ -73,7 +73,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 
     return gen_latex(rendered_source, filetype)
 
-def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=STDOUT):
+def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -139,29 +139,35 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
 
     # All command calls will use the same values for the cwd, stdout, and
-    # stderr arguments, so we define a partially-applied callable call()
-    # that makes it easier to call check_call() with these values.
-    call = partial(check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+    # stderr arguments, so we define a partially-applied callable check_call()
+    # that makes it easier to call subprocess.check_call() with these values
+    # (and similarly for call()).
+    check_call = partial(subprocess.check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+    call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
     if type == 'pdf':
         mime = 'application/pdf'
-        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
 
     elif type == 'log':
         mime = 'text/plain'
+        # Use `subprocess.call()`, not `subprocess.check_call()`, because the
+        # command doesn't need to succeed in order to read the generated .log
+        # file. In fact, for the use case of this type (trying to debug why
+        # compilation isn't working), it is likely that the command will fail.
         call(['latex'] + latex_options + ['%s.tex' % file_base])
 
     elif type == 'svg':
         mime = 'image/svg+xml'
-        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
-        call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
+        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
         if remove_files:
             os.remove('%s.pdf' % file_base)
 
     elif type == 'png':
         mime = 'image/png'
-        call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
-        call(['convert', '-density', '192',
+        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+        check_call(['convert', '-density', '192',
               '%s.pdf' % file_base, '%s.png' % file_base])
         if remove_files:
             os.remove('%s.pdf' % file_base)

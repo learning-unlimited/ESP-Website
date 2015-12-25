@@ -47,10 +47,9 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, no_auth, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
-from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -139,10 +138,9 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             }]
 
-    @classmethod
-    def extensions(cls):
-        return {'scrmi': module_ext.StudentClassRegModuleInfo}
-
+    @property
+    def scrmi(self):
+        return self.program.studentclassregmoduleinfo
 
     def students(self, QObject = False):
 
@@ -210,7 +208,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         user = get_current_request().user
         is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -331,7 +329,7 @@ class StudentClassRegModule(ProgramModuleObj):
             Return True if there are no errors.
         """
         reg_perm = 'Student/Classes'
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         if 'prereg_verb' in request.POST:
             proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
@@ -533,7 +531,7 @@ class StudentClassRegModule(ProgramModuleObj):
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
@@ -585,6 +583,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @cache_control(public=True, max_age=3600)
+    @no_auth
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
@@ -600,7 +599,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @cache_control(public=True, max_age=3600)
     def catalog_allowed_reg_verbs(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         signup_verb_uri = scrmi.signup_verb.get_uri().replace('V/Flags/Registration/', '')
 
         if scrmi.use_priority:
@@ -644,6 +643,7 @@ class StudentClassRegModule(ProgramModuleObj):
     # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
@@ -651,6 +651,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
@@ -730,6 +731,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
+    @no_auth
     def openclasses(self, request, tl, one, two, module, extra, prog):
         """ A publicly viewable version of the onsite class list.
             Should be revisited in the future, as this was a temporary

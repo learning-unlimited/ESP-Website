@@ -360,10 +360,6 @@ class MessageRequest(models.Model):
         if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
 
-    class Admin:
-        pass
-
-
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
@@ -443,9 +439,6 @@ class TextOfEmail(models.Model):
             orm_class = cls
         now = datetime.now()
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
-
-    class Admin:
-        pass
 
     class Meta:
         verbose_name_plural = 'Email Texts'
@@ -539,9 +532,6 @@ class EmailRequest(models.Model):
 
     def __unicode__(self):
         return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
-
-    class Admin:
-        pass
 
 class EmailList(models.Model):
     """

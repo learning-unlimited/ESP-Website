@@ -14,7 +14,7 @@ def render_class_teacher_list_row(cls):
     """Render a class for the teacher list of classes in teacherreg."""
     return {'cls': cls,
             'program': cls.parent_program,
-            'crmi': cls.parent_program.getModuleExtension('ClassRegModuleInfo'),
+            'crmi': cls.parent_program.classregmoduleinfo,
             'friendly_times_with_date': Tag.getBooleanTag(
                 'friendly_times_with_date', cls.parent_program, False),
             'email_host': settings.EMAIL_HOST
@@ -33,7 +33,7 @@ def render_class_copy_row(cls):
     """
     return {'cls': cls,
             'program': cls.parent_program,
-            'crmi': cls.parent_program.getModuleExtension('ClassRegModuleInfo')}
+            'crmi': cls.parent_program.classregmoduleinfo}
 render_class_copy_row.cached_function.depend_on_cache(
     render_class_teacher_list_row.cached_function,
     lambda cls=wildcard, **kwargs: {'cls': cls})

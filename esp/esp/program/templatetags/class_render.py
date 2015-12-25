@@ -14,7 +14,7 @@ register = template.Library()
 def render_class_core(cls):
     """Render non-user-specific parts of a class for the catalog."""
     prog = cls.parent_program
-    scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+    scrmi = prog.studentclassregmoduleinfo
     colorstring = prog.getColor()
     if colorstring is not None:
         colorstring = ' background-color:#' + colorstring + ';'
@@ -70,8 +70,8 @@ render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cl
 
 def _render_class_helper(cls, user=None, filter=False, timeslot=None):
     """Computes the context for render_class and render_class_direct."""
-    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
+    scrmi = cls.parent_program.studentclassregmoduleinfo
+    crmi = cls.parent_program.classregmoduleinfo
 
     if timeslot:
         section = cls.get_section(timeslot=timeslot)

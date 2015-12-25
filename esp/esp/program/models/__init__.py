@@ -48,6 +48,8 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 from django.utils import timezone
 
 from argcache import cache_function, wildcard
@@ -537,8 +539,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def open_class_registration(self):
-        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
-    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.get_program()})
+        return self.classregmoduleinfo.open_class_registration
+    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
     open_class_registration = property(open_class_registration)
 
     @cache_function
@@ -771,7 +773,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
         else:
@@ -840,8 +842,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
-    getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
+    getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -893,59 +895,19 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
 
-    def getModuleExtension(self, ext_name_or_cls, module_id=None):
-        """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
-        This avoids actually looking up the program module first. """
-        # We don't actually want to cache this in memcached:
-        # If its value changes in the middle of a page load, we don't want to switch to the new value.
-        # Also, the method is called quite often, so it adds cache load.
-        # Program objects are assumed to not persist across page loads generally,
-        # so the following should be marginally safer:
-
-        if not hasattr(self, "_moduleExtension"):
-            self._moduleExtension = {}
-
-        key = (ext_name_or_cls, module_id)
-        if key in self._moduleExtension:
-            return self._moduleExtension[key]
-
-        ext_cls = None
-        if isinstance(ext_name_or_cls, basestring):
-            mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
-            ext_cls = getattr(mod, ext_name_or_cls)
-        else:
-            ext_cls = ext_name_or_cls
-
-        if module_id:
-            try:
-                extension = ext_cls.objects.filter(module__id=module_id).select_related()[0]
-            except:
-                extension = ext_cls()
-                extension.module_id = module_id
-                extension.save()
-        else:
-            try:
-                extension = ext_cls.objects.filter(module__program__id=self.id).select_related()[0]
-            except:
-                extension = None
-
-        self._moduleExtension[key] = extension
-
-        return extension
-
     @cache_function
     def getColor(self):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        modinfo = self.getModuleExtension(ClassRegModuleInfo)
+        modinfo = self.classregmoduleinfo
         retVal = None
         if modinfo:
             retVal = modinfo.color_code
 
         self._getColor = retVal
         return retVal
-    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.module.program})
+    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
 
     def visibleEnrollments(self):
         """
@@ -953,7 +915,7 @@ class Program(models.Model, CustomFormsLinkModel):
         This originally returned true if class registration was fully open.
         Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.studentclassregmoduleinfo
         return options.visible_enrollments
 
     def getVolunteerRequests(self):
@@ -997,14 +959,14 @@ class Program(models.Model, CustomFormsLinkModel):
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else:
             return 1
 
     def useGradeRangeExceptions(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule:
             return studentregmodule.use_grade_range_exceptions
         else:
@@ -1844,6 +1806,41 @@ class StudentSubjectInterest(ExpirableModel):
 
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
+
+
+# Hooked up in program.modules.signals and formstack.signals
+def maybe_create_module_ext(handler, ext):
+    """Registers a signal handler which creates program module extensions.
+
+    When the module specified by "handler" is added to a program, the signal
+    handler will automatically get_or_create an instance of the model "ext" for
+    that program.
+
+    Note: we don't remove the settings when we remove the module; there's
+    generally no harm to having them around and we don't want to make it easy
+    to accidentally delete them, since they're potentially harder to
+    reconfigure than just adding back the program module.
+
+    TODO(benkraft): Should we just do this on program creation instead?  We'll
+    end up with a bunch of unused settings, but maybe that's fine.
+    """
+    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
+    @receiver(m2m_changed, sender=Program.program_modules.through,
+              weak=False, dispatch_uid=uid)
+    def signal_handler(sender, **kwargs):
+        if kwargs['action'] == 'post_add':
+            if kwargs['reverse']:
+                if kwargs['instance'].handler == handler:
+                    # We've added some programs to the relevant module
+                    for prog in Program.objects.filter(pk__in=kwargs['pk_set']):
+                        ext.objects.get_or_create(program=prog)
+            else:
+                if ProgramModule.objects.filter(
+                        handler=handler, pk__in=kwargs['pk_set']).exists():
+                    # We've added some modules including the relevant one to a
+                    # program
+                    ext.objects.get_or_create(program=kwargs['instance'])
+
 
 # Needed for app loading, don't delete
 from esp.program.models.class_ import *

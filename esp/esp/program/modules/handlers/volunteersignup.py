@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
@@ -50,6 +50,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             }
 
     @main_call
+    @no_auth
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
 
@@ -92,7 +93,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         result = {}
         for key in queries:
             if QObject:
-                result[key] = self.getQForUser(queries[key])
+                result[key] = queries[key]
             else:
                 result[key] = ESPUser.objects.filter(queries[key]).distinct()
         return result
