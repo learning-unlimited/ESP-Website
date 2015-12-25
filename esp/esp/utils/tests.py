@@ -13,7 +13,7 @@ except:
 import os
 import subprocess
 import sys
-import reversion
+from reversion import revisions as reversion
 import unittest
 
 from django.db.models.query import Q

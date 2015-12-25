@@ -42,12 +42,13 @@ Learning Unlimited, Inc.
 from esp.miniblog.templatetags.render_blog import render_blog
 from esp.miniblog.templatetags.render_blog import render_comments
 
-from esp.program.templatetags.class_render import render_class_core
 from esp.program.templatetags.class_render import render_class
-from esp.program.templatetags.class_render import render_class_minimal
-from esp.program.templatetags.class_render import render_class_current
+from esp.program.templatetags.class_render import render_class_core
 from esp.program.templatetags.class_render import render_class_preview
 from esp.program.templatetags.class_render import render_class_row
+
+from esp.program.templatetags.class_render_row import render_class_copy_row
+from esp.program.templatetags.class_render_row import render_class_teacher_list_row
 
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd

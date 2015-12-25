@@ -10,7 +10,7 @@ django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterM
 django-formtools==1.0 # Used once in customforms
 django-grappelli==2.7.1 # Makes the admin panel better
 django-localflavor==1.1 # Provides address and phone number fields
-django-reversion==1.8.7 # Handles versioning, currently for QSD and TemplateOverrides
+django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
 
