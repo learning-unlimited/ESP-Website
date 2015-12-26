@@ -38,6 +38,7 @@ from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q
 
+from django.db import transaction
 from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
@@ -240,7 +241,7 @@ class IndividualAccountingController(ProgramAccountingController):
         source_account = self.default_source_account()
         required_line_items = self.get_lineitemtypes(required_only=True)
 
-        existing_transfers_by_li = {t.line_item.id: t for t in Transfer.objects.filter(
+        existing_transfers_by_li = {t.line_item_id: t for t in Transfer.objects.filter(
             user=self.user, line_item__in=required_line_items)}
 
         for item in required_line_items:
@@ -257,6 +258,11 @@ class IndividualAccountingController(ProgramAccountingController):
                 # A Transfer for this Line Item Type already exists
                 # *and* has already been paid. It's too late, so do
                 # nothing.
+                pass
+            elif transfer.amount_dec == item.amount_dec:
+                # A Transfer for this Line Item Type already exists
+                # *and* has the correct amount. No changes are
+                # necessary.
                 pass
             else:
                 # Adjust the amount of the Transfer to match the new
@@ -470,6 +476,7 @@ class IndividualAccountingController(ProgramAccountingController):
         amt_sibling = self.amount_siblingdiscount()
         return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
 
+    @transaction.atomic
     def submit_payment(self, amount, transaction_id=''):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
@@ -483,35 +490,35 @@ class IndividualAccountingController(ProgramAccountingController):
         self.link_paid_transfers(payment)
         return payment
 
+    @transaction.atomic
     def link_paid_transfers(self, payment):
-        # Given a Transfer representing a payment (e.g. a credit card payment),
-        # find all of the Transfers representing the items that were paid for
-        # and add a link back to the payment.
+        """ Given a Transfer representing a payment (e.g. a credit card
+        payment), find all of the Transfers representing the items that were
+        paid for and add a link back to the payment. """
+
+        # Filter out Transfers representing payments, financial aid grants, and
+        # purchasable items that have already been paid for.
+        outstanding_transfers = self.get_transfers().filter(
+            line_item__for_payments=False,
+            line_item__for_finaid=False,
+            paid_in__isnull=True,
+        ).order_by('id')
 
         # Find the paid transfers by examining Transfers in order of creation
         # until they sum to the given amount.
         total = 0
         target = payment.get_amount()
-        paid_transfers = []
 
-        for transfer in self.get_transfers():
-            if not (transfer.line_item and transfer.line_item.is_purchasable) \
-               or transfer.paid_in:
-                # Filter out payment-related Transfers and already-paid Transfers
-                continue
-
+        for transfer in outstanding_transfers:
             total += transfer.get_amount()
-            paid_transfers.append(transfer)
+            transfer.paid_in = payment
+            transfer.save()
             if total >= target:
                 break
 
         if total != target:
+            # This will cause all changes to be rolled back
             raise ValueError("Transfers do not sum to target: %.2f" % target)
-
-        # Link the paid transfers back to the payment.
-        for transfer in paid_transfers:
-            transfer.paid_in = payment
-            transfer.save()
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

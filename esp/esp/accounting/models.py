@@ -167,6 +167,7 @@ class Account(models.Model):
 
     @property
     def balance(self):
+        result = 0
         if Transfer.objects.filter(source=self).exists():
             result -= Transfer.objects.filter(source=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
         if Transfer.objects.filter(destination=self).exists():
