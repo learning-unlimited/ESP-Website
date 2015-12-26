@@ -57,7 +57,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             }
 
     @main_call
-#    @needs_onsite
+    @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
         if not 'sure' in request.GET and not 'gen_img' in request.GET:

@@ -62,7 +62,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             context = module.prepare(context)
 
         context['modules'] = modules
-        context['options'] = prog.getModuleExtension('ClassRegModuleInfo')
+        context['options'] = prog.classregmoduleinfo
         context['one'] = one
         context['two'] = two
         context['extra_steps'] = "teach:extra_steps"

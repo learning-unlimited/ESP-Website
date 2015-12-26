@@ -117,11 +117,6 @@ class AvailabilityModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
 
-    def getTimes(self):
-        #   Get a list of tuples with the id and name of each of the program's timeslots
-        times = self.program.getTimeSlots(types=[self.event_type()])
-        return [(str(t.id), t.short_description) for t in times]
-
     def prettyTime(self, time, inc_date=True):
         if inc_date:
             return time.strftime('%A, %b %d, ').decode('utf-8') + time.strftime('%I:%M %p').lower().strip('0').decode('utf-8')

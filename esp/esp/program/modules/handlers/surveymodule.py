@@ -86,6 +86,7 @@ class SurveyModule(ProgramModuleObj):
         return False
 
     @main_call
+    @usercheck_usetl
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':

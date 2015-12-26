@@ -128,7 +128,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="/admin/tagdict/tag">edit the "stripe_settings" Tag here</a>.', True)
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
     @meets_cap
     def payonline(self, request, tl, one, two, module, extra, prog):
@@ -206,6 +206,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
+    @needs_student
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()

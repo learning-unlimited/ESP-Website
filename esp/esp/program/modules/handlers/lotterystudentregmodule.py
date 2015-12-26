@@ -44,7 +44,7 @@ from django.template.loader      import render_to_string
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
-from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap
+from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
@@ -104,7 +104,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         import json
         from django.utils.safestring import mark_safe
 
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        crmi = prog.classregmoduleinfo
 
         open_class_category = prog.open_class_category
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
@@ -114,7 +114,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
-        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
+        ProgInfo = prog.studentclassregmoduleinfo
 
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
@@ -123,6 +123,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)
 
     @aux_call
+    @needs_student
     @meets_deadline('/Classes/Lottery')
     def lsr_submit(self, request, tl, one, two, module, extra, prog):
         """
@@ -133,6 +134,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return lsr_view_submit(request, self.program)
 
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=3600)
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program timeslot names for the tabs in the lottery inteface """

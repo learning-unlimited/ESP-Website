@@ -35,7 +35,6 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
-from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
@@ -69,10 +68,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             "inline_template": "listclasses.html",
             }
 
-    @classmethod
-    def extensions(cls):
-        return {'crmi': module_ext.ClassRegModuleInfo}
-
+    @property
+    def crmi(self):
+        return self.program.classregmoduleinfo
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """
@@ -736,10 +734,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self, current_data)
+                    reg_form = TeacherClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self, current_data)
+                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
                     if populateonly: reg_form._errors = ErrorDict()
 
                 #   Todo...
@@ -761,9 +759,9 @@ class TeacherClassRegModule(ProgramModuleObj):
 
             else:
                 if action=='create':
-                    reg_form = TeacherClassRegForm(self)
+                    reg_form = TeacherClassRegForm(self.crmi)
                 elif action=='createopenclass':
-                    reg_form = TeacherOpenClassRegForm(self)
+                    reg_form = TeacherOpenClassRegForm(self.crmi)
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')

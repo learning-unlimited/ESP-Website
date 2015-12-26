@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2011 by the individual contributors
+Copyright (c) 2015 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -33,28 +32,23 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-""" This file merely imports all of the template tag functions that are cached.
-    This populates the ArgCache registry with the appropriate info so that it's
-    ready to use when the tags get loaded and used in a template.  Otherwise,
-    you'll get cache initialization errors.
-"""
+from esp.program.tests import ProgramFrameworkTest
 
-from esp.miniblog.templatetags.render_blog import render_blog
-from esp.miniblog.templatetags.render_blog import render_comments
+class ProgramModuleAuthTest(ProgramFrameworkTest):
+    """Validate that all program modules have some property."""
 
-from esp.program.templatetags.class_render import render_class
-from esp.program.templatetags.class_render import render_class_core
-from esp.program.templatetags.class_render import render_class_preview
-from esp.program.templatetags.class_render import render_class_row
+    def testViewsHaveAuths(self):
+        """Test that all views of all program modules have some sort of auth decorator,
+        e.g., @needs_admin, @needs_student, @needs_account, @no_auth"""
 
-from esp.program.templatetags.class_render_row import render_class_copy_row
-from esp.program.templatetags.class_render_row import render_class_teacher_list_row
-
-from esp.qsd.templatetags.render_qsd import render_qsd
-from esp.qsd.templatetags.render_qsd import render_inline_qsd
-
-from esp.web.templatetags.navbar import navbar_gen
-
-from esp.web.templatetags.topbar import get_primary_nav
-
-
+        # self.program has all possible modules
+        modules = self.program.getModules()
+        for module in modules:
+            view_names = module.get_all_views()
+            for view_name in view_names:
+                view = getattr(module, view_name)
+                self.assertTrue(getattr(view, 'has_auth_check', None), \
+                    'Module "{}" is missing an auth check for view "{}"'.format(
+                        module,
+                        view_name
+                    ))

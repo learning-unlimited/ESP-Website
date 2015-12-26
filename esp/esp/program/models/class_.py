@@ -384,7 +384,7 @@ class ClassSection(models.Model):
         for r in rooms:
             rc += r.num_students
 
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
@@ -418,7 +418,7 @@ class ClassSection(models.Model):
             else:
                 ans = 0
 
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.parent_program.studentclassregmoduleinfo
 
         #   Apply dynamic capacity rule
         if not (ignore_changes or options.apply_multiplier_to_room_cap):
@@ -823,7 +823,7 @@ class ClassSection(models.Model):
 
         # Check if section is full
         if checkFull and self.isFull():
-            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
         # Test any scheduling constraints
@@ -841,7 +841,7 @@ class ClassSection(models.Model):
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
                     return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
 
-        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.parent_program.studentclassregmoduleinfo
         if not scrmi.use_priority:
             verbs = ['Enrolled']
             section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -1191,7 +1191,7 @@ class ClassSection(models.Model):
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
         if prereg_verb == None:
-            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
             else:
@@ -1588,7 +1588,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
-            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
         if user.getGrade(self.parent_program) < self.grade_min or \
@@ -1597,7 +1597,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
+        if user.getClasses(self.parent_program, verbs=[self.parent_program.studentclassregmoduleinfo.signup_verb.name]).count() == 0:
             return False
 
         for section in self.get_sections():

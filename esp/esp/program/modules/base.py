@@ -45,20 +45,15 @@ from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
 from esp.utils.web import render_to_response
 from argcache import cache_function
-from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
-from django.db.models.query import Q
-from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-
-from os.path import exists
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -83,10 +78,6 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def get_program(self):
-        """ Backward compatibility; see ClassRegModuleInfo.get_program """
-        return self.program
-
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with
@@ -98,12 +89,9 @@ class ProgramModuleObj(models.Model):
 
         result = []
 
-        #   Filter out attributes that we don't want to look at:
-        #   - Attributes of ProgramMdouleObj, including Django stuff
-        #   - Module extension attributes
+        #   Filter out attributes that we don't want to look at: attributes of
+        #   ProgramModuleObj, including Django stuff
         key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
-        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo]:
-            key_set = filter(lambda key: key not in dir(exclude_class), key_set)
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
@@ -196,7 +184,7 @@ class ProgramModuleObj(models.Model):
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
         if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
-            scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = prog.studentclassregmoduleinfo
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
                     return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -238,34 +226,11 @@ class ProgramModuleObj(models.Model):
 
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
-        ModuleObj.fixExtensions()
 
         return ModuleObj
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
-
-    def fixExtensions(self):
-        """ Find module extensions that this program module inherits from, and
-        incorporate those into its attributes. """
-
-        self._ext_map = {}
-        if self.program:
-            for key, x in self.extensions().items():
-                ext = self.program.getModuleExtension(x, module_id=self.id)
-                setattr(self, key, ext)
-                for attr in dir(ext):
-                    self._ext_map[attr] = key
-
-    def __getattr__(self, attr):
-        # backward compatibility
-        if hasattr(self, '_ext_map') and attr in self._ext_map:
-            key = self._ext_map[attr]
-            ext = getattr(self, key)
-            import warnings
-            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
-            return getattr(ext, attr)
-        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
 
@@ -368,10 +333,6 @@ class ProgramModuleObj(models.Model):
         return True
 
     @classmethod
-    def extensions(cls):
-        return {}
-
-    @classmethod
     def module_properties(cls):
         """
         Specify the properties of the ProgramModule row corresponding
@@ -445,8 +406,12 @@ def usercheck_usetl(method):
         else:
             return render_to_response(errorpage, request, {})
 
+    _checkUser.has_auth_check = True
     return _checkUser
 
+def no_auth(method):
+    method.has_auth_check = True
+    return method
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
@@ -458,6 +423,7 @@ def needs_teacher(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
     _checkTeacher.method = method
+    _checkTeacher.has_auth_check = True
     return _checkTeacher
 
 def needs_admin(method):
@@ -476,6 +442,7 @@ def needs_admin(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite(method):
@@ -493,6 +460,7 @@ def needs_onsite(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -509,6 +477,7 @@ def needs_onsite_no_switchback(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_student(method):
@@ -520,6 +489,7 @@ def needs_student(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
+    _checkStudent.has_auth_check = True
     return _checkStudent
 
 def needs_account(method):
@@ -529,6 +499,7 @@ def needs_account(method):
 
         return method(moduleObj, request, *args, **kwargs)
     _checkAccount.method = method
+    _checkAccount.has_auth_check = True
     return _checkAccount
 
 def meets_grade(method):

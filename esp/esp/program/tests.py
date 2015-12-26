@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import decimal
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
@@ -511,7 +512,7 @@ class ProgramHappenTest(TestCase):
         sr = StudentRegistration.objects.all()[0]
 
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
-            relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
+            relationship=self.prog.studentclassregmoduleinfo.signup_verb).count() > 0, 'Registration failed.')
 
         # Check that you're in it now
         self.assertEqual( self.student.getEnrolledClasses().count(), 1, "Student not enrolled in exactly one class" )
@@ -520,7 +521,7 @@ class ProgramHappenTest(TestCase):
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
-            relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
+            relationship=self.prog.studentclassregmoduleinfo.signup_verb).count() > 0, 'Registration failed.')
 
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
@@ -941,7 +942,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         ts1 = timeslot_list[0]
         ts2 = timeslot_list[1]
         modules = program.getModules()
-        scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
+        scrmi = program.studentclassregmoduleinfo
 
         #   Check that the map starts out empty
         sm = ScheduleMap(student, program)
@@ -1023,7 +1024,7 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         program = self.program
         (section_list, timeslot_list) = randomized_attrs(program)
         modules = program.getModules()
-        scrmi = program.getModuleExtension('StudentClassRegModuleInfo', ProgramModuleObj.objects.filter(program=program, module__handler='StudentClassRegModule')[0].id)
+        scrmi = program.studentclassregmoduleinfo
 
         #   Prepare two sections
         section1 = section_list[0]
@@ -1102,40 +1103,39 @@ class DynamicCapacityTest(ProgramFrameworkTest):
     def runTest(self):
         #   Parameters
         initial_capacity = 37
-        mult_test = 0.6
+        mult_test = decimal.Decimal('0.6')
         offset_test = 4
 
         #   Get class capacity
         self.program.getModules()
-        options = self.program.getModuleExtension('StudentClassRegModuleInfo')
         sec = random.choice(list(self.program.sections()))
+        # Load the SCRMI off the section, to make sure that the section doesn't
+        # have a separate unupdated copy of it around when we update it.
+        # (Since self.program is a different copy of the same instance from
+        # sec.parent_program, if we update one SCRMI, the other won't update.)
+        options = sec.parent_program.studentclassregmoduleinfo
         sec.parent_class.class_size_max = initial_capacity
         sec.parent_class.save()
         sec.max_class_capacity = initial_capacity
         sec.save()
 
         #   Check that initially the capacity is correct
-        sec.parent_class._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
         #   Check that multiplier works
-        options.class_cap_multiplier = str(mult_test)
+        options.class_cap_multiplier = mult_test
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity * mult_test))
         #   Check that multiplier and offset work
         options.class_cap_offset = offset_test
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec._get_capacity(), int(initial_capacity * mult_test + offset_test))
         #   Check that offset only works
-        options.class_cap_multiplier = '1.0'
+        options.class_cap_multiplier = decimal.Decimal('1.0')
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, int(initial_capacity + offset_test))
         #   Check that we can go back to normal
         options.class_cap_offset = 0
         options.save()
-        sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
 
@@ -1225,7 +1225,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
         self.priority_rts=[self.priority_rt]
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
         scrmi.priority_limit = 1
         scrmi.save()
 
@@ -1383,7 +1383,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/2')
         self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/3')
         self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
         scrmi.priority_limit = 3
         scrmi.save()
 

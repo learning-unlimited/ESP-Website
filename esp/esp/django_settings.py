@@ -249,7 +249,7 @@ INSTALLED_APPS = (
     'bootstrapform',
     'django_nose',
     'esp.formstack',
-    'esp.application',
+    'esp.application.apps.ApplicationConfig',
 )
 
 import os

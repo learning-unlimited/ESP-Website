@@ -45,6 +45,9 @@ env.encvg = "ubuntu--12--vg-keep_1"
 # Name of the Postgres database
 env.dbname = "devsite_django"
 
+# Location where Fabric can store db-related files, with trailing /
+env.encfab = "/mnt/encrypted/fabric/"
+
 # Configure the Vagrant VM as the default target of our commands, so long as no
 # hosts were specified on the command line. Calling vagrant() is sort of like
 # writing env.hosts = ["vagrant"], but it handles the hostname and SSH config
@@ -86,10 +89,10 @@ def setup():
 
     print "***** "
     print "***** Creating the encrypted partition for data storage."
-    print "***** Please choose a passphrase and type it at the three prompts."
+    print "***** Please choose a passphrase and type it at the prompts."
     print "***** "
 
-    sudo("cryptsetup luksFormat /dev/mapper/%s" % env.encvg)
+    sudo("cryptsetup luksFormat -q /dev/mapper/%s" % env.encvg)
     sudo("cryptsetup luksOpen /dev/mapper/%s encrypted" % env.encvg)
     sudo("mkfs.ext4 /dev/mapper/encrypted")
     sudo("mkdir -p /mnt/encrypted")
@@ -98,6 +101,13 @@ def setup():
     # Create the encrypted tablegroup in Postgres
     sudo("chown -R postgres /mnt/encrypted")
     psql("CREATE TABLESPACE encrypted LOCATION '/mnt/encrypted'")
+
+    # Create a directory on the encrypted partition for miscellaneous storage
+    # and make it accessible to everyone (e.g. both vagrant and postgres need to
+    # access the database dump).
+    sudo("chmod +rx /mnt/encrypted")
+    sudo("mkdir " + env.encfab)
+    sudo("chmod a+rwx " + env.encfab)
 
     # Automatically activate virtualenv. We rely on this so that we don't have
     # to activate the virtualenv as part of every fab command.
@@ -264,16 +274,17 @@ def loaddb(filename=None):
     ensure_environment()
 
     # Clean up existing dumpfile, if present
-    run("rm -f ~/dbdump")
+    run("rm -f " + env.encfab + "dbdump")
 
     if filename:
-        put(filename, "~/dbdump")
+        put(filename, env.encfab + "dbdump")
     else:
         # Get or prompt for HTTP download settings. These settings are saved in
-        # ~/.dbdownload in the Vagrant VM, which makes it easier for people to
-        # work with different chapters' databasees in different VMs.
-        if files.exists("~/.dbdownload"):
-            contents = run("cat ~/.dbdownload")
+        # dbconfig in the encrypted part of the Vagrant VM, which makes it
+        # easier for people to work with different chapters' databasees in
+        # different VMs.
+        if files.exists(env.encfab + "dbconfig"):
+            contents = run(env.encfab + "dbconfig")
             config = json.loads(contents)
         else:
             url = prompt("Download URL:")
@@ -281,11 +292,11 @@ def loaddb(filename=None):
                 "url": url,
             }
             escaped_config = pipes.quote(json.dumps(config))
-            run("echo " + escaped_config + " > ~/.dbdownload")
+            run("echo " + escaped_config + " > " + env.encfab + "dbconfig")
 
         # Download database dump into VM
         escaped_url = pipes.quote(config["url"])
-        run("wget " + escaped_url + " -O ~/dbdump")
+        run("wget " + escaped_url + " -O " + env.encfab + "dbdump")
 
     # HACK: detect the Postgres user used in the dump. We run strings in case
     # the dump is in binary format, then we look for the grant for arbitrary
@@ -294,28 +305,27 @@ def loaddb(filename=None):
     #   GRANT ALL ON TABLE program_clas TO esp;
     #
     # ...which we can then parse to get the user. :D
-    contents = run("strings dbdump | grep 'GRANT ALL ON TABLE program_class TO'")
+    contents = run("strings " + env.encfab + "dbdump | grep 'GRANT ALL ON TABLE program_class TO'")
     pg_owner = contents.split()[-1][:-1]
 
     # Reset the database
     emptydb(pg_owner, interactive=False)
 
     # Load the database dump using the appropriate command for the format
-    sudo("chgrp postgres ~/dbdump")
-    if "PostgreSQL custom database dump" in run("file ~/dbdump"):
+    if "PostgreSQL custom database dump" in run("file " + env.encfab + "dbdump"):
         sudo("pg_restore --verbose --dbname=" + pipes.quote(env.dbname) +
-             " --exit-on-error --jobs=2 ~/dbdump",
+             " --exit-on-error --jobs=2 " + env.encfab + "dbdump",
              user="postgres")
     else:
         sudo("psql --dbname=" + pipes.quote(env.dbname) +
-             " --set='ON_ERROR_STOP=on' -f ~/dbdump",
+             " --set='ON_ERROR_STOP=on' -f " + env.encfab + "dbdump",
              user="postgres")
 
     # Run Django migrations, etc.
     refresh()
 
     # Cleanup
-    run("rm -f ~/dbdump")
+    run("rm -f " + env.encfab + "dbdump")
 
 def gen_password(length):
     return "".join([random.choice(string.letters + string.digits) for i in range(length)])
@@ -366,3 +376,8 @@ def runserver():
     ensure_environment()
 
     manage("runserver 0.0.0.0:8000")
+
+try:
+    from local_fabfile import *
+except ImportError:
+    pass
