@@ -229,7 +229,7 @@ class Transfer(models.Model):
         Account, blank=True, null=True, related_name='transfer_destination',
         help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.')
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
-    line_item = models.ForeignKey(LineItemType, blank=True, null=True)
+    line_item = models.ForeignKey(LineItemType)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
