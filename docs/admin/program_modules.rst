@@ -346,7 +346,6 @@ The questions shown on the teacher profile are configurable via the following ta
 * teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------

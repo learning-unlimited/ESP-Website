@@ -367,18 +367,9 @@ class TeacherInfoForm(FormWithRequiredCss):
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-    full_legal_name = SizedCharField(length=24, max_length=128, required=False)
-    university_email = forms.EmailField(required=False)
-    student_id = SizedCharField(length=24, max_length=128, required=False)
-    mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
-        if not Tag.getTag('teacherinfo_reimbursement_options', default=False):
-            reimbursement_fields = ['full_legal_name', 'university_email', 'student_id', 'mail_reimbursement']
-            for field_name in reimbursement_fields:
-                del self.fields[field_name]
-
         if Tag.getTag('teacherinfo_shirt_options') == 'False':
             del self.fields['shirt_size']
             del self.fields['shirt_type']
@@ -388,9 +379,6 @@ class TeacherInfoForm(FormWithRequiredCss):
         if Tag.getTag('teacherinfo_shirt_size_required'):
             self.fields['shirt_size'].required = True
             self.fields['shirt_size'].widget.attrs['class'] = 'required'
-        if Tag.getTag('teacherinfo_reimbursement_checks') == 'False':
-            del self.fields['mail_reimbursement']
-
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
