@@ -284,7 +284,7 @@ def loaddb(filename=None):
         # easier for people to work with different chapters' databasees in
         # different VMs.
         if files.exists(env.encfab + "dbconfig"):
-            contents = run(env.encfab + "dbconfig")
+            contents = run("cat " + env.encfab + "dbconfig")
             config = json.loads(contents)
         else:
             url = prompt("Download URL:")
