@@ -1189,9 +1189,9 @@ class StudentInfo(models.Model):
 
     medical_needs = models.TextField(blank=True, null=True)
 
+    # Deprecated, but left here so as not to remove Chicago's existing data.
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     schoolsystem_optout = models.BooleanField(default=False)
-    # Deprecated, but left here so as not to remove Chicago's existing data.
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
 
@@ -1242,9 +1242,7 @@ class StudentInfo(models.Model):
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = self.user.hasRole('StudentRep')
-        form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
-        form_dict['schoolsystem_optout'] = self.schoolsystem_optout
         form_dict['transportation'] = self.transportation
         return form_dict
 
@@ -1292,8 +1290,6 @@ class StudentInfo(models.Model):
         studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
-        studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
-        studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()

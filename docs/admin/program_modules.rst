@@ -81,7 +81,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
