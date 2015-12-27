@@ -299,13 +299,15 @@ def loaddb(filename=None):
         run("wget " + escaped_url + " -O " + env.encfab + "dbdump")
 
     # HACK: detect the Postgres user used in the dump. We run strings in case
-    # the dump is in binary format, then we look for the grant for arbitrary
-    # table, program_class. The result should be a line like:
+    # the dump is in binary format, then we look for the grant for an arbitrary
+    # table, program_class. The result should be like one of the following:
     #
-    #   GRANT ALL ON TABLE program_clas TO esp;
+    #   ALTER TABLE public.program_class OWNER TO umbc;
+    #   GRANT ALL ON TABLE program_class TO esp;
     #
     # ...which we can then parse to get the user. :D
-    contents = run("strings " + env.encfab + "dbdump | grep 'GRANT ALL ON TABLE program_class TO'")
+    query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE program_class TO"
+    contents = run("strings " + env.encfab + "dbdump | grep -E '" + query + "'")
     pg_owner = contents.split()[-1][:-1]
 
     # Reset the database
