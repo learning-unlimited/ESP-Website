@@ -269,6 +269,7 @@ class Program(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
+        ordering = ('-id',)
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
     USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
