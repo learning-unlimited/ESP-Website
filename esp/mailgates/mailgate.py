@@ -8,7 +8,6 @@ new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
-os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
 
 import logging
 # Make sure we end up in our logger even though this file is outside esp

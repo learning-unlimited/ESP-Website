@@ -38,7 +38,8 @@ PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT
 # set by shell_plus and script_setup (via esp.utils.shell_utils); should also
-# be set in any other scripts that get called manually.
+# be set in any other scripts that get called manually, but not in scripts that
+# get run unattended by e.g. cron.
 IS_IN_SCRIPT = os.environ.get("DJANGO_IS_IN_SCRIPT", "False") == "True"
 
 # Configure Django to support ESP
