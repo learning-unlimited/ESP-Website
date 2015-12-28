@@ -4,13 +4,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.core.cache.backends.base import BaseCache
-try:
-    #   Test whether we have pylibmc, and if it works, use the real pylibmc backend;
-    #   if it doesn't work, fake it using the default memcached backend
-    import pylibmc
-    from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
-except ImportError:
-    from django.core.cache.backends.memcached import MemcachedCache as PylibmcCacheClass
+import pylibmc
+from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii

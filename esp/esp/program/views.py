@@ -74,7 +74,7 @@ import operator
 import json
 from collections import defaultdict
 from decimal import Decimal
-import reversion
+from reversion import revisions as reversion
 
 try:
     from cStringIO import StringIO

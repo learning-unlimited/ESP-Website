@@ -81,7 +81,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
@@ -346,7 +345,6 @@ The questions shown on the teacher profile are configurable via the following ta
 * teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------

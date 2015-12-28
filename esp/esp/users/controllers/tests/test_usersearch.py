@@ -2,8 +2,6 @@ import datetime
 import logging
 logger = logging.getLogger(__name__)
 
-from model_mommy import mommy
-
 from django import forms
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group

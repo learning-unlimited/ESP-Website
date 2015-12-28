@@ -63,7 +63,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
             iac = IndividualAccountingController(self.program, self.student)
-            iac.add_required_transfers()
+            iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
 

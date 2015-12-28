@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
-import reversion
+from reversion import revisions as reversion
 import unittest
 
 from django.db.models.query import Q
@@ -88,7 +88,6 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
-        self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
 	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.

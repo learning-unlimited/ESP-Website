@@ -78,7 +78,6 @@ LOG_LEVEL = 'INFO' # Set to DEBUG for more spam or WARNING for less
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-USE_PROFILER = False
 SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
@@ -248,8 +247,6 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
-    'bootstrapform',
-    'django_nose',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
 )
