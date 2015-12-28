@@ -95,6 +95,9 @@ class LineItemType(models.Model):
         else:
             return u'%s for %s' % (self.text, self.program)
 
+    class Meta:
+        ordering = ('-program_id',)
+
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
     description = models.TextField(help_text='You can include the cost as part of the description, which is helpful if the cost differs from the line item type.')
