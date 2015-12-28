@@ -81,8 +81,8 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 # console at level LOG_LEVEL if DEBUG=True, mail admins (i.e. serverlog) at
 # level ERROR if DEBUG=False, and log to sentry at level WARNING if set up.
 # DisallowedHost errors and deprecation warnings don't go to email ever.
-# In scripts, we log to the console in a shorter format, and to LOG_FILE as
-# usual, and nothing else.
+# In scripts, we log to the console in a shorter format, to a separate log
+# file, and not to email or sentry.
 if SENTRY_DSN:
     sentry_handler = {
         'level': 'ERROR',
@@ -94,6 +94,11 @@ else:
     sentry_handler = {
         'class': 'logging.NullHandler',
     }
+
+if LOG_FILE.endswith('.log'):
+    SHELL_LOG_FILE = LOG_FILE[:-4] + '.shell.log'
+else:
+    SHELL_LOG_FILE = LOG_FILE + '.shell'
 
 LOGGING = {
     'version': 1,
@@ -125,9 +130,18 @@ LOGGING = {
             'level': LOG_LEVEL,
             # logrotate will take care of rotation if desired
             'class': 'logging.FileHandler',
+            'filters': ['require_not_in_script'],
             # LOG_FILE is set in django_settings or overridden in
             # local_settings
             'filename': LOG_FILE,
+            'formatter': 'verbose',
+        },
+        'filescript': {
+            'level': LOG_LEVEL,
+            # logrotate will take care of rotation if desired
+            'class': 'logging.FileHandler',
+            'filters': ['require_in_script'],
+            'filename': SHELL_LOG_FILE,  # computed from LOG_FILE above
             'formatter': 'verbose',
         },
         'console': {
@@ -165,26 +179,27 @@ LOGGING = {
         # around to override django's.  In 1.9 we will be able to remove them,
         # and just override 'django'.
         'django.security': {
-            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
-                         'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
             'level': 'DEBUG',
         },
         'django.request': {
-            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
-                         'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
             'level': 'DEBUG',
         },
         'django': {
-            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
-                         'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
             'level': 'DEBUG',
         },
         'py.warnings': {
-            'handlers': ['file', 'console', 'consolescript', 'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'sentry'],
         },
         'esp': {
-            'handlers': ['file', 'console', 'consolescript', 'mail_admins',
-                         'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
             'level': 'DEBUG',
         },
     }
