@@ -53,8 +53,9 @@ class TransferAdmin(admin.ModelAdmin):
         else:
             return u'--'
     list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description']
-    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
     list_filter = ['source', 'destination', 'line_item__program']
+    list_select_related = ['source', 'destination', 'line_item', 'option', 'user', 'line_item__program']
+    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
     raw_id_fields = ['paid_in']  # it's too expensive to iterate over all Transfers to create the dropdown menu
 admin_site.register(Transfer, TransferAdmin)
 
