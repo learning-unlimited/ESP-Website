@@ -124,7 +124,7 @@ class ClassChangeController(object):
         self.program = program
         if isinstance(program,int):
             self.program = Program.objects.get(id=program)
-        logger.info(self.program)
+        print self.program
         iscorrect = raw_input("Is this the correct program (y/[n])? ")
         assert (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes')
         self.now = datetime.now()

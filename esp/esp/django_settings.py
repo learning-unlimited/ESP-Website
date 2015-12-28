@@ -69,7 +69,10 @@ STATIC_URL = '/static/'
 LOGIN_REDIRECT_URL = '/'
 
 LOG_FILE = "/tmp/esp-website.log"
-LOG_LEVEL = 'INFO' # Set to DEBUG for more spam or WARNING for less
+# Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
+# when DEBUG=True will cause every query to be logged (to the
+# django.db.backends logger).
+LOG_LEVEL = 'INFO'
 
 
 ###########################

@@ -85,7 +85,7 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 # file, and not to email or sentry.
 if SENTRY_DSN:
     sentry_handler = {
-        'level': 'ERROR',
+        'level': 'WARNING',
         'filters': ['require_not_in_script'],
         'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
         'dsn': SENTRY_DSN,

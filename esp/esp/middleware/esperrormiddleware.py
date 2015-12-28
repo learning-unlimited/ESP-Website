@@ -162,8 +162,11 @@ class ESPErrorMiddleware(object):
 
     def process_exception(self, request, exception):
 
-        # TODO(benkraft): deprecate and remove instances of raising the
-        # exception class rather than an instance of it.
+        if exception == ESPError_Log or exception == ESPError_NoLog:
+            # TODO(benkraft): remove remaining instances of this.
+            logging.warning("Raising the exception class is deprecated, "
+                            "please raise ESPError(message) instead.")
+
         if isinstance(exception, ESPError_Log) or exception == ESPError_Log:
             # logging.ERROR will take care of emailing the error.
             log_level = logging.ERROR
