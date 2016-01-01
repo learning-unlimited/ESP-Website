@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from argcache import cache_function
 
-from esp.tagdict import all_global_tags, all_boolean_tags, all_program_tags
+from esp.tagdict import all_global_tags, all_program_tags
 
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
@@ -42,26 +42,32 @@ class Tag(models.Model):
     def getTag(cls, key, target=None, default=None):
         if key not in all_global_tags:
             logger.warning("Tag %s not in list of global tags", key)
+        elif all_global_tags[key][0]:
+            logger.warning("Tag %s should be used with getBooleanTag", key)
+
         if target is not None:
             logger.warning("getTag() called for key %s with specific target; consider using getProgramTag()",
                            key)
 
-        result = cls._getTag(key, target=target)
+        result = cls._getTag(key, default=default, target=target)
 
-        if result and (result.lower() == "false" or result.lower() == "true"):
+        if isinstance(result, basestring) and (result.lower() == "false" or
+                                               result.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
-        if result is None:
-            result = default
         return result
 
     @cache_function
-    def _getTag(cls, key, target=None):
+    def _getTag(cls, key, default=None, target=None):
         """
         Given a key (as a slug) and a target row from any database table,
         return the corresponding value as a string,
         or the value specified by the 'default' argument if no such value exists.
         """
+        if default is not None and not isinstance(default, basestring):
+            logger.warning("_getTag() called with non-string default for key %s",
+                           key)
+
         try:
             if target != None:
                 ct = ContentType.objects.get_for_model(target)
@@ -69,18 +75,21 @@ class Tag(models.Model):
             else:
                 return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
         except cls.DoesNotExist:
-            return None
+            return default
     _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
     _getTag = classmethod(_getTag)
 
     @classmethod
-    def getProgramTag(cls, key, program=None, default=None, ):
+    def getProgramTag(cls, key, program=None, default=None, boolean=False):
         """
         Given a key and program, return the corresponding value as string.
         If the program does not have the tag set, return the global value.
         """
         if key not in all_program_tags:
             logger.warning("Tag %s not in list of program tags", key)
+        elif all_program_tags[key][0] and not boolean:
+            logger.warning("Tag %s should be used with getBooleanTag", key)
+
         res = None
         # We use None, rather than default, as our default so that we hit the
         # same _getTag cache independently of the default.  Since _getTag should
@@ -91,19 +100,22 @@ class Tag(models.Model):
         if res is None:
             res = cls._getTag(key)
         if res is None:
-            return default
-        else:
-            return res
+            res = default
+        if (not boolean) and isinstance(res, basestring) and \
+           (res.lower() == "false" or res.lower() == "true"):
+            logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
+                           key)
+        return res
 
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
-        if key not in all_boolean_tags:
-            "getBooleanTag warning"
+        if (key not in all_program_tags or not all_program_tags[key][0]) \
+           and (key not in all_global_tags or not all_global_tags[key][0]):
             logger.warning("Tag %s not in list of boolean tags", key)
         if program:
-            tag_val = Tag.getProgramTag(key, program)
+            tag_val = Tag.getProgramTag(key, program, boolean=True)
         else:
             tag_val = Tag._getTag(key)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
