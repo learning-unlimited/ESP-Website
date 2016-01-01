@@ -91,8 +91,7 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             elif 'json_debug' in request.GET:
-                data = json.dumps(result, sort_keys=True,
-                                        indent = '    ')
+                data = json.dumps(result, sort_keys=True, indent=4)
                 return render_to_response('utils/jsondebug.html',
                                           request, {'data': data},
                                           content_type="text/html")

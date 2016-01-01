@@ -604,13 +604,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def message_requests():
-        earlier_requests = MessageRequest.objects.exclude(subject__icontains='password recovery')
-        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()
+        earlier_requests = MessageRequest.objects.all()
+        # Limit to 100 so the data doesn't get too big for memcached
+        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()[:100]
         for item in data:
             if isinstance(item['processed_by'], datetime):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
 
-        return {'message_requests': data}
+        return {'message_requests': list(data)}
 
     message_requests.method.cached_function.depend_on_model('dbmail.MessageRequest')
 
