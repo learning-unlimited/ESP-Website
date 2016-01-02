@@ -546,8 +546,6 @@ def _submit_transaction(request, log_record):
         amount_paid = Decimal(request.POST['req_amount'])
         transaction_id = request.POST['transaction_id']
 
-        program = IndividualAccountingController.program_from_identifier(
-            identifier)
         payment = IndividualAccountingController.record_payment_from_identifier(
             identifier, amount_paid, transaction_id)
 
@@ -555,12 +553,17 @@ def _submit_transaction(request, log_record):
         log_record.transfer = payment
         log_record.save()
 
-        destination = "/learn/%s/confirmreg" % program.getUrlBase()
-        return HttpResponseRedirect(destination)
+        return _redirect_from_identifier(identifier, "success")
     elif decision == "DECLINE":
-        return render_to_response('accounting/credit_rejected.html', request, {})
+        identifier = request.POST['req_merchant_defined_data1']
+        return _redirect_from_identifier(identifier, "declined")
     else:
         raise NotImplementedError("Can't handle decision: %s" % decision)
+
+def _redirect_from_identifier(identifier, result):
+    program = IndividualAccountingController.program_from_identifier(identifier)
+    destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
+    return HttpResponseRedirect(destination)
 
 # This really should go in qsd
 @reversion.create_revision()
