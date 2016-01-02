@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import logging
 logger = logging.getLogger(__name__)
+import traceback
 from operator import __or__ as OR
 from pprint import pprint
 
@@ -52,6 +53,7 @@ from django.db.models import Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
@@ -535,7 +537,18 @@ def submit_transaction(request):
                                  separators=(', ', ': '))
     log_record = CybersourcePostback.objects.create(post_data=pretty_postdata)
     transaction.commit()
-    return _submit_transaction(request, log_record)
+    try:
+        return _submit_transaction(request, log_record)
+    except:
+        subject = '[ESP CC] Failed to process Cybersource postback'
+        log_uri = request.build_absolute_uri(
+            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
+        message = 'The following Cybersource postback could not be processed. Please ' + \
+                  'reconcile it by hand:\n\n    %s\n\n%s' % (log_uri, traceback.format_exc())
+        from_addr = settings.SERVER_EMAIL
+        recipients = [settings.DEFAULT_EMAIL_ADDRESSES['treasury']]
+        send_mail(subject, message, from_addr, recipients)
+        raise
 
 @transaction.atomic
 def _submit_transaction(request, log_record):
