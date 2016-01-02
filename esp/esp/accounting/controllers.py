@@ -480,8 +480,12 @@ class IndividualAccountingController(ProgramAccountingController):
         return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
 
     @transaction.atomic
-    def submit_payment(self, amount, transaction_id=''):
-        #   Create a transfer representing a user's payment for this program
+    def submit_payment(self, amount, transaction_id='', link_transfers=True):
+        """ Create a Transfer representing the user's payment for this program.
+        By default, runs link_paid_transfers in an attempt to automatically
+        create paid_in links. With link_transfers=False, this task is the
+        responsibility of the caller. """
+
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
         payment = Transfer.objects.create(source=None,
@@ -490,7 +494,8 @@ class IndividualAccountingController(ProgramAccountingController):
                                           line_item=line_item_type,
                                           amount_dec=Decimal('%.2f' % amount),
                                           transaction_id=transaction_id)
-        self.link_paid_transfers(payment)
+        if link_transfers:
+            self.link_paid_transfers(payment)
         return payment
 
     @transaction.atomic
