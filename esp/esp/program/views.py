@@ -49,6 +49,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
+from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
@@ -63,6 +64,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import CybersourcePostback
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -527,7 +529,17 @@ def newprogram(request):
 
 @csrf_exempt
 @login_required
+@transaction.non_atomic_requests
 def submit_transaction(request):
+    # Before we do anything else, log the raw postback to the database
+    pretty_postdata = json.dumps(request.POST, sort_keys=True, indent=4,
+                                 separators=(', ', ': '))
+    log_record = CybersourcePostback.objects.create(post_data=pretty_postdata)
+    transaction.commit()
+    return _submit_transaction(request, log_record)
+
+@transaction.atomic
+def _submit_transaction(request, log_record):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
 
     if request.POST.get("decision") not in ("REJECT", "ERROR"):
