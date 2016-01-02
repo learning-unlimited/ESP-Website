@@ -375,7 +375,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def get_identifier(self):
         #   A brief string containing information about the user and
         #   which purchases are included at this time
-        purchases_str = ';'.join(['%d,%.2f' % (t.line_item.id, t.amount) for t in self.get_transfers()])
+        purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in self.get_transfers()])
         return '%s:%s' % (self.get_id(), purchases_str)
 
     @staticmethod
