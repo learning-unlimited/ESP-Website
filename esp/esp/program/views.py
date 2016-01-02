@@ -539,45 +539,31 @@ def submit_transaction(request):
 
 @transaction.atomic
 def _submit_transaction(request, log_record):
-    #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
     decision = request.POST['decision']
     if decision == "ACCEPT":
-        #   Figure out which user and program the payment are for.
-        post_identifier = request.POST['req_merchant_defined_data1']
-        post_amount = Decimal(request.POST['req_amount'])
-        iac = IndividualAccountingController.from_identifier(post_identifier)
+        # Handle payment
+        identifier = request.POST['req_merchant_defined_data1']
+        amount_paid = Decimal(request.POST['req_amount'])
+        transaction_id = request.POST['transaction_id']
 
-        #   Warn for possible duplicate payments
-        prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
-        if prev_payments.count() > 0 and iac.amount_due() <= 0:
-            from django.conf import settings
-            recipient_list = [contact[1] for contact in settings.ADMINS]
-            recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury'])
-            refs = 'Cybersource request ID: %s' % post_identifier
+        program = IndividualAccountingController.program_from_identifier(
+            identifier)
+        payment = IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_paid, transaction_id)
 
-            subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
+        # Link payment to log record
+        log_record.transfer = payment
+        log_record.save()
 
-            # Send mail!
-            send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
-                  """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
-                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('req_bill_to_surname', '--'), request.POST.get('req_bill_to_forename', '--'), request) , \
-                  settings.SERVER_EMAIL, recipient_list, True)
-
-        #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount, transaction_id=request.POST.get('transaction_id', ''))
-
+        # Redirect user to tag-configurable destination
         tl = 'learn'
-        one, two = iac.program.url.split('/')
-        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
-
+        one, two = program.url.split('/')
+        destination = Tag.getProgramTag("cc_redirect", program, default="confirmreg")
         if destination.startswith('/') or '//' in destination:
             pass
         else:
             # simple urls like 'confirmreg' are relative to the program
             destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
-
         return HttpResponseRedirect(destination)
     elif decision == "DECLINE":
         return render_to_response('accounting/credit_rejected.html', request, {})
