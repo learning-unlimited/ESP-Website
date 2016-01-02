@@ -555,15 +555,7 @@ def _submit_transaction(request, log_record):
         log_record.transfer = payment
         log_record.save()
 
-        # Redirect user to tag-configurable destination
-        tl = 'learn'
-        one, two = program.url.split('/')
-        destination = Tag.getProgramTag("cc_redirect", program, default="confirmreg")
-        if destination.startswith('/') or '//' in destination:
-            pass
-        else:
-            # simple urls like 'confirmreg' are relative to the program
-            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
+        destination = "/learn/%s/confirmreg" % program.getUrlBase()
         return HttpResponseRedirect(destination)
     elif decision == "DECLINE":
         return render_to_response('accounting/credit_rejected.html', request, {})
