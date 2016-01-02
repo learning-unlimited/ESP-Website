@@ -540,9 +540,8 @@ def submit_transaction(request):
 @transaction.atomic
 def _submit_transaction(request, log_record):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
-
-    if request.POST.get("decision") not in ("REJECT", "ERROR"):
-
+    decision = request.POST['decision']
+    if decision == "ACCEPT":
         #   Figure out which user and program the payment are for.
         post_identifier = request.POST['req_merchant_defined_data1']
         post_amount = Decimal(request.POST['req_amount'])
@@ -580,8 +579,10 @@ def _submit_transaction(request, log_record):
             destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
 
         return HttpResponseRedirect(destination)
-
-    return render_to_response( 'accounting/credit_rejected.html', request, {} )
+    elif decision == "DECLINE":
+        return render_to_response('accounting/credit_rejected.html', request, {})
+    else:
+        raise NotImplementedError("Can't handle decision: %s" % decision)
 
 # This really should go in qsd
 @reversion.create_revision()
