@@ -735,9 +735,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
                     reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
+                    # TODO: remove private API use
                     if populateonly: reg_form._errors = ErrorDict()
 
                 #   Todo...

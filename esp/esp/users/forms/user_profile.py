@@ -1,5 +1,4 @@
 from django import forms
-from django.forms.utils import ErrorList
 from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
@@ -346,9 +345,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
         if from_here == "False" and school == "":
             msg = u'Please enter your affiliation if you are not from %s.' % settings.INSTITUTION_NAME
-            self._errors['school'] = ErrorList([msg])
-            del cleaned_data['from_here']
-            del cleaned_data['school']
+            self.add_error('school', msg)
 
         return cleaned_data
 
