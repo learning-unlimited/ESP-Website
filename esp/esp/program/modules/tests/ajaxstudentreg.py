@@ -39,6 +39,8 @@ from esp.program.tests import ProgramFrameworkTest
 from django_selenium.testcases import SeleniumTestCase
 import random
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 # TODO(gkanwar): Remove non-selenium tests from this TestCase
 class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
@@ -76,6 +78,8 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
             self.assertTrue(sec.friendly_times()[0] in resp_data['student_schedule_html'])
 
     def expect_ajaxerror(self, request_url, post_data, error_str):
+        # TODO(benkraft): can this be simplified by converting to
+        # self.assertRaises?
         error_received = False
         error_msg = ''
         try:
@@ -83,8 +87,9 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         except AjaxErrorMiddleware.AjaxError as inst:
             error_received = True
             error_msg = inst.args[0]
-        except:
-            print 'Caught unexpected Ajax student reg error: willing to see %s' % AjaxErrorMiddleware.AjaxError
+        except Exception as inst:
+            logger.info('Caught unexpected Ajax student reg error %s: willing '
+                        'to see AjaxErrorMiddleware.AjaxError.', inst)
             raise
 
         if not error_received:

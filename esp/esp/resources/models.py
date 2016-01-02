@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
 
 """ Models for Resources application """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
@@ -46,7 +49,6 @@ from django.db.models.query import Q
 from django.core.cache import cache
 
 import pickle
-import warnings
 
 ########################################
 #   New resource stuff (Michael P)
@@ -194,8 +196,7 @@ class Resource(models.Model):
         """
         Deprecated.
         """
-        warnings.warn("Resource.distance() is deprecated.",
-                      DeprecationWarning)
+        logger.warning("Resource.distance() is deprecated.")
         return 0
 
     __sub__ = distance
@@ -347,7 +348,7 @@ class ResourceAssignment(models.Model):
 
 def install():
     #   Create default resource types.
-    print "Installing esp.resources initial data..."
+    logger.info("Installing esp.resources initial data...")
     if not ResourceType.objects.filter(name='Classroom').exists():
         ResourceType.objects.create(
             name='Classroom',

@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime, timedelta, date
 import json
+import logging
+logger = logging.getLogger(__name__)
 import functools
 
 from django import forms, dispatch
@@ -1270,7 +1272,7 @@ class StudentInfo(models.Model):
                     studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
 
         except:
-            print 'Error, could not find k12school for "%s"' % new_data['k12school']
+            logger.warning('Could not find k12school for "%s"', new_data['k12school'])
             studentInfo.k12school = None
 
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
@@ -2457,7 +2459,7 @@ def install():
     """
     Installs some initial users and permissions.
     """
-    print "Installing esp.users initial data..."
+    logger.info("Installing esp.users initial data...")
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
@@ -2467,7 +2469,7 @@ def install():
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
-        print 'Created onsite user, please set their password in the admin interface.'
+        logger.info('Created onsite user, please set their password in the admin interface.')
 
 #   This import is placed down here since we need it in GradeChangeRequest
 #   but esp.dbmail.models imports ESPUser.

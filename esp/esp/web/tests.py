@@ -40,6 +40,8 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.utils.models import TemplateOverride
 
 import difflib
+import logging
+logger = logging.getLogger(__name__)
 import re
 import os
 import tempfile
@@ -191,7 +193,7 @@ class JavascriptSyntaxTest(TestCase):
         else:
             closure_path = ''
         if not os.path.exists('%scompiler.jar' % closure_path):
-            if display: print 'Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"' % closure_path
+            if display: logger.info('Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"', closure_path)
             return
 
         closure_output_code = tempfile.gettempdir() + '/closure_output.js'
@@ -216,7 +218,7 @@ class JavascriptSyntaxTest(TestCase):
                     break
             if not exclude:
                 if display:
-                    print 'Entering directory %s' % dirpath
+                    logger.info('Entering directory %s', dirpath)
                 for file in filenames:
                     if not file.endswith('.js'):
                         continue
@@ -242,9 +244,9 @@ class JavascriptSyntaxTest(TestCase):
             num_errors = int(closure_result[0].split()[0])
             num_warnings = int(closure_result[1].split()[0])
 
-            print '-- Displaying Closure results: %d Javascript syntax errors, %d warnings' % (num_errors, num_warnings)
+            logger.info('-- Displaying Closure results: %d Javascript syntax errors, %d warnings', num_errors, num_warnings)
             for line in results:
-                print line
+                logger.info(line)
 
             self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
 

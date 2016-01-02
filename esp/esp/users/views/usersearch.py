@@ -33,6 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 """ This is the views portion of the users utility, which has some user-oriented views."""
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.middleware   import ESPError
 from django.db.models.query    import Q
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User
@@ -296,8 +300,6 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         context = {'users': users, 'extra':str(extra), 'list': returnList}
 
         return (render_to_response('users/userpick.html', request, context), False)
-
-    print 'Ran into some kind of problem. %d users' % len(users)
 
 def getQForUser(QRestriction):
     # Let's not do anything and say we did...

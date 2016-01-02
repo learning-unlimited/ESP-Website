@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
 """
 import decimal
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.accounting.models import LineItemType
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -628,10 +631,10 @@ class ProgramFrameworkTest(TestCase):
         #   Create the program much like the /manage/newprogram view does
         pcf = ProgramCreationForm(prog_form_values)
         if not pcf.is_valid():
-            print "ProgramCreationForm errors"
-            print pcf.data
-            print pcf.errors
-            print prog_form_values
+            logger.info("ProgramCreationForm errors")
+            logger.info(pcf.data)
+            logger.info(pcf.errors)
+            logger.info(prog_form_values)
             raise Exception("Program form creation errors")
 
         temp_prog = pcf.save(commit=False)
@@ -789,10 +792,10 @@ class ProgramFrameworkTest(TestCase):
             }
         pcf = ProgramCreationForm(prog_form_values)
         if not pcf.is_valid():
-            print "ProgramCreationForm errors"
-            print pcf.data
-            print pcf.errors
-            print prog_form_values
+            logger.info("ProgramCreationForm errors")
+            logger.info(pcf.data)
+            logger.info(pcf.errors)
+            logger.info(prog_form_values)
             raise Exception()
 
         temp_prog = pcf.save(commit=False)

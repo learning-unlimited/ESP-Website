@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
@@ -389,12 +392,12 @@ class IndividualAccountingController(ProgramAccountingController):
         iac = IndividualAccountingController.from_id(sections[0])
         transfer_list = iac.get_transfers()
         if len(transfer_strings) != len(transfer_list):
-            print 'Warning, expected %d transfers for this program/user but got %d; not checking transfers for consistency' % (iac.get_transfers().count(), len(transfer_strings))
+            logger.warning('Expected %d transfers for this program/user but got %d; not checking transfers for consistency', iac.get_transfers().count(), len(transfer_strings))
             return iac
         for i in range(len(transfer_strings)):
             t = transfer_list[i]
             if transfer_strings[i] != '%d,%.2f' % (t.line_item.id, t.amount):
-                print 'Warning, inconsistent transfer: expected "%s", got "%s"' % ((t.line_item.id, t.amount), transfer_strings[i])
+                logger.warning('Inconsistent transfer: expected "%s", got "%s"', (t.line_item.id, t.amount), transfer_strings[i])
         return iac
 
     def set_finaid_params(self, dollar_amount, discount_percent):

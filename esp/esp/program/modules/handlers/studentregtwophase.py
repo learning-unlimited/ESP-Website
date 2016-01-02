@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 import datetime
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
@@ -362,12 +364,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
             except (ClassSection.DoesNotExist,
                     ClassSection.MultipleObjectsReturned):
                 # XXX: what if a class has multiple sections in a timeblock?
+                logger.warning("Could not save priority for class %s in "
+                               "timeblock %s", cls_id, timeslot_id)
                 continue
             # sanity checks
-            if (not sec.status > 0 or not sec.parent_class.status > 0
-                or not sec.parent_class.grade_min <= request.user.getGrade(prog)
+            if (not sec.status > 0 or not sec.parent_class.status > 0):
+                logger.warning("Class '%s' was not approved.  Not letting "
+                               "user '%s' register.", sec, request.user)
+            if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
                 or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
-                # XXX: fail more loudly
+                logger.warning("User '%s' not in class grade range; not "
+                               "letting them register.", request.user)
                 continue
 
             if not srs.exists():

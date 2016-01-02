@@ -38,6 +38,8 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -1850,7 +1852,7 @@ from esp.program.models.flags import *
 
 def install():
     from esp.program.models.class_ import install as install_class
-    print "Installing esp.program initial data..."
+    logger.info("Installing esp.program initial data...")
     if not RegistrationType.objects.exists():
         RegistrationType.objects.create(name='Enrolled', category='student')
     install_class()

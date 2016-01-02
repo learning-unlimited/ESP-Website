@@ -36,6 +36,8 @@ Learning Unlimited, Inc.
     from within the program handler.
 """
 from functools import wraps
+import logging
+logger = logging.getLogger(__name__)
 
 from django.db import models
 from django.utils.decorators import available_attrs

@@ -32,6 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models
 from django.db.models.query import Q
 
@@ -115,7 +119,7 @@ class NavBarEntry(models.Model):
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
-    print "Installing esp.web initial data..."
+    logger.info("Installing esp.web initial data...")
     if not NavBarCategory.objects.filter(name='default').exists():
         NavBarCategory.objects.create(
             name='default',

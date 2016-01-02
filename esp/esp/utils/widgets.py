@@ -10,6 +10,8 @@ import django.utils.formats
 from django.template import Template, Context
 
 import json
+import logging
+logger = logging.getLogger(__name__)
 import datetime
 import time
 
@@ -201,7 +203,7 @@ class NullCheckboxSelect(forms.CheckboxInput):
         values =  {'on': True, 'true': True, 'false': False}
         if isinstance(value, basestring):
             value = values.get(value.lower(), value)
-        print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
+        logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
 
 class DummyWidget(widgets.Input):

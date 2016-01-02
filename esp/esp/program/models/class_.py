@@ -36,6 +36,8 @@ import datetime
 from datetime import timedelta
 import time
 from collections import defaultdict
+import logging
+logger = logging.getLogger(__name__)
 
 # django Util
 from django.conf import settings
@@ -1972,7 +1974,7 @@ sections_in_program_by_id.depend_on_model(ClassSubject)
 
 def install():
     """ Initialize the default class categories. """
-    print "Installing esp.program.class initial data..."
+    logger.info("Installing esp.program.class initial data...")
     category_dict = {
         'S': 'Science',
         'M': 'Math & Computer Science',
