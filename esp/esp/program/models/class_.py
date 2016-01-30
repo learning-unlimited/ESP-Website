@@ -1586,8 +1586,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if not self.isAccepted():
             return u'This class is not accepted.'
 
-#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not user.canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull() and not user.canRegToFullProgram(self.parent_program):
+        if checkFull and not self.parent_program.user_can_join(user):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():

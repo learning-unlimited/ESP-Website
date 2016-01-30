@@ -612,6 +612,21 @@ def meets_all_deadlines(extensions=[]):
         return _checkDeadline
     return meets_deadline
 
+
+def meets_cap(view_method):
+    """Only allow students who meet the program cap past this point."""
+    @wraps(view_method, assigned=available_attrs(view_method))
+    def _meets_cap(moduleObj, request, tl, one, two, module, extra, prog,
+                   *args, **kwargs):
+        if prog.user_can_join(request.user):
+            return view_method(moduleObj, request, tl, one, two, module, extra,
+                               prog, *args, **kwargs)
+        else:
+            return render_to_response('errors/program/program_full.html',
+                                      request, {'moduleObj': moduleObj})
+    return _meets_cap
+
+
 def user_passes_test(test_func, error_message):
     """A method decorator based on django.contrib.auth.decorators.user_passes_test.
 
