@@ -528,14 +528,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
-        collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+        collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
-        collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+        collapse_full_classes = Tag.getBooleanTag('collapse_full_classes', prog, True)
         class_blobs = []
 
         category_header_str = """<hr size="1"/>
@@ -561,7 +561,6 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'catalog.html', request, context, use_request_context=False)
 
-#def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return render_to_response(self.baseDir()+'catalog_javascript.html', request, {
                 'one':        one,

@@ -57,14 +57,14 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
-        if Tag.getTag('request_student_phonenum', default='True') == 'False':
+        if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getTag('text_messages_to_students'):
+        if not Tag.getBooleanTag('text_messages_to_students'):
             del self.fields['receive_txt_message']
 
     def clean(self):
         super(UserContactForm, self).clean()
-        if self.user.isTeacher() or Tag.getTag('request_student_phonenum', default='True') != 'False':
+        if self.user.isTeacher() or Tag.getBooleanTag('request_student_phonenum', default=True):
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
@@ -239,7 +239,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         #   The unmatched_school field is for students to opt out of selecting a K12School.
         #   If we don't require a K12School to be selected, don't bother showing that field.
-        if not Tag.getTag('require_school_field', default=False):
+        if not Tag.getBooleanTag('require_school_field', default=False):
             del self.fields['unmatched_school']
 
         self._user = user
@@ -298,7 +298,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
 
-        if Tag.getTag('require_school_field'):
+        if Tag.getBooleanTag('require_school_field'):
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
