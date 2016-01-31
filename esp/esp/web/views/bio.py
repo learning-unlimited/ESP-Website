@@ -44,7 +44,7 @@ from datetime             import datetime
 from django.conf import settings
 
 @login_required
-def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
+def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, username=''):
     """ Edits a teacher bio, given user and program identification information """
 
     try:
@@ -56,28 +56,23 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, extern
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
     except:
-        raise Http404
+        return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
 
-    return bio_edit_user_program(request, founduser, foundprogram, external)
+    return bio_edit_user_program(request, founduser, foundprogram)
 
 @login_required
 def bio_edit_user_program(request, founduser, foundprogram, external=False):
     """ Edits a teacher bio, given user and program """
 
-    if founduser is None:
-        if external:
-            raise ESPError('No user given.')
-        else:
-            raise Http404
+    if founduser is None or not founduser.isTeacher():
+        return bio_not_found(request)
 
-    if not founduser.isTeacher():
-        raise ESPError('%s is not a teacher of ESP.' % \
-                               (founduser.name()), log=False)
-
-    if request.user.id != founduser.id and request.user.is_staff != True:
-        raise ESPError('You are not authorized to edit this biography.', log=False)
+    if request.user.id != founduser.id and not request.user.isAdministrator():
+        # To prevent querying whether a username exists, just return not found
+        # here as well.
+        return bio_not_found(request)
 
     lastbio      = TeacherBio.getLastBio(founduser)
 
@@ -145,12 +140,8 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
 def bio_user(request, founduser):
     """ Display a teacher bio for a given user """
 
-    if founduser is None or founduser.is_active == False:
+    if (not founduser or not founduser.is_active or not founduser.isTeacher()):
         return bio_not_found(request)
-
-    if not founduser.isTeacher():
-        raise ESPError('%s is not a teacher of ESP.' % \
-                               (founduser.name()), log=False)
 
     teacherbio = TeacherBio.getLastBio(founduser)
     if teacherbio.hidden:
@@ -173,7 +164,7 @@ def bio_user(request, founduser):
     # Also, sort by the order of the corresponding program's id.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=datetime.now()).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-parent_program__id')
+    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10).exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).filter(sections__resourceassignment__resource__res_type__name="Classroom").distinct().order_by('-parent_program__id')
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it
