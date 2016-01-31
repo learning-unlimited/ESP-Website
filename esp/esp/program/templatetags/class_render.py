@@ -27,7 +27,8 @@ def render_class_core(cls):
             'collapse_full': collapse_full,
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
-            'show_emailcodes': scrmi.show_emailcodes}
+            'show_emailcodes': scrmi.show_emailcodes,
+            'show_meeting_times': scrmi.visible_meeting_times}
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
