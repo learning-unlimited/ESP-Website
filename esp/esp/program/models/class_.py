@@ -1292,6 +1292,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    # TODO(benkraft): backfill this on all existing sites, then make required.
+    timestamp = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()

@@ -227,23 +227,35 @@ class SectionInline(admin.TabularInline):
     can_delete = False
 
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
+    list_display = ('category', 'id', 'title', 'parent_program',
+                    'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
     exclude = ('teachers',)
+    readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
-    fieldsets= (
-            (None, {'fields':('title','parent_program', 'category', 'class_info', 'message_for_directors', 'directors_notes', 'purchase_requests')}),
-            ('Registration Info',
-                {'classes': ('collapse',),
-                'fields': (('grade_min', 'grade_max'),'allow_lateness','prereqs', 'hardness_rating')}),
-            ('Scheduling Info',
-                {'classes': ('collapse',),
-                 'fields':('requested_room', 'requested_special_resources', ('allowable_class_size_ranges', 'optimal_class_size_range'), ('class_size_min', 'class_size_optimal', 'class_size_max', 'session_count'))}),
-            ('Advanced',
-                {'fields': ('schedule', 'custom_form_data')}),
-            )
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'parent_program', 'timestamp', 'category',
+                       'class_info', 'message_for_directors',
+                       'directors_notes', 'purchase_requests')
+        }),
+        ('Registration Info', {
+            'classes': ('collapse',),
+            'fields': (('grade_min', 'grade_max'), 'allow_lateness', 'prereqs',
+                       'hardness_rating')
+        }),
+        ('Scheduling Info', {
+            'classes': ('collapse',),
+            'fields': ('requested_room', 'requested_special_resources',
+                       ('allowable_class_size_ranges',
+                        'optimal_class_size_range'),
+                       ('class_size_min', 'class_size_optimal',
+                        'class_size_max', 'session_count'))
+        }),
+        ('Advanced', {'fields': ('schedule', 'custom_form_data')}),
+    )
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
