@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.program.modules import module_ext
 from esp.utils.web       import render_to_response
 from datetime            import datetime
@@ -73,6 +73,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/Payment')
+    @meets_cap
     def cybersource(self, request, tl, one, two, module, extra, prog):
 
         # Force users to pay for non-optional stuffs

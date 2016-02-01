@@ -36,6 +36,8 @@ import datetime
 from datetime import timedelta
 import time
 from collections import defaultdict
+import logging
+logger = logging.getLogger(__name__)
 
 # django Util
 from django.conf import settings
@@ -1290,6 +1292,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    # TODO(benkraft): backfill this on all existing sites, then make required.
+    timestamp = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
@@ -1584,8 +1589,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if not self.isAccepted():
             return u'This class is not accepted.'
 
-#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not user.canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull() and not user.canRegToFullProgram(self.parent_program):
+        if checkFull and not self.parent_program.user_can_join(user):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
@@ -1972,7 +1976,7 @@ sections_in_program_by_id.depend_on_model(ClassSubject)
 
 def install():
     """ Initialize the default class categories. """
-    print "Installing esp.program.class initial data..."
+    logger.info("Installing esp.program.class initial data...")
     category_dict = {
         'S': 'Science',
         'M': 'Math & Computer Science',

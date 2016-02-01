@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import numpy
 assert numpy.version.short_version >= "1.7.0"
 import numpy.random
@@ -45,6 +47,7 @@ from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_members, remove_list_member, list_contents
+from esp.tagdict.models import Tag
 
 from django.conf import settings
 from django.db.models import Min
@@ -68,6 +71,19 @@ class LotteryAssignmentController(object):
 
 
         self.program = program
+
+        if Tag.getProgramTag('program_size_by_grade', self.program):
+            # TODO(benkraft): Consider implementing this.  Stanford's use case
+            # as of Fall 2015 (for which program_size_by_grade was written)
+            # doesn't need it, but we might want to implement it anyway, or
+            # remove the program size logic from the lottery entirely.
+            print ("WARNING: The lottery doesn't support the "
+                   "program_size_by_grade Tag yet.  It will run without a "
+                   "program cap, and allow all students who have marked "
+                   "preferences to get classes.")
+            self.program_size_max = 0
+        else:
+            self.program_size_max = self.program.program_size_max
         students = self.program.students()
         if 'twophase_star_students' in students:
             # We can't do the join in SQL, because the query generated takes at least half an hour.  So do it in python.
@@ -97,7 +113,7 @@ class LotteryAssignmentController(object):
         self.initialize()
 
         if self.options['stats_display']:
-            print 'Initialized lottery assignment for %d students, %d sections, %d timeslots' % (self.num_students, self.num_sections, self.num_timeslots)
+            logger.info('Initialized lottery assignment for %d students, %d sections, %d timeslots', self.num_students, self.num_sections, self.num_timeslots)
 
     def get_index_array(self, arr):
         """ Given an array of arbitrary integers, create a new array that maps
@@ -286,19 +302,19 @@ class LotteryAssignmentController(object):
 
         timeslots = numpy.nonzero(self.section_schedules[si, :])[0]
 
-        if self.options['stats_display']: print '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s' % (self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
+        if self.options['stats_display']: logger.info('-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s', self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
 
         #   Compute number of spaces - exit if section or program is already full.  Otherwise, set num_spaces to the number of students we can add without overfilling the section or program.
         num_spaces = self.section_capacities[si] - numpy.sum(self.student_sections[:, si])
-        if self.program.program_size_max:
-            program_spaces_remaining = self.program.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
+        if self.program_size_max:
+            program_spaces_remaining = self.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
             if program_spaces_remaining == 0:
-                if self.options['stats_display']: print '   Program was already full with %d students' % numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
+                if self.options['stats_display']: logger.info('   Program was already full with %d students', numpy.sum((numpy.sum(self.student_schedules, 1) > 0)))
                 return True
             else:
                 num_spaces = min(num_spaces, program_spaces_remaining)
         if num_spaces == 0:
-            if self.options['stats_display']: print '   Section was already full with %d students' % self.section_capacities[si]
+            if self.options['stats_display']: logger.info('   Section was already full with %d students', self.section_capacities[si])
             return True
         assert(num_spaces > 0)
 
@@ -312,14 +328,14 @@ class LotteryAssignmentController(object):
 
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
-            if self.options['stats_display']: print '   Section was not assigned to any timeslots, aborting'
+            if self.options['stats_display']: logger.info('   Section was not assigned to any timeslots, aborting')
             return False
 
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
-                if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
+                if self.options['stats_display']: logger.info('   Section covered all lunch timeslots %s on day %d, aborting', self.lunch_timeslots[i, :], i)
                 return False
 
         #   Get students who have indicated interest in the section
@@ -386,7 +402,7 @@ class LotteryAssignmentController(object):
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
 
-        if self.options['stats_display']: print '   Added %d/%d students (section filled: %s)' % (selected_students.shape[0], candidate_students.shape[0], section_filled)
+        if self.options['stats_display']: logger.info('   Added %d/%d students (section filled: %s)', selected_students.shape[0], candidate_students.shape[0], section_filled)
 
         return section_filled
 
@@ -403,7 +419,9 @@ class LotteryAssignmentController(object):
         for rank in ranks:
             for i in range(1,self.effective_priority_limit+1):
                 if self.options['stats_display']:
-                    print '\n== Assigning priority%s students%s' % ((str(i) if self.effective_priority_limit > 1 else ''), (' with rank %s'%rank if self.options['use_student_apps'] else ''))
+                    logger.info('\n== Assigning priority%s students%s',
+                                str(i) if self.effective_priority_limit > 1 else '',
+                                ' with rank %s' % rank if self.options['use_student_apps'] else '')
                 #   Assign priority students to all sections in random order, grouped by duration
                 #   so that longer sections aren't disadvantaged by scheduling conflicts
                 #   Re-randomize for each priority level so that some sections don't keep getting screwed
@@ -417,7 +435,8 @@ class LotteryAssignmentController(object):
             interested_counts = numpy.sum(self.interest, 0)
             sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) / self.section_capacities)
             if self.options['stats_display']:
-                print '\n== Assigning interested students%s' % (' with rank %s'%rank if self.options['use_student_apps'] else '')
+                logger.info('\n== Assigning interested students%s',
+                            ' with rank %s' % rank if self.options['use_student_apps'] else '')
             for section_index in sorted_section_indices:
                 self.fill_section(section_index, priority=False, rank=rank)
 
@@ -556,35 +575,35 @@ class LotteryAssignmentController(object):
         return stats
 
     def display_stats(self, stats):
-        print 'Lottery results for %s' % self.program.niceName()
-        print '--------------------------------------'
+        logger.info('Lottery results for %s', self.program.niceName())
+        logger.info('--------------------------------------')
 
-        print 'Counts:'
-        print '%6d students applied to the lottery' % stats['num_lottery_students']
-        print '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students']
-        print '%6d total enrollments' % stats['num_registrations']
-        print '%6d available sections' % stats['num_sections']
-        print '%6d sections were filled to capacity' % stats['num_full_classes']
+        logger.info('Counts:')
+        logger.info('%6d students applied to the lottery', stats['num_lottery_students'])
+        logger.info('%6d students were enrolled in at least 1 class', stats['num_enrolled_students'])
+        logger.info('%6d total enrollments', stats['num_registrations'])
+        logger.info('%6d available sections', stats['num_sections'])
+        logger.info('%6d sections were filled to capacity', stats['num_full_classes'])
 
-        print 'Ratios:'
+        logger.info('Ratios:')
         if self.effective_priority_limit>1:
             for i in range(1,self.effective_priority_limit+1):
-                print '%2.2f%% of priority %s classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0, i)
+                logger.info('%2.2f%% of priority %s classes were enrolled', stats['overall_priority_%s_ratio' % i] * 100.0, i)
         else:
-            print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
-        print '%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0)
+            logger.info('%2.2f%% of priority classes were enrolled', stats['overall_priority_ratio'] * 100.0)
+        logger.info('%2.2f%% of interested classes were enrolled', stats['overall_interest_ratio'] * 100.0)
         """
-        print 'Example results:'
+        logger.info('Example results:')
         no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
-        print '1) First %d students who got none of their priority classes:' % min(5, no_pri_indices.shape[0])
+        logger.info('1) First %d students who got none of their priority classes:', min(5, no_pri_indices.shape[0]))
         for i in range(min(5, no_pri_indices.shape[0])):
             sid = stats['student_ids'][no_pri_indices[i]]
             student = ESPUser.objects.get(id=sid)
-            print '   Student: %s (grade %s)' % (student.name(), student.getGrade())
+            logger.info('   Student: %s (grade %s)', student.name(), student.getGrade())
             cs_ids = self.section_ids[numpy.nonzero(self.priority[no_pri_indices[i], :])[0]]
-            print '   - Priority classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            logger.info('   - Priority classes: %s', ClassSection.objects.filter(id__in=list(cs_ids)))
             cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
-            print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            logger.info('   - Interested classes: %s', ClassSection.objects.filter(id__in=list(cs_ids)))
             """
 
     def get_computed_schedule(self, student_id, mode='assigned'):
@@ -605,7 +624,7 @@ class LotteryAssignmentController(object):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
 
-    def generate_screwed_csv(self, directory=None, n=None, stats=None, debug_display=False):
+    def generate_screwed_csv(self, directory=None, n=None, stats=None):
         """Generate a CSV file of the n most screwed students. Default: All of them.
         Directory: string of what directory you like the information stored in.
         This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
@@ -633,9 +652,9 @@ class LotteryAssignmentController(object):
             csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
 
         csvfile.close()
-        if debug_display: print 'File can be found at: ' + fullfilename
+        logger.info('File can be found at: %s', fullfilename)
 
-    def save_assignments(self, debug_display=False, try_mailman=True):
+    def save_assignments(self, try_mailman=True):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
@@ -650,9 +669,9 @@ class LotteryAssignmentController(object):
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
         StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        if debug_display or self.options['stats_display']:
-            print "StudentRegistration enrollments all created to start at %s" % self.now
-            print 'Created %d registrations' % student_ids.shape[0]
+        if self.options['stats_display']:
+            logger.info("StudentRegistration enrollments all created to start at %s", self.now)
+            logger.info('Created %d registrations', student_ids.shape[0])
 
         #As mailman has sometimes not worked in the past,
         #leave the option to disable.

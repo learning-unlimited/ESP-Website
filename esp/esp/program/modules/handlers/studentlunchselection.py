@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.users.models            import Record
 from esp.cal.models              import Event
@@ -119,6 +119,7 @@ class StudentLunchSelection(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_cap
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user

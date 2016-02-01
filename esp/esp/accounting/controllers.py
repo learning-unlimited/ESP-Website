@@ -33,11 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
 from esp.utils.query_utils import nest_Q
 
+from django.db import transaction
 from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
@@ -51,42 +55,6 @@ class BaseAccountingController(object):
 
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
-
-    def execute_transfers(self, transfers, reverse=False):
-        """ Simultaneously execute a set of transfers. """
-
-        accounts_source = transfers.order_by('source').distinct('source').values_list('source', flat=True)
-        accounts_dest = transfers.order_by('destination').distinct('destination').values_list('destination', flat=True)
-
-        total_change = Decimal('0')
-
-        for account_id in accounts_source:
-            if account_id is not None:
-                account = Account.objects.get(id=account_id)
-                outflow = transfers.filter(source=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
-                if reverse:
-                    account.balance_dec += outflow
-                    total_change += outflow
-                else:
-                    account.balance_dec -= outflow
-                    total_change -= outflow
-                account.save()
-        for account_id in accounts_dest:
-            if account_id is not None:
-                account = Account.objects.get(id=account_id)
-                inflow = transfers.filter(destination=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
-                if reverse:
-                    account.balance_dec -= inflow
-                    total_change -= inflow
-                else:
-                    account.balance_dec += inflow
-                    total_change += inflow
-                account.save()
-
-        transfers.update(executed=not reverse)
-
-        return total_change
-
 
 class GlobalAccountingController(BaseAccountingController):
 
@@ -109,7 +77,6 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.execute_transfers(self.all_transfers(), reverse=True)
         self.all_transfers().delete()
         self.get_lineitemtypes().delete()
         self.all_accounts().delete()
@@ -257,27 +224,6 @@ class ProgramAccountingController(BaseAccountingController):
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
 
-    def execute_pending_transfers(self, users):
-        """ "Close the books" for this program, with the selected users.
-            Typically this will be all students that attended the program. """
-
-        #   Finalize financial aid for these users
-        for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
-            grant.finalize()
-
-        if self.program.sibling_discount:
-            #   Execute sibling discounts for these users
-            for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
-                splashinfo.execute_sibling_discount()
-
-        #   Execute transfers for these users
-        self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
-
-    def remove_pending_transfers(self, users):
-        """ Clear financial records for these users; if they didn't show up,
-            we shouldn't be expecting their money.  """
-        self.all_transfers().filter(user__in=users, executed=False).delete()
-
     def payments_summary(self):
         """ Return a tuple with the number and total dollar amount of payments
             that have been made so far. """
@@ -290,28 +236,42 @@ class IndividualAccountingController(ProgramAccountingController):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
         self.user = user
 
-    def add_required_transfers(self):
+    def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
             to required line item types, e.g. program admission """
 
-        result = []
         program_account = self.default_program_account()
         source_account = self.default_source_account()
-        line_items = self.get_lineitemtypes(required_only=True)
+        required_line_items = self.get_lineitemtypes(required_only=True)
 
-        #   Clear existing transfers that are not executed
-        unexecuted_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False)
-        unexecuted_items.delete()
+        existing_transfers_by_li = {t.line_item_id: t for t in Transfer.objects.filter(
+            user=self.user, line_item__in=required_line_items)}
 
-        #   Identify item types that have been executed
-        executed_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=True)
-        executed_item_types = executed_items.values_list('line_item__id', flat=True)
-
-        #   Create transfers for required line item types that have not already been executed
-        for lit in line_items:
-            if lit.id not in executed_item_types:
-                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
-        return result
+        for item in required_line_items:
+            transfer = existing_transfers_by_li.get(item.id)
+            if transfer is None:
+                # A Transfer for this Line Item Type does not exist.
+                # Create it now.
+                Transfer.objects.create(source=source_account,
+                                        destination=program_account,
+                                        user=self.user,
+                                        line_item=item,
+                                        amount_dec=item.amount_dec)
+            elif transfer.paid_in:
+                # A Transfer for this Line Item Type already exists
+                # *and* has already been paid. It's too late, so do
+                # nothing.
+                pass
+            elif transfer.amount_dec == item.amount_dec:
+                # A Transfer for this Line Item Type already exists
+                # *and* has the correct amount. No changes are
+                # necessary.
+                pass
+            else:
+                # Adjust the amount of the Transfer to match the new
+                # value.
+                transfer.amount_dec = item.amount_dec
+                transfer.save()
 
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
@@ -326,7 +286,7 @@ class IndividualAccountingController(ProgramAccountingController):
         line_items = self.get_lineitemtypes(optional_only=True)
 
         #   Clear existing transfers
-        Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False).delete()
+        Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
         #   Create transfers for optional line item types
         for item_tup in optional_items:
@@ -432,12 +392,12 @@ class IndividualAccountingController(ProgramAccountingController):
         iac = IndividualAccountingController.from_id(sections[0])
         transfer_list = iac.get_transfers()
         if len(transfer_strings) != len(transfer_list):
-            print 'Warning, expected %d transfers for this program/user but got %d; not checking transfers for consistency' % (iac.get_transfers().count(), len(transfer_strings))
+            logger.warning('Expected %d transfers for this program/user but got %d; not checking transfers for consistency', iac.get_transfers().count(), len(transfer_strings))
             return iac
         for i in range(len(transfer_strings)):
             t = transfer_list[i]
             if transfer_strings[i] != '%d,%.2f' % (t.line_item.id, t.amount):
-                print 'Warning, inconsistent transfer: expected "%s", got "%s"' % ((t.line_item.id, t.amount), transfer_strings[i])
+                logger.warning('Inconsistent transfer: expected "%s", got "%s"', (t.line_item.id, t.amount), transfer_strings[i])
         return iac
 
     def set_finaid_params(self, dollar_amount, discount_percent):
@@ -462,7 +422,7 @@ class IndividualAccountingController(ProgramAccountingController):
         FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).delete()
 
     def amount_requested(self):
-        self.add_required_transfers()
+        self.ensure_required_transfers()
         program_account = self.default_program_account()
 
         #   Compute sum of all transfers into program that are for this user
@@ -519,24 +479,49 @@ class IndividualAccountingController(ProgramAccountingController):
         amt_sibling = self.amount_siblingdiscount()
         return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
 
-    def clear_payments(self):
-        #   Remove all payments listed for this user at this program
-        line_item_type = self.default_payments_lineitemtype()
-        target_account = self.default_source_account()
-        Transfer.objects.filter(source=None, destination=target_account, user=self.user, line_item=line_item_type).delete()
-
+    @transaction.atomic
     def submit_payment(self, amount, transaction_id=''):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
-        return Transfer.objects.create(source=None,
-                                       destination=target_account,
-                                       user=self.user,
-                                       line_item=line_item_type,
-                                       amount_dec=Decimal('%.2f' % amount),
-                                       transaction_id=transaction_id)
+        payment = Transfer.objects.create(source=None,
+                                          destination=target_account,
+                                          user=self.user,
+                                          line_item=line_item_type,
+                                          amount_dec=Decimal('%.2f' % amount),
+                                          transaction_id=transaction_id)
+        self.link_paid_transfers(payment)
+        return payment
+
+    @transaction.atomic
+    def link_paid_transfers(self, payment):
+        """ Given a Transfer representing a payment (e.g. a credit card
+        payment), find all of the Transfers representing the items that were
+        paid for and add a link back to the payment. """
+
+        # Filter out Transfers representing payments, financial aid grants, and
+        # purchasable items that have already been paid for.
+        outstanding_transfers = self.get_transfers().filter(
+            line_item__for_payments=False,
+            line_item__for_finaid=False,
+            paid_in__isnull=True,
+        ).order_by('id')
+
+        # Find the paid transfers by examining Transfers in order of creation
+        # until they sum to the given amount.
+        total = 0
+        target = payment.get_amount()
+
+        for transfer in outstanding_transfers:
+            total += transfer.get_amount()
+            transfer.paid_in = payment
+            transfer.save()
+            if total >= target:
+                break
+
+        if total != target:
+            # This will cause all changes to be rolled back
+            raise ValueError("Transfers do not sum to target: %.2f" % target)
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())
-
-

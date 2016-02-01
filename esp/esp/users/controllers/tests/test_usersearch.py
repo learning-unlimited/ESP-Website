@@ -1,6 +1,6 @@
 import datetime
-
-from model_mommy import mommy
+import logging
+logger = logging.getLogger(__name__)
 
 from django import forms
 from django.contrib.auth import logout, login, authenticate
@@ -91,7 +91,9 @@ class TestUserSearchController(TestCase):
                       u'grade_max': u'', u'email': u''}
 
         query =  self.controller.query_from_postdata(self.program, post_data)
-        print query#need to inspect why this is failing
+        # TODO(benkraft): what is going on here?  Should these tests be getting
+        # run?
+        logger.info(query) # need to inspect why this is failing
         assert False
         #self.assertGreater(qobject.count(), 0)
 

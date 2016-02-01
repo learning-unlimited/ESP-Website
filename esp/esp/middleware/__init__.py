@@ -34,4 +34,3 @@ Learning Unlimited, Inc.
 """
 from esp.middleware.esperrormiddleware import *
 from esp.middleware.fixiemiddleware import *
-from esp.middleware.prettyerroremail import *

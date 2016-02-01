@@ -1,7 +1,5 @@
 import datetime
 
-from model_mommy import mommy
-
 from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
@@ -401,11 +399,9 @@ from esp.users.models import GradeChangeRequest
 class TestChangeRequestModel(TestCase):
 
     def _create_change_request(self):
-        change_request = mommy.make(GradeChangeRequest)
-        student = change_request.requesting_student
-        student.first_name = 'bob'
-        student.last_name = 'dobbs'
-        student.save()
+        student = ESPUser.objects.create_user('bobdobbs', first_name='bob', last_name='dobbs')
+        change_request = GradeChangeRequest.objects.create(claimed_grade=12, grade_before_request=8,
+                                                           reason="hello", requesting_student=student)
         return change_request
 
     def test_acknowledged_time_set(self):

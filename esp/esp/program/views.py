@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
 from operator import __or__ as OR
 from pprint import pprint
 
@@ -191,9 +194,7 @@ def lsr_submit(request, program = None):
             errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
 
     if len(errors) != 0:
-        s = StringIO()
-        print(errors, s)
-        mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
+        mail_admins('Error in class reg', str(errors), fail_silently=True)
 
     cfe = ConfirmationEmailController()
     cfe.send_confirmation_email(request.user, program)

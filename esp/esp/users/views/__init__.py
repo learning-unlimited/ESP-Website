@@ -17,19 +17,6 @@ from esp.users.views.usersearch import *
 from esp.utils.web import render_to_response
 
 
-def filter_username(username, password):
-    #   Allow login by e-mail address if so specified
-    if username and '@' in username and Tag.getTag('login_by_email'):
-        accounts = ESPUser.objects.filter(email = username)
-        matches = []
-        for u in accounts:
-            if u.check_password(password):
-                matches.append(u)
-        if len(matches) > 0:
-            username = matches[0].username
-
-    return username
-
 #   This is a huge hack while we figure out what to do about logins and cookies.
 #   - Michael P 12/28/2011
 def HttpMetaRedirect(location='/'):

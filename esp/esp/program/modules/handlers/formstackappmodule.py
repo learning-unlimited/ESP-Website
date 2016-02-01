@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.utils.web import render_to_response
@@ -88,9 +91,8 @@ class FormstackAppModule(ProgramModuleObj):
             field, _, expr = line.partition(':')
             try:
                 value = eval(expr, {'user': request.user})
-            except:
-                import traceback
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception("Error in FormstackAppSettings: %s", e)
                 continue
             autopopulated.append((field, value))
         return render_to_response(self.baseDir()+'studentapp.html',

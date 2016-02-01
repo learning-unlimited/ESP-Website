@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
 import numpy
 assert numpy.version.short_version >= "1.7.0"
 import numpy.random
@@ -163,7 +165,7 @@ class ClassChangeController(object):
         self.initialize()
 
         if self.options['stats_display']:
-            print 'Initialized lottery assignment for %d students, %d sections, %d timeslots' % (self.num_students, self.num_sections, self.num_timeslots)
+            logger.info('Initialized lottery assignment for %d students, %d sections, %d timeslots', self.num_students, self.num_sections, self.num_timeslots)
 
     def get_index_array(self, arr):
         """ Given an array of arbitrary integers, create a new array that maps
@@ -322,7 +324,7 @@ class ClassChangeController(object):
 
         timeslots = numpy.transpose(numpy.nonzero(self.section_schedules[si, :]))
 
-        if self.options['stats_display']: print '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s' % (self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
+        if self.options['stats_display']: logger.info('-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s', self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
 
         #   Get students who have indicated interest in the section
         possible_students = self.request[:, si, :].any(axis=1)
@@ -333,14 +335,14 @@ class ClassChangeController(object):
 
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
-            if self.options['stats_display']: print '   Section was not assigned to any timeslots, aborting'
+            if self.options['stats_display']: logger.info('   Section was not assigned to any timeslots, aborting')
             return False
 
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
-                if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
+                if self.options['stats_display']: logger.info('   Section covered all lunch timeslots %s on day %d, aborting', self.lunch_timeslots[i, :], i)
                 return False
 
 
@@ -388,7 +390,7 @@ class ClassChangeController(object):
         self.enroll_final[selected_students, si, timeslots] = True
         self.section_capacities[si] -= selected_students.shape[0]
 
-        if self.options['stats_display']: print '   Added %d/%d students (section filled: %s)' % (selected_students.shape[0], candidate_students.shape[0], section_filled)
+        if self.options['stats_display']: logger.info('   Added %d/%d students (section filled: %s)', selected_students.shape[0], candidate_students.shape[0], section_filled)
 
         return section_filled
 
@@ -434,13 +436,13 @@ class ClassChangeController(object):
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
         for i in range(1,self.priority_limit+1) + [False,]:
             if self.options['stats_display']:
-                print '\n== Assigning priority%s students' % (str(i) if self.priority_limit > 1 else '')
+                logger.info('\n== Assigning priority%s students', str(i) if self.priority_limit > 1 else '')
             for section_index in self.sorted_section_indices:
                 self.fill_section(section_index, priority=i)
 
         self.push_back_students()
 
-    def save_assignments(self, debug_display=False):
+    def save_assignments(self):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
@@ -468,7 +470,7 @@ class ClassChangeController(object):
             text_fn = self.get_unchanged_student_email_text
         sent_to = "\n\nSent to " + student.username + ", " + student.name() + " <" + student.email + ">\n\n------------------------\n\n"
         if self.options['stats_display']:
-            print text_fn(student_ind,for_real=False) + sent_to
+            logger.info(text_fn(student_ind,for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
             f.write((text_fn(student_ind,for_real=False) + sent_to).replace(u'\u2019', "'").replace(u'\u201c','"').replace(u'\u201d','"').encode('ascii','ignore'))
@@ -478,7 +480,7 @@ class ClassChangeController(object):
 
     def send_emails(self, for_real = False):
         if self.options['stats_display']:
-            print "Sending emails...."
+            logger.info("Sending emails....")
             sys.stdout.flush()
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:

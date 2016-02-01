@@ -58,7 +58,7 @@ class OnSiteRegister(ProgramModuleObj):
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(self.program, self.student)
         if not iac.has_paid():
-            iac.add_required_transfers()
+            iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
 

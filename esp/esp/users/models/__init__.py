@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 from collections import defaultdict
 from datetime import datetime, timedelta, date
 import json
+import logging
+logger = logging.getLogger(__name__)
 import functools
 
 from django import forms, dispatch
@@ -644,7 +646,7 @@ class BaseESPUser(object):
         return clsObj.students().filter(id=self.id).exists()
 
     def canRegToFullProgram(self, program):
-        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
+        return Permission.user_has_perm(self, 'OverrideFull', program)
 
     @cache_function
     def appliedFinancialAid(self, program):
@@ -1189,9 +1191,9 @@ class StudentInfo(models.Model):
 
     medical_needs = models.TextField(blank=True, null=True)
 
+    # Deprecated, but left here so as not to remove Chicago's existing data.
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     schoolsystem_optout = models.BooleanField(default=False)
-    # Deprecated, but left here so as not to remove Chicago's existing data.
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
 
@@ -1242,9 +1244,7 @@ class StudentInfo(models.Model):
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
         form_dict['studentrep']      = self.user.hasRole('StudentRep')
-        form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
-        form_dict['schoolsystem_optout'] = self.schoolsystem_optout
         form_dict['transportation'] = self.transportation
         return form_dict
 
@@ -1272,7 +1272,7 @@ class StudentInfo(models.Model):
                     studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
 
         except:
-            print 'Error, could not find k12school for "%s"' % new_data['k12school']
+            logger.warning('Could not find k12school for "%s"', new_data['k12school'])
             studentInfo.k12school = None
 
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
@@ -1292,8 +1292,6 @@ class StudentInfo(models.Model):
         studentInfo.studentrep = new_data.get('studentrep', False)
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
-        studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
-        studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.medical_needs = new_data.get('medical_needs', '')
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
@@ -1344,15 +1342,10 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         ('bio', 'Biography'),
         ('shirt_size', 'Shirt size'),
         ('shirt_type', 'Shirt type'),
-        ('full_legal_name', 'Legal name'),
-        ('university_email', 'University e-mail address'),
-        ('student_id', 'Student ID number'),
-        ('mail_reimbursement', 'Reimbursement checkbox'),
     ]
     link_fields_widgets = {
         'from_here': NullRadioSelect,
         'is_graduate_student': NullCheckboxSelect,
-        'mail_reimbursement': forms.CheckboxInput,
     }
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
@@ -1364,11 +1357,6 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     bio = models.TextField(blank=True, null=True)
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
-
-    full_legal_name = models.CharField(max_length=128, blank=True, null=True)
-    university_email = models.EmailField(blank=True, null=True, max_length=75)
-    student_id = models.CharField(max_length=128, blank=True, null=True)
-    mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
     @classmethod
     def cf_link_instance(cls, request):
@@ -1413,11 +1401,6 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
-        if Tag.getTag('teacherinfo_reimbursement_options'):
-            form_dict['full_legal_name']    = self.full_legal_name
-            form_dict['university_email']   = self.university_email
-            form_dict['student_id']         = self.student_id
-            form_dict['mail_reimbursement'] = self.mail_reimbursement
         return form_dict
 
     @staticmethod
@@ -1436,11 +1419,6 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         teacherInfo.major           = new_data['major']
         teacherInfo.shirt_size      = new_data['shirt_size']
         teacherInfo.shirt_type      = new_data['shirt_type']
-        if Tag.getTag('teacherinfo_reimbursement_options'):
-            teacherInfo.full_legal_name    = new_data['full_legal_name']
-            teacherInfo.university_email   = new_data['university_email']
-            teacherInfo.student_id         = new_data['student_id']
-            teacherInfo.mail_reimbursement = new_data['mail_reimbursement']
         teacherInfo.save()
         return teacherInfo
 
@@ -2228,10 +2206,12 @@ class Permission(ExpirableModel):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
+        # The following two are outside of "Student/" so that they aren't
+        # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
+        ("OverrideFull", "Register for a full program"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
-            ("Student/OverrideFull", "Register for a full program"),
             ("Student/All", "All student deadlines"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
@@ -2481,7 +2461,7 @@ def install():
     """
     Installs some initial users and permissions.
     """
-    print "Installing esp.users initial data..."
+    logger.info("Installing esp.users initial data...")
     install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
@@ -2491,7 +2471,7 @@ def install():
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
-        print 'Created onsite user, please set their password in the admin interface.'
+        logger.info('Created onsite user, please set their password in the admin interface.')
 
 #   This import is placed down here since we need it in GradeChangeRequest
 #   but esp.dbmail.models imports ESPUser.

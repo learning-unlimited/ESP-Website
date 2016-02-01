@@ -61,7 +61,6 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 DEBUG = True
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = False
-USE_PROFILER = False
 
 ##############
 # Middleware #

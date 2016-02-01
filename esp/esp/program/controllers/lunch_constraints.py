@@ -127,7 +127,9 @@ class LunchConstraintGenerator(object):
             new_subject.category = category
             new_subject.class_info = 'Enjoy a break for lunch with your friends!  Please register for at least one lunch period on each day of the program.'
             new_subject.class_size_min = 0
-            new_subject.class_size_max = self.program.program_size_max
+            # If the program doesn't have a max size, we unfortunately still
+            # need one here.  Set a really big one.
+            new_subject.class_size_max = self.program.program_size_max or 10**6
             new_subject.status = 10
             new_subject.duration = '%.4f' % timeslot_length
             new_subject.message_for_directors = day.isoformat()
