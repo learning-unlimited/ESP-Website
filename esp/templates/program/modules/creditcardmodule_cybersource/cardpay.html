@@ -94,6 +94,17 @@ function payOnce() {
 {% block content %}
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
 
+{% if result == "success" %}
+<div class="alert alert-success">
+  <b>Your payment was successful!</b> <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">Return to the main registration page</a>.
+</div>
+{% elif result == "declined" %}
+<div class="alert alert-danger">
+  <b>Your card was declined.</b> Please try again.
+</div>
+{% endif %}
+
+{% if result != "success" %}
 {% load render_qsd %}
 {% inline_program_qsd_block program "cybersource_header" %}
 <h2>Instructions for paying by credit card:</h2>
@@ -104,6 +115,7 @@ function payOnce() {
 </ol>
 </p>
 {% end_inline_program_qsd_block %}
+{% endif %}
 
 <form>
 {% include "program/modules/creditcardmodule_cybersource/transaction_record.html" %}

@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 import logging
 logger = logging.getLogger(__name__)
+import traceback
 from operator import __or__ as OR
 from pprint import pprint
 
@@ -49,8 +50,10 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from django.db.models import Min
+from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.http import HttpResponse
@@ -63,6 +66,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.models import CybersourcePostback
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -526,51 +530,53 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
 
 @csrf_exempt
-@login_required
+@transaction.non_atomic_requests
 def submit_transaction(request):
-    #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction
+    # Before we do anything else, log the raw postback to the database
+    pretty_postdata = json.dumps(request.POST, sort_keys=True, indent=4,
+                                 separators=(', ', ': '))
+    log_record = CybersourcePostback.objects.create(post_data=pretty_postdata)
+    transaction.commit()
+    try:
+        return _submit_transaction(request, log_record)
+    except:
+        subject = '[ESP CC] Failed to process Cybersource postback'
+        log_uri = request.build_absolute_uri(
+            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
+        message = 'The following Cybersource postback could not be processed. Please ' + \
+                  'reconcile it by hand:\n\n    %s\n\n%s' % (log_uri, traceback.format_exc())
+        from_addr = settings.SERVER_EMAIL
+        recipients = [settings.DEFAULT_EMAIL_ADDRESSES['treasury']]
+        send_mail(subject, message, from_addr, recipients)
+        raise
 
-    if request.POST.get("decision") not in ("REJECT", "ERROR"):
+@transaction.atomic
+def _submit_transaction(request, log_record):
+    decision = request.POST['decision']
+    if decision == "ACCEPT":
+        # Handle payment
+        identifier = request.POST['req_merchant_defined_data1']
+        amount_paid = Decimal(request.POST['req_amount'])
+        transaction_id = request.POST['transaction_id']
 
-        #   Figure out which user and program the payment are for.
-        post_identifier = request.POST['req_merchant_defined_data1']
-        post_amount = Decimal(request.POST['req_amount'])
-        iac = IndividualAccountingController.from_identifier(post_identifier)
+        payment = IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_paid, transaction_id)
 
-        #   Warn for possible duplicate payments
-        prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
-        if prev_payments.count() > 0 and iac.amount_due() <= 0:
-            from django.conf import settings
-            recipient_list = [contact[1] for contact in settings.ADMINS]
-            recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury'])
-            refs = 'Cybersource request ID: %s' % post_identifier
+        # Link payment to log record
+        log_record.transfer = payment
+        log_record.save()
 
-            subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
+        return _redirect_from_identifier(identifier, "success")
+    elif decision == "DECLINE":
+        identifier = request.POST['req_merchant_defined_data1']
+        return _redirect_from_identifier(identifier, "declined")
+    else:
+        raise NotImplementedError("Can't handle decision: %s" % decision)
 
-            # Send mail!
-            send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
-                  """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
-                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('req_bill_to_surname', '--'), request.POST.get('req_bill_to_forename', '--'), request) , \
-                  settings.SERVER_EMAIL, recipient_list, True)
-
-        #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount, transaction_id=request.POST.get('transaction_id', ''))
-
-        tl = 'learn'
-        one, two = iac.program.url.split('/')
-        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
-
-        if destination.startswith('/') or '//' in destination:
-            pass
-        else:
-            # simple urls like 'confirmreg' are relative to the program
-            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
-
-        return HttpResponseRedirect(destination)
-
-    return render_to_response( 'accounting/credit_rejected.html', request, {} )
+def _redirect_from_identifier(identifier, result):
+    program = IndividualAccountingController.program_from_identifier(identifier)
+    destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
+    return HttpResponseRedirect(destination)
 
 # This really should go in qsd
 @reversion.create_revision()
