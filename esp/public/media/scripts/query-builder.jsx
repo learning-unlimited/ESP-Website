@@ -450,8 +450,8 @@ var SelectInput = React.createClass({
  *   `inner`: another input specification object, for the input which might be
  *     used.
  * 
- * The output JSON data is null if the input was not used, and the value of the
- * input otherwise.
+ * The output JSON data is an object with key "inner" and value the value of
+ * the inner input if the input was used, and null otherwise.
  */
 var OptionalInput = React.createClass({
   propTypes: {
@@ -470,18 +470,18 @@ var OptionalInput = React.createClass({
 
   asJSON: function () {
     if (this.state.show) {
-      return this.refs.inner.asJSON();
+      return {value: this.refs.inner.asJSON()};
     } else {
       return null;
     }
   },
 
   fromJSON: function(data) {
-    if (data) {
+    if (data !== null) {
       this.setState(
         {show: true},
         function () {
-          this.refs.inner.fromJSON(data);
+          this.refs.inner.fromJSON(data.value);
         });
     } else {
       this.setState({show: false});

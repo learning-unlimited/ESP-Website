@@ -195,7 +195,7 @@ class OptionalInput(object):
         if value is None:
             return Q()
         else:
-            return self.inner.as_q(value)
+            return self.inner.as_q(value['inner'])
 
 
 class DatetimeInput(object):
