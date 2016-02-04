@@ -409,7 +409,8 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'OptionalInput', 'name': '+',
                           'inner': select_input.spec()})
         self.assertEqual(str(optional_input.as_q(None)), str(Q()))
-        self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
+        self.assertEqual(str(optional_input.as_q({'inner': '5'})),
+                         str(Q(a_db_field='5')))
 
     def test_datetime_input(self):
         datetime_input = query_builder.DatetimeInput("a_db_field")

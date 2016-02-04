@@ -470,7 +470,7 @@ var OptionalInput = React.createClass({
 
   asJSON: function () {
     if (this.state.show) {
-      return {value: this.refs.inner.asJSON()};
+      return {inner: this.refs.inner.asJSON()};
     } else {
       return null;
     }
@@ -481,7 +481,7 @@ var OptionalInput = React.createClass({
       this.setState(
         {show: true},
         function () {
-          this.refs.inner.fromJSON(data.value);
+          this.refs.inner.fromJSON(data.inner);
         });
     } else {
       this.setState({show: false});
