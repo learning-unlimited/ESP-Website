@@ -227,13 +227,12 @@ class QueryBuilderTest(DjangoTestCase):
         has_ever_printed_filter = query_builder.SearchFilter(
             'has ever printed', 'has ever printed',
             [query_builder.ConstantInput(
-                Q(printrequest__time_executed__isnull=False),
-                'has ever printed')])
+                Q(printrequest__time_executed__isnull=False))])
         always_works_filter = query_builder.SearchFilter(
             'always works', 'always works',
             [query_builder.ConstantInput(
-                Q(printrequest__time_executed__isnull=True),
-                'always works')], inverted=True)
+                Q(printrequest__time_executed__isnull=True))],
+            inverted=True)
         print_query_builder = query_builder.QueryBuilder(
             Printer.objects.all(),
             [name_filter, has_ever_printed_filter, always_works_filter])
@@ -375,8 +374,6 @@ class QueryBuilderTest(DjangoTestCase):
                          str(Q(a_db_field='1') & Q(a="b")))
         with self.assertRaises(ESPError_Log):
             search_filter_1.as_q(['10000',None])
-        self.assertEqual(search_filter_1.as_english(['1', None]),
-                         "the instance with a db field 'option 1'")
 
 
     def test_select_input(self):
@@ -398,16 +395,11 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
         with self.assertRaises(ESPError_Log):
             select_input.as_q('10000')
-        self.assertEqual(select_input.as_english('5'),
-                         "with a db field 'option 5'")
-        with self.assertRaises(ESPError_Log):
-            select_input.as_english('10000')
 
     def test_trivial_input(self):
-        trivial_input = query_builder.ConstantInput(Q(a="b"), "a trivial input")
+        trivial_input = query_builder.ConstantInput(Q(a="b"))
         self.assertEqual(trivial_input.spec(), {'reactClass': 'ConstantInput'})
         self.assertEqual(str(trivial_input.as_q(None)), str(Q(a="b")))
-        self.assertEqual(trivial_input.as_english(None), "a trivial input")
 
     def test_optional_input(self):
         select_input = query_builder.SelectInput(
@@ -417,10 +409,8 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'OptionalInput', 'name': '+',
                           'inner': select_input.spec()})
         self.assertEqual(str(optional_input.as_q(None)), str(Q()))
-        self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
-        self.assertEqual(optional_input.as_english(None), "")
-        self.assertEqual(optional_input.as_english('5'),
-                         "with a db field 'option 5'")
+        self.assertEqual(str(optional_input.as_q({'inner': '5'})),
+                         str(Q(a_db_field='5')))
 
     def test_datetime_input(self):
         datetime_input = query_builder.DatetimeInput("a_db_field")
@@ -441,10 +431,6 @@ class QueryBuilderTest(DjangoTestCase):
         with self.assertRaises(ValueError):
             datetime_input.as_q(
                 {'comparison': '', 'datetime': '11/41/2015 23:59'})
-        self.assertEqual(
-            datetime_input.as_english(
-                {'comparison': 'before', 'datetime': '11/30/2015 23:59'}),
-            'a db field before 11/30/2015 23:59')
 
     def test_text_input(self):
         text_input = query_builder.TextInput("a_db_field")
@@ -452,8 +438,6 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'TextInput', 'name': 'a db field'})
         self.assertEqual(str(text_input.as_q("foo bar baz")),
                          str(Q(a_db_field="foo bar baz")))
-        self.assertEqual(text_input.as_english("foo bar baz"),
-                         "a db field foo bar baz")
 
 
 def suite():
