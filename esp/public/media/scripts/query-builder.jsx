@@ -336,8 +336,8 @@ var Filter = React.createClass({
   },
 
   fromJSON: function (data) {
-    return _.map(data, function (datum, i) {
-      return this.refs[i].fromJSON(datum);
+    _.each(data, function (datum, i) {
+      this.refs[i].fromJSON(datum);
     }.bind(this));
   },
 
