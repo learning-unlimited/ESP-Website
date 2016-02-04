@@ -65,7 +65,7 @@ class SurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'student_survey': self.getQForUser(Q(record__program = program) & Q(record__event = event))}
+            return {'student_survey': Q(record__program=program) & Q(record__event=event)}
         return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
     def teachers(self, QObject = False):
@@ -73,7 +73,7 @@ class SurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'teacher_survey': self.getQForUser(Q(record__program = program) & Q(record__event = event))}
+            return {'teacher_survey': Q(record__program=program) & Q(record__event=event)}
         return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
     def studentDesc(self):
@@ -86,6 +86,7 @@ class SurveyModule(ProgramModuleObj):
         return False
 
     @main_call
+    @usercheck_usetl
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':

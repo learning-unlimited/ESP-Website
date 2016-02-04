@@ -257,8 +257,8 @@ class OnSiteClassList(ProgramModuleObj):
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
-        PrintRequest.objects.create(user=user_obj, printer=printer)
-        result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
+        req = PrintRequest.objects.create(user=user_obj, printer=printer)
+        result['message'] = "Submitted %s's schedule for printing (print request #%s)." % (user_obj.name(), req.id)
 
         json.dump(result, resp)
         return resp
@@ -383,7 +383,7 @@ class OnSiteClassList(ProgramModuleObj):
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}
         for key_option in defaults.keys():
-            if options.has_key(key_option):
+            if key_option in options:
                 context[key_option] = options[key_option]
             else:
                 context[key_option] = defaults[key_option]

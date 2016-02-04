@@ -47,7 +47,7 @@ from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
@@ -111,6 +111,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def resource_types(prog):
         res_types = ResourceType.objects.filter(program = prog)
@@ -144,6 +145,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def timeslots(prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
@@ -161,6 +163,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def lunch_timeslots(prog):
         lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
@@ -169,6 +172,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'timeslots': lunch_timeslots}
 
     @aux_call
+    @no_auth
     @json_response()
     @cached_module_view
     def sections(extra, prog):
@@ -211,7 +215,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'].append(s.id)
                     continue
                 teacher = {
@@ -247,6 +251,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'subject': 'id',
             'subject__sections': 'id',
             })
+    @no_auth
     @cached_module_view
     def classes_timeslot(extra, prog):
         # TODO: make the /timeslots view do what we want and kill this one
@@ -281,6 +286,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def class_subjects(extra, prog):
         if extra == 'catalog':
@@ -317,7 +323,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'] += cls['sections']
                     continue
                 teacher = {
@@ -406,6 +412,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @no_auth
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -467,6 +474,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @no_auth
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -593,19 +601,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @needs_admin
     @cached_module_view
     def message_requests():
-        earlier_requests = MessageRequest.objects.exclude(subject__icontains='password recovery')
-        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()
+        earlier_requests = MessageRequest.objects.all()
+        # Limit to 100 so the data doesn't get too big for memcached
+        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()[:100]
         for item in data:
             if isinstance(item['processed_by'], datetime):
                 item['processed_by'] = item['processed_by'].timetuple()[:6]
 
-        return {'message_requests': data}
-    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
+        return {'message_requests': list(data)}
+
+    message_requests.method.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()
+    @needs_admin
     @cached_module_view
     def stats(prog):
         # Create a dictionary to assemble the output
@@ -729,7 +741,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         dictOut["stats"].append(shirt_data);
 
         Q_categories = Q(program=prog)
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        crmi = prog.classregmoduleinfo
         if crmi.open_class_registration:
             Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
@@ -791,9 +803,9 @@ teachers[key].filter(is_active = True).distinct().count()))
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
 
         return dictOut
-    stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-    stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
-    stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    stats.method.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+    stats.method.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
+    stats.method.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
 
     @aux_call
     @needs_student

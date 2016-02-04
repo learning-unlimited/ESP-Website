@@ -33,18 +33,25 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-import datetime
 import json
+import logging
+logger = logging.getLogger(__name__)
+import sys
 
 from django.conf import settings
-from django.template import RequestContext, Context
-from django.http import HttpResponse, Http404
 from django.db.models.base import ObjectDoesNotExist
+from django.http import HttpResponse, Http404
+from django.shortcuts import render_to_response
+from django.template import RequestContext, Context
 from django.utils.translation import ugettext as _
 
+
+# TODO(benkraft): replace with the django version
 class Http403(Exception):
     pass
 
+
+# TODO(benkraft): these should probably inherit from a common parent.
 class ESPError_Log(Exception):
     pass
 
@@ -58,6 +65,12 @@ def ESPError(message=None, log=True):
         raise ESPError('This error will not be logged.', log=False)
     Legacy (deprecated) usage::
         raise ESPError(log=False), 'This error will not be logged.'
+
+    Note: "log=False" is a bit of a lie -- it just means it gets logged as INFO
+    rather than ERROR (and therefore doesn't go to the serverlog email archive,
+    just to the on-disk log).
+    TODO(benkraft): allow specifying any log level, and update all callers.
+    Some of these should really be WARNINGs.
     """
     if isinstance(message, bool):
         # trying to pass a bool argument: assume they meant log rather than message
@@ -139,6 +152,7 @@ class AjaxErrorMiddleware(object):
 
 AjaxError = AjaxErrorMiddleware.AjaxError
 
+
 class ESPErrorMiddleware(object):
     """ This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
@@ -147,84 +161,57 @@ class ESPErrorMiddleware(object):
     """
 
     def process_exception(self, request, exception):
-        from django.shortcuts import render_to_response
-        from django.conf import settings
-        from django.core.mail import mail_admins
 
-        import sys
+        if exception == ESPError_Log or exception == ESPError_NoLog:
+            # TODO(benkraft): remove remaining instances of this.
+            logging.warning("Raising the exception class is deprecated, "
+                            "please raise ESPError(message) instead.")
 
-        debug = settings.DEBUG  # get the debug value
+        if isinstance(exception, ESPError_Log) or exception == ESPError_Log:
+            # logging.ERROR will take care of emailing the error.
+            log_level = logging.ERROR
+            template = 'error.html'
+            status = 500
+        elif (isinstance(exception, ESPError_NoLog) or
+              exception == ESPError_NoLog):
+            log_level = logging.INFO
+            template = 'error.html'
+            # TODO(benkraft): this should probably be a 4xx, since if we're not
+            # bothering to log it we probably don't think it was our fault.
+            status = 500
+        elif isinstance(exception, Http403):
+            log_level = logging.INFO
+            template = '403.html'
+            status = 403
+        else:
+            return None
 
         exc_info = sys.exc_info()
-        if isinstance(exception, ESPError_Log) or exception == ESPError_Log:
-            # Subject of the email
-            subject = 'Error (%s IP): %s' % ((request.META.get('REMOTE_ADDR') in \
-                                              settings.INTERNAL_IPS and 'internal' or 'EXTERNAL'), \
-                                              getattr(request, 'path', ''))
+        logger.log(log_level, exc_info[1], exc_info=exc_info)
+        context = {'error': exc_info[1]}
+        context_instance = self._get_context(request)
+        # TODO(benkraft): merge our various error templates (403, 500, error).
+        # They're all slightly different, but should probably be more similar
+        # and share code.
+        response = render_to_response(
+            template, context, context_instance=context_instance)
+        response.status_code = status
+        return response
 
-            try:
-                request_repr = repr(request)
-            except:
-                request_repr = "Request repr() unavailable"
-
-
-            # get a friendly traceback
-            traceback = self._get_traceback(exc_info)
-
-            # Message itself
-            message = "%s\n\n%s" % (traceback, request_repr)
-
-            # Now we send the email
-            mail_admins(subject, message, fail_silently=True)
-
-        elif isinstance(exception, Http403):
-            context = {'error': exc_info[1]}
-            try:
-                # attempt to set up variables the template needs
-                # - actually, some things will fail to be set up due to our
-                #   silly render_to_response hack, but hopefully that will all
-                #   just silently fail...
-                # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
-                #   TEMPLATE in main?
-                context_instance = RequestContext(request)
-            except:
-                # well, we couldn't, but at least display something
-                # (actually it will immediately fail on main because someone
-                # removed the safe version of the template and
-                # miniblog_for_user doesn't silently fail but best not to put
-                # in ugly hacks and make random variables just happen to work.)
-                context_instance = Context()
-            response = render_to_response('403.html', context, context_instance=context_instance)
-            response.status_code = 403
-            return response
-
-
-        if isinstance(exception, ESPError_NoLog) or exception == ESPError_NoLog \
-                or isinstance(exception, ESPError_Log) or exception == ESPError_Log: # No logging, just output
-            context = {'error': exc_info[1]}
-            try:
-                # attempt to set up variables the template needs
-                # - actually, some things will fail to be set up due to our
-                #   silly render_to_response hack, but hopefully that will all
-                #   just silently fail...
-                # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
-                #   TEMPLATE in main?
-                context_instance = RequestContext(request)
-            except:
-                # well, we couldn't, but at least display something
-                # (actually it will immediately fail on main because someone
-                # removed the safe version of the template and
-                # miniblog_for_user doesn't silently fail but best not to put
-                # in ugly hacks and make random variables just happen to work.)
-                context_instance = Context()
-            response = render_to_response('error.html', context, context_instance=context_instance)  # Will use a pretty ESP error page...
-            response.status_code = 500
-            return response
-        return None
-
-
-    def _get_traceback(self, exc_info=None):
-        "Helper function to return the traceback as a string"
-        import traceback
-        return '\n'.join(traceback.format_exception(*(exc_info or sys.exc_info())))
-
+    @staticmethod
+    def _get_context(request):
+        try:
+            # attempt to set up variables the template needs
+            # - actually, some things will fail to be set up due to our
+            #   silly render_to_response hack, but hopefully that will all
+            #   just silently fail...
+            # - alternatively, we could, I dunno, NOT GET RID OF THE SAFE
+            #   TEMPLATE in main?
+            return RequestContext(request)
+        except:
+            # well, we couldn't, but at least display something
+            # (actually it will immediately fail on main because someone
+            # removed the safe version of the template and
+            # miniblog_for_user doesn't silently fail but best not to put
+            # in ugly hacks and make random variables just happen to work.)
+            return Context()

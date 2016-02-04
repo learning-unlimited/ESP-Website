@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
 import re
 import sys
 
@@ -57,7 +60,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
-              debug=False,
+              
               *args, **kwargs):
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:
@@ -67,7 +70,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     else:
         new_list = [ x for x in recipient_list ]
     from django.core.mail import EmailMessage #send_mail as django_send_mail
-    if debug: print "Sent mail to %s" % str(new_list)
+    logger.info("Sent mail to %s", new_list)
 
     #   Get whatever type of e-mail connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
@@ -284,7 +287,7 @@ class MessageRequest(models.Model):
                 'This might be a website bug. Please contact us at %s ' + \
                 'and tell us how you got this error, and we will look into it. ' + \
                 'The error message is: "%s".' % \
-                (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
+                (sendto_fn_name, settings.DEFAULT_EMAIL_ADDRESSES['support'], e))
 
     # Processing a MessageRequest needs to be atomic, so that if the DB falls
     # over halfway through the processing, we don't end up with half of the
@@ -295,7 +298,7 @@ class MessageRequest(models.Model):
     # instances of the same function (which should probably be locked out
     # anyway at a higher level).
     @transaction.atomic
-    def process(self, debug=False):
+    def process(self):
         """Process this request, creating TextOfEmail and EmailRequest objects.
 
         It is the caller's responsibility to call this only on unprocessed
@@ -345,7 +348,7 @@ class MessageRequest(models.Model):
                 # all recipients the first time.
                 newtxt, created = TextOfEmail.objects.get_or_create(**newtxt)
                 if not created:
-                    if debug: print 'Skipped duplicate creation of message to %s for message request %d: %s' % (send_to, self.id, self.subject)
+                    logger.warning('Skipped duplicate creation of message to %s for message request %d: %s', send_to, self.id, self.subject)
 
                 newemailrequest['textofemail'] = newtxt
 
@@ -357,11 +360,7 @@ class MessageRequest(models.Model):
         self.processed = True
         self.save()
 
-        if debug: print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
-
-
-    class Admin:
-        pass
+        logger.info('Prepared e-mails to send for message request %d: %s', self.id, self.subject)
 
 
 class TextOfEmail(models.Model):
@@ -386,7 +385,7 @@ class TextOfEmail(models.Model):
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
 
-    def send(self, debug=False):
+    def send(self):
         """Take the email data in this TextOfEmail and send it.
 
         Returns an exception, if one was raised by `send_mail`, or None if the
@@ -413,8 +412,7 @@ class TextOfEmail(models.Model):
                       self.send_from,
                       self.send_to,
                       False,
-                      extra_headers=extra_headers,
-                      debug=debug)
+                      extra_headers=extra_headers)
         except Exception as e:
             self.tries += 1
             self.save()
@@ -443,9 +441,6 @@ class TextOfEmail(models.Model):
             orm_class = cls
         now = datetime.now()
         return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
-
-    class Admin:
-        pass
 
     class Meta:
         verbose_name_plural = 'Email Texts'
@@ -539,9 +534,6 @@ class EmailRequest(models.Model):
 
     def __unicode__(self):
         return unicode(self.msgreq.subject) + ' <' + unicode(self.target.username) + '>'
-
-    class Admin:
-        pass
 
 class EmailList(models.Model):
     """

@@ -34,21 +34,24 @@ Learning Unlimited, Inc.
 """
 
 import json
+import logging
+logger = logging.getLogger(__name__)
+import sys
 from datetime import datetime
 from decimal import Decimal
 from collections import defaultdict
 
+from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.template.loader import get_template
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
-from esp.program.modules import module_ext
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -137,10 +140,9 @@ class StudentClassRegModule(ProgramModuleObj):
             "required": True,
             }]
 
-    @classmethod
-    def extensions(cls):
-        return {'scrmi': module_ext.StudentClassRegModuleInfo}
-
+    @property
+    def scrmi(self):
+        return self.program.studentclassregmoduleinfo
 
     def students(self, QObject = False):
 
@@ -208,7 +210,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         user = get_current_request().user
         is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -295,7 +297,9 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Rewrite registration button if a particular section was named.  (It will be in extra).
         sec_ids = []
         if extra == 'all':
-            sec_ids = user_sections.values_list('id', flat=True)
+            # TODO(benkraft): this branch of the if was broken for 5 years and
+            # nobody noticed, so we may be able to remove it entirely.
+            sec_ids = self.user.getSections(self.program).values_list('id', flat=True)
         elif isinstance(extra, list) or isinstance(extra, QuerySet):
             sec_ids = list(extra)
         else:
@@ -327,7 +331,7 @@ class StudentClassRegModule(ProgramModuleObj):
             Return True if there are no errors.
         """
         reg_perm = 'Student/Classes'
-        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.program.studentclassregmoduleinfo
 
         if 'prereg_verb' in request.POST:
             proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
@@ -348,7 +352,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
 
-        if request.POST.has_key('class_id'):
+        if 'class_id' in request.POST:
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
@@ -433,6 +437,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
+    @meets_cap
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
@@ -441,6 +446,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
+    @meets_cap
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
         if not request.is_ajax():
@@ -459,18 +465,14 @@ class StudentClassRegModule(ProgramModuleObj):
                 except:
                     pass
                 return self.ajax_schedule(request, tl, one, two, module, extra, prog)
-        except ESPError_NoLog, inst:
-            print inst
-            if inst[0]:
-                msg = inst[0]
-                raise AjaxError(msg)
-            else:
-                ec = sys.exc_info()[1]
-                raise AjaxError(ec[1])
+        except ESPError_NoLog as inst:
+            # TODO(benkraft): we shouldn't need to do this.  find a better way.
+            raise AjaxError(inst)
 
     @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')
+    @meets_cap
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
         from esp.cal.models import Event
@@ -480,19 +482,18 @@ class StudentClassRegModule(ProgramModuleObj):
         except:
             raise ESPError('Please use the link at the main registration page.', log=False)
         user = request.user
-        ts = Event.objects.filter(id=extra)
+        ts = Event.objects.filter(id=extra, program=prog)
         if len(ts) < 1:
             raise Http404()
 
         ts = ts[0]
 
-        prereg_url = self.program.get_learn_url() + 'addclass/'
         user_grade = user.getGrade(self.program)
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
-        if is_onsite and not request.GET.has_key('filter'):
+        if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
@@ -513,8 +514,7 @@ class StudentClassRegModule(ProgramModuleObj):
                                                                             'one':        one,
                                                                             'two':        two,
                                                                             'categories': categories.values(),
-                                                                            'timeslot':   ts,
-                                                                            'prereg_url': prereg_url})
+                                                                            'timeslot': ts})
 
     # This function actually renders the catalog
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
@@ -531,7 +531,7 @@ class StudentClassRegModule(ProgramModuleObj):
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
 
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
@@ -583,6 +583,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
 
     @cache_control(public=True, max_age=3600)
+    @no_auth
     @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
@@ -598,7 +599,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @cache_control(public=True, max_age=3600)
     def catalog_allowed_reg_verbs(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = prog.studentclassregmoduleinfo
         signup_verb_uri = scrmi.signup_verb.get_uri().replace('V/Flags/Registration/', '')
 
         if scrmi.use_priority:
@@ -642,6 +643,7 @@ class StudentClassRegModule(ProgramModuleObj):
     # This function gets called and branches off to the two above depending on the user's role
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
@@ -649,6 +651,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @disable_csrf_cookie_update
     @aux_call
+    @no_auth
     @cache_control(public=True, max_age=120)
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
@@ -665,7 +668,7 @@ class StudentClassRegModule(ProgramModuleObj):
         from esp.qsdmedia.models import Media
 
         clsid = 0
-        if request.POST.has_key('clsid'):
+        if 'clsid' in request.POST:
             clsid = request.POST['clsid']
         else:
             clsid = extra
@@ -685,7 +688,7 @@ class StudentClassRegModule(ProgramModuleObj):
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
-        if request.GET.has_key('sec_id'):
+        if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
         #   Take the student out if constraints allow
         for sec in oldclasses:
@@ -728,6 +731,7 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.ajax_schedule(request, tl, one, two, module, cleared_ids, prog)
 
     @aux_call
+    @no_auth
     def openclasses(self, request, tl, one, two, module, extra, prog):
         """ A publicly viewable version of the onsite class list.
             Should be revisited in the future, as this was a temporary

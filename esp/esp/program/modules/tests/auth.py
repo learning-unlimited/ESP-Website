@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 by the individual contributors
+Copyright (c) 2015 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -32,41 +31,24 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.cal.models import Event
-from esp.utils.web import render_to_response
-from django.http import Http404, HttpResponseRedirect
-from django.forms import ModelForm
 
+from esp.program.tests import ProgramFrameworkTest
 
-class EventForm(ModelForm):
-    class Meta:
-        fields = "__all__"
-        model = Event
+class ProgramModuleAuthTest(ProgramFrameworkTest):
+    """Validate that all program modules have some property."""
 
-def createevent(request):
-    """ Create an Event, via a Web form """
+    def testViewsHaveAuths(self):
+        """Test that all views of all program modules have some sort of auth decorator,
+        e.g., @needs_admin, @needs_student, @needs_account, @no_auth"""
 
-    # If we're POSTed to, we're trying to receive an update
-    if request.method == 'POST':
-        f = EventForm(request.POST)
-        if f.is_valid():
-            new_event = f.save()
-            return HttpResponseRedirect('/events/edit/?%i', new_event.id)
-
-    # Otherwise, generate a blank new-page form
-    else:
-        f = EventForm()
-
-    return render_to_response('events/create_update', request, {'form': f } )
-
-
-def updateevent(request, id=None):
-    """ Update an Event, via a Web form """
-    # aseering 8-9-2006: Code blatantly copied from myesp_createevnt; see that function for reference
-
-    # We don't have a generic list page yet; work on that
-    if id == None:
-        raise Http404
-
-    # Because we're lazy like that.
-    return createevent(request)
+        # self.program has all possible modules
+        modules = self.program.getModules()
+        for module in modules:
+            view_names = module.get_all_views()
+            for view_name in view_names:
+                view = getattr(module, view_name)
+                self.assertTrue(getattr(view, 'has_auth_check', None), \
+                    'Module "{}" is missing an auth check for view "{}"'.format(
+                        module,
+                        view_name
+                    ))

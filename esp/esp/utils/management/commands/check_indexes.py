@@ -5,6 +5,8 @@ from django.db.models.loading import get_apps
 from django.db import connection
 from django.core.management.sql import sql_indexes
 
+import logging
+logger = logging.getLogger(__name__)
 import re
 from optparse import make_option
 
@@ -50,11 +52,11 @@ class Command(BaseCommand):
                 try:
                     match = index_re.search(ind)
                     name, table, field = match.groups()
-                    if proposed_indexes.has_key(table):
+                    if table in proposed_indexes:
                         proposed_indexes[table].append(name)
                     else:
                         proposed_indexes[table] = [name]
-                    if index_sql.has_key(name):
+                    if name in index_sql:
                         index_sql[name].append(ind)
                     else:
                         index_sql[name] = [ind]
@@ -68,7 +70,7 @@ class Command(BaseCommand):
         sql_back = cursor.fetchall()
         for row in sql_back:
             name, table = row
-            if indexes.has_key(table):
+            if table in indexes:
                 indexes[table].append(name)
             else:
                 indexes[table] = [name]
@@ -80,16 +82,16 @@ class Command(BaseCommand):
                 try:
                     if not table in indexes[prop_name]:
                         if not options['show']:
-                            print "(%s, %s) is missing" % (prop_name, table)
+                            logger.info("(%s, %s) is missing", prop_name, table)
                         else:
                             for index in index_sql[table]:
                                 if prop_name in index:
-                                    print index
+                                    logger.info(index)
                 except KeyError:
                     if not options['show']:
-                        print "No Indexes for %s in original db" % prop_name
+                        logger.info("No Indexes for %s in original db", prop_name)
                     else:
                         for index in index_sql[table]:
                             if table in index:
-                                print index
+                                logger.info(index)
 

@@ -27,6 +27,7 @@ theme_compiled.css
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg
 *_admin_thumbnail.png
+local_fabfile.py
 
 # Mac
 .DS_Store

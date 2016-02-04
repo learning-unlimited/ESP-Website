@@ -37,8 +37,8 @@ except IOError:
     # another instance has the lock
     sys.exit(0)
 
-process_messages(debug=True)
-send_email_requests(debug=True)
+process_messages()
+send_email_requests()
 
 # Release the lock when message sending is complete.
 fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)

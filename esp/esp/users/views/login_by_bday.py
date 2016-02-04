@@ -1,6 +1,7 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from esp.middleware import ESPError
 from esp.utils.forms import FormWithRequiredCss
 from esp.utils.web import render_to_response
 from esp.web.views.main import registration_redirect
@@ -52,7 +53,7 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
 
-    if request.method == 'POST' and request.POST.has_key('username'):
+    if request.method == 'POST' and 'username' in request.POST:
         preset_username = request.POST['username']
         if preset_username == '-1':
             return HttpResponseRedirect( '/myesp/register/' )
@@ -69,7 +70,7 @@ def login_by_bday_pickname(request, month, day, *args, **kwargs):
         form = StudentSelectForm( students=[ (s.username, '%s (%s)' % (s.first_name, s.username)) for s in candidate_users ] + [('-1', 'I don\'t see my name in this list...')] )
         preset_username = ''
         action = request.get_full_path()
-        if request.REQUEST.has_key('dynamic'):
+        if 'dynamic' in request.REQUEST:
             return HttpResponse( form.as_table() )
 
     return render_to_response('registration/login_by_bday_pickname.html', request,
@@ -85,5 +86,5 @@ def login_by_bday_new(request):
             request.session['birth_month'] = month
             request.session['birth_day'] = day
         else:
-            raise ESPError(False), str(form.errors)
+            raise ESPError(str(form.errors), log=False)
     return HttpResponseRedirect( '/myesp/register/' )

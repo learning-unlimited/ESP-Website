@@ -76,22 +76,6 @@ detailed explanation of our age and grade level policy, please click
 </div>
 {% endif %}
 
-{% if form.schoolsystem_id %}
-<div class="control-group">
-    <label for="id_schoolsystem_id" class="control-label">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label>
-    <div class="controls">
-    {{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
-    <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
-    {% endif %} 
-    {% if form.fields.schoolsystem_id.help_text %}
-    <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
-    <br />{{ form.schoolsystem_optout }}
-    <br />{% autoescape off %}{{ form.schoolsystem_optout.help_text }}{% endautoescape %}
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>

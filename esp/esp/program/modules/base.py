@@ -36,6 +36,8 @@ Learning Unlimited, Inc.
     from within the program handler.
 """
 from functools import wraps
+import logging
+logger = logging.getLogger(__name__)
 
 from django.db import models
 from django.utils.decorators import available_attrs
@@ -45,20 +47,15 @@ from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
 from esp.utils.web import render_to_response
 from argcache import cache_function
-from esp.tagdict.models import Tag
 from django.http import HttpResponseRedirect, Http404
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.conf import settings
 from urllib import quote
-from django.db.models.query import Q
-from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
 
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-
-from os.path import exists
 
 LOGIN_URL = settings.LOGIN_URL
 
@@ -83,10 +80,6 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def get_program(self):
-        """ Backward compatibility; see ClassRegModuleInfo.get_program """
-        return self.program
-
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with
@@ -98,12 +91,9 @@ class ProgramModuleObj(models.Model):
 
         result = []
 
-        #   Filter out attributes that we don't want to look at:
-        #   - Attributes of ProgramMdouleObj, including Django stuff
-        #   - Module extension attributes
+        #   Filter out attributes that we don't want to look at: attributes of
+        #   ProgramModuleObj, including Django stuff
         key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
-        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo]:
-            key_set = filter(lambda key: key not in dir(exclude_class), key_set)
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
@@ -152,10 +142,6 @@ class ProgramModuleObj(models.Model):
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
 
-    def getQForUser(self, QRestriction):
-        # Let's not do anything and say we did...
-        return QRestriction
-
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
@@ -200,7 +186,7 @@ class ProgramModuleObj(models.Model):
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
         if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
-            scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = prog.studentclassregmoduleinfo
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
                     return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -242,61 +228,11 @@ class ProgramModuleObj(models.Model):
 
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
-        ModuleObj.fixExtensions()
 
         return ModuleObj
 
-
-
-    def getClassFromId(self, clsid, tl='teach'):
-        """ This function can be called from a view to get a class object from an id. The id can be given
-            with request or extra, but it will try to get it in any way. """
-
-        from esp.program.models import ClassSubject
-
-        classes = []
-        try:
-            clsid = int(clsid)
-        except:
-            return (False, True)
-
-        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
-
-        if len(classes) == 1:
-            if not get_current_request().user.canEdit(classes[0]):
-                from esp.middleware import ESPError
-                message = 'You do not have permission to edit %s.' % classes[0].title
-                raise ESPError(message, log=False)
-            else:
-                Found = True
-                return (classes[0], True)
-        return (False, False)
-
-
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
-
-    def fixExtensions(self):
-        """ Find module extensions that this program module inherits from, and
-        incorporate those into its attributes. """
-
-        self._ext_map = {}
-        if self.program:
-            for key, x in self.extensions().items():
-                ext = self.program.getModuleExtension(x, module_id=self.id)
-                setattr(self, key, ext)
-                for attr in dir(ext):
-                    self._ext_map[attr] = key
-
-    def __getattr__(self, attr):
-        # backward compatibility
-        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
-            key = self._ext_map[attr]
-            ext = getattr(self, key)
-            import warnings
-            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
-            return getattr(ext, attr)
-        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
 
@@ -328,22 +264,9 @@ class ProgramModuleObj(models.Model):
         return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
-    @classmethod
-    def get_summary_path(cls, function):
-        """
-        Returns the base url of a view function
-
-        'function' must be a member of 'cls'.  Both 'cls' and 'function' must
-        not be anonymous (ie., they musht have __name__ defined).
-        """
-
-        url = '/myesp/modules/' + cls.__name__ + '/' + function.__name__
-        return url
-
     def setUser(self, user):
         self.user = user
         self.curUser = user
-
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
@@ -412,10 +335,6 @@ class ProgramModuleObj(models.Model):
         return True
 
     @classmethod
-    def extensions(cls):
-        return {}
-
-    @classmethod
     def module_properties(cls):
         """
         Specify the properties of the ProgramModule row corresponding
@@ -466,23 +385,35 @@ def not_logged_in(request):
     return (not request.user or not request.user.is_authenticated() or not request.user.id)
 
 def usercheck_usetl(method):
+    """
+    Check that the user has the correct role based on tl.
+    Will error if used on json or volunteer modules.
+    """
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
-        errorpage = 'errors/program/nota'+tl+'.html'
+        error_map = {'learn': 'notastudent.html',
+                     'teach': 'notateacher.html',
+                     'manage': 'notanadmin.html',
+                     'onsite': 'notonsite.html'
+                     }
+        errorpage = 'errors/program/' + error_map[tl]
 
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if ((not request.user.isAdmin(moduleObj.program))
-             and (
-                 (tl == 'learn' and not request.user.isStudent())
-                 or (tl == 'teach' and not request.user.isTeacher())
-                 or (tl == 'manage'))):
+        if request.user.isAdmin(moduleObj.program) or \
+           (tl == 'learn' and request.user.isStudent()) or \
+           (tl == 'teach' and request.user.isTeacher()) or \
+           (tl == 'onsite' and request.user.isOnsite()):
+            return method(moduleObj, request, tl, *args, **kwargs)
+        else:
             return render_to_response(errorpage, request, {})
 
-        return method(moduleObj, request, tl, *args, **kwargs)
-
+    _checkUser.has_auth_check = True
     return _checkUser
 
+def no_auth(method):
+    method.has_auth_check = True
+    return method
 
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
@@ -494,11 +425,12 @@ def needs_teacher(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
     _checkTeacher.method = method
+    _checkTeacher.has_auth_check = True
     return _checkTeacher
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if request.session.has_key('user_morph'):
+        if 'user_morph' in request.session:
             morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None
@@ -512,6 +444,7 @@ def needs_admin(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite(method):
@@ -529,6 +462,7 @@ def needs_onsite(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -545,6 +479,7 @@ def needs_onsite_no_switchback(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
+    _checkAdmin.has_auth_check = True
     return _checkAdmin
 
 def needs_student(method):
@@ -556,6 +491,7 @@ def needs_student(method):
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
+    _checkStudent.has_auth_check = True
     return _checkStudent
 
 def needs_account(method):
@@ -565,6 +501,7 @@ def needs_account(method):
 
         return method(moduleObj, request, *args, **kwargs)
     _checkAccount.method = method
+    _checkAccount.has_auth_check = True
     return _checkAccount
 
 def meets_grade(method):
@@ -674,6 +611,21 @@ def meets_all_deadlines(extensions=[]):
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline
+
+
+def meets_cap(view_method):
+    """Only allow students who meet the program cap past this point."""
+    @wraps(view_method, assigned=available_attrs(view_method))
+    def _meets_cap(moduleObj, request, tl, one, two, module, extra, prog,
+                   *args, **kwargs):
+        if prog.user_can_join(request.user):
+            return view_method(moduleObj, request, tl, one, two, module, extra,
+                               prog, *args, **kwargs)
+        else:
+            return render_to_response('errors/program/program_full.html',
+                                      request, {'moduleObj': moduleObj})
+    return _meets_cap
+
 
 def user_passes_test(test_func, error_message):
     """A method decorator based on django.contrib.auth.decorators.user_passes_test.

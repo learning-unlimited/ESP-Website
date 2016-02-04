@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.program.modules import module_ext
 from esp.utils.web       import render_to_response
 from datetime            import datetime
@@ -71,15 +71,10 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
-    def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        return render_to_response(self.baseDir() + 'cardstart.html', request, {})
-
-    @aux_call
-    @usercheck_usetl
-    @meets_deadline('/Payment')
-    def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
+    @meets_cap
+    def cybersource(self, request, tl, one, two, module, extra, prog):
 
         # Force users to pay for non-optional stuffs
         user = request.user
@@ -91,6 +86,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['two'] = two
         context['tl']  = tl
         context['user'] = user
+        context['contact_email'] = self.program.director_email
         context['invoice_id'] = iac.get_id()
         context['identifier'] = iac.get_identifier()
         payment_type = iac.default_payments_lineitemtype()

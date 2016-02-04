@@ -38,6 +38,8 @@ from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
@@ -48,6 +50,8 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 from django.utils import timezone
 
 from argcache import cache_function, wildcard
@@ -267,6 +271,7 @@ class Program(models.Model, CustomFormsLinkModel):
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
+        ordering = ('-id',)
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
     USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
@@ -291,14 +296,6 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.program.models.app_ import StudentAppQuestion
         return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
     isUsingStudentApps.depend_on_model('program.StudentAppQuestion')
-
-    @cache_function
-    def checkitems_all_cached(self):
-        """  The main Manage page requests checkitems.all() O(n) times in
-        the number of classes in the program.  Minimize the number of these
-        calls that actually hit the db. """
-        return self.checkitems.all()
-    checkitems_all_cached.depend_on_row('program.ProgramCheckItem', lambda item: {'self': item.program})
 
     get_teach_url = _get_type_url("teach")
     get_learn_url = _get_type_url("learn")
@@ -522,31 +519,132 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return ESPUser.objects.filter(union).distinct()
 
-    @cache_function
-    def isFull(self):
-        """ Can this program accept any more students? """
+    # Don't bother caching this.  Everything it calls is cached to the extent
+    # possible, with different dependencies.
+    def user_can_join(self, user):
+        """Can this user join this program?
 
-        # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
-        if self.program_size_max is None or self.program_size_max == 0:
-            return False
+        The program cap may be set by either making Program.program_size_max
+        nonzero or by the tag "program_size_by_grade" (which should be a json
+        object of grade -> cap).  The latter overrides the former.  If there is
+        a (possibly per-grade) cap, and the program is at or above that cap, a
+        user can only join a program if they are already registered for it, or
+        if they have the OverrideFull permission.
 
-        students_dict = self.students(QObjects = True)
-        if students_dict.has_key('classreg'):
-            students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
+        The tag's value, if set, should be a json object.  The keys should be
+        grades (as strings, e.g. "9") or inclusive ranges of grades (separated
+        by hyphens, e.g.  "7-9"), and the values should be caps for that range.
+        Each cap will be checked, so having overlapping caps is possible,
+        although it may hurt performance.
+        """
+        # TODO(benkraft): maybe this shouldn't be a Tag.  For now it basically
+        # has to be because I don't want to deal with migrations until after
+        # we're on django 1.8.
+        size_tag = Tag.getProgramTag("program_size_by_grade", self)
+        if size_tag:
+            return self._user_can_join_by_grade(user)
+        elif self.program_size_max:
+            return self._user_can_join_at_all(user)
         else:
-            students_count = ESPUser.objects.filter(record__event="reg_confirmed",record__program=self).distinct().count()
+            return True
 
-        isfull = ( students_count >= self.program_size_max )
+    # Unfortunately, the following two functions depends on approximately
+    # everything in sight, including every student registration for the program
+    # and for the grade-based version every registration profile for the
+    # program, so they're probably not worth caching.
+    def _students_in_program_in_grades(self, grades):
+        """The number of students in the program in a set of grades
 
-        return isfull
-    isFull.depend_on_cache('program.ClassSection.num_students', lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
-    isFull.depend_on_row('program.Program', lambda prog: {'self': prog})
-    isFull.depend_on_row('users.Record', lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
+        Used by the program cap logic.
+        """
+        # Due to how RegistrationProfiles work, this is ~impossible to do
+        # efficiently.  getGrade is cached, though, and probably most of those
+        # caches will be warm, so it'll probably be okay.  Maybe.  Hopefully.
+        return len([student for student in self.students()['classreg']
+                    if student.getGrade(self, assume_student=True) in grades])
+
+    def _students_in_program(self):
+        """The number of students in the program.
+
+        Used by the program cap logic.
+        """
+        return self.students()['classreg'].count()
+
+    @cache_function
+    def _student_is_in_program(self, user):
+        """Return whether the student is in the program."""
+        students = self.students()['classreg']
+        return students.filter(id=user.id).exists()
+    _student_is_in_program.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
+    _student_is_in_program.depend_on_row('program.ClassSection', lambda cls: {'self': cls.parent_class.parent_program})
+    _student_is_in_program.depend_on_row('program.StudentRegistration', lambda sr: {'user': sr.user})
+    _student_is_in_program.depend_on_row('program.StudentSubjectInterest', lambda ssi: {'user': ssi.user})
+    _student_is_in_program.get_or_create_token(('self',))
+    _student_is_in_program.get_or_create_token(('user',))
+
+    def _user_can_join_by_grade(self, user):
+        """Helper function for user_can_join, when using program_size_by_grade.
+
+        Should be called only if the program_size_by_grade tag is set.
+
+        This may be very slow if the user is not in the program; unfortunately
+        there's not much we can do about it.
+        """
+        # Check these first because computing the number of students in the
+        # program is slow and uncacheable.
+        if user.canRegToFullProgram(self):
+            return True
+        if self._student_is_in_program(user):
+            return True
+        caps = self._grade_caps()
+        grade = user.getGrade(self, assume_student=True)
+        for grades, cap in caps.iteritems():
+            if (grade in grades and
+                    self._students_in_program_in_grades(grades) >= cap):
+                return False
+        return True
+
+    @cache_function
+    def _grade_caps(self):
+        """Parses the program_size_by_grade Tag.
+
+        See user_can_join for the tag syntax.
+
+        Returns a dict with tuples of valid grades as keys, and caps as values,
+        or an empty dict if the Tag does not exist.
+        """
+        size_tag = Tag.getProgramTag("program_size_by_grade", self, "{}")
+        size_dict = {}
+        for k, v in json.loads(size_tag).iteritems():
+            if '-' in k:
+                low, high = map(int, k.split('-'))
+                size_dict[tuple(xrange(low, high + 1))] = v
+            else:
+                size_dict[(int(k),)] = v
+        return size_dict
+    _grade_caps.depend_on_model('tagdict.Tag')
+
+    def _user_can_join_at_all(self, user):
+        """Helper function for user_can_join, when using program_size_max.
+
+        Should be called only if the program_size_by_grade tag is not set and
+        program_size_max is nonzero.
+
+        This may be very slow if the user is not in the program; unfortunately
+        there's not much we can do about it.
+        """
+        # Check these first because computing the number of students in the
+        # program is slow and uncacheable.
+        if user.canRegToFullProgram(self):
+            return True
+        if self._student_is_in_program(user):
+            return True
+        return self._students_in_program() < self.program_size_max
 
     @cache_function
     def open_class_registration(self):
-        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
-    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.get_program()})
+        return self.classregmoduleinfo.open_class_registration
+    open_class_registration.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
     open_class_registration = property(open_class_registration)
 
     @cache_function
@@ -779,7 +877,7 @@ class Program(models.Model, CustomFormsLinkModel):
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()))
-        crmi = self.getModuleExtension(ClassRegModuleInfo)
+        crmi = self.classregmoduleinfo
         if crmi and crmi.class_max_duration is not None:
             max_seconds = crmi.class_max_duration * 60
         else:
@@ -848,8 +946,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
-    getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
+    getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -901,59 +999,19 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
 
-    def getModuleExtension(self, ext_name_or_cls, module_id=None):
-        """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
-        This avoids actually looking up the program module first. """
-        # We don't actually want to cache this in memcached:
-        # If its value changes in the middle of a page load, we don't want to switch to the new value.
-        # Also, the method is called quite often, so it adds cache load.
-        # Program objects are assumed to not persist across page loads generally,
-        # so the following should be marginally safer:
-
-        if not hasattr(self, "_moduleExtension"):
-            self._moduleExtension = {}
-
-        key = (ext_name_or_cls, module_id)
-        if key in self._moduleExtension:
-            return self._moduleExtension[key]
-
-        ext_cls = None
-        if isinstance(ext_name_or_cls, basestring):
-            mod = __import__('esp.program.modules.module_ext', (), (), ext_name_or_cls)
-            ext_cls = getattr(mod, ext_name_or_cls)
-        else:
-            ext_cls = ext_name_or_cls
-
-        if module_id:
-            try:
-                extension = ext_cls.objects.filter(module__id=module_id).select_related()[0]
-            except:
-                extension = ext_cls()
-                extension.module_id = module_id
-                extension.save()
-        else:
-            try:
-                extension = ext_cls.objects.filter(module__program__id=self.id).select_related()[0]
-            except:
-                extension = None
-
-        self._moduleExtension[key] = extension
-
-        return extension
-
     @cache_function
     def getColor(self):
         if hasattr(self, "_getColor"):
             return self._getColor
 
-        modinfo = self.getModuleExtension(ClassRegModuleInfo)
+        modinfo = self.classregmoduleinfo
         retVal = None
         if modinfo:
             retVal = modinfo.color_code
 
         self._getColor = retVal
         return retVal
-    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.module.program})
+    getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
 
     def visibleEnrollments(self):
         """
@@ -961,7 +1019,7 @@ class Program(models.Model, CustomFormsLinkModel):
         This originally returned true if class registration was fully open.
         Now it's just a checkbox in the StudentClassRegModuleInfo.
         """
-        options = self.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.studentclassregmoduleinfo
         return options.visible_enrollments
 
     def getVolunteerRequests(self):
@@ -971,7 +1029,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def getShirtInfo(self):
         shirt_count = defaultdict(lambda: defaultdict(int))
         teacher_dict = self.teachers()
-        if teacher_dict.has_key('class_approved'):
+        if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
             query = query.values_list('registrationprofile__teacher_info__shirt_type',
@@ -1005,14 +1063,14 @@ class Program(models.Model, CustomFormsLinkModel):
     incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
 
     def priorityLimit(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else:
             return 1
 
     def useGradeRangeExceptions(self):
-        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        studentregmodule = self.studentclassregmoduleinfo
         if studentregmodule:
             return studentregmodule.use_grade_range_exceptions
         else:
@@ -1853,6 +1911,41 @@ class StudentSubjectInterest(ExpirableModel):
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
 
+
+# Hooked up in program.modules.signals and formstack.signals
+def maybe_create_module_ext(handler, ext):
+    """Registers a signal handler which creates program module extensions.
+
+    When the module specified by "handler" is added to a program, the signal
+    handler will automatically get_or_create an instance of the model "ext" for
+    that program.
+
+    Note: we don't remove the settings when we remove the module; there's
+    generally no harm to having them around and we don't want to make it easy
+    to accidentally delete them, since they're potentially harder to
+    reconfigure than just adding back the program module.
+
+    TODO(benkraft): Should we just do this on program creation instead?  We'll
+    end up with a bunch of unused settings, but maybe that's fine.
+    """
+    uid = 'maybe_create_module_ext:%s:%s' % (handler, ext.__name__)
+    @receiver(m2m_changed, sender=Program.program_modules.through,
+              weak=False, dispatch_uid=uid)
+    def signal_handler(sender, **kwargs):
+        if kwargs['action'] == 'post_add':
+            if kwargs['reverse']:
+                if kwargs['instance'].handler == handler:
+                    # We've added some programs to the relevant module
+                    for prog in Program.objects.filter(pk__in=kwargs['pk_set']):
+                        ext.objects.get_or_create(program=prog)
+            else:
+                if ProgramModule.objects.filter(
+                        handler=handler, pk__in=kwargs['pk_set']).exists():
+                    # We've added some modules including the relevant one to a
+                    # program
+                    ext.objects.get_or_create(program=kwargs['instance'])
+
+
 # Needed for app loading, don't delete
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
@@ -1860,7 +1953,7 @@ from esp.program.models.flags import *
 
 def install():
     from esp.program.models.class_ import install as install_class
-    print "Installing esp.program initial data..."
+    logger.info("Installing esp.program initial data...")
     if not RegistrationType.objects.exists():
         RegistrationType.objects.create(name='Enrolled', category='student')
     install_class()

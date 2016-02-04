@@ -48,11 +48,11 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.varnish import purge_page
+from esp.varnish.varnish import purge_page
 
 from django.conf import settings
 
-import reversion
+from reversion import revisions as reversion
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -147,7 +147,7 @@ def qsd(request, url):
 
 
     # Detect POST
-    if request.POST.has_key('post_edit'):
+    if 'post_edit' in request.POST:
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:

@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
 
 """ Models for Resources application """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
@@ -46,7 +49,6 @@ from django.db.models.query import Q
 from django.core.cache import cache
 
 import pickle
-import warnings
 
 ########################################
 #   New resource stuff (Michael P)
@@ -135,9 +137,6 @@ class ResourceType(models.Model):
     def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
 
-    class Admin:
-        pass
-
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
 
@@ -149,17 +148,11 @@ class ResourceRequest(models.Model):
     def __unicode__(self):
         return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
 
-    class Admin:
-        pass
-
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
 
     def __unicode__(self):
         return 'Resource group %d' % (self.id,)
-
-    class Admin:
-        pass
 
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
@@ -203,8 +196,7 @@ class Resource(models.Model):
         """
         Deprecated.
         """
-        warnings.warn("Resource.distance() is deprecated.",
-                      DeprecationWarning)
+        logger.warning("Resource.distance() is deprecated.")
         return 0
 
     __sub__ = distance
@@ -328,9 +320,6 @@ class Resource(models.Model):
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
 
-    class Admin:
-        pass
-
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
@@ -356,13 +345,10 @@ class ResourceAssignment(models.Model):
     def resources(self):
         return Resource.objects.filter(res_group=self.resource.res_group)
 
-    class Admin:
-        pass
-
 
 def install():
     #   Create default resource types.
-    print "Installing esp.resources initial data..."
+    logger.info("Installing esp.resources initial data...")
     if not ResourceType.objects.filter(name='Classroom').exists():
         ResourceType.objects.create(
             name='Classroom',

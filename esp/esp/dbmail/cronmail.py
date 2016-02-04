@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import logging
+logger = logging.getLogger(__name__)
 import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
@@ -45,7 +47,7 @@ from django.conf import settings
 _ONE_WEEK = timedelta(weeks=1)
 
 
-def process_messages(debug=False):
+def process_messages():
     """Go through all unprocessed messages and process them.
 
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
@@ -71,12 +73,12 @@ def process_messages(debug=False):
         # things with the MessageRequest get backed out properly.  We let the
         # whole script just exit in this case -- this way we get an error
         # message via cron, and the next run of the script can just try again.
-        message.process(debug=debug)
+        message.process()
     return messages
 
 # Deliberately uses transaction autocommitting -- we don't need this to be
 # atomic.
-def send_email_requests(debug=False):
+def send_email_requests():
     """Go through all email requests that aren't sent and send them.
 
     Callers (e.g. dbmail_cron.py) should ensure that this function is not
@@ -111,17 +113,18 @@ def send_email_requests(debug=False):
     errors = [] # if any messages failed to deliver
 
     for mailtxt in mailtxts_list:
-        exception = mailtxt.send(debug=debug)
+        exception = mailtxt.send()
         if exception is not None:
             errors.append({'email': mailtxt, 'exception': str(exception)})
-            if debug: print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
+            logger.warning("Encountered error while sending to %s: %s",
+                           mailtxt.send_to, exception)
         else:
             num_sent += 1
 
         time.sleep(wait)
 
-    if debug and num_sent > 0:
-        print 'Sent %d messages' % num_sent
+    if num_sent > 0:
+        logger.info('Sent %d messages', num_sent)
 
     #   Report any errors
     if errors:
@@ -132,9 +135,9 @@ def send_email_requests(debug=False):
 
         mail_context = {'errors': errors}
         delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
-        if debug:
-            print 'Mail delivery failure'
-            print delivery_failed_string
+        logger.warning('Mail delivery failure: %s', delivery_failed_string)
+        # TODO(benkraft): this is probably redundant with the logging now?  (or
+        # rather, it will be if we log at the right level?)
         send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
     elif num_sent > 0:
-        if debug: print 'No mail delivery failures'
+        logger.info('No mail delivery failures')

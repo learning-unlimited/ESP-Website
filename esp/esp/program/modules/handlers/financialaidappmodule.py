@@ -87,6 +87,8 @@ class FinancialAidAppModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
+    # I didn't set @meets_cap here, because I don't want a bug in that to be
+    # misinterpreted as "we are out of financial aid".
     def finaid(self,request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.
@@ -111,7 +113,7 @@ class FinancialAidAppModule(ProgramModuleObj):
             if form.is_valid():
                 app.__dict__.update(form.cleaned_data)
 
-                if not request.POST.has_key('submitform') or request.POST['submitform'].lower() == 'complete':
+                if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False

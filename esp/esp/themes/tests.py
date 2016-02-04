@@ -115,12 +115,6 @@ class ThemesTest(TestCase):
             #   Check that the CSS stylesheet has been compiled.
             self.assertTrue(os.path.exists(css_filename))
             self.assertTrue(len(open(css_filename).read()) > 1000)  #   Hacky way to check that content is substantial
-            """
-            #   The following code would validate the CSS syntax, but cssutils doesn't seem to
-            #   support the fancy CSS techniques used by Bootstrap and LESS.
-            parser = cssutils.CSSParser(raiseExceptions=True)
-            parser.parseFile(css_filename)
-            """
 
             #   Check that the template override is marked with the theme name.
             self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)

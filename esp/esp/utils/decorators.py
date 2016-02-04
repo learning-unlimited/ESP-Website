@@ -56,12 +56,7 @@ class OptionalDecorator(object):
         def _do_nothing(*args, **kwargs):
             return False
 
-        if hasattr(self, 'value'):
-            if self.value:
-                return func
-            else:
-                return _do_nothing
-        elif value:
+        if hasattr(self, 'value') and self.value:
             return func
         else:
             return _do_nothing
@@ -96,8 +91,7 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             elif 'json_debug' in request.GET:
-                data = json.dumps(result, sort_keys=True,
-                                        indent = '    ')
+                data = json.dumps(result, sort_keys=True, indent=4)
                 return render_to_response('utils/jsondebug.html',
                                           request, {'data': data},
                                           content_type="text/html")

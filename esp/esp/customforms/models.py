@@ -1,5 +1,8 @@
 from __future__ import with_statement
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError
 from esp.users.models import ESPUser
@@ -67,7 +70,7 @@ from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
 
 def install():
-    print "Creating customforms schema..."
+    logger.info("Creating customforms schema...")
     cursor = connection.cursor()
     create_schema(cursor)
 

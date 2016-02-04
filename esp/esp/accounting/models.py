@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.users.models import ESPUser
 from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
@@ -90,10 +93,13 @@ class LineItemType(models.Model):
             return (min_cost, max_cost)
 
     def __unicode__(self):
-        if self.num_options == 0:
+        if self.amount_dec:
             return u'%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
         else:
-            return u'%s for %s (%d options)' % (self.text, self.program, self.options.count())
+            return u'%s for %s' % (self.text, self.program)
+
+    class Meta:
+        ordering = ('-program_id',)
 
 class LineItemOptions(models.Model):
     lineitem_type = models.ForeignKey(LineItemType)
@@ -164,20 +170,19 @@ class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     program = models.ForeignKey(Program, blank=True, null=True)
-    balance_dec = models.DecimalField(max_digits=9, decimal_places=2, help_text='The difference between incoming and outgoing transfers that have been executed so far against this account.', default=Decimal('0'))
 
     @property
     def balance(self):
-        result = self.balance_dec
-        if Transfer.objects.filter(source=self, executed=False).exists():
-            result -= Transfer.objects.filter(source=self, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        if Transfer.objects.filter(destination=self, executed=False).exists():
-            result += Transfer.objects.filter(destination=self, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        result = 0
+        if Transfer.objects.filter(source=self).exists():
+            result -= Transfer.objects.filter(source=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        if Transfer.objects.filter(destination=self).exists():
+            result += Transfer.objects.filter(destination=self).aggregate(Sum('amount_dec'))['amount_dec__sum']
         return result
 
     @property
     def pending_balance(self):
-        return self.balance - self.balance_dec
+        return self.balance
 
     @property
     def description_title(self):
@@ -224,72 +229,39 @@ class Account(models.Model):
         unique_together = ('name',)
 
 class Transfer(models.Model):
-    source = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_source', help_text='Source account; where the money is coming from.  Leave blank if this is a payment from outside.')
-    destination = models.ForeignKey(Account, blank=True, null=True, related_name='transfer_destination', help_text='Destination account; where the money is going to.  Leave blank if this is a payment to an outsider.')
+    source = models.ForeignKey(
+        Account, blank=True, null=True, related_name='transfer_source',
+        help_text='Source account; where the money is coming from. Leave blank if this is a payment from outside.')
+    destination = models.ForeignKey(
+        Account, blank=True, null=True, related_name='transfer_destination',
+        help_text='Destination account; where the money is going to. Leave blank if this is a payment to an outsider.')
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
-    line_item = models.ForeignKey(LineItemType, blank=True, null=True)
+    line_item = models.ForeignKey(LineItemType)
     option = models.ForeignKey(LineItemOptions, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
     transaction_id = models.TextField(
-                      'credit card processor transaction ID number',
-                      max_length=64,
-                      blank=True,
-                      default='',
-                      help_text='If this transfer is from a credit card ' +
-                      'transaction, stores the transaction ID number from ' +
-                      'the processor.')
+        'Transaction ID', max_length=64, blank=True, default='',
+        help_text='If this transfer is from a credit card transaction, stores the transaction ID number from the processor.')
     timestamp = models.DateTimeField(auto_now=True)
-    executed = models.BooleanField(default=False)
+    paid_in = models.ForeignKey(
+        'self', blank=True, null=True, on_delete=models.PROTECT,
+        help_text='If this transfer is for a fee that has been paid, references the transfer for the payment transaction.')
 
     def set_amount(self, amount):
-        if self.executed:
-            raise Exception('Cannot change the amount of this transfer since it was already executed')
+        if self.paid_in:
+            raise Exception('Cannot change the amount of this transfer since it was already paid')
         self.amount_dec = Decimal('%.2f' % amount)
     def get_amount(self):
         return float(self.amount_dec)
     amount = property(get_amount, set_amount)
 
-    def execute(self):
-        if self.executed:
-            return
-
-        source = self.source
-        source.balance_dec -= self.amount_dec
-        source.save()
-
-        destination = self.destination
-        destination.balance_dec += self.amount_dec
-        destination.save()
-
-        self.executed = True
-        self.save()
-
-    def unexecute(self):
-        if not self.executed:
-            return
-
-        source = self.source
-        source.balance_dec += self.amount_dec
-        source.save()
-
-        destination = self.destination
-        destination.balance_dec -= self.amount_dec
-        destination.save()
-
-        self.executed = False
-        self.save()
-
     def __unicode__(self):
-        base_result = u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
-        if self.executed:
-            return base_result + u' (executed)'
-        else:
-            return base_result
+        return u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
 
 
 def install():
     """Set up the default accounts."""
-    print "Installing esp.accounting initial data..."
+    logger.info("Installing esp.accounting initial data...")
     from esp.accounting.controllers import GlobalAccountingController
     gac = GlobalAccountingController()
     gac.setup_accounts()

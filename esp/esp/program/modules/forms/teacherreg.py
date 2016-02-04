@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from django.forms.utils import ErrorList
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
@@ -104,7 +103,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 
 
-    def __init__(self, module, *args, **kwargs):
+    def __init__(self, crmi, *args, **kwargs):
         from esp.program.controllers.classreg import get_custom_fields
 
         def hide_field(field, default=None):
@@ -118,12 +117,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
 
-        if isinstance(module, ClassRegModuleInfo):
-            crmi = module
-        else:
-            crmi = module.crmi
-
-        prog = crmi.get_program()
+        prog = crmi.program
 
         section_numbers = crmi.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)
@@ -250,10 +244,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             grade_max = int(grade_max)
             if grade_min > grade_max:
                 msg = u'Minimum grade must be less than the maximum grade.'
-                self._errors['grade_min'] = ErrorList([msg])
-                self._errors['grade_max'] = ErrorList([msg])
-                del cleaned_data['grade_min']
-                del cleaned_data['grade_max']
+                self.add_error('grade_min', msg)
+                self.add_error('grade_max', msg)
 
         # Make sure the optimal class size <= maximum class size.
         class_size_optimal = cleaned_data.get('class_size_optimal')
@@ -263,10 +255,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             class_size_max = int(class_size_max)
             if class_size_optimal > class_size_max:
                 msg = u'Optimal class size must be less than or equal to the maximum class size.'
-                self._errors['class_size_optimal'] = ErrorList([msg])
-                self._errors['class_size_max'] = ErrorList([msg])
-                del cleaned_data['class_size_optimal']
-                del cleaned_data['class_size_max']
+                self.add_error('class_size_optimal', msg)
+                self.add_error('class_size_max', msg)
 
         if class_size_optimal == '':
             cleaned_data['class_size_optimal'] = None
@@ -281,15 +271,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
 class TeacherOpenClassRegForm(TeacherClassRegForm):
 
-    def __init__(self, module, *args, **kwargs):
+    def __init__(self, crmi, *args, **kwargs):
         """ Initialize the teacher class reg form, and then remove irrelevant fields. """
         def hide_field(field, default=None):
             field.widget = forms.HiddenInput()
             if default is not None:
                 field.initial = default
 
-        super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = module.get_program().open_class_category
+        super(TeacherOpenClassRegForm, self).__init__(crmi, *args, **kwargs)
+        program = crmi.program
+        open_class_category = program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -301,7 +292,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max),
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]

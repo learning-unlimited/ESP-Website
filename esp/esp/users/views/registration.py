@@ -23,7 +23,7 @@ from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
-from esp.users.models import ESPUser_Profile, ESPUser
+from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
 
@@ -68,7 +68,6 @@ This function is overloaded to handle either one or two phase reg"""
             user.is_active = False
 
         user.save()
-        ESPUser_Profile.objects.get_or_create(user = user)
 
         user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 

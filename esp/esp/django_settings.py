@@ -68,6 +68,12 @@ STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
+LOG_FILE = "/tmp/esp-website.log"
+# Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
+# when DEBUG=True will cause every query to be logged (to the
+# django.db.backends logger).
+LOG_LEVEL = 'INFO'
+
 
 ###########################
 # Default debug settings  #
@@ -75,7 +81,6 @@ LOGIN_REDIRECT_URL = '/'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-USE_PROFILER = False
 SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
@@ -194,7 +199,6 @@ TEMPLATES = [
 MIDDLEWARE_GLOBAL = [
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-   #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
@@ -204,7 +208,6 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
-    (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
@@ -247,10 +250,8 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
-    'bootstrapform',
-    'django_nose',
     'esp.formstack',
-    'esp.application',
+    'esp.application.apps.ApplicationConfig',
 )
 
 import os
@@ -282,16 +283,6 @@ USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
 SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
-
-if False:
-    import logging
-    logging.basicConfig(
-        level = logging.DEBUG,
-        format = '%(asctime)s %(levelname)s %(message)s',
-        filename = '/tmp/mit-esp.log',
-        filemode = 'w'
-    )
-
 
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',

@@ -126,26 +126,26 @@ class AjaxForeignKeyWidget(AjaxForeignKeyFieldBase, forms.widgets.Widget):
     def __init__(self, attrs=None, *args, **kwargs):
         super(AjaxForeignKeyWidget, self).__init__(attrs, *args, **kwargs)
 
-        if attrs.has_key('field'):
+        if 'field' in attrs:
             self.field = attrs['field']
-        elif attrs.has_key('type'):
+        elif 'type' in attrs:
             #   Anyone have a better hack here?
             self.field = models.ForeignKey(attrs['type'])
 
         self.field_name = self.field.name
 
-        if attrs.has_key('width'):
+        if 'width' in attrs:
             self.width = attrs['width']
 
-        if attrs.has_key('ajax_func'):
+        if 'ajax_func' in attrs:
             self.ajax_func = attrs["ajax_func"]
 
-        if attrs.has_key('shadow_field'):
+        if 'shadow_field' in attrs:
             self.shadow_field = attrs['shadow_field']
         else:
             self.shadow_field = None
 
-        if attrs.has_key('field_name'):
+        if 'field_name' in attrs:
             self.field_name = attrs['field_name']
             self.field.name = attrs['field_name']
 
@@ -187,9 +187,9 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         if to_field_name is None:
             to_field_name = 'id'
         if to_field_name != 'id':
-            raise NotImplementedException
+            raise NotImplementedError
         if to_field is not None:
-            raise NotImplementedException
+            raise NotImplementedError
         self.show_hidden_initial = show_hidden_initial
         # ---
 

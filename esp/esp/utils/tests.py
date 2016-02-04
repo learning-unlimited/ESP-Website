@@ -10,10 +10,12 @@ try:
     import pylibmc as memcache
 except:
     import memcache
+import logging
+logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
-import reversion
+from reversion import revisions as reversion
 import unittest
 
 from django.db.models.query import Q
@@ -68,12 +70,12 @@ class DependenciesTestCase(unittest.TestCase):
         try:
             foo = __import__(mod)
         except Exception, e:
-            print "Error importing required module '%s': %s" % (mod, e)
+            logger.info("Error importing required module '%s': %s", mod, e)
             self._failed_import = True
 
     def tryExecutable(self, exe):
         if not find_executable(exe):
-            print "Executable not found:  '%s'" % exe
+            logger.info("Executable not found:  '%s'", exe)
             self._exe_not_found = True
 
     def testDeps(self):
@@ -86,7 +88,6 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
-        self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
 	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
@@ -159,7 +160,7 @@ class TemplateOverrideTest(DjangoTestCase):
         except TemplateDoesNotExist:
             template_error = True
         except:
-            print 'Unexpected error fetching nonexistent template'
+            logger.info('Unexpected error fetching nonexistent template')
             raise
         self.assertTrue(template_error)
 

@@ -43,7 +43,7 @@ from esp.dbmail.models import send_mail
 
 class ConfirmationEmailController(object):
     def send_confirmation_email(self, user, program, repeat=False, override=False):
-        options = program.getModuleExtension('StudentClassRegModuleInfo')
+        options = program.studentclassregmoduleinfo
         ## Get or create a userbit indicating whether or not email's been sent.
         try:
             record, created = Record.objects.get_or_create(user=user, event="conf_email", program=program)

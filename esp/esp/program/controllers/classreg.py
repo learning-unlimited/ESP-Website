@@ -38,7 +38,7 @@ class ClassCreationValidationError(Exception):
 class ClassCreationController(object):
     def __init__(self, prog):
         self.program = prog
-        self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        self.crmi = prog.classregmoduleinfo
 
     @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
@@ -228,7 +228,7 @@ class ClassCreationController(object):
         mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.
-        if new_data.has_key('optimal_class_size_range_id') and (new_data['optimal_class_size_range_id'] is not None):
+        if new_data.get('optimal_class_size_range_id') is not None:
             opt_range = ClassSizeRange.objects.get(id=new_data['optimal_class_size_range_id'])
             mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
         else:

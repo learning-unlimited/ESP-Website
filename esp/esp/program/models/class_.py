@@ -36,6 +36,8 @@ import datetime
 from datetime import timedelta
 import time
 from collections import defaultdict
+import logging
+logger = logging.getLogger(__name__)
 
 # django Util
 from django.conf import settings
@@ -46,6 +48,7 @@ from django.db.models.manager import Manager
 from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
@@ -77,7 +80,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
-__all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
+__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
 CANCELLED = -20
 REJECTED = -10
@@ -133,28 +136,6 @@ class ClassSizeRange(models.Model):
     class Meta:
         app_label='program'
 
-class ProgramCheckItem(models.Model):
-    program = models.ForeignKey(Program, related_name='checkitems')
-    title   = models.CharField(max_length=512)
-    seq     = models.PositiveIntegerField(blank=True,verbose_name='Sequence',
-                                          help_text = 'Lower is earlier')
-
-    def save(self, *args, **kwargs):
-        if self.seq is None:
-            try:
-                item = ProgramCheckItem.objects.filter(program = self.program).order_by('-seq')[0]
-                self.seq = item.seq + 5
-            except IndexError:
-                self.seq = 0
-        super(ProgramCheckItem, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        return u'%s for "%s"' % (self.title, unicode(self.program).strip())
-
-    class Meta:
-        ordering = ('seq',)
-        app_label = 'program'
-        db_table = 'program_programcheckitem'
 
 class ClassManager(Manager):
     def __repr__(self):
@@ -316,7 +297,6 @@ class ClassSection(models.Model):
     registration_status = models.IntegerField(choices=REGISTRATION_CHOICES, default=OPEN)    #Ditto.
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
-    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
@@ -406,7 +386,7 @@ class ClassSection(models.Model):
         for r in rooms:
             rc += r.num_students
 
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
@@ -440,7 +420,7 @@ class ClassSection(models.Model):
             else:
                 ans = 0
 
-        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        options = self.parent_program.studentclassregmoduleinfo
 
         #   Apply dynamic capacity rule
         if not (ignore_changes or options.apply_multiplier_to_room_cap):
@@ -479,14 +459,8 @@ class ClassSection(models.Model):
         self.getResourceRequests().delete()
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
-        self.checklist_progress.clear()
 
         super(ClassSection, self).delete()
-
-    @cache_function
-    def checklist_progress_all_cached(self):
-        return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m('program.ClassSection', 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
         return self.resourceassignment_set.all()
@@ -851,7 +825,7 @@ class ClassSection(models.Model):
 
         # Check if section is full
         if checkFull and self.isFull():
-            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
         # Test any scheduling constraints
@@ -869,7 +843,7 @@ class ClassSection(models.Model):
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
                     return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
 
-        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi = self.parent_program.studentclassregmoduleinfo
         if not scrmi.use_priority:
             verbs = ['Enrolled']
             section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -1219,7 +1193,7 @@ class ClassSection(models.Model):
 
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
         if prereg_verb == None:
-            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
             else:
@@ -1304,7 +1278,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     prereqs  = models.TextField(blank=True, null=True)
     requested_special_resources = models.TextField(blank=True, null=True)
     directors_notes = models.TextField(blank=True, null=True)
-    checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     requested_room = models.TextField(blank=True, null=True)
     session_count = models.IntegerField(default=1)
 
@@ -1318,6 +1291,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     status = models.IntegerField(choices = STATUS_CHOICES, default=UNREVIEWED)
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
+
+    # TODO(benkraft): backfill this on all existing sites, then make required.
+    timestamp = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     @cache_function
     def get_allowable_class_size_ranges(self):
@@ -1460,11 +1436,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             return None
 
-    @cache_function
-    def checklist_progress_all_cached(self):
-        return self.checklist_progress.all()
-    checklist_progress_all_cached.depend_on_m2m('program.ClassSubject', 'checklist_progress', lambda cs, cp: {'self': cs})
-
     def friendly_times(self):
         collapsed_times = []
         for s in self.get_sections():
@@ -1549,7 +1520,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         #   Remove indirect dependencies
         self.documents.clear()
-        self.checklist_progress.clear()
 
         super(ClassSubject, self).delete()
 
@@ -1619,12 +1589,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if not self.isAccepted():
             return u'This class is not accepted.'
 
-#        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not user.canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull() and not user.canRegToFullProgram(self.parent_program):
+        if checkFull and not self.parent_program.user_can_join(user):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
-            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            scrmi = self.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
         if user.getGrade(self.parent_program) < self.grade_min or \
@@ -1633,7 +1602,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
+        if user.getClasses(self.parent_program, verbs=[self.parent_program.studentclassregmoduleinfo.signup_verb.name]).count() == 0:
             return False
 
         for section in self.get_sections():
@@ -1930,9 +1899,6 @@ class ClassImplication(models.Model):
         app_label = 'program'
         db_table = 'program_classimplications'
 
-    class Admin:
-        pass
-
     def __unicode__(self):
         return u'Implications for %s' % self.cls
 
@@ -2001,9 +1967,6 @@ class ClassCategories(models.Model):
     def __unicode__(self):
         return u'%s (%s)' % (self.category, self.symbol)
 
-    class Admin:
-        pass
-
 
 @cache_function
 def sections_in_program_by_id(prog):
@@ -2013,7 +1976,7 @@ sections_in_program_by_id.depend_on_model(ClassSubject)
 
 def install():
     """ Initialize the default class categories. """
-    print "Installing esp.program.class initial data..."
+    logger.info("Installing esp.program.class initial data...")
     category_dict = {
         'S': 'Science',
         'M': 'Math & Computer Science',
