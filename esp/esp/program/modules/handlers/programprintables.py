@@ -935,8 +935,7 @@ Volunteer schedule for %s:
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
 
-        # TODO: conditional should use Tag.getBooleanTag or somesuch
-        show_empty_blocks = Tag.getTag('studentschedule_show_empty_blocks', target=prog)
+        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)

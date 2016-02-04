@@ -9,12 +9,12 @@ register = template.Library()
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
     # check whether we should display the date and author footer (only affects non-administrator users)
-    display_date_author_tag = Tag.getTag('qsd_display_date_author', default='True')
+    display_date_author_tag = Tag.getTag('qsd_display_date_author', default='Both')
     display_date_author = 2 # display date and author
 
     if display_date_author_tag == 'Date':
         display_date_author = 1 # display date only
-    elif display_date_author_tag == 'False':
+    elif display_date_author_tag == 'None':
         display_date_author = 0 # hide footer
 
     return {'qsdrec': qsd, 'display_date_author' : display_date_author}

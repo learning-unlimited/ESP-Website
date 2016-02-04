@@ -81,7 +81,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create_open_class'] = self.open_class_reg_is_open()
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
-        context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
+        context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
         context['open_class_category'] = self.program.open_class_category.category
         return context
 
@@ -776,7 +776,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
         if self.program.grade_max - self.program.grade_min >= 4:
-            context['grade_range_popup'] = (Tag.getProgramTag('grade_range_popup', self.program) != "False")
+            context['grade_range_popup'] = Tag.getBooleanTag('grade_range_popup', self.program, default=True)
         else:
             context['grade_range_popup'] = False
 
