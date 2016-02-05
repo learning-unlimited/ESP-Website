@@ -98,20 +98,13 @@ class SplashInfoModule(ProgramModuleObj):
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(get_current_request().user, self.program)
 
-        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
+        if not Tag.getBooleanTag('splashinfo_siblingdiscount', default=True):
             context['splashinfo'].include_siblingdiscount = False
         else:
             context['splashinfo'].include_siblingdiscount = True
 
-        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
-            context['splashinfo'].include_lunchsat = False
-        else:
-            context['splashinfo'].include_lunchsat = True
-
-        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
-            context['splashinfo'].include_lunchsun = False
-        else:
-            context['splashinfo'].include_lunchsun = True
+        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', default=True)
+        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', default=True)
 
         return context
 

@@ -98,6 +98,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
+        context['result'] = request.GET.get("result")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 

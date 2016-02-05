@@ -145,7 +145,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         else:
             del self.fields['class_size_max']
 
-        if Tag.getTag('use_class_size_optimal', default=False):
+        if Tag.getBooleanTag('use_class_size_optimal', default=False):
             if not crmi.use_class_size_optimal:
                 del self.fields['class_size_optimal']
 

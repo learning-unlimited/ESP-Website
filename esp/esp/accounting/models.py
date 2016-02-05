@@ -258,6 +258,16 @@ class Transfer(models.Model):
     def __unicode__(self):
         return u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
 
+class CybersourcePostback(models.Model):
+    """ Logs every Cybersource postback to enable debugging and automated
+        reconciliation."""
+    timestamp = models.DateTimeField(auto_now_add=True)
+    post_data = models.TextField()
+    transfer = models.ForeignKey(Transfer, blank=True, null=True,
+                                 on_delete=models.SET_NULL)
+
+    def __unicode__(self):
+        return u'%d' % self.id
 
 def install():
     """Set up the default accounts."""

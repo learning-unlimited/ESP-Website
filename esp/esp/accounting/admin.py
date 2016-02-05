@@ -33,7 +33,8 @@ Learning Unlimited, Inc.
 """
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
+from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
+    LineItemType, LineItemOptions, CybersourcePostback
 from esp.utils.admin_user_search import default_user_search
 
 class LIOInline(admin.TabularInline):
@@ -78,3 +79,12 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
     search_fields = default_user_search('request__user')
     actions = [ finalize_finaid_grants, ]
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
+
+class CybersourcePostbackAdmin(admin.ModelAdmin):
+    readonly_fields = ['timestamp']
+    list_display = ['timestamp', 'transfer']
+    search_fields = ['post_data', '=transfer__id', '=transfer__user__id',
+                     '=transfer__user__username', '=transfer__transaction_id']
+    list_filter = ['timestamp']
+    raw_id_fields = ['transfer']
+admin_site.register(CybersourcePostback, CybersourcePostbackAdmin)

@@ -377,6 +377,7 @@ class ProgramModuleObj(models.Model):
 
     class Meta:
         app_label = 'modules'
+        unique_together = ('program', 'module')
 
 
 # will check and depending on the value of tl
