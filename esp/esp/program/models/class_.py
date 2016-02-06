@@ -1545,6 +1545,17 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return False
         return True
 
+    def hasScheduledSections(self):
+        """ Return whether the class has at least one scheduled section.
+
+        Only display the "class is full" message if this is true.
+        """
+        sections = self.get_sections()
+        for s in sections:
+            if len(s.get_meeting_times()) > 0:
+                return True
+        return False
+
     @cache_function
     def get_capacity_factor():
         tag_val = Tag.getTag('nearly_full_threshold')
