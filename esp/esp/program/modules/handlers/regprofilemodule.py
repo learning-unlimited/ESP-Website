@@ -69,7 +69,7 @@ class RegProfileModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_profile': Q(registrationprofile__program=self.program) & 
+            return {'teacher_profile': Q(registrationprofile__program=self.program) &
                                        Q(registrationprofile__teacher_info__isnull=False)}
         teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
@@ -81,7 +81,7 @@ class RegProfileModule(ProgramModuleObj):
     @usercheck_usetl
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog):
-    	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+        """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
         from esp.web.views.myesp import profile_editor
 

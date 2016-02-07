@@ -60,7 +60,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
-              
               *args, **kwargs):
     from_email = from_email.strip()
     if 'Reply-To' in extra_headers:

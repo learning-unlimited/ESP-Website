@@ -151,7 +151,7 @@ class OnSiteRegister(ProgramModuleObj):
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
+        return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
 
     class Meta:
         proxy = True
