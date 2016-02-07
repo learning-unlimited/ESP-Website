@@ -81,8 +81,8 @@ class StudentRegSanityController(object):
                 srs = sec.getRegistrations()
                 report.append((sec, srs.count()))
 
-        for sr in srs:		
-            if not fake:	
+        for sr in srs:
+            if not fake:
                 if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
                 sr.expire()
         logger.debug(report)

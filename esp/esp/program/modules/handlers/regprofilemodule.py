@@ -69,7 +69,7 @@ class RegProfileModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         if QObject:
-            return {'teacher_profile': Q(registrationprofile__program=self.program) & 
+            return {'teacher_profile': Q(registrationprofile__program=self.program) &
                                        Q(registrationprofile__teacher_info__isnull=False)}
         teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }

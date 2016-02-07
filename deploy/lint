@@ -14,6 +14,7 @@ echo "Running lint checks..."
 #   F82x: undefined name, local variable referenced before assignment
 #   F831: duplicate arg in function definition
 #   W191: indentation contains tabs
+#   W29x: whitespace at end of line or on blank line
 #   W601: `has_key` instead of `in`
 #   W603: <> instead of !=
 #   W604: backticks instead of `repr`
@@ -22,11 +23,9 @@ echo "Running lint checks..."
 #   E11x: other indentation issues (expected indented block, unexpected indent, not a multiple of four)
 #   F811: redefinition of unused name
 #   F841: unused name
-#   W291: whitespace at end of line
-#   W293: whitespace on blank line
 # Ignore /env, since that's where we by default put the virtualenv, which has
 # lots of code that's not ours.  Also exclude .git, for speed.
-flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W601,W603,W604" "$BASEDIR" --exclude=.git,env
+flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" "$BASEDIR" --exclude=.git,env
 
 # Those escape codes the cursor up a line and forward 22 columns (past
 # "Running lint checks...").  We can't just `echo -n` above, because if there
