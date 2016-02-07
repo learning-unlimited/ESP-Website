@@ -900,8 +900,8 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        #if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
-            # This set of error messages deserves a better home
+        # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
+        # This set of error messages deserves a better home
         for t in self.teachers:
             available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
             for e in meeting_times:
@@ -1336,7 +1336,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             rooms = []
 
             for subj in self.get_sections():
-            	rooms.extend(subj.prettyrooms())
+                rooms.extend(subj.prettyrooms())
 
             return rooms
 

@@ -72,13 +72,13 @@ def myesp_passwd(request):
 
 @login_required
 def myesp_switchback(request):
-	user = request.user
-	user.updateOnsite(request)
+    user = request.user
+    user.updateOnsite(request)
 
-	if not user.other_user:
-		raise ESPError('You were not another user!', log=False)
+    if not user.other_user:
+        raise ESPError('You were not another user!', log=False)
 
-	return HttpResponseRedirect(user.switch_back(request))
+    return HttpResponseRedirect(user.switch_back(request))
 
 @login_required
 def edit_profile(request):
@@ -95,7 +95,7 @@ def edit_profile(request):
         return profile_editor(request, None, True, 'guardian')
 
     elif curUser.isEducator():
-        return profile_editor(request, None, True, 'educator')	
+        return profile_editor(request, None, True, 'educator')
 
     else:
         user_types = curUser.groups.all().order_by('-id')
@@ -234,21 +234,19 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 @login_required
 def myesp_onsite(request):
-	
-	user = request.user
-	if not user.isOnsite():
-		raise ESPError('You are not a valid on-site user, please go away.', log=False)
-	
-	progs = Permission.program_by_perm(user,"Onsite")
+    user = request.user
+    if not user.isOnsite():
+        raise ESPError('You are not a valid on-site user, please go away.', log=False)
 
-        # Order them decreasing by id
-        # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-        # TODO: Fix this
-        progs = list(progs)
-        progs.reverse()
+    progs = Permission.program_by_perm(user,"Onsite")
 
-	if len(progs) == 1:
-		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
-	else:
-		return render_to_response('program/pickonsite.html', request, {'progs': progs})
+    # Order them decreasing by id
+    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
+    # TODO: Fix this
+    progs = list(progs)
+    progs.reverse()
 
+    if len(progs) == 1:
+        return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+    else:
+        return render_to_response('program/pickonsite.html', request, {'progs': progs})
