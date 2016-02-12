@@ -311,9 +311,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_for_user[teacher['id']]
 
         return {'sections': sections, 'teachers': teachers}
-    sections_admin.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
-    sections_admin.cached_function.depend_on_model(ResourceRequest)
-    sections_admin.cached_function.depend_on_model(ClassFlag)
+    sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
+    sections_admin.method.cached_function.depend_on_model(ResourceRequest)
+    sections_admin.method.cached_function.depend_on_model(ClassFlag)
 
     @aux_call
     @json_response({
