@@ -45,8 +45,8 @@ import debug_toolbar
 autodiscover(admin_site)
 
 # Override error pages
-handler404 = 'esp.web.util.main.error404'
-handler500 = 'esp.web.util.main.error500'
+handler404 = 'esp.utils.web.error404'
+handler500 = 'esp.utils.web.error500'
 
 # Static media
 urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()
@@ -70,7 +70,6 @@ urlpatterns += patterns('',
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
-                        (r'^error_reporter', 'error_reporter'),
                         (r'^$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
@@ -97,7 +96,7 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^cache/', include('argcache.urls')),
                         (r'^varnish/', include('esp.varnish.urls'))
                         )
 
@@ -138,22 +137,16 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-
-    # Event-generation
-    # Needs to get fixed (axiak)
-    #(r'^events/create/$', 'esp.cal.views.createevent'),
-    #(r'^events/edit/$', 'esp.cal.views.updateevent'),
-    #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 )
 
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True)),)
 
-urlpatterns += patterns('esp.qsdmedia.views', 
-    (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
+urlpatterns += patterns('esp.qsdmedia.views',
+    (r'^download\/([^/]+)/?$', 'qsdmedia2'),
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
 
-urlpatterns += patterns('', 
+urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
@@ -183,6 +176,6 @@ urlpatterns +=patterns('esp.customforms.views',
 	)	
 
 #   Theme editor
-urlpatterns += patterns('', 
-                        (r'^themes', include('esp.themes.urls')) 
+urlpatterns += patterns('',
+                        (r'^themes', include('esp.themes.urls'))
                        )

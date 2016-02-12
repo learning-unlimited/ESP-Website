@@ -24,3 +24,10 @@ from esp.program.controllers.studentclassregmodule import RegistrationTypeContro
 from esp.program.controllers.studentregsanity import StudentRegSanityController
 from esp.themes.controllers import ThemeController
 from esp.users.controllers.usersearch import UserSearchController
+
+import os
+os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
+# For convenience, set up a logger (and hide logging so people use the logger
+# instead)
+from logging import getLogger
+logger = getLogger('esp.shell_plus')

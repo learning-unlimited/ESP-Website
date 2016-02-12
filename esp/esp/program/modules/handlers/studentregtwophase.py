@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 import datetime
 import json
+import logging
+logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
@@ -42,16 +44,16 @@ from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadReque
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
-from esp.web.util import render_to_response
+from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
 class StudentRegTwoPhase(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
-        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest') 
+        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
         if QObject:
             return {'twophase_star_students': q_ssi,
                     'twophase_priority_students' : q_sr}
@@ -83,6 +85,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    @meets_cap
     def studentreg2phase(self, request, tl, one, two, module, extra, prog):
         """
         Serves the two-phase student reg page. This page includes instructions
@@ -148,6 +151,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return context
 
     @aux_call
+    @no_auth
     def view_classes(self, request, tl, one, two, module, extra, prog):
         """
         Displays a filterable catalog that anyone can view.
@@ -189,6 +193,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    @meets_cap
     def mark_classes(self, request, tl, one, two, module, extra, prog):
         """
         Displays a filterable catalog which allows starring classes that the
@@ -225,6 +230,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    @meets_cap
     def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
         """
         Saves the set of classes marked as interested by the student.
@@ -282,6 +288,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    @meets_cap
     def rank_classes(self, request, tl, one, two, module, extra, prog):
         """
         Displays a filterable catalog including only class subjects for which
@@ -314,14 +321,26 @@ class StudentRegTwoPhase(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    @meets_cap
     def save_priorities(self, request, tl, one, two, module, extra, prog):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        data = json.loads(request.POST['json_data'])
-        timeslot_id = data.keys()[0]
+        if not 'json_data' in request.POST:
+            return HttpResponseBadRequest('JSON data not included in request.')
+        try:
+            json_data = json.loads(request.POST['json_data'])
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        try:
+            [timeslot_id] = json_data.keys()
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        if not isinstance(json_data[timeslot_id], dict):
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+
         timeslot = Event.objects.get(pk=timeslot_id)
-        priorities = data[timeslot_id]
+        priorities = json_data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
             rel = RegistrationType.objects.get(name=rel_name, category='student')
@@ -350,12 +369,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
             except (ClassSection.DoesNotExist,
                     ClassSection.MultipleObjectsReturned):
                 # XXX: what if a class has multiple sections in a timeblock?
+                logger.warning("Could not save priority for class %s in "
+                               "timeblock %s", cls_id, timeslot_id)
                 continue
             # sanity checks
-            if (not sec.status > 0 or not sec.parent_class.status > 0
-                or not sec.parent_class.grade_min <= request.user.getGrade(prog)
+            if (not sec.status > 0 or not sec.parent_class.status > 0):
+                logger.warning("Class '%s' was not approved.  Not letting "
+                               "user '%s' register.", sec, request.user)
+            if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
                 or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
-                # XXX: fail more loudly
+                logger.warning("User '%s' not in class grade range; not "
+                               "letting them register.", request.user)
                 continue
 
             if not srs.exists():

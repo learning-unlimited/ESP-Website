@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Missing Teachers for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
@@ -71,7 +69,7 @@
 
 {% block javascript %}
     {{ block.super }}
-    <script src="/media/scripts/flag-edit.js"></script>
+    <script src="/media/scripts/program/modules/flag-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 

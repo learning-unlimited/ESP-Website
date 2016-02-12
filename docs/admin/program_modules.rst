@@ -81,7 +81,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
@@ -158,7 +157,7 @@ This module should be enabled if your program involves students picking and choo
 * Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
 * Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
 * Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the QSD area on the catalog if you would like students to see their schedule while doing this. 
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
 * Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
 * Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
 * Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
@@ -207,8 +206,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key donation_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 The module, when enabled, is available at the url
 /learn/<program>/<instance>/donation. It will also show up as an item in the
@@ -346,7 +345,6 @@ The questions shown on the teacher profile are configurable via the following ta
 * teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------
@@ -469,11 +467,6 @@ The scheduling interface will periodically fetch updates from the server so that
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
 
-Managing Check List Items (CheckListModule)
--------------------------------------------
-
-This module is deprecated and will be removed in a future release.  Please consider using the new "class flags" feature described immediately below.
-
 Class Flags (ClassFlagModule)
 -------------------------------------------
 
@@ -552,8 +545,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key stripe_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 Credit Card Viewer
 ------------------

@@ -15,7 +15,7 @@ class TimeslotForm(forms.Form):
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
-    
+
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
         self.fields['description'].initial = slot.description
@@ -24,7 +24,7 @@ class TimeslotForm(forms.Form):
         length = (slot.end - slot.start).seconds
         self.fields['hours'].initial = int(length / 3600)
         self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
-        
+
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
         slot.description = self.cleaned_data['description']
@@ -36,7 +36,7 @@ class TimeslotForm(forms.Form):
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
         slot.program = program
         slot.save()
-       
+
 
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -44,14 +44,14 @@ class ResourceTypeForm(forms.Form):
     description = forms.CharField(required=False,widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     is_global = forms.BooleanField(label='Global?', required=False)
-        
+
     def load_restype(self, res_type):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
         self.fields['is_global'].initial = (res_type.program == None)
         self.fields['id'].initial = res_type.id
-        
+
     def save_restype(self, program, res_type):
         res_type.name = self.cleaned_data['name']
         res_type.description  = self.cleaned_data['description']
@@ -61,24 +61,24 @@ class ResourceTypeForm(forms.Form):
             res_type.program = program
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
-        
+
         res_type.save()
-        
-       
+
+
 def setup_furnishings(restype_list):
     #   Populate the available choices for furnishings based on a particular program.
-    return ((str(r.id), r.name) for r in restype_list) 
-    
+    return ((str(r.id), r.name) for r in restype_list)
+
 def setup_timeslots(program):
     return ((str(e.id), e.short_description) for e in program.getTimeSlots())
-       
-       
+
+
 class EquipmentForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     name = forms.CharField()
     times_available = forms.MultipleChoiceField()
     resource_type = forms.ChoiceField()
-    
+
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
             self.base_fields['resource_type'].choices = setup_furnishings(args[0].getResourceTypes())
@@ -86,28 +86,28 @@ class EquipmentForm(forms.Form):
             super(EquipmentForm, self).__init__(*args[1:], **kwargs)
         else:
             super(EquipmentForm, self).__init__(*args, **kwargs)
-            
+
     def load_equipment(self, program, resource):
         self.fields['id'].initial = resource.id
         self.fields['name'].initial = resource.name
         self.fields['times_available'].initial = [mt.short_description for mt in resource.matching_times()]
         self.fields['resource_type'].initial = resource.res_type.name
-        
+
     def save_equipment(self, program):
         initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__program=program))
         new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
         new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type']))
-        
+
         for t in new_timeslots:
             new_res = Resource()
             new_res.res_type = new_restype
             new_res.event = t
             new_res.name = self.cleaned_data['name']
             new_res.save()
-            
+
         for r in initial_resources:
             r.delete()
-          
+
 class ClassroomForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     orig_room_number = forms.CharField(required=False, widget=forms.HiddenInput)
@@ -115,18 +115,18 @@ class ClassroomForm(forms.Form):
     furnishings = forms.MultipleChoiceField(required=False)
     times_available = forms.MultipleChoiceField()
     num_students = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
-       
+
     def __init__(self, *args, **kwargs):
-        
+
         if isinstance(args[0], Program):
             self.base_fields['furnishings'].choices = setup_furnishings(args[0].getResourceTypes())
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super(ClassroomForm, self).__init__(*args[1:], **kwargs)
         else:
             super(ClassroomForm, self).__init__(*args, **kwargs)
-    
 
-    
+
+
     #   The next two functions are interesting because there is not a simple one to one
     #   relationship between the form and the classroom (Resource).  Instead, the form
     #   creates a list of grouped resources for the classroom and copies each resource for
@@ -138,7 +138,7 @@ class ClassroomForm(forms.Form):
         self.fields['num_students'].initial = room.num_students
         self.fields['times_available'].initial = [mt.id for mt in room.matching_times()]
         self.fields['furnishings'].initial = [f.res_type.id for f in room.associated_resources()]
-        
+
     def save_classroom(self, program):
         """ Steps for saving a classroom:
         -   Find the previous list of resources
@@ -155,7 +155,7 @@ class ClassroomForm(forms.Form):
         initial_furnishings = {}
         for r in initial_rooms:
             initial_furnishings[r] = list(r.associated_resources())
-        
+
         timeslots = Event.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['times_available']])
         furnishings = ResourceType.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['furnishings']])
 
@@ -163,7 +163,7 @@ class ClassroomForm(forms.Form):
         rooms_to_delete = list(initial_rooms.exclude(event__in=timeslots))
 
         new_timeslots = timeslots.exclude(id__in=[x.event_id for x in rooms_to_keep])
-        
+
         #   Make up new rooms specified by the form
         for t in new_timeslots:
             #   Create room
@@ -174,7 +174,7 @@ class ClassroomForm(forms.Form):
             new_room.name = self.cleaned_data['room_number']
             new_room.save()
             t.new_room = new_room
-            
+
             for f in furnishings:
                 #   Create associated resource
                 new_resource = Resource()
@@ -184,8 +184,8 @@ class ClassroomForm(forms.Form):
                 new_resource.res_group = new_room.res_group
                 new_resource.save()
                 f.new_resource = new_resource
-                
-                
+
+
         #   Delete old, no-longer-valid resources
         for rm in rooms_to_delete:
             #   Find assignments pertaining to the old room
@@ -205,7 +205,7 @@ class ClassroomForm(forms.Form):
             room.num_students = self.cleaned_data['num_students']
             room.name = self.cleaned_data['room_number']
             room.save()
-            
+
             # Add furnishings that we didn't have before
             for f in furnishings.exclude(resource__res_group=room.res_group):
                 #   Create associated resource
@@ -224,7 +224,7 @@ class ClassroomForm(forms.Form):
 class ClassroomImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
-    
+
 class TimeslotImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)

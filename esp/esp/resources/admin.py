@@ -42,9 +42,9 @@ class ResourceTypeAdmin(admin.ModelAdmin):
         return "%s" % str(obj.choices)
     rt_choices.short_description = 'Choices'
 
-    list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'priority_default', 'rt_choices', 'distancefunc', 'program')
+    list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'priority_default', 'rt_choices', 'program')
     search_fields = ['name', 'description', 'consumable', 'priority_default',
-            'attributes_pickled', 'distancefunc', 'program__name']
+            'attributes_pickled', 'program__name']
 
 class ResourceRequestAdmin(admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')

@@ -46,12 +46,6 @@ document.getElementsByClassName = function(class_name) {
 </script>
 {% endblock %}
 
-{% load subsection %}
-
-{% block subsection %}
-{% autoescape off %}{{ "Course Catalog"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block content %}
 <br />
 

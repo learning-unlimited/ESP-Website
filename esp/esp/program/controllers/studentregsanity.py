@@ -36,6 +36,8 @@ import numpy
 import numpy.random
 
 from datetime import date, datetime
+import logging
+logger = logging.getLogger(__name__)
 
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
@@ -49,7 +51,6 @@ import os
 class StudentRegSanityController(object):
 
     default_options = {
-        'verbosity': 0,
         'directory': os.getenv("HOME"),
     }
 
@@ -59,10 +60,8 @@ class StudentRegSanityController(object):
         self.options = StudentRegSanityController.default_options.copy()
         self.options.update(kwargs)
 
-    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=None):
+    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None):
         """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
-        if verbose == None: 
-            verbose = self.options['verbosity']
         closeatend = False
         category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
@@ -86,15 +85,14 @@ class StudentRegSanityController(object):
             if not fake:	
                 if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
                 sr.expire()
-        if verbose > 0: print report
+        logger.debug(report)
         if closeatend: csvfile.close()
-        print "Walkins checked"
+        logger.info("Walkins checked")
         if not fake: "Please re-run self.initalize() to update."
         return report
 
-    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None, verbose=None):
+    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None):
         """Checks to see if any students have registrations for lunch. If fake=False, removes them."""
-        if verbose == None: verbose = self.options['verbosity']
         closeatend = False
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
@@ -117,13 +115,13 @@ class StudentRegSanityController(object):
                 for sr in srs:
                     if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
                     sr.expire()
-        if verbose > 0: print report
+        logger.debug(report)
         if closeatend: csvfile.close()
-        print "Lunch checked."
+        logger.info("Lunch checked.")
         if not fake: "Please re-run self.initalize() to update."
         return report
 
-    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None, verbose=None):
+    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None):
         """Runs some checks on Student Registration. Enter in the checks you'd like to run as a list of strings.
         Checks that currently exist:
             -antiwalk-in: Checks for Student Registrations made for walk-in classes. Can remove them.
@@ -133,8 +131,6 @@ class StudentRegSanityController(object):
         Set fake=False if you actually want something to happen.
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
-        if verbose == None: 
-            verbose = self.options['verbosity']
         if checks==None:
             print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
             return None
@@ -155,13 +151,13 @@ class StudentRegSanityController(object):
             if directory==None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
             csvfile = open(filefullname, 'ab+')
-            csvwriter = csv.writer(csvfile) 
+            csvwriter = csv.writer(csvfile)
         self.reports = {}
         for ck in checks:
-            if verbose > 3: print "Now running " + ck
+            logger.debug("Now running " + ck)
             if ck == 'antiwalk-in':
-                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
+                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog)
             if ck == 'antilunch':
-                self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
+                self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog)
         if csvlog: csvfile.close()
         return self.reports

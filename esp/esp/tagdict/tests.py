@@ -1,9 +1,14 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
 from esp.program.tests import ProgramFrameworkTest
 
-
+# Make test-only tags not raise warnings
+all_global_tags['test'] = (False, "")
+all_program_tags['test'] = (False, "")
+all_global_tags['test_bool'] = (True, "")
+all_program_tags['test_bool'] = (True, "")
 
 class TagTest(TestCase):
     def testTagGetSet(self):
@@ -13,7 +18,7 @@ class TagTest(TestCase):
         and are invoked correctly on this class.
         """
         # Dump any existing Tag cache
-        Tag.getTag.delete_all()
+        Tag._getTag.delete_all()
 
         self.failIf(bool(Tag.getTag("test")), "Retrieved a tag for key 'test' but we haven't set one yet!")
         self.failIf(Tag.getTag("test"), "getTag() created a retrievable value for key 'test'!")
@@ -42,7 +47,7 @@ class TagTest(TestCase):
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
-        Tag.getTag.delete_all()
+        Tag._getTag.delete_all()
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
@@ -59,7 +64,7 @@ class TagTest(TestCase):
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
-        Tag.getTag.delete_all()
+        Tag._getTag.delete_all()
 
         user1, created = User.objects.get_or_create(username="TestUser1", email="test1@example.com", password="")
         user2, created = User.objects.get_or_create(username="TestUser2", email="test2@example.com", password="")
@@ -180,7 +185,7 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
-        Tag.getTag.delete_all()
+        Tag._getTag.delete_all()
 
         #Caching is hard, so what the hell, let's run every assertion twice.
         self.failIf(Tag.getProgramTag("test",program=self.program))
@@ -245,39 +250,37 @@ class ProgramTagTest(ProgramFrameworkTest):
 
     def testBooleanTag(self):
         '''Test the logic of getBooleanTag in a bunch of different conditions, assuming that the underlying getProgramTag works.'''
-        # Delete any existing tags that might interfere
-        Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
-        Tag.getTag.delete_all()
-        
-        self.failIf(Tag.getBooleanTag("test"))
-        self.failIf(Tag.getBooleanTag("test"))
-        self.failIf(Tag.getBooleanTag("test", program=None))
-        self.failIf(Tag.getBooleanTag("test", program=None))
-        self.failIf(Tag.getBooleanTag("test", program=self.program))
-        self.failIf(Tag.getBooleanTag("test", program=self.program))
+        Tag._getTag.delete_all()
+
+        self.failIf(Tag.getBooleanTag("test_bool"))
+        self.failIf(Tag.getBooleanTag("test_bool"))
+        self.failIf(Tag.getBooleanTag("test_bool", program=None))
+        self.failIf(Tag.getBooleanTag("test_bool", program=None))
+        self.failIf(Tag.getBooleanTag("test_bool", program=self.program))
+        self.failIf(Tag.getBooleanTag("test_bool", program=self.program))
         for b in [True,False]:
-            self.assertEqual(Tag.getBooleanTag("test",default=b),b)
-            self.assertEqual(Tag.getBooleanTag("test",default=b),b)
-            self.assertEqual(Tag.getBooleanTag("test",program=None,default=b),b)
-            self.assertEqual(Tag.getBooleanTag("test",program=None,default=b),b)
-            self.assertEqual(Tag.getBooleanTag("test",program=self.program,default=b),b)
-            self.assertEqual(Tag.getBooleanTag("test",program=self.program,default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",program=None,default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",program=None,default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",program=self.program,default=b),b)
+            self.assertEqual(Tag.getBooleanTag("test_bool",program=self.program,default=b),b)
 
         for true_val in [True,"True","true","1",1]:
-            Tag.setTag("test",target=self.program,value=true_val)
+            Tag.setTag("test_bool",target=self.program,value=true_val)
 
-            self.assertEqual(Tag.getBooleanTag("test", program=self.program), True)
-            self.assertEqual(Tag.getBooleanTag("test", program=self.program), True)
+            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), True)
+            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), True)
             for b in [True,False]:
-                self.assertEqual(Tag.getBooleanTag("test", program=self.program, default=b), True)
-                self.assertEqual(Tag.getBooleanTag("test", program=self.program, default=b), True)
+                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), True)
+                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), True)
 
         for false_val in [False,"False","false","0",0]:
-            Tag.setTag("test",target=self.program,value=false_val)
+            Tag.setTag("test_bool",target=self.program,value=false_val)
 
-            self.assertEqual(Tag.getBooleanTag("test", program=self.program), False)
-            self.assertEqual(Tag.getBooleanTag("test", program=self.program), False)
+            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), False)
+            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), False)
             for b in [True,False]:
-                self.assertEqual(Tag.getBooleanTag("test", program=self.program, default=b), False)
-                self.assertEqual(Tag.getBooleanTag("test", program=self.program, default=b), False)
+                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)

@@ -27,7 +27,7 @@ def write_override_diff(diff_filename='template_overrides.diff'):
             orig_templates[key] = template_loader.load_template_source(key)
         except:
             print 'Could not load original template %s' % key
-            
+
     print 'Got %d overrides and %d original versions' % (len(newest_tos.keys()), len(orig_templates.keys()))
 
     #   Compute diffs between original and overridden templates
@@ -44,8 +44,8 @@ def write_override_diff(diff_filename='template_overrides.diff'):
     file_out.close()
 
     print 'Wrote differences to %s' % diff_filename
-    
-    
+
+
 
 if __name__ == '__main__':
     write_override_diff()

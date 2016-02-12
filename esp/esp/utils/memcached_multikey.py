@@ -1,12 +1,11 @@
 "Memcached cache backend"
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.core.cache.backends.base import BaseCache
-try:
-    #   Test whether we have pylibmc, and if it works, use the real pylibmc backend;
-    #   if it doesn't work, fake it using the default memcached backend
-    import pylibmc
-    from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
-except ImportError:
-    from django.core.cache.backends.memcached import MemcachedCache as PylibmcCacheClass
+import pylibmc
+from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
@@ -17,11 +16,7 @@ try:
 except:
     import pickle
 
-FAILFAST = getattr(settings, "DEBUG", True)
-
-# Is there any way to introspect this?
 CACHE_WARNING_SIZE = 1 * 1024**2
-CACHE_SIZE = 2 * 1024**2
 MAX_KEY_LENGTH = 250
 NO_HASH_PREFIX = "NH_"
 HASH_PREFIX = "H_"
@@ -34,7 +29,7 @@ class CacheClass(BaseCache):
             settings.CACHE_PREFIX = ''
 
     def make_key(self, key, version=None):
-        rawkey = ascii( NO_HASH_PREFIX + key )
+        rawkey = ascii( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
         django_prefix = super(CacheClass, self).make_key('', version=version)
         real_max_length = MAX_KEY_LENGTH - len(django_prefix)
         if len(rawkey) <= real_max_length:
@@ -44,12 +39,13 @@ class CacheClass(BaseCache):
             return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
-        if FAILFAST:
+        if settings.DEBUG:
+            # Make a guess as to the size of the object as seen by Memcache,
+            # after serializtion. This guess can be an overestimate, since some
+            # backends can apply zlib compression in addition to pickling.
             data_size = len(pickle.dumps(value))
-            if data_size > CACHE_SIZE:
-                assert False, "Data size for key '%s' too large: %d bytes" % (key, data_size)
-            elif data_size > CACHE_WARNING_SIZE:
-                print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
+            if data_size > CACHE_WARNING_SIZE:
+                logger.warning("Data size for key '%s' is dangerously large: %d bytes", key, data_size)
 
     @try_multi(8)
     def add(self, key, value, timeout=None, version=None):

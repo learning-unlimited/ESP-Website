@@ -1,5 +1,4 @@
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.views import make_user_admin
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
@@ -12,7 +11,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         modules.append(ProgramModule.objects.get(handler='StudentClassRegModule').id)
         modules.append(ProgramModule.objects.get(handler='StudentRegCore').id)
         modules.append(ProgramModule.objects.get(handler='AdminCore').id)
-        
+
         super(RegistrationTypeManagementTest, self).setUp(modules=modules)
         self.schedule_randomly()
 
@@ -25,13 +24,13 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         # Create an admin account
         self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
         self.adminUser.set_password('password')
-        make_user_admin(self.adminUser)
+        self.adminUser.makeAdmin()
 
-        
+
     def testAdminInterface(self):
         # Login as admin
         self.client.login(username='admin', password='password')
-        
+
         # Try to set the values
         r = self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
 

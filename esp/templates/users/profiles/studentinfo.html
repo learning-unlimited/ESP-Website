@@ -76,22 +76,6 @@ detailed explanation of our age and grade level policy, please click
 </div>
 {% endif %}
 
-{% if form.schoolsystem_id %}
-<div class="control-group">
-    <label for="id_schoolsystem_id" class="control-label">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label>
-    <div class="controls">
-    {{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
-    <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
-    {% endif %} 
-    {% if form.fields.schoolsystem_id.help_text %}
-    <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
-    <br />{{ form.schoolsystem_optout }}
-    <br />{% autoescape off %}{{ form.schoolsystem_optout.help_text }}{% endautoescape %}
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
@@ -170,17 +154,6 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     <div class="controls">
     {{ form.medical_needs }} {% if form.medical_needs.errors %}
     <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{% if form.post_hs %}
-<div class="control-group">
-    <label for="id_post_hs" class="control-label">What are your plans after you graduate from high school?</label>
-    <div class="controls">
-    {{ form.post_hs }} {% if form.post_hs.errors %}
-    <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
     {% endif %}
     </div>
 </div>

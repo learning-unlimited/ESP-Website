@@ -1,4 +1,4 @@
-from esp.cache.registry import dump_all_caches
+from argcache.registry import dump_all_caches
 
 from django.core.cache import cache
 from django.test import TestCase
@@ -20,11 +20,11 @@ class CacheFlushTestCase(TestCase):
             settings.CACHE_PREFIX = ''.join( random.sample( string.letters + string.digits, 16 ) )
             from django.conf import settings as django_settings
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
-            
+
     def _fixture_setup(self):
         self._flush_cache()
         super(CacheFlushTestCase, self)._fixture_setup()
-        
+
     def _fixture_teardown(self):
         self._flush_cache()
         super(CacheFlushTestCase, self)._fixture_teardown()

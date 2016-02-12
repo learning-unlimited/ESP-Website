@@ -57,7 +57,8 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 
         #some useful urls
         self.ajax_url_base = '/manage/%s/' % self.program.getUrlBase()
-        self.changelog_url = self.ajax_url_base + 'ajax_change_log'    
+        self.changelog_url = self.ajax_url_base + 'ajax_change_log'
+        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
 
 
     def loginAdmin(self):
@@ -82,8 +83,8 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         self.emptySchedule()
         self.loginAdmin()
         self.forceAvailability()
-        
-class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):        
+
+class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
     def setUp(self, *args, **kwargs):
         super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
@@ -145,7 +146,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
         self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
-    
+
 
     #############################################################
     #
@@ -166,7 +167,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.failUnless(changelog_response.status_code == 200, "Changelog not successfully retreieved")
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
-    
+
     #TODO use a new program for each test
     def testChangeLogIndexZero(self):
         self.clearScheduleAvailability()
@@ -189,7 +190,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
         #TODO:  more detailed testing here
-        
+
     def testChangeLogFailedScheduling(self):
         #change log should not include failed scheduling of classes
         self.clearScheduleAvailability()
@@ -201,7 +202,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         teacher = s1.parent_class.get_teachers()[0]
         sections = [s2 for s2 in teacher.getTaughtSections() if s2.id != s1.id]
         assert len(sections) > 0
-        #our test set up makes this true, but we want to be notiafied if this changes and tests are going to break because of it
+        #our test set up makes this true, but we want to be notified if this changes and tests are going to break because of it
         s2 = sections[0]
         #schedule it
         (section, times, rooms, success) = self.program_manager.scheduleClass(section=s2, timeslots=times, rooms=rooms)
@@ -211,4 +212,3 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
- 

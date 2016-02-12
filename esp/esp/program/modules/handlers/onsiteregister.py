@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
@@ -58,14 +58,14 @@ class OnSiteRegister(ProgramModuleObj):
         that they have paid all of the money they owe for the program. """
         iac = IndividualAccountingController(self.program, self.student)
         if not iac.has_paid():
-            iac.add_required_transfers()
+            iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
 
     def createBit(self, extension):
         if extension == 'Paid':
             self.updatePaid(True)
-            
+
         if Record.user_completed(self.student, extension.lower(), self.program):
             return False
         else:
@@ -81,17 +81,16 @@ class OnSiteRegister(ProgramModuleObj):
     def onsite_create(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = OnSiteRegForm(request.POST)
-            
+
             if form.is_valid():
                 new_data = form.cleaned_data
                 username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
-                new_user = ESPUser(username = username,
+                new_user = ESPUser.objects.create_user(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'],
                                 is_staff   = False,
                                 is_superuser = False)
-                new_user.save()
 
                 self.student = new_user
 
@@ -122,7 +121,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-                
+
                 if new_data['paid']:
                     self.createBit('paid')
                     self.updatePaid(True)
@@ -139,13 +138,13 @@ class OnSiteRegister(ProgramModuleObj):
 
                 self.createBit('OnSite')
 
-                
+
                 new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
-                
+
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
-                    'student': new_user, 
+                    'student': new_user,
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
 
