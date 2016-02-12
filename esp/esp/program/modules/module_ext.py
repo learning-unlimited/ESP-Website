@@ -268,7 +268,7 @@ class AJAXChangeLogEntry(models.Model):
     index = models.IntegerField()
 
     # whether this is a scheduling entry (or comment entry)
-    isScheduling = models.BooleanField(default=True)
+    is_scheduling = models.BooleanField(default=True)
 
     # scheduling entry: comma-separated list of integer timeslots
     timeslots = models.CharField(max_length=256)
@@ -292,13 +292,13 @@ class AJAXChangeLogEntry(models.Model):
     time = models.FloatField()
 
     def setScheduling(self, timeslots, room_name, cls_id):
-        self.isScheduling = True
+        self.is_scheduling = True
         self.timeslots = ','.join([str(x) for x in timeslots])
         self.room_name = room_name
         self.cls_id = cls_id
 
     def setComment(self, comment, lock, cls_id):
-        self.isScheduling = False
+        self.is_scheduling = False
         self.comment = comment
         self.locked = lock
         self.cls_id = cls_id
@@ -323,8 +323,8 @@ class AJAXChangeLogEntry(models.Model):
         d['index'] = self.index
         d['id'] = self.cls_id
         d['user'] = self.getUserName()
-        d['isScheduling'] = self.isScheduling
-        if self.isScheduling:
+        d['is_scheduling'] = self.is_scheduling
+        if self.is_scheduling:
             d['room_name'] = self.room_name
             d['timeslots'] = self.getTimeslots()
         else:

@@ -4,7 +4,7 @@ describe("ChangelogFetcher", function() {
     var changelog_entry = {
         id: 2,
         index: 2,
-        isScheduling: true,
+        is_scheduling: true,
         room_name: "room-2",
         timeslots: [ "3" ],
     };
@@ -12,7 +12,7 @@ describe("ChangelogFetcher", function() {
     var unschedule_changelog_entry = {
         timeslots: [],
         room_name: "",
-        isScheduling: true,
+        is_scheduling: true,
         id: 1,
         index: 3,
     };

@@ -43,7 +43,7 @@ function ChangelogFetcher(matrix, api_client, start_index){
     this.applyChangeLog = function(data){
         $j.each(data.changelog, function(id, change){
             var section = matrix.sections.getById(change.id);
-            if (change.isScheduling) {
+            if (change.is_scheduling) {
                 if (change.timeslots.length == 0){
                     this.matrix.sections.unscheduleSectionLocal(section);
                 } else {
