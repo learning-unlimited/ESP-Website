@@ -170,7 +170,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'timeslots': lunch_timeslots}
 
     @aux_call
-    @no_auth
     @json_response()
     @needs_admin
     @cached_module_view
@@ -244,6 +243,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
  
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def sections(extra, prog):
         if extra == 'catalog':
