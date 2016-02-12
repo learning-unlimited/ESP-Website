@@ -46,7 +46,7 @@ from django.http import Http404, HttpResponse
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -311,6 +311,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_for_user[teacher['id']]
 
         return {'sections': sections, 'teachers': teachers}
+    sections_admin.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
+    sections_admin.cached_function.depend_on_model(ResourceRequest)
+    sections_admin.cached_function.depend_on_model(ClassFlag)
 
     @aux_call
     @json_response({
