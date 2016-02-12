@@ -168,75 +168,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
         return {'timeslots': lunch_timeslots}
-
-    @aux_call
-    @json_response()
-    @needs_admin
-    @cached_module_view
-    def sections_admin(extra, prog):
-        teacher_dict = {}
-        teachers = []
-        sections = []
-        qs = prog.sections().prefetch_related(
-            'parent_class__category',
-            'parent_class__sections',
-            'parent_class__teachers',
-            'parent_class__parent_program',
-            'meeting_times')
-
-        for s in qs:
-            rrequests = ResourceRequest.objects.filter(target = s)
-            rrequest_dict = defaultdict(list)
-            for r in rrequests:
-                rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-
-            cls = s.parent_class
-            section = {
-                'id': s.id,
-                'status': s.status,
-                'parent_class': s.parent_class.id,
-                'category': s.parent_class.category.symbol,
-                'category_id': s.parent_class.category.id,
-                'grade_max': s.parent_class.grade_max,
-                'grade_min': s.parent_class.grade_min,
-                'title': s.parent_class.title,
-                'class_size_max': s.parent_class.class_size_max,
-                'num_students': s.enrolled_students,
-                'resource_requests': rrequest_dict,
-                'comments': cls.message_for_directors,
-                'special_requests': cls.requested_special_resources,
-                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
- 
-            }
-            sections.append(section)
-            section['index'] = s.index()
-            section['emailcode'] = s.emailcode()
-            section['length'] = float(s.duration)
-            class_teachers = s.parent_class.get_teachers()
-            section['teachers'] = [t.id for t in class_teachers]
-            for t in class_teachers:
-                if teacher_dict.has_key(t.id):
-                    teacher_dict[t.id]['sections'].append(s.id)
-                    continue
-                teacher = {
-                    'id': t.id,
-                    'username': t.username,
-                    'first_name': t.first_name,
-                    'last_name': t.last_name,
-                    'sections': [s.id]
-                }
-                teachers.append(teacher)
-                teacher_dict[t.id] = teacher
-
-        # Build up teacher availability
-        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
-        avail_for_user = defaultdict(list)
-        for user_id, event_id in availabilities:
-            avail_for_user[user_id].append(event_id)
-        for teacher in teachers:
-            teacher['availability'] = avail_for_user[teacher['id']]
-
-        return {'sections': sections, 'teachers': teachers}
  
     @aux_call
     @json_response()
@@ -312,6 +243,74 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
     sections.cached_function.depend_on_cache(ClassSection.friendly_times, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
     sections.cached_function.depend_on_cache(ClassSection._get_capacity, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
+
+    @aux_call
+    @json_response()
+    @needs_admin
+    @cached_module_view
+    def sections_admin(extra, prog):
+        teacher_dict = {}
+        teachers = []
+        sections = []
+        qs = prog.sections().prefetch_related(
+            'parent_class__category',
+            'parent_class__sections',
+            'parent_class__teachers',
+            'parent_class__parent_program',
+            'meeting_times')
+
+        for s in qs:
+            rrequests = ResourceRequest.objects.filter(target = s)
+            rrequest_dict = defaultdict(list)
+            for r in rrequests:
+                rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
+
+            cls = s.parent_class
+            section = {
+                'id': s.id,
+                'status': s.status,
+                'parent_class': s.parent_class.id,
+                'category': s.parent_class.category.symbol,
+                'category_id': s.parent_class.category.id,
+                'grade_max': s.parent_class.grade_max,
+                'grade_min': s.parent_class.grade_min,
+                'title': s.parent_class.title,
+                'class_size_max': s.parent_class.class_size_max,
+                'num_students': s.enrolled_students,
+                'resource_requests': rrequest_dict,
+                'comments': cls.message_for_directors,
+                'special_requests': cls.requested_special_resources,
+                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            }
+            sections.append(section)
+            section['index'] = s.index()
+            section['emailcode'] = s.emailcode()
+            section['length'] = float(s.duration)
+            class_teachers = s.parent_class.get_teachers()
+            section['teachers'] = [t.id for t in class_teachers]
+            for t in class_teachers:
+                if teacher_dict.has_key(t.id):
+                    teacher_dict[t.id]['sections'].append(s.id)
+                    continue
+                teacher = {
+                    'id': t.id,
+                    'username': t.username,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'sections': [s.id]
+                }
+                teachers.append(teacher)
+                teacher_dict[t.id] = teacher
+
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for user_id, event_id in availabilities:
+            avail_for_user[user_id].append(event_id)
+        for teacher in teachers:
+            teacher['availability'] = avail_for_user[teacher['id']]
+
+        return {'sections': sections, 'teachers': teachers}
 
     @aux_call
     @json_response({
