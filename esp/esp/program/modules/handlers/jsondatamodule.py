@@ -190,9 +190,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             for r in rrequests:
                 rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
-            fts = ClassFlagType.get_flag_types(prog)
-            ft_dicts = [{'id': ft.id, 'name': ft.name, 'show_in_scheduler': ft.show_in_scheduler, 'show_in_dashboard': ft.show_in_dashboard} for ft in fts]
-
             cls = s.parent_class
             section = {
                 'id': s.id,
@@ -630,9 +627,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-
-        fts = ClassFlagType.get_flag_types(prog)
-        ft_dicts = [{'id': ft.id, 'name': ft.name, 'show_in_scheduler': ft.show_in_scheduler, 'show_in_dashboard': ft.show_in_dashboard} for ft in fts]
 
         section_info = []
         for sec in cls.get_sections():
