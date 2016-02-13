@@ -277,10 +277,10 @@ class AJAXChangeLogEntry(models.Model):
     room_name = models.CharField(max_length=256)
 
     # comment entry: comment text
-    comment = models.CharField(max_length=256, null=True)
+    comment = models.CharField(max_length=256)
 
     # comment entry: is locked
-    locked = models.BooleanField(default=False)
+    locked = models.NullBooleanField()
 
     # ClassSection ID to update
     cls_id = models.IntegerField()
