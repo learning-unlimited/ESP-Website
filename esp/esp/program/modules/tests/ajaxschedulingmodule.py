@@ -172,7 +172,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     def testChangeLogIndexZero(self):
         self.clearScheduleAvailability()
         self.program_manager.scheduleClass()
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 0 })        
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 0 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
 
@@ -185,7 +185,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         self.program_manager.unschedule_class(section.id)
 
-        #change log should include unscheduled classes 
+        #change log should include unscheduled classes
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))

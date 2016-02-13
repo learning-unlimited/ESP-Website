@@ -7,7 +7,7 @@ class TestProgramManager():
         self.teachers = teachers
         self.rooms = rooms
         self.timeslots = timeslots
-        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'     
+        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
 
     def getClassToSchedule(self, section=None, teacher=None, timeslots=None, rooms=None):
         if section == None:
@@ -19,11 +19,11 @@ class TestProgramManager():
             rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
 
         if timeslots == None:
-            timeslots = self.program.getTimeSlots().order_by('start')       
-        
+            timeslots = self.program.getTimeSlots().order_by('start')
+
         return (section, timeslots, rooms)
 
-    #schedule class, 
+    #schedule class,
     #NO guarantee that it's a class that hasn't been scheduled yet
     #return a tuple (section, times, rooms)
     def scheduleClass(self, section=None, teacher=None, timeslots=None, rooms=None):
@@ -37,7 +37,7 @@ class TestProgramManager():
 
         #make sure the scheduling had the expected result
         success = json.loads(response.content)['ret']
-        
+
         #return information about the class we tried to schedule
         return (section, timeslots, rooms, success)
 
