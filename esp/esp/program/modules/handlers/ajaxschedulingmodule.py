@@ -237,13 +237,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
-        if not request.POST.has_key('comment'):
+        if not 'comment' in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
         cls_id = request.POST['cls']
         comment = request.POST['comment']
-        locked = request.POST.has_key('locked')
+        locked = 'locked' in request.POST
 
         try:
             module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
