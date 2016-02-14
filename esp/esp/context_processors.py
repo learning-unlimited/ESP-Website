@@ -17,7 +17,7 @@ def esp_user(request):
 def email_settings(request):
     context = {}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = settings.EMAIL_HOST
+    context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['settings'] = settings
     return context
 
