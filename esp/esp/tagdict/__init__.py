@@ -22,8 +22,6 @@ all_global_tags = {
     'volunteer_allow_comments': (False, ""),
     'min_available_timeslots': (False, ""),
     'availability_group_timeslots': (True, "Group timeslots into contiguous blocks in the availability interface (enabled by default, set to 'False' to disable)"),
-    'formstack_id': (False, ""),
-    'formstack_viewkey': (False, ""),
     'group_phone_number': (False, ""),
     'finaid_form_fields': (False, ""),
     'onsite_classlist_min_refresh': (False, ""),
@@ -100,4 +98,6 @@ all_program_tags = {
     'display_registration_names': (False, ""),
     'program_size_by_grade': (False, ""),
     'studentschedule_show_empty_blocks': (True, ""),
+    'formstack_id': (False, ""),
+    'formstack_viewkey': (False, ""),
 }
