@@ -20,8 +20,8 @@ class TagTest(TestCase):
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        self.failIf(bool(Tag.getTag("test")), "Retrieved a tag for key 'test' but we haven't set one yet!")
-        self.failIf(Tag.getTag("test"), "getTag() created a retrievable value for key 'test'!")
+        self.assertFalse(bool(Tag.getTag("test")), "Retrieved a tag for key 'test' but we haven't set one yet!")
+        self.assertFalse(Tag.getTag("test"), "getTag() created a retrievable value for key 'test'!")
         self.assertEqual(Tag.getTag("test",default="the default"),"the default")
         self.assertEqual(Tag.getTag("test",default="the default"),"the default")
 
@@ -33,13 +33,13 @@ class TagTest(TestCase):
 
         Tag.unSetTag("test")
 
-        self.failIf(Tag.getTag("test"), "Retrieved a tag for key 'test' but we just deleted it!")
-        self.failIf(Tag.getTag("test"), "unSetTag() deletes don't appear to be persistent!")
+        self.assertFalse(Tag.getTag("test"), "Retrieved a tag for key 'test' but we just deleted it!")
+        self.assertFalse(Tag.getTag("test"), "unSetTag() deletes don't appear to be persistent!")
         self.assertEqual(Tag.getTag("test",default="the default"),"the default")
         self.assertEqual(Tag.getTag("test",default="the default"),"the default")
 
         Tag.setTag("test")
-        self.failUnless(Tag.getTag("test"), "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!")
+        self.assertTrue(Tag.getTag("test"), "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!")
         self.assertNotEqual(Tag.getTag("test",default="the default"),"the default","If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
 
     def testTagWithTarget(self):
@@ -51,13 +51,13 @@ class TagTest(TestCase):
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
-        self.failIf(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
+        self.assertFalse(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
         self.assertEqual(Tag.getTag("test", user), Tag.EMPTY_TAG)
         Tag.unSetTag("test", user)
-        self.failIf(Tag.getTag("test", user), "unSetTag() didn't work for per-row tags!")
+        self.assertFalse(Tag.getTag("test", user), "unSetTag() didn't work for per-row tags!")
 
     def testTagCaching(self):
         '''Test that tag values are being cached.'''
@@ -70,10 +70,10 @@ class TagTest(TestCase):
         user2, created = User.objects.get_or_create(username="TestUser2", email="test2@example.com", password="")
 
         for target in [None,user1,user2]:
-            self.failIf(Tag.getTag("test",target=target))
+            self.assertFalse(Tag.getTag("test",target=target))
             with self.assertNumQueries(0):
-                self.failIf(Tag.getTag("test",target=target))
-                self.failIf(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
 
 
 
@@ -82,10 +82,10 @@ class TagTest(TestCase):
         Tag.setTag("test",value="tag value")
 
         for target in [user1,user2]:
-            self.failIf(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
             with self.assertNumQueries(0):
-                self.failIf(Tag.getTag("test",target=target))
-                self.failIf(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
 
         self.assertEqual(Tag.getTag("test"),"tag value")
         with self.assertNumQueries(0):
@@ -93,10 +93,10 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test"),"tag value")
 
         for target in [user1,user2]:
-            self.failIf(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
             with self.assertNumQueries(0):
-                self.failIf(Tag.getTag("test",target=target))
-                self.failIf(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
 
 
 
@@ -104,10 +104,10 @@ class TagTest(TestCase):
         Tag.setTag("test",value="tag value 2")
 
         for target in [user1,user2]:
-            self.failIf(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
             with self.assertNumQueries(0):
-                self.failIf(Tag.getTag("test",target=target))
-                self.failIf(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
 
         self.assertEqual(Tag.getTag("test"),"tag value 2")
         with self.assertNumQueries(0):
@@ -115,19 +115,19 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test"),"tag value 2")
 
         for target in [user1,user2]:
-            self.failIf(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(Tag.getTag("test",target=target)) #remove after Issue #866 is fixed
             with self.assertNumQueries(0):
-                self.failIf(Tag.getTag("test",target=target))
-                self.failIf(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
+                self.assertFalse(Tag.getTag("test",target=target))
 
 
 
         Tag.setTag("test",target=user1,value="tag value user1")
 
-        self.failIf(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
-            self.failIf(Tag.getTag("test",target=user2))
-            self.failIf(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
 
         self.assertEqual(Tag.getTag("test"),"tag value 2") #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
@@ -144,10 +144,10 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test"),"tag value 2")
             self.assertEqual(Tag.getTag("test"),"tag value 2")
 
-        self.failIf(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
-            self.failIf(Tag.getTag("test",target=user2))
-            self.failIf(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
 
 
 
@@ -158,25 +158,25 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test",target=user1),"tag value user1")
             self.assertEqual(Tag.getTag("test",target=user1),"tag value user1")
 
-        self.failIf(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
-            self.failIf(Tag.getTag("test",target=user2))
-            self.failIf(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
 
-        self.failIf(Tag.getTag("test"))
+        self.assertFalse(Tag.getTag("test"))
         with self.assertNumQueries(0):
-            self.failIf(Tag.getTag("test"))
-            self.failIf(Tag.getTag("test"))
+            self.assertFalse(Tag.getTag("test"))
+            self.assertFalse(Tag.getTag("test"))
 
         self.assertEqual(Tag.getTag("test",target=user1),"tag value user1") #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertEqual(Tag.getTag("test",target=user1),"tag value user1")
             self.assertEqual(Tag.getTag("test",target=user1),"tag value user1")
 
-        self.failIf(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(Tag.getTag("test",target=user2)) #remove after Issue #866 is fixed
         with self.assertNumQueries(0):
-            self.failIf(Tag.getTag("test",target=user2))
-            self.failIf(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
+            self.assertFalse(Tag.getTag("test",target=user2))
 
 class ProgramTagTest(ProgramFrameworkTest):
     def testProgramTag(self):
@@ -188,10 +188,10 @@ class ProgramTagTest(ProgramFrameworkTest):
         Tag._getTag.delete_all()
 
         #Caching is hard, so what the hell, let's run every assertion twice.
-        self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getProgramTag("test",program=None))
-        self.failIf(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=self.program))
+        self.assertFalse(Tag.getProgramTag("test",program=self.program))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
@@ -201,8 +201,8 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Set the program-specific tag
         Tag.setTag("test",target=self.program,value="program tag value")
 
-        self.failIf(Tag.getProgramTag("test",program=None))
-        self.failIf(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"program tag value")
@@ -239,10 +239,10 @@ class ProgramTagTest(ProgramFrameworkTest):
         #just to clean up
         Tag.unSetTag("test",target=None)
 
-        self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getProgramTag("test",program=None))
-        self.failIf(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=self.program))
+        self.assertFalse(Tag.getProgramTag("test",program=self.program))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
+        self.assertFalse(Tag.getProgramTag("test",program=None))
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
@@ -253,12 +253,12 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        self.failIf(Tag.getBooleanTag("test_bool"))
-        self.failIf(Tag.getBooleanTag("test_bool"))
-        self.failIf(Tag.getBooleanTag("test_bool", program=None))
-        self.failIf(Tag.getBooleanTag("test_bool", program=None))
-        self.failIf(Tag.getBooleanTag("test_bool", program=self.program))
-        self.failIf(Tag.getBooleanTag("test_bool", program=self.program))
+        self.assertFalse(Tag.getBooleanTag("test_bool"))
+        self.assertFalse(Tag.getBooleanTag("test_bool"))
+        self.assertFalse(Tag.getBooleanTag("test_bool", program=None))
+        self.assertFalse(Tag.getBooleanTag("test_bool", program=None))
+        self.assertFalse(Tag.getBooleanTag("test_bool", program=self.program))
+        self.assertFalse(Tag.getBooleanTag("test_bool", program=self.program))
         for b in [True,False]:
             self.assertEqual(Tag.getBooleanTag("test_bool",default=b),b)
             self.assertEqual(Tag.getBooleanTag("test_bool",default=b),b)

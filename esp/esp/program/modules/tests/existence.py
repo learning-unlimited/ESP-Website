@@ -114,7 +114,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
 
         #   Pick a student and log on
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Get student reg page and check list of modules
         self.check_reg_modules('studentreg', 'learn')
@@ -134,7 +134,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
 
         #   Pick a teacher and log on
         teacher = random.choice(self.teachers)
-        self.failUnless( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
+        self.assertTrue( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
 
         #   Get teacher reg page and check list of modules
         self.check_reg_modules('teacherreg', 'teach')

@@ -50,33 +50,33 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase, LiveServerTestCas
     def isScheduled(self, section_id):
         elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
         for el in elements:
-            self.failIf(self.hasCSSClass(el, "class-entry"), "Scheduled class appears in directory")
+            self.assertFalse(self.hasCSSClass(el, "class-entry"), "Scheduled class appears in directory")
 
-        self.failUnless(True in [self.hasCSSClass(el, "matrix-cell") for el in elements],
+        self.assertTrue(True in [self.hasCSSClass(el, "matrix-cell") for el in elements],
             "Scheduled class does not appear in matrix")
 
     def isInDirectory(self, section_id):
         elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
-        self.failUnless(True in [self.hasCSSClass(el, "class-entry") for el in elements],
+        self.assertTrue(True in [self.hasCSSClass(el, "class-entry") for el in elements],
                         "Class does not appear in directory.")
 
     def isNotInDirectory(self, section_id):
         elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
         for el in elements:
-            self.failIf(self.hasCSSClass(el, "class-entry"), "Class appears in directory")
+            self.assertFalse(self.hasCSSClass(el, "class-entry"), "Class appears in directory")
 
     def isNotScheduled(self, section_id):
         elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
         for el in elements:
-            self.failIf(self.hasCSSClass(el, "matrix-cell"), "Unscheduled class appears in matrix")
+            self.assertFalse(self.hasCSSClass(el, "matrix-cell"), "Unscheduled class appears in matrix")
 
-        self.failUnless(True in [self.hasCSSClass(el, "class-entry") for el in elements],
+        self.assertTrue(True in [self.hasCSSClass(el, "class-entry") for el in elements],
                         "Unscheduled class does not appear in directory.")
 
     #mostly exists as sanity on testing framework
     def testAjaxLoads(self):
         self.loadAjax()
-        self.failUnless(self.browser.title == "ESP Scheduling Application", "Did not find AJAX: " + self.browser.title)
+        self.assertTrue(self.browser.title == "ESP Scheduling Application", "Did not find AJAX: " + self.browser.title)
 
     def testUpdateScheduledClass(self):
         self.loadAjax()

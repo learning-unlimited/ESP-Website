@@ -61,7 +61,7 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 
     def loginAdmin(self):
         """Log in an admin user."""
-        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
     def emptySchedule(self):
         """Empty the schedule and teacher availability."""
@@ -112,9 +112,9 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         #make sure the scheduling had the expected result
         success = json.loads(response.content)['ret']
         if not shouldFail:
-            self.failUnless(success, "Class not successfully scheduled: " + response.content)
+            self.assertTrue(success, "Class not successfully scheduled: " + response.content)
         else:
-            self.failIf(success, "Class successfully scheduled, which we didn't expect.")
+            self.assertFalse(success, "Class successfully scheduled, which we didn't expect.")
 
         #return information about the class we tried to schedule
         return (section, timeslots, rooms)
@@ -135,7 +135,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         # Fetch three consecutive vacancies in one room.
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
-        self.failUnless(rooms.count() >= 3, "Not enough timeslots to run this test.")
+        self.assertTrue(rooms.count() >= 3, "Not enough timeslots to run this test.")
 
         # Now we attempt to schedule the sections overlapping.
         s1, s2 = [t.getTaughtSections(self.program)[0] for t in self.teachers[:2]]
@@ -145,17 +145,17 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         m2 = [rooms[1].event, rooms[2].event]
         s1.assign_meeting_times(m1)
         s2.assign_meeting_times(m2)
-        self.failUnless(set(s1.get_meeting_times()) == set(m1), "Failed to assign meeting times.")
-        self.failUnless(set(s2.get_meeting_times()) == set(m2), "Failed to assign meeting times.")
+        self.assertTrue(set(s1.get_meeting_times()) == set(m1), "Failed to assign meeting times.")
+        self.assertTrue(set(s2.get_meeting_times()) == set(m2), "Failed to assign meeting times.")
 
         # Return values should be success on the first one and failure on the second.
-        self.failUnless(s1.assign_room(rooms[0])[0] == True, "Received negative response when scheduling first class.")
-        self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "Failed to schedule first class.")
-        self.failUnless(s2.assign_room(rooms[0])[0] == False, "Failed to detect conflict with first class.")
+        self.assertTrue(s1.assign_room(rooms[0])[0] == True, "Received negative response when scheduling first class.")
+        self.assertTrue(set(s1.classrooms()) == set(rooms[:2]), "Failed to schedule first class.")
+        self.assertTrue(s2.assign_room(rooms[0])[0] == False, "Failed to detect conflict with first class.")
 
         # Check that the second attempt did not take.
-        self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")
-        self.failUnless(not s2.classrooms().exists(), "Second class should not have any classrooms assigned.")
+        self.assertTrue(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")
+        self.assertTrue(not s2.classrooms().exists(), "Second class should not have any classrooms assigned.")
 
 
     def testWebAPI(self):
@@ -167,10 +167,10 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         # Fetch two consecutive vacancies in two different rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
-        self.failUnless(rooms.count() >= 2, "Not enough timeslots to run this test.")
+        self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
         a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
         rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
-        self.failUnless(rooms.count() >= 2, "Not enough timeslots to run this test.")
+        self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
         a2 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
 
         # Schedule one class.
@@ -179,12 +179,12 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         timeslots = self.program.getTimeSlots().order_by('start')
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
-        self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Failed to assign meeting times.")
+        self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Failed to assign meeting times.")
         # Try to schedule the other class.
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s2.id})
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
-        self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
-        self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
+        self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
+        self.assertTrue(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
 
 
     #############################################################
@@ -205,9 +205,9 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         #fetch the changelog
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeSchedule })
-        self.failUnless(changelog_response.status_code == 200, "Changelog not successfully retreieved")
+        self.assertTrue(changelog_response.status_code == 200, "Changelog not successfully retreieved")
         changelog = json.loads(changelog_response.content)["changelog"]
-        self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
+        self.assertTrue(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
 
     def testChangeLogTruncates(self):
         self.clearScheduleAvailability()
@@ -219,7 +219,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #change log should truncate at last requested time
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': afterSchedule })
         changelog = json.loads(changelog_response.content)["changelog"]
-        self.failUnless(len(changelog) == 0, "Change log contained content from before last_fetched_time: " + str(changelog) )
+        self.assertTrue(len(changelog) == 0, "Change log contained content from before last_fetched_time: " + str(changelog) )
 
     def testChangeLogDeletedClasses(self):
         self.clearScheduleAvailability()
@@ -236,7 +236,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeUnschedule })
         changelog = json.loads(changelog_response.content)["changelog"]
 
-        self.failUnless(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
+        self.assertTrue(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
 
     def testChangeLogFailedScheduling(self):
         #change log should not include failed scheduling of classes
@@ -259,7 +259,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         #change log should not include it
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeSchedule })
         changelog = json.loads(changelog_response.content)["changelog"]
-        self.failUnless(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
+        self.assertTrue(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
 
     def testTooOldChangeLog(self):
         self.clearScheduleAvailability()
@@ -273,7 +273,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # change log has not changed since our last update.
         response = self.client.get(self.changelog_url, {'last_fetched_index': beforeDelete })
         response = json.loads(response.content)
-        self.failUnless('command' not in response["other"][0], "Was asked to reload after the change log was destroyed but no changes were made: " +
+        self.assertTrue('command' not in response["other"][0], "Was asked to reload after the change log was destroyed but no changes were made: " +
                         str(response["other"]))
         # Schedule a class after deleting the change log and not reloading it.
         beforeDelete = self.changelog.get_latest_index()
@@ -284,6 +284,6 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # change log has been updated but may be missing relevant information.
         response = self.client.get(self.changelog_url, {'last_fetched_index': beforeDelete })
         response = json.loads(response.content)
-        self.failUnless(response["other"][0]["command"] == "reload", "Was not asked to reload after the change log was destroyed and a class was scheduled: " +
+        self.assertTrue(response["other"][0]["command"] == "reload", "Was not asked to reload after the change log was destroyed and a class was scheduled: " +
                         str(response["other"]))
 

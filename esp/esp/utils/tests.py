@@ -145,7 +145,7 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
     """ Grab a ridiculous URL and make sure the status code isn't 500. """
     def runTest(self):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
-        self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
+        self.assertTrue(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
 
 
 class TemplateOverrideTest(DjangoTestCase):

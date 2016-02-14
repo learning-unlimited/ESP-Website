@@ -64,21 +64,21 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         timeslots = self.program.getTimeSlots().values_list( 'id', flat=True )
 
         # Check that the teacher starts out without availability set
-        self.failUnless( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted() )
 
         # Log in as the teacher
-        self.failUnless( self.client.login( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
+        self.assertTrue( self.client.login( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
 
         # Submit availability, checking results each time
         # Available for one timeslot
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:1] } )
-        self.failUnless( response.status_code == 302 )
-        self.failUnless( not self.moduleobj.isCompleted() )
+        self.assertTrue( response.status_code == 302 )
+        self.assertTrue( not self.moduleobj.isCompleted() )
         # Two timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:2] } )
-        self.failUnless( response.status_code == 302 )
-        self.failUnless( not self.moduleobj.isCompleted() )
+        self.assertTrue( response.status_code == 302 )
+        self.assertTrue( not self.moduleobj.isCompleted() )
         # Three timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots } )
-        self.failUnless( response.status_code == 302 )
-        self.failUnless( self.moduleobj.isCompleted() )
+        self.assertTrue( response.status_code == 302 )
+        self.assertTrue( self.moduleobj.isCompleted() )
