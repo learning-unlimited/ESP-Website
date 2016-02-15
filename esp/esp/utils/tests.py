@@ -151,7 +151,7 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
-        return template.render(Context({}))
+        return template.render({})
 
     def expect_template_error(self, template_name):
         template_error = False
@@ -182,7 +182,7 @@ class TemplateOverrideTest(DjangoTestCase):
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
 
         #   Revert the update to the template and make sure you see the old version
-        reversion.get_unique_for_object(to)[1].revert()
+        list(reversion.get_for_object(to).get_unique())[1].revert()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Delete the original template override and make sure you see nothing

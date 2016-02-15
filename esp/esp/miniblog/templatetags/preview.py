@@ -26,7 +26,7 @@ class MiniblogNode(template.Node):
     def render(self, context):
         # First we ensure we have a user
         try:
-            user_obj = template.resolve_variable(self.user, context)
+            user_obj = template.Variable(self.user).resolve(context)
         except template.VariableDoesNotExist:
             if self.user == "AnonymousUser":
                 user_obj = AnonymousUser()
