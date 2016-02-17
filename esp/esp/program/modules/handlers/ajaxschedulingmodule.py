@@ -115,21 +115,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, blockrooms, times, classrooms, user=None):
-        classroom_names = classrooms
-
-        if len(times) < 1:
+    def ajax_schedule_assignreg(self, prog, cls, blockrooms, timeslot_ids, classroom_names, user=None):
+        if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
-        if len(classrooms) < 1:
+        if len(classroom_names) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        basic_cls = classrooms[0]
-        for c in classrooms:
+        basic_cls = classroom_names[0]
+        for c in classroom_names:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
-        times = Event.objects.filter(id__in=times).order_by('start')
+        times = Event.objects.filter(id__in=timeslot_ids).order_by('start')
         if len(times) < 1:
             return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
