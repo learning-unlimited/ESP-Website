@@ -124,38 +124,36 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if len(classrooms) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        #TODO:  this loom modifies classrooms from within the loop.  That seems like a bad idea.
-        #we should figure out why
         basic_cls = classrooms[0]
         for c in classrooms:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
-            times = Event.objects.filter(id__in=times).order_by('start')
-            if len(times) < 1:
-                return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+        times = Event.objects.filter(id__in=times).order_by('start')
+        if len(times) < 1:
+            return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
-            classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
-            if len(classrooms) < 1:
-                return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+        classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
+        if len(classrooms) < 1:
+            return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
 
-            classroom = classrooms[0]
+        classroom = classrooms[0]
 
-            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
-            if cannot_schedule:
-                return self.makeret(prog, ret=False, msg=cannot_schedule)
+        cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
+        if cannot_schedule:
+            return self.makeret(prog, ret=False, msg=cannot_schedule)
 
-            cls.assign_meeting_times(times)
-            status, errors = cls.assign_room(classroom, clear_others=True)
+        cls.assign_meeting_times(times)
+        status, errors = cls.assign_room(classroom, clear_others=True)
 
-            if not status: # If we failed any of the scheduling-constraints checks in assign_room()
-                cls.clear_meeting_times()
-                return self.makeret(prog, ret=False, msg=" | ".join(errors))
+        if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+            cls.clear_meeting_times()
+            return self.makeret(prog, ret=False, msg=" | ".join(errors))
 
-            #add things to the change log here
-            self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
+        #add things to the change log here
+        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
 
-            return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+        return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
     @aux_call
     @needs_admin
