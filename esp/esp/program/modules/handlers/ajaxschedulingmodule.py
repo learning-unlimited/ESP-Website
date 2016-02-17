@@ -115,7 +115,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, blockrooms, timeslot_ids, classroom_names, user=None):
+    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_names, user=None):
         if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
@@ -224,7 +224,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
-            retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms, request.user)
+            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
