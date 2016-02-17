@@ -219,11 +219,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         elif action == 'assignreg':
             blockrooms = request.POST['block_room_assignments'].split("\n")
-            blockrooms = [b.split(",") for b in blockrooms if b]
-            blockrooms = [{'time_id': b[0], 'room_id': b[1]} for b in blockrooms]
-
-            times = [br['time_id'] for br in blockrooms]
-            classrooms = [br['room_id'] for br in blockrooms]
+            times = []
+            classrooms = []
+            for br in blockrooms:
+                timeslot, classroom = br.split(",")
+                times.append(timeslot)
+                classrooms.append(classroom)
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
