@@ -130,7 +130,7 @@ function payOnce() {
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
-<form onsubmit="return payOnce();" action="https://shopmitprd.mit.edu/controller/index.php?auto_submit=Y" method="post" autocomplete="off">
+<form onsubmit="return payOnce();" action="{{ post_url }}" method="post" autocomplete="off">
 
 <br />
 <p>Please fill out the form below.  Required fields are boxed in a red border and marked with an asterisk.</p>
@@ -139,7 +139,7 @@ function payOnce() {
 <input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
 
 <input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="merchant_id" value="MIT_SAO_ESP" />
+<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
 
 <!-- Defaults -->
 <input type="hidden" name="billTo_country" value="US" />
