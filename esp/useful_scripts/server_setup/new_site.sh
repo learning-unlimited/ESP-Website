@@ -3,7 +3,8 @@
 # ESP site creation script
 # See /docs/dev/deploying.rst for documentation on how to deploy.
 
-set -e -o pipefail
+# no -u because a bunch of the modes are undefined unless we use them.
+set -ef -o pipefail
 
 # Parameters
 GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
@@ -19,7 +20,6 @@ WWW_USER="www-data"
 DOMAIN="learningu.org"
 TIMEZONE_DEFAULT="America/New_York"
 
-#CURDIR=`dirname $0`
 # This should probably be /lu/sites
 # TODO(benkraft): should we hardcode that we install to /lu/sites?
 CURDIR=`pwd`
@@ -160,7 +160,7 @@ while [[ ! -n $GROUPNAME ]]; do
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
 echo "In printed materials and e-mails your group will be referred to as"
-echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
+echo "$INSTITUTION $GROUPNAME.  To substitute a more detailed name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
@@ -328,7 +328,7 @@ MIDDLEWARE_LOCAL = []
 
 SECRET_KEY = '`openssl rand -base64 48`'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-ALLOWED_HOSTS = ['$ESPHOSTNAME', '$SITENAME-orig.$DOMAIN']
+ALLOWED_HOSTS = ['$ESPHOSTNAME']
 
 EOF
 
@@ -391,20 +391,16 @@ fi
 # To reset: remove appropriate section from Apache config
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-    # TODO(benkraft): what the heck does this DAV thing do, and do we need it?
     # TODO(benkraft): we should put each site in a separate conf file, and just
     # make sure they all get imported.
     # TODO(benkraft): we should attempt to factor much of the shared config out
     # into a single file used by all sites, so it's easier to update.
-    # TODO(benkraft): most existing sites have the $SITENAME-orig alias.  I'm
-    # not sure why; we should figure out if it's in use, and if not, remove it.
     cat >>$APACHE_CONF_FILE <<EOF
 
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-name=${SITENAME}wsgi
 <VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
-    ServerAlias $SITENAME-orig.$DOMAIN
 
     Include $APACHE_REDIRECT_CONF_FILE
 
@@ -416,7 +412,6 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
     Alias /static $BASEDIR/esp/public/static
 
     <Location /media>
-        DAV on
         <LimitExcept GET HEAD OPTIONS PROPFIND>
             AuthType Basic
             AuthUserFile $AUTH_USER_FILE
@@ -494,9 +489,8 @@ echo "You may wish to commit your changes to the /etc git repo."
 echo "Please ensure that DNS is configured to direct the correct hostnames"
 echo "to `hostname`.  To do this, log in to the DNS server and edit"
 echo "$DNS_CONF_FILE to increment the serial number in the header, and add"
-echo "the lines:"
+echo "the line:"
 echo "  ${ESPHOSTNAME%%.$DOMAIN} CNAME `hostname`"
-echo "  $SITENAME-orig CNAME `hostname`"
 echo "near the other similar lines.  Then run 'sudo service bind9 restart';"
 echo "after a few minutes you should be able to access the site.  You may"
 echo "wish to also set up a theme and create additional administrators."
