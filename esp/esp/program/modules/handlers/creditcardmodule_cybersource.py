@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.utils.web       import render_to_response
 from datetime            import datetime
+from django.conf         import settings
 from django.db.models.query     import Q
 from esp.users.models    import ESPUser
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -99,6 +100,11 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
         context['result'] = request.GET.get("result")
+        context['post_url'] = settings.CYBERSOURCE_CONFIG['post_url']
+        context['merchant_id'] = settings.CYBERSOURCE_CONFIG['merchant_id']
+
+        if (not context['post_url']) or (not context['merchant_id']):
+            raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
