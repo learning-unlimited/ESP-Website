@@ -32,9 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
+from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.web import render_to_response
 
 class UnenrollModule(ProgramModuleObj):
@@ -66,3 +67,72 @@ class UnenrollModule(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlotList()
         return render_to_response(
             self.baseDir()+'select.html', request, context)
+
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    @cached_module_view
+    def unenroll_status(prog):
+        """
+        Assemble the data necessary to compute the set of enrollments to
+        expire for a given combination of student first class times
+        and section start times.
+
+        Returns:
+        enrollments: { enrollment id -> (user id, section id) }
+        student_timeslots: { user id -> event id of first class timeslot }
+        section_timeslots: { section id -> event id of first timeslot }
+
+        """
+        enrolled = RegistrationType.objects.get(name='Enrolled')
+
+        sections = prog.sections().filter(
+            status__gt=0, parent_class__status__gt=0)
+        sections = sections.exclude(
+            parent_class__category__category='Lunch')
+
+        enrollments = StudentRegistration.valid_objects().filter(
+            relationship=enrolled, section__in=sections)
+
+        # students not checked in
+        students = ESPUser.objects.filter(
+            id__in=enrollments.values('user'))
+        students = students.exclude(
+            record__program=prog, record__event='attended')
+
+        # enrollments for those students
+        relevant = enrollments.filter(user__in=students).values_list(
+            'id', 'user', 'section', 'section__meeting_times')
+        relevant = relevant.order_by('section__meeting_times__start')
+
+        section_timeslots = {}  # section -> starting timeslot id
+        student_timeslots = {}  # student -> starting timeslot id
+        enrollments = {}        # id -> (student, section)
+        for id, student, section, ts in relevant:
+            if ts is None:
+                continue
+
+            if section not in section_timeslots:
+                section_timeslots[section] = ts
+
+            if student not in student_timeslots:
+                student_timeslots[student] = ts
+
+            enrollments[id] = (student, section)
+
+        return {
+            'section_timeslots': section_timeslots,
+            'student_timeslots': student_timeslots,
+            'enrollments': enrollments
+        }
+    cache = unenroll_status.method.cached_function
+    cache.depend_on_row(StudentRegistration,
+        lambda sr: {'prog': sr.section.parent_class.parent_program})
+    cache.depend_on_row('users.Record',
+        lambda record: {'prog': record.program},
+        lambda record: record.event == 'attended')
+    cache.depend_on_model('program.ClassSection')
+    cache.depend_on_model('program.ClassSubject')
+    cache.depend_on_model('cal.Event')
+    cache.depend_on_m2m('program.ClassSection', 'meeting_times',
+        lambda sec, event: {})
