@@ -686,6 +686,8 @@ class ClassSection(models.Model):
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            if not allow_partial:
+                return (status, errors)
 
         for i, r in enumerate(rooms_to_assign):
             result = self.assignClassRoom(r, lock)
