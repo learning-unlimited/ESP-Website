@@ -87,8 +87,16 @@ class UnenrollModule(ProgramModuleObj):
             return render_to_response(
                 self.baseDir()+'result.html', request, context)
 
+        timeslots = prog.getTimeSlotList()
+        now = datetime.datetime.now()
+        hour = datetime.timedelta(minutes=60)
+        selections = [{
+            'slot': timeslot,
+            'passed': timeslot.start < now - hour,
+            'upcoming': timeslot.start < now + hour,
+        } for timeslot in timeslots]
         context = {}
-        context['timeslots'] = prog.getTimeSlotList()
+        context['selections'] = selections
         return render_to_response(
             self.baseDir()+'select.html', request, context)
 

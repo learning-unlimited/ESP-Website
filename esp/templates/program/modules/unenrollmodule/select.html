@@ -24,20 +24,22 @@
       <th>Kick students whose first class starts at...</th>
       <th>from sections starting at...</th>
     </tr>
-    {% for timeslot in timeslots %}
+    {% for t in selections %}
     <tr>
       <td>
-        <input type="checkbox" name="student_timeslots" value="{{ timeslot.id }}"
-               id="student_timeslot_{{ timeslot.id }}" />
-        <label for="student_timeslot_{{ timeslot.id }}">
-          {{ timeslot.short_description }}
+        <input type="checkbox" name="student_timeslots" value="{{ t.slot.id }}"
+               {% if t.passed %} checked {% endif %}
+               id="student_timeslot_{{ t.slot.id }}" />
+        <label for="student_timeslot_{{ t.slot.id }}">
+          {{ t.slot.short_description }}
         </label>
       </td>
       <td>
-        <input type="checkbox" name="section_timeslots" value="{{ timeslot.id }}"
-               id="section_timeslot_{{ timeslot.id }}" />
-        <label for="section_timeslot_{{ timeslot.id }}">
-          {{ timeslot.short_description }}
+        <input type="checkbox" name="section_timeslots" value="{{ t.slot.id }}"
+               {% if t.upcoming %} checked {% endif %}
+               id="section_timeslot_{{ t.slot.id }}" />
+        <label for="section_timeslot_{{ t.slot.id }}">
+          {{ t.slot.short_description }}
         </label>
       </td>
     </tr>
