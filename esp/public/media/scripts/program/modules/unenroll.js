@@ -29,6 +29,9 @@ function handle_update() {
     var submission = $j('#program_form').prop('selected_enrollments');
     submission.value = _.keys(enrollments);
 
+    // enable the submit button if submissions is non-empty
+    $j('#program_form [type=submit]').prop('disabled', _.isEmpty(enrollments));
+
     // display a message
     $j('#message').text("You have selected " + _.size(students) + " students to be dropped from " + _.size(sections) + " sections (" + _.size(enrollments) + " enrollments total)");
 }
