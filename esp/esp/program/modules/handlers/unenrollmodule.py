@@ -32,11 +32,15 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import datetime
+import logging
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.web import render_to_response
+
+logger = logging.getLogger(__name__)
 
 class UnenrollModule(ProgramModuleObj):
     """ Frontend to kick students from classes. """
@@ -63,6 +67,17 @@ class UnenrollModule(ProgramModuleObj):
         times.
 
         """
+        if request.method == 'POST':
+            selected_enrollments = request.POST['selected_enrollments']
+            ids = [int(id) for id in selected_enrollments.split(',')]
+            registrations = StudentRegistration.objects.filter(id__in=ids)
+            registrations.update(end_date=datetime.datetime.now())
+            logger.info("Expired student registrations: %s", ids)
+            context = {}
+            context['ids'] = ids
+            return render_to_response(
+                self.baseDir()+'result.html', request, context)
+
         context = {}
         context['timeslots'] = prog.getTimeSlotList()
         return render_to_response(
