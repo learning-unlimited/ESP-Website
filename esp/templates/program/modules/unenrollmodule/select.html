@@ -15,7 +15,10 @@
 
 <p>Use the form below to unenroll students who have not checked into the program. Before using this, make sure that the latest check-ins have been recorded in the website.</p>
 
-<p id="message">Loading enrollment numbers...</p>
+<p>
+  <span id="message">Loading enrollment numbers...</span>
+  <button id="refresh">Refresh Data</button>
+</p>
 
 <form id="program_form" method="post" action="{{ request.path }}">
   <input type="hidden" name="selected_enrollments" value="" />

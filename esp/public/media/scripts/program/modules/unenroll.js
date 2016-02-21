@@ -2,6 +2,7 @@ function setup() {
     // entry point
     setup_handlers.call(this);
     fetch_status.call(this);
+    setInterval(poll_status.bind(this), 15000);
 }
 
 function fetch_status() {
@@ -9,13 +10,25 @@ function fetch_status() {
                handle_status.bind(this));
 }
 
+function poll_status() {
+    $j.getJSON(program_base_url + 'unenroll_status?cache_only',
+               handle_status.bind(this));
+}
+
 function handle_status(data) {
     // enrollments: { enrollment id -> (user id, section id) }
     // student_timeslots: { user id -> event id of first class timeslot }
     // section_timeslots: { section id -> event id of first timeslot }
-    this.enrollments = data.enrollments;
-    this.student_timeslots = data.student_timeslots;
-    this.section_timeslots = data.section_timeslots;
+    if (data !== null) {
+        this.enrollments = data.enrollments;
+        this.student_timeslots = data.student_timeslots;
+        this.section_timeslots = data.section_timeslots;
+        this.stale = false;
+    }
+    else {
+        // cache_only returned none
+        this.stale = true;
+    }
     handle_update.call(this);
 }
 
@@ -39,6 +52,9 @@ function handle_update(event) {
 
     // display a message
     $j('#message').text("You have selected " + _.size(students) + " students to be dropped from " + _.size(sections) + " sections (" + _.size(enrollments) + " enrollments total)");
+
+    // show "refresh data" link if data is non-stale
+    $j('#refresh').toggle(this.stale);
 }
 
 function selected_enrollments(students, sections) {
@@ -80,6 +96,12 @@ function selected_timeslots(name) {
 
 function setup_handlers() {
     $j('#program_form').change(handle_update.bind(this));
+    $j('#program_form').submit(function () {
+        if (this.stale) {
+            return confirm("The data on this page is out-of-date, and it is recommended to click Refresh Data before submitting. Are you sure you want to continue anyway?");
+        }
+    }.bind(this));
+    $j('#refresh').click(fetch_status.bind(this));
 }
 
 function update_checkboxes(event) {
