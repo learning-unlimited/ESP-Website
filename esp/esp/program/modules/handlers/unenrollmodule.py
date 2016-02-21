@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 import datetime
 import logging
+from django.db.models import signals
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.models import StudentRegistration, RegistrationType
 from esp.users.models import ESPUser
@@ -73,6 +74,14 @@ class UnenrollModule(ProgramModuleObj):
             registrations = StudentRegistration.objects.filter(id__in=ids)
             registrations.update(end_date=datetime.datetime.now())
             logger.info("Expired student registrations: %s", ids)
+            # send signal to expire caches
+            # XXX: sending all of them is actually kind of
+            # expensive and mostly redundant; it would be
+            # preferable to have a way to say "just invalidate the
+            # whole table".
+            for reg in registrations:
+                signals.post_save.send(
+                    sender=StudentRegistration, instance=reg)
             context = {}
             context['ids'] = ids
             return render_to_response(
