@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Main mailgate for ESP.
 # Handles incoming messages etc.
