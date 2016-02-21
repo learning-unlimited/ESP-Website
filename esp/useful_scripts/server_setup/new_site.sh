@@ -411,17 +411,6 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
     Alias /media $BASEDIR/esp/public/media
     Alias /static $BASEDIR/esp/public/static
 
-    <Location /media>
-        <LimitExcept GET HEAD OPTIONS PROPFIND>
-            AuthType Basic
-            AuthUserFile $AUTH_USER_FILE
-            AuthName "$ESPHOSTNAME media files"
-            Require valid-user
-        </LimitExcept>
-        ExpiresActive on
-        ExpiresDefault "now plus 1 hour"
-    </Location>
-
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
     WSGIScriptAlias / $BASEDIR/esp.wsgi
