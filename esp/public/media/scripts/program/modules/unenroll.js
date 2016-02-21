@@ -19,7 +19,12 @@ function handle_status(data) {
     handle_update.call(this);
 }
 
-function handle_update() {
+function handle_update(event) {
+    // toggle timeslots before/after the current one
+    if (event !== undefined) {
+        update_checkboxes.call(this, event);
+    }
+
     // recalculate data
     var students = selected_students.call(this);
     var sections = selected_sections.call(this);
@@ -75,6 +80,21 @@ function selected_timeslots(name) {
 
 function setup_handlers() {
     $j('#program_form').change(handle_update.bind(this));
+}
+
+function update_checkboxes(event) {
+    // get all checkboxes in the same group
+    var group = $j('#program_form').prop(event.target.name);
+    var seq = parseInt(event.target.getAttribute('data-seq'), 10);
+    _.each(group, function (other) {
+        var other_seq = parseInt(other.getAttribute('data-seq'), 10);
+        // if checked, check all earlier timeslots as well
+        // if not checked, uncheck all later timeslots
+        if (event.target.checked && other_seq <= seq ||
+           !event.target.checked && other_seq >= seq) {
+            other.checked = event.target.checked;
+        }
+    });
 }
 
 $j(document).ready(function () {

@@ -92,9 +92,10 @@ class UnenrollModule(ProgramModuleObj):
         hour = datetime.timedelta(minutes=60)
         selections = [{
             'slot': timeslot,
+            'seq': seq,
             'passed': timeslot.start < now - hour,
             'upcoming': timeslot.start < now + hour,
-        } for timeslot in timeslots]
+        } for seq, timeslot in enumerate(timeslots)]
         context = {}
         context['selections'] = selections
         return render_to_response(

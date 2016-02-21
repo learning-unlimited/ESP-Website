@@ -28,6 +28,7 @@
     <tr>
       <td>
         <input type="checkbox" name="student_timeslots" value="{{ t.slot.id }}"
+               data-seq="{{ t.seq }}"
                {% if t.passed %} checked {% endif %}
                id="student_timeslot_{{ t.slot.id }}" />
         <label for="student_timeslot_{{ t.slot.id }}">
@@ -36,6 +37,7 @@
       </td>
       <td>
         <input type="checkbox" name="section_timeslots" value="{{ t.slot.id }}"
+               data-seq="{{ t.seq }}"
                {% if t.upcoming %} checked {% endif %}
                id="section_timeslot_{{ t.slot.id }}" />
         <label for="section_timeslot_{{ t.slot.id }}">
