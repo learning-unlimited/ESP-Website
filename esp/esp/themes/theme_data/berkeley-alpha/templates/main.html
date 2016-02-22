@@ -1,11 +1,6 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name {}}% endblock %}
-
-{% block js1 %}
-{{ block.super }} {# TODO: fix user_classes #}
-<script type="text/javascript" src="/media/splash-at-berkeley/user_classes.js"></script>
-{% endblock js1 %}
+{% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name }}{% endblock %}
 
 {% block body %}
 
