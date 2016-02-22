@@ -1,57 +1,11 @@
 {% extends "elements/html" %}
-{% comment %}
-Customize your title formatting here. For example: {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %}
-{% endcomment %}
 
-{% block fulltitle %}{% block title %}{% endblock %} - Splash at Berkeley{% endblock %}
-{% block stylesheets %}
-<link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
-<link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css" />
-{% comment %}
-<link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
-<link rel="stylesheet" type="text/css" href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" />
-<link rel="stylesheet" type="text/css" href="/media/splash-at-berkeley/flatstrap.min.css" media="all" />
-{% endcomment %}
-<link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-{% block jquery_ui_stylesheet_version %}
-<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
-{% endblock jquery_ui_stylesheet_version %}
-{% comment %}
-  Example: <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> -->
-{% endcomment %}
-{% endblock stylesheets %}
+{% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name {}}% endblock %}
 
 {% block js1 %}
-<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+{{ block.super }} {# TODO: fix user_classes #}
 <script type="text/javascript" src="/media/splash-at-berkeley/user_classes.js"></script>
-<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
-{% comment %}
-<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<script type="text/x-mathjax-config">
- MathJax.Hub.Config({
-   messageStyle: "none",
-   displayAlign: "left",
-   displayIndent: "0em",
-   "HTML-CSS": {
-     styles: {
-       '.MathJax_Display': {
-         display: "inline"
-       }
-     }
-   }
- });
-</script>
-{% endcomment %}
-<script type="text/javascript" src="/media/scripts/json2.js"></script>
-<script type="text/javascript" src="/media/scripts/qsd.js"></script>
-<script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
-<script type="text/javascript"> window.jsprettify.run(); </script>
 {% endblock js1 %}
-
-{% block javascript %}
-{{ block.super }}
-{# Customize your scripts here #}
-{% endblock %}
 
 {% block body %}
 
