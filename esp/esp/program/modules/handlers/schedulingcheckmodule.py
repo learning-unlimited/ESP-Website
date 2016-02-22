@@ -97,7 +97,7 @@ class JSONFormatter:
         return output
 
 class SchedulingCheckRunner:
-#Generate html report and generate text report functions?lingCheckRunner:
+     # Generate html report and generate text report functions?lingCheckRunner:
      def __init__(self, program, formatter=JSONFormatter()):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school

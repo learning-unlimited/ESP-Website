@@ -98,7 +98,7 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
 def error404(request, template_name='404.html'):
     context = {'request_path': request.path}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = settings.EMAIL_HOST
+    context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     response = render_to_response(template_name, request, context)
     response.status_code = 404
     return response
@@ -107,7 +107,7 @@ def error500(request, template_name='500.html'):
     context = {}
     context['settings'] = settings # needed by elements/html
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = settings.EMAIL_HOST
+    context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
 

@@ -82,44 +82,44 @@ def home(request):
     return render_to_response('index.html', request, context)
 
 def program(request, tl, one, two, module, extra = None):
-	""" Return program-specific pages """
-        from esp.program.models import Program
+    """ Return program-specific pages """
+    from esp.program.models import Program
 
-	try:
-		prog = Program.by_prog_inst(one, two)
-	except Program.DoesNotExist:
-		raise Http404("Program not found.")
+    try:
+        prog = Program.by_prog_inst(one, two)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
 
-        setattr(request, "program", prog)
-        setattr(request, "tl", tl)
-        if extra:
-            setattr(request, "module", "%s/%s" % (module, extra))
-        else:
-            setattr(request, "module", module)
+    setattr(request, "program", prog)
+    setattr(request, "tl", tl)
+    if extra:
+        setattr(request, "module", "%s/%s" % (module, extra))
+    else:
+        setattr(request, "module", module)
 
-	from esp.program.modules.base import ProgramModuleObj
-	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
+    from esp.program.modules.base import ProgramModuleObj
+    newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 
-	if newResponse:
-            return newResponse
+    if newResponse:
+        return newResponse
 
-	raise Http404
+    raise Http404
 
 def archives(request, selection, category = None, options = None):
-	""" Return a page with class archives """
-	
-	sortparams = []
-	if request.POST and 'newparam' in request.POST:
-		if request.POST['newparam']:
-			sortparams.append(request.POST['newparam'])
-		for key in request.POST:
-			if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
-	#	The selection variable is the type of data they want to see:
-	#	classes, programs, teachers, etc.
-	if selection in archive_handlers:
-		return archive_handlers[selection](request, category, options, sortparams)
-	
-	return render_to_response('users/construction', request, {})
+    """ Return a page with class archives """
+
+    sortparams = []
+    if request.POST and 'newparam' in request.POST:
+        if request.POST['newparam']:
+            sortparams.append(request.POST['newparam'])
+        for key in request.POST:
+            if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
+    #    The selection variable is the type of data they want to see:
+    #    classes, programs, teachers, etc.
+    if selection in archive_handlers:
+        return archive_handlers[selection](request, category, options, sortparams)
+
+    return render_to_response('users/construction', request, {})
 
 def contact(request, section='esp'):
     """
@@ -237,7 +237,7 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        return render_to_response('users/profile_complete.html', request, ctxt)		
+        return render_to_response('users/profile_complete.html', request, ctxt)
 
 def set_csrf_token(request):
     # Call get_token to set the CSRF cookie

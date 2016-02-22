@@ -686,6 +686,8 @@ class ClassSection(models.Model):
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            if not allow_partial:
+                return (status, errors)
 
         for i, r in enumerate(rooms_to_assign):
             result = self.assignClassRoom(r, lock)
@@ -900,8 +902,8 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        #if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
-            # This set of error messages deserves a better home
+        # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
+        # This set of error messages deserves a better home
         for t in self.teachers:
             available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
             for e in meeting_times:
@@ -1336,7 +1338,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             rooms = []
 
             for subj in self.get_sections():
-            	rooms.extend(subj.prettyrooms())
+                rooms.extend(subj.prettyrooms())
 
             return rooms
 
@@ -1544,6 +1546,17 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
+
+    def hasScheduledSections(self):
+        """ Return whether the class has at least one scheduled section.
+
+        Only display the "class is full" message if this is true.
+        """
+        sections = self.get_sections()
+        for s in sections:
+            if len(s.get_meeting_times()) > 0:
+                return True
+        return False
 
     @cache_function
     def get_capacity_factor():

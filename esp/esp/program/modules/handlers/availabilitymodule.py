@@ -130,8 +130,8 @@ class AvailabilityModule(ProgramModuleObj):
         #   Renders the teacher availability page and handles submissions of said page.
 
         if tl == "manage":
-        	# They probably want to be check someone's availability instead-
-        	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
+            # They probably want to be check someone's availability instead-
+            return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
@@ -315,10 +315,10 @@ class AvailabilityModule(ProgramModuleObj):
         try:
             teacher = ESPUser.objects.get(id=target_id)
         except:
-        	try:
-        		teacher = ESPUser.objects.get(username=target_id)
-        	except:
-        		raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+            try:
+                teacher = ESPUser.objects.get(username=target_id)
+            except:
+                raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 
