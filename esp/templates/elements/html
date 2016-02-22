@@ -79,17 +79,6 @@
     <script type="text/javascript"> window.jsprettify.run(); </script>
     {% endblock js1 %}
 
-
-    {% block user_classes %}
-    <script type="text/javascript">
-      /* <![CDATA[ */
-      $j(document).ready(function() {
-      update_user_classes();
-      });
-      /* ]]> */
-    </script>
-    {% endblock user_classes %}
-
     {% block xtrajs %}{% endblock xtrajs %}
 
     {% endblock javascript %}
