@@ -1,13 +1,6 @@
 {% extends "main.html" %}
 
 {% block title %}Contact Us{% endblock %}
-{% load subsection %}
-
-{% block subsection %}
-{% autoescape off %}{{ "Let us know"|subsection }}{% endautoescape %}
-{% endblock %}
-
-{% block subsection_name %}Welcome{% endblock %}
 
 {% block stylesheets %}
   {{ block.super }}
