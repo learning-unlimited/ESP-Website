@@ -80,7 +80,7 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Pick a student and log in
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Sign up for a class directly
         sec = random.choice(program.sections())
@@ -147,19 +147,19 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Login as a student and ensure we can submit the profile
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
         self.expect_template(response, 'users/profile.html')
 
         #   Login as a teacher and ensure we get the right message
         teacher = random.choice(self.teachers)
-        self.failUnless( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
+        self.assertTrue( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
         self.expect_template(response, 'errors/program/notastudent.html')
 
         #   Login as an admin and ensure we get the right message
         admin = random.choice(self.admins)
-        self.failUnless( self.client.login( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
+        self.assertTrue( self.client.login( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
         self.expect_template(response, 'users/profile.html')
 
@@ -184,7 +184,7 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost)
 
         #   Apply for financial aid
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         response = self.client.get(
                     '/learn/%s/finaid' % self.program.url,
                     **{'wsgi.url_scheme': 'https'})
@@ -252,7 +252,7 @@ class StudentRegTest(ProgramFrameworkTest):
         #   Choose a random student and check that the extracosts page loads
         student = random.choice(self.students)
         iac = IndividualAccountingController(self.program, student)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         response = self.client.get('/learn/%s/extracosts' % self.program.url)
         self.assertEqual(response.status_code, 200)
 

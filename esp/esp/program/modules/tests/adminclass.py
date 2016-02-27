@@ -35,10 +35,10 @@ class CancelClassTest(ProgramFrameworkTest):
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
 
         # Check that the class was changed to cancelled
-        self.failUnless(self.cls.status == -20)
+        self.assertTrue(self.cls.status == -20)
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
-            self.failUnless(sec.status == -20)
+            self.assertTrue(sec.status == -20)
 
         # Test that an email was sent
         directorEmail = None
@@ -52,9 +52,9 @@ class CancelClassTest(ProgramFrameworkTest):
                     studentEmail = m
                     break
 
-        self.failUnless(directorEmail != None and cancelMsg in directorEmail.body)
-        self.failUnless(studentEmail != None and cancelMsg in studentEmail.body)
+        self.assertTrue(directorEmail != None and cancelMsg in directorEmail.body)
+        self.assertTrue(studentEmail != None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
-        self.failUnless(self.cls.emailcode() in r.content)
+        self.assertTrue(self.cls.emailcode() in r.content)

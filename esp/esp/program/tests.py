@@ -223,7 +223,7 @@ class ViewUserInfoTest(TestCase):
     def testUserInfoPage(self):
         """ Tests the /manage/userview view, that displays information about arbitrary users to admins """
         c = Client()
-        self.failUnless( c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin" )
+        self.assertTrue( c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin" )
 
         # Test to make sure we can get a user's page
         # (I'm just going to assume that the template renders properly;
@@ -241,7 +241,7 @@ class ViewUserInfoTest(TestCase):
         self.assertEqual(response.status_code, 500)
 
         # Now, make sure that only admins can view this page
-        self.failUnless( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
+        self.assertTrue( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
 
@@ -372,10 +372,10 @@ class ProgramHappenTest(TestCase):
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
 
-        self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
+        self.assertTrue( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
-        self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
-        self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
+        self.assertTrue( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
+        self.assertTrue( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
 
         timeslot_type = EventType.get_from_desc('Class Time Block')
         now = datetime.now()
@@ -1158,7 +1158,7 @@ class ModuleControlTest(ProgramFrameworkTest):
 
         #   Pick a student and log in; fill out profile
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Check that the main student reg page displays as usual in the initial state.
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
@@ -1287,10 +1287,10 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
-                self.failUnless(cls.cannotAdd(student) or cls.isFull())
+                self.assertTrue(cls.cannotAdd(student) or cls.isFull())
 
             # Check that they only got into classes that they asked for
-            self.failIf(incorrectly_enrolled_classes)
+            self.assertFalse(incorrectly_enrolled_classes)
 
     def testStats(self):
         """ Verify that the values returned by compute_stats() are correct
@@ -1337,7 +1337,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg.generate_all_constraints()
 
         lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-        self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+        self.assertTrue(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
         lunch_sec = lunch_sec[0]
 
         # Run the lottery!
@@ -1350,7 +1350,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
 
-            self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
+            self.assertTrue(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
@@ -1359,7 +1359,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg.generate_all_constraints()
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-        self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
+        self.assertTrue(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
 
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
@@ -1376,7 +1376,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 if not lunch_section.meeting_times.all()[0] in timeslots:
                     lunch_free = True
                     break
-            self.failUnless(lunch_free, "No lunch sections free for a student!")
+            self.assertTrue(lunch_free, "No lunch sections free for a student!")
 
     def testNoLunchConstraint(self):
         # Make sure LunchConstraintGenerator won't crash with no lunch timeslots
@@ -1385,7 +1385,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg.generate_all_constraints()
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-        self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
+        self.assertTrue(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
 
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
