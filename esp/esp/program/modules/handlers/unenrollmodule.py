@@ -51,8 +51,8 @@ class UnenrollModule(ProgramModuleObj):
         return {
             "admin_title": "Unenroll Students",
             "link_title": "Unenroll Students",
-            "module_type": "manage",
-            "seq": 10,
+            "module_type": "onsite",
+            "seq": 100,
         }
 
     class Meta:
