@@ -355,6 +355,13 @@ STRIPE_CONFIG = {
     'publishable_key': '',
 }
 
+# Settings for Cybersource credit card payments. Unlike Stripe, does not support
+# overrides.
+CYBERSOURCE_CONFIG = {
+    'post_url': '',
+    'merchant_id': '',
+}
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''

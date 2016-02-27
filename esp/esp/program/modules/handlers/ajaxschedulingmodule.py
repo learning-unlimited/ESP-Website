@@ -90,203 +90,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_sections_cached(prog, 'accepted_only' in request.GET)
-
-    @cache_function
-    def ajax_sections_cached(self, prog, accepted_only=False):
-        if accepted_only:
-            sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0).select_related()
-        else:
-            sections = prog.sections().select_related()
-
-        rrequests = ResourceRequest.objects.filter(target__in = sections)
-
-        rrequest_dict = defaultdict(list)
-        for r in rrequests:
-            rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-
-        sections_dicts = [
-            {   'id': s.id,
-                'class_id': s.parent_class_id,
-                'emailcode': s.emailcode(),
-                'text': s.title(),
-                'category': s.category.category,
-                'length': float(s.duration),
-                'teachers': [t.id for t in s.parent_class.get_teachers()],
-                'resource_requests': rrequest_dict[s.id],
-                'max_class_capacity': s.max_class_capacity,
-                'capacity': s.capacity,
-                'class_size_max': s.parent_class.class_size_max,
-                'optimal_class_size': s.parent_class.class_size_optimal,
-                'optimal_class_size_range': s.parent_class.optimal_class_size_range.range_str() if s.parent_class.optimal_class_size_range else None,
-                'allowable_class_size_ranges': [ cr.range_str() for cr in s.parent_class.get_allowable_class_size_ranges() ],
-                'status': s.status,
-                'parent_status': s.parent_class.status,
-                'grades': [s.parent_class.grade_min, s.parent_class.grade_max],
-                'prereqs': s.parent_class.prereqs,
-                'comments': s.parent_class.message_for_directors,
-            } for s in sections ]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(sections_dicts, response)
-        return response
-    ajax_sections_cached.get_or_create_token(('prog',))
-    ajax_sections_cached.depend_on_model('program.ClassSubject')
-    ajax_sections_cached.depend_on_model('program.ClassSection')
-    ajax_sections_cached.depend_on_model('program.ClassSizeRange')
-    ajax_sections_cached.depend_on_model('resources.ResourceRequest')
-
-    @aux_call
-    @needs_admin
-    def ajax_rooms(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_rooms_cached(prog)
-
-    @cache_function
-    def ajax_rooms_cached(self, prog):
-        classrooms = prog.getResources().filter(res_type__name="Classroom")
-
-        classrooms_grouped = defaultdict(list)
-
-        for room in classrooms:
-            classrooms_grouped[room.name].append(room)
-
-        classrooms_dicts = [
-            {   'uid': room_id,
-                'text': classrooms_grouped[room_id][0].name,
-                'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
-                'num_students': classrooms_grouped[room_id][0].num_students,
-            } for room_id in classrooms_grouped.keys() ]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(classrooms_dicts, response)
-        return response
-    ajax_rooms_cached.get_or_create_token(('prog',))
-    ajax_rooms_cached.depend_on_model('resources.Resource')
-
-
-    @aux_call
-    @needs_admin
-    def ajax_teachers(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_teachers_cached(prog)
-
-    @cache_function
-    def ajax_teachers_cached(self, prog):
-        teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
-        resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
-        resources_for_user = defaultdict(list)
-
-        for resource in resources:
-            resources_for_user[resource['user_id']].append(resource['event_id'])
-
-        teacher_dicts = [
-            {   'uid': t.id,
-                'text': t.name(),
-                'availability': resources_for_user[t.id]
-            } for t in teachers ]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(teacher_dicts, response)
-        return response
-    ajax_teachers_cached.get_or_create_token(('prog',))
-    ajax_teachers_cached.depend_on_model(UserAvailability)
-    ajax_teachers_cached.depend_on_m2m(ClassSubject, 'teachers', lambda sub, teacher: {'prog': sub.parent_program})
-
-    @aux_call
-    @needs_admin
-    def ajax_times(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_times_cached(prog)
-
-    @cache_function
-    def ajax_times_cached(self, prog):
-        times = list( [ dict(e) for e in prog.getTimeSlots().values('id', 'short_description', 'description', 'start', 'end') ] )
-
-        for t in times:
-            t['start'] = t['start'].timetuple()[:6]
-            t['end'] = t['end'].timetuple()[:6]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(times, response)
-        return response
-    ajax_times_cached.get_or_create_token(('prog',))
-    ajax_times_cached.depend_on_model(Event)
-
-
-    @aux_call
-    @needs_admin
-    def ajax_resourcetypes(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_resourcetypes_cached(prog)
-
-    @cache_function
-    def ajax_resourcetypes_cached(self, prog):
-        resourcetypes = ResourceType.objects.filter(program=prog)
-        if len(resourcetypes) == 0:
-            resourcetypes = ResourceType.objects.filter(program__isnull=True)
-
-        resourcetypes_dicts = [
-            {
-                'uid': rt.id,
-                'name': rt.name,
-                'description': rt.description,
-                'attributes': rt.attributes_pickled.split("|"),  ## .attributes wasn't working properly; so just using this for now -- aseering 10/21/2010
-                }
-            for rt in resourcetypes ]
-
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(resourcetypes_dicts, response)
-        return response
-    ajax_times_cached.get_or_create_token(('prog',))
-    ajax_times_cached.depend_on_model(ResourceType)
-
-    @aux_call
-    @needs_admin
-    def ajax_resources(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_resources_cached(prog)
-
-    @cache_function
-    def ajax_resources_cached(self, prog):
-        resources = Resource.objects.filter(event__program=self.program).exclude(res_type__name__in=["Classroom", "Teacher Availability"])
-
-        resources_grouped = defaultdict(list)
-
-        for resource in resources:
-            resources_grouped[resource.name].append(resource)
-
-        classrooms_dicts = [
-            {   'uid': rsrc_id,
-                'text': resources_grouped[rsrc_id][0].name,
-                'availability': [ r.event_id for r in resources_grouped[rsrc_id] ],
-                'associated_resources': []
-            } for rsrc_id in resources_grouped.keys() ]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(classrooms_dicts, response)
-        return response
-    ajax_resources_cached.get_or_create_token(('prog',))
-    ajax_resources_cached.depend_on_model('resources.Resource')
-
-
-    @aux_call
-    @needs_admin
-    def ajax_schedule_assignments(self, request, tl, one, two, module, extra, prog):
-        resource_assignments = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog, resource__res_type__name="Classroom").select_related('resource')
-
-        resassign_dicts = [
-            { 'uid': r.id,
-              'resource_id': r.resource.name,
-              'resource_time_id': r.resource.event_id,
-              'classsection_id': r.target_id,
-              'classsubject_id': r.target_subj_id
-              } for r in resource_assignments ]
-
-        response = HttpResponse(content_type="application/json")
-        json.dump(resassign_dicts, response)
-        return response
-
-    @aux_call
-    @needs_admin
     def ajax_schedule_assignments_csv(self, request, tl, one, two, module, extra, prog):
         lst = []
         for s in prog.sections():
@@ -308,51 +111,47 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_deletereg(self, prog, cls, user=None):
         cls.clearRooms()
         cls.clear_meeting_times()
-        self.get_change_log(prog).append([], "", int(cls.id), user)
+        self.get_change_log(prog).appendScheduling([], "", int(cls.id), user)
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, blockrooms, times, classrooms, user=None):
-        classroom_names = classrooms
-
-        if len(times) < 1:
+    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_names, user=None):
+        if len(timeslot_ids) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
-        if len(classrooms) < 1:
+        if len(classroom_names) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
-        #TODO:  this loom modifies classrooms from within the loop.  That seems like a bad idea.
-        #we should figure out why
-        basic_cls = classrooms[0]
-        for c in classrooms:
+        basic_cls = classroom_names[0]
+        for c in classroom_names:
             if c != basic_cls:
                 return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
 
-            times = Event.objects.filter(id__in=times).order_by('start')
-            if len(times) < 1:
-                return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+        times = Event.objects.filter(id__in=timeslot_ids).order_by('start')
+        if len(times) < 1:
+            return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
-            classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
-            if len(classrooms) < 1:
-                return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+        classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
+        if len(classrooms) < 1:
+            return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
 
-            classroom = classrooms[0]
+        classroom = classrooms[0]
 
-            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
-            if cannot_schedule:
-                return self.makeret(prog, ret=False, msg=cannot_schedule)
+        cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
+        if cannot_schedule:
+            return self.makeret(prog, ret=False, msg=cannot_schedule)
 
-            cls.assign_meeting_times(times)
-            status, errors = cls.assign_room(classroom)
+        cls.assign_meeting_times(times)
+        status, errors = cls.assign_room(classroom, clear_others=True)
 
-            if not status: # If we failed any of the scheduling-constraints checks in assign_room()
-                cls.clear_meeting_times()
-                return self.makeret(prog, ret=False, msg=" | ".join(errors))
+        if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+            cls.clear_meeting_times()
+            return self.makeret(prog, ret=False, msg=" | ".join(errors))
 
-            #add things to the change log here
-            self.get_change_log(prog).append([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
+        #add things to the change log here
+        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
 
-            return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+        return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
     @aux_call
     @needs_admin
@@ -364,7 +163,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
         #note: negative number implies we want to debug dump changelog
-        if cl.get_earliest_index() is not None and cl.get_earliest_index() > last_fetched_index:
+        if cl.get_earliest_index() is not None and last_fetched_index !=0 and cl.get_earliest_index() > last_fetched_index:
             return { "other" : [ { 'command' : "reload", 'earliest_index' : cl.get_earliest_index(), 'latest_index' : cl.get_latest_index(), 'time' : time.time() } ] }
 
         return { "changelog" : cl.get_log(last_fetched_index), 'other' : [ { 'time': time.time() } ] }
@@ -393,6 +192,15 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    @json_response()
+    def ajax_section_details(self, request, tl, one, two, module, extra, prog):
+        sectionDetails = {}
+        for sectionDetail in module_ext.AJAXSectionDetail.objects.filter(program=prog):
+            sectionDetails[sectionDetail.cls_id] = [{'comment': sectionDetail.comment, 'locked': sectionDetail.locked}]
+        return sectionDetails
+
+    @aux_call
+    @needs_admin
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
@@ -411,16 +219,37 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         elif action == 'assignreg':
             blockrooms = request.POST['block_room_assignments'].split("\n")
-            blockrooms = [b.split(",") for b in blockrooms if b]
-            blockrooms = [{'time_id': b[0], 'room_id': b[1]} for b in blockrooms]
-
-            times = [br['time_id'] for br in blockrooms]
-            classrooms = [br['room_id'] for br in blockrooms]
-            retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms, request.user)
+            times = []
+            classrooms = []
+            for br in blockrooms:
+                timeslot, classroom = br.split(",")
+                times.append(timeslot)
+                classrooms.append(classroom)
+            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
         return retval
+
+    @aux_call
+    @needs_admin
+    def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
+        if not 'comment' in request.POST:
+            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+
+        # Pull relevant data out of the JSON structure
+        cls_id = request.POST['cls']
+        comment = request.POST['comment']
+        locked = 'locked' in request.POST
+
+        try:
+            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+        except module_ext.AJAXSectionDetail.DoesNotExist:
+            sectionDetail = module_ext.AJAXSectionDetail()
+            sectionDetail.initialize(prog, cls_id, comment, locked)
+
+        self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
+        return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls_id)
 
     @aux_call
     @needs_admin

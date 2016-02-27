@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from esp.users.models import User, ESPUser, PersistentQueryFilter
 from django.db.models.query import Q
