@@ -34,14 +34,14 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
     def test_page(self):
         self.client.login(username='admin', password='password')
-        r = self.client.get('/manage/' + self.program.url + '/unenroll_students')
+        r = self.client.get('/onsite/' + self.program.url + '/unenroll_students')
         self.assertContains(r, "Select Students to Unenroll")
         for timeslot in self.program.getTimeSlotList():
             self.assertContains(r, timeslot.short_description)
 
     def test_json_view(self):
         self.client.login(username='admin', password='password')
-        r = self.client.get('/manage/' + self.program.url + '/unenroll_status')
+        r = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
         data = json.loads(r.content)
 
         self.assertGreaterEqual(len(data['student_timeslots']), 20)
@@ -72,11 +72,11 @@ class UnenrollModuleTest(ProgramFrameworkTest):
 
     def test_submit(self):
         self.client.login(username='admin', password='password')
-        r = self.client.get('/manage/' + self.program.url + '/unenroll_status')
+        r = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
         data = json.loads(r.content)
         enrollment_ids = data['enrollments'].keys()
 
-        r = self.client.post('/manage/' + self.program.url + '/unenroll_students', {'selected_enrollments': ','.join(enrollment_ids)})
+        r = self.client.post('/onsite/' + self.program.url + '/unenroll_students', {'selected_enrollments': ','.join(enrollment_ids)})
         self.assertContains(r, 'Expired %d student registrations' % len(enrollment_ids))
         self.assertContains(r, ', '.join(enrollment_ids))
 
