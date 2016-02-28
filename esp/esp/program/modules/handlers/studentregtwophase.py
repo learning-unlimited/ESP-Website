@@ -123,7 +123,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 times = sec.meeting_times.all()
                 if len(times) == 0:
                     continue
-                timeslot = min(times, key=lambda t: t.start)
+                timeslot = min(times, key=lambda t: t.start).id
                 if not timeslot in star_counts:
                     star_counts[timeslot] = 1
                 else:
