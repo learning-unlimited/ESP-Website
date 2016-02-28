@@ -518,6 +518,12 @@ class LotteryAssignmentController(object):
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
 
+        #   Timeslot-based metrics
+        stats['timeslots_filled'] = numpy.sum(self.student_enrollments > 0, axis=1)
+        for j in range(1, self.effective_priority_limit+1):
+            stats['timeslots_priority_%s'%j] = numpy.dot(self.priority[j], self.section_schedules).sum(axis=1)
+        stats['hist_timeslots_filled'] = dict(enumerate(numpy.bincount(stats['timeslots_filled'])))
+
         #   Compute histograms of assigned vs. requested classes
         hist_priority = [{} for i in range(self.effective_priority_limit+1)]
         for j in range(1,self.effective_priority_limit+1):
@@ -577,6 +583,10 @@ class LotteryAssignmentController(object):
     def display_stats(self, stats):
         logger.info('Lottery results for %s', self.program.niceName())
         logger.info('--------------------------------------')
+
+        logger.info('Distribution:')
+        for i, count in stats['hist_timeslots_filled'].items():
+            logger.info('%6d students got a schedule with %d filled slots', count, i)
 
         logger.info('Counts:')
         logger.info('%6d students applied to the lottery', stats['num_lottery_students'])
