@@ -112,6 +112,23 @@ class StudentRegTwoPhase(ProgramModuleObj):
             else:
                 timeslot_dict[timeslot][rel] = title
 
+        star_counts = {}
+        interests = StudentSubjectInterest.valid_objects().filter(
+            user=request.user, subject__parent_program=prog)
+        interests = interests.select_related(
+            'subject').prefetch_related('subject__sections__meeting_times')
+        for interest in interests:
+            cls = interest.subject
+            for sec in cls.sections.all():
+                times = sec.meeting_times.all()
+                if len(times) == 0:
+                    continue
+                timeslot = min(times, key=lambda t: t.start)
+                if not timeslot in star_counts:
+                    star_counts[timeslot] = 1
+                else:
+                    star_counts[timeslot] += 1
+
         # Iterate through timeslots and create a list of tuples of information
         prevTimeSlot = None
         blockCount = 0
@@ -126,9 +143,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
                 priority_list = sorted(priority_dict.items())
-                schedule.append((timeslot, priority_list, blockCount + 1))
             else:
-                schedule.append((timeslot, {}, blockCount + 1))
+                priority_list = []
+            if timeslot.id in star_counts:
+                priority_list.append((
+                    'Starred', "(%d classes)" % star_counts[timeslot.id]))
+            schedule.append((timeslot, priority_list, blockCount + 1))
 
             prevTimeSlot = timeslot
 
