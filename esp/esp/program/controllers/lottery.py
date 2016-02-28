@@ -584,6 +584,10 @@ class LotteryAssignmentController(object):
         logger.info('Lottery results for %s', self.program.niceName())
         logger.info('--------------------------------------')
 
+        logger.info('Distribution:')
+        for i, count in stats['hist_timeslots_filled'].items():
+            logger.info('%6d students got a schedule with %d filled slots', count, i)
+
         logger.info('Counts:')
         logger.info('%6d students applied to the lottery', stats['num_lottery_students'])
         logger.info('%6d students were enrolled in at least 1 class', stats['num_enrolled_students'])
