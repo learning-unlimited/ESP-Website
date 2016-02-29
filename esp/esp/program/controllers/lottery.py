@@ -519,7 +519,7 @@ class LotteryAssignmentController(object):
         stats['total_spaces'] = numpy.sum(self.section_capacities)
 
         #   Timeslot-based metrics
-        stats['timeslots_filled'] = numpy.sum(self.student_enrollments > 0, axis=1)
+        stats['timeslots_filled'] = numpy.sum(self.student_schedules, axis=1)
         for j in range(1, self.effective_priority_limit+1):
             stats['timeslots_priority_%s'%j] = numpy.dot(self.priority[j], self.section_schedules).sum(axis=1)
         stats['hist_timeslots_filled'] = dict(enumerate(numpy.bincount(stats['timeslots_filled'])))
