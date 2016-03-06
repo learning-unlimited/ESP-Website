@@ -89,7 +89,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
-	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
+        self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
         self.assert_(not self._failed_import)
 
@@ -145,13 +145,13 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
     """ Grab a ridiculous URL and make sure the status code isn't 500. """
     def runTest(self):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
-        self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
+        self.assertTrue(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
 
 
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
-        return template.render(Context({}))
+        return template.render({})
 
     def expect_template_error(self, template_name):
         template_error = False
@@ -182,7 +182,7 @@ class TemplateOverrideTest(DjangoTestCase):
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
 
         #   Revert the update to the template and make sure you see the old version
-        reversion.get_unique_for_object(to)[1].revert()
+        list(reversion.get_for_object(to).get_unique())[1].revert()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Delete the original template override and make sure you see nothing

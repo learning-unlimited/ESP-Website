@@ -67,7 +67,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
 
     def runTest(self):
         #   Log in an administrator
-        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
         #   Select users to fetch
         post_data = {

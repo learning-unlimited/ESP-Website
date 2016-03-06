@@ -175,10 +175,10 @@ TEMPLATES = [
                 'esp.context_processors.email_settings',
                 'esp.context_processors.program',
                 'esp.context_processors.schoolyear',
-                'django.core.context_processors.i18n',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.core.context_processors.media',
+                'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
             ],
@@ -353,6 +353,13 @@ DEBUG_TOOLBAR_CONFIG = {
 STRIPE_CONFIG = {
     'secret_key': '',
     'publishable_key': '',
+}
+
+# Settings for Cybersource credit card payments. Unlike Stripe, does not support
+# overrides.
+CYBERSOURCE_CONFIG = {
+    'post_url': '',
+    'merchant_id': '',
 }
 
 #   Allow Filebrowser to edit anything under media/

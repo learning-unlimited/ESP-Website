@@ -33,6 +33,8 @@ Learning Unlimited, Inc.
 """
 
 import os
+import warnings
+import tempfile
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
@@ -94,6 +96,8 @@ else:
     sentry_handler = {
         'class': 'logging.NullHandler',
     }
+
+warnings.simplefilter("default", PendingDeprecationWarning)
 
 if LOG_FILE.endswith('.log'):
     SHELL_LOG_FILE = LOG_FILE[:-4] + '.shell.log'
@@ -231,8 +235,6 @@ CACHES = {
 MIDDLEWARE_CLASSES = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
-import tempfile
-import os
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
     tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
     if not os.path.exists(tempdir):

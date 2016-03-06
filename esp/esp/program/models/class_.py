@@ -666,7 +666,7 @@ class ClassSection(models.Model):
         else:
             return None
 
-    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
+    def assign_room(self, base_room, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
 
@@ -676,16 +676,11 @@ class ClassSection(models.Model):
         if clear_others:
             self.clearRooms()
 
-        if compromise is False:
-            #   Check that the room satisfies all needs of the class.
-            result = base_room.satisfies_requests(self)
-            if result[0] is False:
-                status = False
-                errors.append( u'Room %s lacks some resources that %s needs (or is too small), and you opted not to compromise.' % (base_room.name, self.emailcode()) )
-
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
+            if not allow_partial:
+                return (status, errors)
 
         for i, r in enumerate(rooms_to_assign):
             result = self.assignClassRoom(r, lock)
@@ -900,8 +895,8 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        #if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
-            # This set of error messages deserves a better home
+        # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
+        # This set of error messages deserves a better home
         for t in self.teachers:
             available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
             for e in meeting_times:
@@ -1336,7 +1331,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             rooms = []
 
             for subj in self.get_sections():
-            	rooms.extend(subj.prettyrooms())
+                rooms.extend(subj.prettyrooms())
 
             return rooms
 

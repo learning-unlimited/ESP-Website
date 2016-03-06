@@ -74,6 +74,8 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
+urlpatterns += patterns('', ('^javascript_tests', 'esp.tests.views.javascript_tests'))
+
 # program stuff
 urlpatterns += patterns('',
                         (r'^',  include('esp.program.urls')),
@@ -158,20 +160,20 @@ urlpatterns += patterns('esp.formstack.views',
     (r'^formstack_webhook/?$', 'formstack_webhook'),)
 
 urlpatterns +=patterns('esp.customforms.views',
-	(r'^customforms/$','landing'),
-	(r'^customforms/create/$','formBuilder'),
-	(r'^customforms/submit/$','onSubmit'),
-	(r'^customforms/modify/$','onModify'),
-	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
-	(r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
-	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
-	(r'^customforms/getData/$', 'getData'),
-	(r'^customforms/metadata/$', 'getRebuildData'),
-	(r'^customforms/getperms/$', 'getPerms'),
-	(r'^customforms/getlinks/$', 'get_links'),
-	(r'^customforms/builddata/$', 'formBuilderData'),
-	(r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
-	)	
+    (r'^customforms/$','landing'),
+    (r'^customforms/create/$','formBuilder'),
+    (r'^customforms/submit/$','onSubmit'),
+    (r'^customforms/modify/$','onModify'),
+    (r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
+    (r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
+    (r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
+    (r'^customforms/getData/$', 'getData'),
+    (r'^customforms/metadata/$', 'getRebuildData'),
+    (r'^customforms/getperms/$', 'getPerms'),
+    (r'^customforms/getlinks/$', 'get_links'),
+    (r'^customforms/builddata/$', 'formBuilderData'),
+    (r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
+    )
 
 #   Theme editor
 urlpatterns += patterns('',

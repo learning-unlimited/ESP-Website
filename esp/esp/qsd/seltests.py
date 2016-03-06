@@ -114,7 +114,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         self.delete_all_cookies()
         self.open_url(page)
-        self.failUnless(self.is_text_present(self.TEST_STRING))
+        self.assertTrue(self.is_text_present(self.TEST_STRING))
         logout(self)
 
         try_normal_login(self, self.qsd_user.username, self.PASSWORD_STRING)
@@ -123,7 +123,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         self.delete_all_cookies()
         self.open_url(page)
-        self.failUnless(self.is_text_present(self.TEST_STRING))
+        self.assertTrue(self.is_text_present(self.TEST_STRING))
 
     @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_inline(self):

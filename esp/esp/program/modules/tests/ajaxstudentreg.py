@@ -107,7 +107,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         #   Pick a student and log in
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Sign up for a class directly
         sec = random.choice(program.sections())
@@ -139,7 +139,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
 
         #   Pick a student, clear schedule and log in
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Get the schedule and check that it's empty
         response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
