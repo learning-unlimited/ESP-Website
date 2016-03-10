@@ -293,7 +293,7 @@ def find_user(userstr):
     found_users = None
     if len(userstr_parts) == 1:
         #try username?
-        user_q = Q(username=userstr)
+        user_q = Q(username__iexact=userstr)
         #try pk
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
