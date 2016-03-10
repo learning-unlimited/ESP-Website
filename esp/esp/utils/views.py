@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.utils.models import TemplateOverride
 from esp.users.models import admin_required
