@@ -179,3 +179,8 @@ urlpatterns +=patterns('esp.customforms.views',
 urlpatterns += patterns('',
                         (r'^themes', include('esp.themes.urls'))
                        )
+
+# diff
+urlpatterns += patterns('',
+                        (r'^manage/templateoverride/(?P<template_id>[0-9]+)', 'esp.utils.views.diff_templateoverride')
+                       )
