@@ -49,3 +49,4 @@ from esp.program.modules.tests.admincore import RegistrationTypeManagementTest
 from esp.program.modules.tests.adminclass import CancelClassTest
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
+from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest

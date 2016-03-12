@@ -136,7 +136,8 @@ class CachedModuleViewDecorator(object):
                 for i in range(len(param_list)):
                     if param_name_list[i] in parent_obj.params:
                         args_for_func.append(param_list[i])
-                return parent_obj.cached_function(*args_for_func)
+                cache_only = 'cache_only' in request.GET
+                return parent_obj.cached_function(*args_for_func, cache_only=cache_only)
 
             return actual_func
 
