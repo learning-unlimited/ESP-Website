@@ -135,7 +135,6 @@ function handle_settings_change(event)
 {
     setup_settings();
     render_table(state.display_mode, state.student_id);
-    update_checkboxes();
 }
 
 function setup_settings()
@@ -795,6 +794,9 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    if (display_mode == "classchange") {
+        update_checkboxes();
+    }
     update_search_filter();
     update_category_filters(); // show/hide classes by category
 }
@@ -809,7 +811,6 @@ function render_status_table()
 function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
-    update_checkboxes();
     var studentLabel = data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")";
     add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
 
