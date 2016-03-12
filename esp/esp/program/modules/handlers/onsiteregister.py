@@ -88,9 +88,9 @@ class OnSiteRegister(ProgramModuleObj):
                 new_user = ESPUser.objects.create_user(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
-                                email      = new_data['email'],
-                                is_staff   = False,
-                                is_superuser = False)
+                                email      = new_data['email'])
+                                # is_staff   = False,
+                                # is_superuser = False)
 
                 self.student = new_user
 
