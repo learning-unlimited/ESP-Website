@@ -1,8 +1,5 @@
 Vagrant based dev servers
 =========================
-Authors:
-   - Michael Price <price@learningu.org>
-   - Theodore Hwa <ted@learningu.org>
 
 .. contents:: :local:
 
@@ -128,13 +125,13 @@ Problems
     VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
     might be out of luck since the VM runs 64-bit Ubuntu.
 
-2. When running ``fab emptydb``, it fails with an error "Operation now in progress".
+2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
 
     You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
 
         ``sudo service memcached restart``
 
-    Now try ``fab emptydb`` again.
+    Now try your ``fab`` command again.
 
 3. I forgot the passphrase for the encrypted partition.
 
