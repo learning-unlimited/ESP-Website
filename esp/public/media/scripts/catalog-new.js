@@ -292,8 +292,8 @@ var CatalogViewModel = function () {
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.status <= 0) {
-                // remove unapproved classes
+            if (cls.status <= 5) {
+                // remove unapproved or hidden classes
                 delete data.classes[key];
             }
             else if (cls.category_id == open_class_category_id ||
