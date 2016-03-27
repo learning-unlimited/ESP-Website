@@ -1731,19 +1731,30 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             user = AnonymousUser()
         return True
 
+    def set_all_sections_to_status(self, status):
+        self.status = status
+        self.save()
+        for sec in self.sections.all():
+            sec.status = status
+            sec.save()
+
+    def accept_all_sections(self):
+        """ Accept all sections of this class, without any of the checks or messages that are in accept() """
+        self.set_all_sections_to_status(ACCEPTED)
+
     def propose(self):
         """ Mark this class as just `proposed' """
         self.status = UNREVIEWED
         self.save()
 
+    def unreview_all_sections(self):
+        """ Mark all sections of this class as unreviewed """
+        self.set_all_sections_to_status(UNREVIEWED)
+
     def reject(self):
         """ Mark this class as rejected; also kicks out students from each section. """
-        for sec in self.sections.all():
-            sec.status = REJECTED
-            sec.save()
         self.clearStudents()
-        self.status = REJECTED
-        self.save()
+        self.set_all_sections_to_status(REJECTED)
 
     def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
