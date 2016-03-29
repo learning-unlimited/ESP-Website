@@ -167,8 +167,8 @@ class AvailabilityModule(ProgramModuleObj):
             #   Process form
             post_vars = request.POST
 
-            #   Reset teacher's availability
-            teacher.clearAvailableTimes(self.program)
+            #   Reset teacher's availability (for classes, not interviews or other events)
+            teacher.clearAvailableClassTimes(self.program)
             #   But add back in the times they're teaching
             #   because those aren't submitted with the form
             for timeslot in avail_and_teaching:

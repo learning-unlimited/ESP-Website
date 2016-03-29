@@ -64,7 +64,7 @@ from django.utils.functional import SimpleLazyObject
 
 
 
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
@@ -496,6 +496,14 @@ class BaseESPUser(object):
     def clearAvailableTimes(self, program):
         """ Clear this teacher's availability for a program """
         self.useravailability_set.filter(event__program=program).delete()
+
+    def clearAvailableClassTimes(self, program):
+        """ Clear this teacher's class availability (but not interviews, etc.) for a program """
+        try:
+            class_time_block_event_type = EventType.objects.get(description='Class Time Block')
+        except EventType.DoesNotExist:
+            raise ESPError('There is no Class Time Block event type; this should always be there!')
+        self.useravailability_set.filter(event__program=program, event__event_type=class_time_block_event_type).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
         #   Because the timeslot has a program, the program is unnecessary.
