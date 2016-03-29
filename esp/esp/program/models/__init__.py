@@ -428,7 +428,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return clean_counts
 
-    @cache_function
     def getListDescriptions(self):
         desc = {}
         modules = self.getModules()
@@ -439,7 +438,6 @@ class Program(models.Model, CustomFormsLinkModel):
                     if tmpdict is not None:
                         desc.update(tmpdict)
         return desc
-    getListDescriptions.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
