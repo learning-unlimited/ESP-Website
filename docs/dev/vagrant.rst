@@ -127,10 +127,10 @@ Follow these steps to set it up for this project.  These instructions are for Py
 3. Set up a `remote Python interpreter <https://www.jetbrains.com/help/pycharm/2016.1/configuring-remote-interpreters-via-vagrant.html>`_. The "Python interpreter path" should be set to /home/vagrant/venv/bin/python .
 
 4. Set up your run/debug configuration by going to Run -> Edit Configurations.  Add a configuration of type "Django Server".
-    - Host: 0.0.0.0   Port: 8000
-    - Environment variables:
-        - DJANGO_SETTINGS_MODULE=esp.settings
-        - VIRTUALENV=/home/vagrant/venv
+    * Host: 0.0.0.0   Port: 8000
+    * Environment variables:
+        * DJANGO_SETTINGS_MODULE=esp.settings
+        * VIRTUALENV=/home/vagrant/venv
 
 To get started, first do ``vagrant up``, then ``fab runserver`` from a terminal, type in the passphrase for the encrypted partition, then Ctrl-C to exit the server.  You only
 need to do these steps once per session (until you do ``vagrant halt``), so that the VM can access the encrypted partition.
