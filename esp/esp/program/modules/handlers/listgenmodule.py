@@ -67,7 +67,8 @@ class UserAttributeGetter(object):
                     '20_schoolsystem_id': 'School system ID',
                     '21_tshirt_size': 'T-Shirt Size',
                     '22_gender': 'Gender',
-                 }
+                    '23_dob': 'Date of Birth'
+        }
 
         last_label_index = len(labels)
         for i in range(3):#replace 3 with call to get_max_applications + fix that method    
@@ -188,6 +189,12 @@ class UserAttributeGetter(object):
     def get_schoolsystem_id(self):
         if self.profile.student_info:
             return self.profile.student_info.schoolsystem_id
+
+    def get_dob(self):
+        if self.profile.student_info:
+            dob = self.profile.student_info.dob
+            if dob:
+                return '{:%Y-%m-%d}'.format(dob)
 
     def get_gender(self):
         if self.profile.student_info:
