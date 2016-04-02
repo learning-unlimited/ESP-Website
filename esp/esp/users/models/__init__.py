@@ -494,10 +494,6 @@ class BaseESPUser(object):
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
-        """ Clear this teacher's availability for a program """
-        self.useravailability_set.filter(event__program=program).delete()
-
-    def clearAvailableClassTimes(self, program):
         """ Clear this teacher's class availability (but not interviews, etc.) for a program """
         try:
             class_time_block_event_type = EventType.objects.get(description='Class Time Block')
