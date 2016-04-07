@@ -63,6 +63,7 @@ class UserAttributeGetter(object):
                     '16_school': 'School',
                     '17_heard_about': 'Heard about Splash from',
                     '18_transportation': 'Plan to Get to Splash',
+                    '19_dob': 'Date of Birth',
                     '21_tshirt_size': 'T-Shirt Size',
                     '22_gender': 'Gender',
                  }
@@ -178,6 +179,12 @@ class UserAttributeGetter(object):
     def get_transportation(self):
         if self.profile.student_info:
             return self.profile.student_info.transportation
+
+    def get_dob(self):
+        if self.profile.student_info:
+            dob = self.profile.student_info.dob
+            if dob:
+                return '{:%Y-%m-%d}'.format(dob)
 
     def get_gender(self):
         if self.profile.student_info:
