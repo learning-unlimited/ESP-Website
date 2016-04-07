@@ -68,7 +68,7 @@ def qsdmedia2(request, url, ignored_part=None):
     # all others are served with Content-Disposition: attachment (download)
     disposition = 'attachment'
     for disp in inline_dispositions:
-        if fnmatch.fnmatch(media_rec.mime_type, disp):
+        if media_rec.mime_type and fnmatch.fnmatch(media_rec.mime_type, disp):
             disposition = 'inline'
             break
     response['Content-Disposition'] = disposition + '; filename="' + media_rec.file_name + '"'

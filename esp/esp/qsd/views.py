@@ -33,27 +33,26 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
-from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, Permission
 from esp.web.views.navBar import makeNavBar
-from esp.web.models import NavBarEntry, NavBarCategory
-from esp.web.util.main import render_to_response
+from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
+from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
-from esp.middleware import ESPError, Http403
+from esp.middleware import Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.varnish import purge_page
+from esp.varnish.varnish import purge_page
 
 from django.conf import settings
 
-import reversion
+from reversion import revisions as reversion
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -78,10 +77,10 @@ def qsd(request, url):
         action = 'read'
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
-    
+
     # Detect edit authorizations
     have_read = True
-    
+
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
 
@@ -100,7 +99,7 @@ def qsd(request, url):
             if action in ('edit','create',):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
-                qsd_rec.nav_category = NavBarCategory.default()
+                qsd_rec.nav_category = default_navbarcategory()
                 qsd_rec.title = 'New Page'
                 qsd_rec.content = 'Please insert your text here'
                 qsd_rec.create_date = datetime.now()
@@ -123,14 +122,14 @@ def qsd(request, url):
         action = 'edit'
 
     # Detect the standard read verb
-    if action == 'read':        
+    if action == 'read':
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
             'title': qsd_rec.title,
-            'nav_category': qsd_rec.nav_category, 
+            'nav_category': qsd_rec.nav_category,
             'content': qsd_rec.html(),
             'settings': settings,
             'qsdrec': qsd_rec,
@@ -146,14 +145,14 @@ def qsd(request, url):
 
         return response
 
-            
+
     # Detect POST
-    if request.POST.has_key('post_edit'):
+    if 'post_edit' in request.POST:
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
-        
+
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
@@ -179,7 +178,7 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError("You don't have permission to edit this page.", log=False)
+            raise Http403, "You don't have permission to edit this page."
 
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
@@ -187,14 +186,14 @@ def qsd(request, url):
             'content'      : qsd_rec.content,
             'keywords'     : qsd_rec.keywords,
             'description'  : qsd_rec.description,
-            'nav_category' : qsd_rec.nav_category, 
+            'nav_category' : qsd_rec.nav_category,
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
-            use_request_context=False)  
-    
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
+            use_request_context=False)
+
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
 
@@ -208,10 +207,10 @@ def ajax_qsd(request):
     post_dict = request.POST.copy()
 
     if ( request.user.id is None ):
-        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
+        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=401)
     if post_dict['cmd'] == "update":
         if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
-            return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
+            return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=403)
 
         qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 

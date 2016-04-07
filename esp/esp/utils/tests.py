@@ -10,10 +10,12 @@ try:
     import pylibmc as memcache
 except:
     import memcache
+import logging
+logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
-import reversion
+from reversion import revisions as reversion
 import unittest
 
 from django.db.models.query import Q
@@ -24,7 +26,6 @@ from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
 from esp.utils import query_builder
-from esp.utils.defaultclass import defaultclass
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 
 
@@ -69,27 +70,26 @@ class DependenciesTestCase(unittest.TestCase):
         try:
             foo = __import__(mod)
         except Exception, e:
-            print "Error importing required module '%s': %s" % (mod, e)
+            logger.info("Error importing required module '%s': %s", mod, e)
             self._failed_import = True
-    
+
     def tryExecutable(self, exe):
         if not find_executable(exe):
-            print "Executable not found:  '%s'" % exe
+            logger.info("Executable not found:  '%s'", exe)
             self._exe_not_found = True
 
     def testDeps(self):
         self._failed_import = False
         self._exe_not_found = False
-        
+
         self.tryImport("django")  # If this fails, we lose.
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("json")  # Used for some of our AJAX magic
-        self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
-	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
+        self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
         self.tryImport("form_utils")     #Used to create better forms.
         self.assert_(not self._failed_import)
 
@@ -109,7 +109,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryExecutable("dvipng")  # Used to convert LaTeX output (.dvi) to .png files
         self.tryExecutable("ps2pdf")  # Used to convert LaTeX output (.dvi) to .pdf files (must go to .ps first because we use some LaTeX packages that depend on Postscript)
         self.tryExecutable("inkscape")  # Used to render LaTeX output (once converted to .pdf) to .svg image files
-        
+
         self.assert_(not self._exe_not_found)
 
 class MemcachedTestCase(unittest.TestCase):
@@ -127,14 +127,14 @@ class MemcachedTestCase(unittest.TestCase):
         caches = [ x.split(':') for x in self.CACHES ]
         self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                          for cache in caches ]
-        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
+        self.clients = [ memcache.Client([cache]) for cache in self.CACHES ]
 
     def tearDown(self):
         """ Terminate all the server processes that we launched with setUp() """
         for client in self.clients:
             client.disconnect_all()
 
-        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes 
+        if len(self.servers) > 0 and hasattr(self.servers[0], 'terminate'):  # You can't terminate processes prior to Python 2.6, they (hopefully) get killed off on their own when the test run finishes
             for server in self.servers:
                 server.terminate()  # Sends SIGTERM, telling the servers to terminate
             for server in self.servers:
@@ -145,45 +145,13 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
     """ Grab a ridiculous URL and make sure the status code isn't 500. """
     def runTest(self):
         response = self.client.get('/l' + 'o'*256 + 'ngurl.html')
-        self.failUnless(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
-
-
-class DefaultclassTestCase(unittest.TestCase):
-    def testDefaultclass(self):
-        """ Verify that defaultclass correctly lets you select out a custom instance of a class """
-        class kls(object):
-            @classmethod
-            def get_name(cls):
-                return cls.__name__
-            def get_hi(self):
-                return "hi!"
-                
-        kls = defaultclass(kls)
-
-        myKls = kls()
-        self.assertEqual(myKls.get_name(), "kls")
-        self.assertEqual(myKls.get_hi(), "hi!")
-        self.assertEqual(kls.get_name(), "kls")
-
-        myKls2 = kls[0]()
-        self.assertEqual(myKls.get_name(), "kls")
-
-        class otherKls(kls.real):
-            pass
-
-        myOtherKls = otherKls()
-        self.assertEqual(myOtherKls.get_name(), "otherKls")
-        
-        kls[0] = otherKls
-    
-        myOtherKls2 = kls[0]()
-        self.assertEqual(myOtherKls2.get_name(), "otherKls")
+        self.assertTrue(response.status_code != 500, 'Ridiculous URL not handled gracefully.')
 
 
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
-        return template.render(Context({}))
+        return template.render({})
 
     def expect_template_error(self, template_name):
         template_error = False
@@ -192,7 +160,7 @@ class TemplateOverrideTest(DjangoTestCase):
         except TemplateDoesNotExist:
             template_error = True
         except:
-            print 'Unexpected error fetching nonexistent template'
+            logger.info('Unexpected error fetching nonexistent template')
             raise
         self.assertTrue(template_error)
 
@@ -214,7 +182,7 @@ class TemplateOverrideTest(DjangoTestCase):
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
 
         #   Revert the update to the template and make sure you see the old version
-        reversion.get_unique_for_object(to)[1].revert()
+        list(reversion.get_for_object(to).get_unique())[1].revert()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Delete the original template override and make sure you see nothing
@@ -259,13 +227,12 @@ class QueryBuilderTest(DjangoTestCase):
         has_ever_printed_filter = query_builder.SearchFilter(
             'has ever printed', 'has ever printed',
             [query_builder.ConstantInput(
-                Q(printrequest__time_executed__isnull=False),
-                'has ever printed')])
+                Q(printrequest__time_executed__isnull=False))])
         always_works_filter = query_builder.SearchFilter(
             'always works', 'always works',
             [query_builder.ConstantInput(
-                Q(printrequest__time_executed__isnull=True),
-                'always works')], inverted=True)
+                Q(printrequest__time_executed__isnull=True))],
+            inverted=True)
         print_query_builder = query_builder.QueryBuilder(
             Printer.objects.all(),
             [name_filter, has_ever_printed_filter, always_works_filter])
@@ -407,10 +374,8 @@ class QueryBuilderTest(DjangoTestCase):
                          str(Q(a_db_field='1') & Q(a="b")))
         with self.assertRaises(ESPError_Log):
             search_filter_1.as_q(['10000',None])
-        self.assertEqual(search_filter_1.as_english(['1', None]),
-                         "the instance with a db field 'option 1'")
 
-        
+
     def test_select_input(self):
         select_input = query_builder.SelectInput(
             "a_db_field", {str(i): "option %s" % i for i in range(10)})
@@ -430,16 +395,11 @@ class QueryBuilderTest(DjangoTestCase):
         self.assertEqual(str(select_input.as_q('5')), str(Q(a_db_field='5')))
         with self.assertRaises(ESPError_Log):
             select_input.as_q('10000')
-        self.assertEqual(select_input.as_english('5'),
-                         "with a db field 'option 5'")
-        with self.assertRaises(ESPError_Log):
-            select_input.as_english('10000')
 
     def test_trivial_input(self):
-        trivial_input = query_builder.ConstantInput(Q(a="b"), "a trivial input")
+        trivial_input = query_builder.ConstantInput(Q(a="b"))
         self.assertEqual(trivial_input.spec(), {'reactClass': 'ConstantInput'})
         self.assertEqual(str(trivial_input.as_q(None)), str(Q(a="b")))
-        self.assertEqual(trivial_input.as_english(None), "a trivial input")
 
     def test_optional_input(self):
         select_input = query_builder.SelectInput(
@@ -449,10 +409,8 @@ class QueryBuilderTest(DjangoTestCase):
                          {'reactClass': 'OptionalInput', 'name': '+',
                           'inner': select_input.spec()})
         self.assertEqual(str(optional_input.as_q(None)), str(Q()))
-        self.assertEqual(str(optional_input.as_q('5')), str(Q(a_db_field='5')))
-        self.assertEqual(optional_input.as_english(None), "")
-        self.assertEqual(optional_input.as_english('5'), 
-                         "with a db field 'option 5'")
+        self.assertEqual(str(optional_input.as_q({'inner': '5'})),
+                         str(Q(a_db_field='5')))
 
     def test_datetime_input(self):
         datetime_input = query_builder.DatetimeInput("a_db_field")
@@ -473,19 +431,13 @@ class QueryBuilderTest(DjangoTestCase):
         with self.assertRaises(ValueError):
             datetime_input.as_q(
                 {'comparison': '', 'datetime': '11/41/2015 23:59'})
-        self.assertEqual(
-            datetime_input.as_english(
-                {'comparison': 'before', 'datetime': '11/30/2015 23:59'}),
-            'a db field before 11/30/2015 23:59')
-    
+
     def test_text_input(self):
         text_input = query_builder.TextInput("a_db_field")
         self.assertEqual(text_input.spec(),
                          {'reactClass': 'TextInput', 'name': 'a db field'})
         self.assertEqual(str(text_input.as_q("foo bar baz")),
                          str(Q(a_db_field="foo bar baz")))
-        self.assertEqual(text_input.as_english("foo bar baz"),
-                         "a db field foo bar baz")
 
 
 def suite():

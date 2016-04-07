@@ -68,16 +68,20 @@ STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
+LOG_FILE = "/tmp/esp-website.log"
+# Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
+# when DEBUG=True will cause every query to be logged (to the
+# django.db.backends logger).
+LOG_LEVEL = 'INFO'
+
 
 ###########################
 # Default debug settings  #
 ###########################
 DEBUG = False
-DISPLAYSQL = False
-TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-USE_PROFILER = False
+SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -154,21 +158,47 @@ DEFAULT_CACHE_TIMEOUT = 86400
 
 SITE_ID = 1
 
-TEMPLATE_LOADERS = (
-    'esp.utils.template.Loader',
-    ('esp.utils.template.CachedLoader',
-        (
-         'django.template.loaders.filesystem.Loader',
-         'django.template.loaders.app_directories.Loader',
-        )
-    ),
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            # Filled in by settings.py so it can depend on PROJECT_ROOT
+        ],
+        'OPTIONS': {
+            'context_processors': [
+                'esp.context_processors.media_url', # remove this one after all branches are transitioned
+                'esp.context_processors.esp_user',
+                'esp.context_processors.current_site',
+                'esp.context_processors.index_backgrounds',
+                'esp.context_processors.espuserified_request',
+                'esp.context_processors.preload_images',
+                'esp.context_processors.email_settings',
+                'esp.context_processors.program',
+                'esp.context_processors.schoolyear',
+                'django.template.context_processors.i18n',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.static',
+            ],
+            'loaders': [
+                'esp.utils.template.Loader',
+                ('django.template.loaders.cached.Loader',
+                    (
+                     'django.template.loaders.filesystem.Loader',
+                     'django.template.loaders.app_directories.Loader',
+                    )
+                ),
+            ]
+        },
+    },
+]
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-   #( 200, 'esp.queue.middleware.QueueMiddleware'),
     ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
@@ -178,8 +208,6 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
-    (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
-    (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
@@ -196,42 +224,34 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'grappelli',
     'filebrowser',
-    'django.contrib.admin',
+    'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
-    'esp.datatree',
-    'esp.users',
+    'esp.users.apps.UsersConfig',
     'esp.miniblog',
-    'esp.web',
-    'esp.program',
-    'esp.program.modules',
+    'esp.web.apps.WebConfig',
+    'esp.program.apps.ProgramConfig',
+    'esp.program.modules.apps.ModulesConfig',
     'esp.dbmail',
-    'esp.cal',
+    'esp.cal.apps.CalConfig',
     'esp.qsd',
     'esp.qsdmedia',
-    'esp.resources',
-    'esp.gen_media',
+    'esp.resources.apps.ResourcesConfig',
     'esp.survey',
-    'esp.accounting',
-    'esp.accounting_core',
-    'esp.accounting_docs',
-    'esp.customforms',
+    'esp.accounting.apps.AccountingConfig',
+    'esp.customforms.apps.CustomformsConfig',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.cache',
-    'esp.cache_loader',
     'esp.tagdict',
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
+    'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
-    'south',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
-    'bootstrapform',
-    'django_nose',
     'esp.formstack',
-    'esp.application',
+    'esp.application.apps.ApplicationConfig',
 )
 
 import os
@@ -250,25 +270,8 @@ ATOMIC_REQUESTS = True
 # rejected by the CSRF middleware.
 CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
 
-TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
-                               'esp.context_processors.esp_user',
-                               'esp.context_processors.current_site',
-                               'esp.context_processors.index_backgrounds',
-                               'esp.context_processors.espuserified_request',
-                               'esp.context_processors.preload_images',
-                               'esp.context_processors.email_settings',
-                               'esp.context_processors.program',
-                               'esp.context_processors.schoolyear',
-                               'django.core.context_processors.i18n',
-                               'django.contrib.auth.context_processors.auth',
-                               'django.contrib.messages.context_processors.messages',
-                               'django.core.context_processors.media',
-                               )
-
 # no i18n
 USE_I18N = False
-
-AUTH_PROFILE_MODULE='users.ESPUser_Profile'
 
 FORCE_SCRIPT_NAME = ''
 
@@ -281,18 +284,8 @@ MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
 SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
 
-if False:
-    import logging
-    logging.basicConfig(
-        level = logging.DEBUG,
-        format = '%(asctime)s %(levelname)s %(message)s',
-        filename = '/tmp/mit-esp.log',
-        filemode = 'w'
-    )
-
-
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
+    'esp.utils.auth_backend.ESPAuthBackend',
     )
 
 CONTACTFORM_EMAIL_CHOICES = (
@@ -344,7 +337,7 @@ DEBUG_TOOLBAR_CONFIG = {
     ]),
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
-        'esp.cache.signals.cache_deleted',
+        'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',
@@ -362,6 +355,13 @@ STRIPE_CONFIG = {
     'publishable_key': '',
 }
 
+# Settings for Cybersource credit card payments. Unlike Stripe, does not support
+# overrides.
+CYBERSOURCE_CONFIG = {
+    'post_url': '',
+    'merchant_id': '',
+}
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
@@ -371,17 +371,11 @@ SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
 
-#   Set test runner to behave like pre-1.6 versions of Django
-#   Exclude apps from testing
-TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
-TEST_EXCLUDE = ('django', 'grappelli', 'reversion', 'django_extensions')
-
-SKIP_SOUTH_TESTS = True
-SOUTH_TESTS_MIGRATE = False
-SOUTH_AUTO_FREEZE_APP = True
-SOUTH_USE_PYC = False
-
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None
 TWILIO_ACCOUNT_NUMBERS = None
+
+# Default configuration for themes: set this to True to make recompile_theme
+# and the themes frontend refuse to do anything
+LOCAL_THEME = False

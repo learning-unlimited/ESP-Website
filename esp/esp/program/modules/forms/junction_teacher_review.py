@@ -11,4 +11,4 @@ class JunctionTeacherReview(forms.Form):
 
     rejected = forms.BooleanField(required = False,
                                   help_text = 'If you want to reject them outright.')
-    
+

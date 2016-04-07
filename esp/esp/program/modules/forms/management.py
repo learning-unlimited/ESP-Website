@@ -3,7 +3,6 @@ from django import forms
 
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource
-from esp.program.models import ProgramCheckItem
 
 from esp.program.models.class_ import ClassSubject, ClassSection
 
@@ -33,7 +32,6 @@ class ClassManageForm(ManagementForm):
     min_grade = forms.ChoiceField(choices=())
     max_grade = forms.ChoiceField(choices=())
     class_size = forms.IntegerField(label='Max. number of students')
-    progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
     notes = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': 60, 'rows': 8}))
 
     def __init__(self, *args, **kwargs):
@@ -59,10 +57,9 @@ class ClassManageForm(ManagementForm):
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': csm ,
-            prefix+'clsid': cls.id,
-            prefix+'progress': [cm.id for cm in cls.checklist_progress.all()]}
+            prefix+'clsid': cls.id}
         return self.initial
-         
+
     def save_data(self, cls):
         cls.status = self.cleaned_data['status']
         #   If the section's status has not already been marked, apply the subject's status.
@@ -79,14 +76,10 @@ class ClassManageForm(ManagementForm):
         cls.grade_max = self.cleaned_data['max_grade']
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
-        cls.checklist_progress.clear()
 
         if cls.duration:
             from decimal import Decimal
             cls.duration = Decimal(str(cls.duration))
-        for ci in self.cleaned_data['progress']:
-            cpl = ProgramCheckItem.objects.get(id=ci)
-            cls.checklist_progress.add(cpl)
         cls.save()
 
 class SectionManageForm(ManagementForm):
@@ -100,7 +93,6 @@ class SectionManageForm(ManagementForm):
     status = forms.ChoiceField(choices=())
     class_size = forms.IntegerField(label='Max. number of students (OVERRIDE: Force the section to be this size regardless of the class or room size!)', required=False)
     reg_status = forms.ChoiceField(required=False, choices=())
-    progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
 
     def __init__(self, *args, **kwargs):
         if 'section' in kwargs:
@@ -117,7 +109,6 @@ class SectionManageForm(ManagementForm):
     def load_data(self, sec, prefix=''):
         self.initial = {prefix+'status': sec.status,
             prefix+'reg_status': sec.registration_status,
-            prefix+'progress': sec.checklist_progress.all().values_list('id', flat=True),
             prefix+'secid': sec.id,
             prefix+'class_size': sec.max_class_capacity,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
@@ -143,10 +134,6 @@ class SectionManageForm(ManagementForm):
             sec.classroomassignments().delete()
             for r in rooms:
                 sec.assign_room(r)
-        sec.checklist_progress.clear()
-        for ci in self.cleaned_data['progress']:
-            cpl = ProgramCheckItem.objects.get(id=ci)
-            sec.checklist_progress.add(cpl)
         for r in self.cleaned_data['resources']:
             for ts in sec.meeting_times.all():
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
@@ -159,20 +146,20 @@ class ClassCancellationForm(forms.Form):
     unschedule = forms.BooleanField(help_text='Check this box to unschedule all sections of this class, in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
-    
+
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
         initial['target'] = kwargs.pop('subject', None)
         kwargs['initial'] = initial
         super(ClassCancellationForm, self).__init__(*args, **kwargs)
-    
+
 class SectionCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
-    
+
     def __init__(self, *args, **kwargs):
         initial = kwargs.pop('initial', {})
         initial['target'] = kwargs.pop('section', None)

@@ -33,16 +33,26 @@ Learning Unlimited, Inc.
 """
 
 import os
+import warnings
+import tempfile
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT
+# set by shell_plus and script_setup (via esp.utils.shell_utils); should also
+# be set in any other scripts that get called manually, but not in scripts that
+# get run unattended by e.g. cron.
+IS_IN_SCRIPT = os.environ.get("DJANGO_IS_IN_SCRIPT", "False") == "True"
 
 # Configure Django to support ESP
 from django_settings import *
 
 # Import system-specific settings
 from local_settings import *
+
+# Do this here so we have access to PROJECT_ROOT
+TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
+TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:
@@ -69,17 +79,142 @@ SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
 STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 
+# We log to LOG_FILE always at level LOG_LEVEL (INFO by default), log to the
+# console at level LOG_LEVEL if DEBUG=True, mail admins (i.e. serverlog) at
+# level ERROR if DEBUG=False, and log to sentry at level WARNING if set up.
+# DisallowedHost errors and deprecation warnings don't go to email ever.
+# In scripts, we log to the console in a shorter format, to a separate log
+# file, and not to email or sentry.
+if SENTRY_DSN:
+    sentry_handler = {
+        'level': 'WARNING',
+        'filters': ['require_not_in_script'],
+        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+        'dsn': SENTRY_DSN,
+    }
+else:
+    sentry_handler = {
+        'class': 'logging.NullHandler',
+    }
+
+warnings.simplefilter("default", PendingDeprecationWarning)
+
+if LOG_FILE.endswith('.log'):
+    SHELL_LOG_FILE = LOG_FILE[:-4] + '.shell.log'
+else:
+    SHELL_LOG_FILE = LOG_FILE + '.shell'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s',
+        },
+        'brief': {
+            'format': '%(levelname)s: %(message)s',
+        },
+    },
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_in_script': {
+            '()': 'esp.utils.log.RequireInScript',
+        },
+        'require_not_in_script': {
+            '()': 'esp.utils.log.RequireNotInScript',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': LOG_LEVEL,
+            # logrotate will take care of rotation if desired
+            'class': 'logging.FileHandler',
+            'filters': ['require_not_in_script'],
+            # LOG_FILE is set in django_settings or overridden in
+            # local_settings
+            'filename': LOG_FILE,
+            'formatter': 'verbose',
+        },
+        'filescript': {
+            'level': LOG_LEVEL,
+            # logrotate will take care of rotation if desired
+            'class': 'logging.FileHandler',
+            'filters': ['require_in_script'],
+            'filename': SHELL_LOG_FILE,  # computed from LOG_FILE above
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': LOG_LEVEL,
+            'filters': ['require_debug_true', 'require_not_in_script'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'consolescript': {
+            'level': LOG_LEVEL,
+            'filters': ['require_in_script'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'brief',
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'filters': ['require_debug_false', 'require_not_in_script'],
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+            'formatter': 'verbose',
+        },
+        'sentry': sentry_handler,
+    },
+    # We don't have a root logger, because it for various reasons ends up
+    # confusing runserver_plus and getting doubled log output.  I can't figure
+    # out a good way around that, and we should ideally be logging everything
+    # under 'esp' anyway.
+    'loggers': {
+        'django.security.DisallowedHost': {
+            # Don't bother with the DisallowedHost errors.
+            'handlers': ['file', 'console'],
+            'propagate': False,
+        },
+        # TODO(benkraft): until 1.9 we need to have the following two handlers
+        # around to override django's.  In 1.9 we will be able to remove them,
+        # and just override 'django'.
+        'django.security': {
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
+            'level': 'DEBUG',
+        },
+        'django.request': {
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
+            'level': 'DEBUG',
+        },
+        'django': {
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
+            'level': 'DEBUG',
+        },
+        'py.warnings': {
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'sentry'],
+        },
+        'esp': {
+            'handlers': ['file', 'filescript', 'console', 'consolescript',
+                         'mail_admins', 'sentry'],
+            'level': 'DEBUG',
+        },
+    }
+}
+
 #   Search directories for LESS (customizable stylesheet) files
 LESS_SEARCH_PATH = [
     os.path.join(MEDIA_ROOT, 'less'),
 ]
 
 MANAGERS = ADMINS
-
-TEMPLATE_DIRS = (
-    os.path.join(PROJECT_ROOT, 'templates'),
-    
-)
 
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
@@ -100,8 +235,6 @@ CACHES = {
 MIDDLEWARE_CLASSES = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
-import tempfile
-import os
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
     tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
     if not os.path.exists(tempdir):
@@ -114,4 +247,16 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 # NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
-SKIP_SOUTH_TESTS = True # To disable South's own unit tests
+if SENTRY_DSN:
+    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
+    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
+    # will remain enabled and will receive exceptions before Raven does.
+    import raven
+
+    INSTALLED_APPS += (
+        'raven.contrib.django.raven_compat',
+    )
+    RAVEN_CONFIG = {
+        'dsn': SENTRY_DSN,
+        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
+    }

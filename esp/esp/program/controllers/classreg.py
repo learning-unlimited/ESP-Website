@@ -2,14 +2,14 @@ from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
+from esp.resources.forms import ResourceRequestFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 
 from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
-from django.utils.datastructures import SortedDict
+from collections import OrderedDict
 from django.db import transaction
 
 from datetime import timedelta, datetime
@@ -18,7 +18,7 @@ import json
 from django.conf import settings
 
 def get_custom_fields():
-    result = SortedDict()
+    result = OrderedDict()
     form_list_str = Tag.getTag('teacherreg_custom_forms')
     if form_list_str:
         form_cls_list = json.loads(form_list_str)
@@ -30,28 +30,27 @@ def get_custom_fields():
     return result
 
 class ClassCreationValidationError(Exception):
-    def __init__(self, reg_form, resource_formset, restype_formset, error_msg):
+    def __init__(self, reg_form, resource_formset, error_msg):
         self.reg_form = reg_form
         self.resource_formset = resource_formset
-        self.restype_formset = restype_formset
         super(ClassCreationValidationError, self).__init__(error_msg)
 
 class ClassCreationController(object):
     def __init__(self, prog):
         self.program = prog
-        self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        self.crmi = prog.classregmoduleinfo
 
     @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
 
         self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
-        self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
-        
+        self.make_class_happen(cls, user, reg_form, resource_formset)
+
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
         self.send_class_mail_to_directors(cls)
@@ -60,8 +59,8 @@ class ClassCreationController(object):
 
     @transaction.atomic
     def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
-        
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
+
+        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -72,12 +71,12 @@ class ClassCreationController(object):
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, current_user, extra_time)
 
-        self.make_class_happen(cls, None, reg_form, resource_formset, restype_formset, editing=True)
-        
+        self.make_class_happen(cls, None, reg_form, resource_formset, editing=True)
+
         self.send_class_mail_to_directors(cls, False)
 
         return cls
-        
+
 
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
@@ -87,17 +86,13 @@ class ClassCreationController(object):
         else:
             resource_formset = None
 
-        if 'restype-TOTAL_FORMS' in reg_data:
-            restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
-        else:
-            restype_formset = None
-            
-        if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
-            raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
+        if not reg_form.is_valid() or (resource_formset and not
+                                       resource_formset.is_valid()):
+            raise ClassCreationValidationError, (reg_form, resource_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
-        return reg_form, resource_formset, restype_formset
-    
-    def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
+        return reg_form, resource_formset
+
+    def make_class_happen(self, cls, user, reg_form, resource_formset, editing=False):
         self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
@@ -105,27 +100,27 @@ class ClassCreationController(object):
         if user and not editing:
             self.associate_teacher_with_class(cls, user)
 
-        self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
+        self.add_rsrc_requests_to_class(cls, resource_formset)
 
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
         if user in cls.get_teachers():
             cls.propose()
-        
+
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
         custom_data = {}
-    
+
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
             elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
-        
+
         cls.custom_form_data = custom_data
 
         if hasattr(cls, 'duration'):
             cls.duration = Decimal(cls.duration)
-            
+
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
@@ -148,11 +143,11 @@ class ClassCreationController(object):
         if num_sections < len(section_list):
             for class_section in section_list[num_sections:]:
                 class_section.delete()
-                        
+
         # Set duration of sections
         cls.sections.update(duration = cls.duration)
 
-    def attach_class_to_program(self, cls):        
+    def attach_class_to_program(self, cls):
         cls.parent_program = self.program
 
     def associate_teacher_with_class(self, cls, user):
@@ -195,18 +190,13 @@ class ClassCreationController(object):
     def add_teacher_to_program_mailinglist(self, user):
         add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
 
-    def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
+    def add_rsrc_requests_to_class(self, cls, resource_formset):
         for sec in cls.get_sections():
             sec.clearResourceRequests()
             if resource_formset:
                 for resform in resource_formset.forms:
                     self.import_resource_formset(sec, resform)
-            if restype_formset:
-                for resform in restype_formset.forms:
-                    #   Save new types; handle imperfect validation
-                    if len(resform.cleaned_data['name']) > 0:
-                        self.import_restype_formset(self, sec, resform)
-                    
+
     def import_resource_formset(self, sec, resform):
         if isinstance(resform.cleaned_data['desired_value'], list):
             for val in resform.cleaned_data['desired_value']:
@@ -224,33 +214,21 @@ class ClassCreationController(object):
             rr.save()
             return rr
 
-    def import_restype_formset(self, sec, resform):
-        rt, created = ResourceType.get_or_create(resform.cleaned_data['name'])
-        rt.choices = ['Yes']
-        rt.save()
-        rr = ResourceRequest()
-        rr.target = sec
-        rr.res_type = rt
-        rr.desired_value = 'Yes'
-        rr.save()
-        return (rt, rr)
-
-
     def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
-        
+
         mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.program_type
         mail_ctxt['two'] = cls.parent_program.program_instance
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
-        
+
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
         mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.
-        if new_data.has_key('optimal_class_size_range_id') and (new_data['optimal_class_size_range_id'] is not None):
+        if new_data.get('optimal_class_size_range_id') is not None:
             opt_range = ClassSizeRange.objects.get(id=new_data['optimal_class_size_range_id'])
             mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
         else:
@@ -260,7 +238,7 @@ class ClassCreationController(object):
         except:
             # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
             pass
-        
+
         mail_ctxt['teachers'] = []
         for teacher in cls.get_teachers():
             teacher_ctxt = {'teacher': teacher}
@@ -288,7 +266,7 @@ class ClassCreationController(object):
 
         # add program email tag
         subject = '['+self.program.niceName()+'] ' + subject
-        
+
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
             send_mail(subject, \

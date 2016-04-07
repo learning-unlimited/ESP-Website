@@ -2,10 +2,6 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% load subsection %}
-{% block subsection %}{% autoescape off %}{{ "Teacher Registration"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
@@ -19,7 +15,6 @@
 {% load render_qsd %}
 {% render_inline_program_qsd program "teacher_class_import_description" %}
 
-{% if allow_class_import %}
 <div id="battlescreen">
 
 <table cellpadding="4" cellspacing="0" align="center">
@@ -46,9 +41,6 @@
 
 </table>
 </div> <!-- div#battlescreen -->
-{% else %}
-Sorry! Class importing is disabled for {{ program.niceName }}.
-{% endif %}
 <br /><br/ >
 
 <a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 #
 # Display Auto-Approved Financial Aid Requests
-# 
+#
 # Displays financial aid requests that have been approved or autoapproved,
 # sorted by date, so that students can be emailed easily.  Make sure to update
 # PROGRAM_ID before running.
