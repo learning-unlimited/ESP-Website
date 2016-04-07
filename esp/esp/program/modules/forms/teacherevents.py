@@ -26,6 +26,6 @@ class TimeslotForm(forms.Form):
         slot.program = program
         slot.short_description = slot.start.strftime('%A, %B %d %Y %I:%M %p') + " to " + slot.end.strftime('%I:%M %p')
         slot.description = slot.short_description
-        
+
         slot.save()
 

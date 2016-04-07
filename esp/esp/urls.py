@@ -45,8 +45,8 @@ import debug_toolbar
 autodiscover(admin_site)
 
 # Override error pages
-handler404 = 'esp.web.util.main.error404'
-handler500 = 'esp.web.util.main.error500'
+handler404 = 'esp.utils.web.error404'
+handler500 = 'esp.utils.web.error500'
 
 # Static media
 urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()
@@ -61,19 +61,20 @@ urlpatterns += patterns('',
                      (r'^admin/', include(admin_site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
-                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
+                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
                         )
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
 urlpatterns += patterns('',
-(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
+(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/', permanent=True)),)
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
-                        (r'^error_reporter', 'error_reporter'),
                         (r'^$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
+
+urlpatterns += patterns('', ('^javascript_tests', 'esp.tests.views.javascript_tests'))
 
 # program stuff
 urlpatterns += patterns('',
@@ -95,7 +96,7 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('',
-                        (r'^cache/', include('esp.cache.urls')),
+                        (r'^cache/', include('argcache.urls')),
                         (r'^varnish/', include('esp.varnish.urls'))
                         )
 
@@ -112,11 +113,6 @@ urlpatterns += patterns('esp.qsd.views',
 urlpatterns += patterns('',
                         (r'^',  include('esp.survey.urls')),
                         )
-
-urlpatterns += patterns('esp.web.views.json_utils',
-
-     # JSON
-    (r'json/teachers/$', 'teacher_lookup'))
 
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
@@ -141,22 +137,16 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-
-    # Event-generation
-    # Needs to get fixed (axiak)
-    #(r'^events/create/$', 'esp.cal.views.createevent'),
-    #(r'^events/edit/$', 'esp.cal.views.updateevent'),
-    #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 )
 
 urlpatterns += patterns('',
-(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
+(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True)),)
 
-urlpatterns += patterns('esp.qsdmedia.views', 
-    (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
+urlpatterns += patterns('esp.qsdmedia.views',
+    (r'^download\/([^/]+)/?$', 'qsdmedia2'),
     (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
 
-urlpatterns += patterns('', 
+urlpatterns += patterns('',
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += patterns('',
@@ -170,22 +160,22 @@ urlpatterns += patterns('esp.formstack.views',
     (r'^formstack_webhook/?$', 'formstack_webhook'),)
 
 urlpatterns +=patterns('esp.customforms.views',
-	(r'^customforms/$','landing'),
-	(r'^customforms/create/$','formBuilder'),
-	(r'^customforms/submit/$','onSubmit'),
-	(r'^customforms/modify/$','onModify'),
-	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
-	(r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
-	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
-	(r'^customforms/getData/$', 'getData'),
-	(r'^customforms/metadata/$', 'getRebuildData'),
-	(r'^customforms/getperms/$', 'getPerms'),
-	(r'^customforms/getlinks/$', 'get_links'),
-	(r'^customforms/builddata/$', 'formBuilderData'),
-	(r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
-	)	
+    (r'^customforms/$','landing'),
+    (r'^customforms/create/$','formBuilder'),
+    (r'^customforms/submit/$','onSubmit'),
+    (r'^customforms/modify/$','onModify'),
+    (r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
+    (r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
+    (r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
+    (r'^customforms/getData/$', 'getData'),
+    (r'^customforms/metadata/$', 'getRebuildData'),
+    (r'^customforms/getperms/$', 'getPerms'),
+    (r'^customforms/getlinks/$', 'get_links'),
+    (r'^customforms/builddata/$', 'formBuilderData'),
+    (r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
+    )
 
 #   Theme editor
-urlpatterns += patterns('', 
-                        (r'^themes', include('esp.themes.urls')) 
+urlpatterns += patterns('',
+                        (r'^themes', include('esp.themes.urls'))
                        )

@@ -26,7 +26,7 @@ for s in sl:
     else:
         pe = ''
     outfile.write('"%s","%s","%s","%s","%s"\n' % (id, ln.encode('ascii', 'replace'), fn.encode('ascii', 'replace'), ea.encode('ascii', 'replace'), pe.encode('ascii', 'replace')))
-    
+
 outfile.close()
 print 'Wrote to %s' % outfile
 print 'Created %d list entries' % PlainRedirect.objects.filter(original=list_name).count()

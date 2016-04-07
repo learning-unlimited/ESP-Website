@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from esp.survey.models import *
 
@@ -27,7 +27,7 @@ def get_excitement(question_id, threshold):
                     excited_all = False
             num_answers += 1
             if excited_one: num_excited_one += 1
-            if excited_all: 
+            if excited_all:
                 num_excited_all += 1
                 num_classes_taken += answers.count()
     print '%s: %s' % (program.niceName(), question.name)

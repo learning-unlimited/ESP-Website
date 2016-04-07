@@ -9,7 +9,7 @@ def ascii_sanitize(s):
 
 def dateonly(d):
     return d.strftime('%Y-%m-%d')
-    
+
 def timeonly(d):
     return d.strftime('%H:%M:%S')
 
@@ -23,9 +23,9 @@ appropriate_sections = []
 for un in teacher_usernames:
     teacher = ESPUser.objects.get(username=un)
     appropriate_sections += list(teacher.getTaughtSections(splash))
-    
+
 """
-print 'Checking for students in these sections:' 
+print 'Checking for students in these sections:'
 for sec in appropriate_sections:
     print ' -> %s: %s' % (sec.teachers, sec.title())
 """

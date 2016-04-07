@@ -35,8 +35,8 @@ Learning Unlimited, Inc.
 import json
 
 from django.http import HttpResponse
-from django.db.models.query import Q
 
+# TODO(benkraft): replace users of this with @json_response, and remove.
 class JsonResponse(HttpResponse):
     def __init__(self, obj):
         self.original_obj = obj
@@ -46,31 +46,3 @@ class JsonResponse(HttpResponse):
 
     def serialize(self):
         return(json.dumps(self.original_obj))
-
-def teacher_lookup(request, limit=10):
-     # FIXME: REQUIRE PERMISSIONS!
-    
-    queryset = ESPUser.objects.filter(group__name="Teacher")
-
-
-    # Search for teachers with names that start with search string
-    startswith = request.GET['q']
-    parts = startswith.split(', ')
-    Q_name = Q(user__last_name__istartswith=parts[0])
-    if len(parts) > 1:
-	Q_name = Q_name & Q(user__first_name__istartswith=parts[1])
-
-    # Isolate user objects
-    queryset = queryset.filter(Q_name)[:(limit*10)]
-    users = [ub.user for ub in queryset]
-    user_dict = {}
-    for user in users:
-    	user_dict[user.id] = user
-    users = user_dict.values()
-
-    # Construct combo-box items
-    obj_list = [[user.last_name + ', ' + user.first_name, user.id] for user in users]
-
-    # Operation Complete!
-    return JsonResponse(obj_list)
-
