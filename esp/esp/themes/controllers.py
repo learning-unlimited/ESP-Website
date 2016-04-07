@@ -260,6 +260,8 @@ class ThemeController(object):
         Reloads the theme (possibly updating the template overrides with recent
         code changes), then recompiles the customizations.
         """
+        if settings.LOCAL_THEME:
+            return
         if (customization_name is None) or (customization_name == "None"):
             customization_name = self.get_current_customization()
         if customization_name == "None":
