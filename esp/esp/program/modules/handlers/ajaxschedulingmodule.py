@@ -317,11 +317,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
             num_affected_sections = self.clear_schedule_logic(prog, lock_level)
             data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
             response = HttpResponse(content_type="application/json")
-            json.dump(data, response) 
+            json.dump(data, response)
         else:
             context = {}
             context['num_affected_sections'] = self._get_affected_sections(prog, lock_level).count()
-            response = render_to_response(self.baseDir()+'clear_schedule_confirmation.html', request, context) 
+            response = render_to_response(self.baseDir()+'clear_schedule_confirmation.html', request, context)
 
         return response
 
@@ -333,7 +333,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     def clear_schedule_logic(self, prog, lock_level=0):
         affected_sections = self._get_affected_sections(prog, lock_level)
-        
+
         ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
         ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
 
@@ -341,7 +341,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         for section in affected_sections:
             section.meeting_times.clear()
             num_affected_sections += 1
-        
+
         return num_affected_sections
 
     class Meta:
