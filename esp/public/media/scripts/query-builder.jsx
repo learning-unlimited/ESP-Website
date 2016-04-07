@@ -30,6 +30,9 @@ function BuildQueryError() {
  *           filter.  Each must have a key `reactClass` which should be the
  *           name of the React class that displays the input.  They may also
  *           have more keys as specified by that class.
+ *   `query`: Optionally, a query to preload into the query builder.  This
+ *   should be a stringified JSON object similar to that which would be passed
+ *   as the GET parameter `query` (see below).
  *
  * Note that the boolean operations `and` and `or` need not be included in the
  * list of filters.
@@ -39,7 +42,10 @@ function BuildQueryError() {
  * methods, it must have a method `asJSON` which returns a value that will be
  * passed through to the corresponding python class to be interpreted.  The
  * method may alternately raise a BuildQueryError if the user's input is
- * invalid, in which case it should show the invalid input.
+ * invalid, in which case it should show the invalid input.  Finally, it must
+ * have a method `fromJSON`, which should take a value of the same type, and
+ * call the appropriate `setState()` operations on the class.  (If it can't
+ * understand the value, `fromJSON` may fail silently or error.)
  *
  * When the submit button is pressed, this generates a JSON object representing
  * the query, and sends it to the current URL as the GET parameter `query`.
@@ -64,19 +70,52 @@ var QueryBuilder = React.createClass({
         })).isRequired,
       })).isRequired,
     }).isRequired,
+    query: React.PropTypes.shape({
+      filter: React.PropTypes.string.isRequired,
+      negated: React.PropTypes.bool.isRequired,
+      values: React.PropTypes.array.isRequired,
+    }),
+  },
+
+  /**
+   * If we just mounted, set up the initial query from this.props.query.
+   *
+   * TODO(benkraft): this really wants to be a getInitialState, but since it's
+   * not actually modifying state, and the children might not be mounted at
+   * call-time of getInitialState, that won't work.  See also the TODO in
+   * QueryBuilder.asJSON below.
+   */
+  componentDidMount: function () {
+    if (this.props.query) {
+      this.fromJSON(this.props.query);
+    }
   },
 
   asJSON: function () {
+    // TODO(benkraft): this pattern of using refs to access the child's asJSON
+    // and fromJSON might not work in React 0.14; figure out another way to do
+    // it, probably by storing all the state on this component and propagating
+    // everything down.
     return this.refs.queryNode.asJSON();
+  },
+
+  fromJSON: function (data) {
+    return this.refs.queryNode.fromJSON(data);
   },
 
   /**
    * Handler to submit the query.
+   *
+   * params, a string, should be extra query parameters, formatted as a string.
+   *     It may be the empty string.
    */
-  submit: function () {
+  _submit: function (params) {
     try {
       json = JSON.stringify(this.asJSON());
-      window.location.href = "?query=" + encodeURIComponent(json);
+      if (params) {
+        params = params + "&";
+      }
+      window.location.href = "?" + params + "query=" + encodeURIComponent(json);
     } catch (e) {
       if (e.name != "BuildQueryError") {
         alert("There was an error, recheck your query or poke web support.");
@@ -87,6 +126,18 @@ var QueryBuilder = React.createClass({
         return;
       }
     }
+  },
+  
+  submit: function () {
+    this._submit("");
+  },
+
+  submitRandom: function () {
+    this._submit("randomize=1");
+  },
+
+  submitLucky: function () {
+    this._submit("randomize=1&lucky=1");
   },
 
   allFilterNames: function () {
@@ -106,7 +157,17 @@ var QueryBuilder = React.createClass({
                  filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
       <button onClick={this.submit} className="qb-input btn btn-primary">
-        Go
+        Search
+      </button>
+      <button title="search and randomize results"
+              onClick={this.submitRandom}
+              className="qb-input btn btn-default">
+        Randomize
+      </button>
+      <button title="jump to manage page for a random result"
+              onClick={this.submitLucky}
+              className="qb-input btn btn-default">
+        I'm Feeling Lucky
       </button>
     </div>;
   },
@@ -159,6 +220,15 @@ var QueryNode = React.createClass({
         'values': this.refs.filter.asJSON(),
       };
     }
+  },
+
+  fromJSON: function (data) {
+    this.setState({
+      currentFilterName: data.filter,
+      negated: data.negated,
+    }, function () {
+      this.refs.filter.fromJSON(data.values);
+    }.bind(this));
   },
 
   render: function () {
@@ -265,6 +335,12 @@ var Filter = React.createClass({
                  }.bind(this));
   },
 
+  fromJSON: function (data) {
+    _.each(data, function (datum, i) {
+      this.refs[i].fromJSON(datum);
+    }.bind(this));
+  },
+
   render: function () {
     var inputs = _.map(this.props.filter.inputs,
                        function (input, i) {
@@ -294,6 +370,9 @@ var ConstantInput = React.createClass({
 
   asJSON: function () {
     return null;
+  },
+
+  fromJSON: function (data) {
   },
 
   render: function () {
@@ -341,6 +420,10 @@ var SelectInput = React.createClass({
     }
   },
 
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.select).value = data;
+  },
+
   render: function () {
     var options = _.map(this.props.input.options,
                         function (option) {
@@ -367,8 +450,8 @@ var SelectInput = React.createClass({
  *   `inner`: another input specification object, for the input which might be
  *     used.
  * 
- * The output JSON data is null if the input was not used, and the value of the
- * input otherwise.
+ * The output JSON data is an object with key "inner" and value the value of
+ * the inner input if the input was used, and null otherwise.
  */
 var OptionalInput = React.createClass({
   propTypes: {
@@ -387,9 +470,21 @@ var OptionalInput = React.createClass({
 
   asJSON: function () {
     if (this.state.show) {
-      return this.refs.inner.asJSON();
+      return {inner: this.refs.inner.asJSON()};
     } else {
       return null;
+    }
+  },
+
+  fromJSON: function(data) {
+    if (data !== null) {
+      this.setState(
+        {show: true},
+        function () {
+          this.refs.inner.fromJSON(data.inner);
+        });
+    } else {
+      this.setState({show: false});
     }
   },
 
@@ -441,6 +536,11 @@ var DatetimeInput = React.createClass({
     };
   },
 
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.comparison).value = data.comparison;
+    React.findDOMNode(this.refs.datetime).value = data.datetime;
+  },
+
   componentDidMount: function () {
     this.componentDidUpdate();
   },
@@ -481,6 +581,10 @@ var TextInput = React.createClass({
 
   asJSON: function () {
     return React.findDOMNode(this.refs.input).value;
+  },
+
+  fromJSON: function (data) {
+    React.findDOMNode(this.refs.input).value = data;
   },
 
   render: function () {
@@ -538,6 +642,19 @@ var BooleanOp = React.createClass({
                      return this.refs[key].asJSON();
                    }.bind(this));
     }
+  },
+
+  fromJSON: function (data) {
+    this.setState({
+      // Remove any existing children and create new ones before trying to
+      // update them.
+      childKeys: _.map(data, function () { return _.uniqueId() }),
+    }, function () {
+      _.map(_.zip(data, this.state.childKeys), 
+            function (datumKey) {
+              this.refs[datumKey[1]].fromJSON(datumKey[0]);
+            }.bind(this));
+    }.bind(this));
   },
 
   handleAdd: function () {

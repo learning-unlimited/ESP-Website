@@ -43,7 +43,7 @@ from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.db.models.query import Q
 
 @login_required
@@ -58,33 +58,32 @@ def myesp_passwd(request):
                         new_data = form.cleaned_data
                         user = authenticate(username=request.user.username,
                                             password=new_data['password'])
-                        
+
                         user.set_password(new_data['newpasswd'])
                         user.save()
                         login(request, user)
                         return render_to_response('users/passwd.html', request, {'Success': True})
         else:
                 form = UserPasswdForm(user=request.user)
-                
+
         return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
                                                     'Success': False})
 
 @login_required
 def myesp_switchback(request):
-	user = request.user
-	user = ESPUser(user)
-	user.updateOnsite(request)
+    user = request.user
+    user.updateOnsite(request)
 
-	if not user.other_user:
-		raise ESPError('You were not another user!', log=False)
+    if not user.other_user:
+        raise ESPError('You were not another user!', log=False)
 
-	return HttpResponseRedirect(user.switch_back(request))
+    return HttpResponseRedirect(user.switch_back(request))
 
 @login_required
 def edit_profile(request):
 
-    curUser = ESPUser(request.user)
+    curUser = request.user
 
     if curUser.isStudent():
         return profile_editor(request, None, True, 'student')
@@ -96,7 +95,7 @@ def edit_profile(request):
         return profile_editor(request, None, True, 'guardian')
 
     elif curUser.isEducator():
-        return profile_editor(request, None, True, 'educator')	
+        return profile_editor(request, None, True, 'educator')
 
     else:
         user_types = curUser.groups.all().order_by('-id')
@@ -108,7 +107,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
-    
+
     if prog_input is None:
         prog = None
     else:
@@ -119,10 +118,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     context['user'] = request.user
     context['program'] = prog
 
-    curUser = ESPUser(curUser)
     curUser.updateOnsite(request)
 
-    #   Get the profile form from the user's type, although we need to handle 
+    #   Get the profile form from the user's type, although we need to handle
     #   a couple of extra possibilities for the 'role' variable.
     user_types = ESPUser.getAllUserTypes()
     additional_types = [['',  {'label': 'Not specified', 'profile_form': 'UserContactForm'}],
@@ -140,7 +138,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['profiletype'] = role
 
-    if request.method == 'POST' and request.POST.has_key('profile_page'):
+    if request.method == 'POST' and 'profile_page' in request.POST:
         form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
@@ -168,7 +166,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
             regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
 
-            if new_data.has_key('dietary_restrictions') and new_data['dietary_restrictions']:
+            if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
@@ -214,13 +212,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
         new_data = regProf.updateForm(new_data, role)
-        
+
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
-        elif request.session.has_key('birth_month') and request.session.has_key('birth_day'):
+        elif 'birth_month' in request.session and 'birth_day' in request.session:
             new_data['dob'] = datetime.date(1998, int(request.session['birth_month']), int(request.session['birth_day']))
 
-        if request.session.has_key('school_id'):
+        if 'school_id' in request.session:
             new_data['k12school'] = request.session['school_id']
 
         #   Set default values for state fields
@@ -236,21 +234,19 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 @login_required
 def myesp_onsite(request):
-	
-	user = ESPUser(request.user)
-	if not user.isOnsite():
-		raise ESPError('You are not a valid on-site user, please go away.', log=False)
-	
-	progs = Permission.program_by_perm(user,"Onsite")
+    user = request.user
+    if not user.isOnsite():
+        raise ESPError('You are not a valid on-site user, please go away.', log=False)
 
-        # Order them decreasing by id
-        # - Currently reverse the list in Python, otherwise fbap's cache is ignored
-        # TODO: Fix this
-        progs = list(progs)
-        progs.reverse()
+    progs = Permission.program_by_perm(user,"Onsite")
 
-	if len(progs) == 1:
-		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
-	else:
-		return render_to_response('program/pickonsite.html', request, {'progs': progs})
+    # Order them decreasing by id
+    # - Currently reverse the list in Python, otherwise fbap's cache is ignored
+    # TODO: Fix this
+    progs = list(progs)
+    progs.reverse()
 
+    if len(progs) == 1:
+        return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
+    else:
+        return render_to_response('program/pickonsite.html', request, {'progs': progs})

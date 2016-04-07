@@ -40,7 +40,7 @@ import re
 
 class ModuleExistenceTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-       
+
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
@@ -59,16 +59,16 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         prog_mods = filter(lambda x: x.isStep(), self.program.getModules(tl=tl))
         prog_mods.sort(key=lambda x: x.id)
         return prog_mods
-            
+
     def observed_module_list(self, tl, page_content):
         prog_modules = self.program.getModules(tl=tl)
         modules_found = []
-    
+
         #   Find normal links
         pat1 = r'<a href="(?P<linkurl>[a-zA-z0-9_/]+)" title="(?P<linktitle>.*?)" class="vModuleLink" >(.*?)</a>'
         re_links_normal = re.findall(pat1, page_content, re.DOTALL)
         link_titles = [x[1] for x in re_links_normal]
-        
+
         #   Find inline template links
         pat2 = r'<a href="#module-(?P<moduleid>[0-9]+)" title="(?P<linktitle>.*?)">(.*?)</a>'
         re_links_inline = re.findall(pat2, page_content, re.DOTALL)
@@ -77,13 +77,13 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         for mod in prog_modules:
             if (mod.module.link_title in link_titles) or (mod.id in inline_ids):
                 modules_found.append(mod)
-        
+
         return modules_found
-        
+
     def check_reg_modules(self, core_url, tl):
         """ Check that the modules linked from the requested core registration page
             are consistent with those associated with the program. """
-        
+
         #   Fetch the registration page and the lists of desired/actual modules
         response = self.client.get('/%s/%s/%s' % (tl, self.program.getUrlBase(), core_url))
         self.assertEqual(response.status_code, 200)
@@ -104,7 +104,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         for i in range(len(actual_modules)):
             if actual_module_ids[i] not in target_module_ids:
                 missing_mods.append(actual_modules[i])
-                
+
         #   Report any inconsistencies we detected.
         self.assertTrue(len(missing_mods) == 0, 'Missing modules: %s' % [x.__class__.__name__ for x in missing_mods])
         self.assertTrue(len(extra_mods) == 0, 'Extra modules: %s' % [x.__class__.__name__ for x in extra_mods])
@@ -114,17 +114,17 @@ class ModuleExistenceTest(ProgramFrameworkTest):
 
         #   Pick a student and log on
         student = random.choice(self.students)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
         #   Get student reg page and check list of modules
         self.check_reg_modules('studentreg', 'learn')
-        
+
         #   Remove a module and check list is still consistent
         possible_modules = [x.module.id for x in self.target_module_list('learn')]
         module_to_remove = random.choice(possible_modules)
         self.program.program_modules.remove(module_to_remove)
         self.check_reg_modules('studentreg', 'learn')
-        
+
         #   Restore it and re-check
         self.program.program_modules.add(module_to_remove)
         self.check_reg_modules('studentreg', 'learn')
@@ -134,17 +134,17 @@ class ModuleExistenceTest(ProgramFrameworkTest):
 
         #   Pick a teacher and log on
         teacher = random.choice(self.teachers)
-        self.failUnless( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
-        
+        self.assertTrue( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
+
         #   Get teacher reg page and check list of modules
         self.check_reg_modules('teacherreg', 'teach')
-        
+
         #   Remove a module and check list is still consistent
         possible_modules = [x.module.id for x in self.target_module_list('teach')]
         module_to_remove = random.choice(possible_modules)
         self.program.program_modules.remove(module_to_remove)
         self.check_reg_modules('teacherreg', 'teach')
-        
+
         #   Restore it and re-check
         self.program.program_modules.add(module_to_remove)
         self.check_reg_modules('teacherreg', 'teach')

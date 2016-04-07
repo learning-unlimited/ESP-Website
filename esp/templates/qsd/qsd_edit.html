@@ -2,8 +2,6 @@
 
 {% block title %}{{ title }} - EDIT{% endblock %}
 
-{% block subsection_name %}QSD Editor{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <style type="text/css">
@@ -64,7 +62,7 @@
   <p>Please use <a href="http://daringfireball.net/projects/markdown/syntax">
      Markdown</a> whenever possible. (Although HTML will work.)
   </p>
-  <p><textarea class="wide" name="content" class="markdown" rows="50">{{ content|escape }}</textarea></p>
+  <p><textarea class="wide markdown" name="content" rows="50" style="font-family: monospace;">{{ content|escape }}</textarea></p>
   <p><input type="submit" name="post_edit" value="Save Changes!" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from functools import wraps
 
 def disable_csrf_cookie_update(fn):

@@ -33,8 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.web.util import render_to_response
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -113,11 +113,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Check for a 'donation' line item type on this program, which we will need
         #   Note: This could also be created by default for every program,
         #   in the accounting controllers.
-        (lit, created) = LineItemType.objects.get_or_create(
-            text=self.settings['donation_text'],
-            program=self.program,
-            required=False
-        )
+        if self.settings['offer_donation']:
+            (lit, created) = LineItemType.objects.get_or_create(
+                text=self.settings['donation_text'],
+                program=self.program,
+                required=False
+            )
 
         #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
         #   and followed by a 24 character base64-encoded string.
@@ -127,8 +128,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="/admin/tagdict/tag">edit the "stripe_settings" Tag here</a>.', True)
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
+    @meets_cap
     def payonline(self, request, tl, one, two, module, extra, prog):
 
         #   Check that the user has completed all required modules so that they
@@ -146,7 +148,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
         context = {}
@@ -158,8 +160,9 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         payment_type = iac.default_payments_lineitemtype()
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
-        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text'])
-        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type, donate_type]).order_by('-line_item__required')
+        offer_donation = self.settings['offer_donation']
+        donate_type = iac.get_lineitemtypes().get(text=self.settings['donation_text']) if offer_donation else None
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=filter(None, [payment_type, sibling_type, grant_type, donate_type])).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
         #   accepted by Stripe.
@@ -170,7 +173,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['amount_paid'] = iac.amount_paid()
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.
-        donation_prefs = iac.get_preferences([donate_type,])
+        donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
         if donation_prefs:
             context['amount_donation'] = Decimal(donation_prefs[0][2])
             context['has_donation'] = True
@@ -203,6 +206,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
 
     @aux_call
+    @needs_student
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         self.check_setup()
@@ -240,7 +244,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         if 'error_type' not in context:
             try:
-                with transaction.commit_on_success():
+                with transaction.atomic():
                     # Save a record of the charge if we can uniquely identify the user/program.
                     # If this causes an error, the user will get a 500 error
                     # page, and the card will NOT be charged.
@@ -262,6 +266,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         currency="usd",
                         card=request.POST['stripeToken'],
                         description="Payment for %s %s - %s" % (group_name, prog.niceName(), request.user.name()),
+                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },
@@ -297,4 +302,4 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

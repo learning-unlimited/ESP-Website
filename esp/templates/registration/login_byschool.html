@@ -2,11 +2,6 @@
 
 {% block title %}Login{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Welcome Back"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />

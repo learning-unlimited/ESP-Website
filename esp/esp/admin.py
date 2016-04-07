@@ -49,20 +49,9 @@ admin_site = ESPAdminSite()
 
 #   A copy of Django's autodiscover function that accepts a site instance.
 def autodiscover(site):
-    import copy
-    from django.conf import settings
-    from django.utils.importlib import import_module
-    from django.utils.module_loading import module_has_submodule
+    from django.utils.module_loading import autodiscover_modules
 
-    for app in settings.INSTALLED_APPS:
-        mod = import_module(app)
-        try:
-            before_import_registry = copy.copy(site._registry)
-            import_module('%s.admin' % app)
-        except:
-            site._registry = before_import_registry
-            if module_has_submodule(mod, 'admin'):
-                raise
+    autodiscover_modules('admin', register_to=site)
 
 #   Properly add needed contrib modules to the Admin site
 from django.contrib.sites.models import Site

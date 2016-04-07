@@ -40,7 +40,7 @@ class ConsistencyChecker(object):
     """ A class for finding issues with the scheduling of a program. """
     def __init__(self, program, *args, **kwargs):
         self.program = program
-        
+
         self.classes = ClassSubject.objects.filter(parent_program=self.program)
         teachers = set()
         for c in self.classes:
@@ -64,7 +64,7 @@ class ConsistencyChecker(object):
         if sorted(resource_events) != sorted(meeting_time_events):
             result.append(str(section.emailcode()) + ' has resource events: ' + ', '.join([str(x) for x in resource_events]) + ' and meeting_time events: ' + ', '.join([str(x) for x in meeting_time_events]))
         return result
-        
+
     def check_teacher_conflict(self, teacher):
         result = []
         sections_taught = list(teacher.getTaughtSectionsFromProgram(self.program)) # I don't trust the QuerySet to iterate in the same order for both loops.
@@ -80,7 +80,7 @@ class ConsistencyChecker(object):
                     if set(c1_times).intersection(c2_times) != set():
                         result.append(str(s1.emailcode()) + ' and ' + str(s2.emailcode()) + ' are both taught by ' + str(teacher) + ' at ' + ', '.join([str(x) for x in set(c1_times).intersection(c2_times)]))
         return result
-    
+
     def check_resource_conflicts(self):
         result = []
         sectionlist = list(self.sections)   # I don't trust the QuerySet to iterate in the same order for both loops.
@@ -98,7 +98,7 @@ class ConsistencyChecker(object):
                     if s1_used_resources.intersection(s2_used_resources) != set():
                         result.append(str(s1.emailcode()) + ' and ' + str(s2.emailcode()) + ' are both using: ' + str([[x.name, x.event] for x in set(s1_used_resources).intersection(s2_used_resources)]))
         return result
-        
+
     def run_all_checks(self):
         results = []
         for section in self.sections:

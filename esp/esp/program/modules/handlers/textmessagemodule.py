@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call
 from django.http import HttpResponseRedirect
 from django import forms
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+from localflavor.us.forms import USPhoneNumberField
 from esp.program.models import RegistrationProfile
 from esp.middleware.threadlocalrequest import get_current_request
 class TextMessageForm(forms.Form):
@@ -76,8 +76,8 @@ class TextMessageModule(ProgramModuleObj):
             profile = RegistrationProfile.getLastForProgram(student, self.program)
             profile.text_reminder = False
             profile.save()
-            
+
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

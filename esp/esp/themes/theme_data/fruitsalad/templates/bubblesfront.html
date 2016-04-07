@@ -102,8 +102,10 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 </form>
 {% else %}
 <!-- logout -->
-  Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+<div id="login_greeting_index">
+  Hello, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>!<br />
   (<a href="/myesp/signout/">Logout</a>)
+</div>
 {% endif %}
 
 </div>

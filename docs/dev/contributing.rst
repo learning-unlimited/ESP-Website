@@ -30,7 +30,7 @@ From the directory ``/esp``: ::
   git checkout main
   git pull
   ./update_deps.sh # on vagrant: see vagrant docs; no need to bother if deps haven’t changed
-  ./manage.py update # on vagrant: fab manage:cmd=update
+  ./manage.py update # on vagrant: fab refresh
   git checkout -b new-branch-name
 
 Write some code!
