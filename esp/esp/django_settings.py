@@ -375,3 +375,7 @@ SHELL_PLUS_POST_IMPORTS = (
 TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None
 TWILIO_ACCOUNT_NUMBERS = None
+
+# Default configuration for themes: set this to True to make recompile_theme
+# and the themes frontend refuse to do anything
+LOCAL_THEME = False

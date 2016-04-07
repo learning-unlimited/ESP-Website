@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.middleware import ESPError
 from esp.users.models import admin_required
 from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
@@ -46,8 +47,14 @@ import random
 import string
 import os.path
 
+THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
+                     "If you want to switch to one of the standard themes, " + \
+                     "please contact the web team."
+
 @admin_required
 def landing(request):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
     context = {}
     tc = ThemeController()
     context['theme_name'] = tc.get_current_theme()
@@ -56,6 +63,9 @@ def landing(request):
 
 @admin_required
 def selector(request, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
+
     context = {}
     tc = ThemeController()
 
@@ -89,6 +99,9 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     """ Display a form asking the user which local modified files
         they would like to keep, and which they would like to overwrite
         with the ones from the theme data.  """
+
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
 
     context = {}
     tc = ThemeController()
@@ -125,6 +138,9 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
 
 @admin_required
 def configure(request, current_theme=None, force_display=False, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
+
     context = {}
     tc = ThemeController()
     if current_theme is None:
@@ -164,6 +180,8 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
 
 @admin_required
 def editor(request):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
 
     tc = ThemeController()
 
@@ -241,6 +259,8 @@ def editor(request):
 
 @admin_required
 def recompile(request, keep_files=None):
+    if settings.LOCAL_THEME:
+        raise ESPError(THEME_ERROR_STRING, log=False)
 
     tc = ThemeController()
 
