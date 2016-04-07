@@ -68,7 +68,9 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
-    filter_horizontal = ('program_modules', 'class_categories', 'flag_types')
+    list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
+    filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
+    search_fields = ('name', )
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
