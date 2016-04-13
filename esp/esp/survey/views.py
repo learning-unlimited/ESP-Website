@@ -212,9 +212,9 @@ def display_survey(user, prog, surveys, request, tl, format):
         subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         perclass_data = [ { 'class': x, 'questions': [ { 'question': y, 'answers': y.answer_set.filter(Q(content_type=section_ct,object_id=x.id) | Q(content_type=subject_ct,object_id=x.parent_class.id)) } for y in perclass_questions ] } for x in classes ]
-    
-    context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data}
-    
+
+    context = {'user': user, 'surveys': surveys, 'program': prog, 'perclass_data': perclass_data, 'tl': tl}
+
     #   Choose+use appropriate output format
     if format == 'html':
         return render_to_response('survey/review.html', request, context)
