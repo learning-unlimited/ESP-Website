@@ -974,7 +974,7 @@ Volunteer schedule for %s:
             for t in times_compulsory:
                 i = min_index
                 while i < len(classes):
-                    if classes[i].start_time_prefetchable() > t.start:
+                    if classes[i].start_time > t.start:
                         classes.insert(i, t)
                         break
                     i += 1
