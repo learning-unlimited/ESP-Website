@@ -394,8 +394,8 @@ class OnSiteClassList(ProgramModuleObj):
         if start_id != -1:
             curtime = Event.objects.filter(id=start_id)
         else:
-            window_start = time_now + timedelta(-1, 85200)
-            curtime = Event.objects.filter(start__gte=window_start).order_by('start')
+            window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
+            curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
 
         end_id = int(options.get('end', -1))
         if end_id != -1:
