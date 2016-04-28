@@ -157,14 +157,21 @@ def qsd(request, url):
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
-        if qsd_rec.url != base_url or qsd_rec.nav_category != nav_category_target or qsd_rec.content != request.POST['content'] or qsd_rec.description != request.POST['description'] or qsd_rec.keywords != request.POST['keywords']:
-            qsd_rec.url = base_url
-            qsd_rec.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
-            qsd_rec.content = request.POST['content']
-            qsd_rec.title = request.POST['title']
-            qsd_rec.description = request.POST['description']
-            qsd_rec.keywords    = request.POST['keywords']
+        copy_map = {
+            'url': base_url,
+            'nav_category': nav_category_target,
+            'content': request.POST['content'],
+            'title': request.POST['title'],
+            'description': request.POST['description'],
+            'keywords': request.POST['keywords'],
+        }
+        diff_found = False
+        for field, new_value in copy_map.items():
+            if getattr(qsd_rec, field) != new_value:
+                setattr(qsd_rec, field, new_value)
+                diff_found = True
 
+        if diff_found:
             qsd_rec.load_cur_user_time(request)
             qsd_rec.save()
 
