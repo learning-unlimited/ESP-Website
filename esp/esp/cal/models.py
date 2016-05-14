@@ -56,6 +56,13 @@ class EventType(models.Model):
     get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
+    @classmethod
+    def teacher_event_types(cls):
+        return {
+            'interview': cls.get_from_desc('Teacher Interview'),
+            'training': cls.get_from_desc('Teacher Training'),
+        }
+
 class Event(models.Model):
     """ A unit calendar entry.
 
