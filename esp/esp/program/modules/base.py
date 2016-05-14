@@ -108,15 +108,12 @@ class ProgramModuleObj(models.Model):
 
         return result
 
-    def get_main_view(self, tl=None):
-        if tl or not hasattr(self, '_main_view'):
-            main_views = self.get_views_by_call_tag(['Main Call'])
-        if tl:
-            tl_matching_views = filter(lambda x: hasattr(getattr(self, x), 'call_tl') and getattr(self, x).call_tl == tl, main_views)
-            if len(tl_matching_views) > 0:
-                return tl_matching_views[0]
+    def get_main_view(self):
         if not hasattr(self, '_main_view'):
-            if len(main_views) > 0:
+            main_views = self.get_views_by_call_tag(['Main Call'])
+            if len(main_views) > 1:
+                raise ESPError("Modules may not have multiple main calls.")
+            elif main_views:
                 self._main_view = main_views[0]
             else:
                 self._main_view = None
@@ -124,7 +121,7 @@ class ProgramModuleObj(models.Model):
     main_view = property(get_main_view)
 
     def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
-        return getattr(self, self.get_main_view(tl))(request, tl, one, two, call_txt, extra, prog)
+        return getattr(self, self.get_main_view())(request, tl, one, two, call_txt, extra, prog)
 
     def get_all_views(self):
         if not hasattr(self, '_views'):
@@ -140,7 +137,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.get_main_view(tl)
+                return module.get_full_path()
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -261,8 +258,9 @@ class ProgramModuleObj(models.Model):
 
     # important functions for hooks...
     @cache_function
-    def get_full_path(self, tl=None):
-        return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
+    def get_full_path(self):
+        return '/%s/%s/%s' % (
+            self.module.module_type, self.program.url, self.get_main_view())
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
     def setUser(self, user):
@@ -272,10 +270,10 @@ class ProgramModuleObj(models.Model):
     def makeLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(tl=self.module.module_type), self.module.link_title, self.module.link_title)
+                (self.get_full_path(), self.module.link_title, self.module.link_title)
         else:
             link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path('manage'), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
