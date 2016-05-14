@@ -35,14 +35,11 @@ Learning Unlimited, Inc.
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
-from esp.program.modules.base import LOGIN_URL
-from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from urllib import quote
 
 from Cookie import SimpleCookie
 
