@@ -956,10 +956,6 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.user = user
-        #   Populate the view attributes so they can be cached
-        for module in modules:
-            module.get_all_views()
-            module.get_main_view()
         return modules
 
     @cache_function
