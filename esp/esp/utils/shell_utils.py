@@ -25,6 +25,9 @@ from esp.program.controllers.studentregsanity import StudentRegSanityController
 from esp.themes.controllers import ThemeController
 from esp.users.controllers.usersearch import UserSearchController
 
-# Until accounting_core.models is removed, some of the models we really want
-# can get shadowed.
-from esp.accounting.models import *
+import os
+os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
+# For convenience, set up a logger (and hide logging so people use the logger
+# instead)
+from logging import getLogger
+logger = getLogger('esp.shell_plus')

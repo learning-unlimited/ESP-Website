@@ -32,10 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models
-from esp.datatree.models import *
 from datetime import datetime, timedelta
-from esp.cache import cache_function
+from argcache import cache_function
 
 # Create your models here.
 
@@ -51,7 +53,7 @@ class EventType(models.Model):
         """ A cached function for getting EventTypes that we know must exist
         if someone has run install() """
         return EventType.objects.get(description=desc)
-    get_from_desc.depend_on_model(lambda: EventType)
+    get_from_desc.depend_on_model('cal.EventType')
     get_from_desc = classmethod(get_from_desc)
 
 class Event(models.Model):
@@ -72,35 +74,31 @@ class Event(models.Model):
 
     def duration(self):
         return self.end - self.start
-    
+
     def duration_str(self):
         dur = self.end - self.start
         hours = int(dur.seconds / 3600)
         minutes = int(dur.seconds / 60) - hours * 60
-        return '%d hr %d min' % (hours, minutes)
-    
+        return u'%d hr %d min' % (hours, minutes)
+
     def __unicode__(self):
-        return self.start.strftime('%a %b %d: ') + self.short_time()
+        return self.start.strftime('%a %b %d: ').decode('utf-8') + self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-        
-        start_minutes = ''
-        end_minutes = ''
-        start_ampm = ''
-        if self.start.minute != 0:
-            start_minutes = ':%02d' % self.start.minute
-        if self.end.minute != 0:
-            end_minutes = ':%02d' % self.end.minute
-        if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p')
-        
-        return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
-            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p') )
+        day_list = [u'Mon', u'Tue', u'Wed', u'Thu', u'Fri', u'Sat', u'Sun']
 
-    def is_happening(self, time=datetime.now()):
-        """ Return True if the specified time is between start and end """
-        return (time > self.start and time < self.end)
+        start_minutes = u''
+        end_minutes = u''
+        start_ampm = u''
+        if self.start.minute != 0:
+            start_minutes = u':%02d' % self.start.minute
+        if self.end.minute != 0:
+            end_minutes = u':%02d' % self.end.minute
+        if (self.start.hour < 12) != (self.end.hour < 12):
+            start_ampm = self.start.strftime(' %p').decode('utf-8')
+
+        return u'%d%s%s to %d%s %s' % ( (self.start.hour % 12) or 12, start_minutes, start_ampm,
+            (self.end.hour % 12) or 12, end_minutes, self.end.strftime('%p').decode('utf-8') )
 
     @staticmethod
     def total_length(event_list):
@@ -127,92 +125,71 @@ class Event(models.Model):
         newList = [ x for x in sortedList if x != None ]
 
         return newList
-            
+
     @staticmethod
     def contiguous(event1, event2):
         """ Returns true if the second argument is less than 20 minutes apart from the first one. """
         tol = timedelta(minutes=20)
-        
+
         if (event2.start - event1.end) < tol:
             return True
         else:
             return False
-        
+
     @staticmethod
     def group_contiguous(event_list):
         """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
         from copy import copy
         sorted_list = copy(event_list)
         sorted_list.sort()
-        
+
         grouped_list = []
         current_group = []
         last_event = None
-        
+
         for event in sorted_list:
-            
+
             if last_event is None or Event.contiguous(last_event, event):
                 current_group.append(event)
             else:
                 grouped_list.append(copy(current_group))
                 current_group = [event]
-                
+
             last_event = event
-        
+
         if len(current_group) > 0:
             grouped_list.append(current_group)
-        
+
         return grouped_list
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a')
-        s2 = self.end.strftime('%a')
+        s = self.start.strftime('%a').decode('utf-8')
+        s2 = self.end.strftime('%a').decode('utf-8')
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,')
-            s2 += self.end.strftime(', %b %d,')
+            s += self.start.strftime(', %b %d,').decode('utf-8')
+            s2 += self.end.strftime(', %b %d,').decode('utf-8')
         if s != s2:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
+               + s2 + u' ' + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
         else:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0')
-    
+            return s + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8') + u'--' \
+               + self.end.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d')
-    
+        return self.start.strftime('%A, %B %d').decode('utf-8')
+
     def pretty_start_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
-    
-    def num_classes_assigned(self):
-        #   Return the number of classes assigned to classrooms in this time slot.
-        from esp.resources.models import ResourceAssignment, ResourceType
-        classroom = ResourceType.get_or_create('Classroom')
-        return ResourceAssignment.objects.filter(resource__event=self, resource__res_type=classroom).count()
-    
-    def num_classes(self):
-        #   Return the number of classes assigned to this time slot.
-        from esp.program.models import ClassSection
-        return ClassSection.objects.filter(meeting_times=self).count()
-    
+        return self.start.strftime('%a').decode('utf-8') + u' ' + self.start.strftime('%I:%M%p').lower().strip('0').decode('utf-8')
+
     def parent_program(self):
         return self.program
-    
+
     def __cmp__(self, other):
         try:
             return cmp(self.start, other.start)
         except:
             return 0
-        
-class EmailReminder(models.Model):
-    """ A reminder, associated with an Event, that is to be sent by e-mail """
-    event = models.ForeignKey(Event)
-    email = models.ForeignKey('dbmail.MessageRequest')
-    date_to_send = models.DateTimeField()
-    sent = models.BooleanField(default=True)
-
-    def __unicode__(self):
-        return unicode(self.event) + ': ' + unicode(self.email)
 
 def install():
     """
@@ -222,7 +199,7 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    print "Installing esp.cal initial data..."
+    logger.info("Installing esp.cal initial data...")
     for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
         if not EventType.objects.filter(description=x).exists():
             EventType.objects.create(description=x)

@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
-from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site
 
@@ -46,7 +45,7 @@ from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstrai
 
 from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
 
-from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
+from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 from esp.program.models import ClassFlag, ClassFlagType
@@ -59,7 +58,7 @@ class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
 admin_site.register(ProgramModule, ProgramModuleAdmin)
-    
+
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
@@ -69,7 +68,9 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
-    filter_horizontal = ('program_modules', 'class_categories', 'flag_types')
+    list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
+    filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
+    search_fields = ('name', )
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
@@ -79,8 +80,12 @@ class RegistrationProfileAdmin(admin.ModelAdmin):
                                             'contact_emergency__first_name', 'contact_emergency__last_name']
     list_filter = ('program', )
     date_hierarchy = 'last_ts'
+
+    def lookup_allowed(self, key, value):
+        return True
+
 admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
-    
+
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
     search_fields = default_user_search() + ['slugbio', 'bio']
@@ -114,12 +119,12 @@ admin_site.register(SplashInfo, Admin_SplashInfo)
 def subclass_instance_type(obj):
     return type(obj.subclass_instance())._meta.object_name
 subclass_instance_type.short_description = 'Instance type'
-        
+
 class BooleanTokenAdmin(admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
 admin_site.register(BooleanToken, BooleanTokenAdmin)
-    
+
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
@@ -176,10 +181,6 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 ## class_.py
 
-class ProgramCheckItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'program')
-admin_site.register(ProgramCheckItem, ProgramCheckItemAdmin)
-
 class Admin_RegistrationType(admin.ModelAdmin):
     list_display = ('name', 'category', )
 admin_site.register(RegistrationType, Admin_RegistrationType)
@@ -215,35 +216,48 @@ def sec_classrooms(obj):
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
+    list_display = ('emailcode', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
-    search_fields = ['parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
-    pass
+    search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
     model = ClassSection
     fields = ('status','meeting_times', 'prettyrooms')
     readonly_fields = ('meeting_times', 'prettyrooms')
+    can_delete = False
+
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('category', 'id', 'title', 'parent_program', 'pretty_teachers')
+    list_display = ('category', 'id', 'title', 'parent_program',
+                    'pretty_teachers')
     list_display_links = ('title',)
     search_fields = default_user_search('teachers') + ['class_info', 'title', 'id']
-    exclude = ('teachers','anchor')
+    exclude = ('teachers',)
+    readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
-    fieldsets= (
-            (None, {'fields':('title','parent_program', 'category', 'class_info', 'message_for_directors', 'directors_notes', 'purchase_requests')}),
-            ('Registration Info',
-                {'classes': ('collapse',),
-                'fields': (('grade_min', 'grade_max'),'allow_lateness','prereqs', 'hardness_rating')}),
-            ('Scheduling Info',
-                {'classes': ('collapse',),
-                 'fields':('requested_room', 'requested_special_resources', ('allowable_class_size_ranges', 'optimal_class_size_range'), ('class_size_min', 'class_size_optimal', 'class_size_max', 'session_count'))}),
-            ('Advanced',
-                {'fields': ('schedule','checklist_progress', 'custom_form_data')}),
-            )
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'parent_program', 'timestamp', 'category',
+                       'class_info', 'message_for_directors',
+                       'directors_notes', 'purchase_requests')
+        }),
+        ('Registration Info', {
+            'classes': ('collapse',),
+            'fields': (('grade_min', 'grade_max'), 'allow_lateness', 'prereqs',
+                       'hardness_rating')
+        }),
+        ('Scheduling Info', {
+            'classes': ('collapse',),
+            'fields': ('requested_room', 'requested_special_resources',
+                       ('allowable_class_size_ranges',
+                        'optimal_class_size_range'),
+                       ('class_size_min', 'class_size_optimal',
+                        'class_size_max', 'session_count'))
+        }),
+        ('Advanced', {'fields': ('schedule', 'custom_form_data')}),
+    )
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):

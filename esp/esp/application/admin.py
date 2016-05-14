@@ -44,15 +44,16 @@ from esp.application.models import FormstackAppSettings, FormstackStudentProgram
 from esp.utils.admin_user_search import default_user_search
 
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
-    fields = ['module', 'api_key', 'forms_for_api_key',
+    fields = ['program', 'api_key', 'forms_for_api_key',
               'form_id', 'form_fields',
               'username_field', 'coreclass_fields',
               'autopopulated_fields', 'teacher_view_template',
               'finaid_form_id', 'finaid_form_fields',
               'finaid_user_id_field', 'finaid_username_field',
               'app_is_open']
-    readonly_fields = ['module', 'forms_for_api_key', 'form_fields', 'finaid_form_fields']
-    list_display = ['module']
+    readonly_fields = ['program', 'forms_for_api_key', 'form_fields', 'finaid_form_fields']
+    list_display = ['program', 'app_is_open']
+    search_fields = ('program__name',)
 
     def forms_for_api_key(self, fsas):
         if fsas.api_key == '':
@@ -164,7 +165,7 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                     'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
-    list_filter = ['app__admin_status', 'subject', 'subject__parent_program']
+    list_filter = ['app__admin_status', 'subject', 'subject__parent_program', 'student_preference']
     search_fields = default_user_search('app__user') + ['subject__title', 'subject__id']
 
     def user(self, classapp):

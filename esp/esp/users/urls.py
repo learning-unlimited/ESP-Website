@@ -1,13 +1,11 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 from esp.users.views.registration import GradeChangeRequestView
 
 urlpatterns = patterns('esp.users.views',
-                       (r'^ajax_login/?', 'ajax_login'),
                        (r'^register/?$', 'user_registration_phase1',),
                        (r'^register/information/?$', 'user_registration_phase2'),
                        (r'^activate/?$', 'registration.activate_account',),
-                       (r'^emaillist/?$', 'join_emaillist',),                   
                        (r'^passwdrecover/(success)?/?$', 'initial_passwd_request',),
                        (r'^passwdrecover/?$', 'initial_passwd_request',),
                        (r'^recoveremail/(success)?/?$', 'email_passwd_followup',),

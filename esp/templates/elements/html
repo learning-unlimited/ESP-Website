@@ -27,7 +27,6 @@
     {% block javascript %}
     {% block js0 %}
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
-    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
     {% endblock js0 %}
 
     {% block jquery %}
@@ -44,12 +43,21 @@
     <script type="text/javascript" src="/media/scripts/common.js"></script>
     {% endblock jquery %}
 
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/react-with-addons.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
+    <script type="text/javascript" src="/media/scripts/lodash.compat.min.js"></script>
+
     {% block js1 %}
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+    {% if schoolyear %}
+    <script type="text/javascript">
+      esp_user['cur_grade'] = {{schoolyear}} + 12 - esp_user['cur_yog'];
+    </script>
+    {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
-    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">
       MathJax.Hub.Config({
       messageStyle: "none",
@@ -70,17 +78,6 @@
     <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
     <script type="text/javascript"> window.jsprettify.run(); </script>
     {% endblock js1 %}
-
-
-    {% block user_classes %}
-    <script type="text/javascript">
-      /* <![CDATA[ */
-      $j(document).ready(function() {
-      update_user_classes();
-      });
-      /* ]]> */
-    </script>
-    {% endblock user_classes %}
 
     {% block xtrajs %}{% endblock xtrajs %}
 

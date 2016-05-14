@@ -2,16 +2,6 @@
 
 {% block title %}Profile Editor{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
-{% endblock %}
-
-{% block xtrajs %}
-{{ block.super }}
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
-{% endblock %}
-
 {% block content %}
 <div class="row-fluid">
   <div class="span10 offset1">

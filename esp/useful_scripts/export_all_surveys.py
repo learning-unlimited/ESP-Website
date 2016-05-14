@@ -35,7 +35,7 @@ def get_all_data():
 
     print 'Got answers'
     gc.collect() # 'cause the Django query parser system uses gobs of RAM; keep RAM usage down a bit
-    
+
     all_survey_responses = list( SurveyResponse.objects.all().select_related() )
     all_surveys = list( Survey.objects.all().select_related() )
 
@@ -69,7 +69,7 @@ def get_all_data():
     # Survey responses for a class share an anchor with that class
     all_classes_dict = {}
     for c in all_classes:
-        all_classes_dict[c.id] = c        
+        all_classes_dict[c.id] = c
 
     all_sections_dict = {}
     for s in all_sections:
@@ -88,7 +88,7 @@ def get_all_data():
         s._questions = set()
         s._per_class_questions = set()
         all_surveys_dict[s.id] = s
-        
+
     all_survey_responses_dict = {}
     for s in all_survey_responses:
         s._answers = list()
@@ -102,7 +102,7 @@ def get_all_data():
         # We could be a per-class question; figure this out from our anchor
         a._is_per_section = (a.content_type == content_type_classsection)
         a._is_per_class = (a.content_type == content_type_classsubject)
-        
+
         if a._is_per_class:
             a._class = all_classes_dict[a.object_id]
             a._program = all_programs_dict[a._class.parent_program_id]
@@ -176,7 +176,7 @@ def auto_cell_type(val):
     # No idea; we'll just return a string
     # Excel can deal with Unicode, so leave it as a Unicode-string.
     return val
-    
+
 
 def write_xls_row(ws, rownum, data_list):
     """
@@ -295,7 +295,7 @@ def build_workbook_data():
             # Because ans_dict is a defaultdict(str), if we ask for an answer that we don't have,
             # we'll just get "", which is probably what we want.
             this_answers = [ans_dict[q] for q in this_question_ids]
-            
+
             write_xls_row(ws, row, surveyresponse_answers + this_answers)
 
             row += 1
@@ -303,7 +303,7 @@ def build_workbook_data():
         # PER-CLS:
         this_column_names = ["Class ID", "Section Number", "Teachers"]
         this_question_ids = [-1, -2, -3]
-        
+
         # Iterate through per-class questions this time
         for q in s._per_class_questions:
             # But build up the same data structures
@@ -313,7 +313,7 @@ def build_workbook_data():
 
         # Now we have to do something tricky,
         # because we don't have one response per row;
-        # we have one row per response per class.        
+        # we have one row per response per class.
         response_per_usercls = defaultdict( lambda: defaultdict(list) )
         row = 1
         for r in s._responses:
@@ -334,7 +334,7 @@ def build_workbook_data():
                     ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class != None else ans_dict[-3]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
-                
+
                 # If we actually have any data; ie., we're not about to print out the empty string
                 if not reduce(lambda comb, val: comb and (val == ""), this_answers, True):
                     write_xls_row(ws, row, surveyresponse_answers + this_answers)

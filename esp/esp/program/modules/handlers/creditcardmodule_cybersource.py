@@ -32,11 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.program.modules import module_ext
-from esp.datatree.models import *
-from esp.web.util        import render_to_response
-from datetime            import datetime        
+from esp.utils.web       import render_to_response
+from datetime            import datetime
+from django.conf         import settings
 from django.db.models.query     import Q
 from esp.users.models    import ESPUser
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -72,18 +72,13 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Payment')
-    def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        return render_to_response(self.baseDir() + 'cardstart.html', request, {})
-
-    @aux_call
-    @usercheck_usetl
-    @meets_deadline('/Payment')
-    def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
+    @meets_cap
+    def cybersource(self, request, tl, one, two, module, extra, prog):
 
         # Force users to pay for non-optional stuffs
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, request.user)
         context = {}
@@ -92,6 +87,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['two'] = two
         context['tl']  = tl
         context['user'] = user
+        context['contact_email'] = self.program.director_email
         context['invoice_id'] = iac.get_id()
         context['identifier'] = iac.get_identifier()
         payment_type = iac.default_payments_lineitemtype()
@@ -103,9 +99,15 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
+        context['result'] = request.GET.get("result")
+        context['post_url'] = settings.CYBERSOURCE_CONFIG['post_url']
+        context['merchant_id'] = settings.CYBERSOURCE_CONFIG['merchant_id']
+
+        if (not context['post_url']) or (not context['merchant_id']):
+            raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

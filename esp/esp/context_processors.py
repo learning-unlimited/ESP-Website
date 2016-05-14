@@ -1,12 +1,12 @@
-import esp.web.util.globaltags
 from django.contrib.sites.models import Site
 from django.conf import settings
 
 from esp.program.models import Program
+from esp.users.models import ESPUser
 from esp.web.views.navBar import makeNavBar
 
-def media_url(request): 
-    return {'media_url': settings.MEDIA_URL} 
+def media_url(request):
+    return {'media_url': settings.MEDIA_URL}
 
 def espuserified_request(request):
     return {'request': request, 'user': None, 'messages': None, 'perms': None}
@@ -17,7 +17,7 @@ def esp_user(request):
 def email_settings(request):
     context = {}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = settings.EMAIL_HOST
+    context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
     context['settings'] = settings
     return context
 
@@ -28,6 +28,15 @@ def program(request):
         if Program.objects.filter(url=program_url).count() == 1:
             return {'program': Program.objects.get(url=program_url)}
     return {}
+
+def schoolyear(request):
+    path_parts = request.path.lstrip('/').split('/')
+    if len(path_parts) > 3:
+        program_url = '/'.join(path_parts[1:3])
+        if Program.objects.filter(url=program_url).count() == 1:
+            program = Program.objects.get(url=program_url)
+            return {'schoolyear': ESPUser.program_schoolyear(program)}
+    return {'schoolyear': ESPUser.current_schoolyear()}
 
 def index_backgrounds(request):
     #if request.path.strip() == '':
@@ -47,13 +56,13 @@ def preload_images(request):
     return {'preload_images': preload_images_data}
 
 """ This list can be populated with images to be preloaded by the template.
-    
+
     Example:
     preload_images_data = [
         settings.MEDIA_URL+'images/level3/nav/home_ro.gif',
         settings.MEDIA_URL+'images/level3/nav/discoveresp_ro.gif',
         (etc.)
-        ] 
+        ]
 """
 
 preload_images_data = [

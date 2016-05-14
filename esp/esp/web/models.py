@@ -32,24 +32,25 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db import models
 from django.db.models.query import Q
 
-from esp.datatree.models import DataTree
 from esp.db.fields import AjaxForeignKey
-from esp.program.models import Program
-from esp.cache import cache_function
-        
+from argcache import cache_function
+
 class NavBarCategory(models.Model):
-    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
-    include_auto_links = models.BooleanField()
+    include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
     path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
     long_explanation = models.TextField()
 
     def get_navbars(self):
         return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
-    
+
     @cache_function
     def from_request(section, path):
         """ A function to guess the appropriate navigation category when one
@@ -69,38 +70,38 @@ class NavBarCategory(models.Model):
                 return categories[0]
 
         #   If all else fails, make something up.
-        return NavBarCategory.default()
+        return default_navbarcategory()
 
-    from_request.depend_on_model(lambda: NavBarCategory) 
+    from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
-    
-    @classmethod
-    def default(cls):
-        """ Default navigation category.  For now, the one with the lowest ID. """
-        if not hasattr(cls, '_default'):
-            if not cls.objects.exists():
-                install()
-            cls._default = cls.objects.all().order_by('id')[0]
-        return cls._default
-    
+
     def __unicode__(self):
         return u'%s' % self.name
+
+def default_navbarcategory():
+    """ Default navigation category. """
+    if not hasattr(NavBarCategory, '_default'):
+        if not NavBarCategory.objects.exists():
+            # We shouldn't need this before we've had a chance to run install()
+            # But Django was trying to call it anyway
+            return None
+        NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
+    return NavBarCategory._default
+
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
-    path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
-    
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
-    indent = models.BooleanField()
+    indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
+    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory)
 
     def can_edit(self, user):
         return user.isAdmin()
-    
+
     def __unicode__(self):
         return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
 
@@ -109,16 +110,16 @@ class NavBarEntry(models.Model):
 
     def makeUrl(self):
         return self.link
-    
+
     def is_link(self):
         return (self.link is not None) and (len(self.link) > 0)
-    
+
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
-    print "Installing esp.web initial data..."
+    logger.info("Installing esp.web initial data...")
     if not NavBarCategory.objects.filter(name='default').exists():
         NavBarCategory.objects.create(
             name='default',

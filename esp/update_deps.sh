@@ -12,15 +12,15 @@
 # (see comments in make_virtualenv.sh) and activate it accordingly.
 
 # Parse options
-OPTSETTINGS=`getopt -o 'p' -l 'prod' -- "$@"`
+OPTSETTINGS=`getopt -o 'pv:' -l 'prod,virtualenv:' -- "$@"`
 
 eval set -- "$OPTSETTINGS"
 
 while [ ! -z "$1" ]
 do
   case "$1" in
-    -p) MODE_PROD=true;;
-    --prod) MODE_PROD=true;;
+    -p | --prod) MODE_PROD=true;;
+    -v | --virtualenv) MODE_VIRTUALBOX=true; VIRTUALENV_DIR=$2; shift;;
      *) break;;
   esac
 
@@ -29,6 +29,7 @@ done
 
 BASEDIR=$(dirname $(dirname $(readlink -e $0)))
 
+sudo apt-get update
 sudo apt-get install -y $(<"$BASEDIR/esp/packages_base.txt")
 $BASEDIR/esp/packages_base_manual_install.sh
 if [[ "$MODE_PROD" ]]
@@ -36,11 +37,17 @@ then
     sudo apt-get install -y $(<"$BASEDIR/esp/packages_prod.txt")
 fi
 
-if [[ ! -f "$BASEDIR/env/bin/activate" ]]
+# Ensure that the virtualenv exists and is activated.
+if [[ -z "$VIRTUAL_ENV" ]]
 then
-    $BASEDIR/esp/make_virtualenv.sh
-else
-    source "$BASEDIR/env/bin/activate"
-    pip install -r "$BASEDIR/esp/requirements.txt"
+    VIRTUALENV_DIR=${VIRTUALENV_DIR:-$BASEDIR/env}
+    if [[ ! -f "$VIRTUALENV_DIR/bin/activate" ]]
+    then
+        $BASEDIR/esp/make_virtualenv.sh $VIRTUALENV_DIR
+    fi
+    source "$VIRTUALENV_DIR/bin/activate"
 fi
 
+# Upgrade/install pip, setuptools, wheel, and application dependencies.
+pip install -U pip setuptools wheel
+pip install -U -r "$BASEDIR/esp/requirements.txt"

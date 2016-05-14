@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (15)
+Student modules (17)
 ====================
 
 Extra Registration Info (CustomFormModule)
@@ -61,14 +61,14 @@ Formstack medical/liability forms (FormstackMedLiabModule)
 We are not permitted to directly handle sensitive information such as medical insurance information (just as we are not permitted to see credit card numbers).  If you need students to submit this type of information, you can use a secure 3rd party service (Formstack) along with this module:
 1) Create your form on Formstack.
 2) Create (program-specific) Tags with the form ID and viewing key as "formstack_id" and "formstack_viewkey" respectively.
-3) Configure Formstack to POST an acknowledgement of each form submission to /learn/[prorgram]/[instance]/medicalpostback581309742.
+3) Configure Formstack to POST an acknowledgement of each form submission to /learn/[program]/[instance]/medicalpostback581309742.
 
 This registration step is controlled by the FormstackMedliab deadline type.
 
 Lottery Student Registration (LotteryStudentRegModule) 
 ------------------------------------------------------
 
-There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose .  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
+There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose.  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
 
 If you are using this module, make sure the StudentClassRegModule is not enabled at the same time.  Add only LotteryStudentRegModule to your program for the lottery phase, then remove it when that phase ends.  After running the lottery assignment script, you can add the StudentClassRegModule and set a deadline for first-come first-served registration.
 
@@ -81,7 +81,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
@@ -100,7 +99,7 @@ More details on these Tags can be found here at http://wiki.learningu.org/Custom
 Lunch Preferences and Sibling Discount (SplashInfoModule) 
 ---------------------------------------------------------
 
-This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1--2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
+This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1-2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
 
 * splashinfo_choices: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  Example:
 
@@ -158,7 +157,7 @@ This module should be enabled if your program involves students picking and choo
 * Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
 * Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
 * Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the QSD area on the catalog if you would like students to see their schedule while doing this. 
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
 * Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
 * Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
 * Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
@@ -181,6 +180,42 @@ still controlled by the splashinfo_choices and splashinfo_costs Tags.  Items no
 longer have a separate cost for financial aid students; the amount these
 students are charged is determined by the financial aid grant.
 
+
+Donation module
+---------------
+
+This program module can be used to solicit donations for Learning Unlimited. If
+this module is enabled, students who visit the page can, if they so choose,
+select one of a few donation options (and those options are admin
+configurable). Asking for donations from parents and students can be a good way
+to help fundraise for LU community events, chapter services, and operational
+costs. If you are interested in fundraising this way, get in contact with an LU
+volunteer.
+
+There are two configurable options for the module:
+
+- donation_text: Defaults to "Donation to Learning Unlimited". This is the
+  description of the line item that will show up on student invoices when they
+  pay.
+
+- donation_options: Defaults to the list [10, 20, 50]. These are the donation
+  options, in US dollars, that students are able to select between. In
+  addition, "I won't be making a donation" is always an option.
+
+To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
+the program, with the key donation_settings, and with the value being a JSON
+object with the overriden keys/values.
+
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
+
+The module, when enabled, is available at the url
+/learn/<program>/<instance>/donation. It will also show up as an item in the
+student checklist. When students visit the page, they will see the donation
+pitch and the donation options. They may or may not select any of the options;
+if they select any of the options, it will be instantly recorded with an AJAX
+request to the server. When they are done, they can click a link to return to
+the main student registration page.
 
 Student Application (StudentJunctionAppModule)
 ----------------------------------------------
@@ -272,10 +307,19 @@ Text Message Reminders (TextMessageModule)
 
 With this module, students will be prompted to enter a phone number at which you will send reminders about the program (typically around the closing of registration, or the day before the program).  You can get a list of these numbers using the user list generator.
 
-This module does *NOT* send text messages, although this feature will be included in a future version of the site.  Please send your messages using a third party service.
+This module does *NOT* send text messages. For that functionality, see the "Group Text Module" below.
 
+Formstack Application Module
+----------------------------
 
-Teacher modules (12)
+This is the module that embeds a Formstack form on a student-facing page for
+student applications.  For more information, see
+`</docs/admin/student_apps.rst>`_.
+
+Class Change Request Module (ClassChangeRequest)
+------------------------------------------------
+
+Teacher modules (13)
 ====================
 
 Teacher Availability (AvailabilityModule)
@@ -301,7 +345,6 @@ The questions shown on the teacher profile are configurable via the following ta
 * teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------
@@ -363,8 +406,13 @@ This module will allow teachers to create one or more application questions for 
 
 Do not include this module unless you intend to review the responses in order to determine which students are admitted to the program.  It is unnecessary and confusing otherwise.
 
+Teacher Admissions Dashboard
+----------------------------
 
-Management modules (24)
+Provides an interface for teachers to review applications for their class.
+For more information, see `</docs/admin/student_apps.rst>`_.
+
+Management modules (26)
 =======================
 
 Class Management For Admin (AdminClass)
@@ -408,7 +456,7 @@ Custom forms and Formstack may be used to augment or replace these features.
 Admin Module for showing basic vitals (AdminVitals)
 ---------------------------------------------------
 
-This module is deprecated and will be removed in a future release.
+This module shows statistics about your program on the dashboard.
 
 AJAX Scheduling Module (AJAXSchedulingModule)
 ---------------------------------------------
@@ -418,11 +466,6 @@ This module provides one view, ajax_scheduling.  It is the main interface for as
 The scheduling interface will periodically fetch updates from the server so that multiple people can work on scheduling at the same time.  You will be warned if you are trying to create conflicting assignments.  For overriding schedule conflicts and other special cases (like assigning a class to non-contiguous time slots or multiple classrooms), use the manage class page.
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
-
-Managing Check List Items (CheckListModule)
--------------------------------------------
-
-This module is deprecated and will be removed in a future release.  Please consider using the new "class flags" feature described immediately below.
 
 Class Flags (ClassFlagModule)
 -------------------------------------------
@@ -436,9 +479,16 @@ To set up class flags, first add some flag types from the admin panel at
 /admin/program/classflagtype/, then add them to your program by choosing your
 program in /admin/program/program/ and scrolling to the bottom of the page.
 (There is also a place to add them at program creation.) Now you can add and
-view class flags from the edit class or manage class pages.  To create a list
-of classes with(out) some flag, go to the manage page for the program, and in
-the complete list of modules, choose "Manage class flags".
+view class flags from the edit class or manage class pages.
+
+Class Search (ClassSearchModule)
+--------------------------------
+
+This page, formerly a part of the ClassFlagModule allows building queries of
+classes, such as all classes with or without a particular flag, status,
+category, or any combination thereof.  It can be reached by clicking on "Search
+for Classes" under the complete module list on the program management main
+page.
 
 Communications Panel for Admin (CommModule)
 -------------------------------------------
@@ -447,18 +497,59 @@ This module allows you to use the Web site to send e-mail to participants in you
 
 To send an HTML e-mail (e.g. with images and formatting), begin your e-mail text with <html> and end it with </html>.  Besides using proper HTML code in the message text, please test send the message to yourself (before sending to a larger list) so you can verify that the message displays properly.
 
-Credit Card Module (CreditCardModule_Cybersource)
--------------------------------------------------
+Cybersource Credit Card Module
+------------------------------
 
 This is a module to allow credit card payments using the Cybersource hosted order page.  It is used only by MIT.
 
-Credit Card Module (CreditCardModule_FirstData)
--------------------------------------------------
+Stripe Credit Card Module
+-------------------------
 
-This is a module to allow credit card payments using the First Data hosted order page.  It can be used by LU hosted sites.  It will need to be configured for your specific program, so please contact your mentors and support team to discuss well in advance (at least one month) of your student registration.
+This is a module to allow credit card payments using Stripe.  It can be used by
+LU hosted sites.  It will need to be configured for your specific program, so
+please contact your mentors and/or websupport@learningu.org to discuss well in
+advance (at least one month) of your student registration.
 
-Credit Card Viewer(CreditCardViewer_Cybersource)
--------------------------------------------------
+The STRIPE_CONFIG settings should be configured for the module to interact with
+Stripe API servers.  There are two possible public/secret key pairs that can be
+used: one for live transactions, and one for testing.
+
+Once Stripe is configured, you can use the module for your program by enabling
+it in the admin panel and opening the "Pay for a program" deadline for
+students.  On the page, students will be able to confirm their current charges,
+and then enter their credit card information.  They can also opt to make a
+donation to LU.
+
+After submitting credit card information form, the data will be submitted
+directly to Stripe servers. The user will then send a Stripe token variable
+back to ESP-Website, which will be used to create a Stripe charge object. If
+invalid credit card information is submitted, Stripe will redirect back to
+website with error field set rather than the token.
+
+You will probably also want to enable the "Credit Card Viewer" (see below).
+
+There are three configurable options for the module:
+
+- donation_text: Defaults to "Donation to Learning Unlimited". This is the
+  description of the line item that will show up on student invoices when they
+  have made a donation.
+
+- donation_options: Defaults to the list [10, 20, 50]. These are the donation
+  options, in US dollars, that students are able to select between. In
+  addition, "I won't be making a donation" is always an option.
+
+- offer_donation: Defaults to True. If it is set to False, there will be no
+  prompt to donate to LU.
+
+To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
+the program, with the key stripe_settings, and with the value being a JSON
+object with the overriden keys/values.
+
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
+
+Credit Card Viewer
+------------------
 
 This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.  
 
@@ -508,7 +599,17 @@ This module is essential to most programs (e.g. those with classes that need to 
 Scheduling checks (SchedulingCheckModule)
 -----------------------------------------
 
-During and after scheduling a program, you should periodically visit this page to see if you made any mistakes.  It may take a few minutes to run, but you will see a summary of common issues such as teachers that have to travel between adjacent timeslots and classes that aren't assigned the resources they need.
+During and after scheduling a program, you should periodically visit this page
+to see if you made any mistakes.  It may take a few minutes to run, but you
+will see a summary of common issues such as teachers that have to travel
+between adjacent timeslots and classes that aren't assigned the resources they
+need.
+
+For larger chapters the page may take a long time to load.  More improvements
+are in the works, but for now, the page
+<site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
+will display a list of links to display the checks individually; most will load
+much more quickly than the entire page.
 
 Old-style scheduling (SchedulingModule)
 ---------------------------------------
@@ -529,6 +630,27 @@ Volunteer Management (VolunteerManage)
 --------------------------------------
 
 Include this module if you will be using the Web site for volunteer registration.  It lets you define time slots for volunteering (each with a desired number of volunteers) and shows you who has signed up for each slot.
+
+Group Text Module
+-----------------
+
+
+
+Admin Admissions Dashboard
+--------------------------
+
+Provides an interface for admins to review all of the applications in the
+program. For more information, see `</docs/admin/student_apps.rst>`_.
+
+Student Registration Big Board
+--------------------------------------
+
+Provides a page for watching the current number of student registrations.
+You can get to it from the link "Student Registration Big Board" on the main
+program management page, or at /manage/[program]/[instance]/bigboard.  It has
+some of the same statistics as the dashboard, but is a lot faster to load, and
+has some fun extra numbers too.  Most of the statistics are most useful during
+lottery registration, but it is not restricted to the lottery.
 
 
 Onsite modules (8)
@@ -591,5 +713,3 @@ Volunteer Sign-up Module (VolunteerSignup)
 If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
 
 If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
-
-

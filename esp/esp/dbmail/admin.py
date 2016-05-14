@@ -47,7 +47,7 @@ admin_site.register(MessageVars, MessageVarsAdmin)
 class EmailListAdmin(admin.ModelAdmin):
     list_display = ('description', 'regex')
 admin_site.register(EmailList, EmailListAdmin)
-    
+
 class PlainRedirectAdmin(admin.ModelAdmin):
     list_display = ('original', 'destination')
     search_fields = ('original', 'destination')

@@ -37,8 +37,6 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from django.conf import settings
-# if the picked email address isn't in the above, it will send to this.
-fallback_address = 'esp@mit.edu'
 
 person_type = (
     ('Student', 'K-12 Student'),
@@ -58,9 +56,9 @@ hear_about = (
     )
 
 class ContactForm(forms.Form):
-    sender  = forms.EmailField(label=_("Your Email"), required = False,
+    sender  = forms.EmailField(label=_("Your Email"), required = True,
                                help_text=_("(e.g.: john.doe@domain.xyz)"))
-    
+
     cc_myself = forms.BooleanField(label=_("Copy me"), required = False,
                                    help_text=_("(By checking this, we will send you a carbon-copy (cc) of this email.)") )
 

@@ -31,19 +31,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
+from collections import OrderedDict
+
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, Record
+from esp.users.models    import Record
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
-from django.contrib.auth.models import User
-from esp.accounting_core.models import LineItemType
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
@@ -90,23 +89,36 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
         pac = ProgramAccountingController(self.program)
-        for i in pac.get_lineitemtypes(optional_only=True):
-            student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
+        for line_item_type in pac.get_lineitemtypes(optional_only=True):
+            student_desc['extracosts_%d' % line_item_type.id] = """Students who have opted for '%s'""" % line_item_type.text
+            for option in line_item_type.options:
+                (option_id, option_amount, option_description) = option
+                key = 'extracosts_%d_%d' % (line_item_type.id, option_id)
+                student_desc[key] = """Students who have opted for '%s' for '%s' ($%s)""" % (option_description, line_item_type.text, option_amount or line_item_type.amount_dec)
 
         return student_desc
 
     def students(self, QObject = False):
         """ Return the useful lists of students for the Extra Costs module. """
 
-        student_lists = {}
+        student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
-        
+
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
-                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(transfer__line_item = i))
+                students = pac.all_students_Q(lineitemtype_id=i.id)
+                student_lists['extracosts_%d' % i.id] = students
             else:
-                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(transfer__line_item = i).distinct()
+                students = pac.all_students(lineitemtype_id=i.id).distinct()
+                student_lists['extracosts_%d' % i.id] = students
+            for option in i.options:
+                key = 'extracosts_%d_%d' % (i.id, option[0])
+                filter_qobject = Q(transfer__option=option[0])
+                if QObject:
+                    student_lists[key] = students & filter_qobject
+                else:
+                    student_lists[key] = students.filter(filter_qobject).distinct()
 
         return student_lists
 
@@ -116,6 +128,7 @@ class StudentExtraCosts(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/ExtraCosts')
+    @meets_cap
     def extracosts(self,request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program
@@ -141,14 +154,14 @@ class StudentExtraCosts(ProgramModuleObj):
         if request.method == 'POST':
 
             #   Initialize a list of forms using the POST data
-            costs_db = [ { 'LineItemType': x, 
+            costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
                          [ x for x in \
-                           [ { 'LineItemType': x, 
+                           [ { 'LineItemType': x,
                                'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
                              for x in multicosts_list ] \
-                           if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
+                           if x['CostChoice'].is_valid() and 'cost' in x['CostChoice'].cleaned_data ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
                                                      choices=x.option_choices,
@@ -213,9 +226,9 @@ class StudentExtraCosts(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

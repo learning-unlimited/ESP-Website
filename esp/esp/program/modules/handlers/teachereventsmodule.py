@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.dbmail.models import send_mail
 from django.db.models.query import Q
@@ -51,7 +51,7 @@ class TeacherEventsModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
-    
+
     def event_types(self):
         et_interview = EventType.get_from_desc('Teacher Interview')
         et_training = EventType.get_from_desc('Teacher Training')
@@ -59,10 +59,10 @@ class TeacherEventsModule(ProgramModuleObj):
             'interview': et_interview,
             'training': et_training,
         }
-        
+
     def availability_role(self):
         return Group.objects.get(name='Teacher')
-    
+
     # General Info functions
     @classmethod
     def module_properties(cls):
@@ -78,13 +78,13 @@ class TeacherEventsModule(ProgramModuleObj):
             'admin_title': 'Manage Teacher Training and Interviews',
             'link_title': 'Teacher Training and Interviews',
         } ]
-    
+
     def teachers(self, QObject = False):
         """ Returns lists of teachers who've signed up for interviews and for teacher training. """
         if QObject is True:
             return {
-                'interview': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program )),
-                'training': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ))
+                'interview': Q(useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program),
+                'training': Q(useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program)
             }
         else:
             return {
@@ -97,21 +97,21 @@ class TeacherEventsModule(ProgramModuleObj):
             'interview': """Teachers who have signed up for an interview.""",
             'training':  """Teachers who have signed up for teacher training.""",
         }
-    
+
     # Helper functions
     def getTimes(self, type):
         """ Get events of the program's teacher interview/training slots. """
         return Event.objects.filter( program=self.program, event_type=self.event_types()[type] ).order_by('start')
-    
+
     def entriesByTeacher(self, user):
         return {
             'interview': UserAvailability.objects.filter( event__event_type=self.event_types()['interview'], user=user, event__program=self.program ),
             'training': UserAvailability.objects.filter( event__event_type=self.event_types()['training'], user=user, event__program=self.program ),
         }
-    
+
     def entriesBySlot(self, event):
         return UserAvailability.objects.filter(event=event)
-    
+
     # Per-user info
     def isCompleted(self):
         """
@@ -121,11 +121,11 @@ class TeacherEventsModule(ProgramModuleObj):
         """
         entries = self.entriesByTeacher(get_current_request().user)
         return (self.getTimes('interview').count() == 0 or entries['interview'].count() > 0) and (self.getTimes('training').count() == 0 or entries['training'].count() > 0)
-    
+
     # Views
     @main_call
     @needs_teacher
-    @meets_deadline('/MainPage')
+    @meets_deadline('/Events')
     def event_signup(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = TeacherEventSignupForm(self, request.POST)
@@ -158,50 +158,51 @@ class TeacherEventsModule(ProgramModuleObj):
                 data['training'] = entries['training'][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
-    
+
     @main_call
     @needs_admin
     def teacher_events(self, request, tl, one, two, module, extra, prog):
         context = {}
-        
+
         if request.method == 'POST':
             data = request.POST
-            
+
             if data['command'] == 'delete':
                 #   delete timeslot
                 ts = Event.objects.get(id=data['id'])
                 ts.delete()
-                
+
             elif data['command'] == 'add':
                 #   add/edit timeslot
                 form = TimeslotForm(data)
                 if form.is_valid():
                     new_timeslot = Event()
-                    
+
                     # decide type
                     type = "training"
-                    
-                    if data.has_key('submit') and data['submit'] == "Add Interview":
+
+                    if data.get('submit') == "Add Interview":
                         type = "interview"
-                    
+
                     form.save_timeslot(self.program, new_timeslot, type)
                 else:
                     context['timeslot_form'] = form
-        
+
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
-        
+
         interview_times = self.getTimes('interview')
         training_times = self.getTimes('training')
-        
+
         for ts in list( interview_times ) + list( training_times ):
             ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.entriesBySlot( ts ) ]
-        
+
         context['prog'] = prog
         context['interview_times'] = interview_times
         context['training_times'] = training_times
-        
+
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
     class Meta:
         proxy = True
+        app_label = 'modules'

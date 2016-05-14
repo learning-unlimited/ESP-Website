@@ -1,13 +1,10 @@
 from esp.program.models import Program, ClassSection
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 import numpy
-import zlib
-import base64
-from StringIO import StringIO
 
 class LotteryFrontendModule(ProgramModuleObj):
 
@@ -65,37 +62,16 @@ class LotteryFrontendModule(ProgramModuleObj):
         try:
             lotteryObj = LotteryAssignmentController(prog, **options)
         except LotteryException, e:
-            error_msg = str(e)
-            return {'response': [{'error_msg': error_msg}]}
+            return {'response': [{'error_msg': str(e)}]}
 
-        for i in xrange(15):
-            try:
-                lotteryObj.compute_assignments(True)
-                break
-            except LotteryException, e:
-                error_msg = str(e)
-            except AssertionError:
-                pass
+        try:
+            lotteryObj.compute_assignments(True)
+        except LotteryException, e:
+            return {'response': [{'error_msg': str(e)}]}
 
-        stats = lotteryObj.compute_stats()
-        statsDisp = lotteryObj.display_stats(stats)
-
-        # export numpy arrayrs
-        # the client will upload these back to server if they decide to save a particular run of the lottery
-        s = StringIO()
-        numpy.savetxt(s, lotteryObj.student_sections)
-        student_sections = s.getvalue()
-        s = StringIO()
-        numpy.savetxt(s, lotteryObj.student_ids)
-        student_ids = s.getvalue()
-        s = StringIO()
-        numpy.savetxt(s, lotteryObj.section_ids)
-        section_ids = s.getvalue()
-
-        #   Encode the lottery data as compressed base64 so it can be transmitted as ASCII
-        lottery_data = base64.b64encode(zlib.compress(student_sections + '|' + student_ids + '|' + section_ids))
-
-        return {'response': [{'stats': statsDisp, 'lottery_data': lottery_data}]}
+        stats = lotteryObj.extract_stats(lotteryObj.compute_stats())
+        lottery_data = lotteryObj.export_assignments()
+        return {'response': [{'stats': stats, 'lottery_data': lottery_data}]}
 
     @aux_call
     @json_response()
@@ -105,17 +81,8 @@ class LotteryFrontendModule(ProgramModuleObj):
         	return {'response': [{'success': 'no', 'error': 'missing lottery_data POST field'}]};
 
         lotteryObj = LotteryAssignmentController(prog)
-        #   Decode compressed and base64-encoded lottery data
-        lottery_data_parts = zlib.decompress(base64.b64decode(request.POST['lottery_data'])).split('|')
-
-        if len(lottery_data_parts) != 3:
-        	return {'response': [{'success': 'no', 'error': 'provided lottery_data is corrupted (doesn\'t contain three parts)'}]};
-
-        student_sections = numpy.loadtxt(StringIO(lottery_data_parts[0]))
-        student_ids = numpy.loadtxt(StringIO(lottery_data_parts[1]))
-        section_ids = numpy.loadtxt(StringIO(lottery_data_parts[2]))
-        lotteryObj.save_assignments_helper(student_sections, student_ids, section_ids)
-
+        lotteryObj.import_assignments(request.POST['lottery_data'])
+        lotteryObj.save_assignments()
         return {'response': [{'success': 'yes'}]};
 
     @aux_call
@@ -127,4 +94,5 @@ class LotteryFrontendModule(ProgramModuleObj):
         return {'response': [{'success': 'yes'}]};
 
     class Meta:
-        abstract = True
+        proxy = True
+        app_label = 'modules'

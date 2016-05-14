@@ -43,6 +43,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
         super(TeacherCheckinModuleTest, self).setUp(*args, **kwargs)
+        self.add_user_profiles()
         self.schedule_randomly() # only scheduled classes used in module
         self.ccc      = ClassCreationController(self.program)
         pm            = ProgramModule.objects.get(handler='TeacherCheckinModule')
@@ -50,6 +51,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.now      = self.settings['start_time']
         self.past     = datetime.datetime(1970, 1, 1)
         self.future   = datetime.datetime.max
+        self.admin    = self.admins[0]
         self.teacher  = self.teachers[0]
         self.cls      = self.teacher.getTaughtClasses()[0]
         self.event    = 'teacher_checked_in'
@@ -61,7 +63,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         super(TeacherCheckinModuleTest, self).tearDown()
 
     def addCoteacher(self, cls, coteacher):
-        ccc.associate_teacher_with_class(cls, coteacher)
+        self.ccc.associate_teacher_with_class(cls, coteacher)
 
     # Aliases so full set of args don't need to be typed each time.
     # 'when' defaults to self.now (the datetime of the program), and
@@ -91,10 +93,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
 
     # End aliases.
 
-    def runTest(self):
-        self.runCheckInTest()
-
-    def runCheckInTest(self):
+    def test_checkIn(self):
         """Run tests for checkIn() and undoCheckIn()."""
 
         # Test that calling checkIn() works, and
@@ -137,3 +136,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.assertIn('was not checked in for',
                       self.undoCheckIn(teacher=self.teacher2))
 
+    def test_phone_numbers_on_checkin_page(self):
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
+        response = self.client.get(u'%smissingteachers' % self.program.get_onsite_url())
+        phone = self.teacher.getLastProfile().contact_user.phone_cell
+        self.assertIn(phone, response.content.decode('utf-8'))

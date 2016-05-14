@@ -1,6 +1,9 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.dbmail.base import BaseHandler
 from esp.program.models import ClassSubject
-from esp.mailman import create_list, load_list_settings, add_list_member, set_list_moderator_password, apply_list_settings
+from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -61,7 +64,7 @@ class SectionList(BaseHandler):
         load_list_settings(list_name, "lists/class_mailman.config")
 
         if user_type != "teachers":
-            add_list_member(list_name, ["%s %s <%s>" % (x.first_name, x.last_name, x.email, ) for x in section.students()])
+            add_list_members(list_name, section.students())
 
             apply_list_settings(list_name, {
                 'moderator': [
@@ -76,10 +79,11 @@ class SectionList(BaseHandler):
                     settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
                     cls.parent_program.director_email,
                 ],
+                'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
             })
-            if DEBUG: print "Settings applied..."
+            logger.info("Settings applied...")
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
-                      render_to_string("mailman/new_list_intro_teachers.txt", 
+                      render_to_string("mailman/new_list_intro_teachers.txt",
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }),
                       settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
@@ -87,13 +91,14 @@ class SectionList(BaseHandler):
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
             apply_list_settings(list_name, {'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
+            apply_list_settings(list_name, {'subject_prefix': "[%s]" % (cls.parent_program.niceName(),)})
 
-        if DEBUG: print "Settings applied still..."
-        add_list_member(list_name, [cls.parent_program.director_email])
-        add_list_member(list_name, [x.email for x in cls.get_teachers()])
+        logger.info("Settings applied still...")
+        add_list_member(list_name, cls.parent_program.director_email)
+        add_list_members(list_name, cls.get_teachers())
         if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
-        if DEBUG: print "Members added"
+        logger.info("Members added")
 
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True

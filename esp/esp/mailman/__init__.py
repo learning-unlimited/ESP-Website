@@ -4,7 +4,7 @@ import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
 from esp.utils.decorators import enable_with_setting
-from esp.users.models import ESPUser, User
+from esp.users.models import ESPUser
 from tempfile import NamedTemporaryFile
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -36,7 +36,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 def load_list_settings(list, listfile):
     """
     Load a Mailman list-settings file and configure a list with the specified settings.
-   
+
     If the path specified isn't an absolute path, it will be taken to be relative to the project root.
     """
     if listfile[0] == '/':
@@ -86,7 +86,7 @@ mlist.password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = User.objects.make_random_password()
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 
@@ -106,7 +106,7 @@ mlist.mod_password = sha.new('%s').hexdigest()
 del sha
 """
     if not password:
-        password = User.objects.make_random_password()
+        password = ESPUser.objects.make_random_password()
 
     data_str = data_str_template % (password)
 
@@ -115,37 +115,38 @@ del sha
 
 
 @enable_with_setting(settings.USE_MAILMAN)
-def add_list_member(list, member):
+def add_list_member(list_name, member):
+    """Add the 'member' to the local Mailman mailing list 'list_name'.
+
+    'member' may be a User object, or an e-mail address.
     """
-    Add the e-mail address 'member' to the local Mailman mailing list 'list'
-    
-    "member" may be a list (or other iterable) of e-mail address strings,
-    in which case all addresses will be added.
+    return add_list_members(list_name, [member])
+
+
+@enable_with_setting(settings.USE_MAILMAN)
+def add_list_members(list_name, members):
+    """Add e-mail addresses to the local Mailman mailing list 'list_name'.
+
+    'members' is an iterable of e-mail address strings or ESPUser objects.
     """
-    if isinstance(member, User):
-        member = member.email
+    members = [x.get_email_sendto_address() if isinstance(x, User) else unicode(x) for x in members]
 
-    if hasattr(member, "filter"):
-        member = [x.email for x in member]
+    members = u'\n'.join(members)
 
-    if not isinstance(member, basestring):
-        member = "\n".join(member)
+    # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
+    # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
+    # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
+    # this is probably fine since non-ASCII mostly happens in real names,
+    # for which it doesn't matter much if we lose a few chars
+    members = members.encode('iso-8859-1', 'replace')
 
-    if isinstance(member, unicode):
-        # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
-        # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
-        # http://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
-        # this is probably fine since non-ASCII mostly happens in real names,
-        # for which it doesn't matter much if we lose a few chars
-        member = member.encode('iso-8859-1', 'replace')
-
-    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
+    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(members)
 
 @enable_with_setting(settings.USE_MAILMAN)
 def remove_list_member(list, member):
     """
     Remove the e-mail address 'member' from the local Mailman mailing list 'list'
-    
+
     "member" may be a list (or other iterable) of e-mail address strings,
     in which case all addresses will be removed.
     """
@@ -155,7 +156,7 @@ def remove_list_member(list, member):
     if hasattr(member, "filter"):
         member = [x.email for x in member]
 
-    if not isinstance(member, basestring):       
+    if not isinstance(member, basestring):
         member = "\n".join(member)
 
     if isinstance(member, unicode):
@@ -171,7 +172,7 @@ def list_contents(lst):
     try:
         # It seems the empty string gets dragged into this list.
         contents.remove('')
-    except: 
+    except:
         pass
 
     return contents

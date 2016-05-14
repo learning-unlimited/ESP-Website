@@ -1,6 +1,5 @@
 {% extends "elements/receipt.html" %}
 {% block title %}Registration Receipt for {{ program.niceName }}{% endblock %}
-{% block subsection_name %} {% endblock %}
 {% block body %}
 
 Your class selections and any other information you entered have been saved.  Be on the lookout for emails from the organizers for more details about {{ program.niceName }}.  We will also post any updates on our Web site!
@@ -51,7 +50,7 @@ User Information: <br />
             {% if not forloop.last %}<br />{% endif %}
         {% endfor %}
         {% if timeslot.1|length_is:0 %}
-            Nothing Selected
+            No classes
         {% endif %}
         </td> 
     </tr>

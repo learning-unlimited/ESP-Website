@@ -2,7 +2,7 @@ from django import forms
 from esp.program.models import RegistrationProfile
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
-from esp.users.models import K12School
+from esp.users.models import K12School, ESPUser
 import datetime
 
 class OnSiteRegForm(forms.Form):
@@ -18,6 +18,11 @@ class OnSiteRegForm(forms.Form):
     medical = forms.BooleanField(required = False)
     liability = forms.BooleanField(required = False)
 
+    def __init__(self, *args, **kwargs):
+        super(OnSiteRegForm, self).__init__(*args, **kwargs)
+        self.fields['grade'].choices = (
+            [('', '')] + [(x, x) for x in ESPUser.grade_options()])
+
 class OnSiteRapidCheckinForm(forms.Form):
     user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Student')
 
@@ -26,8 +31,8 @@ class OnsiteBarcodeCheckinForm(forms.Form):
 
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
-    
+
     def __init__(self, *args, **kwargs):
         now = datetime.datetime.now()
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)
-        super(type(self), self).__init__(*args, **kwargs)
+        super(TeacherCheckinForm, self).__init__(*args, **kwargs)

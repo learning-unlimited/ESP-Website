@@ -1,13 +1,13 @@
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core import serializers
 from django.http import HttpResponse
-from django.utils import simplejson
+import json
 from django.db.models.query import QuerySet
 
 """ Removed the staff-only restriction and instead pass a flag to ajax_autocomplete if the user
     is not a staff member.  The staff bit is checked at the per-function level, so that students
     can call ajax_autocomplete on K12School but not on User or DataTree (for example).
-    
+
 user_is_staff = user_passes_test(lambda u: u.is_authenticated() and u.is_staff and u.is_authenticated())
 @user_is_staff
 """
@@ -40,22 +40,22 @@ def ajax_autocomplete(request):
         return response
 
     # import the model
-    Model = getattr(__import__(model_module,(),(),['']),model_name)
+    Model = getattr(__import__(model_module,(),(),[str(model_name)]),model_name)
 
     if hasattr(Model.objects, ajax_func):
         query_set = autocomplete_wrapper(getattr(Model.objects, ajax_func), data, request.user.is_staff)
     else:
         query_set = autocomplete_wrapper(getattr(Model, ajax_func), data, request.user.is_staff)
 
-    if type(query_set) == QuerySet:
+    if type(query_set) is QuerySet:
         raise NotImplementedError
     else:
         output = list(query_set[:limit])
         output2 = []
         for item in output:
             output2.append({'id': item['id'], 'ajax_str': item['ajax_str']+' (%s)' % item['id']})
-        
-        content = simplejson.dumps({'result':output2})
+
+        content = json.dumps({'result':output2})
 
     return HttpResponse(content,
-                        mimetype = 'javascript/javascript')
+                        content_type = 'javascript/javascript')

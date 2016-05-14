@@ -25,7 +25,7 @@ You are welcome to use this page to view your classes' status and upload documen
 {% if can_edit %}
 However, you may edit classes that you have already created.
 {% endif %}
-{% if module.classRegInfo.director_email %}<br />
+{% if program.director_email %}<br />
 If you have any questions regarding the program, <br /> please email the 
 <a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
@@ -72,11 +72,9 @@ If you have any questions regarding the program, <br /> please email the
        Add a new class for {{ program.niceName }}!
      </a>
      <br />
-     {% if allow_class_import %}
      <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
        Teach a class from a previous program for {{ program.niceName }}!
      </a>
-     {% endif %}
      {% endif %}
      {% if can_create_open_class %}<br />
      <a href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">

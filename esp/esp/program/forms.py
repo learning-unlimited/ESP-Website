@@ -37,7 +37,6 @@ import re
 import unicodedata
 
 from esp.users.models import StudentInfo, K12School
-from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -50,10 +49,10 @@ def make_id_tuple(object_list):
 
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
-    
+
     term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
-    
+
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
@@ -110,8 +109,6 @@ class ProgramCreationForm(BetterModelForm):
             value.append(json_module.id)
         return value
 
-    # use field grouping
-    #as_table = grouped_as_table
 
     class Meta:
         fieldsets = [
@@ -129,7 +126,7 @@ class ProgramCreationForm(BetterModelForm):
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
-'''        
+'''
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
 
@@ -142,7 +139,7 @@ ProgramCreationForm.base_fields['director_email'].line_group = -1
 ProgramCreationForm.base_fields['teacher_reg_start'].line_group = 2
 ProgramCreationForm.base_fields['teacher_reg_end'].line_group = 2
 ProgramCreationForm.base_fields['student_reg_start'].line_group = 3
-ProgramCreationForm.base_fields['student_reg_end'].line_group = 3        
+ProgramCreationForm.base_fields['student_reg_end'].line_group = 3
 ProgramCreationForm.base_fields['publish_start'].line_group = 1
 ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
@@ -181,7 +178,7 @@ class StatisticsQueryForm(forms.Form):
         names_url.sort()
         result = zip(names_url, names_url)
         return result
-        
+
     @staticmethod
     def get_program_instance_choices(program_name):
         programs = Program.objects.all()
@@ -210,34 +207,32 @@ class StatisticsQueryForm(forms.Form):
     program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Program')
     program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
     program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
-    
+
     reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
-    
+
     school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
     school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School[s]', help_text='Hold down Ctrl to select more than one')
-    
+
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
     zip_code_partial = forms.CharField(required=False, widget=forms.TextInput(), label='Beginning digits of Zip code')
     zip_code_distance = forms.IntegerField(required=False, widget=forms.TextInput(), label='Maximum distance from Zip code', help_text='Enter an integer distance in miles')
-    
+
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
             #   placeholder for later:
             del kwargs['program']
-            
+
         super(StatisticsQueryForm, self).__init__(*args, **kwargs)
-        
+
         self.fields['program_type'].choices = StatisticsQueryForm.get_program_type_choices()
         self.fields['program_instances'].choices = StatisticsQueryForm.get_program_instance_choices(self.fields['program_type'].choices[0][0])
-        
+
         #   This will be done later if they ask
         #   self.fields['school_multisel'].choices = StatisticsQueryForm.get_school_choices()
 
     def clean(self):
-        #   print self.cleaned_data
-        
         """ Check that either 'All Programs' is selected or a program is selected   """
         if not self.cleaned_data['program_type_all']:
             if not self.cleaned_data['program_type']:
@@ -245,7 +240,7 @@ class StatisticsQueryForm(forms.Form):
                     raise forms.ValidationError('Please select at least one program type if you have not checked "All Programs."')
                 else:
                     self.cleaned_data['program_type'] = self.fields['program_type'].choices[0][0]
-                
+
         """ Check that either 'All Instances' is selected or an instance is selected """
         if not self.cleaned_data['program_type_all'] and not self.cleaned_data['program_instance_all']:
             if 'program_instances' not in self.cleaned_data or not self.cleaned_data['program_instances']:
@@ -258,7 +253,7 @@ class StatisticsQueryForm(forms.Form):
         elif self.cleaned_data['school_query_type'] == 'list':
             if 'school_multisel' not in self.cleaned_data or len(self.cleaned_data['school_multisel']) == 0:
                 raise forms.ValidationError('Please select at least one school from the list.')
-        
+
         """ Check that the appropriate zip code fields are filled out """
         if self.cleaned_data['zip_query_type'] in ['exact', 'distance']:
             if not self.cleaned_data['zip_code'] or len(self.cleaned_data['zip_code']) != 5 or not self.cleaned_data['zip_code'].isnumeric():
@@ -269,7 +264,7 @@ class StatisticsQueryForm(forms.Form):
         if self.cleaned_data['zip_query_type'] == 'distance':
             if not self.cleaned_data['zip_code_distance']:
                 raise forms.ValidationError('Please enter a zip code and a radius to search within.')
-        
+
         return self.cleaned_data
 
     def hide_field(self, field_name, default=None):
@@ -295,7 +290,7 @@ class StatisticsQueryForm(forms.Form):
         for field_name in self.fields:
             if hasattr(self.fields[field_name], '_old_widget'):
                 self.fields[field_name].widget = self.fields[field_name]._old_widget
-            
+
         #   Populate data.  Start with default initial values and then add bound data if it's there.
         data = {}
 
@@ -312,7 +307,7 @@ class StatisticsQueryForm(forms.Form):
             if hasattr(self, 'initial'):
                 data.update(self.initial)
 
-            
+
         #   Program selection
         if 'program_type_all' in data and data['program_type_all']:
             self.hide_field('program_type')
@@ -330,7 +325,7 @@ class StatisticsQueryForm(forms.Form):
             elif data['school_query_type'] == 'name':
                 self.hide_field('school_multisel')
             elif data['school_query_type'] == 'list':
-                self.hide_field('school_name')        
+                self.hide_field('school_name')
 
         #   Zip code selection
         if 'zip_query_type' in data:
@@ -346,11 +341,11 @@ class StatisticsQueryForm(forms.Form):
                 self.hide_field('zip_code_distance')
             elif data['zip_query_type'] == 'distance':
                 self.hide_field('zip_code_partial')
-                
+
         #   Limit queries
         if 'query' not in data or data['query'] not in ['zipcodes', 'heardabout', 'schools']:
             self.hide_field('limit')
-            
+
     @staticmethod
     def get_multiselect_fields():
         result = []

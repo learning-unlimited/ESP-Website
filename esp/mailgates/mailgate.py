@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Main mailgate for ESP.
 # Handles incoming messages etc.
@@ -9,28 +9,27 @@ sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
+import logging
+# Make sure we end up in our logger even though this file is outside esp
+logger = logging.getLogger('esp.mailgate')
+
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # Path for ESP code
 sys.path.insert(0, project)
 
-# activate virtualenv
-root = os.path.dirname(project)
-activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-
-try:
+# Check if a virtualenv has been installed and activated from elsewhere.
+# If this has happened, then the VIRTUAL_ENV environment variable should be
+# defined.
+# If the variable isn't defined, then activate our own virtualenv.
+if os.environ.get('VIRTUAL_ENV') is None:
+    root = os.path.dirname(project)
+    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     execfile(activate_this, dict(__file__=activate_this))
-except IOError, e:
-    # Check if a virtualenv has been installed and activated from elsewhere.
-    # If this has happened, then the VIRTUAL_ENV environment variable should be
-    # defined, and we can ignore the IOError.
-    # If the variable isn't defined, then we really should be using our own
-    # virtualenv, so we re-raise the error.
-    if os.environ.get('VIRTUAL_ENV') is None:
-        raise e
 
-from esp import cache_loader # Needed to block an annoying circular-dependency issue
+import django
+django.setup()
 from esp.dbmail.models import EmailList
 from django.conf import settings
 
@@ -86,7 +85,7 @@ try:
 
             send_mail(str(message))
             continue
-        
+
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
@@ -101,7 +100,7 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-            
+
         del message['Message-ID']
 
         # get a new message id
@@ -130,6 +129,7 @@ except Exception as e:
     if DEBUG:
         raise
     else:
+        logger.warning("Couldn't find user '%s'", user)
         print """
 ESP MAIL SERVER
 ===============

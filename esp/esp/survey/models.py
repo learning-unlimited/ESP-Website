@@ -38,9 +38,10 @@ Learning Unlimited, Inc.
 import datetime
 from django.db import models
 from django.template import loader
-from django.core.cache import cache
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
+
+from argcache import cache_function
 
 try:
     import cPickle as pickle
@@ -50,19 +51,18 @@ except ImportError:
 from esp.db.fields import AjaxForeignKey
 
 # Models to depend on.
-from esp.datatree.models import *
 from esp.middleware import ESPError
 from esp.program.models import Program
 
 class ListField(object):
-    """ Create a list type field descriptor. Allows you to 
+    """ Create a list type field descriptor. Allows you to
     pack lists (actually tuples) into a delimited string easily.
 
     Example Usage:
         class A(models.Model):
             b = models.TextField()
             a = ListField('b')
-    
+
         c = A()
 
         c.a = ('a','b','c')
@@ -72,7 +72,7 @@ class ListField(object):
 
         c.save()
 
-    """        
+    """
     field_name = ''
     separator = '|'
 
@@ -100,10 +100,10 @@ class Survey(models.Model):
                                 help_text="Blank if not associated to a program")
 
     category = models.CharField(max_length=32) # teach|learn|etc
-    
+
     def __unicode__(self):
         return '%s (%s) for %s' % (self.name, self.category, unicode(self.program))
-    
+
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
         #   of participants based on the category.
@@ -117,7 +117,7 @@ class Survey(models.Model):
                 return 0
         else:
             return 0
-        
+
 class SurveyResponse(models.Model):
     """ A single survey taken by a person. """
     time_filled = models.DateTimeField(default=datetime.datetime.now)
@@ -126,7 +126,7 @@ class SurveyResponse(models.Model):
     def set_answers(self, get_or_post, save=False):
         """ For a given get or post, get a set of answers. """
         from esp.program.models import ClassSection
-        
+
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
         attendances = {}
@@ -145,15 +145,15 @@ class SurveyResponse(models.Model):
             str_list = key.split('_')
             if len(str_list) < 2 or len(str_list) > 3:
                 raise ESPError('Inappropriate question key: %s' % key)
-            
+
             new_answer = Answer()
             new_answer.survey_response = self
-            
+
             if len(str_list) > 2:
                 try:
                     qid = int(str_list[1])
                     cid = int(str_list[2])
-                    if attendances.has_key(cid):
+                    if cid in attendances:
                         cid = attendances[cid]
                     if not cid:
                         continue
@@ -167,7 +167,7 @@ class SurveyResponse(models.Model):
                     raise ESPError('Error getting IDs from %s' % key)
 
                 new_answer.target = sec
-                
+
             elif len(str_list) == 2:
                 try:
                     qid = int(str_list[1])
@@ -177,9 +177,9 @@ class SurveyResponse(models.Model):
                 except ValueError:
                     raise ESPError('Error getting IDs from %s' % key)
                 new_answer.target = self.survey.program
-            
+
             new_answer.answer = value
-            new_answer.question = question 
+            new_answer.question = question
             answers.append(new_answer)
 
         if save:
@@ -187,12 +187,12 @@ class SurveyResponse(models.Model):
                 answer.save()
 
         return answers
-    
+
     def __unicode__(self):
         return "Survey for %s filled out at %s" % (unicode(self.survey.program),
                                                    self.time_filled)
-                                                   
-    
+
+
 class QuestionType(models.Model):
     """ A type of question.
     Examples:
@@ -212,7 +212,7 @@ class QuestionType(models.Model):
     @property
     def template_file(self):
         return 'survey/questions/%s.html' % self.name.replace(' ', '_').lower()
-    
+
     def __unicode__(self):
         return '%s: includes %s' % (self.name, self._param_names.replace('|', ', '))
 
@@ -229,7 +229,7 @@ class Question(models.Model):
 
     def get_params(self):
         " Get the parameters for this question, as a dictionary. "
-        
+
         a, b = self.question_type.param_names, self.param_values
         params = dict(zip(map(lambda x: x.replace(' ', '_').lower(), a),
                           b))
@@ -252,7 +252,7 @@ class Question(models.Model):
             value = data_dict.get(question_key, None)
 
         return value
-    
+
     def render(self, data_dict=None):
         """ Render this question to text (usually HTML).
 
@@ -272,46 +272,41 @@ class Question(models.Model):
         params['name'] = self.name
         params['id'] = self.id
         params['value'] = value
-        
+
         if self.per_class:
             params['for_class'] = True
 
         return loader.render_to_string(self.question_type.template_file, params)
 
+    @cache_function
     def global_average(self):
         def pretty_val(val):
             if val == 0:
                 return 'N/A'
             else:
                 return str(round(val, 2))
-        
+
         if not self.question_type.is_numeric:
             return None
-        
+
         try:
-            average_key = 'question_%d_avg' % self.id
-            
-            test_val = cache.get(average_key)
-            if test_val is None:
-                ans = Answer.objects.filter(question=self)
-                ans_count = ans.count()
-                ans_sum = 0.0
-                for a in ans:
-                    ans_sum += float(a.answer)
-                if ans_count == 0:
-                    new_val = 0
-                else:
-                    new_val = ans_sum / ans_count;
-                cache.set(average_key, new_val)
-                return pretty_val(new_val)
+            ans = Answer.objects.filter(question=self)
+            ans_count = ans.count()
+            ans_sum = 0.0
+            for a in ans:
+                ans_sum += float(a.answer)
+            if ans_count == 0:
+                new_val = 0
             else:
-                return pretty_val(test_val)
+                new_val = ans_sum / ans_count;
+            return pretty_val(new_val)
         except:
             return 'N/A'
-    
+    global_average.depend_on_row('survey.Answer', lambda ans: {'self': ans.question})
+
     class Meta:
         ordering = ['seq']
-        
+
 class Answer(models.Model):
     """ An answer for a single question for a single survey response. """
 
@@ -321,7 +316,7 @@ class Answer(models.Model):
     ## Generic ForeignKey: either the program, the class, or the section ##
     content_type = models.ForeignKey(ContentType, blank=True, null=True)
     object_id = models.PositiveIntegerField(blank=True, null=True)
-    target = generic.GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
     ## End Generic ForeignKey ##
 
     question = models.ForeignKey(Question, db_index=True)
@@ -353,9 +348,6 @@ class Answer(models.Model):
             self.value = ':' + value
 
     answer = property(_answer_getter, _answer_setter)
-
-    class Admin:
-        pass
 
     def __unicode__(self):
         return "Answer for question #%d: %s" % (self.question.id, self.value)

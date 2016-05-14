@@ -13,16 +13,16 @@ class PropertyDict(dict):
                 self[key] = other_dict[key]
             else:
                 val = other_dict[key]
-                if type(val) == list:
+                if isinstance(val, list):
                     self[key] += val
-                elif type(val) == dict:
-                    self[key] = PropertyDict(self[key]).merge(PropertyDict(val))
-                elif type(val) == PropertyDict:
+                elif isinstance(val, PropertyDict):
                     self[key] = PropertyDict(self[key]).merge(val)
+                elif isinstance(val, dict):
+                    self[key] = PropertyDict(self[key]).merge(PropertyDict(val))
                 else:
                     self[key] = val
         return self
-                    
+
     def flatten(self):
         result = []
         for key in self.keys():

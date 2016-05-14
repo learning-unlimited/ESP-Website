@@ -22,14 +22,25 @@ function runLotteryThing() {
 		data: post_data,
 		success: function(data) {
 			data = data['response'][0];
+			stats_div = $j('#lotterythingstats');
 			if (data['error_msg'])
 			{
-				$j('#lotterythingstats').html("A misconfiguration or unexpected situation prevented the lottery from running: " + data['error_msg']);
+				stats_div.html("A misconfiguration or unexpected situation prevented the lottery from running: " + data['error_msg']);
 			}
 			else
 			{
 				lottery_data = data['lottery_data'];
-				$j('#lotterythingstats').html("<pre>" + data['stats'] + "</pre>");
+				stats_div.html('');
+				data['stats'].forEach(function (el) {
+					label = el[0];
+					lines = el[1];
+					stats_div.append('<h2>' + label + '</h2>');
+					var bullets = $j('<ul>');
+					lines.forEach(function(line) {
+						bullets.append('<li>' + line + '</li>');
+					});
+					stats_div.append(bullets);
+				});
 			}
 		},
 		error: lotteryErrorHandler,

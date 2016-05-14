@@ -2,12 +2,6 @@
 
 {% block title %}Program Administration{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Program Management"|subsection }}{% endautoescape %}
-{% endblock %}
-
-
 {% block breadcrumbs %}
 <div id="breadcrumbs">
 <a href="/manage/{{ program.getUrlBase }}/main" 

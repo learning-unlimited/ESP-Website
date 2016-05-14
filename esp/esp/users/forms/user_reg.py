@@ -1,11 +1,10 @@
 from django import forms
-from django.contrib.localflavor.us.forms import USPhoneNumberField
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 
 from esp.users.models import ESPUser, GradeChangeRequest
-from esp.utils.forms import CaptchaForm, StrippedCharField
-
+from esp.utils.forms import StrippedCharField
+from localflavor.us.forms import USPhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -35,7 +34,7 @@ class ValidHostEmailField(forms.EmailField):
 class EmailUserRegForm(forms.Form):
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
- 
+
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
             raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
@@ -80,7 +79,7 @@ class UserRegForm(forms.Form):
         set_of_data = set(data)
         if not(good_chars & set_of_data == set_of_data):
             raise forms.ValidationError('Username contains invalid characters.')
- 
+
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the e-mail list only (they can be 'upgraded' to a full account)
@@ -100,11 +99,11 @@ class UserRegForm(forms.Form):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
             raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
         return self.cleaned_data['confirm_email']
-    
+
     def __init__(self, *args, **kwargs):
         #   Set up the default form
         super(UserRegForm, self).__init__(*args, **kwargs)
-        
+
         #   Adjust initial_role choices
         role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
@@ -116,14 +115,6 @@ class SinglePhaseUserRegForm(UserRegForm):
         self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
-class EmailUserForm(CaptchaForm):
-    email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
-    def clean_confirm_email(self):
-        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
-            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
-        return self.cleaned_data['confirm_email']
-
 class EmailPrefForm(forms.Form):
     email = ValidHostEmailField(label='E-Mail Address', required = True)
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>")
@@ -132,7 +123,7 @@ class EmailPrefForm(forms.Form):
     sms_number = USPhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
-    
+
     def clean_confirm_email(self):
         if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
             raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
@@ -147,7 +138,7 @@ class AwaitingActivationEmailForm(forms.Form):
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
         if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
-        
+
         data = data.strip()
         return data
 
@@ -158,4 +149,5 @@ class GradeChangeRequestForm(forms.ModelForm):
     """
     class Meta:
         model = GradeChangeRequest
-        exclude = ('acknowledged_by','acknowledged_time','requesting_student','approved',)
+        exclude = ('acknowledged_by','acknowledged_time','requesting_student',
+                   'approved', 'grade_before_request',)

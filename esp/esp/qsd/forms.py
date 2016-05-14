@@ -3,7 +3,6 @@ from django import forms
 from esp.web.models import NavBarCategory
 from esp.qsd.models import QuasiStaticData
 from esp.program.models import Program
-from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.forms import AjaxForeignKeyNewformField
 
@@ -13,7 +12,7 @@ class QSDMoveForm(forms.Form):
     id = forms.IntegerField(widget=forms.HiddenInput)
     nav_category = forms.ChoiceField(choices=(), label='Navigation category')
     destination = forms.CharField(help_text='The portion of the URL that comes before the \'.html\'.')
-    
+
     def __init__(self, *args, **kwargs):
         super(QSDMoveForm, self).__init__(*args, **kwargs)
         self.fields['nav_category'].choices = [(n.id, n.name) for n in NavBarCategory.objects.all()]
@@ -22,7 +21,7 @@ class QSDMoveForm(forms.Form):
         self.fields['id'].initial = qsd.id
         self.fields['destination'].initial = qsd.url
         self.fields['nav_category'].initial = qsd.nav_category
-        
+
     def save_data(self):
         #   Find all matching QSDs
         main_qsd = QuasiStaticData.objects.get(id=self.cleaned_data['id'])
@@ -53,11 +52,11 @@ class QSDBulkMoveForm(forms.Form):
             return target_path
         else:
             return False
-        
+
     def save_data(self):
         qsd_list = QuasiStaticData.objects.filter(id__in=[int(x) for x in self.cleaned_data['id_list'].split(',')])
         orig_path = destination_path(qsd_list)
-        
+
         #   For each QSD in the list:
         for main_qsd in qsd_list:
 
@@ -65,7 +64,7 @@ class QSDBulkMoveForm(forms.Form):
             url_relative = main_qsd.url[len(orig_path):]
             #   Add that URI to that of the new one
             url_new = self.cleaned_data['destination'] + url_relative
-            
+
             #   Set the path on all versions of this QSD
             other_qsds = QuasiStaticData.objects.filter(url=main_qsd.url, name=main_qsd.name)
             for qsd in other_qsds:

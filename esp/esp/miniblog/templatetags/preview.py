@@ -3,7 +3,6 @@ import re
 from django import template
 from django.contrib.auth.models import User, AnonymousUser
 
-from esp.datatree.models import *
 from esp.miniblog.views import get_visible_announcements
 
 __all__ = ['MiniblogNode', 'miniblog_for_user']
@@ -27,9 +26,9 @@ class MiniblogNode(template.Node):
     def render(self, context):
         # First we ensure we have a user
         try:
-            user_obj = template.resolve_variable(self.user, context)
+            user_obj = template.Variable(self.user).resolve(context)
         except template.VariableDoesNotExist:
-            if self.user == "AnonymousUser" or self.user == "None":
+            if self.user == "AnonymousUser":
                 user_obj = AnonymousUser()
             else:
                 raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user
@@ -40,19 +39,19 @@ class MiniblogNode(template.Node):
         return ''
 
 def parse_from_re(token, matching_rules):
-    
+
     tag = token.contents.split()[0]
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
         raise template.TemplateSyntaxError, "%r tag requires arguments" % tag_name
-    
+
     match = None
     for rule in matching_rules:
         match = rule[0].match(arg)
         if match:
             return dict( zip( rule[1], match.groups() ) )
-    
+
     raise template.TemplateSyntaxError, "%r tag could not parse arguments" % tag_name
 
 
@@ -66,9 +65,9 @@ def miniblog_for_user(parser, token):
     will return the last 5 miniblog entries in the section tl
     as the context variable entries.
     """
-    
+
     kwargs = parse_from_re(token, arg_re)
-    if kwargs.has_key('limit'):
+    if 'limit' in kwargs:
         try:
             kwargs['limit'] = int( kwargs['limit'] )
         except ValueError:

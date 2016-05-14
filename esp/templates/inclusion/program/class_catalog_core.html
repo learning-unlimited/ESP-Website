@@ -2,7 +2,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 </div>
      <div class="class_subtitle_row">
@@ -95,7 +95,7 @@
        <b>Materials for this class include:</b>
         <span class="doclist">
         {% for doc in class.docs_summary %}
-        <a href="{{ doc.target_url }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
         {% endfor %}
         {% if class.media_count > class.docs_summary|length %}
         <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
