@@ -106,7 +106,9 @@ class ProgramModuleObj(models.Model):
 
         return result
 
-    def get_main_view(self):
+    @property
+    def main_view(self):
+        """The name of the module's main view."""
         if not hasattr(self, '_main_view'):
             main_views = self._get_views_by_call_tag(['Main Call'])
             if len(main_views) > 1:
@@ -116,16 +118,15 @@ class ProgramModuleObj(models.Model):
             else:
                 self._main_view = None
         return self._main_view
-    main_view = property(get_main_view)
 
     def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
-        return getattr(self, self.get_main_view())(request, tl, one, two, call_txt, extra, prog)
+        return getattr(self, self.main_view)(request, tl, one, two, call_txt, extra, prog)
 
-    def get_all_views(self):
+    @property
+    def views(self):
         if not hasattr(self, '_views'):
             self._views = self._get_views_by_call_tag(['Main Call', 'Aux Call'])
         return self._views
-    views = property(get_all_views)
 
     def get_msg_vars(self, user, key):
         return None
@@ -268,7 +269,7 @@ class ProgramModuleObj(models.Model):
     @cache_function
     def get_full_path(self):
         return '/%s/%s/%s' % (
-            self.module.module_type, self.program.url, self.get_main_view())
+            self.module.module_type, self.program.url, self.main_view)
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
 
     def makeLink(self):
@@ -290,7 +291,7 @@ class ProgramModuleObj(models.Model):
         if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
             path = self.setup_path
         else:
-            path = self.get_main_view()
+            path = self.main_view
         return '/manage/' + self.program.url + '/' + path
 
     def makeSetupLink(self):
