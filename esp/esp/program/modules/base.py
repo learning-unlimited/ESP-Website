@@ -57,7 +57,10 @@ from django.template import TemplateDoesNotExist
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
-LOGIN_URL = settings.LOGIN_URL
+def _login_redirect(request):
+    return HttpResponseRedirect(
+        '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
+                      quote(request.get_full_path())))
 
 class CoreModule(object):
     """
@@ -191,7 +194,7 @@ class ProgramModuleObj(models.Model):
             scrmi = prog.studentclassregmoduleinfo
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
-                    return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+                    return _login_redirect(request)
                 for m in moduleobj.findRequiredModules():
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
@@ -468,7 +471,7 @@ def usercheck_usetl(method):
         errorpage = 'errors/program/' + error_map[tl]
 
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         if request.user.isAdmin(moduleObj.program) or \
            (tl == 'learn' and request.user.isStudent()) or \
@@ -488,7 +491,7 @@ def no_auth(method):
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notateacher.html', request, {})
@@ -506,7 +509,7 @@ def needs_admin(method):
             morpheduser=None
 
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
             if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
@@ -520,7 +523,7 @@ def needs_admin(method):
 def needs_onsite(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
@@ -538,7 +541,7 @@ def needs_onsite(method):
 def needs_onsite_no_switchback(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
             user = request.user
@@ -555,7 +558,7 @@ def needs_onsite_no_switchback(method):
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
             return render_to_response('errors/program/notastudent.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
@@ -567,7 +570,7 @@ def needs_student(method):
 def needs_account(method):
     def _checkAccount(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
-            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return _login_redirect(request)
 
         return method(moduleObj, request, *args, **kwargs)
     _checkAccount.method = method
@@ -610,14 +613,12 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     """
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
-    response = None
-    canView = False
     perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
     if not_logged_in(request):
         if not moduleObj.require_auth() and Permission.null_user_has_perm(permission_type=perm_name, program=request.program):
-            canView = True
+            return (True, None)
         else:
-            response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            return (False, _login_redirect(request))
     else:
         user = request.user
         program = request.program
@@ -649,7 +650,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
                 else:
                     request.roles_with_perm = roles_with_perm
 
-    return (canView, response)
+        return (canView, None)
 
 def list_extensions(tl, extensions, andor=''):
     nicetl={'teach':'Teacher','learn':'Student','volunteer':'Volunteer'}[tl]
