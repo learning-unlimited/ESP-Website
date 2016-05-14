@@ -185,8 +185,6 @@ class LotteryAssignmentController(object):
             student_ixs = self.student_indices[pref_array[:, 0]]
             section_ixs = self.section_indices[pref_array[:, 1]]
 
-            #   Check that we didn't look up invalid indices (which are set to -1).
-
             #   - Missing student (this should never happen and would indicate an error in the code)
             assert numpy.min(student_ixs)>=0, "Got a preference for a student who doesn't exist!"
 
@@ -623,7 +621,7 @@ class LotteryAssignmentController(object):
         self.stats = stats
         return stats
 
-    def display_stats(self, stats, as_strings=False):
+    def display_stats(self, stats):
         logger.info('Lottery results for %s', self.program.niceName())
         logger.info('--------------------------------------')
         for label, lines in self.extract_stats(stats):
