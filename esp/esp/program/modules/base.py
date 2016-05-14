@@ -166,16 +166,15 @@ class ProgramModuleObj(models.Model):
     #   The list of modules in a particular category (student reg, teacher reg)
     #   is accessed frequently and should be cached.
     @cache_function
-    def findCategoryModules(self, include_optional):
+    def findRequiredModules(self):
+        """Includes only required modules"""
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = filter(lambda mod: mod.module.module_type == module_type, prog.getModules())
-        if not include_optional:
-            moduleobjs = filter(lambda mod: mod.required == True, moduleobjs)
+        moduleobjs = filter(lambda mod: mod.module.module_type == module_type and mod.required, prog.getModules())
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies
-    findCategoryModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
+    findRequiredModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
 
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
@@ -190,8 +189,7 @@ class ProgramModuleObj(models.Model):
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
                     return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-                other_modules = moduleobj.findCategoryModules(False)
-                for m in other_modules:
+                for m in moduleobj.findRequiredModules():
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
                         continue

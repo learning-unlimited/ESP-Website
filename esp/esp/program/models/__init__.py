@@ -980,8 +980,8 @@ class Program(models.Model, CustomFormsLinkModel):
     getModule.depend_on_cache(hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
-    def getModuleViews(self, main_only=False, tl=None):
-        modules = self.getModules_cached(tl)
+    def getModuleViews(self, main_only=False):
+        modules = self.getModules_cached()
         result = {}
         for mod in modules:
             tl = mod.module.module_type
