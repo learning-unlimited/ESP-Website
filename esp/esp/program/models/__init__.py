@@ -955,7 +955,7 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = self.getModules_cached(tl)
         if user:
             for module in modules:
-                module.setUser(user)
+                module.user = user
         #   Populate the view attributes so they can be cached
         for module in modules:
             module.get_all_views()

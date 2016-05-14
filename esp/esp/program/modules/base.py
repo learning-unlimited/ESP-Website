@@ -83,15 +83,13 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def get_views_by_call_tag(self, tags):
+    def _get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with
             metadata.  At the moment, this metadata is a string stored in the
             'call_tag' attribute.  This function searches the methods of the
             current program module to find those that match the list supplied
             in the 'tags' argument. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-
         result = []
 
         #   Filter out attributes that we don't want to look at: attributes of
@@ -102,7 +100,7 @@ class ProgramModuleObj(models.Model):
             item = getattr(self, key)
             #   This is a hack to test whether the item is a bound method,
             #   maybe there is a better way.
-            if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
+            if isinstance(item, type(self._get_views_by_call_tag)) and hasattr(item, 'call_tag'):
                 if item.call_tag in tags:
                     result.append(key)
 
@@ -110,7 +108,7 @@ class ProgramModuleObj(models.Model):
 
     def get_main_view(self):
         if not hasattr(self, '_main_view'):
-            main_views = self.get_views_by_call_tag(['Main Call'])
+            main_views = self._get_views_by_call_tag(['Main Call'])
             if len(main_views) > 1:
                 raise ESPError("Modules may not have multiple main calls.")
             elif main_views:
@@ -125,7 +123,7 @@ class ProgramModuleObj(models.Model):
 
     def get_all_views(self):
         if not hasattr(self, '_views'):
-            self._views = self.get_views_by_call_tag(['Main Call', 'Aux Call'])
+            self._views = self._get_views_by_call_tag(['Main Call', 'Aux Call'])
         return self._views
     views = property(get_all_views)
 
@@ -262,10 +260,6 @@ class ProgramModuleObj(models.Model):
         return '/%s/%s/%s' % (
             self.module.module_type, self.program.url, self.get_main_view())
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
-
-    def setUser(self, user):
-        self.user = user
-        self.curUser = user
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
