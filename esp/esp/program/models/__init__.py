@@ -1093,7 +1093,7 @@ class Program(models.Model, CustomFormsLinkModel):
         modules = self.getModules_cached(tl, old_prog)
         if user:
             for module in modules:
-                module.setUser(user)
+                module.user = user
             modules.sort(key=lambda mod: not mod.isCompleted())
         #   Populate the view attributes so they can be cached
         for module in modules:
