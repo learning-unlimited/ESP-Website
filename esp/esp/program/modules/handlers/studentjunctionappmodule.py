@@ -130,8 +130,3 @@ class StudentJunctionAppModule(ProgramModuleObj):
             forms = app.get_forms()
 
         return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

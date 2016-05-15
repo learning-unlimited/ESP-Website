@@ -105,7 +105,3 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             key = 'volunteer_%d' % req.id
             base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
         return base_dict
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

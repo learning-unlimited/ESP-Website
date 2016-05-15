@@ -74,8 +74,3 @@ class OnsitePaidItemsModule(ProgramModuleObj):
         context['amount_due'] = iac.amount_due()
 
         return render_to_response(self.baseDir()+'paiditems.html', request, context)
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

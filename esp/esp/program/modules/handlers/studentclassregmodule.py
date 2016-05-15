@@ -742,7 +742,3 @@ class StudentClassRegModule(ProgramModuleObj):
 
         #  Otherwise this will be a 404
         return None
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

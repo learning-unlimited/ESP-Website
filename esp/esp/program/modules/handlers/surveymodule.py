@@ -99,7 +99,3 @@ class SurveyModule(ProgramModuleObj):
             return survey_review_single(request, tl, one, two)
 
     surveys = survey
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -106,7 +106,3 @@ class FormstackMedliabModule(ProgramModuleObj):
         """Marks student off as completed."""
         Record.objects.create(user=request.user, event="med", program=self.program)
         return self.goToCore(tl)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

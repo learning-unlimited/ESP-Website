@@ -44,7 +44,3 @@ class MedicalBypassModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

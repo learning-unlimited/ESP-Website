@@ -364,7 +364,3 @@ class ListGenModule(ProgramModuleObj):
             return filterObj
 
         return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

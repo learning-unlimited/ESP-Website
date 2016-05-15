@@ -167,7 +167,3 @@ class AdmissionsDashboard(ProgramModuleObj):
                 updated.append(app_id)
 
             return {'success': 1, 'updated': updated}
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

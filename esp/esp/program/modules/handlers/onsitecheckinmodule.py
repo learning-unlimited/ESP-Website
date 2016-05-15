@@ -231,8 +231,3 @@ class OnSiteCheckinModule(ProgramModuleObj):
             return self.goToCore(tl)
 
         return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

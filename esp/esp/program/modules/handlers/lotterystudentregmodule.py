@@ -183,7 +183,3 @@ class LotteryStudentRegModule(ProgramModuleObj):
         else: context['iempty'] = False
 
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -152,7 +152,3 @@ class DonationModule(ProgramModuleObj):
 
         context['institution'] = settings.INSTITUTION_NAME
         return render_to_response(self.baseDir() + 'donation.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

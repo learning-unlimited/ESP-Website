@@ -248,7 +248,3 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return True
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -75,9 +75,3 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

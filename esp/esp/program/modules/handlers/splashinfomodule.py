@@ -133,7 +133,3 @@ class SplashInfoModule(ProgramModuleObj):
         context['missing_siblingname'] = missing_siblingname
 
         return render_to_response(self.baseDir()+'splashinfo.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

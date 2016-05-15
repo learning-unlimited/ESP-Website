@@ -425,7 +425,3 @@ class StudentRegTwoPhase(ProgramModuleObj):
             sr.save()
 
         return self.goToCore(tl)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -64,9 +64,3 @@ class AdminVitals(ProgramModuleObj):
 
     def prepare(self, context=None):
         return context
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

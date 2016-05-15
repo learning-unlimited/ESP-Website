@@ -68,12 +68,48 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+# TODO(benkraft): move this to models.py since it is, after all, a model.
+class ProgramModuleSettings(models.Model):
     program  = models.ForeignKey(Program)
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=True)
+
+    class Meta:
+        app_label = 'modules'
+        unique_together = ('program', 'module')
+
+    @classmethod
+    def from_program_and_module(cls, program, module):
+        existing = ProgramModuleSettings.objects.filter(
+            program=program, module=module)
+        existing = existing.select_related('module')
+        if not len(existing):
+            new = ProgramModuleSettings(
+                program=program, module=module,
+                seq=module.seq, required=module.required)
+            new.save()
+            return new 
+        elif len(existing) > 1:
+            raise ESPError("%s program module objects for %s on %s." %
+                           (len(existing), module, program))
+        else:
+            return existing[0]
+
+
+class ProgramModuleObj(object):
+    def __init__(self, settings):
+        # TODO(benkraft): Consider initing from a program and module and
+        # getting the settings here.
+        self.settings = settings
+        self.program = settings.program
+        self.module = settings.module
+        # TODO(benkraft): Change all users to directly access the settings
+        # object, and remove this.
+        self.seq = settings.seq
+        self.required = settings.required
+        self.required_label = settings.required_label
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -94,7 +130,7 @@ class ProgramModuleObj(models.Model):
 
         #   Filter out attributes that we don't want to look at: attributes of
         #   ProgramModuleObj, including Django stuff
-        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(ProgramModuleSettings._meta.get_all_field_names())
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
@@ -205,28 +241,13 @@ class ProgramModuleObj(models.Model):
 
     @staticmethod
     def getFromProgModule(prog, mod):
-        import esp.program.modules.models
-        """ Return an appropriate module object for a Module and a Program.
-           Note that all the data is forcibly taken from the ProgramModuleObj table """
+        """Return an appropriate module object for a module and a program.
 
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
-        if len(BaseModuleList) < 1:
-            BaseModule = ProgramModuleObj()
-            BaseModule.program = prog
-            BaseModule.module  = mod
-            BaseModule.seq     = mod.seq
-            BaseModule.required = mod.required
-            BaseModule.save()
-
-        elif len(BaseModuleList) > 1:
-            assert False, 'Too many module objects!'
-        else:
-            BaseModule = BaseModuleList[0]
-
-        ModuleObj   = mod.getPythonClass()()
-        ModuleObj.__dict__.update(BaseModule.__dict__)
-
-        return ModuleObj
+        We pull data from the ProgramModuleSettings, or initialize from the
+        module defaults if there is none.
+        """
+        settings = ProgramModuleSettings.from_program_and_module(prog, mod)
+        return mod.getPythonClass()(settings)
 
     def baseDir(self):
         return 'program/modules/'+self.__class__.__name__.lower()+'/'
@@ -260,7 +281,7 @@ class ProgramModuleObj(models.Model):
     def get_full_path(self):
         return '/%s/%s/%s' % (
             self.module.module_type, self.program.url, self.main_view)
-    get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
+    get_full_path.depend_on_row('modules.ProgramModuleSettings', 'self')
 
     def makeLink(self):
         if not self.module.module_type == 'manage':
@@ -368,10 +389,6 @@ class ProgramModuleObj(models.Model):
             update_props(prop)
 
         return props
-
-    class Meta:
-        app_label = 'modules'
-        unique_together = ('program', 'module')
 
 
 # will check and depending on the value of tl

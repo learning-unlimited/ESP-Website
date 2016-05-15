@@ -107,7 +107,3 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

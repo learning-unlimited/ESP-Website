@@ -61,10 +61,6 @@ class ClassChangeRequestModule(ProgramModuleObj):
             "required": False,
         }
 
-    class Meta:
-        proxy = True
-        app_label = 'modules'
-
     def isCompleted(self):
         return StudentRegistration.valid_objects().filter(user=get_current_request().user,
                                                           relationship__name="Request").exists()

@@ -226,8 +226,3 @@ Student schedule for %s:
                rooms)
 
         return schedule
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

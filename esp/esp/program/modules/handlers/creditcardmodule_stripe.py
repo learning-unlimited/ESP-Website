@@ -299,7 +299,3 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context['amount_paid'] = totalcost_dollars
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

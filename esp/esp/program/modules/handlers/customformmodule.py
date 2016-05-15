@@ -118,7 +118,3 @@ class CustomFormModule(ProgramModuleObj):
             form = form_wizard.get_form(0)
 
         return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

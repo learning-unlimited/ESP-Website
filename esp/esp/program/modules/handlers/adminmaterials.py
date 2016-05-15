@@ -101,10 +101,3 @@ class AdminMaterials(ProgramModuleObj):
         classes = ClassSubject.objects.filter(parent_program = prog)
 
         return render_to_response(self.baseDir()+'listmaterials.html', request, context)
-
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

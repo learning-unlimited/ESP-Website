@@ -889,7 +889,3 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         data = {'amount_donation': amount_donation, 'amount_due': iac.amount_due()}
         return HttpResponse(json.dumps(data), content_type='application/json')
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

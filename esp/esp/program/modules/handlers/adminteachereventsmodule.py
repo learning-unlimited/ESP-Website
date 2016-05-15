@@ -63,7 +63,3 @@ class AdminTeacherEventsModule(ProgramModuleObj):
         context['training_times'] = training_times
 
         return render_to_response(self.baseDir()+'teacher_events.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -296,10 +296,3 @@ class MailingLabels(ProgramModuleObj):
                         i += 1
 
         return output
-
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

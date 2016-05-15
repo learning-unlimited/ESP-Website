@@ -95,8 +95,3 @@ class OnsiteClassSchedule(ProgramModuleObj):
                                  True)
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

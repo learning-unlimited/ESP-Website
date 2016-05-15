@@ -327,7 +327,3 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html',
                                   request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

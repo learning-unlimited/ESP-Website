@@ -116,7 +116,3 @@ class RegProfileModule(ProgramModuleObj):
     def isCompleted(self):
         regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         return regProf.id is not None
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

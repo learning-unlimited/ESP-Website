@@ -321,7 +321,3 @@ class AvailabilityModule(ProgramModuleObj):
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

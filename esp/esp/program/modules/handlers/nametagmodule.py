@@ -157,9 +157,3 @@ class NameTagModule(ProgramModuleObj):
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

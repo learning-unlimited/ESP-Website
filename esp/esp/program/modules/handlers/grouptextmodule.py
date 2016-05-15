@@ -175,7 +175,3 @@ class GroupTextModule(ProgramModuleObj):
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
 
         return "\n".join(send_log)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -94,7 +94,3 @@ class VolunteerManage(ProgramModuleObj):
         context['form'] = form
         context['requests'] = self.program.getVolunteerRequests()
         return render_to_response('program/modules/volunteermanage/main.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

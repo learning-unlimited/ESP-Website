@@ -152,7 +152,3 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
 
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

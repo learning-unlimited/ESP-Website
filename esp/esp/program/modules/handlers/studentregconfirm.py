@@ -58,7 +58,3 @@ class StudentRegConfirm(ProgramModuleObj):
 
     def hideNotRequired(self):
         return True
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

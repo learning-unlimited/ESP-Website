@@ -97,7 +97,3 @@ class OnsitePrintSchedules(ProgramModuleObj):
         else:
             # No response if no users
             return HttpResponse('')
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

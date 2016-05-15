@@ -180,8 +180,3 @@ This request can be (re)viewed at:
         return render_to_response(self.baseDir()+'application.html',
                                   request,
                                   {'form': form, 'app': app})
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

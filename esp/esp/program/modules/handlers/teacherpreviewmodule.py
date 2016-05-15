@@ -132,7 +132,3 @@ class TeacherPreviewModule(ProgramModuleObj):
 
     def isStep(self):
         return False
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

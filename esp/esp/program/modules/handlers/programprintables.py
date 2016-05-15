@@ -1551,7 +1551,3 @@ Volunteer schedule for %s:
 
         response['Content-Disposition'] = 'attachment; filename=csv_schedule.csv'
         return response
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

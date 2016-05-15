@@ -467,7 +467,3 @@ class AdminClass(ProgramModuleObj):
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

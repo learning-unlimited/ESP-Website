@@ -115,7 +115,3 @@ class FormstackAppModule(ProgramModuleObj):
         context['username'] = request.user.username
         return render_to_response(self.baseDir()+'finaidapp.html',
                                   request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

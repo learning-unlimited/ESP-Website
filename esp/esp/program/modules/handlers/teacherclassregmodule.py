@@ -886,7 +886,3 @@ class TeacherClassRegModule(ProgramModuleObj):
             return user.getFullClasses_pretty(self.program)
 
         return 'No classes.'
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

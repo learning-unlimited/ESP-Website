@@ -150,7 +150,3 @@ class OnSiteRegister(ProgramModuleObj):
             form = OnSiteRegForm()
 
         return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

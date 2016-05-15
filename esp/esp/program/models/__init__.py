@@ -944,7 +944,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
-    getModules_cached.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
+    getModules_cached.depend_on_row('modules.ProgramModuleSettings', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
     getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
@@ -964,7 +964,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return self.program_modules.filter(handler=name).exists()
     hasModule.depend_on_row('program.Program', lambda prog: {'self': prog})
     hasModule.depend_on_model('program.ProgramModule')
-    hasModule.depend_on_row('modules.ProgramModuleObj', lambda module: {'self': module.program})
+    hasModule.depend_on_row('modules.ProgramModuleSettings', lambda module: {'self': module.program})
     hasModule.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     @cache_function

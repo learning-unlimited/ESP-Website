@@ -91,7 +91,3 @@ class SurveyManagement(ProgramModuleObj):
             return top_classes(request, tl, one, two)
 
     survey = surveys
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

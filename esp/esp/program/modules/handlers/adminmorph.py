@@ -96,8 +96,3 @@ class AdminMorph(ProgramModuleObj):
                                  False)
 
         return HttpResponseRedirect('/')
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

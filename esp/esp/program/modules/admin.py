@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
-from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.base import ProgramModuleSettings
 
 class Admin_DBReceipt(admin.ModelAdmin):
     list_display = (
@@ -58,7 +58,7 @@ class CRMIAdmin(admin.ModelAdmin):
     search_fields = ('program__name',)
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
-class ProgramModelObjAdmin(admin.ModelAdmin):
+class ProgramModuleSettingsAdmin(admin.ModelAdmin):
     list_display = (
         'program',
         'module',
@@ -68,4 +68,4 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     )
     list_filter = ('program', 'module')
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
-admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
+admin_site.register(ProgramModuleSettings, ProgramModuleSettingsAdmin)

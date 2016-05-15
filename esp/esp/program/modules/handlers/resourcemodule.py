@@ -397,8 +397,3 @@ class ResourceModule(ProgramModuleObj):
 
         #   Display default form
         return render_to_response(self.baseDir()+'resource_main.html', request, context)
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

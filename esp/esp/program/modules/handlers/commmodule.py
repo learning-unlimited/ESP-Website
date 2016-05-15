@@ -298,7 +298,3 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

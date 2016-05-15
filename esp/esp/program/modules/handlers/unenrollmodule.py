@@ -55,10 +55,6 @@ class UnenrollModule(ProgramModuleObj):
             "seq": 100,
         }
 
-    class Meta:
-        proxy = True
-        app_label = 'modules'
-
     @main_call
     @needs_admin
     def unenroll_students(self, request, tl, one, two, module, extra, prog):

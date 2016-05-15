@@ -77,7 +77,3 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
         }
 
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

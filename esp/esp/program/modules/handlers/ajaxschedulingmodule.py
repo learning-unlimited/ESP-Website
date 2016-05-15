@@ -343,7 +343,3 @@ class AJAXSchedulingModule(ProgramModuleObj):
             num_affected_sections += 1
 
         return num_affected_sections
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -135,7 +135,3 @@ class TeacherEventsModule(ProgramModuleObj):
                 data['training'] = entries['training'][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

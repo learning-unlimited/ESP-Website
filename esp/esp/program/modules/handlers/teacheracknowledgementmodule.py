@@ -68,8 +68,4 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}
 
-    class Meta:
-        proxy = True
-        app_label = 'modules'
-
 

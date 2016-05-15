@@ -460,10 +460,3 @@ class OnSiteClassList(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
-
-
-
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'

@@ -77,7 +77,3 @@ class TeacherBioModule(ProgramModuleObj):
         #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
         lastBio = TeacherBio.getLastForProgram(get_current_request().user, self.program)
         return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
-
-    class Meta:
-        proxy = True
-        app_label = 'modules'
