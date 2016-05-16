@@ -52,7 +52,7 @@ class LotteryFrontendModule(ProgramModuleObj):
                 elif value == 'False':
                     value = False
                 elif value == 'None':
-                	value = None
+                    value = None
                 elif self.is_float(value):
                     value = float(value)
 
@@ -78,7 +78,7 @@ class LotteryFrontendModule(ProgramModuleObj):
     @needs_admin
     def lottery_save(self, request, tl, one, two, module, extra, prog):
         if 'lottery_data' not in request.POST:
-        	return {'response': [{'success': 'no', 'error': 'missing lottery_data POST field'}]};
+            return {'response': [{'success': 'no', 'error': 'missing lottery_data POST field'}]};
 
         lotteryObj = LotteryAssignmentController(prog)
         lotteryObj.import_assignments(request.POST['lottery_data'])
