@@ -1,6 +1,8 @@
 Workflow
 ========
 
+To set up your dev server, see `<vagrant.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
+
 Recommended one-time setup
 --------------------------
 
