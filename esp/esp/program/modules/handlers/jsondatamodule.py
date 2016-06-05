@@ -52,7 +52,7 @@ from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
-from esp.users.models import UserAvailability
+from esp.users.models import ESPUser, UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -820,16 +820,20 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         ## Calculate the grade data:
         grades = [i for i in range(prog.grade_min, prog.grade_max+1)]
-        grades_annotated = []
-        # I should keep trying to make this nicer, but leaving it for now
+        # We can't perfectly trust most_recent_profile, but it's good enough for stats
+        students_grades = students['enrolled'].filter(registrationprofile__most_recent_profile=True)
+        students_grades = students_grades.values_list('registrationprofile__student_info__graduation_year')
+        students_grades = students_grades.annotate(Count('id', distinct=True))
+        grades_dict = {result[0]: result[1] for result in students_grades}
+        grades_results = []
         for g in grades:
+            year = ESPUser.YOGFromGrade(g, ESPUser.program_schoolyear(prog))
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grade_students = filter(
-                lambda x: x.getGrade(prog, assume_student=True)==g,
-                students['enrolled'])
-            grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
-        dictOut["stats"].append({"id": "grades", "data": grades_annotated})
+            grades_results.append({'grade': g, 'num_subjects': grade_classes.count(),
+                                   'num_sections': grade_sections.count(),
+                                   'num_students': grades_dict[year] if year in grades_dict else 0})
+        dictOut["stats"].append({"id": "grades", "data": grades_results})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
