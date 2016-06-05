@@ -40,7 +40,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
 
-class DashboardTest(ProgramFrameworkTest):
+class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
     ## It needs more data, more interesting state in the program in question.
     ## It also needs all of the queries in self.program.students() and
@@ -49,20 +49,21 @@ class DashboardTest(ProgramFrameworkTest):
     ## It also also needs to test all the other queries on this page.
 
     def setUp(self):
-        super(DashboardTest, self).setUp()
+        super(JSONDataModuleTest, self).setUp()
+        # Generate some nonzero stats
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.classreg_students()
 
-        if not getattr(self, 'isSetUp', False):
-            self.pm = ProgramModule.objects.get(handler='AdminCore')
-            self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
-            self.moduleobj.user = self.students[0]
+        self.pm = ProgramModule.objects.get(handler='AdminCore')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.pm)
+        self.moduleobj.user = self.students[0]
 
-            self.client.login(username=self.admins[0].username, password='password')
-            self.stats_response = self.client.get('/json/%s/stats'
-                                                  % self.program.getUrlBase())
-            self.classes_response = self.client.get('/json/%s/class_subjects'
-                                                    % self.program.getUrlBase())
-
-            self.isSetUp = True  ## Save duplicate sets of queries on setUp
+        self.client.login(username=self.admins[0].username, password='password')
+        self.stats_response = self.client.get('/json/%s/stats'
+                                              % self.program.getUrlBase())
+        self.classes_response = self.client.get('/json/%s/class_subjects'
+                                                % self.program.getUrlBase())
 
     def testStudentStats(self):
         ## Student statistics
@@ -94,6 +95,18 @@ class DashboardTest(ProgramFrameworkTest):
             json_str = "[\"%s\", %d]" % (query_label, value)
             self.assertContains(self.stats_response, json_str)
 
+    def testGradesStats(self):
+        ## Statistics in the "grades" section of the dashboard
+        ## Note: Depends on add_user_profiles() always creating 10th graders
+        ## and all classes being open to all grades in the program
+        expected_response = {"data": [], "id": "grades"}
+        for g in xrange(self.program.grade_min, self.program.grade_max + 1):
+            expected_response["data"].append({"grade": g,
+                                              "num_subjects": 10,
+                                              "num_sections": 10,
+                                              "num_students": 10 if g==10 else 0})
+        json_str = json.dumps(expected_response)
+        self.assertContains(self.stats_response, json_str)
 
     def testClasses(self):
         ## Make sure all classes are listed
