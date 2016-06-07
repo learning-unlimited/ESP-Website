@@ -202,7 +202,7 @@ class StudentClassRegModule(ProgramModuleObj):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
         regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
-        timeslots = self.program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslots = self.program.getTimeSlots(include_compulsory=True)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))
 
         prevTimeSlot = None

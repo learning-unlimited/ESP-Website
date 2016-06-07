@@ -755,18 +755,20 @@ class Program(models.Model, CustomFormsLinkModel):
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self, types=None, exclude_types=None):
-        """ Get the time slots for a program.
-            A flag, exclude_types, allows you to restrict which types of timeslots
-            are grabbed.  You can also provide a list of timeslot types to include.
-            The default behavior is to include only class time slots.  See the
-            install() function in esp/esp/cal/models.py for a list of time slot types.
+    def getTimeSlots(self, include_compulsory=False, include_all=False):
+        """Get the time slots for a program.
+
+        By default, returns the class time slots only.  If `include_compulsory`
+        is True, also includes "compulsory" time slots.  If `include_all` is
+        True, includes all time slots regardless of type.  See
+        esp.cal.models.install() for a list of time slot types.
         """
         qs = Event.objects.filter(program=self)
-        if exclude_types is not None:
-            qs = qs.exclude(event_type__description__in=exclude_types)
-        elif types is not None:
-            qs = qs.filter(event_type__description__in=types)
+        if include_all:
+            pass
+        elif include_compulsory:
+            qs = qs.filter(event_type__description__in=['Compulsory',
+                                                        'Class Time Block'])
         else:
             qs = qs.filter(event_type__description='Class Time Block')
         return qs.select_related('event_type').order_by('start')
@@ -778,10 +780,7 @@ class Program(models.Model, CustomFormsLinkModel):
     #   that can be cached.
     @cache_function
     def getTimeSlotList(self, include_all=False):
-        if include_all:
-            return list(self.getTimeSlots(exclude_types=[]))
-        else:
-            return list(self.getTimeSlots())
+        return list(self.getTimeSlots(include_all=include_all))
     getTimeSlotList.depend_on_model('cal.Event')
 
     def total_duration(self):

@@ -133,7 +133,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         prevTimeSlot = None
         blockCount = 0
         schedule = []
-        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslots = prog.getTimeSlots(include_compulsory=True)
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             if prevTimeSlot != None:

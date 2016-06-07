@@ -70,10 +70,6 @@ class AvailabilityModule(ProgramModuleObj):
             "seq": 0
             } ]
 
-    def event_type(self):
-        et = EventType.get_from_desc('Class Time Block')
-        return et
-
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page.
             Everything else can be gotten from hooks in this module. """
@@ -136,7 +132,7 @@ class AvailabilityModule(ProgramModuleObj):
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
     def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
-        time_options = self.program.getTimeSlots(types=[self.event_type()])
+        time_options = self.program.getTimeSlots()
         #   Group contiguous blocks
         if not Tag.getBooleanTag('availability_group_timeslots', default=True):
             time_groups = [list(time_options)]
@@ -201,7 +197,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
-            available_slots = self.program.getTimeSlots(types=[self.event_type()])
+            available_slots = self.program.getTimeSlots()
             #   The following 2 lines mark the teacher as always available.  This
             #   is sometimes helpful, but not usually the desired behavior.
             #   for a in available_slots:

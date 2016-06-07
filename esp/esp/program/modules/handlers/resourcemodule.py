@@ -362,7 +362,8 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(exclude_types=[])
+        #   TODO(benkraft): is include_all actually desired here?
+        time_options = self.program.getTimeSlots(include_all=True)
         time_groups = Event.group_contiguous(list(time_options))
 
         #   Retrieve remaining context information
