@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,71 +31,50 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call
-from esp.program.modules import module_ext
-from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser
-from django.db.models.query   import Q
-from esp.middleware     import ESPError
-from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single
+from django.db.models.query import Q
 
-import operator
+from esp.middleware import ESPError
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call
+from esp.survey.views import survey_view
+from esp.users.models import ESPUser
 
-class SurveyModule(ProgramModuleObj):
+
+class StudentSurveyModule(ProgramModuleObj):
     """ A module for people to take surveys. """
 
     @classmethod
     def module_properties(cls):
-        return [ {
+        return {
             "admin_title": "Student Surveys",
             "link_title": "Surveys",
             "module_type": "learn",
             "seq": 20,
-        }, {
-            "admin_title": "Teacher Surveys",
-            "link_title": "Survey",
-            "module_type": "teach",
-            "seq": 15,
-        } ]
+        }
 
-    def students(self, QObject = False):
-        event="student_survey"
-        program=self.program
+    def students(self, QObject=False):
+        # TODO(benkraft): share code with the teacher version.
+        event = "teacher_survey"
+        program = self.program
 
         if QObject:
             return {'student_survey': Q(record__program=program) & Q(record__event=event)}
         return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
-    def teachers(self, QObject = False):
-        event="teacher_survey"
-        program=self.program
-
-        if QObject:
-            return {'teacher_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
-
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}
-
-    def teacherDesc(self):
-        return {'teacher_survey': """Teachers who filled out the survey"""}
 
     def isStep(self):
         return False
 
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
-        if extra is None or extra == '':
+        if extra:
+            raise ESPError("You need to be a teacher or administrator of this "
+                           "program to review survey responses.")
+        else:
             return survey_view(request, tl, one, two)
-        elif extra == 'review':
-            return survey_review(request, tl, one, two)
-        elif extra == 'review_pdf':
-            return survey_graphical(request, tl, one, two)
-        elif extra == 'review_single':
-            return survey_review_single(request, tl, one, two)
 
     surveys = survey
 
