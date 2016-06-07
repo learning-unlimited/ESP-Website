@@ -70,14 +70,6 @@ class AvailabilityModule(ProgramModuleObj):
             "seq": 0
             } ]
 
-    def prepare(self, context={}):
-        """ prepare returns the context for the main availability page.
-            Everything else can be gotten from hooks in this module. """
-        if context is None: context = {}
-
-        context['availabilitymodule'] = self
-        return context
-
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=True)
