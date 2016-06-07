@@ -43,6 +43,7 @@ from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
 from esp.users.forms.password_reset import UserPasswdForm
+from esp.users.forms import user_profile
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
 
@@ -82,36 +83,25 @@ def myesp_switchback(request):
 
 @login_required
 def edit_profile(request):
-
-    curUser = request.user
-
-    if curUser.isStudent():
-        return profile_editor(request, None, True, 'student')
-
-    elif curUser.isTeacher():
-        return profile_editor(request, None, True, 'teacher')
-
-    elif curUser.isGuardian():
-        return profile_editor(request, None, True, 'guardian')
-
-    elif curUser.isEducator():
-        return profile_editor(request, None, True, 'educator')
-
+    if request.user.isStudent():
+        role = 'student'
+    elif request.user.isTeacher():
+        role = 'teacher'
+    elif request.user.isGuardian():
+        role = 'guardian'
+    elif request.user.isEducator():
+        role = 'educator'
     else:
-        user_types = curUser.groups.all().order_by('-id')
-        return profile_editor(request, None, True, user_types[0].name if user_types else '')
+        user_types = request.user.groups.all().order_by('-id')
+        role = user_types[0].name if user_types else ''
 
-@login_required
-def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):
+    return profile_editor(request, None, True, role)
+
+
+def profile_editor(request, prog, responseuponCompletion, role):
     """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
-    from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
-
-    if prog_input is None:
-        prog = None
-    else:
-        prog = prog_input
 
     curUser = request.user
     context = {'logged_in': request.user.is_authenticated() }
@@ -123,18 +113,16 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     #   Get the profile form from the user's type, although we need to handle
     #   a couple of extra possibilities for the 'role' variable.
     user_types = ESPUser.getAllUserTypes()
-    additional_types = [['',  {'label': 'Not specified', 'profile_form': 'UserContactForm'}],
-                        ['Administrator', {'label': 'Administrator', 'profile_form': 'UserContactForm'}],
-                       ]
-    additional_type_labels = [x[0] for x in additional_types]
+    # If there's an overlap (which doesn't seem to exist in practice) we'll
+    # prefer the user-specified version to ours, because index() finds the
+    # first one.
+    user_types += [['',  {'label': 'Not specified', 'profile_form': 'UserContactForm'}],
+                    ['Administrator', {'label': 'Administrator', 'profile_form': 'UserContactForm'}],
+                   ]
     #   Handle all-lowercase versions of role being passed in by calling title()
     user_type_labels = [x[0] for x in user_types]
-    if role.title() in user_type_labels:
-        target_type = user_types[user_type_labels.index(role.title())][1]
-    else:
-        target_type = additional_types[additional_type_labels.index(role.title())][1]
-    mod = __import__('esp.users.forms.user_profile', (), (), target_type['profile_form'])
-    FormClass = getattr(mod, target_type['profile_form'])
+    target_type = user_types[user_type_labels.index(role.title())][1]
+    FormClass = getattr(user_profile, target_type['profile_form'])
 
     context['profiletype'] = role
 
@@ -199,7 +187,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             form = FormClass(curUser, replacement_data)
 
     else:
-        if prog_input is None:
+        if prog is None:
             regProf = RegistrationProfile.getLastProfile(curUser)
         else:
             regProf = RegistrationProfile.getLastForProgram(curUser, prog)
