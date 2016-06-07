@@ -32,63 +32,40 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, needs_account, usercheck_usetl, main_call, aux_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_deadline
 from esp.program.models import RegistrationProfile
-from esp.users.models   import ESPUser
+from esp.users.models import ESPUser
 from django.db.models.query import Q
-from django.contrib.auth.decorators import login_required
 from esp.middleware.threadlocalrequest import get_current_request
 
-# reg profile module
-class RegProfileModule(ProgramModuleObj):
+
+class StudentProfileModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
-        return [ {
+        return {
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
             "seq": 1,
             "required": True
-        }, {
-            "admin_title": "Teacher Profile Editor",
-            "link_title": "Update Your Profile",
-            "module_type": "teach",
-            "seq": 1,
-            "required": True
-        } ]
+        }
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         if QObject:
-            return {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)
-                    }
-        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
-        return {'student_profile': students }
+            return {'student_profile': Q(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False)}
+        students = ESPUser.objects.filter(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False).distinct()
+        return {'student_profile': students}
 
     def studentDesc(self):
         return {'student_profile': """Students who have filled out a profile"""}
 
-    def teachers(self, QObject = False):
-        if QObject:
-            return {'teacher_profile': Q(registrationprofile__program=self.program) &
-                                       Q(registrationprofile__teacher_info__isnull=False)}
-        teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
-        return {'teacher_profile': teachers }
-
-    def teacherDesc(self):
-        return {'teacher_profile': """Teachers who have filled out a profile"""}
-
     @main_call
-    @usercheck_usetl
+    @needs_student
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog):
         """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
-
         from esp.web.views.myesp import profile_editor
-
-        role = {'teach': 'teacher','learn': 'student'}[tl]
-
-        response = profile_editor(request, prog, False, role)
-
+        response = profile_editor(request, prog, False, 'student')
         if response == True:
             return self.goToCore(tl)
         return response
