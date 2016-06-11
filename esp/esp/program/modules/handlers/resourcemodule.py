@@ -218,7 +218,7 @@ class ResourceModule(ProgramModuleObj):
             context['new_timeslots'] = new_timeslots
             if import_mode == 'preview':
                 context['prog'] = self.program
-                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context, prog)
+                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context)
             else:
                 extra = 'timeslot'
 

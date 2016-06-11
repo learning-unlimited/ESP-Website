@@ -93,8 +93,7 @@ def json_response(field_map={}):
             elif 'json_debug' in request.GET:
                 data = json.dumps(result, sort_keys=True, indent=4)
                 return render_to_response('utils/jsondebug.html',
-                                          request, {'data': data},
-                                          content_type="text/html")
+                                          request, {'data': data})
             else:
                 if field_map is None:
                     new_result = result
