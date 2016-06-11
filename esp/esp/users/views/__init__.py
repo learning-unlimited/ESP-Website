@@ -9,7 +9,6 @@ from esp.program.models import Program
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, admin_required
 from esp.users.models.forwarder import UserForwarder
-from esp.users.views.emailpref import *
 from esp.users.views.make_admin import *
 from esp.users.views.password_reset import *
 from esp.users.views.registration import *

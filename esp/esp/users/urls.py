@@ -30,8 +30,6 @@ urlpatterns = [
     url(r'^login/bybday/([0-9]+)/([0-9]+)/?$',   login_by_bday.login_by_bday_pickname),
     url(r'^login/bybday/new/?$',   login_by_bday.login_by_bday_new),
     url(r'^disableaccount/?$', views.disable_account),
-    url(r'^emailpref/?$', views.emailpref),
-    url(r'^emailpref/(success)?/?$', views.emailpref),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^morph/?$', views.morph_into_user),
