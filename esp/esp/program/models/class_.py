@@ -346,7 +346,7 @@ class ClassSection(models.Model):
                          ]
 
         sections = queryset.prefetch_related('meeting_times')
-        sections = queryset.extra(select=select, select_params=select_params)
+        sections = sections.extra(select=select, select_params=select_params)
         sections = list(sections)
 
         # Now, to combine all of the above:
