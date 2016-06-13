@@ -1,7 +1,6 @@
 from django.conf.urls import url
 
 from esp.users import views
-from esp.users.views import login_byschool, login_by_bday
 from esp.users.views.registration import GradeChangeRequestView
 from esp.web.views import bio
 from esp.web.views import main
@@ -23,12 +22,6 @@ urlpatterns = [
     url(r'^signout/?$', views.signout),
     url(r'^signedout/?$', views.signed_out_message),
     url(r'^login/?$',   views.login_checked),
-    url(r'^login/byschool/?$',   login_byschool.login_byschool),
-    url(r'^login/byschool/([0-9]+)/?$',   login_byschool.login_byschool_pickname),
-    url(r'^login/byschool/new/?$',   login_byschool.login_byschool_new),
-    url(r'^login/bybday/?$',   login_by_bday.login_by_bday),
-    url(r'^login/bybday/([0-9]+)/([0-9]+)/?$',   login_by_bday.login_by_bday_pickname),
-    url(r'^login/bybday/new/?$',   login_by_bday.login_by_bday_new),
     url(r'^disableaccount/?$', views.disable_account),
     url(r'^emailpref/?$', views.emailpref),
     url(r'^emailpref/(success)?/?$', views.emailpref),
