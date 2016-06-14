@@ -41,6 +41,7 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 import debug_toolbar
+import esp.utils.views
 
 autodiscover(admin_site)
 
@@ -179,3 +180,9 @@ urlpatterns +=patterns('esp.customforms.views',
 urlpatterns += patterns('',
                         (r'^themes', include('esp.themes.urls'))
                        )
+
+
+urlpatterns += [
+    url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
+        esp.utils.views.diff_templateoverride),
+]
