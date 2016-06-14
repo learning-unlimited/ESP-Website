@@ -60,6 +60,7 @@ from esp.web.views import main
 import esp.qsd.views
 import esp.db.views
 import esp.users.views
+import esp.utils.views
 
 autodiscover(admin_site)
 
@@ -137,3 +138,9 @@ urlpatterns += [
 
 urlpatterns += [
 url(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html', permanent=True))]
+
+
+urlpatterns += [
+    url(r'^manage/templateoverride/(?P<template_id>[0-9]+)',
+        esp.utils.views.diff_templateoverride),
+]
