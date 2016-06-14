@@ -32,13 +32,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.utils.models import TemplateOverride
 from esp.users.models import admin_required
 from difflib import HtmlDiff
 import os.path
 from django.conf import settings
+from django.http import Http404
 
 @admin_required
 def diff_templateoverride(request, template_id):
@@ -47,8 +47,7 @@ def diff_templateoverride(request, template_id):
     if qs.exists():
         override_obj = qs.order_by('-version')[0]
     else:
-
-        raise ESPError("No TemplateOverride with id {} found!".format(template_id))
+        raise Http404
 
     override_lines = override_obj.content.split('\n')
 
