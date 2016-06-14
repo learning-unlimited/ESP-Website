@@ -1,7 +1,5 @@
 Vagrant based dev servers
 =========================
-Authors:
-   - Michael Price <price@learningu.org>
 
 .. contents:: :local:
 
@@ -67,6 +65,8 @@ Finally, you can set up your dev server with an empty database.  At some point d
 
     fab emptydb
 
+(If this step fails with an error "Operation now in progress", see the "Problems" section at the end.)
+
 These commands can also be used on a system that has already been set up to bring your database up to date. They will overwrite the existing database on your dev server.
 
 Now you can run the dev server: ::
@@ -113,3 +113,30 @@ One last command! When your devserver gets out of date, this command will update
     fab refresh
 
 If you want to add some custom shortcuts that don't need to go in the main fabfile, you can add them in a file called  ``local_fabfile.py`` in the same directory as ``fabfile.py``. Just add ``from fabfile import *`` at the top, and then write whatever commands you want.
+
+For instructions on contributing changes and our ``git`` workflow, see `<contributing.rst>`_.
+
+Problems
+--------
+
+1. The ``vagrant up`` command errors out with a Ruby stack trace.
+
+    There is a `known issue <https://github.com/mitchellh/vagrant/issues/6748>`_ with Vagrant/VirtualBox on IPv6 static networking.
+
+    One other quick thing to check is to open the VM directly from VirtualBox.  If it also fails,
+    VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
+    might be out of luck since the VM runs 64-bit Ubuntu.
+
+2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
+
+    You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
+
+        ``sudo service memcached restart``
+
+    Now try your ``fab`` command again.
+
+3. I forgot the passphrase for the encrypted partition.
+
+    You won't be able to recover the data, but you can start over by dropping the tablespace ``encrypted`` and then re-running ``fab setup``.
+
+Some other common dev setup issues are discussed `here <https://github.com/learning-unlimited/ESP-Website/issues/1432>`_.

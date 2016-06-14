@@ -215,11 +215,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
-        elif 'birth_month' in request.session and 'birth_day' in request.session:
-            new_data['dob'] = datetime.date(1998, int(request.session['birth_month']), int(request.session['birth_day']))
-
-        if 'school_id' in request.session:
-            new_data['k12school'] = request.session['school_id']
 
         #   Set default values for state fields
         state_fields = ['address_state', 'emerg_address_state']

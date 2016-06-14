@@ -43,6 +43,7 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         from esp.themes.controllers import ThemeController
         try:
+            # If this changes, make sure it still respects settings.LOCAL_THEME
             ThemeController().recompile_theme()
         except Exception:
             logger.warning("recompile_theme failed the first time. Trying "

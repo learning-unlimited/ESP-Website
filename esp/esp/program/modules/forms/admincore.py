@@ -35,10 +35,12 @@ class LunchConstraintsForm(forms.Form):
 
     def save_data(self):
         timeslots = Event.objects.filter(id__in=self.cleaned_data['timeslots']).order_by('start')
-        cg = LunchConstraintGenerator(self.program, timeslots, autocorrect=(self.cleaned_data['autocorrect'] is True), include_conditions=(self.cleaned_data['include_conditions'] is True))
+        cg = LunchConstraintGenerator(self.program, timeslots, generate_constraints=(self.cleaned_data['generate_constraints'] is True), autocorrect=(self.cleaned_data['autocorrect'] is True), include_conditions=(self.cleaned_data['include_conditions'] is True))
         cg.generate_all_constraints()
 
     timeslots = forms.MultipleChoiceField(choices=[], widget=forms.CheckboxSelectMultiple)
+
+    generate_constraints=forms.BooleanField(initial=True, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
     autocorrect = forms.BooleanField(initial=True, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
     include_conditions = forms.BooleanField(initial=True, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
 

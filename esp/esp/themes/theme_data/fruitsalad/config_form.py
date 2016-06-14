@@ -39,7 +39,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.conf import settings
-from django.core.urlresolvers import reverse
 
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
@@ -71,5 +70,5 @@ class ConfigForm(ThemeConfigurationForm):
             host = settings.SITE_INFO[1]
         self.fields['front_page_style'].help_text = \
             self.fields['front_page_style'].help_text % \
-                {'home': reverse('esp.web.views.main.home'), 'host': host}
+                {'home': '/', 'host': host}
 

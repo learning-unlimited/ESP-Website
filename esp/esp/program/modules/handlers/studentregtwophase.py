@@ -167,7 +167,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes
         context['open_class_category_id'] = prog.open_class_category.id
-        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
+        try:
+            lunch_category = ClassCategories.objects.get(category='Lunch')
+            context['lunch_category_id'] = lunch_category.id
+        except ClassCategories.DoesNotExist:
+            context['lunch_category_id'] = -1
         return context
 
     @aux_call

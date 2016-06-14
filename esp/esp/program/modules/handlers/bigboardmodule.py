@@ -185,7 +185,7 @@ class BigBoardModule(ProgramModuleObj):
         for description, field, qs in fields:
             qs = qs.annotate(points=Count(field)).values(
                 'id', 'category__symbol', 'title', 'points'
-            ).order_by('-points')[:num]
+            ).exclude(points__lte=0).order_by('-points')[:num]
             # The above query should Just Work, but django does something
             # suboptimal in query generation: even though only
             # program_class.id, program_class.title,
@@ -220,7 +220,9 @@ class BigBoardModule(ProgramModuleObj):
             # 'category__symbol'.
             qs.query.group_by = [column for column in qs.query.group_by
                                  if column in qs.query.select]
-            popular_classes.append((description, list(qs)))
+            qs_list = list(qs)
+            if len(qs_list)>0:
+                popular_classes.append((description, qs_list))
         return popular_classes
 
     @cache_function_for(105)

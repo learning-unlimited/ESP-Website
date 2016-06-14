@@ -213,12 +213,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         #   Set a flag on each perm for whether it has ended
+        #   TODO(benkraft): refactor users to just call is_valid themselves.
         for perm in perms:
-            if perm.end_date is None or  perm.end_date > datetime.now():
-                perm.open_now = True
-            else:
-                perm.open_now = False
-
+            perm.open_now = perm.is_valid()
 
         #   For each permission, determine which other ones it implies
         for perm in perms:
