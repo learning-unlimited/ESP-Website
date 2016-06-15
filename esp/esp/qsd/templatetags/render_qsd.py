@@ -70,6 +70,7 @@ class InlineQSDNode(template.Node):
             title += ' - ' + unicode(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
+        # Note: this is django's render_to_response, not ours!
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj}, context_instance=context).content
 
 @register.tag

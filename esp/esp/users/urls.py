@@ -23,8 +23,6 @@ urlpatterns = [
     url(r'^signedout/?$', views.signed_out_message),
     url(r'^login/?$',   views.login_checked),
     url(r'^disableaccount/?$', views.disable_account),
-    url(r'^emailpref/?$', views.emailpref),
-    url(r'^emailpref/(success)?/?$', views.emailpref),
     url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
     url(r'^makeadmin/?$', views.make_admin),
     url(r'^morph/?$', views.morph_into_user),

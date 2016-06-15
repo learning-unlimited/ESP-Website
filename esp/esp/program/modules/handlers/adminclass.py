@@ -388,11 +388,12 @@ class AdminClass(ProgramModuleObj):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,{'class':cls,
-                                                                                                 'ajax':ajax,
-                                                                                                 'txtTeachers': txtTeachers,
-                                                                                                 'coteachers':  coteachers,
-                                                                                                 'error': error})
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error})
 
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
@@ -432,11 +433,12 @@ class AdminClass(ProgramModuleObj):
 
 
 
-        return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
-                                                                                         'ajax':ajax,
-                                                                                         'txtTeachers': txtTeachers,
-                                                                                         'coteachers':  coteachers,
-                                                                                         'conflicts':   conflictingusers})
+        return render_to_response(self.baseDir()+'coteachers.html', request,
+                                  {'class': cls,
+                                   'ajax': ajax,
+                                   'txtTeachers': txtTeachers,
+                                   'coteachers': coteachers,
+                                   'conflicts': conflictingusers})
 
     @aux_call
     @needs_admin
