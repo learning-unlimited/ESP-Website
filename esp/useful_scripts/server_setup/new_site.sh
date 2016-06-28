@@ -410,6 +410,7 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
     #   Static files
     Alias /media $BASEDIR/esp/public/media
     Alias /static $BASEDIR/esp/public/static
+    Alias /favicon.ico $BASEDIR/esp/public/media/images/favicon.ico
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
