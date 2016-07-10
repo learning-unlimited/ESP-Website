@@ -515,8 +515,10 @@ class ProgramHappenTest(TestCase):
 
         sr = StudentRegistration.objects.all()[0]
 
+        enrolled = RegistrationType.get_map(include=['Enrolled'],
+                                            category='student')['Enrolled']
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
-            relationship=self.prog.studentclassregmoduleinfo.signup_verb).count() > 0, 'Registration failed.')
+            relationship=enrolled).count() > 0, 'Registration failed.')
 
         # Check that you're in it now
         self.assertEqual( self.student.getEnrolledClasses().count(), 1, "Student not enrolled in exactly one class" )
@@ -525,7 +527,7 @@ class ProgramHappenTest(TestCase):
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
         self.assertFalse( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
-            relationship=self.prog.studentclassregmoduleinfo.signup_verb).count() > 0, 'Registration failed.')
+            relationship=enrolled).count() > 0, 'Registration failed.')
 
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
