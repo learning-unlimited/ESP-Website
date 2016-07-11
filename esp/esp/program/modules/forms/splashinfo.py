@@ -62,7 +62,7 @@ class SplashInfoForm(forms.Form):
     #   The default choices are somewhat unappetizing...
     default_choices = [['no', 'No'], ['yes', 'Yes']]
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
-                        (True, 'I have a brother/sister already enrolled in Splash  (+ $20).')]
+                        (True, 'I have a sibling already enrolled in Splash  (+ $20).')]
 
     lunchsat = forms.ChoiceField(choices=default_choices)
     lunchsun = forms.ChoiceField(choices=default_choices)
@@ -112,7 +112,7 @@ class SplashInfoForm(forms.Form):
         if 'lunchsun' in self.cleaned_data:
             splashinfo.lunchsun = self.cleaned_data['lunchsun']
         if 'siblingdiscount' in self.cleaned_data:
-            splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
+            splashinfo.siblingdiscount = (self.cleaned_data['siblingdiscount'] == "True")
         if 'siblingname' in self.cleaned_data:
             splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
