@@ -53,7 +53,7 @@ def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, userna
         else:
             if username != '':
                 founduser = ESPUser.objects.get(username=username)
-                old_url = ('tl' != 'teach')
+                old_url = (tl != 'teach')
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
                 old_url = True
@@ -83,7 +83,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False,
     if old_url:
         # TODO(benkraft): after these URLs have been redirecting for a while,
         # remove them.
-        return HttpResponsePermanentRedirect(lastbio.url())
+        return HttpResponsePermanentRedirect(lastbio.edit_url())
 
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
