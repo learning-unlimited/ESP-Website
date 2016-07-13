@@ -51,7 +51,7 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -394,36 +394,6 @@ class StudentClassRegModule(ProgramModuleObj):
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
         else:
             priority = 1
-
-        # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
-        auto_classes = []
-        blocked_class = None
-        cannotadd_error = ''
-
-        for implication in ClassImplication.objects.filter(cls__id=classid, parent__isnull=True):
-            if implication.fails_implication(request.user):
-                for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
-                    #   Override size limits on subprogram classes (checkFull=False). -Michael P
-                    sec = cls.default_section()
-                    if sec.cannotAdd(request.user, checkFull=False):
-                        blocked_class = cls
-                        cannotadd_error = sec.cannotAdd(request.user, checkFull=False)
-                    else:
-                        if sec.preregister_student(request.user, overridefull=True, automatic=True, priority=priority, prereg_verb = prereg_verb):
-                            auto_classes.append(sec)
-                            if implication.operation != 'AND':
-                                break
-                        else:
-                            blocked_class = cls
-                    if (blocked_class is not None) and implication.operation == 'AND':
-                        break
-                if implication.fails_implication(request.user):
-                    for sec in auto_classes:
-                        sec.unpreregister_student(request.user, prereg_verb = prereg_verb)
-                    if blocked_class is not None:
-                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error), log=False)
-                    else:
-                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error), log=False)
 
         if error and not request.user.onsite_local:
             raise ESPError(error, log=False)
