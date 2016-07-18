@@ -22,11 +22,6 @@ Per-grade program caps
 
 TODO(benkraft)
 
-Accounting improvements
-~~~~~~~~~~~~~~~~~~~~~~~
-
-TODO(btidor), or delete this if it's not user-facing, I forget
-
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 With this release, class search allows you to edit your search at the top of the search page.  The results page also includes a new button to email the teachers of a class, a new button to show all classes and all flags which have comments, and an option to randomize the order of search results, along with a minor bugfix.
