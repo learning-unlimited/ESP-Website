@@ -124,8 +124,8 @@ class StudentClassRegModuleInfo(models.Model):
         return self.program.getModule('StudentClassRegModule')
 
     def reg_verbs(self):
-        verb_list = [RegistrationType.get_map(include=['Enrolled'],
-                                              category='student')['Enrolled']]
+        verb_list = [RegistrationType.get_cached(name='Enrolled',
+                                                 category='student')]
 
         if self.use_priority:
             for i in range(0, self.priority_limit):

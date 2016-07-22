@@ -515,8 +515,8 @@ class ProgramHappenTest(TestCase):
 
         sr = StudentRegistration.objects.all()[0]
 
-        enrolled = RegistrationType.get_map(include=['Enrolled'],
-                                            category='student')['Enrolled']
+        enrolled = RegistrationType.get_cached(name='Enrolled',
+                                               category='student')
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
             relationship=enrolled).count() > 0, 'Registration failed.')
 
