@@ -57,7 +57,7 @@ class AdminVitals(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Admin Module for Showing Basic Vitals",
-            "link_title": "Program Vitals",
+            "link_title": "Programme Vitals",
             "module_type": "manage",
             "inline_template": "vitals.html",
             "seq": -2,

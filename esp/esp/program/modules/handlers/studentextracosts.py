@@ -137,7 +137,7 @@ class StudentExtraCosts(ProgramModuleObj):
         Right now it doesn't.
         """
         if self.have_paid():
-            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+            raise ESPError("You've already paid for this programme.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
         iac = IndividualAccountingController(self.program, get_current_request().user)

@@ -31,9 +31,9 @@
 {% if not request.user.onsite_local %}
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 {% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+<div class="errormsg">This programme is now full!  Click below to add yourself to the waiting list.</div>
 {% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+<div class="errormsg">This programme is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}
 {% endif %}
 {% endif %}
@@ -51,7 +51,7 @@
 {% render_inline_program_qsd program "learn:studentregheader" %}
 <div class="alert alert-info">
 <i class="icon-info-sign"></i>
-<b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+<b>Parents:</b> You should not be at this page!  Please let your children fill out the registration forms.
 </div>
     
 {% ifequal scrmi.progress_mode 1 %}
@@ -79,9 +79,9 @@
 <center>
 
 {% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
+<div class="errormsg">This programme is now full!  Click below to add yourself to the waiting list.</div>
 {% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
+<div class="errormsg">This programme is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
 {% endif %}
 {% endif %}
 {% endif %}

@@ -29,7 +29,7 @@ You have chosen to delete the resource type: {{ restype }}.  Please confirm this
     </th></tr>
     <tr><th class="small">Name:</th><td>{{ restype.name }}</td></tr>
     <tr><th class="small">Description:</th><td> {{ restype.description }}</td></tr>
-    <tr><th class="small">Program Association:</th><td>{% if restype.program %}{{ restype.program }}{% else %}None (global){% endif %}</td></tr>
+    <tr><th class="small">Programme Association:</th><td>{% if restype.program %}{{ restype.program }}{% else %}None (global){% endif %}</td></tr>
     <tr><th class="small">Priority:</th><td> {{ restype.priority_default }} </td></tr>
     <tr><th class="small">Options:</th>
         <td align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resoure editor</a>, or click here:

@@ -49,7 +49,7 @@ document.getElementsByClassName = function(class_name) {
 {% load subsection %}
 
 {% block subsection %}
-{% autoescape off %}{{ "Course Catalog"|subsection }}{% endautoescape %}
+{% autoescape off %}{{ "Course Catalogue"|subsection }}{% endautoescape %}
 {% endblock %}
 
 {% block content %}
@@ -57,7 +57,7 @@ document.getElementsByClassName = function(class_name) {
 
 <h1>
     {{ program.niceName }} <br /> 
-        Course Catalog
+        Course Catalogue
 </h1>
 
 {% if timeslot %}

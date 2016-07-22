@@ -313,7 +313,7 @@ class ProgramHappenTest(TestCase):
             inline_template='listclasses.html', seq=10, required=False)
         ProgramModule.objects.create(link_title='Sign up for Classes', admin_title='Student Class Registration', module_type='learn', handler='StudentClassRegModule',
             seq=10, required=True)
-        ProgramModule.objects.create(link_title='Sign up for a Program', admin_title='Student Registration Core', module_type='learn', handler='StudentRegCore',
+        ProgramModule.objects.create(link_title='Sign up for a Programme', admin_title='Student Registration Core', module_type='learn', handler='StudentRegCore',
             seq=-9999, required=False)
         
         # Admin logs in
@@ -368,7 +368,7 @@ class ProgramHappenTest(TestCase):
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
 
-        self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
+        self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty programme has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
         self.failUnless( user_obj.getTaughtClasses().count() == 0, "User tubbeachubber is teaching classes that don't exist")
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
@@ -435,7 +435,7 @@ class ProgramHappenTest(TestCase):
         
         # check prog.classes
         classes = self.prog.classes()
-        self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
+        self.assertEqual( classes.count(), 1, 'Classes failing to show up in programme' )
         self.classsubject = classes[0]
 
         # check the title ise good
@@ -685,7 +685,7 @@ class ProgramFrameworkTest(TestCase):
         (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
                                               name="learn:index",
                                               title=new_prog.niceName(),
-                                              content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
+                                              content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalogue.",
                                               author=self.admins[0],
                                               nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 

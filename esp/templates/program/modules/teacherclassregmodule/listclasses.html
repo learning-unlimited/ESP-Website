@@ -26,14 +26,14 @@ You are welcome to use this page to view your classes' status and upload documen
 However, you may edit classes that you have already created.
 {% endif %}
 {% if program.director_email %}<br />
-If you have any questions regarding the program, <br /> please email the 
-<a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
+If you have any questions regarding the programme, <br /> please email the 
+<a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">programme directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
 </div>
 {% else %}
 {% if not can_edit %}
 <div class="info">
-<b>Note:</b> Class editing has been disabled.  Please contact the <a href="mailto:{{module.program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{module.program.director_email }}</span>) if you need to make changes.
+<b>Note:</b> Class editing has been disabled.  Please contact the <a href="mailto:{{module.program.director_email }}" title="{{program.niceName }} director(s)">programme directors</a> (<span class="monospace">{{module.program.director_email }}</span>) if you need to make changes.
 </div>
 {% endif %}
 {% endif %}
@@ -74,7 +74,7 @@ If you have any questions regarding the program, <br /> please email the
      <br />
      {% if allow_class_import %}
      <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
-       Teach a class from a previous program for {{ program.niceName }}!
+       Teach a class from a previous programme for {{ program.niceName }}!
      </a>
      {% endif %}
      {% endif %}

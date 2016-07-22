@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Make Program Happen{% endblock %}
+{% block title %}Make Programme Happen{% endblock %}
 
 {% load subsection %}
 {% block subsection %}
@@ -17,14 +17,14 @@
 
 {% block content %}
 <div id="divmaintext">
-<h2>Program Creation Review</h2>
+<h2>Programme Creation Review</h2>
 
 <p>
 So, that wasn't actually your magic button.  Please find someone else to go over all of this information, verifying that it is correct before clicking the REAL magic button.
 </p>
 
 <p>
-The program you are trying to create is: <b>{{ prog }}</b>
+The programme you are trying to create is: <b>{{ prog }}</b>
 </p>
 
 <p>
@@ -45,7 +45,7 @@ The program you are trying to create is: <b>{{ prog }}</b>
 <div id="catalog">
 <table align="center">
 <tr>
-<th>The following program modules will be added:</th>
+<th>The following programme modules will be added:</th>
 </tr>
 <tr><th class="materials">Module Name</th></tr>
 {% for item in modules %}
@@ -61,7 +61,7 @@ The program you are trying to create is: <b>{{ prog }}</b>
 <div id="program_form">
 <form method="POST" action="{{ request.path }}?checked=1">
 
-<input type="submit" class="button" value="Make Program Happen">
+<input type="submit" class="button" value="Make Programme Happen">
 </form>
 </div>
 </center>

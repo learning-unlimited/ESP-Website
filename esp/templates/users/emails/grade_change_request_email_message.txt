@@ -1,7 +1,7 @@
-A grade change request was received from: {{ student.name }} (ID: {{ student.id }}, e-mail: {{ student.email }}).
+A year change request was received from: {{ student.name }} (ID: {{ student.id }}, e-mail: {{ student.email }}).
 
-Current Grade: {{ change_request.grade_before_request }}
-Claimed Grade: {{ change_request.claimed_grade }}
+Current Year: {{ change_request.grade_before_request }}
+Claimed Year: {{ change_request.claimed_grade }}
 Reason: {{ change_request.reason }}
 
 

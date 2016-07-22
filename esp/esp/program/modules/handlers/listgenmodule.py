@@ -55,7 +55,7 @@ class UserAttributeGetter(object):
                     '08_accountdate': 'Created Date',
                     '09_first_regdate': 'Initial Registration Date',
                     '10_last_regdate': 'Most Recent Registration Date',
-                    '11_cellphone': 'Cell Phone',
+                    '11_cellphone': 'Mobile Phone',
                     '12_textmsg': 'Text Msg?',
                     '13_studentrep': 'Student Rep?',
                     '14_classhours': 'Num Class Hrs',

@@ -85,15 +85,15 @@ class StudentClassRegModuleInfo(models.Model):
     #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
     priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
     #   Whether to use grade range exceptions
-    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
+    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable year group range exceptions.')
     
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
-    register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
+    register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalogue page if they are logged in.')
     
     #   Enrollment visibility
-    visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrollments on the catalog.')
+    visible_enrollments = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing enrolments on the catalogue.')
     #   Meeting times visibility
-    visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalog.')
+    visible_meeting_times = models.BooleanField(default=True, help_text='Uncheck this box to prevent students from seeing classes\' meeting times on the catalogue.')
     
     #   Customize buttons
     #   - Labels
@@ -113,7 +113,7 @@ class StudentClassRegModuleInfo(models.Model):
     send_confirmation = models.BooleanField(default=False, help_text='Check this box to send each student an e-mail the first time they confirm their registration.  You must define an associated DBReceipt of type "confirmemail".')
     
     #   Choose whether class IDs are shown on catalog.
-    show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalog and fillslot pages.')
+    show_emailcodes = models.BooleanField(default=True, help_text='Uncheck this box to prevent e-mail codes (i.e. E534, H243) from showing up on catalogue and fillslot pages.')
 
     #   Choose whether users have to fill out "required" modules before they can see the main StudentReg page
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
@@ -141,7 +141,7 @@ class StudentClassRegModuleInfo(models.Model):
 class ClassRegModuleInfo(models.Model):
     module               = models.ForeignKey(ProgramModuleObj)
     allow_coteach        = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to specify co-teachers.')
-    set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalog.')
+    set_prereqs          = models.BooleanField(blank=True, default=True, help_text='Check this box to allow teachers to enter prerequisites for each class that are displayed separately on the catalogue.')
     
     #   The maximum length of a class, in minutes.
     class_max_duration   = models.IntegerField(blank=True, null=True, help_text='The maximum length of a class, in minutes.')

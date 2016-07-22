@@ -457,7 +457,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': "Year " + str(cls.grade_min) + "to Year" + str(cls.grade_max) ,
         }
 
         return {return_key: [return_dict]}
@@ -579,7 +579,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': "Year " + str(cls.grade_min) + "to Year " + str(cls.grade_max) ,
             'teacher_names': cls.pretty_teachers(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
@@ -750,8 +750,8 @@ teachers[key].filter(is_active = True).distinct().count()))
             grade_students = filter(
                 lambda x: x.getGrade(prog, assume_student=True)==g,
                 students['enrolled'])
-            grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
-        dictOut["stats"].append({"id": "grades", "data": grades_annotated})
+            grades_annotated.append({'year': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
+        dictOut["stats"].append({"id": "years", "data": grades_annotated})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
