@@ -839,16 +839,7 @@ class ClassSection(models.Model):
                     return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
 
         scrmi = self.parent_program.studentclassregmoduleinfo
-        if not scrmi.use_priority:
-            verbs = ['Enrolled']
-            section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
-        else:
-            verbs = [scrmi.signup_verb.name]
-            # Disallow joining a no-app class that conflicts with an app class
-            # For HSSP Harvard Spring 2010
-            #if self.parent_class.studentappquestion_set.count() == 0:
-            #    verbs += ['/Applied']
-            section_list = user.getSections(self.parent_program, verbs=verbs)
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
         my_timeslots = self.timeslot_ids()
@@ -1608,7 +1599,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=[self.parent_program.studentclassregmoduleinfo.signup_verb.name]).count() == 0:
+        if user.getClasses(self.parent_program, verbs=['Enrolled']).count() == 0:
             return False
 
         for section in self.get_sections():
