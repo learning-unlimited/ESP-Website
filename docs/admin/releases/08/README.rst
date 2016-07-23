@@ -20,7 +20,11 @@ TODO(lua) (and please also add this to program_modules.rst if you haven't alread
 Per-grade program caps
 ~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(benkraft)
+The site now supports having per-grade program caps.  The backend for program caps has also been updated, so the logic should be more consistent and correct.
+
+As before, the overall program cap is controlled by setting "Program size max" in the admin panel for the program.  Per-grade caps override this setting, and are controlled by the Tag ``program_size_by_grade``, generally set on a specific program.  The value should be a JSON object; the keys should be strings, either individual grades (as strings, e.g. "7"), or ranges (e.g. "7-9"), and the values should be nonnegative integers.  These ranges should cover all grades for which you want to have a cap.  If you want, they can be overlapping, but that will probably cause worse performance for students in the overlap, since it will have to check both grades.  So it should look something like ``{"7-8": 1000, "9": 300, "10-12" 1500}`` if you want to allow 1000 total 7th and 8th graders, 300 9th graders, and 1500 total 10th-12th graders.
+
+Note: all program caps, and especially per-grade ones, will hurt your site's performance, because we need to check how many students are in the program every time a student tries to join it.  If you don't intend to set a program cap, just leave the field blank, and you'll get much better performance than setting it to a large value.
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
