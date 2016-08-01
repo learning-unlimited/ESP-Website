@@ -142,10 +142,11 @@ class SchedulingCheckRunner:
      all_diagnostics = [
           ('lunch_blocks_setup', 'Lunch blocks'),
           ('incompletely_scheduled_classes', 'Classes not completely scheduled'),
+          ('inconsistent_rooms_and_times', 'Mismatched rooms and meeting times'),
           ('wrong_classroom_type', 'Classes in wrong classroom type'),
           ('classes_missing_resources', 'Unfulfilled resource requests'),
           ('missing_resources_by_hour', 'Unfulfilled resource requests by hour'),
-          ('multiple_classes_same_room_same_time', 'Double-booked rooms'),
+          ('multiple_classes_same_resource_same_time', 'Double-booked resources'),
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
@@ -225,6 +226,18 @@ class SchedulingCheckRunner:
                     problem_classes.append(s)
           return self.formatter.format_list(problem_classes)
 
+     def inconsistent_rooms_and_times(self):
+        output = []
+        for s in self._all_class_sections():
+            mt = sorted(s.get_meeting_times())
+            rooms = s.getResources()
+            res_events = sorted([x.event for x in rooms])
+            if res_events != mt:
+                output.append({"Section": s, "Resource events": res_events,
+                               "Meeting times": mt})
+        return self.formatter.format_table(output,
+            {"headings": ["Section", "Resource events", "Meeting times"]})
+
      def classes_which_cover_lunch(self):
           l = []
           for s in self._all_class_sections(include_walkins=False):
@@ -267,19 +280,19 @@ class SchedulingCheckRunner:
                               l.append({"Teacher": teach, "Timeslot":t, "Section 1": s, "Section 2": d[t][teach]})
           return self.formatter.format_table(l, {'headings': ["Teacher", "Timeslot", "Section 1", "Section 2"]})
 
-     def multiple_classes_same_room_same_time(self):
+     def multiple_classes_same_resource_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
           l = []
           for s in self._all_class_sections(include_walkins=False):
                mt =  s.get_meeting_times()
-               rooms = s.classrooms()
+               resources = s.getResources()
                for t in mt:
-                    for r in rooms:
+                    for r in resources:
                          if not r in d[t]:
                               d[t][r] = s
                          else:
-                              l.append({"Timeslot": t, "Room":r, "Section 1":s, "Section2":d[t][r]})
-          return self.formatter.format_table(l, {"headings": ["Room", "Timeslot", "Section 1", "Section 2"]})
+                              l.append({"Timeslot": t, "Resource":r, "Section 1":s, "Section2":d[t][r]})
+          return self.formatter.format_table(l, {"headings": ["Resource", "Timeslot", "Section 1", "Section 2"]})
 
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []

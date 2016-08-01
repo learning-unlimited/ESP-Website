@@ -63,22 +63,6 @@
             </ul>
         </td>
     </tr>
-    <tr>
-        <th class="smaller">Consistency checks: </th>
-        <td>{% if errors|length_is:0 %}
-            <div style="color: #009900;">All checks passed.</div>
-            {% else %}
-            <div style="color: #990000;">Some checks failed:</div>
-            <ul>
-            {% autoescape off %}
-            {% for item in errors %}
-                <li style="color: black;">{{ item }}</li>
-            {% endfor %}
-            {% endautoescape %}
-            </ul>
-            {% endif %}
-        </td>
-    </tr>
 </table>
 
 <br />
