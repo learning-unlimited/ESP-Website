@@ -37,12 +37,22 @@ There are <strong>{{listcount}}</strong> distinct users in your query. If you fe
 <br />
 Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
 into the text of the message&mdash;the parameters are listed below.
-
-<p><b>Tip:</b> The default {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can modify <a href="/admin/utils/templateoverride/">here</a>) is automatically wrapped around your message below.
-Don't forget to write the body in HTML, but no need for &lt;html&gt; and &lt;/html&gt; tags.</p>
+The default {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can
+modify
+<a href="/admin/utils/templateoverride/?name=default_email_html.txt">here</a>)
+is automatically wrapped around your message below.
+You can choose to write the body in either plain text or HTML.
+If you choose to use HTML, there is no need for &lt;html&gt; and &lt;/html&gt;
+tags because they're are included in the wrapper template.
+If you choose plain text, do <b>not</b> try to use any HTML tags for
+whitespace.</p>
 
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
+
 <table border="0" cellspacing="0" width="100%">
+<tr>
+  <input type="radio" name="msglang" id="msglang" value="plaintext"> Plain Text<br>
+  <input type="radio" name="msglang" id="msglang" value="html"> HTML
 <tr>
   <td>
   <label for="from">
