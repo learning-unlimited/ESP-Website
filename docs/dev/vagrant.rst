@@ -42,6 +42,8 @@ Using a shell, navigate to the directory where you would like to place the code 
 
     git clone https://github.com/learning-unlimited/ESP-Website.git devsite
     cd devsite
+    
+If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 
 Next, use Vagrant to create your VM: ::
 
