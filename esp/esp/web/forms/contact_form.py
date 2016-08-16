@@ -58,7 +58,7 @@ hear_about = (
 class ContactForm(forms.Form):
     sender  = forms.EmailField(label=_("Your Email"), required = True,
                                help_text=_("(e.g.: john.doe@domain.xyz)"))
-    
+
     cc_myself = forms.BooleanField(label=_("Copy me"), required = False,
                                    help_text=_("(By checking this, we will send you a carbon-copy (cc) of this email.)") )
 

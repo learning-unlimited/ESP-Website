@@ -1,0 +1,67 @@
+{% extends "main.html" %}
+
+{% block title %}Search Classes for {{ program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/query-builder.css"/>
+{% endblock %}
+
+{% block xtrajs %}
+    <script type="text/jsx" src="/media/scripts/query-builder.jsx"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/flag-results-page.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Search Classes for {{ program.niceName }}</h1>
+
+{% load query_builder %}
+{% render_query_builder query_builder query %}
+
+{% if queryset %}
+<p>
+Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
+</p>
+
+<div class="flag-query-results" id="program_form">
+    {% for class in queryset %}
+        <div class="fqr-class" id="fqr-class-{{class.id}}">
+            <div class="fqr-class-header {% if class.isReviewed %}{% if class.isAccepted %}accepted{% else %}rejected{% endif %}{% else %}unreviewed{% endif %}" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');">
+                {{class.emailcode}}: {{class.title}} <br/>
+            </div>
+            <div class="fqr-class-flags">
+                Flags: 
+                {% for flag in class.flags.all %}
+                    {% include "program/modules/classflagmodule/flag_name.html" %}
+                {% endfor %}
+            </div>
+            <div class="fqr-class-buttons">
+                <button class="btn btn-default" onclick="manage({{class.id}});">manage</button>
+                <button class="btn btn-default" onclick="edit({{class.id}});">edit</button>
+                <button class="btn btn-default" onclick="approve({{class.id}});">approve</button>
+                <button class="btn btn-default" onclick="unreview({{class.id}});">unreview</button>
+                <button class="btn btn-default" onclick="reject({{class.id}});">reject</button>
+                <button class="btn btn-default" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+                <button class="btn btn-default" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
+                <button class="add-flag btn btn-default">add flag</button>
+            </div>
+            <div class="fqr-class-detail" style="display: none;">
+                {% include "program/modules/classsearchmodule/class_detail.html" %}
+            </div>
+            <div class="fqr-class-flags-detail">
+                {% for flag in class.flags.all %}
+                    {% include "program/modules/classflagmodule/flag_detail.html" %}
+                {% endfor %}
+                {% include "program/modules/classflagmodule/new_flag_form.html" %}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% elif query %}
+No classes were found.
+{% endif %}
+{% endblock %}

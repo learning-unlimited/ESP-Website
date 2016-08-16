@@ -135,7 +135,6 @@ function handle_settings_change(event)
 {
     setup_settings();
     render_table(state.display_mode, state.student_id);
-    update_checkboxes();
 }
 
 function setup_settings()
@@ -726,7 +725,22 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("room").html(section.rooms));
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-            
+
+            //  Hide the class if it started in the past (and we're not showing past timeblocks)
+            if (settings.hide_past_time_blocks && section.timeslots.length > 1)
+            {
+                for (var j in section.timeslots)
+                {
+                    var sec_ts_id = section.timeslots[j];
+                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+                    //excludes timeslots that have a start time 20 minutes prior to the current time
+                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+                    if (differenceInMinutes > minMinutesToHideTimeSlot)
+                        new_div.addClass("section_hidden");
+                }
+            }
+
             // Show the class title if we're not in compact mode
             if (settings.show_class_titles)
             {
@@ -745,7 +759,7 @@ function render_table(display_mode, student_id)
             var last_timeslot = section.timeslots[section.timeslots.length-1];
             var start_time = data.timeslots[first_timeslot].label.split("--")[0];
             var end_time = data.timeslots[last_timeslot].label.split("--")[1];
-            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " hour)";
+            var friendly_times = start_time + "--" + end_time + " (" + section.timeslots.length + " blocks)";
             tooltip_div.append($j("<div/>").html(friendly_times));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
@@ -780,6 +794,9 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    if (display_mode == "classchange") {
+        update_checkboxes();
+    }
     update_search_filter();
     update_category_filters(); // show/hide classes by category
 }
@@ -794,7 +811,6 @@ function render_status_table()
 function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
-    update_checkboxes();
     var studentLabel = data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")";
     add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
 

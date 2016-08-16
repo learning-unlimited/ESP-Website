@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib.auth.decorators import login_required
 
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
@@ -62,38 +62,38 @@ class ResourceModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 10
             }
-            
+
     """
     Resource module handler functions
-    
+
     Each returns a tuple (response, context).  Typically the response is None, in which
-    case we have performed the desired operations and rendering can continue.  If the 
+    case we have performed the desired operations and rendering can continue.  If the
     response is not None, it should be returned (e.g.to display a confirmation page).
     """
     def resources_timeslot(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = Event.objects.get(id=request.GET['id'])
             context['timeslot_form'] = TimeslotForm()
             context['timeslot_form'].load_timeslot(current_slot)
-            
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['timeslot'] = Event.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'timeslot_delete.html', request, context)
-        
+
         if request.method == 'POST':
             data = request.POST
-            
+
             if data['command'] == 'reallyremove':
                 controller.delete_timeslot(data['id'])
-                
+
             elif data['command'] == 'addedit':
                 #   add/edit timeslot
                 form = TimeslotForm(data)
@@ -101,33 +101,33 @@ class ResourceModule(ProgramModuleObj):
                     controller.add_or_edit_timeslot(form)
                 else:
                     context['timeslot_form'] = form
-        
+
         return (response, context)
 
     def resources_restype(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_slot = ResourceType.objects.get(id=request.GET['id'])
             context['restype_form'] = ResourceTypeForm()
             context['restype_form'].load_restype(current_slot)
-            
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['restype'] = ResourceType.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'restype_delete.html', request, context)
-            
+
         if request.method == 'POST':
             data = request.POST
-            
+
             if data['command'] == 'reallyremove':
                 controller.delete_restype(data['id'])
-                
+
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = ResourceTypeForm(data)
@@ -135,57 +135,57 @@ class ResourceModule(ProgramModuleObj):
                     controller.add_or_edit_restype(form)
                 else:
                     context['restype_form'] = form
-        
+
         return (response, context)
-        
+
     def resources_classroom(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             current_room = Resource.objects.get(id=request.GET['id'])
             context['classroom_form'] = ClassroomForm(self.program)
             context['classroom_form'].load_classroom(self.program, current_room)
-            
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['classroom'] = Resource.objects.get(id=request.GET['id'])
             resources = self.program.getClassrooms().filter(name=context['classroom'].name)
             context['timeslots'] = [r.event for r in resources]
             sections = ClassSection.objects.filter(resourceassignment__resource__id__in=resources.values_list('id', flat=True)).distinct()
-            
+
             context['sections'] = sections
             response = render_to_response(self.baseDir()+'classroom_delete.html', request, context)
-            
+
         if request.method == 'POST':
             data = request.POST
-            
+
             if data['command'] == 'reallyremove':
                 controller.delete_classroom(data['id'])
-                
+
             elif data['command'] == 'addedit':
                 form = ClassroomForm(self.program, data)
                 if form.is_valid():
                     controller.add_or_edit_classroom(form)
                 else:
                     context['classroom_form'] = form
-        
+
         return (response, context)
 
     def resources_timeslot_import(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
+
         import_mode = 'preview'
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
-            
+
         import_form = TimeslotImportForm(request.POST)
         if not import_form.is_valid():
             context['import_timeslot_form'] = import_form
@@ -211,29 +211,29 @@ class ResourceModule(ProgramModuleObj):
                 if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists():
                     new_timeslot.save()
                 new_timeslots.append(new_timeslot)
-            
+
             #   Render a preview page showing the resources for the previous program if desired
             context['past_program'] = past_program
             context['start_date'] = start_date.strftime('%m/%d/%Y')
             context['new_timeslots'] = new_timeslots
             if import_mode == 'preview':
                 context['prog'] = self.program
-                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context, prog)
+                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context)
             else:
                 extra = 'timeslot'
-        
+
         return (response, context)
 
     def resources_classroom_import(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
+
         import_mode = 'preview'
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
-            
+
         import_form = ClassroomImportForm(request.POST)
         if not import_form.is_valid():
             context['import_form'] = import_form
@@ -281,7 +281,7 @@ class ResourceModule(ProgramModuleObj):
                             new_res.save()
                         #   Note: furnishings are messed up, so don't bother copying those yet.
                         resource_list.append(new_res)
-            
+
             #   Render a preview page showing the resources for the previous program if desired
             context['past_program'] = past_program
             context['complete_availability'] = complete_availability
@@ -294,33 +294,33 @@ class ResourceModule(ProgramModuleObj):
                 response = render_to_response(self.baseDir()+'classroom_import.html', request, context)
             else:
                 extra = 'classroom'
-        
+
         return (response, context)
 
     def resources_equipment(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
-        
+
         controller = ResourceController(prog)
-        
-        if request.GET.has_key('op') and request.GET['op'] == 'edit':
+
+        if request.GET.get('op') == 'edit':
             #   pre-fill form
             equip = Resource.objects.get(id=request.GET['id'])
             context['equipment_form'] = EquipmentForm(self.program)
             context['equipment_form'].load_equipment(self.program, equip)
-            
-        if request.GET.has_key('op') and request.GET['op'] == 'delete':
+
+        if request.GET.get('op') == 'delete':
             #   show delete confirmation page
             context['prog'] = self.program
             context['equipment'] = Resource.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'equipment_delete.html', request, context)
-            
+
         if request.method == 'POST':
             data = request.POST
-            
+
             if data['command'] == 'reallyremove':
                 controller.delete_equipment(data['id'])
-                
+
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = EquipmentForm(self.program, data)
@@ -329,13 +329,13 @@ class ResourceModule(ProgramModuleObj):
                     form.save_equipment(self.program)
                 else:
                     context['equipment_form'] = form
-                    
+
         return (response, context)
 
     @main_call
     @needs_admin
     def resources(self, request, tl, one, two, module, extra, prog):
-        """ Main view for the resource module.  
+        """ Main view for the resource module.
             Besides displaying resource information, the 'extra' slug at the
             end of the URL selects which aspect of resources to perform
             more detailed operations on.
@@ -367,24 +367,24 @@ class ResourceModule(ProgramModuleObj):
 
         #   Retrieve remaining context information
         context['timeslots'] = [{'selections': group} for group in time_groups]
-        
+
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
-        
+
         context['resource_types'] = self.program.getResourceTypes()
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True
-        
+
         if 'restype_form' not in context:
             context['restype_form'] = ResourceTypeForm()
-    
+
         if 'classroom_form' not in context:
             context['classroom_form'] = ClassroomForm(self.program)
-        
+
         if 'equipment_form' not in context:
             context['equipment_form'] = EquipmentForm(self.program)
-        
+
         if 'import_form' not in context:
             context['import_form'] = ClassroomImportForm()
 
@@ -397,7 +397,7 @@ class ResourceModule(ProgramModuleObj):
 
         #   Display default form
         return render_to_response(self.baseDir()+'resource_main.html', request, context)
-    
+
 
     class Meta:
         proxy = True

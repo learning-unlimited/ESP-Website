@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 from esp.qsd.models import QuasiStaticData
 from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
 from esp.tagdict.models import Tag
-from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
 from esp.web.models import NavBarCategory, default_navbarcategory
 
@@ -72,7 +71,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
         self.admin_user.set_password(self.PASSWORD_STRING)
-        make_user_admin(self.admin_user)
+        self.admin_user.makeAdmin()
         self.qsd_user, created = ESPUser.objects.get_or_create(username='qsd', first_name='Aylik', last_name='Kewesd')
         self.qsd_user.set_password(self.PASSWORD_STRING)
         self.qsd_user.save()
@@ -96,6 +95,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.save()
 
         # Set the port that the webdriver will try to access
+        self._old_port = self.driver.testserver_port
         self.driver.testserver_port = settings.VARNISH_PORT
 
         # Add the varnish_purge tag
@@ -114,7 +114,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         self.delete_all_cookies()
         self.open_url(page)
-        self.failUnless(self.is_text_present(self.TEST_STRING))
+        self.assertTrue(self.is_text_present(self.TEST_STRING))
         logout(self)
 
         try_normal_login(self, self.qsd_user.username, self.PASSWORD_STRING)
@@ -123,7 +123,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         self.delete_all_cookies()
         self.open_url(page)
-        self.failUnless(self.is_text_present(self.TEST_STRING))
+        self.assertTrue(self.is_text_present(self.TEST_STRING))
 
     @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_inline(self):
@@ -135,4 +135,4 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = getattr(selenium_settings, 'SELENIUM_TESTSERVER_PORT')
+        self.driver.testserver_port = self._old_port

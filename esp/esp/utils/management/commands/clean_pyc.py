@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.core.management.base import NoArgsCommand
 
+import logging
+logger = logging.getLogger(__name__)
 import os
 
 class Command(NoArgsCommand):
@@ -19,5 +21,5 @@ class Command(NoArgsCommand):
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
         ret = os.system("find " + root + """ -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
         if ret:
-            print "Aborting with return code", ret
+            logger.info("Aborting with return code", ret)
             exit(ret)

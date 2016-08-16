@@ -1,29 +1,42 @@
 #!/bin/bash
 
 # ESP site creation script
-# Michael Price, December 2010
+# See /docs/dev/deploying.rst for documentation on how to deploy.
+
+# no -u because a bunch of the modes are undefined unless we use them.
+set -ef -o pipefail
 
 # Parameters
-GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
+GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+GIT_BRANCH="stable-release-7"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
+APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
+DNS_CONF_FILE="/etc/bind/pri/learningu.zone"
+AUTH_USER_FILE="/lu/auth/dav_auth"
+EXIMDIR="/etc/exim4"
 LOGDIR="/lu/logs"
-DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-MAILMAN_LIST_PASSWORD="oobleck"
-MAILMAN_ADMIN="price@kilentra.net"
 CRON_FILE="/etc/crontab"
+WWW_USER="www-data"
+DOMAIN="learningu.org"
+TIMEZONE_DEFAULT="America/New_York"
 
-#CURDIR=`dirname $0`
+# This should probably be /lu/sites
+# TODO(benkraft): should we hardcode that we install to /lu/sites?
 CURDIR=`pwd`
 
+# TODO(benkraft): it would be nice if more of these steps were idempotent, so
+# that if something failed somewhere you could just rerun it instead of
+# completing or undoing it manually.
+
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,apache,mailman,cron,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ah' -l 'reset,all,git,settings,db,apache,cron,exim,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
   echo "Usage: $0 -(option) [-(option) ...] [sitename]"
   echo "Type '$0 -h' for help."
   exit $E_OPTERR
-fi  
+fi
 
 eval set -- "$OPTSETTINGS"
 
@@ -39,8 +52,8 @@ do
     --db) MODE_DB=true;;
     --settings) MODE_SETTINGS=true;;
     --apache) MODE_APACHE=true;;
-    --mailman) MODE_MAILMAN=true;;
     --cron) MODE_CRON=true;;
+    --exim) MODE_EXIM=true;;
      *) break;;
   esac
 
@@ -60,8 +73,8 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    --mailman:  Create a Mailman support list
-    --cron:     Add appropriate entry to cron for comm panel e-mail sending
+    --cron:     Add appropriate entry to cron for comm panel email sending
+    --exim:     Add appropriate exim4 config for email handling
 "
     exit 0
 fi
@@ -115,10 +128,12 @@ echo "#!/bin/bash" > $BASEDIR/.espsettings
 
 # Collect settings
 # To manually reset: Remove '.espsettings' file in site directory
-while [[ ! -n $ESPHOSTNAME ]]; do 
+while [[ ! -n $ESPHOSTNAME ]]; do
     echo
-    echo -n "Enter your site's hostname (without the http://) --> "
+    echo "Enter your site's hostname (without the https://)"
+    echo -n "  (default = $SITENAME.$DOMAIN) --> "
     read ESPHOSTNAME
+    ESPHOSTNAME=${ESPHOSTNAME:-$SITENAME.$DOMAIN}
 done
 echo "The Web site address will be http://$ESPHOSTNAME."
 echo "ESPHOSTNAME=\"$ESPHOSTNAME\"" >> $BASEDIR/.espsettings
@@ -145,11 +160,11 @@ while [[ ! -n $GROUPNAME ]]; do
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
 echo "In printed materials and e-mails your group will be referred to as"
-echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
+echo "$INSTITUTION $GROUPNAME.  To substitute a more detailed name in"
 echo "some printed materials, set the 'full_group_name' Tag."
 
 while [[ ! -n $EMAILHOST ]]; do
-    echo 
+    echo
     echo "Enter the hostname you will be using for e-mail"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
@@ -158,18 +173,8 @@ done
 echo "Selected e-mail host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $ADMINEMAIL ]]; do
-    echo 
-    echo "Please enter the e-mail address of the initial site administrator"
-    echo -n "  --> "
-    read ADMINEMAIL
-done
-echo "Selected admin e-mail: $ADMINEMAIL"
-echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
-
-TIMEZONE_DEFAULT="America/New_York"
 while [[ ! -n $TIMEZONE ]]; do
-    echo 
+    echo
     echo "Please enter your group's time zone"
     echo -n "  (default $TIMEZONE_DEFAULT) --> "
     read TIMEZONE
@@ -200,16 +205,12 @@ echo "DBUSER=\"$DBUSER\"" >> $BASEDIR/.espsettings
 
 if [[ ! -n $DBPASS ]]
 then
-    DBPASS=`$CURDIR/random_password.sh`
+    DBPASS=`openssl rand -base64 12`
     echo "Generated random password for database"
 else
     echo "Preserved saved database password"
 fi
 echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
-
-SECRET_KEY=`$CURDIR/random_password.sh`
-echo "Generated random secret key"
-echo "SECRET_KEY=\"$SECRET_KEY\"" >> $BASEDIR/.espsettings
 
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
@@ -217,33 +218,50 @@ read THROWAWAY
 
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
-if [[ "$MODE_GIT" || "$MODE_ALL" ]]
-then
-    if [[ -e $CURDIR/$SITENAME/esp ]]
-    then
+if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
+    if [[ -e "$BASEDIR/.git" ]] ; then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
-        cd $BASEDIR
-        git stash
-        git pull origin main
-        git stash apply
+        cd "$BASEDIR"
+        if ! git diff --exit-code >/dev/null ; then
+            DIFF=true
+            git stash
+        fi
+        git pull origin ${GIT_BRANCH}
+        if [[ "$DIFF" ]] ; then
+            # Only apply the stash if we made one.
+            git stash apply
+        fi
     else
-        cd $CURDIR
-        if [[ -e $CURDIR/$SITENAME ]]
-        then
-            echo "Executing: rm -r $CURDIR/$SITENAME.old; mv $CURDIR/$SITENAME $CURDIR/$SITENAME.old"
-            rm -r $CURDIR/$SITENAME.old
-            mv $CURDIR/$SITENAME $CURDIR/$SITENAME.old
+        # We will almost certainly have created $BASEDIR already; get it out of
+        # the way for git.
+        if [[ -e "$BASEDIR" ]] ; then
+            echo "Executing: rm -rf $BASEDIR.old; mv $BASEDIR $BASEDIR.old"
+            rm -rf "$BASEDIR.old"
+            mv "$BASEDIR" "$BASEDIR.old"
         fi
         echo "Creating site $SITENAME in $CURDIR."
-        git clone $GIT_REPO $SITENAME
-        if [[ -e $CURDIR/$SITENAME.old/.espsettings ]]
-        then
-            echo "Executing: cp $CURDIR/$SITENAME.tmp/.espsettings $CURDIR/$SITENAME/"
-            cp $CURDIR/$SITENAME.old/.espsettings $CURDIR/$SITENAME/
+        git clone "$GIT_REPO" "$SITENAME"
+        cd "$BASEDIR"
+        git checkout "$GIT_BRANCH"
+        if [[ -e "$BASEDIR.old/.espsettings" ]] ; then
+            echo "Executing: cp $BASEDIR.tmp/.espsettings $BASEDIR/"
+            cp "$BASEDIR.old/.espsettings" "$BASEDIR/"
+        fi
+        if [[ "$(ls -A "$BASEDIR.old")" = ".espsettings" ]] ; then
+            # If all that's left in $BASEDIR.old is the .espsettings file,
+            # which we've now copied to $BASEDIR, get rid of it.
+            rm -rf "$BASEDIR.old"
         fi
     fi
-    echo "Git repository has been checked out.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+
+    
+    ./esp/make_virtualenv.sh
+    ./esp/update_deps.sh --prod
+    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+
+    echo "Git repository has been checked out, and dependencies have been installed"
+    echo "with Python libraries in a local virtualenv.  Please check them by looking"
+    echo -n "over the output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 
@@ -253,7 +271,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -265,34 +283,23 @@ EOF
 
 SITE_INFO = (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site')
 ADMINS = (
-    ('LU Web group','serverlog@learningu.org'),
+    ('LU Web group','serverlog@$DOMAIN'),
 )
 CACHE_PREFIX = "${SITENAME}ESP"
-SECRET_KEY = '$SECRET_KEY'
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
         'archive': 'learninguarchive@gmail.com',
         'bounces': 'learningubounces@gmail.com',
-        'support': '$SITENAME-websupport@learningu.org',
+        'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
         }
 ORGANIZATION_SHORT_NAME = '$GROUPNAME'
 INSTITUTION_NAME = '$INSTITUTION'
 EMAIL_HOST = '$EMAILHOST'
+EMAIL_HOST_SENDER = EMAIL_HOST
 
-# E-mail addresses for contact form
-email_choices = (
-    ('general','General ESP'),
-    ('esp-web','Web Site Problems'),
-    ('splash','Splash!'),
-    )
-email_addresses = {
-    'general': '$GROUPEMAIL',
-    'esp-web': '$GROUPEMAIL',
-    'splash': '$GROUPEMAIL',
-    }
 USE_MAILMAN = False
 TIME_ZONE = '$TIMEZONE'
 
@@ -304,32 +311,28 @@ LOG_FILE = '$LOGDIR/$SITENAME-django.log'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
-USE_PROFILER = False
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120
-DATABASE_ENGINE = 'postgresql_psycopg2'
-#DATABASE_ENGINE = 'esp.db.prepared'
+DATABASE_ENGINE = 'django.db.backends.postgresql_psycopg2'
 DATABASE_NAME = '$DBNAME'
 DATABASE_HOST = 'localhost'
 DATABASE_PORT = '5432'
+
+VARNISH_HOST = 'localhost'
+VARNISH_PORT = '80'
 
 from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
-# E-mails for contact form
-email_choices = (
-    ('general', 'General Inquiries'),
-    ('web',     'Web Site Problems'),
-    )
-# Corresponding email addresses                                                                                                                                 
-email_addresses = {
-    'general': '$GROUPEMAIL',
-    'web':     '$SITENAME-websupport@learningu.org',
-    }
+SECRET_KEY = '`openssl rand -base64 48`'
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+ALLOWED_HOSTS = ['$ESPHOSTNAME']
 
 EOF
+
+    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -342,6 +345,16 @@ EOF
 
 fi
 
+MEDIADIR="$BASEDIR/esp/public/media"
+[[ -e "$MEDIADIR/images" ]] || ln -s "$MEDIADIR/default_images" "$MEDIADIR/images"
+[[ -e "$MEDIADIR/styles" ]] || ln -s "$MEDIADIR/default_styles" "$MEDIADIR/styles"
+
+mkdir -p $MEDIADIR/uploaded
+chmod -R u+rwX,go+rX $MEDIADIR
+mkdir -p /tmp/esptmp__${SITENAME}ESP
+chmod -R u+rwX,go+rX /tmp/esptmp__${SITENAME}ESP
+echo "Default images and styles have been symlinked."
+
 # Database setup
 # To reset: remove user and DB in SQL
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
@@ -350,34 +363,26 @@ then
     sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
     sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
     echo "Created a PostgreSQL login role and empty database."
-    
+
     echo "Django's manage.py scripts will now be used to initialize the"
     echo "$DBNAME database.  Please follow their directions."
 
-    cd $BASEDIR/esp/esp
+    cd $BASEDIR/esp
     ./manage.py migrate
     ./manage.py createsuperuser
+    # This will prompt before it (potentially) clobbers files.  Since it's a
+    # new site, there's definitely nothing to clobber and we can just say yes
+    # automatically.  With `set -o pipefail`, this will exit 141 (SIGPIPE), so
+    # we need `|| true` to prevent the script from exiting failure.
+    yes yes | ./manage.py collectstatic || true
+    chown -R $WWW_USER:$WWW_USER "$BASEDIR"
     cd $CURDIR
-    
+
     #   Set initial Site (used in password recovery e-mail)
+    # TODO(benkraft): do this in python.
     sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
 
     echo "Database has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
-    read THROWAWAY
-fi
-
-# Mailman setup
-# To reset: remove list manually
-if [[ "$MODE_MAILMAN" || "$MODE_ALL" ]]
-then
-    newlist -q $SITENAME-websupport $ADMINEMAIL $MAILMAN_LIST_PASSWORD
-    add_members -r - granite-websupport <<EOF
-$ADMINEMAIL
-EOF
-    echo "Created Mailman list $SITENAME-websupport with initial member $ADMINEMAIL."
-    
-    echo "Support list has been created.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
@@ -386,46 +391,41 @@ fi
 # To reset: remove appropriate section from Apache config
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
+    # TODO(benkraft): we should put each site in a separate conf file, and just
+    # make sure they all get imported.
+    # TODO(benkraft): we should attempt to factor much of the shared config out
+    # into a single file used by all sites, so it's easier to update.
     cat >>$APACHE_CONF_FILE <<EOF
+
 #   $INSTITUTION $GROUPNAME (automatically generated)
-WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
+WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-name=${SITENAME}wsgi
 <VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
-    ServerAlias $SITENAME-orig.learningu.org
 
-    #   Redirect to be used for failover
-    # RedirectMatch (.*) http://$SITENAME-backup.learningu.org\$1
+    Include $APACHE_REDIRECT_CONF_FILE
 
     #   Caching - should use Squid if performance is really important
-    # CacheEnable disk /
+    CacheEnable disk /
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
-    <Location /media>
-        DAV on
-        <LimitExcept GET HEAD OPTIONS PROPFIND>
-            AuthType Basic
-            AuthUserFile /lu/auth/dav_auth
-            AuthName "$INSTITUTION $GROUPNAME media files"
-            Require valid-user
-        </LimitExcept>
-        ExpiresActive on
-        ExpiresDefault "now plus 1 hour"
-    </Location>
+    Alias /static $BASEDIR/esp/public/static
+    Alias /favicon.ico $BASEDIR/esp/public/media/images/favicon.ico
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
     WSGIScriptAlias / $BASEDIR/esp.wsgi
     WSGIProcessGroup $SITENAME
+    WSGIApplicationGroup %{GLOBAL}
     ErrorLog $LOGDIR/$SITENAME-error.log
     CustomLog $LOGDIR/$SITENAME-access.log combined
     LogLevel warn
 </VirtualHost>
 
 EOF
-    /etc/init.d/apache2 reload
+    service apache2 graceful
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -433,18 +433,55 @@ fi
 
 if [[ "$MODE_CRON" || "$MODE_ALL" ]]
 then
-    cat >>$CRON_FILE <<EOF
-* * * * * root $BASEDIR/esp/dbmail_cron.py
+    # Rather than run all dbmail_cron procs every 5 minutes, we choose a random
+    # offset for each.
+    # TODO(benkraft): we should just figure out the right cron syntax to have
+    # cron do this magically, without having to do `sleep` ourselves, and
+    # update both this and existing cron jobs.
+    sleep_sec="$(( (RANDOM % 5) * 60))"
+    if [[ "$sleep_sec" -eq 0 ]] ; then
+        sleep_cmd=""
+    else
+        sleep_cmd="sleep $sleep_sec ; "
+    fi
+    cat >>"$CRON_FILE" <<EOF
+*/5 * * * * root $sleep_cmd$BASEDIR/esp/dbmail_cron.py
 EOF
+
+    # TODO(benkraft): actually echo the added line so there's something to
+    # check.
+    echo "cron has been set up.  Please check the config by looking over the"
+    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    read THROWAWAY
+fi
+
+if [[ "$MODE_EXIM" || "$MODE_ALL" ]] ; then
+    cat >>"$EXIMDIR/virtual/$ESPHOSTNAME" <<EOF
+*: "|$BASEDIR/esp/mailgates/mailgate.py"
+EOF
+    # The line we want to edit looks like
+    # dc_other_hostnames='foo.learningu.org;bar.learningu.org;baz.learningu.org'
+    # and we want to add another entry to it.
+    sed --in-place=.bak "s/^\\(dc_other_hostnames='.*\\)'$/\\1;$ESPHOSTNAME'/" "$EXIMDIR/update-exim4.conf.conf"
+    update-exim4.conf
+    exim -bt test@$ESPHOSTNAME
+
+    echo "exim4 has been set up.  Please check the config by looking over the"
+    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    read THROWAWAY
 fi
 
 # Done!
+# Let's let the human do the /etc commit since they may want to separate out
+# other changes, or make sure everything is right, before doing so.
 echo "=== Site setup complete: $ESPHOSTNAME ==="
-IP_ADDRESS=`ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}'`
-echo "Please ensure that DNS is configured to provide A and MX records for:"
-echo "  $ESPHOSTNAME -> $IP_ADDRESS"
-echo "  $SITENAME-orig.learningu.org -> $IP_ADDRESS"
-echo "  $SITENAME-backup.learningu.org -> $IP_ADDRESS"
-echo "You may also want to add some template overrides that establish"
-echo "the initial look and feel of the site."
+echo "You may wish to commit your changes to the /etc git repo."
+echo "Please ensure that DNS is configured to direct the correct hostnames"
+echo "to `hostname`.  To do this, log in to the DNS server and edit"
+echo "$DNS_CONF_FILE to increment the serial number in the header, and add"
+echo "the line:"
+echo "  ${ESPHOSTNAME%%.$DOMAIN} CNAME `hostname`"
+echo "near the other similar lines.  Then run 'sudo service bind9 restart';"
+echo "after a few minutes you should be able to access the site.  You may"
+echo "wish to also set up a theme and create additional administrators."
 echo

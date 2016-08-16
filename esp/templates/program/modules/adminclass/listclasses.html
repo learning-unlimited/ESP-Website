@@ -48,20 +48,6 @@ color : #FF0000;
 font-weight:bold;
 color: #3333FF;
 }
-
-.class_checkitem {
-padding:0 !important;
-margin: 0 !important;
-}
-
-.checkmark img {
-border: 1px solid #999;
-margin: 2px !important;
-}
-
-.class_checkitem a:hover img {
-border: 1px solid black !important;
-}
 </style>
 
 <hr />
@@ -74,9 +60,9 @@ border: 1px solid black !important;
     <div class="info" style="margin-left: 0; margin-right: 0">
       If you need to email a class, students, or teachers, just use its code!<br />
       For instance, if the code is M100:<br />
-      <tt>M100-students@{{ EMAIL_HOST }}</tt> will email the students,<br />
-      <tt>M100-teachers@{{ EMAIL_HOST }}</tt> will email the teachers,<br />
-      and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
+      <tt>M100-students@{{ EMAIL_HOST_SENDER }}</tt> will email the students,<br />
+      <tt>M100-teachers@{{ EMAIL_HOST_SENDER }}</tt> will email the teachers,<br />
+      and <tt>M100-class@{{ EMAIL_HOST_SENDER }}</tt> will email everyone in the class.
     </div>
 
     <p>Notes: 

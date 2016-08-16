@@ -10,6 +10,8 @@ import django.utils.formats
 from django.template import Template, Context
 
 import json
+import logging
+logger = logging.getLogger(__name__)
 import datetime
 import time
 
@@ -38,24 +40,24 @@ class DateTimeWidget(forms.widgets.TextInput):
         }
         js = ('scripts/jquery-ui.js',
               'scripts/jquery-ui.timepicker.js')
-    
+
     def prepare_render_attrs(self, name, value, attrs=None):
         """ Base function for preparing information needed to render the widget. """
 
         if value is None: value = ''
         final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
-        
-        if value != '': 
+
+        if value != '':
             try:
                 final_attrs['value'] = value.strftime(self.pythondformat)
             except:
                 final_attrs['value'] = value
-                
-        if not final_attrs.has_key('id'):
+
+        if not 'id' in final_attrs:
             final_attrs['id'] = u'%s_id' % (name)
         id = final_attrs['id']
         return final_attrs
-        
+
     def render(self, name, value, attrs=None):
         final_attrs = self.prepare_render_attrs(name, value, attrs)
         id = final_attrs['id']
@@ -79,7 +81,7 @@ class DateTimeWidget(forms.widgets.TextInput):
             except ValueError:
                 continue
         return None
-        
+
 class DateWidget(DateTimeWidget):
     """ A stripped down version of the DateTimeWidget that uses jQuery UI's
         built in datepicker. """
@@ -89,7 +91,7 @@ class DateWidget(DateTimeWidget):
         id = final_attrs['id']
         cal = calEnable % (id, 'datepicker', settings.MEDIA_URL, self.dformat, self.tformat)
         return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
-        
+
 class ClassAttrMergingSelect(forms.Select):
 
     def build_attrs(self, extra_attrs=None, **kwargs):
@@ -128,7 +130,7 @@ class SplitDateWidget(forms.MultiWidget):
         year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
         month_widget = ClassAttrMergingSelect(choices=choices['month'], attrs={'class': 'input-medium'})
         day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
-        
+
         widgets = (month_widget, day_widget, year_widget)
         super(SplitDateWidget, self).__init__(widgets, attrs)
 
@@ -159,18 +161,18 @@ class SplitDateWidget(forms.MultiWidget):
 
 class BlankSelectWidget(forms.Select):
     """ A <select> widget whose first entry is blank. """
-    
+
     def __init__(self, blank_choice=('',''), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
-    
+
     # Copied from django/forms/widgets.py
     def render(self, name, value, attrs=None, choices=()):
         from django.utils.html import escape, conditional_escape
         from django.utils.encoding import force_unicode
         from django.utils.safestring import mark_safe
-        
+
         if value is None: value = ''
         final_attrs = self.build_attrs(attrs, name=name)
         output = [u'<select%s>' % forms.utils.flatatt(final_attrs)]
@@ -181,7 +183,7 @@ class BlankSelectWidget(forms.Select):
             output.append(options)
         output.append('</select>')
         return mark_safe(u'\n'.join(output))
-    
+
 
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
@@ -201,15 +203,15 @@ class NullCheckboxSelect(forms.CheckboxInput):
         values =  {'on': True, 'true': True, 'false': False}
         if isinstance(value, basestring):
             value = values.get(value.lower(), value)
-        print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
+        logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
         return value
 
 class DummyWidget(widgets.Input):
     input_type = 'text'
-    
+
     def value_from_datadict(self, data, files, name):
         return True
-    
+
     def render(self, name, value, attrs=None, choices=()):
         output = u''
         if attrs and 'text' in attrs:
@@ -244,7 +246,7 @@ function {{ name }}_add_link(obj, data)
     entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
     entry.append($j("<span>Link: </span>"));
     entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
-    
+
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.click({{ name }}_delete_link);
     entry.append(delete_button);
@@ -262,10 +264,10 @@ function {{ name }}_add_tab(obj, data)
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete tab</button>");
     delete_button.click({{ name }}_delete_tab);
     category_li.append(delete_button);
-    
+
     category_li.append($j("<ul />"));
     var entry_list = category_li.children("ul");
-    
+
     //  console.log("Links: ");
     for (var j = 0; j < data.links.length; j++)
     {
@@ -311,7 +313,7 @@ function {{ name }}_setup()
         {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: ""}]});
     });
     anchor_ul.parent().append(add_button);
-    
+
     anchor_ul.parents("form").submit({{ name }}_save);
 }
 

@@ -38,43 +38,43 @@ custom_fields = {
 class CustomFormsLinkModel(object):
     # Dummy class to identify linked models with
     pass
-    
+
 class CustomFormsCache:
     """
     Holds a global cache of all models and fields available to customforms.
     Uses the Borg design pattern like Django's AppCache class.
     """
-    
+
     __shared_state = dict(
         only_fkey_models={},
         link_fields={},
         loaded=False,
     )
-    
+
     def __init__(self):
         self.__dict__ = self.__shared_state
-        
+
     def _populate(self):
         """
         Populates the cache with metadata about models
         """
         if self.loaded:
             return
-            
+
         for model in apps.get_models():
             if CustomFormsLinkModel in model.__bases__:
                 if not hasattr(model, 'link_fields_list'):
                     # only_fkey model
                     self.only_fkey_models.update({model.form_link_name : model})
                 else:
-                    # This model has linked fields    
+                    # This model has linked fields
                     self.link_fields[model.form_link_name] = {'model': model, 'fields': {}}
                     # Now getting the fields
                     all_form_fields = fields_for_model(model, widgets = getattr(model, 'link_fields_widgets', None))
                     sublist = getattr(model, 'link_fields_list')
                     for field, display_name in sublist:
                         field_name = model.__name__ + "_" + field
-                        
+
                         if field in all_form_fields:
                             field_instance = all_form_fields[field]
                             generic_field_type = self.getGenericType(field_instance)
@@ -85,7 +85,7 @@ class CustomFormsCache:
                         model_field = field
                         if hasattr(model, 'link_compound_fields') and field_name in model.link_compound_fields:
                             model_field = model.link_compound_fields[field_name]
-                            
+
                         self.link_fields[model.form_link_name]['fields'].update({ field_name: {
                             'model_field': field,
                             'disp_name': display_name,
@@ -94,25 +94,25 @@ class CustomFormsCache:
                             'required': field_instance.required,
                         }
                         })
-        
-        self.loaded = True                
-                        
+
+        self.loaded = True
+
     def getGenericType(self, field_instance):
         """
         Returns the generic field type (e.g. textField) corresponding to this widget.
-        This information is useful for rendering this field in the form builder, and for 
+        This information is useful for rendering this field in the form builder, and for
         setting classes on link fields when they are rendered in the form.
         If this field doesn't resemble any of the generic fields, we return 'custom'.
         We first try to match the field class and widget. If there's no match, we just
         try to macth the widget.
-        """    
+        """
         widget = field_instance.widget
         for k,v in generic_fields.items():
             # First, try and match the field class and corresponding widget
             if field_instance.__class__ is v['typeMap']:
                 if widget.__class__ is v['attrs']['widget']:
                     return k
-        
+
         # Now try to match widgets. Only useful for rendering in the form builder.
         # Check -> does this break for any case? We'll get the wrong classes matched up
         # with the wrong field, and correspondingly the wrong client-side validation.
@@ -125,12 +125,11 @@ class CustomFormsCache:
                     return k
             except AttributeError:
                 if v['attrs']['widget'] in widget.__class__.__bases__:
-                    backup_type = k       
-        
+                    backup_type = k
+
         #   Hm, maybe we should actually check if a custom field has been defined here.
-        #   print 'Warning: Could not find generic type for %s, with attrs %s' % (field_instance, field_instance.widget.attrs)
         return backup_type
-    
+
     def getCustomFieldInstance(self, field, field_name):
         if field in custom_fields:
             field_class = custom_fields[field][0]
@@ -145,10 +144,10 @@ class CustomFormsCache:
     def isLinkField(self, field):
         """
         Convenience method to get check if 'field' is a link field
-        """    
-        if field not in generic_fields: return True    
-        else: return False 
-    
+        """
+        if field not in generic_fields: return True
+        else: return False
+
     def isCompoundLinkField(self, model, field):
         if hasattr(model, 'link_compound_fields') and field in model.link_compound_fields:
             return True
@@ -167,13 +166,13 @@ class CustomFormsCache:
         """
         for category, options in self.link_fields.items():
             if field in options['fields']: return options['fields'][field]
-                
+
     def modelForLinkField(self, field):
         """
         Returns the model associated with a particular link field.
         """
         for category, options in self.link_fields.items():
-            if field in options['fields']: return options['model']                    
-        
+            if field in options['fields']: return options['model']
+
 cf_cache = CustomFormsCache()
 

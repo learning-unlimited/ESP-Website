@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -34,7 +32,7 @@
 <ul>
 <li>Total number of students: {{ num_students }}</li>
 <li>Number of credit card payments so far: {{ num_payments }}</li>
-<li>Amount of credit card payments so far: ${{ total_payment|floatformat:2 }}</li>
+<li>Amount of credit card payments so far: £{{ total_payment|floatformat:2 }}</li>
 </ul>
 
 <div id="program_form">

@@ -40,9 +40,18 @@ function deleteClass (id, name) {
     }
 }
 
+function emailTeachers (emailAddress, subject) {
+    window.open("mailto:" + emailAddress + '?subject=' + encodeURIComponent(subject));
+}
+
 function showAll () {
     $j(".fqr-class-detail").show();
-    $j(".flag-detail:not(#flag-extra)").show();
+    $j(".flag-detail:not(.flag-extra)").show();
+}
+
+function showWithComments () {
+    $j(".fqr-class-detail").show();
+    $j(".flag-detail.flag-has-comment").show();
 }
 
 function hideAll () {

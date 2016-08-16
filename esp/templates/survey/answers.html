@@ -56,7 +56,7 @@ Expects:
     {% else %}
         <ul>
         {% for ans in q.answers|drop_empty_answers %}
-            <li><a href="/teach/{{ program.getUrlBase }}/survey/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
+            <li><a href="/{{ tl }}/{{ program.getUrlBase }}/survey/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
         {% empty %}
             <li>There are no responses to this question.</li>
         {% endfor %}

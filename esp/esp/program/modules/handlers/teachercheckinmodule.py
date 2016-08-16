@@ -38,7 +38,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.program.models.class_ import ClassSubject
 from esp.program.models.flags import ClassFlagType
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, Record, ContactInfo
 from esp.cal.models import Event
@@ -60,7 +60,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 10
             }
-    
+
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').
 
@@ -77,7 +77,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
             return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
-    
+
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
         if when is None:
@@ -88,7 +88,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             return '%s is no longer checked in.' % teacher.name()
         else:
             return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
-    
+
     @main_call
     @needs_onsite
     def teachercheckin(self, request, tl, one, two, module, extra, prog):
@@ -110,11 +110,11 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         context['module'] = self
         context['form'] = form
-        
+
         context['time_slots'] = prog.getTimeSlots()
-        
+
         return render_to_response(self.baseDir()+'teachercheckin.html', request, context)
-    
+
     @aux_call
     @needs_onsite
     def ajaxteachercheckin(self, request, tl, one, two, module, extra, prog):

@@ -1,6 +1,6 @@
 import datetime
-
-from model_mommy import mommy
+import logging
+logger = logging.getLogger(__name__)
 
 from django import forms
 from django.contrib.auth import logout, login, authenticate
@@ -16,14 +16,13 @@ from esp.tagdict.models import Tag
 from esp.tests.util import user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
-from esp.users.views import make_user_admin
 from django.test import TestCase
 import esp.users.views as views
 from esp.program.models import Program
 
 import random
 import string
-        
+
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
@@ -72,27 +71,29 @@ class TestUserSearchController(TestCase):
         self.assertGreater(qobject.count(), 0)
 
     def test_teacher_classroom_tables_query_from_post(self):
-        post_data = {u'username': u'', 
-                     u'zipdistance_exclude': u'', 
-                     u'first_name': u'', 
-                     u'last_name': u'', 
-                     u'use_checklist': u'0', 
-                     u'gradyear_max': u'', 
-                     u'userid': u'', 
-                     u'school': u'', 
-                     u'combo_base_list': u'Teacher:teacher_res_150_8', 
-                     u'zipcode': u'', 
-                     u'states': u'', 
-                     u'student_sendto_self': u'1', 
-                     u'checkbox_and_teacher_res_152_0': u'', 
-                     u'grade_min': u'', 
-                     u'gradyear_min': u'', 
+        post_data = {u'username': u'',
+                     u'zipdistance_exclude': u'',
+                     u'first_name': u'',
+                     u'last_name': u'',
+                     u'use_checklist': u'0',
+                     u'gradyear_max': u'',
+                     u'userid': u'',
+                     u'school': u'',
+                     u'combo_base_list': u'Teacher:teacher_res_150_8',
+                     u'zipcode': u'',
+                     u'states': u'',
+                     u'student_sendto_self': u'1',
+                     u'checkbox_and_teacher_res_152_0': u'',
+                     u'grade_min': u'',
+                     u'gradyear_min': u'',
                      u'zipdistance': u'',
-                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw', 
+                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw',
                       u'grade_max': u'', u'email': u''}
 
         query =  self.controller.query_from_postdata(self.program, post_data)
-        print query#need to inspect why this is failing
+        # TODO(benkraft): what is going on here?  Should these tests be getting
+        # run?
+        logger.info(query) # need to inspect why this is failing
         assert False
         #self.assertGreater(qobject.count(), 0)
 

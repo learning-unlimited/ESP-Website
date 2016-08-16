@@ -4,13 +4,13 @@ import subprocess
 from django.db.models.aggregates import Count, Max, Min
 from django.db.models.query import Q
 
-from esp.cache import cache_function_for
+from argcache import cache_function_for
 from esp.program.models import ClassSubject
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 
 class BigBoardModule(ProgramModuleObj):
@@ -42,6 +42,8 @@ class BigBoardModule(ProgramModuleObj):
         numbers = [
             ("students registering in the last 10 minutes",
              self.num_active_users(prog)),
+            ("students checked in",
+             self.num_checked_in_users(prog)),
             ("students with lottery preferences",
              self.num_users_with_lottery(prog)),
             ("students enrolled in a class",
@@ -164,6 +166,11 @@ class BigBoardModule(ProgramModuleObj):
         return Record.objects.filter(program=prog,
                                      event__in=['med', 'med_bypass']).count()
 
+
+    @cache_function_for(105)
+    def num_checked_in_users(self, prog):
+        return Record.objects.filter(program=prog, event='attended').count()
+
     @cache_function_for(105)
     def popular_classes(self, prog, num=5):
         classes = ClassSubject.objects.filter(
@@ -178,7 +185,7 @@ class BigBoardModule(ProgramModuleObj):
         for description, field, qs in fields:
             qs = qs.annotate(points=Count(field)).values(
                 'id', 'category__symbol', 'title', 'points'
-            ).order_by('-points')[:num]
+            ).exclude(points__lte=0).order_by('-points')[:num]
             # The above query should Just Work, but django does something
             # suboptimal in query generation: even though only
             # program_class.id, program_class.title,
@@ -213,7 +220,9 @@ class BigBoardModule(ProgramModuleObj):
             # 'category__symbol'.
             qs.query.group_by = [column for column in qs.query.group_by
                                  if column in qs.query.select]
-            popular_classes.append((description, list(qs)))
+            qs_list = list(qs)
+            if len(qs_list)>0:
+                popular_classes.append((description, qs_list))
         return popular_classes
 
     @cache_function_for(105)

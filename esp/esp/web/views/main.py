@@ -51,7 +51,7 @@ import re
 import json
 
 from esp.web.models import NavBarCategory
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.web.views.navBar import makeNavBar
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
@@ -73,12 +73,6 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-
-# get_callable might not actually be public API. Django's nice and well-documented like that.
-def my_import(name):
-    from django.core.urlresolvers import get_callable
-    return get_callable(name)
-    
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
 def home(request):
@@ -88,44 +82,44 @@ def home(request):
     return render_to_response('index.html', request, context)
 
 def program(request, tl, one, two, module, extra = None):
-	""" Return program-specific pages """
-        from esp.program.models import Program
-        
-	try:
-		prog = Program.by_prog_inst(one, two)
-	except Program.DoesNotExist:
-		raise Http404("Program not found.")
+    """ Return program-specific pages """
+    from esp.program.models import Program
 
-        setattr(request, "program", prog)
-        setattr(request, "tl", tl)
-        if extra:
-            setattr(request, "module", "%s/%s" % (module, extra))
-        else:
-            setattr(request, "module", module)
-            
-	from esp.program.modules.base import ProgramModuleObj
-	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
+    try:
+        prog = Program.by_prog_inst(one, two)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
 
-	if newResponse:
-            return newResponse
+    setattr(request, "program", prog)
+    setattr(request, "tl", tl)
+    if extra:
+        setattr(request, "module", "%s/%s" % (module, extra))
+    else:
+        setattr(request, "module", module)
 
-	raise Http404
+    from esp.program.modules.base import ProgramModuleObj
+    newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
+
+    if newResponse:
+        return newResponse
+
+    raise Http404
 
 def archives(request, selection, category = None, options = None):
-	""" Return a page with class archives """
-	
-	sortparams = []
-	if request.POST and request.POST.has_key('newparam'):
-		if request.POST['newparam']:
-			sortparams.append(request.POST['newparam'])
-		for key in request.POST:
-			if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
-	#	The selection variable is the type of data they want to see:
-	#	classes, programs, teachers, etc.
-	if archive_handlers.has_key(selection):
-		return archive_handlers[selection](request, category, options, sortparams)
-	
-	return render_to_response('users/construction', request, {})
+    """ Return a page with class archives """
+
+    sortparams = []
+    if request.POST and 'newparam' in request.POST:
+        if request.POST['newparam']:
+            sortparams.append(request.POST['newparam'])
+        for key in request.POST:
+            if key.startswith('sortparam') and request.POST[key] != request.POST['newparam']: sortparams.append(request.POST[key])
+    #    The selection variable is the type of data they want to see:
+    #    classes, programs, teachers, etc.
+    if selection in archive_handlers:
+        return archive_handlers[selection](request, category, options, sortparams)
+
+    return render_to_response('users/construction', request, {})
 
 def contact(request, section='esp'):
     """
@@ -133,7 +127,7 @@ def contact(request, section='esp'):
     """
     from django.core.mail import send_mail
 
-    if request.GET.has_key('success'):
+    if 'success' in request.GET:
         return render_to_response('contact_success.html', request, {})
 
     if request.method == 'POST':
@@ -148,7 +142,7 @@ def contact(request, section='esp'):
             usernames = []
             logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
             user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
-            
+
             email = form.cleaned_data['sender']
             usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
@@ -165,7 +159,7 @@ def contact(request, section='esp'):
                 to_email.append(email)
 
             to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-            
+
             if len(form.cleaned_data['name'].strip()) > 0:
                 email = '%s <%s>' % (form.cleaned_data['name'], email)
 
@@ -173,10 +167,10 @@ def contact(request, section='esp'):
                 t = loader.get_template('email/comment')
 
                 context = {
-                    'form': form, 
-                    'domain': domain, 
-                    'usernames': usernames, 
-                    'logged_in_as': logged_in_as, 
+                    'form': form,
+                    'domain': domain,
+                    'usernames': usernames,
+                    'logged_in_as': logged_in_as,
                     'user_agent_str': user_agent_str
                 }
                 msgtext = t.render(Context(context))
@@ -209,8 +203,7 @@ def registration_redirect(request):
     from esp.users.models import ESPUser
     from esp.program.models import Program
 
-    #   Make sure we have an ESPUser
-    user = ESPUser(request.user)
+    user = request.user
 
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
@@ -226,25 +219,13 @@ def registration_redirect(request):
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
         regperm = 'Teacher/Classes'
-    else:
-        #   Default to student registration (this will only show if the program
-        #   is found via the 'allowed_student_types' Tag)
-        userrole['name'] = user.getUserTypes()[0]
-        userrole['base'] = 'learn'
-        userrole['reg'] = 'studentreg'
     ctxt['userrole'] = userrole
 
     if regperm:
-        progs_deadline = list(Permission.program_by_perm(user,regperm))
+        progs = list(Permission.program_by_perm(user,regperm))
     else:
-        progs_deadline = []
+        progs = []
 
-    progs_tag = list(t.target \
-            for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
-            if isinstance(t.target, Program) \
-                and (set(user.getUserTypes()) & set(t.value.split(","))))
-    progs = list(set(progs_deadline + progs_tag)) #distinct ones
-    
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
@@ -256,10 +237,10 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        return render_to_response('users/profile_complete.html', request, ctxt)		    
+        return render_to_response('users/profile_complete.html', request, ctxt)
 
 def set_csrf_token(request):
     # Call get_token to set the CSRF cookie
     from django.middleware.csrf import get_token
     get_token(request)
-    return HttpResponse('') # Return the minimum possible 
+    return HttpResponse('') # Return the minimum possible

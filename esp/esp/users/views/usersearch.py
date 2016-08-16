@@ -33,10 +33,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 """ This is the views portion of the users utility, which has some user-oriented views."""
+
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.middleware   import ESPError
 from django.db.models.query    import Q
 from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User
-from esp.web.util     import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query import QuerySet
 from django.conf import settings
@@ -49,10 +53,10 @@ def get_user_list(request, listDict2, extra=''):
                          'description': "UseFul_Description"}
             ...
           }
-    
+
         This will return a tuple (userlist_or_response, found_list).
         If found_list is True, then userlist_or_response is a UserList object.
-        
+
         Otherwise, it returns a response that's expected to be returned to django.
         """
 
@@ -66,7 +70,7 @@ def get_user_list(request, listDict2, extra=''):
                          'description': value['description']}
 
 
-    if request.POST.has_key('select_mailman'):
+    if 'select_mailman' in request.POST:
         from esp.mailman import list_members
         import operator
 
@@ -95,11 +99,9 @@ def get_user_list(request, listDict2, extra=''):
                 return (getUsers, False)
 
         return (filterObj, True) # We got the list, return it.
-        
 
-    if request.POST.has_key('submit_checklist') and \
-            request.POST['submit_checklist'] == 'true':
 
+    if request.POST.get('submit_checklist') == 'true':
         # If we're coming back after having checked off users from a checklist...
         filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], ESPUser)
         getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
@@ -109,11 +111,9 @@ def get_user_list(request, listDict2, extra=''):
             return (newfilterObj, True)
         else:
             return (getUsers, False)
-    
 
-    if request.POST.has_key('submit_user_list') and \
-       request.POST['submit_user_list'] == 'true':
 
+    if request.POST.get('submit_user_list') == 'true':
         # If a user list was submitted....
         import operator
 
@@ -125,11 +125,11 @@ def get_user_list(request, listDict2, extra=''):
                      }
 
         # this is the "first" list...the list we start with.
-        if listDict.has_key(request.POST['base_list']):
+        if request.POST['base_list'] in listDict:
             curList = listDict[request.POST['base_list']]['list']
         else:
             raise ESPError('I do not know of list "%s".' % request.POST['base_list'])
-        
+
         # we start with all the sparated lists, and apply the and'd lists onto the or'd lists before
         # we or. This closely represents the sentence (it's not as powerful, but makes "sense")
         separated = {'or': [curList], 'and': []}
@@ -139,8 +139,7 @@ def get_user_list(request, listDict2, extra=''):
         keys = request.POST['keys'].split(',,')
 
         for key in keys:
-            if request.POST.has_key('operator_'+key) and \
-               request.POST['operator_'+key]         and \
+            if request.POST.get('operator_'+key) and \
                request.POST['operator_'+key] != 'ignore':     # and it's not ignore (it should be 'and' or 'or')
                 # We are adding to the list of 'and'd' lists and 'or'd' lists.
                 separated[request.POST['operator_'+key]].append(opmapping[request.POST['not_'+key]](listDict[key]['list']))
@@ -187,26 +186,26 @@ def get_user_list(request, listDict2, extra=''):
 
 
     # if we found a single user:
-    if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
+    if request.method == 'GET' and request.GET.get('op') == 'usersearch':
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], ESPUser)
         getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
             if isinstance(getUser, ESPUser):
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
             else:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')         
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
 
             if 'usersearch_containers' in request.session:
                 request.POST, request.GET = request.session['usersearch_containers']
-                del request.session['usersearch_containers']   
+                del request.session['usersearch_containers']
 
             return (newfilterObj, True)
-        
+
         else:
             return (getUser, False)
 
 
-    if request.GET.has_key('advanced') or not settings.USE_MAILMAN:
+    if 'advanced' in request.GET or not settings.USE_MAILMAN:
         # we're going to prepare a list to send out.
         arrLists = []
 
@@ -214,11 +213,11 @@ def get_user_list(request, listDict2, extra=''):
         pickled_get  = pickle.dumps(request.GET)
 
         request.session['usersearch_containers'] = (pickled_post, pickled_get)
-        
+
         for key, value in listDict.items():
             arrLists.append(DBList(key = key, QObject = value['list'], description = value['description'].strip('.'))) # prepare a nice list thing.
-        
-        arrLists.sort(reverse=True) 
+
+        arrLists.sort(reverse=True)
 
         return (render_to_response('users/create_list.html', request, {'lists': arrLists}), False) # No, we didn't find it yet...
     else:
@@ -232,7 +231,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
         Returns a tuple (userid_query or response, users found?)
         The query that's returned contains the id's of just the users which are checked off. """
 
-    if request.POST.has_key('submit_checklist') and \
+    if 'submit_checklist' in request.POST and \
        request.POST['submit_checklist'] == 'true':
         UsersQ = Q(id=-1)
 
@@ -245,7 +244,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
                     pass
 
         return (UsersQ, True)
-        
+
     context = {}
     context['extra'] = extra
     context['users'] = userList
@@ -260,7 +259,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
 def search_for_user(request, user_type='Any', extra='', returnList = False):
     """ Interface to search for a user. If you need a user, just use this.
         Returns (user or response, user returned?) """
-    
+
     users = None
     error = False
 
@@ -272,29 +271,29 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         QSUsers = usc.filter_from_criteria(user_type, request.GET)
     else:
         raise ESPError('Invalid user_type: %s' % type(user_type), log=True)
-    
+
     #   We need to ask for more user input if no filtering options were selected
     if not usc.updated:
         users = None
     else:
-        users = [ ESPUser(user) for user in QSUsers ]
-    
+        users = [ user for user in QSUsers ]
+
     if users is not None and len(users) == 0:
         error = True
         users = None
 
     if users is None:
         return (render_to_response('users/usersearch.html', request, {'error': error, 'extra':extra,  'list': returnList}), False)
-        
+
     if len(users) == 1:
         return (users[0], True)
-        
+
     else:
 
         users.sort()
 
-        if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
-           (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
+        if request.GET.get('listokay') == 'true' or \
+           request.GET.get('submitform') == 'Use Filtered List':
             Q_Filter = Q(id__in=QSUsers.values_list('id', flat=True))
             return (Q_Filter, True)
 
@@ -302,12 +301,10 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         return (render_to_response('users/userpick.html', request, context), False)
 
-    print 'Ran into some kind of problem. %d users' % len(users)
-
 def getQForUser(QRestriction):
     # Let's not do anything and say we did...
     #return QRestriction
-    
+
     from esp.users.models import ESPUser
     ids = [ x['id'] for x in ESPUser.objects.filter(QRestriction).values('id')]
     if len(ids) == 0:
