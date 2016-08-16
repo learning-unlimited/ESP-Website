@@ -1,9 +1,9 @@
 Dear {{ student.name }},
 
-We have reviewed the grade change request that you sent to {{ site }}:
+We have reviewed the year change request that you sent to {{ site }}:
 
-Current Grade: {{ student.getGrade }}
-Claimed Grade: {{ change_request.claimed_grade }}
+Current Year: {{ student.getGrade }}
+Claimed Year: {{ change_request.claimed_grade }}
 Reason:
 
 {{ change_request.reason }}

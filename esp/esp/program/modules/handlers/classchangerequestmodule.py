@@ -99,7 +99,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
 
         fields = {}
         for i, timeslot in enumerate(sections_by_slot.keys()):
-            choices = [('0', "I'm happy with my current enrollment.")]
+            choices = [('0', "I'm happy with my current enrolment.")]
             initial = '0'
             for section in sections_by_slot[timeslot]:
                 choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))

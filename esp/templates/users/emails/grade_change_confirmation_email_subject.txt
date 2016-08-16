@@ -1,1 +1,1 @@
-Grade Change Request Update - {{ student.name }}
+Year Change Request Update - {{ student.name }}

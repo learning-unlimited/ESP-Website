@@ -41,7 +41,7 @@ No classes have yet been approved and scheduled!
 \textbf{% templatetag openbrace %}{{sec.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
 {{ cls.ascii_info|texescape }} \\
-\textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
+\textit{Open to students in years {{ cls.grade_min }} to {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{ sec.capacity }} } \\
 \textbf{% templatetag openbrace %}{{ sec.friendly_times|join:"} \\ \textbf{" }} } 
 {% if sec.isFull %}\textbf{(FULL)}{% endif %}

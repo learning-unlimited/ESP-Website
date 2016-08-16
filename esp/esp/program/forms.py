@@ -57,12 +57,12 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    base_cost         = forms.IntegerField( label = u'Cost of Program Admission £', min_value = 0 )
+    base_cost         = forms.IntegerField( label = u'Cost of Programme Admission £', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
-    program_type      = forms.CharField(label = "Program Type")
+    program_type      = forms.CharField(label = "Programme Type")
     program_modules   = forms.MultipleChoiceField(
                           choices=[],
-                          label='Program Modules',
+                          label='Programme Modules',
                           widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}),
                           help_text=Program.program_modules.field.help_text)
 
@@ -112,11 +112,11 @@ class ProgramCreationForm(BetterModelForm):
 
     class Meta:
         fieldsets = [
-('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
+('Programme Title', {'fields': ['term', 'term_friendly'] }),
+                     ('Programme Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
+                     ('About Programme Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                     ('Programme Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
@@ -203,11 +203,11 @@ class StatisticsQueryForm(forms.Form):
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
     limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
 
-    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select a program type')
-    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Program')
+    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programmes?', help_text='Uncheck to select a programme type')
+    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Programme')
     program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
-    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
-
+    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Programme')  #   Choices will be replaced by Ajax request if necessary
+    
     reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
 
     school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
@@ -237,14 +237,14 @@ class StatisticsQueryForm(forms.Form):
         if not self.cleaned_data['program_type_all']:
             if not self.cleaned_data['program_type']:
                 if len(self.fields['program_type'].choices) > 1:
-                    raise forms.ValidationError('Please select at least one program type if you have not checked "All Programs."')
+                    raise forms.ValidationError('Please select at least one programme type if you have not checked "All Programmes."')
                 else:
                     self.cleaned_data['program_type'] = self.fields['program_type'].choices[0][0]
 
         """ Check that either 'All Instances' is selected or an instance is selected """
         if not self.cleaned_data['program_type_all'] and not self.cleaned_data['program_instance_all']:
             if 'program_instances' not in self.cleaned_data or not self.cleaned_data['program_instances']:
-                raise forms.ValidationError('Please select at least one instance if you have not checked "All Programs" or "All Instances."')
+                raise forms.ValidationError('Please select at least one instance if you have not checked "All Programmes" or "All Instances."')
 
         """ Check that school_name or school_multisel is filled out """
         if self.cleaned_data['school_query_type'] == 'name':

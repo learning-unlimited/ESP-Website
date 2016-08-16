@@ -107,18 +107,18 @@ class StudentRegTest(ProgramFrameworkTest):
                 #   Check title
                 title = cls_info['title'].strip()
                 expected_title = '%s: %s' % (cls.emailcode(), cls.title)
-                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got "%s", expected "%s"' % (title, expected_title))
+                self.assertTrue(title == expected_title, 'Incorrect class title in catalogue: got "%s", expected "%s"' % (title, expected_title))
 
                 #   Check description
                 description = cls_info['description'].replace('<br />', '').strip()
-                self.assertTrue(description == cls.class_info.strip(), 'Incorrect class description in catalog: got "%s", expected "%s"' % (description, cls.class_info.strip()))
+                self.assertTrue(description == cls.class_info.strip(), 'Incorrect class description in catalogue: got "%s", expected "%s"' % (description, cls.class_info.strip()))
 
                 #   Check enrollments
                 enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
                 for sec in cls.sections.order_by('id'):
                     i = sec.index() - 1
                     expected_str = '%s: %s (max %s)' % (sec.index(), sec.num_students(), sec.capacity)
-                    self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrollment for %s in catalog: got "%s", expected "%s"' % (sec.emailcode(), enrollments[i], expected_str))
+                    self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrolment for %s in catalog: got "%s", expected "%s"' % (sec.emailcode(), enrollments[i], expected_str))
 
         program = self.program
 

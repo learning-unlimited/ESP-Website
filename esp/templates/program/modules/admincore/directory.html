@@ -50,12 +50,12 @@ $j(document).ready(initialize);
 <h1>Admin Portal for {{ program.niceName }} </h1>
 
 {% inline_program_qsd_block program "manage:main_top" %}
-Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by programme administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your programme-specific links and notes here.
 {% end_inline_program_qsd_block %}
 
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
-        Configure Your Program
+        Configure Your Programme
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
@@ -132,7 +132,7 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
     <ul>
-        <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>
+        <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalogue</a></li>
         <li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>
         <li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>
         <li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>
@@ -182,11 +182,11 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
   {% endif %}
 {% endif %}
 {% endfor %}
-<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Programme Deadlines</a></li>
 <li><a href="/manage/{{ one }}/{{ two }}/lunch_constraints/" title="Setup Lunch Constraints" onmouseover="updateDocs('<p>Setup Lunch Constraints</p>');">Setup Lunch Constraints</a></li>
 <li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
 <li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
-<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
+<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalogue" onmouseover="updateDocs('<p>Catalog</p>');">Catalogue</a></li>
 </ul>
 </td>
 <td style="vertical-align: top;">

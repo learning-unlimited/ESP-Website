@@ -23,7 +23,7 @@
 {% ifequal profiletype "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
-    <strong>Students:</strong> Please enter your primary e-mail address.  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' e-mail address in the parent/guardian section below.
+    <strong>Students:</strong> Please enter your primary e-mail address.  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each programme you participate in.  Enter your parents' e-mail address in the parent/guardian section below.
 </div>
 {% endifequal %}
 
@@ -111,7 +111,7 @@
 
 {% if form.receive_txt_message %}
 
- <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+ <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the programme:</label></i></small>
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}

@@ -17,15 +17,15 @@
 <br />
 
 <br /><br />
-<h1>Catalog order for {{program.niceName}}</h1>
+<h1>Catalogue order for {{program.niceName}}</h1>
 
 <p>
-Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
+Before you can print off the catalogue, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
 </p>
 <p>
-<a href="{{request.path}}">Reset Order</a> (default is by catagory, timeblock, title)
+<a href="{{request.path}}">Reset Order</a> (default is by category, timeblock, title)
 <br /><br />
-Get Catalog: 
+Get Catalogue: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 
@@ -41,7 +41,7 @@ Get Catalog:
         
         Filter by 
         
-        grades
+        years
         <select name="grade_min">
         {% for op in grade_options %}
         <option value="{{ op }}"{% ifequal op grade_min_orig %} selected="selected"{% endifequal %}>{{ op }}</option>
@@ -125,7 +125,7 @@ Get Catalog:
 </div>
 
 <p>
-Get Catalog: 
+Get Catalogue: 
 (<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/dvi?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">dvi</a>, 
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/ps?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">ps</a>, 

@@ -533,7 +533,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': "Year " + str(cls.grade_min) + "to Year" + str(cls.grade_max) ,
         }
 
         return {return_key: [return_dict]}
@@ -653,7 +653,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),
-            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'grade_range': "Year " + str(cls.grade_min) + "to Year " + str(cls.grade_max) ,
             'teacher_names': cls.pretty_teachers(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
@@ -830,10 +830,10 @@ teachers[key].filter(is_active = True).distinct().count()))
             year = ESPUser.YOGFromGrade(g, ESPUser.program_schoolyear(prog))
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grades_results.append({'grade': g, 'num_subjects': grade_classes.count(),
+            grades_results.append({'year': g, 'num_subjects': grade_classes.count(),
                                    'num_sections': grade_sections.count(),
                                    'num_students': grades_dict[year] if year in grades_dict else 0})
-        dictOut["stats"].append({"id": "grades", "data": grades_results})
+        dictOut["stats"].append({"id": "years", "data": grades_results})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}

@@ -116,7 +116,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         if prog.user_can_join(request.user):
-            raise ESPError("You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
+            raise ESPError("You can't subscribe to the waiting list of a programme that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration.", log=False)
 
         waitlist = Record.objects.filter(event="waitlist",
                                          user=request.user,
@@ -172,8 +172,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
         if not prog.user_can_join(user):
-            raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
-
+            raise ESPError("This programme has filled!  It can't accept any more students.  Please try again next session.", log=False)
         modules = prog.getModules(request.user, tl)
         completedAll = True
         for module in modules:
@@ -216,8 +215,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         from esp.program.modules.module_ext import DBReceipt
 
         if self.have_paid(request.user):
-            raise ESPError("You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
-
+            raise ESPError("You have already paid for this programme!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund.", log=False)
+        
         recs = Record.objects.filter(user=request.user,
                                      event="reg_confirmed",
                                      program=prog)

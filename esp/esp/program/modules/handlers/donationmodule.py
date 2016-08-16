@@ -121,7 +121,7 @@ class DonationModule(ProgramModuleObj):
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
         if iac.amount_due() <= 0:
-            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+            raise ESPError("You've already paid for this programme.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
 
         # Donations and non-donations go through different code paths. If a
         # user chooses to make a donation, set_donation_amount() is called via

@@ -60,7 +60,7 @@ class ProgramPrintables(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "Program Printables",
+            "link_title": "Programme Printables",
             "module_type": "manage",
             "seq": 5
             }

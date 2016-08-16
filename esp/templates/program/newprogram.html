@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Make Program Happen{% endblock %}
+{% block title %}Make Programme Happen{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -8,14 +8,14 @@
 {% endblock %}
 
 {% block content %}
-<h1>Program Creation Form</h1>
+<h1>Programme Creation Form</h1>
 
 <p>
 Please fill in the information below and click the magic button.
 </p>
 
 <p>
-After creating the program template using this form, you will still need to set up the classrooms and timeslots.  Please do this using the classroom management page, which is linked to from the top of the main program management page.  (You will be taken there shortly.)
+After creating the programme template using this form, you will still need to set up the classrooms and timeslots.  Please do this using the classroom management page, which is linked to from the top of the main programme management page.  (You will be taken there shortly.)
 </p>
 
 <p>
@@ -27,7 +27,7 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
 </p>
 
 <p>
-Use a past program as a template:
+Use a past programme as a template:
 <select name="program_choose" id="id_program_choose" onchange="window.location='?template_prog='+document.getElementById('id_program_choose').value">
 <option value = '0'> None </option>
 {% for program in programs %}
@@ -39,7 +39,7 @@ Use a past program as a template:
 {% endfor %}
 </select>
 <br />
-<font color="red">If you use a program as a template, make sure to carefully look through and update all fields below!</font>
+<font color="red">If you use a programme as a template, make sure to carefully look through and update all fields below!</font>
 </p>
 
 <div id="alumni_form">
@@ -91,7 +91,7 @@ Use a past program as a template:
     <tr> 
       <td colspan="2" class="submit" align="center">
         When finished, click here: <br /><br />
-        <input class="fancybutton" type="submit" value="Make Program Happen!" />
+        <input class="fancybutton" type="submit" value="Make Programme Happen!" />
       </td>
     </tr>
   </table>

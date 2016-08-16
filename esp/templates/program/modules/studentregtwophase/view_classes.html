@@ -11,12 +11,12 @@
 {% block catalog_intro %}
 {{ block.super }}
 {% inline_program_qsd_block program "learn:studentregtwophase/catalog-intro" %}
-Below is the class listing for {{program.niceName}}. If you have trouble viewing this page, try our <a href="/learn/{{program.getUrlBase}}/catalog">basic catalog</a>.
+Below is the class listing for {{program.niceName}}. If you have trouble viewing this page, try our <a href="/learn/{{program.getUrlBase}}/catalog">basic catalogue</a>.
 {% end_inline_program_qsd_block %}
 {% endblock %}
 
 {% block catalog_sticky %}
-<div><h2>{{program.niceName}} Course Catalog</h2></div>
+<div><h2>{{program.niceName}} Course Catalogue</h2></div>
 <hr>
 <div class="sticky-toggle">
   <a href="javascript:void(0)"
@@ -44,7 +44,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
   {% endfor %}
 </div>
 <div class="filter-box" data-bind="visible: showFilter">
-  <label>Grade:</label>
+  <label>Year:</label>
   <br>
   {% for column in grade_choices %}
   <div class="filter-column">
