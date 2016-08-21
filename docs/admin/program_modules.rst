@@ -703,6 +703,10 @@ Teacher Check-in (TeacherCheckInModule)
 
 This is a very helpful module for recording which teachers have checked in (/onsite/[program]/[instance]/teachercheckin), avoiding the need for a Google Doc or paper checklist.  It divides teachers by the time of their first class on each day, and shows you their phone number if you need to call them.  Teachers will need to check in before the first class on each day that they are teaching.
 
+Unenroll Students (UnenrollModule)
+----------------------------------
+
+This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
 Volunteer modules (1)
 =====================

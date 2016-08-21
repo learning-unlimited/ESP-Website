@@ -15,7 +15,7 @@ TODO(ruthie, herrickc, fbastani, lua, everyone)
 Unenroll absent students
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(lua) (and please also add this to program_modules.rst if you haven't already)
+In the past, MIT has run a script to find students who haven't checked in before their first class and unenroll them from their future classes. This functionality is now available as a program module. To use it, add the "Unenroll Students" module to your program, and then click on the "Unenroll Students" link from the main onsite page. The page allows you to select the set of registrations to remove.
 
 Per-grade program caps
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -33,12 +33,7 @@ With this release, class search allows you to edit your search at the top of the
 Onsite print schedules page diagnostic information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(lua)
-
-Onsite class changes grid improvements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TODO(lua)
+The onsite print schedules page now shows a list of the most recent print requests. This should help with figuring out what's wrong if printing isn't working as expected.
 
 User search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -68,3 +63,5 @@ Other improvements in this release include:
 - Display improvements to fruitsalad bubblesfront page and editable text attribution line
 
 - Display improvements to alerts on volunteer signup page
+
+- Fixes for display bugs in the onsite class changes grid
