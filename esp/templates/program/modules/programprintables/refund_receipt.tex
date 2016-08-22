@@ -30,7 +30,7 @@ Student Address: &\texttt{ {{user.getLastProfile.contact_user.address_street|tex
 {{ user.getLastProfile.contact_user.address_city|texescape }}, {{ user.getLastProfile.contact_user.address_state|texescape }} {{ user.getLastProfile.contact_user.address_zip|texescape }}
 } \\
 Transaction Type: &\texttt{ {{transaction.payment_type|texescape }} } \\
-Transaction Amount: &\texttt{ £{{ amount }} } \\
+Transaction Amount: &\texttt{ \textsterling {{ amount }} } \\
 Transaction ID: &\texttt{ {{ transaction.id|texescape }} } \\
 Transaction Date: &\texttt{ {{ transaction.update_ts|date:"F d, Y" }} }\\
 Payer's Name: &\texttt{ {{ payer_name|texescape }} } \\
@@ -45,7 +45,7 @@ Credit Card Number: &\rule{2in}{0.25pt} \hspace{.5in} Expiration date: \rule{.8i
 By printing and/or sending this document, MIT Educational Studies Program
 voids the transaction above. \\
 \\
-By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP £{{ amount }} on {{ transaction.update_ts|date:"F d, Y" }} and that the credit card I used is under the address (bolded) above.
+By signing below, I, \underline{ {{ payer_name|texescape }} }, assert that I have paid ESP \textsterling {{ amount }} on {{ transaction.update_ts|date:"F d, Y" }} and that the credit card I used is under the address (bolded) above.
 
 \vspace{.6in}
 \rule{4.5in}{0.25pt} \\
