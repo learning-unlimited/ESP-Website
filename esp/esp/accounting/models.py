@@ -93,7 +93,7 @@ class LineItemType(models.Model):
             return (min_cost, max_cost)
 
     def __unicode__(self):
-        if self.num_options == 0:
+        if self.amount_dec:
             return u'%s for %s (£%s)' % (self.text, self.program, self.amount_dec)
         else:
             return u'%s for %s' % (self.text, self.program)
