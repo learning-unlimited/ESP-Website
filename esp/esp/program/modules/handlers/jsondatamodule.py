@@ -830,10 +830,10 @@ teachers[key].filter(is_active = True).distinct().count()))
             year = ESPUser.YOGFromGrade(g, ESPUser.program_schoolyear(prog))
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grades_results.append({'year': g, 'num_subjects': grade_classes.count(),
+            grades_results.append({'grade': g, 'num_subjects': grade_classes.count(),
                                    'num_sections': grade_sections.count(),
                                    'num_students': grades_dict[year] if year in grades_dict else 0})
-        dictOut["stats"].append({"id": "years", "data": grades_results})
+        dictOut["stats"].append({"id": "grades", "data": grades_results})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
