@@ -5,20 +5,11 @@
 <h3>Teacher Information</h3>
 
 <div class="control-group">
-<label for="id_from_here" class="control-label">{{ form.from_here.label }}</label>
+<label for="id_affiliation" class="control-label">{{ form.affiliation.label }}</label>
 <div class="controls">
-{{ form.from_here }} {% if form.from_here.errors %}
-  <br /><span class="form_error">{{ form.from_here.errors|join:", " }}</span>
+    {{ form.affiliation }} {% if form.affiliation.errors %}
+  <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
   {% endif %}
-</div>
-</div>
-
-<div class="control-group">
- <label for="id_school" class="control-label">If no, what is your school/employer?</label>
- <div class="controls">
- {{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
-   {% endif %}
 </div>
 </div>
 
@@ -32,15 +23,6 @@
    {% endif %}
 </div>
 </div>
-
-<div class="control-group">
- <label for="id_school" class="control-label">Are you a graduate student or graduate alum?</label><br />
- <div class="controls">
- {{ form.is_graduate_student }} {% if form.is_graduate_student.errors %}
-   <br /><span class="form_error">{{ form.is_graduate_student.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div> 
 
 <div class="control-group">
  <label for="id_major" class="control-label">Major/Department:</label>
