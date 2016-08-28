@@ -178,7 +178,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 regProf.guardian_info = GuardianInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'educator':
                 regProf.educator_info = EducatorInfo.addOrUpdate(curUser, regProf, new_data)
-            blah = regProf.__dict__
             regProf.save()
 
             curUser.first_name = new_data['first_name']
