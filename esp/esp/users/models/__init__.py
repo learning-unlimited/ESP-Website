@@ -1332,6 +1332,13 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+
+AFFILIATION_UNDERGRAD = 'Undergrad'
+AFFILIATION_GRAD = 'Grad'
+AFFILIATION_POSTDOC = 'Postdoc'
+AFFILIATION_OTHER = 'Other'
+AFFILIATION_NONE = 'None'
+
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1340,6 +1347,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     link_fields_list = [
         ('graduation_year', 'Graduation year'),
         ('from_here', 'Current student checkbox'),
+        ('affiliation', 'School affiliation type'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1354,6 +1362,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    affiliation = models.CharField(max_length=100, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
@@ -1399,9 +1408,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['from_here']        = self.from_here
-        form_dict['is_graduate_student'] = self.is_graduate_student
-        form_dict['school']          = self.college
+        form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
@@ -1417,12 +1424,17 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
-        teacherInfo.from_here        = (new_data['from_here'] == "True")
-        teacherInfo.is_graduate_student = new_data['is_graduate_student']
-        teacherInfo.college         = new_data['school']
-        teacherInfo.major           = new_data['major']
-        teacherInfo.shirt_size      = new_data['shirt_size']
-        teacherInfo.shirt_type      = new_data['shirt_type']
+        teacherInfo.affiliation = new_data['affiliation']
+        affiliation = teacherInfo.affiliation.split(':', 1)[0]
+        teacherInfo.from_here           = affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER)
+        teacherInfo.is_graduate_student = (affiliation == AFFILIATION_GRAD)
+        if affiliation == AFFILIATION_NONE:
+            teacherInfo.college         = teacherInfo.affiliation.split(':', 1)[1]
+        else:
+            teacherInfo.college         = ''
+        teacherInfo.major               = new_data['major']
+        teacherInfo.shirt_size          = new_data['shirt_size']
+        teacherInfo.shirt_type          = new_data['shirt_type']
         teacherInfo.save()
         return teacherInfo
 
