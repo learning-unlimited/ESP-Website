@@ -103,7 +103,8 @@
 {% if profile.teacher_info %}
 <h2>Teacher Info</h2>
 <table class="dottedtable long">
-<tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
+    <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
+    <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
 <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
 <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
 <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
