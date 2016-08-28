@@ -3,7 +3,7 @@ from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
-from esp.users.models import K12School, StudentInfo
+from esp.users.models import K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
@@ -310,6 +310,14 @@ StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
+affiliationChoices = (
+    ('Pick', 'Pick one...'),
+    (AFFILIATION_UNDERGRAD, 'Undergraduate Student'),
+    (AFFILIATION_GRAD, 'Graduate Student'),
+    (AFFILIATION_POSTDOC, 'Postdoc'),
+    (AFFILIATION_OTHER, 'Other (please specify your affiliation)'),
+    (AFFILIATION_NONE, 'No affiliation (please specify your school or employer)')
+)
 
 class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
@@ -320,9 +328,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     from_here_answers = [ (True, "Yes"), (False, "No") ]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
-    is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % settings.INSTITUTION_NAME)
-    school = SizedCharField(length=24, max_length=128, required=False)
+    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=affiliationChoices), label = 'What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
@@ -339,14 +345,20 @@ class TeacherInfoForm(FormWithRequiredCss):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
-        # If teacher is not from MIT, make sure they've filled in the next box
-        from_here = cleaned_data.get('from_here')
-        school = cleaned_data.get('school')
-
-        if from_here == "False" and school == "":
-            msg = u'Please enter your affiliation if you are not from %s.' % settings.INSTITUTION_NAME
-            self.add_error('school', msg)
-
+        affiliation_with_data = cleaned_data.get('affiliation').split(':', 1)
+        affiliation = affiliation_with_data[0]
+        if affiliation == 'Pick':
+            msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+            self.add_error('affiliation', msg)
+        elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
+            cleaned_data['affiliation'] = affiliation + ':' # ignore the box
+        else: # OTHER or NONE -- Make sure they entered something into the other box
+            if len(affiliation_with_data) < 2 or affiliation_with_data[1].strip() == '':
+                if affiliation == AFFILIATION_OTHER:
+                    msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                elif affiliation == AFFILIATION_NONE:
+                    msg = u'Please enter your school or employer.'
+                self.add_error('affiliation', msg)
         return cleaned_data
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
