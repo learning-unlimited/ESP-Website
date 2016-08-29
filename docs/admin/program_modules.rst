@@ -467,6 +467,29 @@ The scheduling interface will periodically fetch updates from the server so that
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
 
+Instructions for using the scheduler:
+
+- Click on the class you want to schedule (either in the directory or on the grid) to select it.
+- On the grid, the places you might put the class are highlighted. Legend:
+ - Green means you can put the class there.
+ - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+ - Yellow means the teacher is available then, but teaching another class.
+- Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
+- When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
+- When no class is selected, the pane in the upper right corner displays scheduling errors.
+- Hovering over a room cell or a class section gives you a tooltip with info about the classes.
+- The lower right pane is the directory. You can search using the search bar at the top and select how you want to search with the radio buttons. You can move to the filters tab of the directory and set bounds on different parameters such as capacity and length.
+- To set a comment on a class's scheduling, select it and click on "Set Comment" in the upper right pane. A dialog for entering a comment will appear.
+- To lock a class, follow the instructions to set a comment, and check the "Lock" box in the comment dialog. A red border will appear around it in the schedule or directory, and no one will be able to move it without unlocking it first. To unlock a class, select it and then click on "Edit Comment or Unlock". Any admin can lock or unlock any class.
+
+Keyboard shortcuts:
+
+- ESC unselects the currently selected class
+- F1 switches to the directory tab
+- F2 switches to the filters tab
+- / selects the search box
+- DEL unschedules the currently selected class
+
 Class Flags (ClassFlagModule)
 -------------------------------------------
 
@@ -703,6 +726,10 @@ Teacher Check-in (TeacherCheckInModule)
 
 This is a very helpful module for recording which teachers have checked in (/onsite/[program]/[instance]/teachercheckin), avoiding the need for a Google Doc or paper checklist.  It divides teachers by the time of their first class on each day, and shows you their phone number if you need to call them.  Teachers will need to check in before the first class on each day that they are teaching.
 
+Unenroll Students (UnenrollModule)
+----------------------------------
+
+This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
 Volunteer modules (1)
 =====================
