@@ -354,6 +354,7 @@ class TeacherInfoForm(FormWithRequiredCss):
             cleaned_data['affiliation'] = affiliation + ':' # ignore the box
         else: # OTHER or NONE -- Make sure they entered something into the other box
             if len(affiliation_with_data) < 2 or affiliation_with_data[1].strip() == '':
+                msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                 if affiliation == AFFILIATION_OTHER:
                     msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
                 elif affiliation == AFFILIATION_NONE:
