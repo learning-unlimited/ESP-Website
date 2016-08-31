@@ -354,7 +354,7 @@ class TeacherInfoForm(FormWithRequiredCss):
         elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
             cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
         else: # OTHER or NONE -- Make sure they entered something into the other box
-            if len(affiliation_with_data) < 2 or affiliation_with_data[1].strip() == '':
+            if affiliation_with_data[1].strip() == '':
                 msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                 if affiliation == AFFILIATION_OTHER:
                     msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
