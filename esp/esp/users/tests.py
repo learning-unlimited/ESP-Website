@@ -156,11 +156,9 @@ class TeacherInfo__validationtest(TestCase):
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
-            'school': 'L University',
             'major': 'Underwater Basket Weaving',
             'shirt_size': 'XXL',
-            'shirt_type': 'M',
-            'from_here': 'True'
+            'shirt_type': 'M'
         }
 
     def useData(self, data):
@@ -189,6 +187,14 @@ class TeacherInfo__validationtest(TestCase):
 
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
+
+        # split values from dropdown widget of affiliation
+        affiliation_dropdown_widget = tifnew.fields['affiliation'].widget
+        affiliation_values = affiliation_dropdown_widget.decompress(tifnew.data['affiliation'])
+        tifnew.data['affiliation_0'] = affiliation_values[0]
+        tifnew.data['affiliation_1'] = affiliation_values[1]
+        del tifnew.data['affiliation']
+
         self.assertTrue(tifnew.is_valid())
 
         # This one should be an exact match
@@ -196,14 +202,27 @@ class TeacherInfo__validationtest(TestCase):
 
     def testUndergrad(self):
         self.info_data['graduation_year'] = '2000'
+        self.info_data['affiliation_0'] = 'Undergrad'
+        self.info_data['affiliation_1'] = ''
         self.useData( self.info_data )
     def testGrad(self):
         self.info_data['graduation_year'] = ' G'
+        self.info_data['affiliation_0'] = 'Grad'
+        self.info_data['affiliation_1'] = ''
         self.useData( self.info_data )
+    def testPostdoc(self):
+        self.info_data['graduation_year'] = ''
+        self.info_data['affiliation_0'] = 'Postdoc'
+        self.info_data['affiliation_1'] = ''
+        self.useData(self.info_data)
     def testOther(self):
         self.info_data['graduation_year'] = ''
+        self.info_data['affiliation_0'] = 'Other'
+        self.info_data['affiliation_1'] = 'Professor'
         self.useData( self.info_data )
         self.info_data['graduation_year'] = 'N/A'
+        self.info_data['affiliation_0'] = 'None'
+        self.info_data['affiliation_1'] = 'other school'
         self.useData( self.info_data )
 
 class ValidHostEmailFieldTest(TestCase):
