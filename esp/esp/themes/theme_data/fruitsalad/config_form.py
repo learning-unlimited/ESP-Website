@@ -46,7 +46,12 @@ class ConfigForm(ThemeConfigurationForm):
     full_group_name = forms.CharField()
     contact_info = forms.CharField(widget=forms.Textarea)
     nav_structure = forms.Field(widget=NavStructureWidget)
-    facebook_link = forms.URLField(required=False, help_text='Leave blank to avoid including a Facebook link.')
+    # TODO(benkraft): Make all the contact info links fully editable, like the
+    # navbar links.
+    facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
+    # URLField requires an absolute URL, here we probably want relative.
+    faq_link = forms.CharField(required=False, initial='/faq.html',
+                               help_text='Leave blank to omit an FAQ link.')
     front_page_style = forms.ChoiceField(
                            choices=(('bubblesfront.html','Bubbles'),
                                     ('qsdfront.html','QSD')),
