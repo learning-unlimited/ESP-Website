@@ -14,7 +14,8 @@ APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect
 DNS_CONF_FILE="/etc/bind/pri/learningu.zone"
 AUTH_USER_FILE="/lu/auth/dav_auth"
 EXIMDIR="/etc/exim4"
-LOGDIR="/lu/logs"
+APACHE_LOGDIR="/lu/logs"
+DJANGO_LOGDIR="/lu/logs/django"
 CRON_FILE="/etc/crontab"
 WWW_USER="www-data"
 DOMAIN="learningu.org"
@@ -305,7 +306,7 @@ TIME_ZONE = '$TIMEZONE'
 
 # File Locations
 PROJECT_ROOT = '$BASEDIR/esp/'
-LOG_FILE = '$LOGDIR/$SITENAME-django.log'
+LOG_FILE = '$DJANGO_LOGDIR/$SITENAME-django.log'
 
 # Debug settings
 DEBUG = False
@@ -417,8 +418,8 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
     WSGIScriptAlias / $BASEDIR/esp.wsgi
     WSGIProcessGroup $SITENAME
     WSGIApplicationGroup %{GLOBAL}
-    ErrorLog $LOGDIR/$SITENAME-error.log
-    CustomLog $LOGDIR/$SITENAME-access.log combined
+    ErrorLog $APACHE_LOGDIR/$SITENAME-error.log
+    CustomLog $APACHE_LOGDIR/$SITENAME-access.log combined
     LogLevel warn
 </VirtualHost>
 
