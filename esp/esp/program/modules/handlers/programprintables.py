@@ -712,13 +712,17 @@ class ProgramPrintables(ProgramModuleObj):
 
         for volunteer in volunteers:
             # get list of volunteer offers
+            items = []
             offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
-            # now we sort them by time/title
-            # offers.sort()
+            
             for offer in offers:
-                scheditems.append({'name': volunteer.name(),
+                items.append({'name': volunteer.name(),
                                    'volunteer': volunteer,
                                    'offer' : offer})
+            #sort offers
+            items.sort(key=lambda item: item['offer'].request.timeslot.start)
+            #combine offers of all volunteers
+            scheditems.extend(items)
 
         context['scheditems'] = scheditems
 
