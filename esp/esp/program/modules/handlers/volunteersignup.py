@@ -33,10 +33,11 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth
+from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, needs_account
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
+from esp.program.models import VolunteerOffer
 from django.db.models.query import Q
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
@@ -105,6 +106,34 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             key = 'volunteer_%d' % req.id
             base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
         return base_dict
+
+    def volunteerhandout(self, request, tl, one, two, module, extra, prog, template_file='volunteerschedules.html'):
+        #   Use the template defined in ProgramPrintables
+        from esp.program.modules.handlers import ProgramPrintables
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        if pmos.count() == 1:
+            pmo = ProgramPrintables(pmos[0])
+            if request.user.isAdmin() and 'user' in request.GET:
+                volunteer = ESPUser.objects.get(id=request.GET['user'])
+            else:
+                volunteer = request.user
+            scheditems = []
+            offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
+            #sort the offers by timeslot
+            for offer in offers:
+                scheditems.append({'name': volunteer.name(),
+                                   'volunteer': volunteer,
+                                   'offer' : offer})
+            context['scheditems'] = scheditems
+            return render_to_response(pmo.baseDir()+template_file, request, context)
+        else:
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
+
+    @aux_call
+    @needs_account
+    def volunteerschedule(self, request, tl, one, two, module, extra, prog):
+        return self.volunteerhandout(request, tl, one, two, module, extra, prog, template_file='volunteerschedule.html')
 
     class Meta:
         proxy = True
