@@ -107,7 +107,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
         return base_dict
 
-    def volunteerhandout(self, request, tl, one, two, module, extra, prog, template_file='volunteerschedules.html'):
+    def volunteerhandout(self, request, tl, one, two, module, extra, prog, template_file='volunteerschedule.html'):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
@@ -120,11 +120,13 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
                 volunteer = request.user
             scheditems = []
             offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
-            #sort the offers by timeslot
+            
             for offer in offers:
                 scheditems.append({'name': volunteer.name(),
                                    'volunteer': volunteer,
                                    'offer' : offer})
+            #sort the offers by timeslot
+            scheditems.sort(key=lambda item: item['offer'].request.timeslot.start)
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
