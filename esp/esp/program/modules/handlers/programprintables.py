@@ -714,7 +714,6 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of volunteer offers
             items = []
             offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
-            
             for offer in offers:
                 items.append({'name': volunteer.name(),
                                    'volunteer': volunteer,
