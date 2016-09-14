@@ -11,7 +11,6 @@ GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
 GIT_BRANCH="stable-release-7"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
-DNS_CONF_FILE="/etc/bind/pri/learningu.zone"
 AUTH_USER_FILE="/lu/auth/dav_auth"
 EXIMDIR="/etc/exim4"
 APACHE_LOGDIR="/lu/logs"
@@ -476,13 +475,6 @@ fi
 # Let's let the human do the /etc commit since they may want to separate out
 # other changes, or make sure everything is right, before doing so.
 echo "=== Site setup complete: $ESPHOSTNAME ==="
-echo "You may wish to commit your changes to the /etc git repo."
-echo "Please ensure that DNS is configured to direct the correct hostnames"
-echo "to `hostname`.  To do this, log in to the DNS server and edit"
-echo "$DNS_CONF_FILE to increment the serial number in the header, and add"
-echo "the line:"
-echo "  ${ESPHOSTNAME%%.$DOMAIN} CNAME `hostname`"
-echo "near the other similar lines.  Then run 'sudo service bind9 restart';"
-echo "after a few minutes you should be able to access the site.  You may"
-echo "wish to also set up a theme and create additional administrators."
+echo "You may wish to commit your changes to the /etc git repo.  You may"
+echo "also wish to set up a theme and create additional administrators."
 echo
