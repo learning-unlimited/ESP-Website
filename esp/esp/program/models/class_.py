@@ -80,7 +80,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
-__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
+__all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'ClassSizeRange']
 
 CANCELLED = -20
 REJECTED = -10
@@ -346,7 +346,7 @@ class ClassSection(models.Model):
                          ]
 
         sections = queryset.prefetch_related('meeting_times')
-        sections = queryset.extra(select=select, select_params=select_params)
+        sections = sections.extra(select=select, select_params=select_params)
         sections = list(sections)
 
         # Now, to combine all of the above:
@@ -839,16 +839,7 @@ class ClassSection(models.Model):
                     return u"Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
 
         scrmi = self.parent_program.studentclassregmoduleinfo
-        if not scrmi.use_priority:
-            verbs = ['Enrolled']
-            section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
-        else:
-            verbs = [scrmi.signup_verb.name]
-            # Disallow joining a no-app class that conflicts with an app class
-            # For HSSP Harvard Spring 2010
-            #if self.parent_class.studentappquestion_set.count() == 0:
-            #    verbs += ['/Applied']
-            section_list = user.getSections(self.parent_program, verbs=verbs)
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
         my_timeslots = self.timeslot_ids()
@@ -1249,7 +1240,7 @@ class ClassSection(models.Model):
         ordering = ['id']
 
 class ClassSubject(models.Model, CustomFormsLinkModel):
-    """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
+    """ An ESP course.  The course includes one or more ClassSections. """
 
     #customforms info
     form_link_name='Course'
@@ -1608,7 +1599,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return u'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=[self.parent_program.studentclassregmoduleinfo.signup_verb.name]).count() == 0:
+        if user.getClasses(self.parent_program, verbs=['Enrolled']).count() == 0:
             return False
 
         for section in self.get_sections():
@@ -1892,78 +1883,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     class Meta:
         db_table = 'program_class'
         app_label = 'program'
-
-
-class ClassImplication(models.Model):
-    """ Indicates class prerequisites corequisites, and the like """
-    cls = models.ForeignKey(ClassSubject, null=True) # parent class
-    parent = models.ForeignKey('self', null=True, default=None) # parent classimplication
-    is_prereq = models.BooleanField(default=True) # if not a prereq, it's a coreq
-    enforce = models.BooleanField(default=True)
-    member_ids = models.CommaSeparatedIntegerField(max_length=100, blank=True, null=False) # implied classes (get implied implications with classimplication_set instead)
-    operation = models.CharField(max_length=4, choices = ( ('AND', 'All'), ('OR', 'Any'), ('XOR', 'Exactly One') ))
-
-    def member_id_ints_get(self):
-        return [ int(s) for s in self.member_ids.split(',') ]
-
-    def member_id_ints_set(self, value):
-        self.member_ids = ",".join([ str(n) for n in value ])
-
-    member_id_ints = property( member_id_ints_get, member_id_ints_set )
-
-    class Meta:
-        verbose_name_plural = 'Class Implications'
-        app_label = 'program'
-        db_table = 'program_classimplications'
-
-    def __unicode__(self):
-        return u'Implications for %s' % self.cls
-
-    def _and(lst):
-        """ True iff all elements in lst are true """
-        for i in lst:
-            if not i:
-                return False
-
-        return True
-
-    def _or(lst):
-        """ True iff at least one element in lst is true """
-        for i in lst:
-            if i:
-                return True
-
-        return False
-
-    def _xor(lst):
-        """ True iff lst contains exactly one true element """
-        true_count = 0
-
-        for i in lst:
-            if i:
-                true_count += 1
-
-            if true_count > 1:
-                return False
-
-        if true_count == 1:
-            return True
-        else:
-            return False
-
-    _ops = { 'AND': _and, 'OR': _or, 'XOR': _xor }
-
-    def fails_implication(self, student, already_seen_implications=set(), without_classes=set()):
-        """ Returns either False, or the ClassImplication that fails (may be self, may be a subimplication) """
-        class_set = ClassSubject.objects.filter(id__in=self.member_id_ints)
-
-        class_valid_iterator = [ (student in c.students(False) and c.id not in without_classes) for c in class_set ]
-        subimplication_valid_iterator = [ (not i.fails_implication(student, already_seen_implications, without_classes)) for i in self.classimplication_set.all() ]
-
-        if not ClassImplication._ops[self.operation](class_valid_iterator + subimplication_valid_iterator):
-            return self
-        else:
-            return False
 
 
 class ClassCategories(models.Model):

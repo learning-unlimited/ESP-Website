@@ -12,7 +12,7 @@ To deploy a new site, first make sure you know:
 #. the chapter's preferred theme
 
 Then ssh to ``diogenes``, grab the latest version of
-``esp/useful_scripts/server_setup/new_site.sh``, ``cd`` to ``/lu/sites``, and
+``deploy/server_setup/new_site.sh``, ``cd`` to ``/lu/sites``, and
 run ``sudo new_site.sh --all``.  (You may instead clone the repository
 yourself, ``cd`` into it, and run the script from there.)  Follow the
 instructions to set up the site.  For the site directory name, choose something

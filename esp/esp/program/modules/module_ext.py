@@ -63,12 +63,6 @@ class DBReceipt(models.Model):
     def __unicode__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
-def get_regtype_enrolled():
-    if RegistrationType.objects.exists():
-        return RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
-    else: # if this is being called while running initial migrations
-        return None
-
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -83,13 +77,6 @@ class StudentClassRegModuleInfo(models.Model):
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
     apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
-
-    #   This points to the tree node that is used for the verb when a student is added to a class.
-    #   Only 'Enrolled' actually puts them on the class roster.  Other verbs may be used to
-    #   represent other statuses ('Applied', 'Rejected', etc.)
-    #   Note: When use_priority is True, sub-verbs with integer indices are used
-    #         (e.g. 'Priority/1', 'Priority/2', ...)
-    signup_verb          = models.ForeignKey(RegistrationType, default=get_regtype_enrolled, help_text='Which verb to grant a student when they sign up for a class.', null=True)
 
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
@@ -137,7 +124,8 @@ class StudentClassRegModuleInfo(models.Model):
         return self.program.getModule('StudentClassRegModule')
 
     def reg_verbs(self):
-        verb_list = [self.signup_verb]
+        verb_list = [RegistrationType.get_cached(name='Enrolled',
+                                                 category='student')]
 
         if self.use_priority:
             for i in range(0, self.priority_limit):

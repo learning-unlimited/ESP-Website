@@ -32,7 +32,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db.models import ProtectedError
+
 from esp.cal.models import Event
+from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 
 class ResourceController(object):
@@ -63,7 +66,14 @@ class ResourceController(object):
     def delete_restype(self, id):
         #   delete restype
         rt = ResourceType.objects.get(id=id)
-        rt.delete()
+        try:
+            rt.delete()
+        except ProtectedError:
+            raise ESPError("This resource type can't be deleted because it has "
+                           "already been requested. If you really want to "
+                           "delete it, first go to the admin panel and delete "
+                           "all ResourceRequests for this resource type.",
+                           log=False)
 
     def add_or_edit_restype(self, form):
         if form.cleaned_data['id'] is not None:

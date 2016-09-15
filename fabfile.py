@@ -365,7 +365,7 @@ def manage(cmd):
     ensure_environment()
 
     if cmd.split(" ")[0] in ["shell", "shell_plus"]:
-        interactive(env.rbase + "esp/esp/manage.py " + cmd)
+        interactive(env.rbase + "esp/manage.py " + cmd)
     else:
         with cd(env.rbase + "esp"):
             run("python manage.py " + cmd)

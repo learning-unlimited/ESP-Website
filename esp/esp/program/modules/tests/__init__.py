@@ -40,7 +40,7 @@ from esp.program.modules.tests.studentreg import StudentRegTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
-from esp.program.modules.tests.dashboard import DashboardTest
+from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
 from esp.program.modules.tests.commpanel import CommunicationsPanelTest

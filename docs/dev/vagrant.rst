@@ -31,7 +31,7 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Python 2.7 <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
-If you are on a Linux system, it's likely that everything except Vagrant and Virtualbox can be installed using a package manager on the command line.
+If you are on a Linux system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
 
 If you are on a Windows system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you may need to run ``setx path "%path%;C:\Python27;C:\Python27\Scripts;"`` in order to put ``python``, ``pip`` and ``fab`` on your PATH. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
@@ -42,6 +42,8 @@ Using a shell, navigate to the directory where you would like to place the code 
 
     git clone https://github.com/learning-unlimited/ESP-Website.git devsite
     cd devsite
+    
+If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 
 Next, use Vagrant to create your VM: ::
 
@@ -114,6 +116,8 @@ One last command! When your devserver gets out of date, this command will update
 
 If you want to add some custom shortcuts that don't need to go in the main fabfile, you can add them in a file called  ``local_fabfile.py`` in the same directory as ``fabfile.py``. Just add ``from fabfile import *`` at the top, and then write whatever commands you want.
 
+For instructions on contributing changes and our ``git`` workflow, see `<contributing.rst>`_.
+
 Problems
 --------
 
@@ -123,7 +127,7 @@ Problems
 
     One other quick thing to check is to open the VM directly from VirtualBox.  If it also fails,
     VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
-    might be out of luck since the VM runs 64-bit Ubuntu.
+    might be out of luck since the VM runs 64-bit Ubuntu.  Similarly, on some computers you will need to enable hardware virtualization in the BIOS in order to run the 64-bit VM.
 
 2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
 

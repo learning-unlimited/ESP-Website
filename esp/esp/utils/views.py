@@ -32,44 +32,33 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.users.models import EmailPref
-from esp.users.forms.user_reg import EmailPrefForm
 from esp.utils.web import render_to_response
-from django.shortcuts import redirect
+from esp.utils.models import TemplateOverride
+from esp.users.models import admin_required
+from difflib import HtmlDiff
+import os.path
+from django.conf import settings
+from django.http import Http404
 
-__all__ = ['emailpref']
-
-#
-# Email Preferences Page
-#
-# If called without arguments, show form to let user sign up for mailing list & SMS.
-#
-# If called with arguments, changes existing settings for an email address
-
-def emailpref(request, success = None):
-
-    if success:
-        return render_to_response('users/emailpref_success.html',
-                                  request,
-                                  {})
-
-    if request.method == 'POST':
-        form = EmailPrefForm(request.POST)
-
-        if form.is_valid():
-            ep, created = EmailPref.objects.get_or_create(email = form.cleaned_data['email'])
-
-            ep.email_opt_in = True
-            ep.first_name = form.cleaned_data['first_name']
-            ep.last_name = form.cleaned_data['last_name']
-            ep.sms_number = form.cleaned_data['sms_number']
-            ep.sms_opt_in = True if ep.sms_number else False
-            ep.save()
-            return redirect('/myesp/emailpref/success')
+@admin_required
+def diff_templateoverride(request, template_id):
+    template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+    qs = TemplateOverride.objects.filter(id=template_id)
+    if qs.exists():
+        override_obj = qs.order_by('-version')[0]
     else:
-        form = EmailPrefForm()
+        raise Http404
 
-    return render_to_response('users/emailpref.html',
-                              request,
-                              {'form': form})
+    override_lines = override_obj.content.split('\n')
 
+    original_path = os.path.join(template_dir, override_obj.name)
+    with open(original_path) as original_file:
+        original_lines = list(original_file)
+
+    context = {}
+    context['name'] = override_obj.name
+    context['version'] = override_obj.version
+    context['diff'] = HtmlDiff().make_table(
+            original_lines, override_lines,
+            'original', 'override (version {})'.format(template_id))
+    return render_to_response('utils/diff_templateoverride.html', request, context)

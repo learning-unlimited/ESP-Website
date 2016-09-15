@@ -63,6 +63,10 @@ class TemplateOverride(models.Model):
         self.version = self.next_version()
         super(TemplateOverride, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return "/manage/templateoverride/" + str(self.id)
+
+
 class Printer(models.Model):
     name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
     printer_type = models.CharField(max_length=255, blank=True)

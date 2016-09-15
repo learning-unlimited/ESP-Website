@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
-from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.program.models import ClassSubject, ClassSection, ClassFlagType
@@ -273,14 +272,6 @@ class AdminClass(ProgramModuleObj):
 
                 return HttpResponseRedirect(request.get_full_path())
 
-        consistency_checker = ConsistencyChecker(self.program)
-        context['errors'] = []
-        for teacher in cls.get_teachers():
-            context['errors'] += consistency_checker.check_teacher_conflict(teacher)
-        for section in sections:
-            context['errors'] += consistency_checker.check_expected_duration(section)
-            context['errors'] += consistency_checker.check_resource_consistency(section)
-
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
@@ -388,11 +379,12 @@ class AdminClass(ProgramModuleObj):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,{'class':cls,
-                                                                                                 'ajax':ajax,
-                                                                                                 'txtTeachers': txtTeachers,
-                                                                                                 'coteachers':  coteachers,
-                                                                                                 'error': error})
+                return render_to_response(self.baseDir()+'coteachers.html', request,
+                                          {'class': cls,
+                                           'ajax': ajax,
+                                           'txtTeachers': txtTeachers,
+                                           'coteachers': coteachers,
+                                           'error': error})
 
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
@@ -432,11 +424,12 @@ class AdminClass(ProgramModuleObj):
 
 
 
-        return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
-                                                                                         'ajax':ajax,
-                                                                                         'txtTeachers': txtTeachers,
-                                                                                         'coteachers':  coteachers,
-                                                                                         'conflicts':   conflictingusers})
+        return render_to_response(self.baseDir()+'coteachers.html', request,
+                                  {'class': cls,
+                                   'ajax': ajax,
+                                   'txtTeachers': txtTeachers,
+                                   'coteachers': coteachers,
+                                   'conflicts': conflictingusers})
 
     @aux_call
     @needs_admin
