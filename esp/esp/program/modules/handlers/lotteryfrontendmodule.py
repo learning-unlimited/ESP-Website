@@ -61,10 +61,6 @@ class LotteryFrontendModule(ProgramModuleObj):
         error_msg = ''
         try:
             lotteryObj = LotteryAssignmentController(prog, **options)
-        except LotteryException, e:
-            return {'response': [{'error_msg': str(e)}]}
-
-        try:
             lotteryObj.compute_assignments(True)
         except LotteryException, e:
             return {'response': [{'error_msg': str(e)}]}
