@@ -62,7 +62,7 @@ function clearLotteryThing() {
 		type: "post",
 		data: post_data,
 		success: function() {
-			$j('#lotterythingstats').html("The lottery assignments has been clear successfully!");
+			$j('#lotterythingstats').html("The lottery assignments have been cleared successfully!");
 		},
 		error: lotteryErrorHandler,
 		dataType: 'json'
