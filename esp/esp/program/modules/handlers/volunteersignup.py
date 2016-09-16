@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth
+from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
@@ -51,6 +51,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
 
     @main_call
     @no_auth
+    @meets_deadline("/Signup")
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
 
