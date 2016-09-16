@@ -11,7 +11,7 @@ class TimeslotForm(forms.Form):
     start = forms.DateTimeField(label='Start Time', help_text='Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00', widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
-    description = forms.CharField(widget=forms.TextInput(attrs={'size':'100'}), blank = True)
+    description = forms.CharField(widget=forms.TextInput(attrs={'size':'100'}), required = False)
 
     def save_timeslot(self, program, slot, type):
         slot.start = self.cleaned_data['start']
