@@ -530,7 +530,7 @@ def meets_grade(method):
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
-    if tl != 'learn' and tl != 'teach':
+    if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
     response = None
     canView = False
@@ -539,7 +539,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     else:
         canView = request.user.updateOnsite(request)
         if not canView:
-            perm_name = {'learn':'Student','teach':'Teacher'}[tl]+extension
+            perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
             canView = Permission.user_has_perm(request.user,
                                                perm_name,
                                                program=request.program)
@@ -551,7 +551,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     return (canView, response)
 
 def list_extensions(tl, extensions, andor=''):
-    nicetl={'teach':'Teacher','learn':'Student'}[tl]
+    nicetl={'teach':'Teacher','learn':'Student','volunteer':'Volunteer'}[tl]
     if len(extensions)==0:
         return 'no deadlines were'
     elif len(extensions)==1:

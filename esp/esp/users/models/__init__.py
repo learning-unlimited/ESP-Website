@@ -2261,6 +2261,10 @@ class Permission(ExpirableModel):
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
         )),
+        ("Volunteer Deadlines", (
+            ("Volunteer", "Basic volunteer access"),
+            ("Volunteer/Signup", "Volunteer signup"),
+        )),
     )
 
     PERMISSION_CHOICES_FLAT = flatten(PERMISSION_CHOICES)
@@ -2358,7 +2362,7 @@ class Permission(ExpirableModel):
         return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
 
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student") or x.startswith("Volunteer")]
 
     @classmethod
     def deadlines(cls):
