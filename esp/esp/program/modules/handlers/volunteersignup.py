@@ -108,7 +108,9 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
         return base_dict
 
-    def volunteerhandout(self, request, tl, one, two, module, extra, prog, template_file='volunteerschedule.html'):
+    @aux_call
+    @needs_account
+    def volunteerschedule(self, request, tl, one, two, module, extra, prog):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
         context = {'module': self}
@@ -128,14 +130,9 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             #sort the offers by timeslot
             scheditems.sort(key=lambda item: item['offer'].request.timeslot.start)
             context['scheditems'] = scheditems
-            return render_to_response(pmo.baseDir()+template_file, request, context)
+            return render_to_response(pmo.baseDir()+'volunteerschedule.html', request, context)
         else:
             raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
-
-    @aux_call
-    @needs_account
-    def volunteerschedule(self, request, tl, one, two, module, extra, prog):
-        return self.volunteerhandout(request, tl, one, two, module, extra, prog, template_file='volunteerschedule.html')
 
     class Meta:
         proxy = True
