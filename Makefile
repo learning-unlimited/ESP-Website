@@ -30,6 +30,9 @@ finish:
 	@echo "Updating the site; if this fails for any reason, fix it up and (re-)run 'make finish'."
 	esp/update_deps.sh
 	sudo -u www-data esp/manage.py update
+	@# Clear memcache
+	@# TODO(benkraft): do this in manage.py update
+	echo flush_all | nc localhost 11211
 	sudo -u www-data touch esp.wsgi
 	@echo "Done! Go test some things."
 
