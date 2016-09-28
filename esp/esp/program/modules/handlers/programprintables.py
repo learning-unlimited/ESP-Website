@@ -982,6 +982,8 @@ Volunteer schedule for %s:
                         classes.insert(i, t)
                         break
                     i += 1
+                else:
+                    classes.append(t)
                 min_index = i
 
             # get payment information
