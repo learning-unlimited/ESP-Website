@@ -1,0 +1,58 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet">
+<style>
+.button {
+    background-color: #dbe3e7;
+    border: 3px solid #5b78bb;
+    color: #3a3a3a;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 20px;
+    border-radius: 8px;
+    -moz-border-radius:8px;
+    -webkit-border-radius:8px;
+}
+
+.button:link {
+    text-decoration: none;
+    color: #3a3a3a;
+}
+
+.button:visited {
+    color: #3a3a3a;
+}
+
+.button:hover {
+    background-color: #5ab897;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+{% inline_program_qsd_block program "learn:studentregphasezero/top" %}
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the registration lottery may proceed to register for classes.
+{% end_inline_program_qsd_block %}
+
+<hr>
+
+<h2>Submit Interest in the Program</h2>
+{% inline_program_qsd_block program "learn:studentregphasezero/step1" %}
+<p>
+Clicking the button below will enter you into the Student Lottery.
+</p>
+{% end_inline_program_qsd_block %}
+<center><button class="button" type="submit"><p style="font-family: 'Architects Daughter', sans-serif;font-weight:bold;">Click Here to Enter the<br>Student Lottery</p></button></center>
+
+
+{% endblock %}
