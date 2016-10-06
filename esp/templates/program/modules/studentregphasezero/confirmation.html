@@ -1,0 +1,52 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link href="https://fonts.googleapis.com/css?family=Architects+Daughter" rel="stylesheet">
+<style>
+.submit {
+    text-align: center !important;
+    float: none !important;
+    height: 40px !important;
+    width: 100px !important;
+    font-size: 13px !important;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+{% inline_program_qsd_block program "learn:studentregphasezero/top" %}
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the registration lottery may proceed to register for classes.
+{% end_inline_program_qsd_block %}
+
+<hr>
+
+<h2>Phase Zero Confirmation</h2>
+{% inline_program_qsd_block program "learn:studentregphasezero/confirmation" %}
+<p>
+This is confirmation that you have submitted your interest for our Program and are entered into our student lottery.
+</p>
+<p>
+Below is your <b>assigned lottery code</b>. If you would like to enter the lottery as a group (e.g. siblings, close friends), please enter the <b>assigned lottery code</b> of the student with which you would like to enter the lottery and then click the submit button. If you are in a group of more than 2 students, all students should use the <b>assigned lottery code</b> of one of the students.
+</p>
+<p>
+Please note that we can not accommodate groups larger than 4 students. Groups larger than 4 students will be disbanded and the students will be entered in the lottery individually.
+</p>
+{% end_inline_program_qsd_block %}
+<div id="program_form">
+<form method="POST" id="phase_zero_form" action="{{ request.path }}">
+<center>
+{{ form }}
+<br><br>
+<input type="submit" class="submit" value="Submit">
+</center>
+</form>
+</div>
+
+{% endblock %}
