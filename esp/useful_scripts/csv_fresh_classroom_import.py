@@ -116,7 +116,7 @@ for row in sched_reader:
         if res == RTYPE_CLASS_SPACE:
             continue
         else:
-            idx = RESOURCE_MATCHING[res.name]
+            idx = RESOURCE_NAMES.index(res.name)
             if idx is not None and room_desc[idx + 1]:
                 furnishings.add(res)
 
