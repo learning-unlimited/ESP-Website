@@ -2222,6 +2222,7 @@ class Permission(ExpirableModel):
             ("Student/Classes", "Classes"),
             ("Student/Classes/OneClass", "Classes/OneClass"),
             ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),
             ("Student/MainPage", "Registration mainpage"),
@@ -2232,7 +2233,7 @@ class Permission(ExpirableModel):
             ("Student/Profile", "Set profile info"),
             ("Student/Survey", "Access to survey"),
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
-            ("Student/Finaid", "Access to financial aid application"),
+            ("Student/Finaid", "Access to financial aid application")
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
