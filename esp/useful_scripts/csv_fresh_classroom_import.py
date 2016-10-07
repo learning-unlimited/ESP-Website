@@ -38,7 +38,7 @@ furnish_csvfile = open(furnish_filename, "r")
 furnish_reader = csv.reader(furnish_csvfile)
 furnish_rows = list(furnish_reader)
 furnish_headers = furnish_rows[0]
-furnish_classrooms = furnish_rows[0:]
+furnish_classrooms = furnish_rows[1:]
 
 RESOURCE_MATCHING = {}
 rooms_dict = {}
