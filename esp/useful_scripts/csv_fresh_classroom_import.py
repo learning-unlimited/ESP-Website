@@ -41,6 +41,7 @@ furnish_headers = furnish_rows[0]
 furnish_classrooms = furnish_rows[0:]
 
 RESOURCE_MATCHING = {}
+rooms_dict = {}
 def get_available_furnishings():
     return [(i, header) for i, header in enumerate(furnish_headers) if i not in
             RESOURCE_MATCHING.values()]
