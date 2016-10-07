@@ -26,11 +26,8 @@ PROGRAM = Program.objects.get(name=raw_input("Program name: "))
 RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
 RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
 
-PROJECTOR = RESOURCE_TYPES.get(name__icontains="projector")
-SPEAKERS = RESOURCE_TYPES.get(name__icontains="speaker")
-MOVEABLE = RESOURCE_TYPES.get(name__icontains="moveable")
-TABLES = RESOURCE_TYPES.get(name__icontains="large")
-BOARDS = RESOURCE_TYPES.get(name__icontains="board")
+RESOURCE_NAMES = [x[0] for x in RESOURCE_TYPES.values_list("name") if x[0] !=
+        RTYPE_CLASS_SPACE.name]
 
 sched_filename = os.path.expanduser(raw_input("Full path to CSV file from schedules: "))
 sched_csvfile = open(sched_filename, "r")
@@ -39,8 +36,43 @@ sched_reader = csv.reader(sched_csvfile)
 furnish_filename = os.path.expanduser(raw_input("Full path to CSV file with furnishings: "))
 furnish_csvfile = open(furnish_filename, "r")
 furnish_reader = csv.reader(furnish_csvfile)
+furnish_rows = list(furnish_reader)
+furnish_headers = furnish_rows[0]
+furnish_classrooms = furnish_rows[1:]
 
+RESOURCE_MATCHING = {}
 rooms_dict = {}
+def get_available_furnishings():
+    return [(i, header) for i, header in enumerate(furnish_headers) if i not in
+            RESOURCE_MATCHING.values()]
+
+while True:
+    print "Now attempting to match resource types..."
+    for resource_name in RESOURCE_NAMES:
+        if resource_name in furnish_headers:
+            RESOURCE_MATCHING[resource_name] = \
+                furnish_headers.index(resource_name)
+        else:
+            available_furnishings = get_available_furnishings()
+            print ("Unable to automatically match resource type {} to furnishings "
+                    "in spreadsheet. Available furnishings ('None' if none): ").format(resource_name)
+            for f in available_furnishings:
+                print f
+            idx = raw_input("Input furnishing index: ")
+            if idx == "None":
+                idx = None
+            else:
+                idx = int(idx)
+            RESOURCE_MATCHING[resource_name] = idx
+    print "We have the following matchings:"
+    for res, idx in RESOURCE_MATCHING.iteritems():
+        furnish_name = furnish_headers[idx] if idx is not None else "None"
+        print "{}: {} (Column {})".format(res, furnish_name, str(idx))
+    conf = raw_input("Confirm correctness: y/n")
+    if "y" in conf.lower():
+        break
+    else:
+        RESOURCE_MATCHING = {}
 
 def parse_time(date, time):
     if time == "noon":
@@ -50,17 +82,16 @@ def parse_time(date, time):
     time = (time + "m").upper()
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
-for row in furnish_reader:
+for row in furnish_classrooms:
     room_number = row[0]
     capacity = int(row[1])
-    projector = (row[3] == "Yes")
-    speakers = (row[4] == "Yes")
-    moveable = (row[5] == "Yes")
-    tables = (row[6] == "Yes")
-    boards = (row[7] == "Yes")
-    rooms_dict[room_number] = (capacity, projector, speakers, moveable, tables, boards)
+    others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
+            is not None else False for name in RESOURCE_NAMES]
+    rooms_dict[room_number] = [capacity] + others
 
 for row in sched_reader:
+    if row[0] == "Date":
+        continue
     # Parse Input
     date = datetime.strptime(row[0], "%m/%d/%Y").date()
     start = parse_time(date, row[1])
@@ -80,17 +111,17 @@ for row in sched_reader:
     furnishings = set() # a set of ResourceTypes, not Resources
     furnishings.add(RTYPE_CLASS_SPACE) # always add classroom space
 
+    if room_number not in rooms_dict:
+        print "WARNING: {} not found; skipping".format(room_number)
+        continue
     room_desc = rooms_dict[room_number]
-    if room_desc[1]:
-        furnishings.add(PROJECTOR)
-    if room_desc[2]:
-        furnishings.add(SPEAKERS)
-    if room_desc[3]:
-        furnishings.add(MOVEABLE)
-    if room_desc[4]:
-        furnishings.add(TABLES)
-    if room_desc[5]:
-        furnishings.add(BOARDS)
+    for i, res in enumerate(list(RESOURCE_TYPES)):
+        if res == RTYPE_CLASS_SPACE:
+            continue
+        else:
+            idx = RESOURCE_NAMES.index(res.name)
+            if idx is not None and room_desc[idx + 1]:
+                furnishings.add(res)
 
     # Create Clasrooms with Furnishings
     for block in timeblocks:
