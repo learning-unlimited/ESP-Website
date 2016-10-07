@@ -113,6 +113,7 @@ for row in sched_reader:
 
     if room_number not in rooms_dict:
         print "WARNING: {} not found; skipping".format(room_number)
+        continue
     room_desc = rooms_dict[room_number]
     for i, res in enumerate(list(RESOURCE_TYPES)):
         if res == RTYPE_CLASS_SPACE:
