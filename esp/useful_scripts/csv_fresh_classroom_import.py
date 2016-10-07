@@ -82,8 +82,6 @@ def parse_time(date, time):
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
 for row in furnish_reader:
-    if row[0] == "Date":
-        continue
     room_number = row[0]
     capacity = int(row[1])
     others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
@@ -91,6 +89,8 @@ for row in furnish_reader:
     rooms_dict[room_number] = [capacity] + others
 
 for row in sched_reader:
+    if row[0] == "Date":
+        continue
     # Parse Input
     date = datetime.strptime(row[0], "%m/%d/%Y").date()
     start = parse_time(date, row[1])
