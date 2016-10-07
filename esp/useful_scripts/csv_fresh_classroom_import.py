@@ -53,9 +53,8 @@ while True:
                 furnish_headers.index(resource_name)
         else:
             available_furnishings = get_available_furnishings()
-            print "Unable to automatically match resource type {} to furnishings \
-            in spreadsheet. Available furnishings ('None' if none): \
-                ".format(resource_name)
+            print ("Unable to automatically match resource type {} to furnishings "
+                    "in spreadsheet. Available furnishings ('None' if none): ").format(resource_name)
             for f in available_furnishings:
                 print f
             idx = raw_input("Input furnishing index: ")
@@ -65,7 +64,7 @@ while True:
                 idx = int(idx)
             RESOURCE_MATCHING[resource_name] = idx
     print "We have the following matchings:"
-    for res, idx in RESOURCE_MATCHING:
+    for res, idx in RESOURCE_MATCHING.iteritems():
         furnish_name = furnish_headers[idx] if idx is not None else "None"
         print "{}: {} (Column {})".format(res, furnish_name, str(idx))
     conf = raw_input("Confirm correctness: y/n")
