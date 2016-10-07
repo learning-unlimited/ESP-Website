@@ -111,6 +111,8 @@ for row in sched_reader:
     furnishings = set() # a set of ResourceTypes, not Resources
     furnishings.add(RTYPE_CLASS_SPACE) # always add classroom space
 
+    if room_number not in rooms_dict:
+        print "WARNING: {} not found; skipping".format(room_number)
     room_desc = rooms_dict[room_number]
     for i, res in enumerate(list(RESOURCE_TYPES)):
         if res == RTYPE_CLASS_SPACE:
