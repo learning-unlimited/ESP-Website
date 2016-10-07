@@ -85,7 +85,8 @@ def parse_time(date, time):
 for row in furnish_reader:
     room_number = row[0]
     capacity = int(row[1])
-    others = [row[RESOURCE_MATCHING[name]] == "Yes" for name in RESOURCE_NAMES]
+    others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
+            is not None else False for name in RESOURCE_NAMES]
     rooms_dict[room_number] = [capacity] + others
 
 for row in sched_reader:
@@ -113,7 +114,8 @@ for row in sched_reader:
         if res == RTYPE_CLASS_SPACE:
             continue
         else:
-            if room_desc[RESOURCE_MATCHING[res.name] + 1]:
+            idx = RESOURCE_MATCHING[res.name]
+            if idx is not None and room_desc[idx + 1]:
                 furnishings.add(res)
 
     # Create Clasrooms with Furnishings
