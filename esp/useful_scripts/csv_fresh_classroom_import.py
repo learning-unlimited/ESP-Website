@@ -82,7 +82,7 @@ def parse_time(date, time):
     time = (time + "m").upper()
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
-for row in furnish_reader:
+for row in furnish_classrooms:
     room_number = row[0]
     capacity = int(row[1])
     others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
