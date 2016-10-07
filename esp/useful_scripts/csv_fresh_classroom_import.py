@@ -54,7 +54,7 @@ while True:
         else:
             available_furnishings = get_available_furnishings()
             print "Unable to automatically match resource type {} to furnishings \
-            in spreadsheet. Available furnishings ('None' if none):
+            in spreadsheet. Available furnishings ('None' if none): \
                 ".format(resource_name)
             for f in available_furnishings:
                 print f
