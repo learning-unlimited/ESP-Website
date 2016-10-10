@@ -52,7 +52,13 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
 Clicking the button below will enter you into the Student Lottery.
 </p>
 {% end_inline_program_qsd_block %}
-<center><button class="button" type="submit"><p><b>Click Here to Enter the<br>Student Lottery</p></b></button></center>
-
+<div id="program_form">
+<form method="POST" id="submit_form" action="{{ request.path }}">
+<center>
+{{ form }}
+<br><br>
+<button class="button" type="submit"><p><b>Click Here to Enter the<br>Student Lottery</p></b></button>
+</center>
+</form>
 
 {% endblock %}

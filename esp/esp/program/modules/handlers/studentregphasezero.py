@@ -35,8 +35,9 @@ Learning Unlimited, Inc.
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
-from esp.users.models import Record, ESPUser #, PhaseZeroRecords
-from esp.program.modules.forms.phasezero import LotteryNumberForm
+from esp.users.models import Record, ESPUser
+from esp.program.models import PhaseZeroRecords
+from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
 
 class StudentRegPhaseZero(ProgramModuleObj):
     @classmethod
@@ -63,24 +64,31 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context = {}
         user = request.user
 
-        if request.method == 'POST':
-            form = LotteryNumberForm(request.POST, program=prog)
-        else:
-            form = LotteryNumberForm(program=prog)
-
-        form.load(request.user, prog)
-		
-        context['form'] = form
-
         context['program'] = prog
 
         #if there is already a record of the student for the Phase Zero for this program
-        return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-        #else
-        #return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-	
-	
-	
+        if not(PhaseZeroRecords.objects.filter(user=user, program=prog).exists()) and request.method == 'POST':
+            form = SubmitForm(request.POST, program=prog)
+            form.save(user, prog)
+        
+        if PhaseZeroRecords.objects.filter(user=user, program=prog).exists():
+            if request.method == 'POST':
+                form = LotteryNumberForm(request.POST, program=prog)
+                if form.is_valid():
+                    form.save(user, prog)
+            else:
+                form = LotteryNumberForm(program=prog)
+
+            form.load(request.user, prog)
+            context['form'] = form
+            return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+        else:
+            form = SubmitForm(program=prog)
+            context['form'] = form
+            return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+    
+    
+    
     class Meta:
         proxy = True
         app_label = 'modules'
