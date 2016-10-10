@@ -1880,6 +1880,22 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
+class PhaseZeroRecords(models.Model):
+
+    class Meta:
+        app_label = 'program'
+
+    def __unicode__(self):
+        return self.lottery_number
+
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program, blank=True, null=True)
+    phase_zero_time = models.DateTimeField('Submission_Time')
+    lottery_number = models.CharField(max_length=6) # not sure how to assign the number in order
+
+    def joinExistingGroup(self):
+        lottery_number = input()
+
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,

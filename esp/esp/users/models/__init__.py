@@ -608,6 +608,13 @@ class BaseESPUser(object):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
 
+    def getPhaseZeroRecords(self, program=None):
+        program = models.ForeignKey("program.Program", blank=True, null=True)
+        return self.lottery_number
+
+    def canPassPhaseZero(self, program):
+        return Permission.user_has_perm(self, '/Classes/PhaseZero', program)
+
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots.
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
