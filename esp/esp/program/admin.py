@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecords
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
