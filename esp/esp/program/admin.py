@@ -321,3 +321,9 @@ class ClassFlagAdmin(admin.ModelAdmin):
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
+
+class PhaseZeroRecordsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'lottery_number', 'program')
+    list_filter = ['program']
+    search_fields = ['program', 'user', 'lottery_number']
+admin_site.register(PhaseZeroRecords, PhaseZeroRecordsAdmin)
