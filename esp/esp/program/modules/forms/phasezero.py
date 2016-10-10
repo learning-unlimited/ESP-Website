@@ -33,10 +33,31 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-#from esp.program.models import PhaseZeroRecords
+from esp.program.models import PhaseZeroRecords
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
+
+class SubmitForm(forms.Form):
+
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs:
+            self.program = kwargs['program']
+            del kwargs['program']
+        else:
+            raise KeyError('Need to supply program as named argument to SubmitForm')
+        super(SubmitForm, self).__init__(*args, **kwargs)
+    
+    def save(self, user, program):
+        #Create new lottery record and assign new lottery number
+        rec = PhaseZeroRecords()
+        rec.lottery_number = "000000"
+        rec.user = user
+        rec.program = program
+        rec.save()
+        rec.lottery_number = str(rec.id).zfill(6)
+        rec.save()
 
 class LotteryNumberForm(forms.Form):
 
@@ -52,8 +73,10 @@ class LotteryNumberForm(forms.Form):
 
     def load(self, user, program):
         #Load assigned lottery number associated with user
-        self.initial['lottery_number'] = user.id
+        self.fields['lottery_number'].initial = PhaseZeroRecords.objects.filter(user=user, program=program)[0].lottery_number
 
-    def save(self, request, program):
+    def save(self, user, program):
         #Save new lottery number
-		self.save()
+        rec = PhaseZeroRecords.objects.filter(user=user, program=program)[0]
+        rec.lottery_number = self.fields['lottery_number']
+        rec.save()
