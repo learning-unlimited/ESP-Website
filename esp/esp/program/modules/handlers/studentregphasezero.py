@@ -66,27 +66,28 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
         context['program'] = prog
 
-        #if there is already a record of the student for the Phase Zero for this program
-        if not(PhaseZeroRecords.objects.filter(user=user, program=prog).exists()) and request.method == 'POST':
-            form = SubmitForm(request.POST, program=prog)
-            form.save(user, prog)
-        
-        if PhaseZeroRecords.objects.filter(user=user, program=prog).exists():
+        if not(PhaseZeroRecords.objects.filter(user=user, program=prog).exists()):
+            if request.method == 'POST':
+                form = SubmitForm(request.POST, program=prog)
+                if form.is_valid():
+                    form.save(user, prog)
+                form = LotteryNumberForm(program=prog)
+                form.load(request.user, prog)
+                context['form'] = form
+                return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+            else:
+                form = SubmitForm(program=prog)
+                context['form'] = form
+                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+        else:
             if request.method == 'POST':
                 form = LotteryNumberForm(request.POST, program=prog)
                 if form.is_valid():
                     form.save(user, prog)
-            else:
-                form = LotteryNumberForm(program=prog)
-
+            form = LotteryNumberForm(program=prog)
             form.load(request.user, prog)
             context['form'] = form
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-        else:
-            form = SubmitForm(program=prog)
-            context['form'] = form
-            return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-    
     
     
     class Meta:
