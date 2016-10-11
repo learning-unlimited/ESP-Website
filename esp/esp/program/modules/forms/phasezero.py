@@ -52,7 +52,7 @@ class SubmitForm(forms.Form):
     def save(self, user, program):
         #Create new lottery record and assign new lottery number
         rec = PhaseZeroRecords()
-        rec.lottery_number = "000000"
+        rec.lottery_number = '000000'
         rec.user = user
         rec.program = program
         rec.save()
@@ -78,5 +78,5 @@ class LotteryNumberForm(forms.Form):
     def save(self, user, program):
         #Save new lottery number
         rec = PhaseZeroRecords.objects.filter(user=user, program=program)[0]
-        rec.lottery_number = self.fields['lottery_number']
+        rec.lottery_number = str(self.cleaned_data['lottery_number']).zfill(6)
         rec.save()
