@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.program.models import PhaseZeroRecords
+from esp.program.models import PhaseZeroRecord
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -51,7 +51,7 @@ class SubmitForm(forms.Form):
 
     def save(self, user, program):
         #Create new lottery record and assign new lottery number
-        rec = PhaseZeroRecords()
+        rec = PhaseZeroRecord()
         rec.lottery_number = '000000'
         rec.user = user
         rec.program = program
@@ -73,10 +73,10 @@ class LotteryNumberForm(forms.Form):
 
     def load(self, user, program):
         #Load assigned lottery number associated with user
-        self.fields['lottery_number'].initial = PhaseZeroRecords.objects.filter(user=user, program=program)[0].lottery_number
+        self.fields['lottery_number'].initial = PhaseZeroRecord.objects.filter(user=user, program=program)[0].lottery_number
 
     def save(self, user, program):
         #Save new lottery number
-        rec = PhaseZeroRecords.objects.filter(user=user, program=program)[0]
+        rec = PhaseZeroRecord.objects.filter(user=user, program=program)[0]
         rec.lottery_number = str(self.cleaned_data['lottery_number']).zfill(6)
         rec.save()

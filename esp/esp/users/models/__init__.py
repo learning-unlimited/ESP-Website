@@ -608,7 +608,7 @@ class BaseESPUser(object):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
 
-    def getPhaseZeroRecords(self, program=None):
+    def getPhaseZeroRecord(self, program=None):
         program = models.ForeignKey("program.Program", blank=True, null=True)
         return self.lottery_number
 

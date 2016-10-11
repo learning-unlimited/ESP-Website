@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecords
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -322,8 +322,8 @@ class ClassFlagAdmin(admin.ModelAdmin):
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
-class PhaseZeroRecordsAdmin(admin.ModelAdmin):
+class PhaseZeroRecordAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'lottery_number', 'program')
     list_filter = ['program']
     search_fields = ['program', 'user', 'lottery_number']
-admin_site.register(PhaseZeroRecords, PhaseZeroRecordsAdmin)
+admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
