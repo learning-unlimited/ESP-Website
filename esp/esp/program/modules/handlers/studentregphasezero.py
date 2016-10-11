@@ -88,8 +88,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
             form.load(request.user, prog)
             context['form'] = form
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-    
-    
+
+
     class Meta:
         proxy = True
         app_label = 'modules'
