@@ -1911,7 +1911,7 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
-class PhaseZeroRecords(models.Model):
+class PhaseZeroRecord(models.Model):
 
     class Meta:
         app_label = 'program'
