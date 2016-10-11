@@ -48,7 +48,7 @@ class SubmitForm(forms.Form):
         else:
             raise KeyError('Need to supply program as named argument to SubmitForm')
         super(SubmitForm, self).__init__(*args, **kwargs)
-    
+
     def save(self, user, program):
         #Create new lottery record and assign new lottery number
         rec = PhaseZeroRecords()
