@@ -61,7 +61,7 @@ class SubmitForm(forms.Form):
 
 class LotteryNumberForm(forms.Form):
 
-    lottery_number = forms.CharField(max_length=6)
+    lottery_number = forms.CharField(max_length=6, label="Group Lottery Code:")
 
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
