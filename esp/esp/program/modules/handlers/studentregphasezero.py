@@ -54,7 +54,6 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/PhaseZero')
-    @meets_cap
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
         """
         Serves the Phase Zero student reg page. The initial page includes a button
