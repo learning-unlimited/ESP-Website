@@ -45,6 +45,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
+from esp.program.models import VolunteerOffer
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -659,6 +660,38 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 
+    @aux_call
+    @needs_admin
+    def volunteerschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate volunteer schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        volunteers = list(filterObj.getList(ESPUser).distinct())
+        volunteers.sort()
+
+        scheditems = []
+
+        for volunteer in volunteers:
+            # get list of volunteer offers
+            items = []
+            offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
+            for offer in offers:
+                items.append({'name': volunteer.name(),
+                                   'volunteer': volunteer,
+                                   'offer' : offer})
+            #sort offers
+            items.sort(key=lambda item: item['offer'].request.timeslot.start)
+            #combine offers of all volunteers
+            scheditems.extend(items)
+
+        context['scheditems'] = scheditems
+
+        return render_to_response(self.baseDir()+'volunteerschedule.html', request, context)
+
     def get_msg_vars(self, user, key):
         if key == 'receipt':
             #   Take the user's most recent registration profile.
@@ -949,6 +982,8 @@ Volunteer schedule for %s:
                         classes.insert(i, t)
                         break
                     i += 1
+                else:
+                    classes.append(t)
                 min_index = i
 
             # get payment information
