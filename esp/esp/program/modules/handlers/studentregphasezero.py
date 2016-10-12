@@ -73,6 +73,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     form.save(user, prog)
                 form = LotteryNumberForm(program=prog)
                 form.load(request.user, prog)
+                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
                 context['form'] = form
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
@@ -87,6 +88,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             form = LotteryNumberForm(program=prog)
             form.load(request.user, prog)
             context['form'] = form
+            context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
 

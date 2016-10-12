@@ -8,7 +8,15 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 
 <style>
-.submit {
+.button1 {
+    text-align: center !important;
+    float: none !important;
+    height: 40px !important;
+    width: 250px !important;
+    font-size: 13px !important;
+}
+
+.button2 {
     text-align: center !important;
     float: none !important;
     height: 40px !important;
@@ -20,33 +28,60 @@
 {% endblock %}
 
 {% block content %}
-<h1>Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+<h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
-Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the registration lottery may proceed to register for classes.
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the student lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
 
 <hr>
 
-<h2>Phase Zero Confirmation</h2>
+
+<center>
+<h1>
+This is confirmation that you are entered into our student lottery.
+</h1>
+</br>
+<h2>
+Your lottery code is
+</h2>
+<h2 style="font-family:sans-serif">
+<u>{{ lottery_number }}</u>
+</h2>
+</br>
+<h3>
+No further action is required at this time.
+</h3>
+</center>
+</br></br>
 {% inline_program_qsd_block program "learn:studentregphasezero/confirmation" %}
 <p>
-This is confirmation that you have submitted your interest for our Program and are entered into our student lottery.
+Siblings and close friends have the option to enter the lottery as a group (either the entire group gets selected or the entire group doesn't get selected). If you would like to do this, please click the button below:
 </p>
+{% end_inline_program_qsd_block %}
+
+<center><input type="button" class="button1" value="I Would Like To Join A Lottery Group" onclick="ShowDiv()" /></center>
+
+<div style="display:none;" id="program_form">
+{% inline_program_qsd_block program "learn:studentregphasezero/lottery_id_form" %}
 <p>
-Below is your <b>assigned lottery code</b>. If you would like to enter the lottery as a group (e.g. siblings, close friends), please enter the <b>assigned lottery code</b> of the student with which you would like to enter the lottery and then click the submit button. If you are in a group of more than 2 students, all students should use the <b>assigned lottery code</b> of <u><b>one</b></u> of the students.
-</p>
+In order to enter the lottery as a group, please enter the <b>assigned lottery code</b> of the student with whom you would like to enter the lottery and then click the submit button. If you are in a group of more than 2 students, all students should use the <b>assigned lottery code</b> of <u><b>one</b></u> of the students.
+<p>
 <p>
 Please note that we can not accommodate groups larger than 4 students. Groups larger than 4 students will be disbanded and the students will be entered in the lottery individually.
 </p>
 {% end_inline_program_qsd_block %}
-<div id="program_form">
 <form method="POST" id="lottery_id_form" action="{{ request.path }}">
 <center>
 {{ form }}
 <br><br>
-<input type="submit" class="submit" value="Submit">
+<input type="submit" class="button2" value="Submit">
 </center>
 </form>
 </div>
 
+<script>
+function ShowDiv() {
+    document.getElementById("program_form").style.display = "";
+}
+</script>
 {% endblock %}
