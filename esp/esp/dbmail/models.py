@@ -344,13 +344,16 @@ class MessageRequest(models.Model):
                 # from receiving a duplicate when a message request needs to
                 # be resent after a bug prevented it from being received by
                 # all recipients the first time.
-                newtxt, created = TextOfEmail.objects.get_or_create(**newtxt)
+                # We've temporarily disabled it for Stanford in hopes that it
+                # will make postgres less sad.
+                # TODO(benkraft): Figure out a more permanent solution.
+                newtxt, created = TextOfEmail.objects.create(**newtxt)
                 if not created:
                     if debug: print 'Skipped duplicate creation of message to %s for message request %d: %s' % (send_to, self.id, self.subject)
 
                 newemailrequest['textofemail'] = newtxt
 
-                EmailRequest.objects.get_or_create(**newemailrequest)
+                EmailRequest.objects.create(**newemailrequest)
 
         # Mark ourselves processed.  We don't have to worry about the DB
         # falling over between the above writes and this one, because the whole
