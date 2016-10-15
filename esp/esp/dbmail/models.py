@@ -347,12 +347,8 @@ class MessageRequest(models.Model):
                 # We've temporarily disabled it for Stanford in hopes that it
                 # will make postgres less sad.
                 # TODO(benkraft): Figure out a more permanent solution.
-                newtxt, created = TextOfEmail.objects.create(**newtxt)
-                if not created:
-                    if debug: print 'Skipped duplicate creation of message to %s for message request %d: %s' % (send_to, self.id, self.subject)
-
+                newtxt = TextOfEmail.objects.create(**newtxt)
                 newemailrequest['textofemail'] = newtxt
-
                 EmailRequest.objects.create(**newemailrequest)
 
         # Mark ourselves processed.  We don't have to worry about the DB
