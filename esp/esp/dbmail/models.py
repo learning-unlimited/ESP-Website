@@ -334,7 +334,7 @@ class MessageRequest(models.Model):
                     'subject': subject,
                     'msgtext': msgtext,
                     'created_at': self.created_at,
-                    'defaults': {'sent': None},
+                    'sent': None,
                 }
 
                 # Use get_or_create so that, if this send_to address is
