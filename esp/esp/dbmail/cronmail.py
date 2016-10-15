@@ -119,7 +119,7 @@ def send_email_requests(debug=False):
     # So we do our own batching on top of that.
     batch_size = 1000
     for i in xrange(mailtxts.count() / batch_size):
-        for mailtxt in mailtxts[i * batch_size:(i + 1) * batch_size].iterator():
+        for mailtxt in mailtxts[:batch_size].iterator():
             exception = mailtxt.send(debug=debug)
             if exception is not None:
                 errors.append({'email': mailtxt, 'exception': str(exception)})
