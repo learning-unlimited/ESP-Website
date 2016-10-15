@@ -111,16 +111,25 @@ def send_email_requests():
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
-    for mailtxt in mailtxts.iterator():
-        exception = mailtxt.send()
-        if exception is not None:
-            errors.append({'email': mailtxt, 'exception': str(exception)})
-            logger.warning("Encountered error while sending to %s: %s",
-                           mailtxt.send_to, exception)
-        else:
-            num_sent += 1
+    # We make two optimizations here to reduce memory usage.  First, mailtxts
+    # is quite large, and by default even for iterating over a queryset django
+    # tries to cache it all in memory, which can get quite large, so we use
+    # .iterator() to prevent that.  Second, even when django doesn't load the
+    # whole query into django objects in memory, psycopg2 still loads it all
+    # internally:
+    # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
+    # So we do our own batching on top of that.
+    batch_size = 1000
+    for i in xrange(mailtxts.count() / batch_size):
+        for mailtxt in mailtxts[i * batch_size:(i + 1) * batch_size].iterator():
+            exception = mailtxt.send()
+            if exception is not None:
+                errors.append({'email': mailtxt, 'exception': str(exception)})
+                logger.warning("Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e))
+            else:
+                num_sent += 1
 
-        time.sleep(wait)
+            time.sleep(wait)
 
     if num_sent > 0:
         logger.info('Sent %d messages', num_sent)
