@@ -101,7 +101,6 @@ def send_email_requests(debug=False):
                                           created_at__gte=one_week_ago,
                                           sent__isnull=True,
                                           tries__lte=retries)
-    mailtxts_list = list(mailtxts)
 
     wait = getattr(settings, 'EMAILTIMEOUT', None)
     if wait is None:
@@ -110,7 +109,7 @@ def send_email_requests(debug=False):
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
-    for mailtxt in mailtxts_list:
+    for mailtxt in mailtxts.iterator():
         exception = mailtxt.send(debug=debug)
         if exception is not None:
             errors.append({'email': mailtxt, 'exception': str(exception)})
