@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import math
 import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
@@ -118,7 +119,7 @@ def send_email_requests(debug=False):
     # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
     # So we do our own batching on top of that.
     batch_size = 1000
-    for i in xrange(mailtxts.count() / batch_size):
+    for i in xrange(int(math.ceil(float(mailtxts.count()) / batch_size))):
         for mailtxt in mailtxts[:batch_size].iterator():
             exception = mailtxt.send(debug=debug)
             if exception is not None:
