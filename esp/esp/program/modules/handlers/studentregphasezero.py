@@ -40,6 +40,9 @@ from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    def isCompleted(self):
+        return get_current_request().user.canPassPhaseZero(self.program)
+
     @classmethod
     def module_properties(cls):
         return {
