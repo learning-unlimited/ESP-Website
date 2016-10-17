@@ -613,7 +613,7 @@ class BaseESPUser(object):
         return self.lottery_number
 
     def canPassPhaseZero(self, program):
-        return Permission.user_has_perm(self, '/Classes/PhaseZero', program)
+        return Permission.user_has_perm(self, 'OverridePhaseZero', program)
 
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots.
@@ -2221,6 +2221,7 @@ class Permission(ExpirableModel):
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
+        ("OverridePhaseZero", "Bypass Phase Zero to proceed to other student reg modules"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
