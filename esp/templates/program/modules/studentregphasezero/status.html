@@ -1,0 +1,76 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+.button1 {
+    text-align: center !important;
+    float: none !important;
+    height: 40px !important;
+    width: 250px !important;
+    font-size: 13px !important;
+}
+
+ul 
+{
+    list-style-type: none;
+    counter-reset: section;
+
+    -moz-column-count: 3;
+    -moz-column-gap: 20px;
+    -webkit-column-count: 3;
+    -webkit-column-gap: 20px;
+    column-count: 3;
+    column-gap: 20px;
+}
+
+ul li 
+{
+    padding-left: 30px;
+    position: relative;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+
+<center>
+<h2>
+Number of students that have entered the student lottery:
+</h2>
+<h2 style="font-family:sans-serif">
+<u>{{ nrecs }}</u>
+</h2>
+
+</br></br>
+<center><input type="button" class="button1" value="Show Lottery Entrants" onclick="ShowDiv()" /></center>
+</br></br>
+<div style="display:none;" id="lotteryentries">
+<ul>
+{% for rec in recs %}
+<li>{{rec.user}}&emsp;({{rec.lottery_number}})</li>
+{% endfor %}
+</ul>
+</br></br>
+</div>
+
+{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
+<form action="#" method="POST">
+<input type="checkbox" name="confirm">I confirm that I would like to run the student lottery.<br>
+<input type="submit" value="Run Student Lottery" />
+</form>
+
+
+<script>
+function ShowDiv() {
+    document.getElementById("lotteryentries").style.display = "";
+}
+</script>
+{% endblock %}

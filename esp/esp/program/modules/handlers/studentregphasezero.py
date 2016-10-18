@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
 from esp.users.models import Record, ESPUser
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
@@ -45,13 +45,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return {
+        return [ {
             "admin_title": "Student Registration Phase Zero",
             "link_title": "Student Registration Phase Zero",
             "module_type": "learn",
             "seq": 0,
             "required": True
-            }
+        }, {
+            "module_type": "manage",
+            'required': False,
+            'admin_title': 'Manage Student Registration Phase Zero',
+            'link_title': 'Manage Phase Zero',
+        } ]
 
     @main_call
     @needs_student
@@ -93,6 +98,23 @@ class StudentRegPhaseZero(ProgramModuleObj):
             context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
             return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
+    @main_call
+    @needs_admin
+    def phasezero(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        if request.POST:
+            if "confirm" in request.POST:
+                #run lottery
+                #show lottery results
+                context['success'] = "The student lottery has been run successfully."
+                return render_to_response('program/modules/studentregphasezero/status.html', request, context)
+            else:
+                context['error'] = "You did not confirm that you would like to run the lottery"
+                return render_to_response('program/modules/studentregphasezero/status.html', request, context)
+        else:
+            context['recs'] = PhaseZeroRecord.objects.filter(program=prog)
+            context['nrecs'] = len(context['recs'])
+            return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     class Meta:
         proxy = True
