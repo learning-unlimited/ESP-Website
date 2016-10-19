@@ -58,6 +58,10 @@ class StudentRegPhaseZero(ProgramModuleObj):
             'link_title': 'Manage Phase Zero',
         } ]
 
+    def lottery(self, prog, role):
+        #run lottery
+        return
+
     @main_call
     @needs_student
     @meets_grade
@@ -102,19 +106,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @needs_admin
     def phasezero(self, request, tl, one, two, module, extra, prog):
         context = {}
+        context['role'] = str(prog) + " Winners"
+        context['recs'] = PhaseZeroRecord.objects.filter(program=prog)
+        context['nrecs'] = len(context['recs'])
         if request.POST:
+            role = request.POST['rolename']
+            context['role'] = role
             if "confirm" in request.POST:
-                #run lottery
-                #show lottery results
+                self.lottery(prog, role)
                 context['success'] = "The student lottery has been run successfully."
-                return render_to_response('program/modules/studentregphasezero/status.html', request, context)
             else:
                 context['error'] = "You did not confirm that you would like to run the lottery"
-                return render_to_response('program/modules/studentregphasezero/status.html', request, context)
-        else:
-            context['recs'] = PhaseZeroRecord.objects.filter(program=prog)
-            context['nrecs'] = len(context['recs'])
-            return render_to_response('program/modules/studentregphasezero/status.html', request, context)
+        return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     class Meta:
         proxy = True
