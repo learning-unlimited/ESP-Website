@@ -1891,7 +1891,7 @@ class PhaseZeroRecord(models.Model):
     user = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program, blank=True, null=True)
     phase_zero_time = models.DateTimeField(default=timezone.now)
-    lottery_number = models.CharField(max_length=6) # not sure how to assign the number in order
+    lottery_number = models.CharField(max_length=6)
 
     def joinExistingGroup(self):
         lottery_number = input()

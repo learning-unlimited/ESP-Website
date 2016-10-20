@@ -36,8 +36,12 @@ from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
 from esp.users.models import Record, ESPUser
-from esp.program.models import PhaseZeroRecord
+from esp.program.models import PhaseZeroRecord, getGrade
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
+
+import random, copy, datetime, re
+from django.contrib.auth.models import Group
+from esp.tagdict.models import Tag
 
 class StudentRegPhaseZero(ProgramModuleObj):
     def isCompleted(self):
@@ -60,6 +64,69 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
     def lottery(self, prog, role):
         #run lottery
+
+        def RepresentInt(x):
+            try:
+                int(x)
+                return True
+            except ValueError:
+                return False
+
+        sibgroups = {}
+        indiv = {}
+
+        # Get grade caps and process student data in PhaseZeroRecords
+        grade_caps_tag = Tag.getProgramTag('program_size_by_grade', prog)
+        grade_caps_tag_split = [x for x in re.split('(\d+)', grade_caps_tag) if RepresentInt(x)]
+        grade_caps = {grade_caps_tag_split[2*i]:int(grade_caps_tag_split[2*i+1]) for i in range(len(grade_caps_tag_split)/2)}
+
+        # Can you check if these are the correct calls to methods/parameters?
+        for entry in PhaseZeroRecord.objects:
+            group_number = entry.lottery_number
+            username = entry.user
+            user_grade = entry.user.getGrade(prog)
+
+            indiv[username] = (group_number, user_grade)
+            if group_number not in sibgroups.keys():
+                sibgroups[group_number] = [(username, user_grade)]
+            else:
+                sibgroups[group_number].append((username, user_grade))
+
+        ###############################################################################
+        # The lottery algorithm is run, with randomization and processing in order.
+        # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
+
+        # not sure if we need to deep copy here; kept as shallow
+        groups = sibgroups.keys()
+        order = copy.copy(groups)
+        random.shuffle(order)
+
+        counts = {key:0 for key in grade_caps}
+        winners = Group(name=(str(prog) + ' Winners'))
+        waitlist = Group(name=(str(prog) + ' Waitlist'))
+
+        for i in order:
+            sibs = sibgroups[i]
+            newcounts = copy.copy(counts)
+            for j in sibs:
+                newcounts[j[1]] += 1
+
+            cpass = True
+            for c in counts.keys():
+                if newcounts[c] > caps[c]:
+                    cpass = False
+
+            if cpass:
+                for user in sibs:
+                    winners.add(user[0])   # correct syntax??
+                counts = copy.copy(newcounts)
+            else:
+                for user in sibs:
+                    waitlist.add(user[0])
+
+        ###############################################################################
+        # Post lottery, assign permissions to people in the lottery winners group
+
         return
 
     @main_call
