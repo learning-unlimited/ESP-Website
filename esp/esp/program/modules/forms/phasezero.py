@@ -52,16 +52,16 @@ class SubmitForm(forms.Form):
     def save(self, user, program):
         #Create new lottery record and assign new lottery number
         rec = PhaseZeroRecord()
-        rec.lottery_number = '000000'
+        rec.lottery_number = 0
         rec.user = user
         rec.program = program
         rec.save()
-        rec.lottery_number = str(rec.id).zfill(6)
+        rec.lottery_number = rec.id
         rec.save()
 
 class LotteryNumberForm(forms.Form):
 
-    lottery_number = forms.CharField(max_length=6, label="Group Lottery Code:")
+    lottery_number = forms.IntegerField(max_value=999999,min_value=0, label="Group Lottery Code:")
 
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
@@ -78,5 +78,5 @@ class LotteryNumberForm(forms.Form):
     def save(self, user, program):
         #Save new lottery number
         rec = PhaseZeroRecord.objects.filter(user=user, program=program)[0]
-        rec.lottery_number = str(self.cleaned_data['lottery_number']).zfill(6)
+        rec.lottery_number = self.cleaned_data['lottery_number']
         rec.save()

@@ -613,10 +613,6 @@ class BaseESPUser(object):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
 
-    def getPhaseZeroRecord(self, program=None):
-        program = models.ForeignKey("program.Program", blank=True, null=True)
-        return self.lottery_number
-
     def canPassPhaseZero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
 
@@ -2263,7 +2259,7 @@ class Permission(ExpirableModel):
             ("Student/Profile", "Set profile info"),
             ("Student/Survey", "Access to survey"),
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
-            ("Student/Finaid", "Access to financial aid application")
+            ("Student/Finaid", "Access to financial aid application"),
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
