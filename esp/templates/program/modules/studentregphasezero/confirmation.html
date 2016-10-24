@@ -24,6 +24,12 @@
     font-size: 13px !important;
 }
 
+#program_form{
+  display:none;
+}
+#program_form.show{
+  display:block;
+}
 </style>
 {% endblock %}
 
@@ -59,9 +65,9 @@ Siblings and close friends have the option to enter the lottery as a group (eith
 </p>
 {% end_inline_program_qsd_block %}
 
-<center><input type="button" class="button1" value="I Would Like To Join A Lottery Group" onclick="ShowDiv()" /></center>
+<center><input type="button" class="button1" value="I Would Like To Join A Lottery Group" id="toggle" /></center>
 
-<div style="display:none;" id="program_form">
+<div id="program_form">
 {% inline_program_qsd_block program "learn:studentregphasezero/lottery_id_form" %}
 <p>
 In order to enter the lottery as a group, please enter the <b>assigned lottery code</b> of the student with whom you would like to enter the lottery and then click the submit button. If you are in a group of more than 2 students, all students should use the <b>assigned lottery code</b> of <u><b>one</b></u> of the students.
@@ -80,8 +86,11 @@ Please note that we can not accommodate groups larger than 4 students. Groups la
 </div>
 
 <script>
-function ShowDiv() {
-    document.getElementById("program_form").style.display = "";
-}
+var toggle  = document.getElementById("toggle");
+var content = document.getElementById("program_form");
+
+toggle.addEventListener("click", function(){
+  content.classList.toggle("show");
+}, false);
 </script>
 {% endblock %}
