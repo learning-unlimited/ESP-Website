@@ -20,4 +20,13 @@ class Migration(migrations.Migration):
             },
             bases=('modules.programmoduleobj',),
         ),
+        migrations.CreateModel(
+            name='StudentRegPhaseZeroManage',
+            fields=[
+            ],
+            options={
+                'proxy': True,
+            },
+            bases=('modules.programmoduleobj',),
+        ),
     ]

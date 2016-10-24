@@ -1881,20 +1881,13 @@ class RegistrationType(models.Model):
             return self.name
 
 class PhaseZeroRecord(models.Model):
-
-    class Meta:
-        app_label = 'program'
-
     def __unicode__(self):
         return self.lottery_number
 
     user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program, blank=True, null=True)
-    phase_zero_time = models.DateTimeField(default=timezone.now)
-    lottery_number = models.CharField(max_length=6)
-
-    def joinExistingGroup(self):
-        lottery_number = input()
+    program = models.ForeignKey(Program, blank=True)
+    time = models.DateTimeField(auto_now_add=True)
+    lottery_number = models.IntegerField(null=True)
 
 class StudentRegistration(ExpirableModel):
     """
