@@ -1882,7 +1882,7 @@ class RegistrationType(models.Model):
 
 class PhaseZeroRecord(models.Model):
     def __unicode__(self):
-        return self.lottery_number
+        return str(self.lottery_number)
 
     user = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program, blank=True)
