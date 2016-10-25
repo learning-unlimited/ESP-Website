@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
-from esp.users.models import Record, ESPUser
+from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
 
@@ -60,7 +60,6 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_grade
-    @meets_deadline('/Classes/PhaseZero')
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
         """
         Serves the Phase Zero student reg page. The initial page includes a button
@@ -68,34 +67,45 @@ class StudentRegPhaseZero(ProgramModuleObj):
         served a confirmation page and lottery number form (for self-assigning groups).
         """
         context = {}
-        user = request.user
-
         context['program'] = prog
-
-        if PhaseZeroRecord.objects.filter(user=user, program=prog).exists():
-            if request.method == 'POST':
-                form = LotteryNumberForm(request.POST, program=prog)
-                if form.is_valid():
-                    form.save(user, prog)
-            form = LotteryNumberForm(program=prog)
-            form.load(request.user, prog)
-            context['form'] = form
-            context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
-            return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-        else:
-            if request.method == 'POST':
-                form = SubmitForm(request.POST, program=prog)
-                if form.is_valid():
-                    form.save(user, prog)
+        user = request.user
+        in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+        if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
+            if in_lottery:
+                if request.method == 'POST':
+                    form = LotteryNumberForm(request.POST, program=prog)
+                    if form.is_valid():
+                        form.save(user, prog)
                 form = LotteryNumberForm(program=prog)
                 form.load(request.user, prog)
-                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
                 context['form'] = form
+                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
-                form = SubmitForm(program=prog)
-                context['form'] = form
-                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+                if request.method == 'POST':
+                    form = SubmitForm(request.POST, program=prog)
+                    if form.is_valid():
+                        form.save(user, prog)
+                    form = LotteryNumberForm(program=prog)
+                    form.load(request.user, prog)
+                    context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                    context['form'] = form
+                    return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+                else:
+                    form = SubmitForm(program=prog)
+                    context['form'] = form
+                    return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+        else:
+            if in_lottery:
+                if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+                    #Sorry page
+                    return render_to_response('program/modules/studentregphasezero/sorry.html', request, context)
+                else:
+                    #Lottery has not yet been run page
+                    return render_to_response('program/modules/studentregphasezero/notyet.html', request, context)
+            else:
+                #Generic error page
+                return render_to_response('errors/program/phasezero_closed.html', request, context)
 
     class Meta:
         proxy = True

@@ -120,6 +120,10 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
+        # Assign OverridePhaseZero permission and all Student/ permissions
+        
+        ###############################################################################
+        # Add tag to indicate student lottery has been run
 
         return
 
