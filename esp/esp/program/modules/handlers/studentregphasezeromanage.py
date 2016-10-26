@@ -86,6 +86,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         counts = {key:0 for key in grade_caps}
         winners = Group(name=role)
+        winners.save()
 
         for i in groups:
             sibs = sibgroups[i]
@@ -100,19 +101,20 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
             if cpass:
                 for user in sibs:
-                    winners.add(user[0])    # check syntax
+                    user[0].groups.add(winners)    # check syntax
                 counts = copy.copy(newcounts)
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
-        # Assign OverridePhaseZero permission and all Student permissions
+        # Assign OverridePhaseZero permission and Student/All permissions
 
-        Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
-        Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
-        
+        override_perm = Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
+        studentAll_perm = Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+        override_perm.save()
+        studentAll_perm.save()
         # Add tag to indicate student lottery has been run
-        Tag.setTag('student_lottery_run', prog, True)
- 
+        Tag.setTag('student_lottery_run', target=prog, value='True')
+
         return
 
     @main_call
