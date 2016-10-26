@@ -39,7 +39,7 @@ from esp.users.models import Record, ESPUser
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
 
-import random, copy, datetime, re
+import random, copy, datetime, json
 from django.contrib.auth.models import Group
 from esp.tagdict.models import Tag
 
@@ -57,49 +57,37 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         }
 
     def lottery(self, prog, role):
-        #run lottery
-
-        def RepresentInt(x):
-            try:
-                int(x)
-                return True
-            except ValueError:
-                return False
-
+        #run lottery. Get grade caps and process student data in PhaseZeroRecords
+        grade_caps = prog._grade_caps()
         sibgroups = {}
-        indiv = {}
 
-        # Get grade caps and process student data in PhaseZeroRecords
-        grade_caps_tag = Tag.getProgramTag('program_size_by_grade', prog)
-        grade_caps_tag_split = [x for x in re.split('(\d+)', grade_caps_tag) if RepresentInt(x)]
-        grade_caps = {grade_caps_tag_split[2*i]:int(grade_caps_tag_split[2*i+1]) for i in range(len(grade_caps_tag_split)/2)}
-
-        # Can you check if these are the correct calls to methods/parameters?
-        for entry in PhaseZeroRecord.objects:
+        for entry in PhaseZeroRecord.objects.filter(program=prog):
             group_number = entry.lottery_number
-            username = entry.user
+            user = entry.user
             user_grade = entry.user.getGrade(prog)
+            user_id = entry.id
 
-            indiv[username] = (group_number, user_grade)
             if group_number not in sibgroups.keys():
-                sibgroups[group_number] = [(username, user_grade)]
+                sibgroups[group_number] = [(user, user_grade, user_id)]
             else:
-                sibgroups[group_number].append((username, user_grade))
+                sibgroups[group_number].append((user, user_grade, user_id))
+
+        for number in sibgroups:
+            if len(sibgroups[number]) > 4:
+                for user in sibgroups[number]:
+                    sibgroups[user[2]] = [user]
 
         ###############################################################################
         # The lottery algorithm is run, with randomization and processing in order.
         # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
 
-        # not sure if we need to deep copy here; kept as shallow
         groups = sibgroups.keys()
-        order = copy.copy(groups)
-        random.shuffle(order)
+        random.shuffle(groups)
 
         counts = {key:0 for key in grade_caps}
         winners = Group(name=role)
-        waitlist = Group(name=(str(prog) + ' Waitlist'))
 
-        for i in order:
+        for i in groups:
             sibs = sibgroups[i]
             newcounts = copy.copy(counts)
             for j in sibs:
@@ -112,19 +100,19 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
             if cpass:
                 for user in sibs:
-                    winners.add(user[0])   # correct syntax??
+                    winners.add(user[0])    # check syntax
                 counts = copy.copy(newcounts)
-            else:
-                for user in sibs:
-                    waitlist.add(user[0])
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
-        # Assign OverridePhaseZero permission and all Student/ permissions
+        # Assign OverridePhaseZero permission and all Student permissions
 
-        ###############################################################################
+        Permission(permission_type='OverridePhaseZero', role=winners, start_date=datetime.datetime.now(), program=prog)
+        Permission(permission_type='Student/All', role=winners, start_date=datetime.datetime.now(), program=prog)
+        
         # Add tag to indicate student lottery has been run
-
+        Tag().setTag('student_lottery_run', prog, True)
+ 
         return
 
     @main_call

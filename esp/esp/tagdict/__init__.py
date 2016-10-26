@@ -98,6 +98,7 @@ all_program_tags = {
     'display_registration_names': (False, ""),
     'program_size_by_grade': (False, ""),
     'studentschedule_show_empty_blocks': (True, ""),
+    'student_lottery_run': (False, ""),
     'formstack_id': (False, ""),
     'formstack_viewkey': (False, ""),
 }
