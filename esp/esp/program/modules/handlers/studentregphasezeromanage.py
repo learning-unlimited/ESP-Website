@@ -74,8 +74,8 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         for number in sibgroups:
             if len(sibgroups[number]) > 4:
-                for user in sibgroups[number]:
-                    sibgroups[user[2]] = [user]
+                for student in sibgroups[number]:
+                    sibgroups[student[2]] = [student]
 
         ###############################################################################
         # The lottery algorithm is run, with randomization and processing in order.
