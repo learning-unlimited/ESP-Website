@@ -58,13 +58,14 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
     def lottery(self, prog, role):
         #run lottery. Get grade caps and process student data in PhaseZeroRecords
-        grade_caps = prog._grade_caps()
+        grade_caps_str = prog._grade_caps()
+        grade_caps = {int(key):grade_caps_str[key] for key in grade_caps_str}
         sibgroups = {}
 
         for entry in PhaseZeroRecord.objects.filter(program=prog):
             group_number = entry.lottery_number
             user = entry.user
-            user_grade = entry.user.getGrade(prog)
+            user_grade = entry.user.getGrade(prog)  
             lottery_id = entry.id
 
             if group_number not in sibgroups.keys():
@@ -85,7 +86,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         random.shuffle(groups)
 
         counts = {key:0 for key in grade_caps}
-        winners = Group(name=role)
+        winners = Group.objects.get_or_create(name=role)
         winners.save()
 
         for i in groups:
