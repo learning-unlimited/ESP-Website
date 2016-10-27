@@ -86,8 +86,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         random.shuffle(groups)
 
         counts = {key:0 for key in grade_caps}
-        winners = Group.objects.get_or_create(name=role)
-        winners.save()
+        winners = Group.objects.get_or_create(name=role)[0]
 
         for i in groups:
             sibs = sibgroups[i]
