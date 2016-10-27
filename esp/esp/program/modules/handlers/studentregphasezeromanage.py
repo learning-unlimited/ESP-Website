@@ -59,7 +59,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     def lottery(self, prog, role):
         #run lottery. Get grade caps and process student data in PhaseZeroRecords
         grade_caps_str = prog._grade_caps()
-        grade_caps = {int(key[0]):key[1] for key in grade_caps_str}
+        grade_caps = {int(key[0]):grade_caps_str[key] for key in grade_caps_str}
         sibgroups = {}
 
         for entry in PhaseZeroRecord.objects.filter(program=prog):
