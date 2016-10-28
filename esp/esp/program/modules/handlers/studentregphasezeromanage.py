@@ -73,9 +73,10 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             else:
                 sibgroups[group_number].append((user, user_grade, lottery_id))
 
-        for number in sibgroups:
-            if len(sibgroups[number]) > 4:
-                for student in sibgroups[number]:
+        sibgroups_copy = copy.copy(sibgroups)
+        for number in sibgroups_copy:
+            if len(sibgroups_copy[number]) > 4:
+                for student in sibgroups_copy[number]:
                     sibgroups[student[2]] = [student]
 
         ###############################################################################
