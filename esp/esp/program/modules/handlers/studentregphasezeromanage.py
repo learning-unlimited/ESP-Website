@@ -65,7 +65,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         for entry in PhaseZeroRecord.objects.filter(program=prog):
             group_number = entry.lottery_number
             user = entry.user
-            user_grade = entry.user.getGrade(prog)  
+            user_grade = entry.user.getGrade(prog)
             lottery_id = entry.id
 
             if group_number not in sibgroups.keys():
