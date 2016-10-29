@@ -222,7 +222,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             times = []
             classrooms = []
             for br in blockrooms:
-                timeslot, classroom = br.split(",")
+                timeslot, classroom = br.split(",", 1)
                 times.append(timeslot)
                 classrooms.append(classroom)
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)
