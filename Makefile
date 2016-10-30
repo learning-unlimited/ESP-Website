@@ -14,7 +14,10 @@ sr-8: pre src finish
 
 pre:
 	@echo "Backing things up and fixing permissions."
-	sudo -u postgres pg_dump $(SITE)_django | gzip > $(SITE)_$(shell date +"%Y%m%d").sql.gz
+	@# get credentials, if we lack them, before we try to do anything fancy with pipes
+	sudo -v
+        @# We might not have write permissions on the homedir, but www-data should.
+        sudo -u postgres pg_dump $(SITE)_django | gzip | sudo -u www-data tee $(SITE)_$(shell date +"%Y%m%d").sql.gz >/dev/null
 	-sudo chown -RL "www-data:www-data" .
 
 src:
