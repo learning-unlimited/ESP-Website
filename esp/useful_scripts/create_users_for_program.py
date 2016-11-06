@@ -4,6 +4,24 @@ import random
 import datetime
 
 def create_users_for_schools(program, groups, schools):
+    """
+    Create a sequentially numbered list of users for some schools, with a randomly generated
+    password for each school.
+
+    :param program:
+       The program for which we should create these users.
+    :param groups:
+       The groups that all of these users should be added to.  IN ADDITION TO ANY OTHER DESIRED
+       GROUPS, YOU MUST ADD EITHER THE "Student" or "Teacher" GROUP (probably the former in most
+       use cases of this script); OTHERWISE, THE PROFILE VIEWER MAY FAIL.
+    :param schools:
+       A dictionary where the key is a string indicating the school and is the prefix
+       for all the usernames; the value is the number of accounts desired for that school.  For
+       example, if there is an item 'xyz' : 20, then the usernames will be xyz1, xyz2, ..., xyz20.
+    :return:
+       A dictionary where the key is a school prefix, and the value is the randomly generated
+       password (which will start with the prefix).
+    """
     ret = {}
     for school, number in schools.iteritems():
         pw = school + str(random.randrange(1000000))
