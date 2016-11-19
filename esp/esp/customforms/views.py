@@ -89,11 +89,11 @@ def onSubmit(request):
             fields = []
 
         # truncating field lengths to the character limits specified
-        title = metadata['title'][0:Form._meta.get_field_by_name('title')[0].max_length]
-        link_type = metadata['link_type'][0:Form._meta.get_field_by_name('link_type')[0].max_length]
-        perms = metadata['perms'][0:Form._meta.get_field_by_name('perms')[0].max_length]
-        success_message = metadata['success_message'][0:Form._meta.get_field_by_name('success_message')[0].max_length]
-        success_url = metadata['success_url'][0:Form._meta.get_field_by_name('success_url')[0].max_length]
+        title = metadata['title'][0:Form._meta.get_field('title').max_length]
+        link_type = metadata['link_type'][0:Form._meta.get_field('link_type').max_length]
+        perms = metadata['perms'][0:Form._meta.get_field('perms').max_length]
+        success_message = metadata['success_message'][0:Form._meta.get_field('success_message').max_length]
+        success_url = metadata['success_url'][0:Form._meta.get_field('success_url').max_length]
 
         # Creating form
         form = Form.objects.create(title=title,

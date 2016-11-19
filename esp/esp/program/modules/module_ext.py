@@ -39,7 +39,7 @@ import time
 from django.db import models
 
 from esp.db.fields import AjaxForeignKey
-from esp.program.models import Program, RegistrationType
+from esp.program.models import Program, RegistrationType, ClassSection
 from esp.users.models import ESPUser
 
 # If this module is a little confusingly named, or has some cruft in it, it's
@@ -63,12 +63,6 @@ class DBReceipt(models.Model):
     def __unicode__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
-def get_regtype_enrolled():
-    if RegistrationType.objects.exists():
-        return RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
-    else: # if this is being called while running initial migrations
-        return None
-
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
@@ -83,13 +77,6 @@ class StudentClassRegModuleInfo(models.Model):
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
     apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
-
-    #   This points to the tree node that is used for the verb when a student is added to a class.
-    #   Only 'Enrolled' actually puts them on the class roster.  Other verbs may be used to
-    #   represent other statuses ('Applied', 'Rejected', etc.)
-    #   Note: When use_priority is True, sub-verbs with integer indices are used
-    #         (e.g. 'Priority/1', 'Priority/2', ...)
-    signup_verb          = models.ForeignKey(RegistrationType, default=get_regtype_enrolled, help_text='Which verb to grant a student when they sign up for a class.', null=True)
 
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
@@ -137,7 +124,8 @@ class StudentClassRegModuleInfo(models.Model):
         return self.program.getModule('StudentClassRegModule')
 
     def reg_verbs(self):
-        verb_list = [self.signup_verb]
+        verb_list = [RegistrationType.get_cached(name='Enrolled',
+                                                 category='student')]
 
         if self.use_priority:
             for i in range(0, self.priority_limit):
@@ -267,13 +255,22 @@ class AJAXChangeLogEntry(models.Model):
     # unique index in change_log of this entry
     index = models.IntegerField()
 
-    # comma-separated list of integer timeslots
+    # whether this is a scheduling entry (or comment entry)
+    is_scheduling = models.BooleanField(default=True)
+
+    # scheduling entry: comma-separated list of integer timeslots
     timeslots = models.CharField(max_length=256)
 
-    # name of the room involved in scheduling update
+    # scheduling entry: name of the room involved in scheduling update
     room_name = models.CharField(max_length=256)
 
-    # class ID to update
+    # comment entry: comment text
+    comment = models.CharField(max_length=256)
+
+    # comment entry: is locked
+    locked = models.NullBooleanField()
+
+    # ClassSection ID to update
     cls_id = models.IntegerField()
 
     # user responsible for this entry
@@ -282,10 +279,16 @@ class AJAXChangeLogEntry(models.Model):
     # time we entered this
     time = models.FloatField()
 
-    def update(self, index, timeslots, room_name, cls_id):
-        self.index = index
+    def setScheduling(self, timeslots, room_name, cls_id):
+        self.is_scheduling = True
         self.timeslots = ','.join([str(x) for x in timeslots])
         self.room_name = room_name
+        self.cls_id = cls_id
+
+    def setComment(self, comment, lock, cls_id):
+        self.is_scheduling = False
+        self.comment = comment
+        self.locked = lock
         self.cls_id = cls_id
 
     def save(self, *args, **kwargs):
@@ -293,13 +296,29 @@ class AJAXChangeLogEntry(models.Model):
         super(AJAXChangeLogEntry, self).save(*args, **kwargs)
 
     def getTimeslots(self):
-        return self.timeslots.split(',')
+        if self.timeslots == "":
+            return []
+        return [int(timeslot_id) for timeslot_id in self.timeslots.split(',')]
 
     def getUserName(self):
         if self.user:
             return self.user.username
         else:
             return "unknown"
+
+    def toDict(self):
+        d = {}
+        d['index'] = self.index
+        d['id'] = self.cls_id
+        d['user'] = self.getUserName()
+        d['is_scheduling'] = self.is_scheduling
+        if self.is_scheduling:
+            d['room_name'] = self.room_name
+            d['timeslots'] = self.getTimeslots()
+        else:
+            d['comment'] = self.comment
+            d['locked'] = self.locked
+        return d
 
 class AJAXChangeLog(models.Model):
     # program this change log stores changes for
@@ -320,12 +339,8 @@ class AJAXChangeLog(models.Model):
         self.entries.filter(time__lte=max_time).delete()
         self.save()
 
-    def append(self, timeslots, room_name, cls_id, user=None):
-        next_index = self.get_latest_index() + 1
-
-        entry = AJAXChangeLogEntry()
-        entry.update(next_index, timeslots, room_name, cls_id)
-
+    def append(self, entry, user=None):
+        entry.index = self.get_latest_index() + 1
         if user:
             entry.user = user
 
@@ -333,6 +348,16 @@ class AJAXChangeLog(models.Model):
         self.save()
         self.entries.add(entry)
         self.save()
+
+    def appendScheduling(self, timeslots, room_name, cls_id, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setScheduling(timeslots, room_name, cls_id)
+        self.append(entry, user)
+
+    def appendComment(self, comment, lock, cls_id, user=None):
+        entry = AJAXChangeLogEntry()
+        entry.setComment(comment, lock, cls_id)
+        self.append(entry, user)
 
     def get_latest_index(self):
         index = self.entries.all().aggregate(models.Max('index'))['index__max']
@@ -350,10 +375,28 @@ class AJAXChangeLog(models.Model):
         entry_list = list()
 
         for entry in new_entries:
-            entry_list.append( {	'index'     : entry.index,
-                                    'room_name' : entry.room_name,
-                                    'id'    : entry.cls_id,
-                                    'timeslots' : entry.getTimeslots(),
-                                    'user'      : entry.getUserName() })
+            entry_list.append(entry.toDict())
 
         return entry_list
+
+# stores scheduling details about an section for the AJAX scheduler
+#  (e.g., scheduling comments, locked from AJAX scheduling, etc.)
+class AJAXSectionDetail(models.Model):
+    program = AjaxForeignKey(Program)
+    cls_id = models.IntegerField()
+    comment = models.CharField(max_length=256)
+    locked = models.BooleanField(default=False)
+
+    def initialize(self, program, cls_id, comment, locked):
+        self.program = program
+        self.cls_id = cls_id
+        self.comment = comment
+        self.locked = locked
+        self.save()
+
+    def update(self, comment, locked):
+        self.comment = comment
+        self.locked = locked
+        self.save()
+
+from esp.application.models import FormstackAppSettings

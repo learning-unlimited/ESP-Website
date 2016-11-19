@@ -235,9 +235,6 @@ def _get_type_url(type):
 
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
-
-    #from esp.program.models.class_ import ClassCategories
-
     #customforms definitions
     form_link_name='Program'
 
@@ -423,7 +420,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return clean_counts
 
-    @cache_function
     def getListDescriptions(self):
         desc = {}
         modules = self.getModules()
@@ -434,7 +430,6 @@ class Program(models.Model, CustomFormsLinkModel):
                     if tmpdict is not None:
                         desc.update(tmpdict)
         return desc
-    getListDescriptions.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
 
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
@@ -743,19 +738,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')
-
-    @cache_function
-    def class_ids_implied(self):
-        """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
-        retVal = set([])
-        for c in self.classes():
-            for imp in c.classimplication_set.all():
-                retVal = retVal.union(imp.member_id_ints)
-        if len(retVal) < 1:
-            retVal = [-1]
-        retVal = list(retVal)
-        return retVal
-    class_ids_implied.depend_on_row('program.ClassImplication', lambda ci: {'self': ci.cls.parent_program})
 
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')

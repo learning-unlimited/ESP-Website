@@ -51,7 +51,7 @@ from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call, meets_cap, no_auth
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration, StudentSubjectInterest
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, StudentRegistration, StudentSubjectInterest
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission, Record
@@ -188,7 +188,7 @@ class StudentClassRegModule(ProgramModuleObj):
         if extension is not None:
             return super(StudentClassRegModule, self).deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+            return super(StudentClassRegModule, self).deadline_met('/Classes')
 
     def deadline_met_or_lottery_open(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -330,23 +330,7 @@ class StudentClassRegModule(ProgramModuleObj):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        reg_perm = 'Student/Classes'
         scrmi = self.program.studentclassregmoduleinfo
-
-        if 'prereg_verb' in request.POST:
-            proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
-            if scrmi.use_priority:
-                available_verbs = ["%s/%d" % (scrmi.signup_verb.get_uri(), x) for x in xrange(1, scrmi.priority_limit+1)]
-            else:
-                available_verbs = [scrmi.signup_verb.get_uri()]
-
-            if proposed_verb in available_verbs:
-                prereg_verb = proposed_verb
-            else:
-                prereg_verb = None
-
-        else:
-            prereg_verb = None
 
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
@@ -357,31 +341,6 @@ class StudentClassRegModule(ProgramModuleObj):
             sectionid = request.POST['section_id']
         else:
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
-
-        # Can we register for more than one class yet?
-        if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
-            enrolled_classes = request.user.getEnrolledClasses(prog)
-            # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
-            classes_registered = 0
-            for cls in enrolled_classes:
-                reg_verbs = cls.getRegVerbs(request.user)
-                is_auto = 0
-                for r in reg_verbs:
-                    if r == 'Automatic':
-                        is_auto = 1
-                if not is_auto:
-                    classes_registered += 1
-
-            if classes_registered >= 1:
-                datestring = ''
-                sreg_perms=Permission.objects.filter(user__isnull=True, role__name="Student", permission_type=reg_perm, program=prog)
-                if sreg_perms.count() > 0:
-                    d = sreg_perms[0].start_date
-                    if d.date() == d.today().date():
-                        datestring = ' later today'
-                    else:
-                        datestring = d.strftime(' on %B %d')
-                raise ESPError("Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring), log=False)
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
@@ -395,48 +354,18 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             priority = 1
 
-        # autoregister for implied classes one level deep. XOR is currently not implemented, but we're not using it yet either.
-        auto_classes = []
-        blocked_class = None
-        cannotadd_error = ''
-
-        for implication in ClassImplication.objects.filter(cls__id=classid, parent__isnull=True):
-            if implication.fails_implication(request.user):
-                for cls in ClassSubject.objects.filter(id__in=implication.member_id_ints):
-                    #   Override size limits on subprogram classes (checkFull=False). -Michael P
-                    sec = cls.default_section()
-                    if sec.cannotAdd(request.user, checkFull=False):
-                        blocked_class = cls
-                        cannotadd_error = sec.cannotAdd(request.user, checkFull=False)
-                    else:
-                        if sec.preregister_student(request.user, overridefull=True, automatic=True, priority=priority, prereg_verb = prereg_verb):
-                            auto_classes.append(sec)
-                            if implication.operation != 'AND':
-                                break
-                        else:
-                            blocked_class = cls
-                    if (blocked_class is not None) and implication.operation == 'AND':
-                        break
-                if implication.fails_implication(request.user):
-                    for sec in auto_classes:
-                        sec.unpreregister_student(request.user, prereg_verb = prereg_verb)
-                    if blocked_class is not None:
-                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error), log=False)
-                    else:
-                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error), log=False)
-
         if error and not request.user.onsite_local:
             raise ESPError(error, log=False)
 
         #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
+        if section.preregister_student(request.user, request.user.onsite_local, priority):
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')
+    @meets_deadline('/Classes')
     @meets_cap
     def addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
@@ -445,7 +374,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')
+    @meets_deadline('/Classes')
     @meets_cap
     def ajax_addclass(self,request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class and return an updated inline schedule """
@@ -471,7 +400,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_deadline('/Classes/OneClass')
+    @meets_deadline('/Classes')
     @meets_cap
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
@@ -595,21 +524,6 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return resp
 
-
-    @cache_control(public=True, max_age=3600)
-    def catalog_allowed_reg_verbs(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        scrmi = prog.studentclassregmoduleinfo
-        signup_verb_uri = scrmi.signup_verb.get_uri().replace('V/Flags/Registration/', '')
-
-        if scrmi.use_priority:
-            verb_list = [ "%s/%d" % (signup_verb_uri, x) for x in xrange(1, scrmi.priority_limit+1) ]
-        else:
-            verb_list = [ signup_verb_uri ]
-
-        resp = HttpResponse(content_type='application/json')
-        json.dump(verb_list, resp)
-        return resp
-
     def catalog_student_count_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         clean_counts = prog.student_counts_by_section_id()
         resp = HttpResponse(content_type='application/json')
@@ -701,7 +615,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_any_deadline(['/Classes/OneClass','/Removal'])
+    @meets_any_deadline(['/Classes','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
@@ -712,7 +626,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_any_deadline(['/Classes/OneClass','/Removal'])
+    @meets_any_deadline(['/Classes','/Removal'])
     def ajax_clearslot(self,request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return an updated inline schedule """
         if not request.is_ajax():

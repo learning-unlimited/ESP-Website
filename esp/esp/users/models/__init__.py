@@ -64,7 +64,7 @@ from django.utils.functional import SimpleLazyObject
 
 
 
-from esp.cal.models import Event
+from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
@@ -213,6 +213,11 @@ class BaseESPUser(object):
 
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
+
+    def nonblank_name(self):
+        name = self.name()
+        if name.strip() == '': name = self.username
+        return name
 
     def get_email_sendto_address_pair(self):
         """
@@ -494,8 +499,12 @@ class BaseESPUser(object):
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
-        """ Clear this teacher's availability for a program """
-        self.useravailability_set.filter(event__program=program).delete()
+        """ Clear this teacher's class availability (but not interviews, etc.) for a program """
+        try:
+            class_time_block_event_type = EventType.objects.get(description='Class Time Block')
+        except EventType.DoesNotExist:
+            raise ESPError('There is no Class Time Block event type; this should always be there!')
+        self.useravailability_set.filter(event__program=program, event__event_type=class_time_block_event_type).delete()
 
     def addAvailableTime(self, program, timeslot, role=None):
         #   Because the timeslot has a program, the program is unnecessary.
@@ -2096,16 +2105,6 @@ class DBList(object):
     def __unicode__(self):
         return self.key
 
-class EmailPref(models.Model):
-    email = models.EmailField(max_length=64, blank=True, null=True, unique=True)
-    email_opt_in = models.BooleanField(default = True)
-    first_name = models.CharField(max_length=64)
-    last_name = models.CharField(max_length=64)
-    sms_number = PhoneNumberField(blank=True, null=True)
-    sms_opt_in = models.BooleanField(default = False)
-    class Meta:
-        app_label = 'users'
-
 class Record(models.Model):
     #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
@@ -2215,14 +2214,14 @@ class Permission(ExpirableModel):
             ("Student/All", "All student deadlines"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
-            ("Student/Classes", "Classes"),
-            ("Student/Classes/OneClass", "Classes/OneClass"),
+            ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),
             ("Student/MainPage", "Registration mainpage"),
             ("Student/Confirm", "Confirm registration"),
             ("Student/Cancel", "Cancel registration"),
+            ("Student/Removal", "Remove class registrations after registration closes"),
             ("Student/Payment", "Pay for a program"),
             ("Student/Profile", "Set profile info"),
             ("Student/Survey", "Access to survey"),
@@ -2499,7 +2498,7 @@ class GradeChangeRequest(TimeStampedModel):
         super(GradeChangeRequest, self).__init__(*args, **kwargs)
         grade_options = ESPUser.grade_options()
 
-        self._meta.get_field_by_name('claimed_grade')[0]._choices = zip(grade_options, grade_options)
+        self._meta.get_field('claimed_grade')._choices = zip(grade_options, grade_options)
 
     def save(self, **kwargs):
         is_new = self.id is None

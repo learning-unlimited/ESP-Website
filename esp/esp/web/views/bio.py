@@ -37,9 +37,8 @@ from django.core.files.base import ContentFile
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from django.http          import HttpResponseRedirect, Http404
+from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
-from esp.middleware       import ESPError
 from datetime             import datetime
 from django.conf import settings
 
@@ -47,23 +46,28 @@ from django.conf import settings
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, username=''):
     """ Edits a teacher bio, given user and program identification information """
 
+    old_url = False
     try:
         if tl == '':
             founduser = request.user
         else:
             if username != '':
                 founduser = ESPUser.objects.get(username=username)
+                old_url = (tl != 'teach')
             else:
                 founduser = ESPUser.getUserFromNum(first, last, usernum)
+                old_url = True
     except:
         return bio_not_found(request)
 
     foundprogram = get_from_id(progid, Program, 'program', False)
 
-    return bio_edit_user_program(request, founduser, foundprogram)
+    return bio_edit_user_program(request, founduser, foundprogram,
+                                 old_url=old_url)
 
 @login_required
-def bio_edit_user_program(request, founduser, foundprogram, external=False):
+def bio_edit_user_program(request, founduser, foundprogram, external=False,
+                          old_url=False):
     """ Edits a teacher bio, given user and program """
 
     if founduser is None or not founduser.isTeacher():
@@ -76,6 +80,10 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     lastbio      = TeacherBio.getLastBio(founduser)
 
+    if old_url:
+        # TODO(benkraft): after these URLs have been redirecting for a while,
+        # remove them.
+        return HttpResponsePermanentRedirect(lastbio.edit_url())
 
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
@@ -130,14 +138,16 @@ def bio(request, tl, last = '', first = '', usernum = 0, username = ''):
     try:
         if username != '':
             founduser = ESPUser.objects.get(username=username)
+            old_url = (tl != 'teach')
         else:
             founduser = ESPUser.getUserFromNum(first, last, usernum)
+            old_url = True
     except:
         return bio_not_found(request)
 
-    return bio_user(request, founduser)
+    return bio_user(request, founduser, old_url)
 
-def bio_user(request, founduser):
+def bio_user(request, founduser, old_url=False):
     """ Display a teacher bio for a given user """
 
     if (not founduser or not founduser.is_active or not founduser.isTeacher()):
@@ -146,6 +156,11 @@ def bio_user(request, founduser):
     teacherbio = TeacherBio.getLastBio(founduser)
     if teacherbio.hidden:
         return bio_not_found(request, founduser, teacherbio.edit_url())
+
+    if old_url:
+        # TODO(benkraft): after these URLs have been redirecting for a while,
+        # remove them.
+        return HttpResponsePermanentRedirect(teacherbio.url())
 
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'

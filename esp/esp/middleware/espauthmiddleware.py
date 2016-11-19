@@ -115,7 +115,7 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                           'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
-                          'cur_retTitle': ret_title,
+                          'cur_retTitle': urllib.quote(ret_title.encode(encoding)),
                           'cur_admin': user.isAdministrator() and '1' or '0',
                           'cur_qsd_bits': has_qsd_bits and '1' or '0',
                           'cur_yog': user.getYOG(),

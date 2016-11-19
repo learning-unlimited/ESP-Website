@@ -93,8 +93,7 @@ def json_response(field_map={}):
             elif 'json_debug' in request.GET:
                 data = json.dumps(result, sort_keys=True, indent=4)
                 return render_to_response('utils/jsondebug.html',
-                                          request, {'data': data},
-                                          content_type="text/html")
+                                          request, {'data': data})
             else:
                 if field_map is None:
                     new_result = result
@@ -136,7 +135,8 @@ class CachedModuleViewDecorator(object):
                 for i in range(len(param_list)):
                     if param_name_list[i] in parent_obj.params:
                         args_for_func.append(param_list[i])
-                return parent_obj.cached_function(*args_for_func)
+                cache_only = 'cache_only' in request.GET
+                return parent_obj.cached_function(*args_for_func, cache_only=cache_only)
 
             return actual_func
 

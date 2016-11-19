@@ -115,20 +115,6 @@ class SinglePhaseUserRegForm(UserRegForm):
         self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
-class EmailPrefForm(forms.Form):
-    email = ValidHostEmailField(label='E-Mail Address', required = True)
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>")
-    first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
-    last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
-    sms_number = USPhoneNumberField(label='Cell Phone', required = False,
-                                  help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
-#    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
-
-    def clean_confirm_email(self):
-        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
-            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
-        return self.cleaned_data['confirm_email']
-
 class AwaitingActivationEmailForm(forms.Form):
     """Form used to verify a user is yet to be activated"""
     username = forms.CharField(min_length=5, max_length=30)

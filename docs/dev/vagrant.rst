@@ -1,7 +1,5 @@
 Vagrant based dev servers
 =========================
-Authors:
-   - Michael Price <price@learningu.org>
 
 .. contents:: :local:
 
@@ -33,7 +31,7 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Python 2.7 <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
-If you are on a Linux system, it's likely that everything except Vagrant and Virtualbox can be installed using a package manager on the command line.
+If you are on a Linux system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
 
 If you are on a Windows system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you may need to run ``setx path "%path%;C:\Python27;C:\Python27\Scripts;"`` in order to put ``python``, ``pip`` and ``fab`` on your PATH. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
@@ -44,6 +42,8 @@ Using a shell, navigate to the directory where you would like to place the code 
 
     git clone https://github.com/learning-unlimited/ESP-Website.git devsite
     cd devsite
+    
+If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 
 Next, use Vagrant to create your VM: ::
 
@@ -66,6 +66,8 @@ Alternatively, database dumps can be downloaded automatically over HTTP. If you'
 Finally, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
     fab emptydb
+
+(If this step fails with an error "Operation now in progress", see the "Problems" section at the end.)
 
 These commands can also be used on a system that has already been set up to bring your database up to date. They will overwrite the existing database on your dev server.
 
@@ -113,3 +115,30 @@ One last command! When your devserver gets out of date, this command will update
     fab refresh
 
 If you want to add some custom shortcuts that don't need to go in the main fabfile, you can add them in a file called  ``local_fabfile.py`` in the same directory as ``fabfile.py``. Just add ``from fabfile import *`` at the top, and then write whatever commands you want.
+
+For instructions on contributing changes and our ``git`` workflow, see `<contributing.rst>`_.
+
+Problems
+--------
+
+1. The ``vagrant up`` command errors out with a Ruby stack trace.
+
+    There is a `known issue <https://github.com/mitchellh/vagrant/issues/6748>`_ with Vagrant/VirtualBox on IPv6 static networking.
+
+    One other quick thing to check is to open the VM directly from VirtualBox.  If it also fails,
+    VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
+    might be out of luck since the VM runs 64-bit Ubuntu.  Similarly, on some computers you will need to enable hardware virtualization in the BIOS in order to run the 64-bit VM.
+
+2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
+
+    You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
+
+        ``sudo service memcached restart``
+
+    Now try your ``fab`` command again.
+
+3. I forgot the passphrase for the encrypted partition.
+
+    You won't be able to recover the data, but you can start over by dropping the tablespace ``encrypted`` and then re-running ``fab setup``.
+
+Some other common dev setup issues are discussed `here <https://github.com/learning-unlimited/ESP-Website/issues/1432>`_.

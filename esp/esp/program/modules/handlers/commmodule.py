@@ -193,16 +193,8 @@ class CommModule(ProgramModuleObj):
         else:
             est_time = 1.5 * numusers
 
-
-        #        assert False, self.baseDir()+'finished.html'
         return render_to_response(self.baseDir()+'finished.html', request,
                                   {'time': est_time})
-
-
-    @aux_call
-    @needs_admin
-    def commstep2(self, request, tl, one, two, module, extra, prog):
-        pass
 
 
     @aux_call

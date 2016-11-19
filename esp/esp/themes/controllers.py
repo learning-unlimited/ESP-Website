@@ -260,20 +260,21 @@ class ThemeController(object):
         Reloads the theme (possibly updating the template overrides with recent
         code changes), then recompiles the customizations.
         """
+        if settings.LOCAL_THEME:
+            return
         if (customization_name is None) or (customization_name == "None"):
             customization_name = self.get_current_customization()
-        if customization_name == "None":
-            return
         if theme_name is None:
             theme_name = self.get_current_theme()
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
         self.update_template_settings()
-        (vars, palette) = self.load_customizations(customization_name)
-        if vars:
-            self.customize_theme(vars)
-        if palette:
-            self.set_palette(palette)
+        if customization_name is not None and customization_name != "None":
+            (vars, palette) = self.load_customizations(customization_name)
+            if vars:
+                self.customize_theme(vars)
+            if palette:
+                self.set_palette(palette)
 
     def backup_files(self, dir, keep_files=None):
         """ Copy the files specified in keep_files (relative to directory dir)

@@ -64,7 +64,7 @@ class SurveyTest(ProgramFrameworkTest):
         student = random.choice(self.students)
         sec = random.choice(self.program.sections())
         sec.preregister_student(student)
-        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
 
         #   Access the survey page - there should be no surveys and we should get an error
         response = self.client.get('/learn/%s/survey' % self.program.url)

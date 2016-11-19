@@ -175,10 +175,10 @@ TEMPLATES = [
                 'esp.context_processors.email_settings',
                 'esp.context_processors.program',
                 'esp.context_processors.schoolyear',
-                'django.core.context_processors.i18n',
+                'django.template.context_processors.i18n',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.core.context_processors.media',
+                'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
             ],
@@ -375,3 +375,7 @@ SHELL_PLUS_POST_IMPORTS = (
 TWILIO_ACCOUNT_SID = None
 TWILIO_AUTH_TOKEN = None
 TWILIO_ACCOUNT_NUMBERS = None
+
+# Default configuration for themes: set this to True to make recompile_theme
+# and the themes frontend refuse to do anything
+LOCAL_THEME = False

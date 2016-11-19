@@ -45,6 +45,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from esp.utils.query_utils import nest_Q
+from esp.program.models import VolunteerOffer
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -422,39 +423,6 @@ class ProgramPrintables(ProgramModuleObj):
             return cmp(one.id, other.id)
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_id)
 
-    @aux_call
-    @needs_admin
-    def classprereqs(self, request, tl, one, two, module, extra, prog):
-        classes = ClassSubject.objects.filter(parent_program = self.program)
-
-        classes = [cls for cls in classes
-                   if cls.isAccepted()   ]
-
-        sort_exp = lambda x,y: ((x.title != y.title) and cmp(x.title.upper().lstrip().strip('"\',.<![($'), y.title.upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
-
-        if 'clsids' in request.GET:
-            clsids = request.GET['clsids'].split(',')
-            cls_dict = {}
-            for cls in classes:
-                cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids]
-            classes.sort(sort_exp)
-        else:
-            classes.sort(sort_exp)
-
-        for cls in classes:
-            cls.implications = []
-            for implication in cls.classimplication_set.filter(parent__isnull=True):
-                imp_info = {}
-                imp_info['operation'] = { 'AND':'All', 'OR':'Any', 'XOR':'Exactly one' }[implication.operation]
-                imp_info['prereqs'] = ClassSubject.objects.filter(id__in = implication.member_id_ints)
-                        #cls.prereqs += '<li>' + str(prereq_list[0].id) + ": " + prereq_list[0].title() + '<br />'
-                        #cls.prereqs += '(' + prereq_list[0].friendly_times().join(', ') + ' in ' + prereq_list[0].prettyrooms().join(', ') + '</li>'
-                cls.implications.append(imp_info)
-
-        context = { 'classes': classes, 'program': self.program }
-        return render_to_response(self.baseDir()+'classprereqs.html', request, context)
-
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
@@ -691,6 +659,38 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def volunteerschedules(self, request, tl, one, two, module, extra, prog):
+        """ generate volunteer schedules """
+
+        filterObj, found = UserSearchController().create_filter(request, self.program)
+        if not found:
+            return filterObj
+
+        context = {'module': self     }
+        volunteers = list(filterObj.getList(ESPUser).distinct())
+        volunteers.sort()
+
+        scheditems = []
+
+        for volunteer in volunteers:
+            # get list of volunteer offers
+            items = []
+            offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
+            for offer in offers:
+                items.append({'name': volunteer.name(),
+                                   'volunteer': volunteer,
+                                   'offer' : offer})
+            #sort offers
+            items.sort(key=lambda item: item['offer'].request.timeslot.start)
+            #combine offers of all volunteers
+            scheditems.extend(items)
+
+        context['scheditems'] = scheditems
+
+        return render_to_response(self.baseDir()+'volunteerschedule.html', request, context)
 
     def get_msg_vars(self, user, key):
         if key == 'receipt':
@@ -974,10 +974,16 @@ Volunteer schedule for %s:
             for t in times_compulsory:
                 i = min_index
                 while i < len(classes):
-                    if classes[i].start_time_prefetchable() > t.start:
+                    if isinstance(classes[i], Event):
+                        start_time = classes[i].start
+                    else:
+                        start_time = classes[i].start_time_prefetchable()
+                    if start_time > t.start:
                         classes.insert(i, t)
                         break
                     i += 1
+                else:
+                    classes.append(t)
                 min_index = i
 
             # get payment information

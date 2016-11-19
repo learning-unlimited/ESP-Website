@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap, meets_grade
 from esp.program.modules import module_ext
 from esp.utils.web       import render_to_response
 from esp.middleware      import ESPError
@@ -99,14 +99,15 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_grade
     @meets_deadline('/FormstackMedliab')
     @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
         """
         Landing page redirecting to med-liab form on Formstack.
         """
-        t = Tag.getTag("formstack_id", self.program)
-        v = Tag.getTag("formstack_viewkey", self.program)
+        t = Tag.getProgramTag("formstack_id", self.program)
+        v = Tag.getProgramTag("formstack_viewkey", self.program)
         context = {"formstack_id": t, "formstack_viewkey": v}
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, context)

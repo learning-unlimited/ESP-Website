@@ -149,11 +149,10 @@ function initialize()
     
     //  Initialize the filtering options accordion
     $j("#filter_accordion").accordion({
-        autoHeight: false,
+        heightStyle: "content",
         collapsible: true,
-        navigation: true
     });
-    $j("#filter_accordion").accordion("activate", false);
+    $j("#filter_accordion").accordion("option", "active", false);
     
     //  Handle changes in the recipient type
     recipient_type_change = function () {
@@ -212,11 +211,10 @@ function initialize()
     
     //  Initialize the filtering options accordion
     $j("#combo_filter_accordion").accordion({
-        autoHeight: false,
+        heightStyle: "content",
         collapsible: true,
-        navigation: true
     });
-    $j("#combo_filter_accordion").accordion("activate", false);
+    $j("#combo_filter_accordion").accordion("option", "active", false);
     
     //  Make AND/OR/NOT into buttons
     for (var i = 0; i < list_names.length; i++)
@@ -245,7 +243,7 @@ function initialize()
     //  Handle step transitions
     combo_base_list_change = function () {
         clear_filters("form_combo_list");
-        $j("#combo_filter_accordion").accordion("activate", false);
+        $j("#combo_filter_accordion").accordion("option", "active", false);
         var list_selected = $j("select[name=combo_base_list]").val();
         $j("#combo_starting_list").html($j("#list_description_" + list_selected.substr(list_selected.indexOf(":") + 1)).html());
         $j("#form_combo_list .sendto_fn_select").hide();

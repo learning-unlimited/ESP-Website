@@ -34,7 +34,7 @@ def csrf_failure(request, reason=""):
         else:
             prog = None
 
-        response = render_to_response('403_csrf_failure.html', request, c, prog=prog)
+        response = render_to_response('403_csrf_failure.html', request, c)
         response = HttpResponseForbidden(response.content, content_type=response['Content-Type'])
 
     except Exception:

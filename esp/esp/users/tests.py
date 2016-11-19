@@ -30,9 +30,9 @@ class ESPUserTest(TestCase):
         uid = self.user.id
         self.user.delete()
         # Make sure it's gone.
-        self.failUnless( User.objects.filter(id=uid).count() == 0 )
-        self.failUnless( ESPUser.objects.filter(id=uid).count() == 0 )
-        self.failUnless( Permission.objects.filter(user=uid).count() == 0 )
+        self.assertTrue( User.objects.filter(id=uid).count() == 0 )
+        self.assertTrue( ESPUser.objects.filter(id=uid).count() == 0 )
+        self.assertTrue( Permission.objects.filter(user=uid).count() == 0 )
 
     def testMorph(self):
         class scratchDict(dict):
@@ -91,16 +91,16 @@ class ESPUserTest(TestCase):
         student_regprofile = RegistrationProfile(user=studentUser, student_info=student_studentinfo, most_recent_profile=True)
         student_regprofile.save()
         # Check that the grade starts at 9
-        self.failUnless(studentUser.getGrade() == 9)
+        self.assertTrue(studentUser.getGrade() == 9)
 
         # Login the admin
-        self.failUnless(self.client.login(username="admin", password="password"))
+        self.assertTrue(self.client.login(username="admin", password="password"))
 
         testGrade = 11
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
         self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
-        self.failUnless(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+        self.assertTrue(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
 
         # Clean up
         if (c1):
@@ -168,7 +168,7 @@ class TeacherInfo__validationtest(TestCase):
         from esp.users.forms.user_profile import TeacherInfoForm
         # Stuff data into the form and check validation.
         tif = TeacherInfoForm(data)
-        self.failUnless(tif.is_valid())
+        self.assertTrue(tif.is_valid())
         # Check that form data copies correctly into the model
         ti = TeacherInfo.addOrUpdate(self.user, self.user.getLastProfile(), tif.cleaned_data)
 
@@ -182,17 +182,17 @@ class TeacherInfo__validationtest(TestCase):
         # There's some data-cleaning going on here, so
         # ti.graduation_year may have been edited to drop
         # invalid values.
-        self.failUnless(ti.graduation_year.strip() == tif.cleaned_data['graduation_year'].strip()
+        self.assertTrue(ti.graduation_year.strip() == tif.cleaned_data['graduation_year'].strip()
                         or (ti.graduation_year.strip() == "N/A"
                             and not (is_int(tif.cleaned_data['graduation_year'].strip())
                                  or tif.cleaned_data['graduation_year'].strip() == 'G')))
 
         # Check that model data copies correctly back to the form
         tifnew = TeacherInfoForm(ti.updateForm({}))
-        self.failUnless(tifnew.is_valid())
+        self.assertTrue(tifnew.is_valid())
 
         # This one should be an exact match
-        self.failUnless(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
+        self.assertTrue(tifnew.cleaned_data['graduation_year'] == ti.graduation_year)
 
     def testUndergrad(self):
         self.info_data['graduation_year'] = '2000'
@@ -211,7 +211,7 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.failUnless( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( u'fakeaddress@%s' % domain ) == u'fakeaddress@%s' % domain )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!

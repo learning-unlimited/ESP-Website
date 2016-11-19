@@ -112,6 +112,23 @@ class StudentRegTwoPhase(ProgramModuleObj):
             else:
                 timeslot_dict[timeslot][rel] = title
 
+        star_counts = {}
+        interests = StudentSubjectInterest.valid_objects().filter(
+            user=request.user, subject__parent_program=prog)
+        interests = interests.select_related(
+            'subject').prefetch_related('subject__sections__meeting_times')
+        for interest in interests:
+            cls = interest.subject
+            for sec in cls.sections.all():
+                times = sec.meeting_times.all()
+                if len(times) == 0:
+                    continue
+                timeslot = min(times, key=lambda t: t.start).id
+                if not timeslot in star_counts:
+                    star_counts[timeslot] = 1
+                else:
+                    star_counts[timeslot] += 1
+
         # Iterate through timeslots and create a list of tuples of information
         prevTimeSlot = None
         blockCount = 0
@@ -125,10 +142,14 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
-                priority_list = sorted(priority_dict.items())
-                schedule.append((timeslot, priority_list, blockCount + 1))
+                # (relationship, class_title) -> relationship.name
+                priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
-                schedule.append((timeslot, {}, blockCount + 1))
+                priority_list = []
+            if timeslot.id in star_counts:
+                priority_list.append((
+                    'Starred', "(%d classes)" % star_counts[timeslot.id]))
+            schedule.append((timeslot, priority_list, blockCount + 1))
 
             prevTimeSlot = timeslot
 
@@ -147,7 +168,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes
         context['open_class_category_id'] = prog.open_class_category.id
-        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
+        try:
+            lunch_category = ClassCategories.objects.get(category='Lunch')
+            context['lunch_category_id'] = lunch_category.id
+        except ClassCategories.DoesNotExist:
+            context['lunch_category_id'] = -1
         return context
 
     @aux_call

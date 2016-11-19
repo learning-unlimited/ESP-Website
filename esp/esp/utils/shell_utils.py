@@ -16,7 +16,6 @@ from esp.customforms.linkfields import CustomFormsLinkModel, CustomFormsCache
 from esp.program.controllers.classchange import ClassChangeController
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.controllers.resources import ResourceController
