@@ -187,105 +187,119 @@ function fillClasses(data)
     $j("#classes_anchor").html('');
 
     // Now loop through and render each class row
-    for (var i in classes)
-    {
-	var cls = classes[i];
-	$j("#classes_anchor").append(createClassRow(cls));
+    for (var i in classes) {
+        var cls = classes[i];
+        $j("#classes_anchor").append(createClassRow(cls));
     }
-    
+
     //  Save the data for later if we need it
     classes_global = classes;
     sections_global = sections;
 }
 
-function createClassRow(clsObj)
-{
-    var template = " \
-    <tr id='clsid-{{ cls.id }}-row'> \
-    <td class='clsleft classname'> \
-      <span title='{{ cls.title }}'> \
-        <strong>{{ cls.emailcode }}.</strong> \
-        <span class='{{ title_css_class }}'>{{ cls.title }} \
-        <strong>[{{ cls_status }}]</strong></span> \
+function createClassTitleTd(clsObj, shortTitle) {
+    var status_details = getStatusDetails(clsObj.status);
+    var title_css_class = status_details.classes.join(" ");
+    var cls_status = status_details['text'];
+    return $j("<td class='clsleft classname'> \
+      <span title='" + shortTitle + "'> \
+        <strong>" + clsObj.emailcode + ".</strong> \
+        <span class='" + title_css_class + "'>" + shortTitle + "\
+        <strong>[" + cls_status + "]</strong></span> \
       </span> \
-    </td> \
-    <td class='clsmiddle' style='font-size: 12px' width='40px'> \
-      <span title='Control the enrollment of the class's sections'> \
-      {{ section_links }} \
-      </span> \
-    </td> \
-    <td class='clsleft classname' style='font-style: italic'> \
-      <span title='Teacher Names'> \
-        {{ teacher_names }} \
-      </span> \
-    </td> \
- \
- \
-    <td class='clsmiddle'> \
-       <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit='return deleteClass();'> \
-         <input class='button' type='submit' value='Delete' /> \
-       </form> \
-    </td> \
-    <td class='clsmiddle'> \
-      <a href='/manage/{{ program.getUrlBase }}/editclass/{{ cls.id }}' title='Edit {{ cls.title }}' \
-       class='abutton' style='white-space: nowrap;'> \
-        Edit \
-      </a> \
-    </td> \
-    <td class='clsmiddle'> \
-      <a href='/manage/{{ program.getUrlBase }}/manageclass/{{ cls.id }}' title='Manage {{ cls.title }}' \
-       class='abutton' style='white-space: nowrap;'> \
-        Manage \
-      </a> \
-    </td> \
-    <td class='clsmiddle rapid_approval_button'> \
-      <a href='#' title='Set the status of {{ cls.title }}' class='abutton' style='white-space: nowrap;' onclick='show_approve_class_popup({{ cls.id }}); return false;'> \
-	Status \
-      </a> \
-    </td> \
-    </tr> \
-";
-
-    // Now fill in the values in the template
-    var teacher_list = clsObj.teachers;
-    teacher_list = $j.map(teacher_list, function(val, index) {
-	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
-    });
-    var teacher_list_string = teacher_list.join(", ");
-
+    </td>");
+}
+function createSectionListTd(clsObj, shortTitle) {
     var section_link_list = "";
     for (var i = 0; i < clsObj.sections.length; i++)
     {
-	var section = sections[clsObj.sections[i]];
-	section_link_list = section_link_list.concat("<a href='/teach/"+base_url+"/select_students/"+section.id+"'>Sec. "+section.index+"</a><br />");
+        var section = sections[clsObj.sections[i]];
+        section_link_list = section_link_list.concat(
+                "<a href='/teach/"
+                + base_url
+                + "/select_students/"
+                + section.id
+                + "'>Sec. "
+                + section.index
+                + "</a><br />");
     }
-    
-    var class_title_trimmed = clsObj.title;
-    if (class_title_trimmed.length > 40)
-    {
-	class_title_trimmed = class_title_trimmed.substring(0, 40);
-	class_title_trimmed = class_title_trimmed.concat("...");
+    return $j("<td class='clsmiddle' style='font-size: 12px' width='40px'> \
+      <span title='Control the enrollment of the class's sections'> \
+      " + section_link_list + " \
+      </span> \
+    </td>");
+}
+function createTeacherListTd(clsObj, shortTitle) {
+    var teacher_list = clsObj.teachers;
+    teacher_list = $j.map(teacher_list, function(val, index) {
+      var teacher = json_data.teachers[val];
+      return ('<a href="/manage/userview?username='
+          + encodeURIComponent(teacher.username)
+          + '">'
+          + teacher.first_name
+          + ' '
+          + teacher.last_name
+          + '</a>');
+    });
+    var teacher_list_string = teacher_list.join(", ");
+    return $j("<td class='clsleft classname' style='font-style: italic'> \
+      <span title='Teacher Names'> \
+        " + teacher_list_string + " \
+      </span> \
+    </td>");
+}
+
+function createManageButtonTd(clsObj) {
+    return $j("<td class='clsmiddle'> \
+       <form method='post' action='/manage/" + base_url + "/deleteclass/" + clsObj.id + "' onsubmit='return deleteClass();'> \
+         <input class='button' type='submit' value='Delete' /> \
+       </form> \
+    </td>");
+}
+
+function createDeleteButtonTd(clsObj) {
+    return $j("<td class='clsmiddle'> \
+       <form method='post' action='/manage/" + base_url + "/deleteclass/" + clsObj.id + "' onsubmit='return deleteClass();'> \
+         <input class='button' type='submit' value='Delete' /> \
+       </form> \
+    </td>");
+}
+
+function createLinkButtonTd(clsObj, shortTitle, type, verb) {
+    return $j("<td class='clsmiddle'> \
+      <a href='/manage/" + base_url + "/" + type + "/" + clsObj.id + "' title='" + verb + " " + shortTitle + "' \
+       class='abutton' style='white-space: nowrap;'>" + verb + "</a> \
+    </td>");
+}
+function createStatusButtonTd(clsObj, shortTitle) {
+    return $j("<td class='clsmiddle rapid_approval_button'> \
+      <a href='#' title='Set the status of " + shortTitle + "' class='abutton' style='white-space: nowrap;' onclick='show_approve_class_popup(" + clsObj.id + "); return false;'>Status</a> \
+    </td>");
+}
+
+function createClassRow(clsObj)
+{
+    var shortTitle = clsObj.title;
+    if (shortTitle.length > 40) {
+        shortTitle = shortTitle.substring(0, 40);
+        shortTitle = shortTitle.concat("...");
     }
 
-    var status_details = getStatusDetails(clsObj.status);
-
-    template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
-	.replace(new RegExp("{{ cls.title }}", "g"), class_title_trimmed)
-	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.emailcode)
-	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string)
-	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
-	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
-	.replace(new RegExp("{{ title_css_class }}", "g"), status_details.classes.join(" "))
-	.replace(new RegExp("{{ cls_status }}", "g"), status_details['text']);
-
-    // Turn the template into a jQuery node
-    $node = $j(template);
+    var tr = $j(document.createElement('tr'));
+    (tr
+        .append(createClassTitleTd(clsObj, shortTitle))
+        .append(createSectionListTd(clsObj, shortTitle))
+        .append(createTeacherListTd(clsObj, shortTitle))
+        .append(createDeleteButtonTd(clsObj))
+        .append(createLinkButtonTd(clsObj, shortTitle, 'editclass', 'Edit'))
+        .append(createLinkButtonTd(clsObj, shortTitle, 'manageclass', 'Manage'))
+        .append(createStatusButtonTd(clsObj, shortTitle)));
 
     // Add in the CSRF onsubmit checker
-    $node.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
+    tr.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
 
     // Return the jQuery node
-    return $node;
+    return tr;
 }
 
 function handle_sort_control()
