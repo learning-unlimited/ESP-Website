@@ -149,6 +149,20 @@ class TeacherCheckinModule(ProgramModuleObj):
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
+    @aux_call
+    @needs_onsite
+    def ajaxclassdetail(self, request, tl, one, two, module, extra, prog):
+        """
+        AJAX to this endpoint to get the details for a class, as an HTML
+        snippet
+        """
+        context = {}
+        context['class'] = ClassSubject.objects.get(id=request.GET['class'])
+        if request.GET['show_flags']:
+            context['show_flags'] = True
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        return render_to_response(self.baseDir()+'classdetail.html', request, context)
+
     @staticmethod
     def get_phones(users):
         """
