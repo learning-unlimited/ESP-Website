@@ -16,7 +16,7 @@
     font-size: 13px !important;
 }
 
-ul 
+#applicants
 {
     list-style-type: none;
     counter-reset: section;
@@ -29,7 +29,7 @@ ul
     column-gap: 20px;
 }
 
-ul li 
+#record
 {
     padding-left: 30px;
     position: relative;
@@ -60,9 +60,9 @@ Number of students that have entered the student lottery:
 
 <div id="lotteryentries">
 </br>
-<ul>
+<ul id="applicants">
 {% for rec in recs %}
-<li>{{rec.user}}&emsp;({{rec.lottery_number}})</li>
+<li id="record">{{rec.user}} - {{rec.user.getGrade}}</br>({{rec.lottery_number}})</li>
 {% endfor %}
 </ul>
 </div>
