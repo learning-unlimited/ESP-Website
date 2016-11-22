@@ -4,6 +4,7 @@
             <th class="smaller">Sections:</th>
             <td>
                 {{class.sections.count}}
+                ({% for section in class.get_sections %}{{section.duration}} hrs{% if not forloop.last %}, {% endif%}{% endfor %})
             </td>
         </tr>
         <tr>
