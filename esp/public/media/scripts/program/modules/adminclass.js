@@ -200,61 +200,54 @@ function fillClasses(data)
 function createClassTitleTd(clsObj, shortTitle) {
     var status_details = getStatusDetails(clsObj.status);
     var title_css_class = status_details.classes.join(" ");
-    var cls_status = status_details['text'];
-    return $j("<td class='clsleft classname'> \
-      <span title='" + shortTitle + "'> \
-        <strong>" + clsObj.emailcode + ".</strong> \
-        <span class='" + title_css_class + "'>" + shortTitle + "\
-        <strong>[" + cls_status + "]</strong></span> \
-      </span> \
-    </td>");
-}
-function createSectionListTd(clsObj, shortTitle) {
-    var section_link_list = "";
-    for (var i = 0; i < clsObj.sections.length; i++)
-    {
-        var section = sections[clsObj.sections[i]];
-        section_link_list = section_link_list.concat(
-                "<a href='/teach/"
-                + base_url
-                + "/select_students/"
-                + section.id
-                + "'>Sec. "
-                + section.index
-                + "</a><br />");
-    }
-    return $j("<td class='clsmiddle' style='font-size: 12px' width='40px'> \
-      <span title='Control the enrollment of the class's sections'> \
-      " + section_link_list + " \
-      </span> \
-    </td>");
-}
-function createTeacherListTd(clsObj, shortTitle) {
-    var teacher_list = clsObj.teachers;
-    teacher_list = $j.map(teacher_list, function(val, index) {
-      var teacher = json_data.teachers[val];
-      return ('<a href="/manage/userview?username='
-          + encodeURIComponent(teacher.username)
-          + '">'
-          + teacher.first_name
-          + ' '
-          + teacher.last_name
-          + '</a>');
-    });
-    var teacher_list_string = teacher_list.join(", ");
-    return $j("<td class='clsleft classname' style='font-style: italic'> \
-      <span title='Teacher Names'> \
-        " + teacher_list_string + " \
-      </span> \
-    </td>");
+    var clsStatus = status_details['text'];
+    var statusStrong = $j('<strong/>').text('[' + clsStatus + ']');
+    return $j('<td/>', {
+      'class': 'clsleft classname',
+      'title': clsObj.title,
+    }).append(
+        $j('<strong/>').text(clsObj.emailcode + '.'),
+        ' ',
+        $j('<span/>', {'class': title_css_class})
+            .text(shortTitle + ' ')
+            .append(statusStrong)
+    );
 }
 
-function createManageButtonTd(clsObj) {
-    return $j("<td class='clsmiddle'> \
-       <form method='post' action='/manage/" + base_url + "/deleteclass/" + clsObj.id + "' onsubmit='return deleteClass();'> \
-         <input class='button' type='submit' value='Delete' /> \
-       </form> \
-    </td>");
+function createSectionListTd(clsObj, shortTitle) {
+    var td = $j('<td/>', {
+        'class': 'clsmiddle',
+        'style': 'font-size: 12px',
+        'width': '40px',
+        'title': "Control the enrollment of the class's sections",
+    });
+    $j.each(clsObj.sections, function(index, sectionId) {
+        if (index) {
+            td.append(', ');
+        }
+        var section = sections[sectionId];
+        var href = '/teach/' + base_url + '/select_students/' + section.id;
+        td.append($j('<a/>', {href: href}).text(
+            'Sec. ' + section.index));
+    });
+    return td;
+}
+function createTeacherListTd(clsObj, shortTitle) {
+    var td = $j('<td/>', {
+        'class': 'clsleft classname',
+        'style': 'font-style: italic',
+        'title': 'Teacher names',
+    });
+    $j.each(clsObj.teachers, function(index, val) {
+        if (index) {
+            td.append(', ');
+        }
+        var teacher = json_data.teachers[val];
+        var href = '/manage/userview?username=' + teacher.username;
+        td.append($j('<a/>', {href: href}).text(
+            teacher.first_name + ' ' + teacher.last_name));
+    });
+    return td;
 }
 
 function createDeleteButtonTd(clsObj) {
