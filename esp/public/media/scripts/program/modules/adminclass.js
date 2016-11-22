@@ -251,23 +251,48 @@ function createTeacherListTd(clsObj, shortTitle) {
 }
 
 function createDeleteButtonTd(clsObj) {
-    return $j("<td class='clsmiddle'> \
-       <form method='post' action='/manage/" + base_url + "/deleteclass/" + clsObj.id + "' onsubmit='return deleteClass();'> \
-         <input class='button' type='submit' value='Delete' /> \
-       </form> \
-    </td>");
+    var action = '/manage/' + base_url + '/deleteclass/' + clsObj.id;
+    return $j("<td/>", {'class': 'clsmiddle'}).append(
+        $j("<form/>", {
+            'method': 'post',
+            'action': action,
+            'onsubmit': 'return deleteClass();',
+        }).append(
+            $j("<input/>", {
+                'class': 'button',
+                'type': 'submit',
+                'value': 'Delete',
+            })
+        )
+    );
 }
 
 function createLinkButtonTd(clsObj, shortTitle, type, verb) {
-    return $j("<td class='clsmiddle'> \
-      <a href='/manage/" + base_url + "/" + type + "/" + clsObj.id + "' title='" + verb + " " + shortTitle + "' \
-       class='abutton' style='white-space: nowrap;'>" + verb + "</a> \
-    </td>");
+    var href = '/manage/' + base_url + '/' + type + '/' + clsObj.id;
+    return $j("<td/>", {'class': 'clsmiddle'}).append(
+        $j("<a/>", {
+            'href': href,
+            'title': verb + ' ' + shortTitle,
+            'class': 'abutton',
+            'style': 'white-space: nowrap;',
+        }).text(verb)
+    );
 }
 function createStatusButtonTd(clsObj, shortTitle) {
-    return $j("<td class='clsmiddle rapid_approval_button'> \
-      <a href='#' title='Set the status of " + shortTitle + "' class='abutton' style='white-space: nowrap;' onclick='show_approve_class_popup(" + clsObj.id + "); return false;'>Status</a> \
-    </td>");
+    var clickjs = ('show_approve_class_popup('
+            + clsObj.id + '); return false;');
+
+    return $j("<td/>", {
+        'class': 'clsmiddle rapid_approval_button'
+    }).append(
+        $j("<a/>", {
+            'href': '#',
+            'title': 'Set the status of ' + shortTitle,
+            'class': 'abutton',
+            'style': 'white-space: nowrap;',
+            'onclick': clickjs,
+        }).text('Status')
+    );
 }
 
 function createClassRow(clsObj)
