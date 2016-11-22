@@ -216,6 +216,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         sections = sections.select_related(
             'parent_class',
             'parent_class__category',
+            'parent_class__parent_program',
         ).prefetch_related(
             'parent_class__teachers',
             'parent_class__sections',
