@@ -72,14 +72,6 @@
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
             <div id="filter_accordion">
-            
-                <h4><a href="#">User Group</a></h4>
-                <div><select id="group" name="group">
-                    {% for group in groups %}
-                    <option value="{{ group.name }}" id="{{ group.name }}">{{ group.name }}</option>
-                    {% endfor %}
-                    <option value="" id="" selected hidden></option>
-                </select></div>
                 
                 <h4><a href="#">User ID</a></h4>
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
@@ -121,6 +113,14 @@
                 Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
+                
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
                 
             </div>
             
@@ -199,14 +199,6 @@
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div id="combo_filter_accordion">
             
-                <h4><a href="#">User Group</a></h4>
-                <div><select id="group" name="group">
-                    {% for group in groups %}
-                    <option value="{{ group.name }}" id="{{ group.name }}">{{ group.name }}</option>
-                    {% endfor %}
-                    <option value="" id="" selected hidden></option>
-                </select></div>
-            
                 <h4><a href="#">User ID</a></h4>
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
                 
@@ -247,6 +239,14 @@
                 Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
+                
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
                 
             </div>
             

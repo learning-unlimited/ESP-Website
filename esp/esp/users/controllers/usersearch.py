@@ -89,11 +89,10 @@ class UserSearchController(object):
         else:
 
             ##  Select users based on all other criteria that was entered
-            if 'group' in criteria:
-                if criteria['group'] != "":
-                    group = criteria['group']
-                    Q_include &= Q(registrationprofile__user__groups__name=group)
-                    self.updated = True
+            if 'group' in criteria and criteria['group'] != "":
+                group = criteria['group']
+                Q_include &= Q(groups=group)
+                self.updated = True
 
             for field in ['username','last_name','first_name', 'email']:
                 if criteria.get(field, '').strip():
