@@ -94,7 +94,7 @@ class UserSearchController(object):
                     group = criteria['group']
                     Q_include &= Q(registrationprofile__user__groups__name=group)
                     self.updated = True
-            
+
             for field in ['username','last_name','first_name', 'email']:
                 if criteria.get(field, '').strip():
                     #   Check that it's a valid regular expression
