@@ -1,27 +1,24 @@
-{% comment %}
-<li class="nav-header">Navigation</li>
+{% for section in theme.nav_structure %}
+<li class="nav-header">
+    {# links on headers are optional #}
+    {% if item.link %}
+    <a href="{{section.header_link}}">
+    {% endif %}
+        {{section.header}}
+    {% if item.link %}
+    </a>
+    {% endif %}
+</li>
 
-<li class="hidden"><a href="/myesp/profile/">
-    <i class="icon-user"></i> My Profile
-</a></li>
-{% endcomment %}
-<li><a href="/">
-    <i class="icon-home"></i> Home
-</a></li>
-{% comment %}
-<li><a href="/about/index.html">
-    <i class="icon-info-sign"></i> Learn!
-</a></li>
-<li><a href="/about/index.html">
-    <i class="icon-info-sign"></i> Teach!
-</a></li>
-<li><a href="/about/index.html">
-    <i class="icon-info-sign"></i> Volunteer!
-</a></li>
-<li><a href="/about/index.html">
-    <i class="icon-info-sign"></i> About Splash
-</a></li>
-{% endcomment %}
-<li><a href="/contact/contact/">
-    <i class="icon-question-sign"></i> Contact Us
-</a></li>
+{% for item in section.links %}
+{# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
+<li>
+    <a href="{{item.link}}">
+        {% if item.icon %}
+        <i class="icon-{{item.icon}}"></i>
+        {% endif %}
+        {{item.text}}
+    </a>
+</li>
+{% endfor %}
+{% endfor %}
