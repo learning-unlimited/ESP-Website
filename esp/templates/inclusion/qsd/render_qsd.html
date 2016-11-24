@@ -2,7 +2,7 @@
 
 <div class="qsd_bits hidden">
 	<div class="qsd_header qsd_bits hidden" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">This is editable text.  Click here to edit the text; click outside the box to save changes.</div>
-	<div class="hidden qsd_bits hidden" id="inline_edit_{{ qsdrec.edit_id }}">
+	<div class="hidden qsd_bits qsd_default_hidden" id="inline_edit_{{ qsdrec.edit_id }}">
 		<textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}" onblur="qsd_inline_upload('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');" name="qsd_content" class="qsd_editor qsd_fullsize qsd_bits hidden">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
 	</div>
 </div>

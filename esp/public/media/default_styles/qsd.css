@@ -40,13 +40,7 @@ div.qsd_header
     text-align: center;
 }
 
-div.qsd_edit_hidden
-{
-    height: 0px;
-    visibility: hidden;
-}
-
-div.hidden
+div.hidden, div.qsd_edit_hidden, div.qsd_default_hidden
 {
     height: 0px;
     visibility: hidden;
