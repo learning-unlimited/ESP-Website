@@ -2,6 +2,11 @@
 
 {% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name }}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Patrick+Hand" />
+{% endblock stylesheets %}
+
 {% block body %}
 
 {% comment %}
@@ -76,6 +81,10 @@
   </div>
 </div>
 </div>
+<script>
+  $j('.button').addClass('btn').removeClass('button');
+  $j('.fancybutton').addClass('btn').addClass('btn-primary');
+</script>
 {% endblock main %}
 
 {% endblock body %}

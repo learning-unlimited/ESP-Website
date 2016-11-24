@@ -1,7 +1,8 @@
 {% for section in theme.nav_structure %}
+{% if section.header %}
 <li class="nav-header">
     {# links on headers are optional #}
-    {% if item.link %}
+    {% if section.header_link %}
     <a href="{{section.header_link}}">
     {% endif %}
         {{section.header}}
@@ -9,6 +10,7 @@
     </a>
     {% endif %}
 </li>
+{% endif %}
 
 {% for item in section.links %}
 {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
