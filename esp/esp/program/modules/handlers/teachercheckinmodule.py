@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
@@ -48,8 +49,8 @@ from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
+import collections
 import json
-
 
 class TeacherCheckinModule(ProgramModuleObj):
     @classmethod
@@ -149,13 +150,31 @@ class TeacherCheckinModule(ProgramModuleObj):
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @staticmethod
-    def get_phone(user):
-        """Get the phone number to display for a user."""
-        contact_info = user.getLastProfile().contact_user
+    def get_phones(users):
+        """
+        Given a list or QuerySet of users, create a dictionary that maps user
+        ids to phone numbers for displaying.
+        """
+
         default = '(missing contact info)'
-        if contact_info:
-            return contact_info.phone_cell or contact_info.phone_day or default
-        return default
+
+        # This is an optimized version of doing this for each user:
+
+        #   contact_info = user.getLastProfile().contact_user
+        #   if contact_info:
+        #       return contact_info.phone_cell or contact_info.phone_day or default
+        #   return default
+
+        # Only Postgres supports the following fancy database operation! See
+        # http://stackoverflow.com/a/20129229/3243497 .
+
+        profiles = (RegistrationProfile.objects
+                .filter(user__in=users)
+                .order_by('user__id', '-last_ts')
+                .distinct('user__id')
+                .values_list('user', 'contact_user__phone_cell', 'contact_user__phone_day'))
+        phone_entries = ((user, cell or day or default) for (user, cell, day) in profiles)
+        return collections.defaultdict(lambda _: default, phone_entries)
 
     def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
                            show_flags=True):
@@ -236,7 +255,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   check-in at this time).
         # - which is from the same date as 'when'.
         teachers = ESPUser.objects.filter(
-            classsubject__sections__in=sections,
+            classsubject__sections__in=sections).distinct()
+        arrived_teachers = teachers.filter(
             record__program=prog,
             record__event='teacher_checked_in',
             record__time__lte=when,
@@ -246,16 +266,9 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         # To save multiple calls to getLastProfile, precompute the teacher
         # phones.
-        teacher_phones = {}
-        for section in sections:
-            for teacher in section.teachers:
-                if teacher.id not in teacher_phones:
-                    teacher_phones[teacher.id] = self.get_phone(teacher)
-
-        arrived = {}
-        for teacher in teachers:
-            if teacher.id not in teacher_phones:
-                teacher_phones[teacher.id] = self.get_phone(teacher)
+        teacher_phones = self.get_phones(teachers)
+        arrived = dict()
+        for teacher in arrived_teachers:
             teacher.phone = teacher_phones[teacher.id]
             arrived[teacher.id] = teacher
 
