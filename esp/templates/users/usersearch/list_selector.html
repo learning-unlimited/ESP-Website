@@ -114,6 +114,14 @@
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
                 
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
+                
             </div>
             
             <a name="#" class="recipient_step_button" id="recipient_filter_back">Go back</a>
@@ -231,6 +239,14 @@
                 Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
+                
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
                 
             </div>
             
