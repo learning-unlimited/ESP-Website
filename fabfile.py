@@ -364,9 +364,14 @@ def manage(cmd):
     """
     ensure_environment()
 
-    if cmd.split(" ")[0] in ["shell", "shell_plus"]:
+    basecmd = cmd.split(" ")[0]
+
+    if basecmd in ["shell", "shell_plus"]:
         interactive(env.rbase + "esp/manage.py " + cmd)
     else:
+        if basecmd.startswith("runserver"):
+            print "*** WARNING: 'fab manage:runserver' won't work right. ***"
+            print "***            use 'fab runserver' instead.           ***"
         with cd(env.rbase + "esp"):
             run("python manage.py " + cmd)
 
