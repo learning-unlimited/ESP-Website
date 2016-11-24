@@ -91,7 +91,8 @@ class UserSearchController(object):
             ##  Select users based on all other criteria that was entered
             if 'group' in criteria and criteria['group'] != "":
                 group = criteria['group']
-                Q_include &= Q(groups=group)
+                #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
+                Q_include &= Q(registrationprofile__user__groups=group)
                 self.updated = True
 
             for field in ['username','last_name','first_name', 'email']:
