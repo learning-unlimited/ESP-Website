@@ -114,7 +114,7 @@ function clear_filters(form_name)
 {
     //  Remove any existing data in the "user filtering options" part of a comm panel form
     var form = $j("#"+form_name)[0];
-    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max"];
+    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max", "group"];
     for (var i = 0; i < field_names.length; i++)
     {
         var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
