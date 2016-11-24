@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{# TODO(benkraft): Many of these changes should go in the non-theme version #}
 
 {% block title %}Contact Us{% endblock %}
 
@@ -20,7 +21,7 @@
     <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
     <input type="submit" name="recoverpassword" value="Reset my password" />
   </form>
-  <form action="{{ request.path }}" method="post">
+  <form action="{{ request.path }}" method="post" class="contact-form">
     <input type="submit" name="sendanyway" value="I want to send this message anyway" />
 {% else %}
   {% inline_qsd_block "contact_header_text" %}
@@ -34,6 +35,7 @@
 
   If your child is or wants to be an {{ settings.ORGANIZATION_SHORT_NAME }} student, we'd rather hear from them directly. We really do appreciate your interest, but we're an all-volunteer organization so we sometimes take a while to respond to e-mail, and we have an obligation to answer mail from our students first. So, please have your son or daughter send us an e-mail!
   {% end_inline_qsd_block %}
+  <form action="{{ request.path }}" method="post" class="contact-form">
 {% endif %}
 
 <h2>Contact Form</h2>
@@ -45,7 +47,6 @@
 </div>
 {% endif %}
 
-<form action="{{ request.path }}" method="post" class="contact-form">
   <table class="contact">
     <tbody>
       {{ contact_form }}
