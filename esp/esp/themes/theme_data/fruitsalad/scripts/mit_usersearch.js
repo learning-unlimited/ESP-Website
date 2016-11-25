@@ -45,12 +45,17 @@ ESP = (function(){
   };
 })();
 
+// In Bootstrap 3, replace these with
+// http://getbootstrap.com/components/#input-groups-buttons
+
 ESP.registerAdminModule({
 content_html:
-    '    <form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
-    '      <input type="text" id="user_search_field" name="userstr" />' +
-    '      <input type="submit" id="user_search_submit" name="search_submit" value="Find User" class="btn" />' +
-    '    </form>',
+    '<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
+    '<div class="input-append">' +
+    '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" />' +
+    '<input type="submit" id="user_search_submit" name="search_submit" value="&raquo;" class="btn btn-default" />' +
+    '</div>' +
+    '</form>',
     name: 'user_search',
     displayName: 'User Search'
 });
@@ -59,8 +64,10 @@ ESP.registerAdminModule({
     content_html:
         currentProgram ? (
             '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
-            '  <input type="text" id="class_search_field" name="namequery" />' +
-            '  <input type="submit" id="class_search_submit" name="class_search_submit" value="Find Class" class="btn" />' +
+            '<div class="input-append">' +
+            '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
+            '<input type="submit" id="class_search_submit" name="class_search_submit" value="&raquo;" class="btn btn-default" />' +
+            '</div>' +
             '</form>'
         ) : (
             '<small><a href="/manage/programs/">Manage a program</a> ' +
