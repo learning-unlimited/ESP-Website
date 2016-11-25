@@ -74,6 +74,16 @@
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
+<script type="text/javascript">
+{% if current_program %}
+var currentProgram = {
+    urlBase: "{{ current_program.getUrlBase }}",
+    name: "{{ current_program.niceName }}",
+};
+{% else %}
+var currentProgram = undefined;
+{% endif %}
+</script>
 <script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
     <div id="tab_sidebar">

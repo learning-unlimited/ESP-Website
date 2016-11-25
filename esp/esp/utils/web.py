@@ -39,6 +39,7 @@ from django import http
 from django.http import HttpResponse, HttpResponseRedirect
 from esp.middleware import ESPError
 from esp.themes.controllers import ThemeController
+from esp.program.models import Program
 from django.conf import settings
 import django.shortcuts
 
@@ -70,6 +71,13 @@ def render_to_response(template, request, context, content_type=None, use_reques
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['settings'] = settings
+
+    current_program_id = request.COOKIES.get('current_program_id')
+    if current_program_id is not None:
+        try:
+            context['current_program'] = Program.objects.get(id=current_program_id)
+        except Program.DoesNotExist:
+            pass
 
     # create nav bar list
     if not 'navbar_list' in context:

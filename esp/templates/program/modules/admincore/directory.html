@@ -49,6 +49,14 @@ $j(document).ready(initialize);
 
 <h1>Admin Portal for {{ program.niceName }} </h1>
 
+<form method="POST" action="/manage/{{ program.getUrlBase }}/make_current">
+{% if current_program.id == program.id %}
+    <button class="btn btn-sm disabled" disabled="disabled">This is your current program</button>
+{% else %}
+    <button class="btn btn-primary btn-sm">Make current program</button>
+{% endif %}
+</form>
+
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_program_qsd_block %}

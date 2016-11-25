@@ -83,6 +83,22 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         return render_to_response(self.baseDir()+'directory.html', request, context)
 
+    @aux_call
+    @needs_admin
+    def make_current(self, request, tl, one, two, module, extra, prog):
+
+        from django.http import HttpResponseRedirect
+        from django.conf import settings
+
+        response = HttpResponseRedirect('/manage/%s/main' % prog.getUrlBase())
+        response.set_cookie('current_program_id', prog.id,
+                            domain=settings.SESSION_COOKIE_DOMAIN,
+                            secure=settings.SESSION_COOKIE_SECURE or None)
+        response.set_cookie('current_program_url_base', prog.getUrlBase(),
+                            domain=settings.SESSION_COOKIE_DOMAIN,
+                            secure=settings.SESSION_COOKIE_SECURE or None)
+        return response
+
     @main_call
     @needs_admin
     def dashboard(self, request, tl, one, two, module, extra, prog):
