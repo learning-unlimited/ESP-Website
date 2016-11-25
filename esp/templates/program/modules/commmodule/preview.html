@@ -71,7 +71,7 @@ users to whom you are sending this email.
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
 <input type="hidden" name="listcount" value="{{listcount}}" />
-<input type="submit" value="Edit Your Email" id="submitform" />
+<input type="submit" value="Edit Your Email" id="submitform" class="btn" />
 </form>
 <form action="/manage/{{program.getUrlBase}}/commfinal" method="post" name="mainback">
 <input type="hidden" name="filterid" value="{{filterid}}" />
@@ -80,7 +80,7 @@ users to whom you are sending this email.
 <input type="hidden" name="replyto" value="{{replyto}}" />
 <input type="hidden" name="subject" value="{{subject}}" />
 <input type="hidden" name="body" value="{{body}}" />
-<input type="submit" value="Send Message!" id="submitform" />
+<input type="submit" value="Send Message!" id="submitform" class="btn btn-primary" />
 </form>
 
 {% endblock %}
