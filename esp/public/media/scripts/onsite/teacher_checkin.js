@@ -8,14 +8,47 @@ $j(function(){
     var checkins = [];
 
     $j(".flag-detail").hide();
-    
+
     //Replace hyphens with non-breaking hyphens, to stop Chrome from breaking up phone numbers
     function changeHyphens(n, node){
         node.innerHTML = node.innerHTML.replace(/-/g, "&#8209;");
     }
     $j(".room").map(changeHyphens);
     $j(".phone").map(changeHyphens);
-    
+
+    $j('.section-detail-header').click(function () {
+        var info = $j(this).siblings('.section-detail-info');
+        var class_id = info.attr('data-class-id');
+
+        // Let data-class-id indicate which class id we want to load details
+        // for, as well as whether we still want to load them.
+        if (class_id !== '') {
+
+          // Clear the attribute while we're attempting to load details so that
+          // we don't try multiple requests for the same class concurrently.
+          info.attr('data-class-id', '');
+
+          $j.ajax({
+            method: 'GET',
+            url: 'ajaxclassdetail',
+            data: {
+              'class': class_id,
+              show_flags: info.attr('data-show-flags'),
+            },
+            success: function (result) {
+              info.html(result);
+            },
+            error: function (xhr, status, errorThrown) {
+              // If an attempt at loading details fails, restore data-class-id
+              // so we can try again if the user so requests.
+              info.text(errorThrown);
+              info.attr('data-class-id', class_id);
+            },
+          });
+        }
+        info.toggle('blink');
+    });
+
     function updateSelected(scroll){
         var buttons = $j(".checkin");
         if(selected >= buttons.length)
@@ -37,7 +70,7 @@ $j(function(){
             $j("#last_checkin").parent().hide();
     }
     updateSelected(false);
-    
+
     function checkIn(username, callback, undo){
         refresh_csrf_cookie();
         var data = {teacher: username, csrfmiddlewaretoken: csrf_token()};
@@ -48,11 +81,11 @@ $j(function(){
             alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
         });
     }
-    
+
     function undoCheckIn(username, callback){
         checkIn(username, callback, true);
     }
-    
+
     $j(".checkin:enabled").click(function(){
         var username = this.id.replace("checkin_", "");
         var td = this.parentNode;
@@ -65,7 +98,7 @@ $j(function(){
         });
         this.value += "...";
     });
-    
+
     $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
@@ -122,7 +155,7 @@ $j(function(){
     }).keyup(function(e){
         input.change();
     });
-    
+
     var lastLength=0;
     input.change(function(e){
         if(input.val().length == 0)
