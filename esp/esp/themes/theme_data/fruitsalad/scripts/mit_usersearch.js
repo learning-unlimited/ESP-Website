@@ -47,7 +47,7 @@ ESP = (function(){
 
 ESP.registerAdminModule({
 content_html:
-    '    <form id="user_search_form" name="user_search_form" method="get" action="/manage/usersearch">' +
+    '    <form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
     '      <input type="text" id="user_search_field" name="userstr" />' +
     '      <input type="submit" id="user_search_submit" name="search_submit" value="Find User"/>' +
     '    </form>',
