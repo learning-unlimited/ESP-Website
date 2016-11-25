@@ -147,10 +147,15 @@ var SchedulingCheck = React.createClass({
                   clickHeader = {this.sortColumn} clickRow = {this.greyRow} 
                   />;
       }
+      var helpText;
+      if (data.help_text) {
+        helpText = <div className="help-text">{data.help_text}</div>;
+      }
       body = <div>
         <div className="placeholder">
           (loaded {this.state.timestamp}, click title to close)
         </div>
+        {helpText}
         {table}
       </div>;
     }
