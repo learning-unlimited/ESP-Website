@@ -107,7 +107,7 @@ class ClassSearchModule(ProgramModuleObj):
         decoded = None
         if data is not None:
             decoded = json.loads(data)
-        elif namequery is not None:
+        elif namequery: # only search if not None and not ""
             decoded = {'filter': 'title', 'negated': False, 'values': [namequery]}
 
         if decoded is not None:
