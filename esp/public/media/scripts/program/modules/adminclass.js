@@ -57,6 +57,15 @@ function make_attrib_para(field, content) {
         .append($j("<div/>").text(content));
 }
 
+function getShortTitle(clsObj) {
+    var shortTitle = clsObj.title;
+    if (shortTitle.length > 40) {
+        shortTitle = shortTitle.substring(0, 40);
+        shortTitle = shortTitle.concat("...");
+    }
+    return shortTitle;
+}
+
 function fill_class_popup(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
   var status_details = getStatusDetails(class_info.status);
@@ -197,10 +206,10 @@ function fillClasses(data)
     sections_global = sections;
 }
 
-function createClassTitleTd(clsObj, shortTitle) {
+function createClassTitleTd(clsObj) {
     var status_details = getStatusDetails(clsObj.status);
     var title_css_class = status_details.classes.join(" ");
-    var clsStatus = status_details['text'];
+    var clsStatus = status_details.text;
     var statusStrong = $j('<strong/>').text('[' + clsStatus + ']');
     return $j('<td/>', {
       'class': 'clsleft classname',
@@ -209,12 +218,12 @@ function createClassTitleTd(clsObj, shortTitle) {
         $j('<strong/>').text(clsObj.emailcode + '.'),
         ' ',
         $j('<span/>', {'class': title_css_class})
-            .text(shortTitle + ' ')
+            .text(getShortTitle(clsObj) + ' ')
             .append(statusStrong)
     );
 }
 
-function createSectionListTd(clsObj, shortTitle) {
+function createSectionListTd(clsObj) {
     var td = $j('<td/>', {
         'class': 'clsmiddle',
         'style': 'font-size: 12px',
@@ -232,7 +241,7 @@ function createSectionListTd(clsObj, shortTitle) {
     });
     return td;
 }
-function createTeacherListTd(clsObj, shortTitle) {
+function createTeacherListTd(clsObj) {
     var td = $j('<td/>', {
         'class': 'clsleft classname',
         'style': 'font-style: italic',
@@ -267,18 +276,18 @@ function createDeleteButtonTd(clsObj) {
     );
 }
 
-function createLinkButtonTd(clsObj, shortTitle, type, verb) {
+function createLinkButtonTd(clsObj, type, verb) {
     var href = '/manage/' + base_url + '/' + type + '/' + clsObj.id;
     return $j("<td/>", {'class': 'clsmiddle'}).append(
         $j("<a/>", {
             'href': href,
-            'title': verb + ' ' + shortTitle,
+            'title': verb + ' ' + getShortTitle(clsObj),
             'class': 'abutton',
             'style': 'white-space: nowrap;',
         }).text(verb)
     );
 }
-function createStatusButtonTd(clsObj, shortTitle) {
+function createStatusButtonTd(clsObj) {
     var clickjs = ('show_approve_class_popup('
             + clsObj.id + '); return false;');
 
@@ -287,7 +296,7 @@ function createStatusButtonTd(clsObj, shortTitle) {
     }).append(
         $j("<a/>", {
             'href': '#',
-            'title': 'Set the status of ' + shortTitle,
+            'title': 'Set the status of ' + getShortTitle(clsObj),
             'class': 'abutton',
             'style': 'white-space: nowrap;',
             'onclick': clickjs,
@@ -297,21 +306,15 @@ function createStatusButtonTd(clsObj, shortTitle) {
 
 function createClassRow(clsObj)
 {
-    var shortTitle = clsObj.title;
-    if (shortTitle.length > 40) {
-        shortTitle = shortTitle.substring(0, 40);
-        shortTitle = shortTitle.concat("...");
-    }
-
     var tr = $j(document.createElement('tr'));
-    (tr
-        .append(createClassTitleTd(clsObj, shortTitle))
-        .append(createSectionListTd(clsObj, shortTitle))
-        .append(createTeacherListTd(clsObj, shortTitle))
-        .append(createDeleteButtonTd(clsObj))
-        .append(createLinkButtonTd(clsObj, shortTitle, 'editclass', 'Edit'))
-        .append(createLinkButtonTd(clsObj, shortTitle, 'manageclass', 'Manage'))
-        .append(createStatusButtonTd(clsObj, shortTitle)));
+    tr.append(
+        createClassTitleTd(clsObj),
+        createSectionListTd(clsObj),
+        createTeacherListTd(clsObj),
+        createDeleteButtonTd(clsObj),
+        createLinkButtonTd(clsObj, 'editclass', 'Edit'),
+        createLinkButtonTd(clsObj, 'manageclass', 'Manage'),
+        createStatusButtonTd(clsObj));
 
     // Add in the CSRF onsubmit checker
     tr.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
