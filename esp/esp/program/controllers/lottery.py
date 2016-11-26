@@ -53,17 +53,36 @@ from django.conf import settings
 from django.db.models import Min
 import os
 import operator
+import zlib
+import base64
+from StringIO import StringIO
+
+class LotteryException(Exception):
+    """ Top level exception class for lottery related problems.  """
+    pass
+
+class LotterySectionException(LotteryException):
+    """ Something is wrong with a class section.    """
+    def __init__(self, section, msg, **kwargs):
+        super(LotteryException, self).__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+
+class LotterySubjectException(LotteryException):
+    """ Something is wrong with a class subject.    """
+    def __init__(self, subject, msg, **kwargs):
+        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
 
 class LotteryAssignmentController(object):
 
+    # map from default option key to (default value, help text)
+    # help text is false if it should not be displayed on a web interface (specifically, lottery frontend module)
     default_options = {
-        'Kp': 1.2,
-        'Ki': 1.1,
-        'check_grade': True,
-        'stats_display': False,
-        'directory': os.getenv("HOME"),
-        'use_student_apps': False,
-        'fill_low_priorities': False,
+        'Kp': (1.2, 'Assignment weight factor for priority students'),
+        'Ki': (1.1, 'Assignment weight factor for interested students'),
+        'check_grade': (True, 'Whether to validate grade constraints'),
+        'stats_display': (False, False),
+        'directory': (os.getenv("HOME"), False),
+        'use_student_apps': (False, 'Whether to use student application ranks'),
+        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority')
     }
 
     def __init__(self, program, **kwargs):
@@ -104,7 +123,7 @@ class LotteryAssignmentController(object):
         self.grade_range_exceptions = self.program.useGradeRangeExceptions()
         self.effective_priority_limit = self.real_priority_limit + 1 if self.grade_range_exceptions else self.real_priority_limit
 
-        self.options = LotteryAssignmentController.default_options.copy()
+        self.options = {key: value[0] for key, value in LotteryAssignmentController.default_options.items()}
         self.options.update(kwargs)
 
         self.now = datetime.now()
@@ -165,9 +184,31 @@ class LotteryAssignmentController(object):
             pref_array = numpy.array(prefs, dtype=numpy.uint32)
             student_ixs = self.student_indices[pref_array[:, 0]]
             section_ixs = self.section_indices[pref_array[:, 1]]
-            #   Check that we didn't look up invalid indices (which are set to -1).
+
+            #   - Missing student (this should never happen and would indicate an error in the code)
             assert numpy.min(student_ixs)>=0, "Got a preference for a student who doesn't exist!"
-            assert numpy.min(section_ixs)>=0, "Got a preference for a section which doesn't exist!"
+
+            #   - Missing section (this can happen due to factors outside the code's control)
+            if numpy.min(section_ixs) < 0:
+                #   Try to diagnose what is wrong with the sections we are not tracking
+                bad_section_id = pref_array[numpy.nonzero(section_ixs < 0)[0][0], 1]
+                #   Use .get(), since all class sections should be present in the database.
+                #   (If any does not exist, that is a problem with the code and should cause
+                #   a server error.)
+                bad_section = ClassSection.objects.get(id=bad_section_id)
+                if bad_section.status <= 0:
+                    raise LotterySectionException(bad_section, 'is not approved.')
+                elif bad_section.registration_status != 0:
+                    raise LotterySectionException(bad_section, 'is not open to registration.')
+                elif not bad_section.meeting_times.exists():
+                    raise LotterySectionException(bad_section, 'is not scheduled.')
+                elif bad_section.parent_class.status <= 0:
+                    raise LotterySubjectException(bad_section.parent_class, 'is not approved.')
+                elif bad_section.parent_class.parent_program != self.program:
+                    raise LotterySubjectException(bad_section.parent_class, 'does not belong to the right program.')
+                else:
+                    raise LotterySectionException(bad_section, 'is not associated with the lottery (unknown reason).')
+
             array[student_ixs, section_ixs] = True
 
     def initialize(self):
@@ -583,25 +624,10 @@ class LotteryAssignmentController(object):
     def display_stats(self, stats):
         logger.info('Lottery results for %s', self.program.niceName())
         logger.info('--------------------------------------')
-
-        logger.info('Distribution:')
-        for i, count in stats['hist_timeslots_filled'].items():
-            logger.info('%6d students got a schedule with %d filled slots', count, i)
-
-        logger.info('Counts:')
-        logger.info('%6d students applied to the lottery', stats['num_lottery_students'])
-        logger.info('%6d students were enrolled in at least 1 class', stats['num_enrolled_students'])
-        logger.info('%6d total enrollments', stats['num_registrations'])
-        logger.info('%6d available sections', stats['num_sections'])
-        logger.info('%6d sections were filled to capacity', stats['num_full_classes'])
-
-        logger.info('Ratios:')
-        if self.effective_priority_limit>1:
-            for i in range(1,self.effective_priority_limit+1):
-                logger.info('%2.2f%% of priority %s classes were enrolled', stats['overall_priority_%s_ratio' % i] * 100.0, i)
-        else:
-            logger.info('%2.2f%% of priority classes were enrolled', stats['overall_priority_ratio'] * 100.0)
-        logger.info('%2.2f%% of interested classes were enrolled', stats['overall_interest_ratio'] * 100.0)
+        for label, lines in self.extract_stats(stats):
+            logger.info('%s:', label.title())
+            for line in lines:
+                logger.info(line)
         """
         logger.info('Example results:')
         no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
@@ -615,6 +641,33 @@ class LotteryAssignmentController(object):
             cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
             logger.info('   - Interested classes: %s', ClassSection.objects.filter(id__in=list(cs_ids)))
             """
+
+    def extract_stats(self, stats):
+        sections = []
+
+        distribution = []
+        for i, count in stats['hist_timeslots_filled'].items():
+            distribution.append('%6d students got a schedule with %d filled slots' % (count, i))
+        sections.append(('distribution', distribution))
+
+        sections.append(('counts', [
+            '%6d students applied to the lottery' % stats['num_lottery_students'],
+            '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students'],
+            '%6d total enrollments' % stats['num_registrations'],
+            '%6d available sections' % stats['num_sections'],
+            '%6d sections were filled to capacity' % stats['num_full_classes'],
+        ]))
+
+        ratios = []
+        if self.effective_priority_limit>1:
+            for i in range(1,self.effective_priority_limit+1):
+                ratios.append('%2.2f%% of priority %s classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0, i))
+        else:
+            ratios.append('%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0))
+        ratios.append('%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0))
+        sections.append(('ratios', ratios))
+
+        return sections
 
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
@@ -696,6 +749,27 @@ class LotteryAssignmentController(object):
             old_registrations.delete()
         else:
             old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
+
+    def export_assignments(self):
+        def export_array(arr):
+            s = StringIO()
+            numpy.savetxt(s, arr)
+            return s.getvalue()
+
+        student_sections = export_array(self.student_sections)
+        student_ids = export_array(self.student_ids)
+        section_ids = export_array(self.section_ids)
+        return base64.b64encode(zlib.compress(student_sections + '|' + student_ids + '|' + section_ids))
+
+    def import_assignments(self, data):
+        data_parts = zlib.decompress(base64.b64decode(data)).split('|')
+
+        if len(data_parts) != 3:
+            raise ValueError('provided lottery_data is corrupted (doesn\'t contain three parts)')
+
+        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]))
+        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]))
+        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]))
 
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)
