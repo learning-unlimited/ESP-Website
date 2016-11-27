@@ -179,22 +179,24 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
               '%s.pdf' % file_base, '%s.png' % file_base])
 
 
+    out_file = file_base + '.' + type
     try:
-        if type is 'png' and not os.path.isfile(file_base+'.'+type):
-            #If the schedule is multiple pages (such as a schedule if the program is using barcode check-in), ImageMagick will generate files of the form file_base-n.png.  In this case, we will just return the first page.  Most of the time, if we expect something multi-page, we won't use PNG anyway; this is mostly for the benefit of the schedule printing script.
+        if type is 'png' and not os.path.isfile(out_file):
+            # If the schedule is multiple pages (such as a schedule if the
+            # program is using barcode check-in), ImageMagick will generate
+            # files of the form file_base-n.png.  In this case, we will just
+            # return the first page.  Most of the time, if we expect something
+            # multi-page, we won't use PNG anyway; this is mostly for the
+            # benefit of the schedule printing script.
             out_file = file_base + '-0.png'
-        else:
-            out_file = file_base + '.' + type
-        new_file     = open(out_file, 'rb')
-        new_contents = new_file.read()
-        new_file.close()
-
+        if not os.path.isfile(out_file):
+            raise ESPError('No output file %s found; try looking at the log '
+                           'file.' % out_file)
+        with open(out_file) as f:
+            return f.read()
     except:
-        raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
-
-    return new_contents
-
-
+        raise ESPError('Could not read contents of %s. (Hint: try looking at '
+                       'the log file)' % out_file)
 
 
 def get_rand_file_base():
