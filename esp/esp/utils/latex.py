@@ -71,7 +71,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 
     return gen_latex(rendered_source, filetype)
 
-def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
+def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
     """Generate the latex code.
 
     :param texcode:
@@ -86,10 +86,6 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel,
         The others return the compilation of texcode into that format.
     :type type:
         `str`, element of ('pdf', 'tex', 'log', 'svg', 'png')
-    :param remove_files:
-        True if intermediate build files should be removed, else False.
-    :type remove_files:
-        `bool`
     :param stdout:
         See subprocess.__doc__.
         Default is to redirect to os.devnull, which does not print output to stdout.
@@ -114,10 +110,10 @@ def gen_latex(texcode, type='pdf', remove_files=False, stdout=_devnull_sentinel,
         # parameter for `stderr`.
         stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
 
-        return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type, remove_files=remove_files)
+        return _gen_latex(texcode, stdout=stdout, stderr=stderr, type=type)
 
 
-def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
+def _gen_latex(texcode, stdout, stderr, type='pdf'):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
     if type == 'tex':
@@ -159,16 +155,12 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
         mime = 'image/svg+xml'
         check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
         check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
-        if remove_files:
-            os.remove('%s.pdf' % file_base)
 
     elif type == 'png':
         mime = 'image/png'
         check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
         check_call(['convert', '-density', '192',
               '%s.pdf' % file_base, '%s.png' % file_base])
-        if remove_files:
-            os.remove('%s.pdf' % file_base)
 
     else:
         raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))
@@ -178,8 +170,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
         tex_log_file = open(file_base+'.log')
         tex_log      = tex_log_file.read()
         tex_log_file.close()
-        if remove_files:
-            os.remove(file_base+'.log')
     except:
         tex_log      = ''
 
@@ -193,9 +183,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf', remove_files=False):
             new_file     = open(out_file, 'rb')
             new_contents = new_file.read()
             new_file.close()
-            if remove_files:
-                os.remove(out_file)
-                os.remove(file_base+TEX_EXT)
 
         except:
             raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
