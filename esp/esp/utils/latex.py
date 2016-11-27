@@ -53,19 +53,25 @@ TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 _devnull_sentinel = object()
 
-# File types that are valid outputs
-FILE_TYPES = ['pdf','log','tex','svg','png']
+# File types that are valid outputs, and the corresponding response mimetypes
+FILE_MIME_TYPES = {
+    'pdf': 'application/pdf',
+    'log': 'text/plain',
+    'tex': 'text/plain',
+    'svg': 'image/svg+xml',
+    'png': 'image/png',
+}
 
 
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """Render some tex source to latex.
     
     This will run the latex interpreter and generate the necessary file type,
-    which must be one of those from FILE_TYPES.
+    which must be one of those from FILE_MIME_TYPES.
     """
-    if filetype not in FILE_TYPES:
+    if filetype not in FILE_MIME_TYPES:
         raise ESPError('Invalid type received for latex generation: %s should '
-                       'be one of %s' % (type, FILE_TYPES))
+                       'be one of %s' % (type, FILE_MIME_TYPES))
 
     if context_dict is None: context_dict = {}
 
@@ -128,9 +134,10 @@ def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.S
 
 def _gen_latex(texcode, stdout, stderr, type='pdf'):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
+    mime = FILE_MIME_TYPES[type]
 
     if type == 'tex':
-        return HttpResponse(texcode, content_type='text/plain')
+        return HttpResponse(texcode, content_type=mime)
 
     # write to the LaTeX file
     with open(file_base+TEX_EXT, 'w') as texfile:
@@ -146,26 +153,18 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     check_call = partial(subprocess.check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
-    if type == 'pdf':
-        mime = 'application/pdf'
-        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+    retcode = call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
 
-    elif type == 'log':
-        mime = 'text/plain'
-        # Use `subprocess.call()`, not `subprocess.check_call()`, because the
-        # command doesn't need to succeed in order to read the generated .log
-        # file. In fact, for the use case of this type (trying to debug why
-        # compilation isn't working), it is likely that the command will fail.
-        call(['latex'] + latex_options + ['%s.tex' % file_base])
+    # If we're getting the log, an error is fine -- we're probably trying to
+    # debug one!
+    # TODO(benkraft): Return part of the log file here.
+    if type != 'log' and retcode:
+        raise ESPError("LaTeX failed; try looking at the log file.")
 
-    elif type == 'svg':
-        mime = 'image/svg+xml'
-        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+
+    if type == 'svg':
         check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
-
     elif type == 'png':
-        mime = 'image/png'
-        check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
         check_call(['convert', '-density', '192',
               '%s.pdf' % file_base, '%s.png' % file_base])
 
