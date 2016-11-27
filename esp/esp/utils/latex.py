@@ -87,7 +87,8 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
 
     rendered_source = t.render(context_dict)
 
-    return gen_latex(rendered_source, filetype)
+    contents = gen_latex(rendered_source, filetype)
+    return HttpResponse(contents, content_type=FILE_MIME_TYPES[filetype])
 
 
 def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
@@ -117,9 +118,9 @@ def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.S
     :type stderr:
         `int` or `file` or `None`
     :return:
-        The generated file.
+        The generated file contents.
     :rtype:
-        HttpResponse
+        `str`
     """
     with open(os.devnull, 'w') as devnull_file:
         # NOTE(jmoldow): `_devnull_sentinel` is private, and currently only the
@@ -134,10 +135,9 @@ def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.S
 
 def _gen_latex(texcode, stdout, stderr, type='pdf'):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
-    mime = FILE_MIME_TYPES[type]
 
     if type == 'tex':
-        return HttpResponse(texcode, content_type=mime)
+        return texcode
 
     # write to the LaTeX file
     with open(file_base+TEX_EXT, 'w') as texfile:
@@ -154,11 +154,21 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
     retcode = call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+    try:
+        with open('%s.log' % file_base) as f:
+            tex_log = f.read()
+    except Exception as e:
+        raise ESPError('Could not read log file; something has gone horribly '
+                       'wrong.  Error details: %s' % e)
 
-    # If we're getting the log, an error is fine -- we're probably trying to
-    # debug one!
-    # TODO(benkraft): Return part of the log file here.
-    if type != 'log' and retcode:
+    if type == 'log':
+        # If we're getting the log, an error is fine -- we're probably trying
+        # to debug one!
+        return tex_log
+    elif retcode:
+        # Otherwise, if there was an error, we want to exit now since things
+        # didn't work.
+        # TODO(benkraft): Return part of the log file here.
         raise ESPError("LaTeX failed; try looking at the log file.")
 
 
@@ -168,31 +178,21 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         check_call(['convert', '-density', '192',
               '%s.pdf' % file_base, '%s.png' % file_base])
 
+
     try:
-        tex_log_file = open(file_base+'.log')
-        tex_log      = tex_log_file.read()
-        tex_log_file.close()
+        if type is 'png' and not os.path.isfile(file_base+'.'+type):
+            #If the schedule is multiple pages (such as a schedule if the program is using barcode check-in), ImageMagick will generate files of the form file_base-n.png.  In this case, we will just return the first page.  Most of the time, if we expect something multi-page, we won't use PNG anyway; this is mostly for the benefit of the schedule printing script.
+            out_file = file_base + '-0.png'
+        else:
+            out_file = file_base + '.' + type
+        new_file     = open(out_file, 'rb')
+        new_contents = new_file.read()
+        new_file.close()
+
     except:
-        tex_log      = ''
+        raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
 
-    if type != 'log':
-        try:
-            if type is 'png' and not os.path.isfile(file_base+'.'+type):
-                #If the schedule is multiple pages (such as a schedule if the program is using barcode check-in), ImageMagick will generate files of the form file_base-n.png.  In this case, we will just return the first page.  Most of the time, if we expect something multi-page, we won't use PNG anyway; this is mostly for the benefit of the schedule printing script.
-                out_file = file_base + '-0.png'
-            else:
-                out_file = file_base + '.' + type
-            new_file     = open(out_file, 'rb')
-            new_contents = new_file.read()
-            new_file.close()
-
-        except:
-            raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
-
-    if type=='log':
-        new_contents = tex_log
-
-    return HttpResponse(new_contents, content_type=mime)
+    return new_contents
 
 
 
