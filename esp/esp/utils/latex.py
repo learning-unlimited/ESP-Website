@@ -34,26 +34,38 @@ Learning Unlimited, Inc.
 """
 """ This module will render latex code and return a rendered display. """
 
+import hashlib
 import os.path
 import os
-import subprocess
-from random import random
 from functools import partial
-import hashlib
+from random import random
+import shutil
+import subprocess
 import tempfile
-from esp.middleware import ESPError
+
+from django.conf import settings
 from django.http import HttpResponse
+from django.template import Template, loader
+
+from esp.middleware import ESPError
 
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 _devnull_sentinel = object()
 
+# File types that are valid outputs
+FILE_TYPES = ['pdf','log','tex','svg','png']
+
+
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
-    """ Render some tex source to latex. This will run the latex
-        interpreter and generate the necessary file type
-        (either pdf, tex, ps, dvi, or a log file)   """
-    from django.template import Template, loader
-    from django.conf import settings
+    """Render some tex source to latex.
+    
+    This will run the latex interpreter and generate the necessary file type,
+    which must be one of those from FILE_TYPES.
+    """
+    if filetype not in FILE_TYPES:
+        raise ESPError('Invalid type received for latex generation: %s should '
+                       'be one of %s' % (type, FILE_TYPES))
 
     if context_dict is None: context_dict = {}
 
@@ -70,6 +82,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     rendered_source = t.render(context_dict)
 
     return gen_latex(rendered_source, filetype)
+
 
 def gen_latex(texcode, type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
     """Generate the latex code.
@@ -123,12 +136,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     with open(file_base+TEX_EXT, 'w') as texfile:
         texfile.write(texcode.encode('utf-8'))
 
-    file_types = ['pdf','log','tex','svg','png']
-
-    # Get (sometimes-)necessary library files
-    from django.conf import settings
-    import shutil
-
     #   Set latex options
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
 
@@ -161,10 +168,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         check_call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
         check_call(['convert', '-density', '192',
               '%s.pdf' % file_base, '%s.png' % file_base])
-
-    else:
-        raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))
-
 
     try:
         tex_log_file = open(file_base+'.log')
