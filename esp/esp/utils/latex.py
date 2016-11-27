@@ -147,17 +147,19 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
 
     # All command calls will use the same values for the cwd, stdout, and
-    # stderr arguments, so we define a partially-applied callable check_call()
-    # that makes it easier to call subprocess.check_call() with these values
-    # (and similarly for call()).
-    check_call = partial(subprocess.check_call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
+    # stderr arguments, so we define a partially-applied callable call() that
+    # makes it easier to call subprocess.call() with these values.
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
     retcode = call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+
     try:
         with open('%s.log' % file_base) as f:
             tex_log = f.read()
     except Exception as e:
+        # In this case, there's not much to do except error -- pdflatex will
+        # always write a log if it succeeds, or even if it fails due to bad
+        # code or for almost any other reason.
         raise ESPError('Could not read log file; something has gone horribly '
                        'wrong.  Error details: %s' % e)
 
@@ -173,10 +175,14 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
 
 
     if type == 'svg':
-        check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base])
+        retcode = call(['inkscape', '%s.pdf' % file_base, '-l',
+                        '%s.svg' % file_base])
     elif type == 'png':
-        check_call(['convert', '-density', '192',
-              '%s.pdf' % file_base, '%s.png' % file_base])
+        retcode = call(['convert', '-density', '192', '%s.pdf' % file_base,
+                        '%s.png' % file_base])
+
+    if retcode:
+        raise ESPError("Postprocessing failed; try downloading as PDF.")
 
 
     out_file = file_base + '.' + type
