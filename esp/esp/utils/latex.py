@@ -170,8 +170,17 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     elif retcode:
         # Otherwise, if there was an error, we want to exit now since things
         # didn't work.
-        # TODO(benkraft): Return part of the log file here.
-        raise ESPError("LaTeX failed; try looking at the log file.")
+        # TODO(benkraft): Try to extract the actual error out.
+        raise ESPError('LaTeX failed; try looking at the log file.  Here are '
+                       'the last 1000 characters of the log: %s'
+                       % tex_log[-1000:])
+    elif 'No pages if output' in tex_log:
+        # One common problem (which LaTeX doesn't treat as an error) is
+        # selecting no students, which results in no output (thus a nonexistent
+        # file, and an error converting or reading it later).  We'll just exit
+        # right here in that case.
+        raise ESPError('LaTeX generated no output.  Are you sure you selected '
+                       'any users?')
 
 
     if type == 'svg':
@@ -186,23 +195,22 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
 
 
     out_file = file_base + '.' + type
-    try:
-        if type is 'png' and not os.path.isfile(out_file):
-            # If the schedule is multiple pages (such as a schedule if the
-            # program is using barcode check-in), ImageMagick will generate
-            # files of the form file_base-n.png.  In this case, we will just
-            # return the first page.  Most of the time, if we expect something
-            # multi-page, we won't use PNG anyway; this is mostly for the
-            # benefit of the schedule printing script.
-            out_file = file_base + '-0.png'
-        if not os.path.isfile(out_file):
-            raise ESPError('No output file %s found; try looking at the log '
-                           'file.' % out_file)
-        with open(out_file) as f:
-            return f.read()
-    except:
-        raise ESPError('Could not read contents of %s. (Hint: try looking at '
-                       'the log file)' % out_file)
+    if type is 'png' and not os.path.isfile(out_file):
+        # If the schedule is multiple pages (such as a schedule if the program
+        # is using barcode check-in), ImageMagick will generate files of the
+        # form file_base-n.png.  In this case, we will just return the first
+        # page.  Most of the time, if we expect something multi-page, we won't
+        # use PNG anyway; this is mostly for the benefit of the schedule
+        # printing script.
+        out_file = file_base + '-0.png'
+    if not os.path.isfile(out_file):
+        # We probably shouldn't get here -- this means either LaTeX failed,
+        # LaTeX generated no output, or a postprocessor failed, all of which we
+        # handle above.  But we'll at least return a specific error.
+        raise ESPError('No output file %s found; try looking at the log '
+                       'file.' % out_file)
+    with open(out_file) as f:
+        return f.read()
 
 
 def get_rand_file_base():
