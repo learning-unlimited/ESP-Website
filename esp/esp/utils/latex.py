@@ -39,7 +39,6 @@ import os.path
 import os
 from functools import partial
 from random import random
-import shutil
 import subprocess
 import tempfile
 
@@ -52,6 +51,7 @@ from esp.middleware import ESPError
 TEX_TEMP = tempfile.gettempdir()
 TEX_EXT  = '.tex'
 _devnull_sentinel = object()
+LATEX_OPTIONS = ['-interaction', 'nonstopmode', '-halt-on-error']
 
 # File types that are valid outputs, and the corresponding response mimetypes
 FILE_MIME_TYPES = {
@@ -65,7 +65,7 @@ FILE_MIME_TYPES = {
 
 def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """Render some tex source to latex.
-    
+
     This will run the latex interpreter and generate the necessary file type,
     which must be one of those from FILE_MIME_TYPES.
     """
@@ -73,7 +73,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
         raise ESPError('Invalid type received for latex generation: %s should '
                        'be one of %s' % (type, FILE_MIME_TYPES))
 
-    if context_dict is None: context_dict = {}
+    context_dict = context_dict or {}
 
     if isinstance(filepath, Template):
         t = filepath
@@ -143,15 +143,12 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     with open(file_base+TEX_EXT, 'w') as texfile:
         texfile.write(texcode.encode('utf-8'))
 
-    #   Set latex options
-    latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
-
     # All command calls will use the same values for the cwd, stdout, and
     # stderr arguments, so we define a partially-applied callable call() that
     # makes it easier to call subprocess.call() with these values.
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
-    retcode = call(['pdflatex'] + latex_options + ['%s.tex' % file_base])
+    retcode = call(['pdflatex'] + LATEX_OPTIONS + ['%s.tex' % file_base])
 
     try:
         with open('%s.log' % file_base) as f:
@@ -160,6 +157,9 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         # In this case, there's not much to do except error -- pdflatex will
         # always write a log if it succeeds, or even if it fails due to bad
         # code or for almost any other reason.
+        # TODO(benkraft): We could also return the stdout of the process,
+        # although it's a little tricky since we have to make sure to buffer
+        # the pipe correctly -- see c42bd1b9.
         raise ESPError('Could not read log file; something has gone horribly '
                        'wrong.  Error details: %s' % e)
 
@@ -170,8 +170,10 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
     elif retcode:
         # Otherwise, if there was an error, we want to exit now since things
         # didn't work.
-        # TODO(benkraft): Try to extract the actual error out.
-        raise ESPError('LaTeX failed; try looking at the log file.  Here are '
+        # TODO(benkraft): Try to extract the actual error out of pdflatex's
+        # various output.  Or use stdout, which is a bit less noisy.
+        raise ESPError('LaTeX failed with code %s; try looking at the log '
+                       'file.  Here are '
                        'the last 1000 characters of the log: %s'
                        % tex_log[-1000:])
     elif 'No pages if output' in tex_log:
@@ -182,7 +184,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError('LaTeX generated no output.  Are you sure you selected '
                        'any users?')
 
-
     if type == 'svg':
         retcode = call(['inkscape', '%s.pdf' % file_base, '-l',
                         '%s.svg' % file_base])
@@ -192,7 +193,6 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
 
     if retcode:
         raise ESPError("Postprocessing failed; try downloading as PDF.")
-
 
     out_file = file_base + '.' + type
     if type is 'png' and not os.path.isfile(out_file):
@@ -220,8 +220,3 @@ def get_rand_file_base():
         rand = hashlib.md5(str(random())).hexdigest()
 
     return rand
-
-
-
-
-
