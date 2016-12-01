@@ -219,6 +219,8 @@ class DummyWidget(widgets.Input):
         return mark_safe(output)
 
 class NavStructureWidget(forms.Widget):
+    # TODO(benkraft): Convert this to an actual static script so we don't have
+    # to interpolate a pile of JS here.
     template_text = """
 <input type="hidden" id="id_{{ name }}" name="{{ name }}" value="{{ value }}" />
 <div id="{{ name }}_options">
@@ -242,10 +244,7 @@ function {{ name }}_add_link(obj, data)
     var entry_list = obj.children("ul");
     entry_list.append($j("<li />"));
     var entry = entry_list.children().last();
-    entry.append($j("<span>Text: </span>"));
-    entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
-    entry.append($j("<span>Link: </span>"));
-    entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    %(add_link_body)s
 
     var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
     delete_button.click({{ name }}_delete_link);
@@ -271,12 +270,12 @@ function {{ name }}_add_tab(obj, data)
     //  console.log("Links: ");
     for (var j = 0; j < data.links.length; j++)
     {
-        {{ name }}_add_link(category_li, {text: data.links[j].text, link: data.links[j].link})
+        {{ name }}_add_link(category_li, data.links[j]);
     }
     var add_button = $j("<button class='btn btn-mini'>Add link</button>");
     add_button.click(function (event) {
         event.preventDefault();
-        {{ name }}_add_link($j(this).parent(), {text: "", link: ""});
+        {{ name }}_add_link($j(this).parent(), {text: "", link: "", icon: ""});
     });
     category_li.append(add_button);
 }
@@ -289,8 +288,10 @@ function {{ name }}_save()
             header_link: $j(element).children(".data_header_link").val(),
             links: $j(element).children("ul").children("li").map(function (index, element) {
                 return {
+                    // note the first one may be undefined, which is fine.
+                    icon: $j(element).children(".data_icon").val(),
                     link: $j(element).children(".data_link").val(),
-                    text: $j(element).children(".data_text").val()
+                    text: $j(element).children(".data_text").val(),
                 };
             }).get()
         };
@@ -310,7 +311,7 @@ function {{ name }}_setup()
     var add_button = $j("<button class='btn btn-mini btn-primary'>Add tab</button>");
     add_button.click(function (event) {
         event.preventDefault();
-        {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: ""}]});
+        {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: "", icon: ""}]});
     });
     anchor_ul.parent().append(add_button);
 
@@ -330,15 +331,311 @@ $j(document).ready({{ name }}_setup);
 </style>
 """
 
+    # We separate out this part so subclasses can override it.
+    add_link_body = """
+        entry.append($j("<span>Text: </span>"));
+        entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
+        entry.append($j("<span>Link: </span>"));
+        entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    """
+
     def render(self, name, value, attrs=None):
         if value is None: value = ''
         final_attrs = self.build_attrs(attrs, name=name)
         context = {}
         context['name'] = name
         context['value'] = json.dumps(value)
-        template = Template(NavStructureWidget.template_text)
+        template = Template(self.template_text % {
+            'add_link_body': self.add_link_body})
         return template.render(Context(context))
 
     def value_from_datadict(self, data, files, name):
         result = json.loads(data[name])
         return result
+
+
+_ICONS = [  # copied from http://getbootstrap.com/components/
+    "asterisk",
+    "plus",
+    "euro",
+    "eur",
+    "minus",
+    "cloud",
+    "envelope",
+    "pencil",
+    "glass",
+    "music",
+    "search",
+    "heart",
+    "star",
+    "star-empty",
+    "user",
+    "film",
+    "th-large",
+    "th",
+    "th-list",
+    "ok",
+    "remove",
+    "zoom-in",
+    "zoom-out",
+    "off",
+    "signal",
+    "cog",
+    "trash",
+    "home",
+    "file",
+    "time",
+    "road",
+    "download-alt",
+    "download",
+    "upload",
+    "inbox",
+    "play-circle",
+    "repeat",
+    "refresh",
+    "list-alt",
+    "lock",
+    "flag",
+    "headphones",
+    "volume-off",
+    "volume-down",
+    "volume-up",
+    "qrcode",
+    "barcode",
+    "tag",
+    "tags",
+    "book",
+    "bookmark",
+    "print",
+    "camera",
+    "font",
+    "bold",
+    "italic",
+    "text-height",
+    "text-width",
+    "align-left",
+    "align-center",
+    "align-right",
+    "align-justify",
+    "list",
+    "indent-left",
+    "indent-right",
+    "facetime-video",
+    "picture",
+    "map-marker",
+    "adjust",
+    "tint",
+    "edit",
+    "share",
+    "check",
+    "move",
+    "step-backward",
+    "fast-backward",
+    "backward",
+    "play",
+    "pause",
+    "stop",
+    "forward",
+    "fast-forward",
+    "step-forward",
+    "eject",
+    "chevron-left",
+    "chevron-right",
+    "plus-sign",
+    "minus-sign",
+    "remove-sign",
+    "ok-sign",
+    "question-sign",
+    "info-sign",
+    "screenshot",
+    "remove-circle",
+    "ok-circle",
+    "ban-circle",
+    "arrow-left",
+    "arrow-right",
+    "arrow-up",
+    "arrow-down",
+    "share-alt",
+    "resize-full",
+    "resize-small",
+    "exclamation-sign",
+    "gift",
+    "leaf",
+    "fire",
+    "eye-open",
+    "eye-close",
+    "warning-sign",
+    "plane",
+    "calendar",
+    "random",
+    "comment",
+    "magnet",
+    "chevron-up",
+    "chevron-down",
+    "retweet",
+    "shopping-cart",
+    "folder-close",
+    "folder-open",
+    "resize-vertical",
+    "resize-horizontal",
+    "hdd",
+    "bullhorn",
+    "bell",
+    "certificate",
+    "thumbs-up",
+    "thumbs-down",
+    "hand-right",
+    "hand-left",
+    "hand-up",
+    "hand-down",
+    "circle-arrow-right",
+    "circle-arrow-left",
+    "circle-arrow-up",
+    "circle-arrow-down",
+    "globe",
+    "wrench",
+    "tasks",
+    "filter",
+    "briefcase",
+    "fullscreen",
+    "dashboard",
+    "paperclip",
+    "heart-empty",
+    "link",
+    "phone",
+    "pushpin",
+    "usd",
+    "gbp",
+    "sort",
+    "sort-by-alphabet",
+    "sort-by-alphabet-alt",
+    "sort-by-order",
+    "sort-by-order-alt",
+    "sort-by-attributes",
+    "sort-by-attributes-alt",
+    "unchecked",
+    "expand",
+    "collapse-down",
+    "collapse-up",
+    "log-in",
+    "flash",
+    "log-out",
+    "new-window",
+    "record",
+    "save",
+    "open",
+    "saved",
+    "import",
+    "export",
+    "send",
+    "floppy-disk",
+    "floppy-saved",
+    "floppy-remove",
+    "floppy-save",
+    "floppy-open",
+    "credit-card",
+    "transfer",
+    "cutlery",
+    "header",
+    "compressed",
+    "earphone",
+    "phone-alt",
+    "tower",
+    "stats",
+    "sd-video",
+    "hd-video",
+    "subtitles",
+    "sound-stereo",
+    "sound-dolby",
+    "sound-5-1",
+    "sound-6-1",
+    "sound-7-1",
+    "copyright-mark",
+    "registration-mark",
+    "cloud-download",
+    "cloud-upload",
+    "tree-conifer",
+    "tree-deciduous",
+    "cd",
+    "save-file",
+    "open-file",
+    "level-up",
+    "copy",
+    "paste",
+    "alert",
+    "equalizer",
+    "king",
+    "queen",
+    "pawn",
+    "bishop",
+    "knight",
+    "baby-formula",
+    "tent",
+    "blackboard",
+    "bed",
+    "apple",
+    "erase",
+    "hourglass",
+    "lamp",
+    "duplicate",
+    "piggy-bank",
+    "scissors",
+    "bitcoin",
+    "btc",
+    "xbt",
+    "yen",
+    "jpy",
+    "ruble",
+    "rub",
+    "scale",
+    "ice-lolly",
+    "ice-lolly-tasted",
+    "education",
+    "option-horizontal",
+    "option-vertical",
+    "menu-hamburger",
+    "modal-window",
+    "oil",
+    "grain",
+    "sunglasses",
+    "text-size",
+    "text-color",
+    "text-background",
+    "object-align-top",
+    "object-align-bottom",
+    "object-align-horizontal",
+    "object-align-left",
+    "object-align-vertical",
+    "object-align-right",
+    "triangle-right",
+    "triangle-left",
+    "triangle-bottom",
+    "triangle-top",
+    "console",
+    "superscript",
+    "subscript",
+    "menu-left",
+    "menu-right",
+    "menu-down",
+    "menu-up",
+]
+
+class NavStructureWidgetWithIcons(NavStructureWidget):
+    add_link_body = """
+        entry.append($j("<span>Icon: </span>"));
+        var select = $j("<select class='data_icon nav_secondary_field input-small' />");
+        select.append($j("<option value=''" +
+                         (data.icon ? "" : " selected") +
+                         ">(none)</option>"));
+        %(entries)s
+        entry.append(select);
+        %(super_add_link_body)s
+    """ % {
+        'super_add_link_body': NavStructureWidget.add_link_body,
+        'entries': '\n'.join('''
+            select.append($j("<option value='%(icon)s'" +
+                             (data.icon === "%(icon)s" ? " selected" : "") +
+                             ">icon-%(icon)s</option>"));'''
+            % {'icon': icon}
+            for icon in _ICONS),
+    }
