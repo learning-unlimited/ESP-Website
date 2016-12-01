@@ -72,6 +72,47 @@
 </form>
 </div>
 
+<script>
+
+window.onload=changeEmail;
+
+function changeEmail()
+{
+
+
+
+        var emailid = document.getElementById('id_email').value;
+
+
+
+        var newemailid="";
+
+        for(var i =0 ;i<emailid.length ; i++)
+        {
+                if(emailid[i] === ' ')
+                {
+
+                        newemailid=newemailid + "+";
+                }
+
+                else
+                {
+                        newemailid=newemailid + emailid[i];
+                }
+        }
+
+
+
+        document.getElementById('id_email').value = newemailid ;
+
+        var iuyt = document.getElementById('id_email').value ;
+
+        document.getElementById('id_confirm_email').value= iuyt;
+}
+
+</script>
+
+
 <script type="text/javascript">
 <!--
   document.getElementById('id_first_name').focus();
