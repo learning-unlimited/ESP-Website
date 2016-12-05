@@ -1,16 +1,17 @@
 {% load markup %}
 
 <div class="qsd_bits hidden">
-    <div class="qsd_header qsd_bits hidden" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
+    <div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
         {% if qsdrec.id %}
-            This is editable text.  Click here to edit the text; click outside the box to save changes.
+            This is editable text.
         {% else %}
-            This is a placeholder for editable text that has not yet been added.  Click here to edit the text; click outside the box to save changes.
+            This is a placeholder for editable text that has not yet been added.
         {% endif %}
+        Click here to edit the text.
     </div>
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
+        <button type="button" class="btn btn-success" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', true);">Save changes</button> <button type="button" class="btn btn-danger" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', false);">Cancel</button>
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
-                  onblur="qsd_inline_upload('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');"
                   class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
                   name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
         {% comment %}

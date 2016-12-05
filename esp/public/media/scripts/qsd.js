@@ -22,6 +22,7 @@ function qsd_inline_edit(qsd_url, edit_id)
 {
     //  Switch the visibility of the edit and view areas.
     document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_visible";
+    $j("#inline_edit_msg_" + edit_id).hide();
     document.getElementById("qsd_content_" + edit_id).focus();
     document.getElementById("inline_qsd_" + edit_id).className = "hidden";
 }
@@ -54,15 +55,18 @@ function qsd_send_command(qsd_url, edit_id, postdata)
     $j.post("/varnish/purge_page", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrf_token()});
 }
 
-function qsd_inline_upload(qsd_url, edit_id)
+function qsd_inline_finish(qsd_url, edit_id, do_upload)
 {
     //  Switch the visibility of the edit and view areas.
     document.getElementById("inline_edit_" + edit_id).className = "hidden";
+    $j("#inline_edit_msg_" + edit_id).show();
     document.getElementById("inline_qsd_" + edit_id).className = "qsd_view_visible";
 
-    var content = document.getElementById("qsd_content_" + edit_id).value;
-    var postdata = {cmd: "update", url: qsd_url, data: content};
-    qsd_send_command(qsd_url, edit_id, postdata);
+    if (do_upload) {
+        var content = document.getElementById("qsd_content_" + edit_id).value;
+        var postdata = {cmd: "update", url: qsd_url, data: content};
+        qsd_send_command(qsd_url, edit_id, postdata);
+    }
 }
 
 function qsd_inline_update(qsd_url, edit_id, data)
