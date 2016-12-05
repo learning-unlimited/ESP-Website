@@ -60,25 +60,20 @@ content_html:
     displayName: 'User Search'
 });
 
-ESP.registerAdminModule({
-    content_html:
-        currentProgram ? (
+if (currentProgram) {
+    ESP.registerAdminModule({
+        content_html:
             '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
             '<div class="input-append">' +
             '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
             '<input type="submit" id="class_search_submit" name="class_search_submit" value="&raquo;" class="btn btn-default" />' +
             '</div>' +
-            '</form>'
-        ) : (
-            '<small><a href="/manage/programs/">Manage a program</a> ' +
-            'and click "Make Current Program" to activate this module.</small>'
-        ),
-    name: 'class_search',
-    displayName: 'Class Search' + (
-        currentProgram ? (
+            '</form>',
+        name: 'class_search',
+        displayName: 'Class Search' +
             ' <small>(' + currentProgram.name + ')</small>'
-        ) : '')
-});
+    });
+}
 
 ESP.registerAdminModule({
     content_html: '    <a href="/admin/">Administration pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a><br /><a href="/themes/">Theme settings</a>',
