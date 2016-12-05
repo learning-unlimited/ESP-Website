@@ -31,7 +31,7 @@
 
     {% block jquery %}
     {% block jquery_version %}
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"> </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.4/jquery.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     {% endblock jquery_version %}
     {% block jquery_cookie_version %}
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
