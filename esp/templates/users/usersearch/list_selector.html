@@ -59,8 +59,8 @@
                 <li><button type="button" class="btn btn-info commpanel_show_all">Show more list options</button><button type="button" class="btn btn-info commpanel_show_preferred commpanel_hidden">Show fewer list options</button></li></ul>
             </div>
             {% endfor %}
-            <button type="button" class="btn recipient_step_button" id="recipient_list_back">Go back</button>
-            <button type="button" class="btn recipient_step_button" id="recipient_list_next">Add filters</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_list_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_list_next">Add filters</button>
             <button type="button" class="btn btn-primary recipient_step_button" id="recipient_list_done">Continue</button>
         </div>
 
@@ -121,7 +121,7 @@
 
             </div>
 
-            <button type="button" class="btn recipient_step_button" id="recipient_filter_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
             <button type="button" class="btn btn-info recipient_step_button" id="recipient_filter_checklist">Recipient checklist</button>
@@ -186,8 +186,8 @@
             </ul>
             </div>
             <p>&nbsp;</p>
-            <button type="button" class="btn recipient_step_button" id="combo_options_back">Go back</button>
-            <button type="button" class="btn recipient_step_button" id="combo_options_next">Add filters</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_options_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_options_next">Add filters</button>
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_options_done">Continue</button>
         </div>
 
@@ -247,10 +247,10 @@
 
             </div>
 
-            <button type="button" class="btn recipient_step_button" id="combo_filter_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
-            <button type="button" class="btn recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
             {% endif %}
             <button type="button" class="btn btn-primary recipient_step_button" id="combo_filter_done">Continue</button>
         </div>
