@@ -823,9 +823,13 @@ class Program(models.Model, CustomFormsLinkModel):
                 # second most current: program coming up in <100 years
                 # tiebreak by soonest
                 return (1, start)
-            else:
+            elif start <= now:
                 # past programs; tiebreak by latest
                 return (2, now - end)
+            else:
+                # far future programs, which must be for testing: tiebreak by
+                # soonest
+                return (3, start)
         programs = Program.objects.all()
         if programs:
             return min(programs, key=currentness_penalty)
