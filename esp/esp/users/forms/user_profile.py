@@ -204,7 +204,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
-        if Tag.getTag('show_student_graduation_years_not_grades'):
+        if Tag.getBooleanTag('show_student_graduation_years_not_grades'):
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:

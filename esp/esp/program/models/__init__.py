@@ -1156,8 +1156,7 @@ class SplashInfo(models.Model):
 
     def pretty_version(self, attr_name):
         #   Look up choices
-        tag_data = Tag.getTag('splashinfo_choices', target=self.program)
-        if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
+        tag_data = Tag.getProgramTag('splashinfo_choices', self.program)
 
         #   Check for matching item in list of choices
         if tag_data:
