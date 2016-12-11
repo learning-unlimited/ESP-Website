@@ -369,7 +369,7 @@ def manage(cmd):
     if basecmd in ["shell", "shell_plus"]:
         interactive(env.rbase + "esp/manage.py " + cmd)
     else:
-        if basecmd.startswith("runserver"):
+        if basecmd.startswith("runserver") and cmd == basecmd:
             print "*** WARNING: 'fab manage:runserver' won't work right. ***"
             print "***            use 'fab runserver' instead.           ***"
         with cd(env.rbase + "esp"):
