@@ -53,7 +53,7 @@ content_html:
     '<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
     '<div class="input-append">' +
     '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" />' +
-    '<input type="submit" id="user_search_submit" name="search_submit" value="&raquo;" class="btn btn-default" />' +
+    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
     '</div>' +
     '</form>',
     name: 'user_search',
@@ -66,7 +66,7 @@ if (currentProgram) {
             '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
             '<div class="input-append">' +
             '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
-            '<input type="submit" id="class_search_submit" name="class_search_submit" value="&raquo;" class="btn btn-default" />' +
+            '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
             '</div>' +
             '</form>',
         name: 'class_search',
