@@ -37,7 +37,7 @@ class ThemesTest(TestCase):
         """ Check that the ThemeController says we have the themes we expect to have. """
 
         tc = ThemeController()
-        names_ref = ['bigpicture', 'barebones', 'circles', 'floaty', 'fruitsalad']
+        names_ref = ['barebones', 'bigpicture', 'circles', 'floaty', 'fruitsalad']
         names_tc = tc.get_theme_names()
         self.assertEqual(set(names_ref), set(names_tc))
 
