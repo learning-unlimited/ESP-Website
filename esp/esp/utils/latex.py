@@ -71,7 +71,7 @@ def render_to_latex(filepath, context_dict=None, filetype='pdf'):
     """
     if filetype not in FILE_MIME_TYPES:
         raise ESPError('Invalid type received for latex generation: %s should '
-                       'be one of %s' % (type, FILE_MIME_TYPES))
+                       'be one of %s' % (filetype, ', '.join(FILE_MIME_TYPES)))
 
     context_dict = context_dict or {}
 
@@ -175,8 +175,8 @@ def _gen_latex(texcode, stdout, stderr, type='pdf'):
         raise ESPError('LaTeX failed with code %s; try looking at the log '
                        'file.  Here are '
                        'the last 1000 characters of the log: %s'
-                       % tex_log[-1000:])
-    elif 'No pages if output' in tex_log:
+                       % (retcode, tex_log[-1000:]))
+    elif 'No pages of output' in tex_log:
         # One common problem (which LaTeX doesn't treat as an error) is
         # selecting no students, which results in no output (thus a nonexistent
         # file, and an error converting or reading it later).  We'll just exit
