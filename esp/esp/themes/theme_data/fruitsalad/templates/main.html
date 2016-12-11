@@ -78,7 +78,7 @@
     <div id="page" class="{{ request.path|extract_theme }}">
     <div id="tab_sidebar">
       <ul id="menu">
-      <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
+      <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/{% if theme.front_page_style == "bubblesfront.html" %}about/welcome.html{% endif %}"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
       {% with request.path|get_nav_category as category %}
       {% for item in category.links %}
       <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
