@@ -54,7 +54,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from argcache import cache_function, wildcard
+from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
@@ -787,13 +787,62 @@ class Program(models.Model, CustomFormsLinkModel):
                 result.append(ts_day)
         return result
 
+    def datetime_range(self):
+        slots = self.getTimeSlots()
+        if slots:
+            return (min(slots).start, max(slots).end)
+        return None
+
+    # @staticmethod --- applied below after the depend_on_model call
+    @cache_function_for(60*60*24)
+    def current_program():
+        """ Guess the "current program", which is the first of the following programs that exists:
+
+        - the shortest program such that the current time is between the
+          start of its first timeslot and the end of its last timeslot
+        - the program in the future (<100 years) that will start the soonest
+        - the program in the past that ended the most recently
+        """
+        now = datetime.now()
+        far_future = now + timedelta(days=36500)
+        def currentness_penalty(program):
+            # The lower the return value (lexicographically), the more
+            # current a program is.
+            if "test" in program.name.lower():
+                return (9001, None)
+
+            datetime_range = program.datetime_range()
+            if datetime_range is None:
+                return (1337, None)
+            start, end = datetime_range
+            if start <= now <= end:
+                # most current: a program running now.
+                # tiebreak by shortest
+                return (0, (end - start))
+            elif now <= start <= far_future:
+                # second most current: program coming up in <100 years
+                # tiebreak by soonest
+                return (1, start)
+            elif start <= now:
+                # past programs; tiebreak by latest
+                return (2, now - end)
+            else:
+                # far future programs, which must be for testing: tiebreak by
+                # soonest
+                return (3, start)
+        programs = Program.objects.all()
+        if programs:
+            return min(programs, key=currentness_penalty)
+        return None
+    current_program.depend_on_model('cal.Event')
+    current_program = staticmethod(current_program)
+
     def date_range(self):
         """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
-        dates = self.getTimeSlots()
+        datetime_range = self.datetime_range()
 
-        if dates:
-            d1 = min(dates).start
-            d2 = max(dates).end
+        if datetime_range:
+            d1, d2 = datetime_range
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
