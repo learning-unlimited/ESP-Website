@@ -9,7 +9,7 @@
 
 <form method="POST">{% csrf_token %}
 {{ form.as_p }}
-<input type="submit" value="Submit" />
+<input type="submit" value="Submit" class="btn btn-primary" />
 </form>
 
 {% if status == 'invalid user' %}
