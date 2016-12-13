@@ -157,17 +157,20 @@ var QueryBuilder = React.createClass({
                  filters={this.allFilters()}
                  filterNames={this.allFilterNames()} />
       <button onClick={this.submit} className="qb-input btn btn-primary">
-        Search
+        <span className="glyphicon glyphicon-search" aria-hidden="true" />
+        &nbsp;Search
       </button>
       <button title="search and randomize results"
               onClick={this.submitRandom}
               className="qb-input btn btn-default">
-        Randomize
+        <span className="glyphicon glyphicon-random" aria-hidden="true" />
+        &nbsp;Randomize
       </button>
       <button title="jump to manage page for a random result"
               onClick={this.submitLucky}
               className="qb-input btn btn-default">
-        I'm Feeling Lucky
+        <span className="glyphicon glyphicon-gift" aria-hidden="true" />
+        &nbsp;I'm Feeling Lucky
       </button>
     </div>;
   },
@@ -247,8 +250,9 @@ var QueryNode = React.createClass({
     var removeButton = null;
     if (this.props.onRemove) {
       removeButton = <button onClick={this.props.onRemove}
-                             className="qb-input btn btn-default">
-        -
+                             aria-label="Remove"
+                             className="qb-input btn btn-danger">
+        <span className="glyphicon glyphicon-trash glyphicon-btn-height" aria-hidden="true" />
       </button>;
     }
     return <div>
@@ -688,8 +692,9 @@ var BooleanOp = React.createClass({
         {children}
         <li>
           <button onClick={this.handleAdd}
-                  className="qb-input btn btn-default">
-            +
+                  aria-label="Add"
+                  className="qb-input btn btn-success">
+            <span className="glyphicon glyphicon-plus glyphicon-btn-height" aria-hidden="true" />
           </button>
         </li>
       </ul>
