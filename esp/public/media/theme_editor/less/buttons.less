@@ -59,11 +59,19 @@
 // Disabled state
 .btn.disabled,
 .btn[disabled] {
-  cursor: default;
+  cursor: not-allowed; // backported
   background-color: darken(@white, 10%);
   background-image: none;
   .opacity(65);
   .box-shadow(none);
+
+  // override/suppress hover effect on disabled buttons;
+  // backported from future bootstrap
+  &:hover,
+  &:focus,
+  &.focus {
+    color: @grayDark;
+  }
 }
 
 
