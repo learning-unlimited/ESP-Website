@@ -9,7 +9,7 @@ To deploy a new site, first make sure you know:
 #. the hostname the chapter prefers
 #. the chapter's contact email address
 #. the group's name (e.g. "MIT ESP" or "Yale Splash")
-#. the chapter's preferred theme
+#. the chapter's preferred `theme <../admin/available_themes.rst>`_
 
 Then ssh to ``diogenes``, grab the latest version of
 ``deploy/server_setup/new_site.sh``, ``cd`` to ``/lu/sites``, and
