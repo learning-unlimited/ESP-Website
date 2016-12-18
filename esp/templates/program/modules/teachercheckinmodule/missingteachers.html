@@ -157,7 +157,8 @@
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
-            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}" 
+            <span class="message"></span>
+            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             Already checked-in

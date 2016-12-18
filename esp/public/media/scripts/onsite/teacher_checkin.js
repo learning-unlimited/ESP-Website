@@ -50,7 +50,7 @@ $j(function(){
     });
 
     function updateSelected(scroll){
-        var buttons = $j(".checkin");
+        var buttons = $j('.checkin:enabled');
         if(selected >= buttons.length)
             selected = buttons.length-1;
         if(selected < 0)
@@ -71,7 +71,7 @@ $j(function(){
     }
     updateSelected(false);
 
-    function checkIn(username, callback, undo){
+    function checkIn(username, callback, undo, errorCallback){
         refresh_csrf_cookie();
         var data = {teacher: username, csrfmiddlewaretoken: csrf_token()};
         if(undo)
@@ -79,24 +79,37 @@ $j(function(){
         $j.post('ajaxteachercheckin', data, "json").success(callback)
         .error(function(){
             alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+            if (errorCallback) {
+                errorCallback();
+            }
         });
     }
 
-    function undoCheckIn(username, callback){
-        checkIn(username, callback, true);
+    function undoCheckIn(username, callback, errorCallback){
+        checkIn(username, callback, true, errorCallback);
     }
 
     $j(".checkin:enabled").click(function(){
         var username = this.id.replace("checkin_", "");
-        var td = this.parentNode;
-        var oldTd = $j(td).clone(true)[0];
+        var $me = $j(this);
+        var $td = $j(this.parentNode);
+        var $msg = $td.children('.message');
         checkIn(username, function(response) {
-            td.innerHTML = response.message;
-            td.previousElementSibling.className = "checked-in";
-            checkins.push({username: username, name: response.name, td: td, oldTd: oldTd});
+            $msg.text(response.message);
+            $td.prev().prop('class', 'checked-in');
+            checkins.push({username: username, name: response.name, $td: $td});
+            $me.hide().prop('disabled', true);
             updateSelected(false);
+
+            var $undoButton = $j(document.createElement('button'));
+            $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
+            $undoButton.text('Undo');
+            $undoButton.click(function () {
+                undoLiveCheckIn(username);
+            });
+            $msg.append(' ', $undoButton);
         });
-        this.value += "...";
+        $msg.text('Checking in...');
     });
 
     $j(".uncheckin:enabled").click(function(){
@@ -108,6 +121,57 @@ $j(function(){
         this.value += "...";
     });
 
+    // Undo the check in of the user with the specified username, assuming
+    // that that user was not checked in when this page was loaded (because
+    // the DOM would look different depending on whether that were true). If
+    // no username specified, undo the last check in.
+    function undoLiveCheckIn(username) {
+        var targetCheckin;
+        if (username === undefined) {
+            if (checkins.length === 0) {
+                return false;
+            }
+            targetCheckin = checkins[checkins.length - 1];
+        } else {
+            // search from the back because we assume more recent checkins
+            // are more likely to be undone
+            // (TODO if undoing changes from long ago is actually used a lot:
+            // make this a hash)
+            for (var i = checkins.length - 1; i >= 0; i--) {
+                if (checkins[i].username === username) {
+                    targetCheckin = checkins[i];
+                    break;
+                }
+            }
+        }
+        if (targetCheckin === undefined) {
+            alert("No check-in for " + username + " found to undo");
+            return;
+        }
+        username = targetCheckin.username;
+        var $td = targetCheckin.$td;
+        var $msg = $td.children('.message');
+        var $undoButton = $msg.children('.undo-button');
+        $undoButton.text('Undoing...').prop('disabled', true);
+        undoCheckIn(username, function(response) {
+            // find targetCheckin in checkins and splice it out
+            for (var i = checkins.length - 1; i >= 0; i--) {
+                if (checkins[i] === targetCheckin) {
+                    checkins.splice(i, 1);
+                    break;
+                }
+            }
+            $msg.html(response.message+"<br/>");
+            $td.children('.checkin').show().prop('disabled', false);
+            $td.prev().prop('class', 'not-checked-in');
+            selected = $j('.checkin:enabled').index($td.find('.checkin'));
+            updateSelected(true);
+        }, function() {
+            // on error, re-enable undo so you can try again
+            $undoButton.text('Undo').prop('disabled', false);
+        });
+    }
+
     $j(document).keypress(function(e){
         if(e.which==13 && e.shiftKey){
             $j(".selected .checkin").click();
@@ -115,21 +179,7 @@ $j(function(){
             input.val("");
         }
         else if((e.which==122 || e.which==26) && e.ctrlKey){
-            if(checkins.length>0){
-                var lastCheckin = checkins[checkins.length - 1];
-                var username = lastCheckin.username;
-                var td = lastCheckin.td;
-                var oldTd = lastCheckin.oldTd;
-                undoCheckIn(username, function(response) {
-                    if(checkins[checkins.length - 1] === lastCheckin)
-                        checkins.pop();
-                    $j(td).replaceWith($j(oldTd).prepend(response.message+"<br/>"));
-                    oldTd.previousElementSibling.className = "not-checked-in";
-                    selected = $j(".checkin").index($j(oldTd).find("input"));
-                    updateSelected(true);
-                });
-                td.innerHTML += " Undo...";
-            }
+            undoLiveCheckIn();
             e.preventDefault();
         }
         else if(e.which==63){
