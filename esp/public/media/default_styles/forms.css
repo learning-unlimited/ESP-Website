@@ -93,6 +93,12 @@ input.fancybutton:hover
    background-color: #cfc;
    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.25);
 }
+
+input.fancybutton:active
+{
+   background-color: #bfb;
+   box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.25);
+}
 /* end of fancy button */
 
 #divmaintext form a.abutton {

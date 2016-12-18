@@ -59,6 +59,12 @@ color: #006600;
    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.25);
 }
 
+#battlescreen a.abutton:active, #battlescreen input.button:active
+{
+   background-color: #bfb;
+   box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.25);
+}
+
 #battlescreen input.button:disabled, #battlescreen input.button:disabled:hover
 {
    color: #666;
