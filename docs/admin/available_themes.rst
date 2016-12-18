@@ -14,7 +14,7 @@ barebones
 
 .. figure:: images/themes/barebones.png
 
-   Figure 1: "barebones" theme on a sample site
+   "barebones" theme on a sample site
 
 True to its name, "barebones" is the simplest of the available themes.  It's
 not fancy, but it requires little configuration and looks reasonably modern.
@@ -24,7 +24,7 @@ bigpicture
 
 .. figure:: images/themes/bigpicture.png
 
-   Figure 2: "bigpicture" theme on Splash at Berkeley's site
+   "bigpicture" theme on Splash at Berkeley's site
 
 Our newest theme, "bigpicture", looks the most modern.  It requires a bit more
 setup (for the picture at the top and the navbars) than some of the simpler
@@ -36,7 +36,7 @@ circles
 
 .. figure:: images/themes/circles.png
 
-   Figure 3: "circles" theme on BC Splash's site
+   "circles" theme on BC Splash's site
 
 Originally used by Chicago Splash, "circles" has historically been one of the
 more popular themes for small chapters.  It has a fairly simple navigation
@@ -48,7 +48,7 @@ floaty
 
 .. figure:: images/themes/floaty.png
 
-   Figure 4: "floaty" theme on a sample site
+   "floaty" theme on a sample site
 
 The "floaty" theme has a somewhat fancier design than "barebones", and one
 that's somewhat more modern than "circles", but also allows enough structure to
@@ -59,7 +59,7 @@ fruitsalad
 
 .. figure:: images/themes/fruitsalad.png
 
-   Figure 5: "fruitsalad" theme on a sample site
+   "fruitsalad" theme on a sample site
 
 Originally designed by MIT ESP to support its many programs, the "fruitsalad"
 theme has the most complex navigation options, and is best for larger
