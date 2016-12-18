@@ -29,6 +29,6 @@ new theme.
 
 Here's a screenshot of it live on `Berkeley's site
 <https://berkeley.learningu.org>`:
-.. figure:: images/bigpicture.png
+.. figure:: ../../images/themes/bigpicture.png
 
    Figure 1: "bigpicture" theme on Berkeley's site

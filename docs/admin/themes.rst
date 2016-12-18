@@ -21,6 +21,8 @@ You may need to force-refresh after loading a new theme in order to retrieve
 updated stylesheets.  If there is a problem loading one of the themes, please
 contact us.
 
+See also the list of `Available Themes <available_themes.rst>`.
+
 * Set up the theme (/themes/setup/)
 
 You will be presented with a form for information needed by the theme to
