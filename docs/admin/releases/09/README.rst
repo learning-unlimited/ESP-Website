@@ -32,3 +32,46 @@ Here's a screenshot of it live on `Berkeley's site
 .. figure:: images/bigpicture.png
 
    Figure 1: "bigpicture" theme on Berkeley's site
+
+Diff view for template overrides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO(betaveros)
+
+Simplified student reg permissions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO(mgersh)
+
+Minor new features and fixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Other improvements in this release include:
+
+- The deadlines page now correctly shows the status of deadlines that are set
+  to open in the future.
+
+- Changing a class's status from "accepted but hidden" to "accepted" from
+  the dashboard now works.
+
+- Editing a teacher's availability now won't clear their teacher training or
+  interview signups.
+
+- The scrolling class list now only shows class timeblocks.
+
+- It is now possible to edit a page's title without editing its text.
+
+- Lists of popular classes don't show up on the student reg big board when the
+  lottery is not in use.
+
+- Some scheduling sanity checks were moved from "consistency checks" on
+  individual class manage pages to the dedicated scheduling checks page.
+
+- You can now add a description when creating a teacher event (interview or
+  training).
+
+- Volunteer schedules can now be printed.
+
+- It is now possible to hide the FAQ link in the fruitsalad theme.
+
+- Student registration priorities now show up in the correct order.
