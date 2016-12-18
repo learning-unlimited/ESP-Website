@@ -2,9 +2,9 @@
 Available Themes
 ================
 
-This page describes the currently available `Themes <themes.rst>` for the ESP
-website.  To change the theme of your site, see `Themes <themes.rst>`.  If you
-don't like any of these themes, check out the `dev docs <../dev/themes.rst>`
+This page describes the currently available `Themes <themes.rst>`_ for the ESP
+website.  To change the theme of your site, see `Themes <themes.rst>`_.  If you
+don't like any of these themes, check out the `dev docs <../dev/themes.rst>`_
 for information on making your own.
 
 .. contents:: :local:
