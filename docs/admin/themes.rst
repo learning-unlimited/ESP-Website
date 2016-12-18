@@ -1,6 +1,6 @@
-=================
-Generic Templates
-=================
+=============================
+Customizing the Website Theme
+=============================
 
 .. contents:: :local:
 

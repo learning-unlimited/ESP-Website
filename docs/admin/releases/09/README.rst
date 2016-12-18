@@ -24,7 +24,7 @@ New theme: bigpicture
 This release adds a new theme, "bigpicture", based on the custom theme written
 by Sean Zhu and used by Splash at Berkeley.  This theme looks a bit more modern
 than the existing ones, and should better fit the needs of new chapters.  See
-the `themes documentation <../../generic_templates.rst>` for how to set up a
+the `themes documentation <../../themes.rst>` for how to set up a
 new theme.
 
 Here's a screenshot of it live on `Berkeley's site

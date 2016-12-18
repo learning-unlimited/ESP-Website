@@ -33,7 +33,7 @@ can select from pre-defined themes (/themes/select), configure page contents
 (/themes/setup), or adjust aesthetic parameters (/themes/customize).  Behind
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
-`</docs/admin/generic_templates.rst>`_ or
+`</docs/admin/themes.rst>`_ or
 `<http://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
