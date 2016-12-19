@@ -239,6 +239,18 @@ th .program_form_small{
     font-size: 0.9em;
 }
 
+/* don't override Bootstrap button font sizes */
+
+#program_form .btn {
+    font-size: 13px;
+}
+#program_form .btn-small, #program_form .btn-mini {
+    font-size: 11px;
+}
+#program_form .btn-large {
+    font-size: 15px;
+}
+
 #program_form select {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
