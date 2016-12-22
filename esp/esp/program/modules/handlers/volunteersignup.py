@@ -60,6 +60,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             return False
 
     @main_call
+    @no_auth
     @meets_deadline("/Signup", False)
     #Would prefer something like @meets_deadline("/Signup", self.require_auth()),
     #but that doesn't work -willgearty
