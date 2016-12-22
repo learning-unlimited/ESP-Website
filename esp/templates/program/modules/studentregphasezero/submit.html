@@ -3,6 +3,17 @@
 
 {% block title %} Student Registration for {{program.niceName}} {% endblock %}
 
+{% block xtrajs %}
+<script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
+<script type="text/javascript" src="/media/scripts/program/modules/studentregphasezero.js"></script>
+<script type="text/javascript">
+  // Set up the teacher input autocomplete
+  $j(document).ready(function() {
+    setup_autocomplete();
+  });
+</script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -44,6 +55,29 @@
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
 Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the student lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
+
+<hr>
+
+<form action="{{request.path}}" method="post" name="addstudent">
+<table align="center" width="500">
+    <tr>
+        <th colspan="2">Join An Existing Lottery Ticket</th>
+    </tr>
+    <tr>
+        <td colspan="2">Begin typing another student's username to find them.</br>Note: the student must already have a lottery ticket.</td>
+    </tr>
+    <tr>
+        <td width="70%">
+            <input type="hidden" name="op" value="join" />
+            <input type="text" name="student_username" id="student_username" />
+            <input type="hidden" name="student_selected" id="student_id" />
+        </td>
+        <td>
+            <input type="submit" class="button" value="Join Student's Ticket" />
+        </td>
+    </tr>
+</table>
+</form>
 
 <hr>
 
