@@ -509,7 +509,7 @@ def meets_grade(method):
 
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
-def _checkDeadline_helper(method, extension, require_auth, moduleObj, request, tl, *args, **kwargs):
+def _checkDeadline_helper(method, extension, require_auth = True, moduleObj, request, tl, *args, **kwargs):
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
     response = None
