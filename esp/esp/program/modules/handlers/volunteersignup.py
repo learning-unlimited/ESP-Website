@@ -41,6 +41,7 @@ from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
 from esp.program.models import VolunteerOffer
 from django.db.models.query import Q
+from esp.tagdict.models import Tag
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
     @classmethod
@@ -52,9 +53,16 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             "seq": 0,
             }
 
+    def require_auth(self):
+        if Tag.getBooleanTag('volunteer_require_auth', self.program, default=False):
+            return True
+        else:
+            return False
+
     @main_call
-    @no_auth
-    @meets_deadline("/Signup")
+    @meets_deadline("/Signup", False)
+    #Would prefer something like @meets_deadline("/Signup", self.require_auth()),
+    #but that doesn't work -willgearty
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
 
