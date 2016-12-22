@@ -214,6 +214,11 @@ class BaseESPUser(object):
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
+    def nonblank_name(self):
+        name = self.name()
+        if name.strip() == '': name = self.username
+        return name
+
     def get_email_sendto_address_pair(self):
         """
         Returns the pair of data needed to send an email to the user.

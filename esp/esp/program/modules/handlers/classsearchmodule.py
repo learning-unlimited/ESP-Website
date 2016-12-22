@@ -103,8 +103,14 @@ class ClassSearchModule(ProgramModuleObj):
             'program': self.program,
             'query': None,
         }
+        namequery = request.GET.get('namequery')
+        decoded = None
         if data is not None:
             decoded = json.loads(data)
+        elif namequery: # only search if not None and not ""
+            decoded = {'filter': 'title', 'negated': False, 'values': [namequery]}
+
+        if decoded is not None:
             queryset = query_builder.as_queryset(decoded)
             queryset = queryset.distinct().order_by('id').prefetch_related(
                 'flags', 'flags__flag_type', 'teachers', 'category',

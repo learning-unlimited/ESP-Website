@@ -142,7 +142,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
-                priority_list = sorted(priority_dict.items())
+                # (relationship, class_title) -> relationship.name
+                priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
                 priority_list = []
             if timeslot.id in star_counts:

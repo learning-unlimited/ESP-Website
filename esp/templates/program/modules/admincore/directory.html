@@ -37,7 +37,7 @@ $j(document).ready(initialize);
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
-    
+
     <style type="text/css">
     .nocheckmark { border: 1px solid black; }
     </style>
@@ -47,7 +47,7 @@ $j(document).ready(initialize);
 
 {% load render_qsd %}
 
-<h1>Admin Portal for {{ program.niceName }} </h1>
+<h1>Admin Portal for {{ program.niceName }}</h1>
 
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
@@ -59,11 +59,11 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Resources</div>
             <div class="module_link_caption">timeslots, classrooms</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Deadlines</div>
             <div class="module_link_caption">open/close registration</div>
         </button></a>
@@ -84,11 +84,11 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
     <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">E-mail</div>
             <div class="module_link_caption">communications panel</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Morph into User</div>
             <div class="module_link_caption">&nbsp;</div>
         </button></a>
@@ -102,21 +102,21 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Dashboard</div>
             <div class="module_link_caption">review classes and stats</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Scheduling</div>
             <div class="module_link_caption">assign rooms and times</div>
         </button></a>
         </div>
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Documents</div>
             <div class="module_link_caption">upload and view files</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Volunteers</div>
             <div class="module_link_caption">create shifts, view signups</div>
         </button></a>

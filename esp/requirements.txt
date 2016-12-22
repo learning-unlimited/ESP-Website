@@ -1,5 +1,5 @@
 # Django
-Django==1.8.14
+Django==1.8.15
 
 # Django-specific packages
 git+https://github.com/luac/django-argcache.git@0.1 # Handles caching

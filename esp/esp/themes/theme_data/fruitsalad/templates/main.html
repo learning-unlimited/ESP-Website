@@ -74,6 +74,16 @@
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
+<script type="text/javascript">
+{% if current_program %}
+var currentProgram = {
+    urlBase: "{{ current_program.getUrlBase }}",
+    name: "{{ current_program.niceName }}",
+};
+{% else %}
+var currentProgram = undefined;
+{% endif %}
+</script>
 <script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
     <div id="tab_sidebar">
@@ -107,10 +117,18 @@
 	</form>
       </div>
       <div id="contact_info">
-	<span class="title accentcolor">{{ theme.full_group_name }}</span>
-      <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
-      <span class="normal">E-mail: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
-      <span class="normal"><a href="/faq.html">FAQ</a> | <a href="/contact.html">contact us</a>{% if theme.facebook_link %} | <a href="{{ theme.facebook_link }}">facebook</a>{% endif %}</span>
+        <span class="title accentcolor">{{ theme.full_group_name }}</span>
+        <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
+        <span class="normal">E-mail: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
+        <span class="normal">
+          {% if theme.faq_link %}
+            <a href="{{theme.faq_link}}">FAQ</a> |
+          {% endif %}
+          <a href="/contact.html">contact us</a>
+          {% if theme.facebook_link %}
+            | <a href="{{ theme.facebook_link }}">facebook</a>
+          {% endif %}
+        </span>
       </div>
 {% block login %}
 <div id="login_box">

@@ -106,15 +106,18 @@
                 <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
             {% else %}
                 {% if module.deadline_met %}
-                    <input class="button" type="submit"
+                    <button type="submit" class="btn btn-primary btn-large">
                     {% if class.id %}
-                        value="Save course!" /><br />
+                        <span class="glyphicon glyphicon-floppy-saved"></span>
+                        Save course!
                     {% else %}
-                        value="Teach for {{ one }}!" /><br />
+                        <span class="glyphicon glyphicon-education"></span>
+                        Teach for {{one}}!
                     {% endif %}
+                    </button><br />
                 {% endif %}
             {% endif %}
-            <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            <input class="btn btn-default" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
             <br /><br />
         </td>
     </tr>    

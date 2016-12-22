@@ -660,8 +660,16 @@ cursor: pointer;
 background: #bbb;
 }
 
+#adminbar_content small {
+    font-size: smaller;
+}
+
 #adminbar_content .content {
-padding: 6px 10px 15px;
+    padding: 8px;
+}
+
+#adminbar_content form, #adminbar_content .input-append {
+    margin: 0;
 }
 
 
@@ -918,12 +926,18 @@ div .adminbar_user {
     width: 170px;
 }
 
-#user_search_field {
-    width: 160px;
-    padding: 2px;
+#user_search_field, #class_search_field {
+    width: 135px;
 }
 
 #user_data {
     color: #444;
     font-style: italic;
 }
+
+.done-sign { color: green; }
+.not-done-sign { color: red; }
+
+.glyphicon.glyphicon-btn-height:before { line-height: 18px; }
+
+.fqr-class-buttons.btn-toolbar { margin: 0; }

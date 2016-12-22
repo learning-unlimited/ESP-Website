@@ -64,11 +64,12 @@ class BigBoardModule(ProgramModuleObj):
             ("completed the medical form", self.times_medical(prog)),
             ("signed up for classes", self.times_classes(prog)),
         ]
+        timess = [(desc, times) for desc, times in timess if len(times) >= 25]
         # Drop the first and last 10 times, because those are usually
         # special snowflakes or admins and really aren't worth getting excited
         # about.  Then round start down and end up to the nearest day.  If
         # there aren't many registrations, don't bother with the graph.
-        if any(len(times) < 25 for desc, times in timess):
+        if not timess:
             graph_data = []
             start = None
         else:

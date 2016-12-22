@@ -42,6 +42,7 @@ from esp.users.models    import User, ESPUser
 from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
+from argcache            import cache_function
 
 class CreditCardViewer_Cybersource(ProgramModuleObj):
     @classmethod
@@ -62,8 +63,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
 
         #   Fetch detailed information for every student associated with the program
         for student in student_list:
-            iac = IndividualAccountingController(prog, student)
-            payment_table.append((student, iac.get_transfers(), iac.amount_requested(), iac.amount_due()))
+            payment_table.append(self._payment_table_row_cached(prog, student))
 
         #   Also fetch summary information about the payments
         (num_payments, total_payment) = pac.payments_summary()
@@ -77,6 +77,17 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
         }
 
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)
+
+    @staticmethod
+    @cache_function
+    def _payment_table_row_cached(prog, student):
+        iac = IndividualAccountingController(prog, student)
+        return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due())
+    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemType')
+    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOptions')
+    _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
+    _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
+    _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
 
     class Meta:
         proxy = True

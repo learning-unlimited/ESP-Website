@@ -894,6 +894,33 @@ teachers[key].filter(is_active = True).distinct().count()))
         data = {'amount_donation': amount_donation, 'amount_due': iac.amount_due()}
         return HttpResponse(json.dumps(data), content_type='application/json')
 
+    @aux_call
+    @json_response()
+    @needs_admin
+    def teachers_for_autoscheduler(self, request, tl, one, two, module, extra, prog):
+        """Dump teachers in a JSON format to be fed into the autoscheduler.
+
+        Unfortunately, the view name "teachers" conflicts with magic in the
+        Program class, so we have to name it something else.
+
+        Note that this code isn't normally accessed from the website interface.
+        """
+
+        teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
+        resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
+        resources_for_user = defaultdict(list)
+
+        for resource in resources:
+            resources_for_user[resource['user_id']].append(resource['event_id'])
+
+        teacher_dicts = [
+            {   'uid': t.id,
+                'text': t.name(),
+                'availability': resources_for_user[t.id]
+            } for t in teachers ]
+
+        return {'teachers': teacher_dicts}
+
     class Meta:
         proxy = True
         app_label = 'modules'

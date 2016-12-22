@@ -136,29 +136,50 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     };
 
     /**
-     * Get the sections that are not yet scheduled
+     * Get the sections satisfying the search criteria. By default, filter
+     * out sections that have been scheduled.
      */
-    this.filtered_sections = function(){
+    this.filtered_sections = function(allowScheduled){
         var returned_sections = [];
         $j.each(this.sections_data, function(section_id, section) {
-            var sectionValid = true;
-            if(this.searchObject.active) {
-                sectionValid = false;
+            if (!this.scheduleAssignments[section.id]) {
+                // filter out rejected sections
+                return;
             }
-            $j.each(this.filter, function(filterName, filterObject) {
-                if(filterObject.active && !filterObject.valid(section)) {
-                    sectionValid = false;
-                }
-                if(this.searchObject.active) {
-                    if(section[this.searchObject.type].toLowerCase().search(this.searchObject.text.toLowerCase())>-1) {
-                        sectionValid = true;
+            if (this.isScheduled(section) && !allowScheduled) {
+                // filter out scheduled sections
+                return;
+            }
+            var sectionValid;
+            if(this.searchObject.active) {
+                // if searchObject is active, ignore searching criteria in the
+                // other tab; only filter for sections that match the
+                // searchObject text (note this is a regex match)
+                sectionValid = (
+                    section[this.searchObject.type].toLowerCase()
+                    .search(this.searchObject.text.toLowerCase()) > -1
+                );
+            } else {
+                // if searchObject is not active, check every criterion in the
+                // other tab, short-circuiting if possible
+                sectionValid = true;
+                for (var filterName in this.filter) {
+                    if (this.filter.hasOwnProperty(filterName)) {
+                        var filterObject = this.filter[filterName];
+                        // this loops over properties in this.filter
+
+                        if (filterObject.active && !filterObject.valid(section)) {
+                            sectionValid = false;
+                            break;
+                        }
                     }
                 }
-            }.bind(this));
-            if (sectionValid && this.scheduleAssignments[section.id] && !this.isScheduled(section)){
+            }
+
+            if (sectionValid) {
                 returned_sections.push(section);
             }
-           }.bind(this));
+        }.bind(this));
         return returned_sections;
     };
 

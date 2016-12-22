@@ -83,7 +83,7 @@ class SplashInfoForm(forms.Form):
         #   Set choices from Tag data (try to get program-specific choices if they exist)
         tag_data = None
         if program:
-            tag_data = Tag.getTag('splashinfo_choices', target=program)
+            tag_data = Tag.getProgramTag('splashinfo_choices', program)
         if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
         if tag_data:
             tag_struct = json.loads(tag_data)

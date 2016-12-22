@@ -5,24 +5,37 @@
 {% block content %}
 <h1>Med-liab Override for Paper Forms</h1>
 
+{% if status == 'invalid user' %}
+<div class="alert alert-danger" role="alert">
+<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+Invalid user.
+</div>
+{% endif %}
+{% if status == 'bypass exists' %}
+<div class="alert alert-danger" role="alert">
+<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+Bypass record already exists.
+</div>
+{% endif %}
+{% if status == 'reg bit exists' %}
+<div class="alert alert-danger" role="alert">
+<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+User has already submitted form.
+</div>
+{% endif %}
+{% if status == 'success' %}
+<div class="alert alert-success" role="alert">
+<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+Bypass record added successfully.
+</div>
+{% endif %}
+
+
 <p>Enter a username to allow them to bypass the online medical form.</p>
 
 <form method="POST">{% csrf_token %}
 {{ form.as_p }}
-<input type="submit" value="Submit" />
+<input type="submit" value="Submit" class="btn btn-primary" />
 </form>
-
-{% if status == 'invalid user' %}
-<p style="color:#f00">Invalid user.</p>
-{% endif %}
-{% if status == 'bypass exists' %}
-<p style="color:#f00">Bypass record already exists.</p>
-{% endif %}
-{% if status == 'reg bit exists' %}
-<p style="color:#f00">User has already submitted form.</p>
-{% endif %}
-{% if status == 'success' %}
-<p style="color:#070">Bypass record added successfully.</p>
-{% endif %}
 
 {% endblock %}

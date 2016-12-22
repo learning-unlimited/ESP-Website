@@ -1,80 +1,60 @@
 {% extends "main.html" %}
 
-{% block title %}Contact ESP{% endblock %}
+{% block title %}Contact Us{% endblock %}
 
 {% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% block content %}
-<h1>Contact ESP</h1><br />
-
 {% load render_qsd %}
+
 {% if contact_form.data.decline_password_recovery %}
-{% inline_qsd_block "contact_password_recovery_check" %}
-<p>
-It looks like you're trying to recover your login information.
-If you would like, we can e-mail you a link to reset your password.
-The e-mail will remind you of your username.
-</p>
-{% end_inline_qsd_block %}
-<form action="/myesp/passwdrecover/" method="post">
-	<input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
-	<input type="submit" name="recoverpassword" value="Reset my password" />
-</form>
-<form action="{{ request.path }}" method="post">
-<input type="submit" name="sendanyway" value="I want to send this message anyway" />
+  {% inline_qsd_block "contact_password_recovery_check" %}
+  # Contact Us
+
+  It looks like you're trying to recover your login information. If you would like, we can e-mail you a link to reset your password. The e-mail will remind you of your username.
+  {% end_inline_qsd_block %}
+  <form action="/myesp/passwdrecover/" method="post">
+    <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
+    <input type="submit" name="recoverpassword" value="Reset my password" />
+  </form>
+  <form action="{{ request.path }}" method="post" class="contact-form">
+    <input type="submit" name="sendanyway" value="I want to send this message anyway" />
 {% else %}
-{% inline_qsd_block "contact_header_text" %}
-<p>
- Fill out this form to send a quick e-mail to the ESP office. We will get back to 
- you as soon as possible (usually within a day). 
- Submitting this form does not add you to our mailing list.  <br />
+  {% inline_qsd_block "contact_header_text" %}
+  # Contact Us
 
- <small>(Unless of course, you, uh, ASK to be added to our mailing list.)</small>
-<br />
-</p>
+  Fill out this form to send a quick e-mail to the {{ settings.ORGANIZATION_SHORT_NAME }} office. We will get back to you as soon as possible (usually within a day). Submitting this form does not add you to our mailing list.
 
-<h2>Note to Parents: </h2>
-<p>
-If your child is or wants to be an ESP student, we'd rather hear from them directly.
-We really do appreciate your interest, but we're an all-volunteer organization so we sometimes take a while to respond to e-mail, and we have an obligation to answer mail from our students first.  So, please have your son or daughter send us an e-mail!
+  <small>(Unless of course, you, uh, ASK to be added to our mailing list.)</small>
 
-<br />
+  ## Note to Parents:
 
-</p>
-{% end_inline_qsd_block %}
-<form action="{{ request.path }}" method="post">
+  If your child is or wants to be a student at our programs, we'd rather hear from them directly. We really do appreciate your interest, but we're an all-volunteer organization so we sometimes take a while to respond to e-mail, and we have an obligation to answer mail from our students first. So, please have your son or daughter send us an e-mail!
+  {% end_inline_qsd_block %}
+  <form action="{{ request.path }}" method="post" class="contact-form">
 {% endif %}
 
-<table class="contact">
-<thead>
-<tr>
-  <th colspan="2">
-    Contact Form
-  </th>
-</tr>
-</thead>
-<tbody>
+<h2>Contact Form</h2>
 {% if contact_form.errors %}
-<tr>
-<td colspan="2">
 <div class="errors">
-There 
-{% if contact_form.errors|length_is:1 %}is an error{% else %}
-are errors{% endif %} in the below form. Please fix and resubmit.<br />
+  There
+  {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
+  in the below form. Please fix and resubmit.
 </div>
-</td>
-</tr>
 {% endif %}
-{{ contact_form }}
-<tr> 
-<td colspan="2" class="submit">
-<input type="submit" name="sendemail" value="Send!" />
-</td>
-</tr>
-</tbody>
-</table>
+
+  <table class="contact">
+    <tbody>
+      {{ contact_form }}
+      <tr>
+        <td></td>
+        <td><input type="submit" name="sendemail" value="Send!" class="btn btn-primary contact-send" /></td>
+      </tr>
+    </tbody>
+  </table>
+
 </form>
 {% endblock %}

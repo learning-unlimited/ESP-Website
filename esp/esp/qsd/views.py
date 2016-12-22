@@ -236,3 +236,14 @@ def ajax_qsd(request):
         result['url'] = qsd.url
 
     return HttpResponse(json.dumps(result))
+
+def ajax_qsd_preview(request):
+    """ Ajax function for previewing the result of QSD editing. """
+    import json
+    from markdown import markdown
+
+    # We don't necessarily need to wrap it in JSON, but this seems more
+    # future-proof.
+    result = {'content': markdown(request.POST['data'])}
+
+    return HttpResponse(json.dumps(result))

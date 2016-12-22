@@ -37,7 +37,7 @@ all_global_tags = {
     'show_studentrep_application': (False, ""),
     'show_student_tshirt_size_options': (False, ""),
     'show_student_vegetarianism_options': (False, ""),
-    'show_student_graduation_years_not_grades': (False, ""),
+    'show_student_graduation_years_not_grades': (True, ""),
     'ask_student_about_transportation_to_program': (False, ""),
     'student_medical_needs': (False, ""),
     'require_school_field': (True, ""),
