@@ -38,6 +38,7 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meet
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
+from django.db.models.query import Q
 
 import random, copy, datetime, re
 from django.contrib.auth.models import Group
@@ -70,6 +71,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['program'] = prog
         user = request.user
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+        #need logic to check if a student is joining a selected student
+        #need logic to check if selected student is already in lottery
         if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
                 if request.method == 'POST':
@@ -106,6 +109,48 @@ class StudentRegPhaseZero(ProgramModuleObj):
             else:
                 #Generic error page
                 return render_to_response('errors/program/phasezero_closed.html', request, context)
+
+    @aux_call
+    @needs_student
+    def studentlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+
+        # Search for teachers with names that start with search string
+        if not 'username' in request.GET or 'username' in request.POST:
+            return self.goToCore(tl)
+
+        return StudentRegPhaseZero.studentlookup_logic(request, tl, one, two, module, extra, prog, newclass)
+
+    @staticmethod
+    def studentlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
+        limit = 10
+        from esp.web.views.json_utils import JsonResponse
+
+        Q_student = Q(groups__name="Student")
+
+        queryset = ESPUser.objects.filter(Q_student)
+
+        if not 'username' in request.GET:
+            startswith = request.POST['username']
+        else:
+            startswith = request.GET['username']
+
+        #   Don't return anything if there's no input.
+        if len(startswith) > 0:
+            Q_username = Q(username__istartswith=startswith)
+
+            # Isolate user objects
+            queryset = queryset.filter(Q_username)[:(limit*10)]
+            user_dict = {}
+            for user in queryset:
+                user_dict[user.id] = user
+            users = user_dict.values()
+
+            # Construct combo-box items
+            obj_list = [{'username': user.username, 'id': user.id} for user in users]
+        else:
+            obj_list = []
+
+        return JsonResponse(obj_list)
 
     class Meta:
         proxy = True
