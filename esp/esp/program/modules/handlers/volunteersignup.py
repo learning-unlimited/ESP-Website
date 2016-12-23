@@ -60,9 +60,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
 
     @main_call
     @no_auth
-    @meets_deadline("/Signup", False)
-    #Would prefer something like @meets_deadline("/Signup", self.require_auth()),
-    #but that doesn't work -willgearty
+    @meets_deadline("/Signup")
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
 
