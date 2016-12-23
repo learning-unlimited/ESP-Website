@@ -142,6 +142,9 @@ class ProgramModuleObj(models.Model):
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
 
+    def require_auth(self):
+        return True
+
     @cache_function
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
@@ -509,7 +512,7 @@ def meets_grade(method):
 
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
-def _checkDeadline_helper(method, extension, moduleObj, request, tl, require_auth = True, *args, **kwargs):
+def _checkDeadline_helper(method, extension, moduleObj, request, tl, require_auth, *args, **kwargs):
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
     response = None
@@ -551,7 +554,7 @@ def meets_deadline(extension='', require_auth = True):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
-            (canView, response) = _checkDeadline_helper(method, extension, require_auth, moduleObj, request, tl, *args, **kwargs)
+            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, moduleObj.require_auth(), *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
