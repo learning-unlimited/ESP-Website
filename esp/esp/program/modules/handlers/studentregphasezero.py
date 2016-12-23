@@ -45,6 +45,20 @@ from django.contrib.auth.models import Group
 from esp.tagdict.models import Tag
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    def students(self, QObject = False):
+        q_phasezero = Q(phasezerorecord__program=self.program)
+
+        if QObject:
+            retVal = {'phasezero': q_phasezero}
+            return retVal
+
+        retVal = {'phasezero': ESPUser.objects.filter(q_phasezero).distinct()}
+        return retVal
+
+    def studentDesc(self):
+        retVal = {'phasezero': """Students who have entered the Student Lottery."""}
+        return retVal
+
     def isCompleted(self):
         return get_current_request().user.canPassPhaseZero(self.program)
 
