@@ -38,12 +38,15 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meet
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
-from django.db.models.query import Q
 from esp.dbmail.models import send_mail
+from esp.tagdict.models import Tags
+
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.contrib.auth.models import Group
+from django.db.models.query import Q
 
 import random, copy, datetime, re
-from django.contrib.auth.models import Group
-from esp.tagdict.models import Tag
 
 class StudentRegPhaseZero(ProgramModuleObj):
     def students(self, QObject = False):
