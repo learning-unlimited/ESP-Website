@@ -153,15 +153,13 @@ function hideClassesOutOfGradeRange(stu_grade) {
 hideClassesOutOfGradeRange(student_grade);
 </script>
 
+
 <script type="text/javascript">
 function configure_addbuttons()
 {
     {% if register_from_catalog %}
     //  Registration from the catalog is allowed
-    $j("input.addbutton").removeClass("addbutton_hidden");
-    {% else %}
-    //  Registration from the catalog is not allowed
-    $j("input.addbutton").addClass("addbutton_hidden");
+    $j("input.addbutton").addClass("show");
     {% endif %}
 }
 $j(document).ready(configure_addbuttons);
