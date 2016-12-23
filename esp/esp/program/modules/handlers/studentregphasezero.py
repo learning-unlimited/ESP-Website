@@ -103,7 +103,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 context['form'] = form
                 context['join_error'] = join_error
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-            #else: join student in lottery
+            #else:
+                #check lottery group size
+                #if less than 4, add student to group, else error
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
@@ -178,7 +180,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             users = user_dict.values()
 
             # Construct combo-box items
-            obj_list = [{'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'username': user.username, 'id': user.id, 'grade': user.getGrade(prog)} for user in users]
         else:
             obj_list = []
 
