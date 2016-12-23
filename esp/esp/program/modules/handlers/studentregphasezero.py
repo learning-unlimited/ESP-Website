@@ -39,6 +39,7 @@ from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
 from django.db.models.query import Q
+from esp.dbmail.models import send_mail
 
 import random, copy, datetime, re
 from django.contrib.auth.models import Group
