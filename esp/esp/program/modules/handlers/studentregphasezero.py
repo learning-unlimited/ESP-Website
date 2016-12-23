@@ -85,9 +85,27 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['program'] = prog
         user = request.user
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        #need logic to check if a student is joining a selected student
-        #need logic to check if selected student is already in lottery
-        if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
+
+        op = ''
+        join_error = False
+        if 'op' in request.POST:
+            op = request.POST['op']
+        if op == 'join':
+            if len(request.POST['student_selected'].strip()) == 0:
+                join_error = 'Error - You must select a student\'s username.'
+            elif (request.POST['student_selected'] == str(request.user.id)):
+                join_error = 'Error - You cannot select yourself!'
+            elif not PhaseZeroRecord.objects.filter(user=request.POST['student_selected'], program=prog).exists():
+                join_error = 'Error - You can only join a student that is already in the lottery!'
+
+            if join_error:
+                form = SubmitForm(program=prog)
+                context['form'] = form
+                context['join_error'] = join_error
+                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+            #else: join student in lottery
+
+        elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
                 if request.method == 'POST':
                     form = LotteryNumberForm(request.POST, program=prog)

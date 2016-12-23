@@ -77,6 +77,15 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
         </td>
     </tr>
 </table>
+{% if join_error %}
+<table align="center" width="500">
+    <tr>
+        <td>
+            <p><font color="red">{{ join_error }}</font></p>
+        </td>
+    </tr>
+</table>
+{% endif %}
 </form>
 
 <hr>
