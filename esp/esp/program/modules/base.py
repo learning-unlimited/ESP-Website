@@ -512,9 +512,13 @@ def meets_grade(method):
 
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
-def _checkDeadline_helper(method, extension, moduleObj, request, tl, require_auth, *args, **kwargs):
+def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
+    if "require_auth" in kwargs:
+        require_auth = kwargs["require_auth"]
+    else:
+        require_auth = True
     response = None
     canView = False
     perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
@@ -550,11 +554,11 @@ def list_extensions(tl, extensions, andor=''):
 #   Return a decorator that returns a function calling the decorated function if
 #   the deadline is met, or a function that generates an error page if the
 #   deadline is not met.
-def meets_deadline(extension='', require_auth = True):
+def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
-            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, moduleObj.require_auth(), *args, **kwargs)
+            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, require_auth = moduleObj.require_auth(), *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
