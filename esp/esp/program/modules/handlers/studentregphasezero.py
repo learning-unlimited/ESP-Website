@@ -186,6 +186,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
         return JsonResponse(obj_list)
 
+    def send_confirmation_email(self, student, note=None):
+        email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_context = {'student': student,
+                         'program': self.program,
+                         'curtime': datetime.now(),
+                         'note': note,
+                         'DEFAULT_HOST': settings.DEFAULT_HOST}
+        email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
+        email_to = ['%s <%s>' % (student.name(), student.email)]
+        send_mail(email_title, email_contents, email_from, email_to, False)
+
     class Meta:
         proxy = True
         app_label = 'modules'
