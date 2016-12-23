@@ -9,7 +9,7 @@ function setup_autocomplete()
 		success: function(data) {
 		    var output = $j.map(data, function(item) {
 			return {
-			    label: item.username + " (" + item.id + ")",
+			    label: item.username + " (grade " + item.grade + ")",
 			    value: item.username,
 			    id: item.id
 			};
