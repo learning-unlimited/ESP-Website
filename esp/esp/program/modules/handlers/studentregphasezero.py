@@ -110,6 +110,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             #else:
                 #check lottery group size
                 #if less than 4, add student to group, else error
+                #send_confirmation_email
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
@@ -121,6 +122,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 form.load(request.user, prog)
                 context['form'] = form
                 context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                self.send_confirmation_email(user, note = "You have updated your lottery settings")
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
                 if request.method == 'POST':
@@ -131,6 +133,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     form.load(request.user, prog)
                     context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
                     context['form'] = form
+                    self.send_confirmation_email(user)
                     return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
                 else:
                     form = SubmitForm(program=prog)
