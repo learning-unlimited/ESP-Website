@@ -16,7 +16,7 @@
     font-size: 13px !important;
 }
 
-ul 
+#applicants
 {
     list-style-type: none;
     counter-reset: section;
@@ -29,7 +29,7 @@ ul
     column-gap: 20px;
 }
 
-ul li 
+#record
 {
     padding-left: 30px;
     position: relative;
@@ -40,6 +40,18 @@ ul li
 }
 #lotteryentries.show{
   display:block;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+td {
+    text-align: center;
 }
 </style>
 {% endblock %}
@@ -52,7 +64,7 @@ ul li
 Number of students that have entered the student lottery:
 </h2>
 <h2 style="font-family:sans-serif">
-<u>{{ nrecs }}</u>
+<u>{{ nentrants }}</u>
 </h2>
 
 </br>
@@ -60,9 +72,9 @@ Number of students that have entered the student lottery:
 
 <div id="lotteryentries">
 </br>
-<ul>
-{% for rec in recs %}
-<li>{{rec.user}}&emsp;({{rec.lottery_number}})</li>
+<ul id="applicants">
+{% for entrant in entrants %}
+<li id="record">{{entrant}} - {{entrant.getGrade}}</li>
 {% endfor %}
 </ul>
 </div>
@@ -78,11 +90,40 @@ Number of students that have entered the student lottery:
 {% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
 {% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
 <form action="#" method="POST">
-<b>Specify Role Name for Winners: </b><input type="text" name="rolename" value="{{role}}"></br></br>
+<!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
 <input type="checkbox" name="confirm">  I confirm that I would like to run the student lottery.</br></br>
 <input type="submit" value="Run Student Lottery" />
 </form>
 </center>
+
+{% if stats %}
+<hr>
+<center><h2><u>Lottery Statistics</u></h2></center>
+<table align="center" width="500">
+    <tr>
+	    <th>Grade</th>
+	    <th># in Lottery</th>
+        <th># Accepted</th>
+        <th>% Accepted</th>
+	</tr>
+	{% for grade, stat in stats.items %}
+        <tr>
+            <td>
+                {{ grade }}
+            </td>
+            <td>
+                {{ stat.in_lottery }}
+            </td>
+            <td>
+                {{ stat.num_accepted }}
+            </td>
+            <td>
+                {{ stat.per_accepted }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
 
 
 <script>

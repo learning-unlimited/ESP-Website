@@ -38,10 +38,12 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meet
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
+from esp.tagdict.models import Tag
+
+from django.contrib.auth.models import Group
+from django.db.models.query import Q
 
 import random, copy, datetime, json
-from django.contrib.auth.models import Group
-from esp.tagdict.models import Tag
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     def isCompleted(self):
@@ -116,23 +118,58 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         # Add tag to indicate student lottery has been run
         Tag.setTag('student_lottery_run', target=prog, value='True')
 
-        return
+        return True
 
     @main_call
     @needs_admin
     def phasezero(self, request, tl, one, two, module, extra, prog):
         context = {}
-        context['role'] = str(prog) + " Winners"
-        context['recs'] = PhaseZeroRecord.objects.filter(program=prog)
-        context['nrecs'] = len(context['recs'])
-        if request.POST:
+        role = str(prog) + " Winners"
+        context['role'] = role
+        q_phasezero = Q(phasezerorecord__program=self.program)
+        entrants = ESPUser.objects.filter(q_phasezero).distinct()
+        context['entrants'] = entrants
+        context['nentrants'] = len(entrants)
+
+        grades = range(prog.grade_min, prog.grade_max + 1)
+        stats = {}
+
+        #Calculate grade counts
+        for grade in grades:
+            stats[grade] = {}
+            stats[grade]['in_lottery'] = 0
+        for entrant in entrants:
+            stats[entrant.getGrade(prog)]['in_lottery'] += 1
+
+        #If lottery has been run, calculate acceptance stats
+        if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+            if request.POST:
+                context['error'] = "You've already run the student lottery!"
+            for grade in grades:
+                stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
+            q_winners = Q(groups__name=role)
+            winners = ESPUser.objects.filter(q_winners).distinct()
+            for winner in winners:
+                stats[winner.getGrade(prog)]['num_accepted'] += 1
+            for grade in grades:
+                if stats[grade]['num_accepted'] == 0:
+                    stats[grade]['per_accepted'] = "NA"
+                else:
+                    stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'],1)/stats[grade]['in_lottery']*100
+
+        elif request.POST:
             role = request.POST['rolename']
             context['role'] = role
             if "confirm" in request.POST:
-                self.lottery(prog, role)
-                context['success'] = "The student lottery has been run successfully."
+                success = False
+                success = self.lottery(prog, role)
+                if success:
+                    context['success'] = "The student lottery has been run successfully."
+                else:
+                    context['error'] = "The student lottery did not run successfully."
             else:
                 context['error'] = "You did not confirm that you would like to run the lottery"
+        context['stats'] = stats
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
     class Meta:
