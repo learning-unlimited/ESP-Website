@@ -1,0 +1,4 @@
+export PGHOST=<%= @host %>
+export PGPORT=<%= @port %>
+export PGDATABASE=<%= @database %>
+export PGUSER=<%= @user %>

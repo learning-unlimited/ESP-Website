@@ -13,7 +13,8 @@ sys.path.append(project)
 if os.environ.get('VIRTUAL_ENV') is None:
     envroot = os.path.dirname(project)
     activate_this = os.path.join(envroot, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    if os.path.isfile(activate_this):
+        execfile(activate_this, dict(__file__=activate_this))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 

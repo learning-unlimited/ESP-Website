@@ -18,7 +18,8 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
+    if os.path.isfile(activate_this):
+        execfile(activate_this, dict(__file__=activate_this))
 
 import django
 django.setup()
@@ -43,4 +44,3 @@ send_email_requests()
 # Release the lock when message sending is complete.
 fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
 lock_file_handle.close()
-

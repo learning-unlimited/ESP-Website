@@ -21,12 +21,9 @@ ipython==3.2.1 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD
 numpy==1.7.1 # Used mainly in the lottery and class change controller
 pillow==3.3.1 # Required for ImageField, which we use in teacher bios
-psycopg2==2.6.1 # Talks to postgres
-pycurl==7.19.5.1 # Used only in mailing labels and a formstack script which I think is outdated
 pydns==2.3.6 # Used for validating email addresses; imports as "DNS", not "pydns"
 Pygments==2.0.2 # django-extensions dependency
 pyinotify # Makes dev servers auto-reload
-pylibmc==1.5.0 # Talks to memcached
 pytz==2015.4 # Required for timezone support
 raven # Required for Sentry error reporting
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
@@ -35,3 +32,9 @@ stripe==1.12.2 # Required for credit card processing
 twilio==3.6.5 # Required for text messaging support
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.0.0 # Does form and survey exporting
+
+# Packages that try to build things (installed via apt, not pip)
+# TODO: figure out how to make this backwards-compatible
+#psycopg2 # Talks to postgres
+#pycurl # Used only in mailing labels and a formstack script which I think is outdated
+#pylibmc # Talks to memcached

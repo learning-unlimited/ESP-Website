@@ -1,0 +1,5 @@
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# m h dom mon dow user  command
+<%= @offset %>-59/5 *    * * *   ubuntu       /lu/esp-website/esp/dbmail_cron.py
