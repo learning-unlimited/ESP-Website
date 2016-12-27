@@ -54,10 +54,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             }
 
     def require_auth(self):
-        if Tag.getBooleanTag('volunteer_require_auth', self.program, default=False):
-            return True
-        else:
-            return False
+        return Tag.getBooleanTag('volunteer_require_auth', self.program, default=False)
 
     @main_call
     @no_auth

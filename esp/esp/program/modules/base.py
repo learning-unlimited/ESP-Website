@@ -515,15 +515,11 @@ def meets_grade(method):
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
-    if "require_auth" in kwargs:
-        require_auth = kwargs["require_auth"]
-    else:
-        require_auth = True
     response = None
     canView = False
     perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
     if not_logged_in(request):
-        if not require_auth and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+        if not moduleObj.require_auth() and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
             canView = True
         else:
             response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
@@ -558,7 +554,7 @@ def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
-            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, require_auth = moduleObj.require_auth(), *args, **kwargs)
+            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
