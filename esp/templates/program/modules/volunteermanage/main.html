@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Volunteers{% endblock %}
+{% block title %}Manage Volunteers for {{ program.niceName }}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -8,6 +8,7 @@
 {% endblock %}
 
 {% block content %}
+<h1>Manage Volunteers for {{ program.niceName }}</h1>
 
 {% load render_qsd %}
 {% inline_program_qsd_block program "volunteer_requests" %}
@@ -47,14 +48,20 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 </center>
 
 <br />
-
-<form method="POST" action="{{ request.path }}">
 <center>
-<table width="400">
+<form method="post" action="/manage/{{ program.getUrlBase }}/volunteering/request_import">
+<table align="center" cellpadding="0" cellspacing="0" width="450">
+    <tr><th colspan="2" class="small">Import volunteer shifts from a previous program</th></tr>
+    {{ import_request_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
+</table>
+</form>
+<form method="POST" action="{{ request.path }}">
+<table width="450">
 <tr>
-    <th colspan="2">Create Volunteer Shift</th>
+    <th colspan="2">Create New Volunteer Shift</th>
 </tr>
-    {{ form }}
+    {{ shift_form }}
 <tr>   
     <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
 </tr>

@@ -35,10 +35,11 @@ Learning Unlimited, Inc.
 from django import forms
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
-from esp.utils.widgets import DateTimeWidget
+from esp.utils.widgets import DateTimeWidget, DateWidget
 from localflavor.us.forms import USPhoneNumberField
 from esp.users.models import ESPUser, shirt_sizes, shirt_types
 from esp.tagdict.models import Tag
+from esp.program.models import Program
 
 class VolunteerRequestForm(forms.Form):
 
@@ -218,3 +219,7 @@ class VolunteerOfferForm(forms.Form):
             if 'confirm' in self.cleaned_data and not self.cleaned_data['confirm']:
                 raise forms.ValidationError('Please confirm that you will show up to volunteer at the times you selected.')
         return self.cleaned_data
+
+class VolunteerImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
