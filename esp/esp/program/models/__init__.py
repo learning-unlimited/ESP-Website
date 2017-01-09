@@ -1915,7 +1915,7 @@ class PhaseZeroRecord(models.Model):
     def __unicode__(self):
         return str(self.lottery_number)
 
-    user = AjaxForeignKey(ESPUser)
+    user = models.ManyToManyField(ESPUser)
     program = models.ForeignKey(Program, blank=True)
     time = models.DateTimeField(auto_now_add=True)
     lottery_number = models.IntegerField(null=True)

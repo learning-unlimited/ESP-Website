@@ -53,9 +53,9 @@ class SubmitForm(forms.Form):
         #Create new lottery record and assign new lottery number
         rec = PhaseZeroRecord()
         rec.lottery_number = 0
-        rec.user = user
         rec.program = program
         rec.save()
+        rec.user.add(user)
         rec.lottery_number = rec.id
         rec.save()
 
