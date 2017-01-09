@@ -97,20 +97,31 @@ class StudentRegPhaseZero(ProgramModuleObj):
         if op == 'join':
             if len(request.POST['student_selected'].strip()) == 0:
                 join_error = 'Error - You must select a student\'s username.'
-            elif (request.POST['student_selected'] == str(request.user.id)):
-                join_error = 'Error - You cannot select yourself!'
-            elif not PhaseZeroRecord.objects.filter(user=request.POST['student_selected'], program=prog).exists():
-                join_error = 'Error - You can only join a student that is already in the lottery!'
+
+            else:
+                join_user = request.POST['student_selected']
+                group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
+                users = group.user.all()
+                num_users = len(users)
+                if num_users < 4:
+                    group.user.add(user)
+                    group.save()
+                else:
+                    join_error = 'Error - You must select a student\'s username.'
+                #send_confirmation_email
 
             if join_error:
                 form = SubmitForm(program=prog)
                 context['form'] = form
                 context['join_error'] = join_error
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-            #else:
-                #check lottery group size
-                #if less than 4, add student to group, else error
-                #send_confirmation_email
+
+            else:
+                form = LotteryNumberForm(program=prog)
+                form.load(request.user, prog)
+                context['form'] = form
+                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
@@ -155,7 +166,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @needs_student
     def studentlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
 
-        # Search for teachers with names that start with search string
+        # Search for students with names that start with search string
         if not 'username' in request.GET or 'username' in request.POST:
             return self.goToCore(tl)
 
@@ -166,9 +177,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
         limit = 10
         from esp.web.views.json_utils import JsonResponse
 
-        Q_student = Q(groups__name="Student")
-
-        queryset = ESPUser.objects.filter(Q_student)
+        q_phasezero = Q(phasezerorecord__program=prog)
+        queryset = ESPUser.objects.filter(q_phasezero).distinct()
 
         if not 'username' in request.GET:
             startswith = request.POST['username']
@@ -198,7 +208,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'student': student,
                          'program': self.program,
-                         'curtime': datetime.now(),
+                         'curtime': datetime.datetime.now(),
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
