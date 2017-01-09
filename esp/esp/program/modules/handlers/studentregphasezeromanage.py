@@ -59,43 +59,27 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         }
 
     def lottery(self, prog, role):
-        #run lottery. Get grade caps and process student data in PhaseZeroRecords
+        # Run lottery algorithm.
+        # Get grade caps and process student data in PhaseZeroRecords
         grade_caps_str = prog._grade_caps()
         grade_caps = {int(key[0]):grade_caps_str[key] for key in grade_caps_str}
-        sibgroups = {}
 
-        for entry in PhaseZeroRecord.objects.filter(program=prog):
-            group_number = entry.lottery_number
-            user = entry.user
-            user_grade = entry.user.getGrade(prog)
-            lottery_id = entry.id
-
-            if group_number not in sibgroups.keys():
-                sibgroups[group_number] = [(user, user_grade, lottery_id)]
-            else:
-                sibgroups[group_number].append((user, user_grade, lottery_id))
-
-        sibgroups_copy = copy.copy(sibgroups)
-        for number in sibgroups_copy:
-            if len(sibgroups_copy[number]) > 4:
-                for student in sibgroups_copy[number]:
-                    sibgroups[student[2]] = [student]
+        records = PhaseZeroRecord.objects.filter(program=prog)
 
         ###############################################################################
         # The lottery algorithm is run, with randomization and processing in order.
         # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
 
-        groups = sibgroups.keys()
-        random.shuffle(groups)
+        random.shuffle(records)
 
         counts = {key:0 for key in grade_caps}
         winners = Group.objects.get_or_create(name=role)[0]
 
-        for i in groups:
-            sibs = sibgroups[i]
+        for i in records:
+            sibs = i.user.all()
             newcounts = copy.copy(counts)
             for j in sibs:
-                newcounts[j[1]] += 1
+                newcounts[j.getGrade(prog)] += 1
 
             cpass = True
             for c in counts.keys():
@@ -104,7 +88,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
             if cpass:
                 for user in sibs:
-                    user[0].groups.add(winners)    # check syntax
+                    user.groups.add(winners)
                 counts = copy.copy(newcounts)
 
         ###############################################################################
@@ -117,7 +101,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         studentAll_perm.save()
         # Add tag to indicate student lottery has been run
         Tag.setTag('student_lottery_run', target=prog, value='True')
-
+        
         return True
 
     @main_call
