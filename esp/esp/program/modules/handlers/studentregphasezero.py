@@ -106,9 +106,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 if num_users < 4:
                     group.user.add(user)
                     group.save()
+                    self.send_confirmation_email(user)
                 else:
                     join_error = 'Error - You must select a student\'s username.'
-                #send_confirmation_email
 
             if join_error:
                 form = SubmitForm(program=prog)
@@ -133,7 +133,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 form.load(request.user, prog)
                 context['form'] = form
                 context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
-                self.send_confirmation_email(user, note = "You have updated your lottery settings")
+                #self.send_confirmation_email(user, note = "You have updated your lottery settings")
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
                 if request.method == 'POST':

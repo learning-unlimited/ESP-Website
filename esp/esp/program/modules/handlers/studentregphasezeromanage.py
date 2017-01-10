@@ -43,7 +43,7 @@ from esp.tagdict.models import Tag
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import random, copy, datetime, json
+import copy, datetime, json
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     def isCompleted(self):
@@ -60,18 +60,16 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
     def lottery(self, prog, role):
         # Run lottery algorithm.
-        # Get grade caps and process student data in PhaseZeroRecords
+        # Get grade caps
         grade_caps_str = prog._grade_caps()
         grade_caps = {int(key[0]):grade_caps_str[key] for key in grade_caps_str}
 
-        records = PhaseZeroRecord.objects.filter(program=prog)
+        #Get lottery records and randomize them
+        records = PhaseZeroRecord.objects.filter(program=prog).order_by('?')
 
         ###############################################################################
         # The lottery algorithm is run, with randomization and processing in order.
         # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
-
-        random.shuffle(records)
-
         counts = {key:0 for key in grade_caps}
         winners = Group.objects.get_or_create(name=role)[0]
 
@@ -101,7 +99,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         studentAll_perm.save()
         # Add tag to indicate student lottery has been run
         Tag.setTag('student_lottery_run', target=prog, value='True')
-        
+
         return True
 
     @main_call
@@ -125,10 +123,25 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         for entrant in entrants:
             stats[entrant.getGrade(prog)]['in_lottery'] += 1
 
+        #Run lottery if requested
+        if request.POST:
+            if Tag.getBooleanTag('student_lottery_run', prog, default=False):
+                context['error'] = "You've already run the student lottery!"
+            else:
+                role = request.POST['rolename']
+                context['role'] = role
+                if "confirm" in request.POST:
+                    success = False
+                    success = self.lottery(prog, role)
+                    if success:
+                        context['success'] = "The student lottery has been run successfully."
+                    else:
+                        context['error'] = "The student lottery did not run successfully."
+                else:
+                    context['error'] = "You did not confirm that you would like to run the lottery"
+
         #If lottery has been run, calculate acceptance stats
         if Tag.getBooleanTag('student_lottery_run', prog, default=False):
-            if request.POST:
-                context['error'] = "You've already run the student lottery!"
             for grade in grades:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
             q_winners = Q(groups__name=role)
@@ -136,23 +149,10 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             for winner in winners:
                 stats[winner.getGrade(prog)]['num_accepted'] += 1
             for grade in grades:
-                if stats[grade]['num_accepted'] == 0:
+                if stats[grade]['in_lottery'] == 0:
                     stats[grade]['per_accepted'] = "NA"
                 else:
                     stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'],1)/stats[grade]['in_lottery']*100
-
-        elif request.POST:
-            role = request.POST['rolename']
-            context['role'] = role
-            if "confirm" in request.POST:
-                success = False
-                success = self.lottery(prog, role)
-                if success:
-                    context['success'] = "The student lottery has been run successfully."
-                else:
-                    context['error'] = "The student lottery did not run successfully."
-            else:
-                context['error'] = "You did not confirm that you would like to run the lottery"
         context['stats'] = stats
         return render_to_response('program/modules/studentregphasezero/status.html', request, context)
 
