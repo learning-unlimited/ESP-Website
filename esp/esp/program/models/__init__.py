@@ -1889,6 +1889,11 @@ class PhaseZeroRecord(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     lottery_number = models.IntegerField(null=True)
 
+    def display_user(self):
+        # Creates a string for the Users. This is required to display user in Admin.
+        return ', '.join([user.username for user in self.user.all()])
+    display_user.short_description = 'Username(s)'
+
 class StudentRegistration(ExpirableModel):
     """
     Model relating a student with a class section (interest, priority,

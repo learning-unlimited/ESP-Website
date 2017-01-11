@@ -323,7 +323,7 @@ class ClassFlagAdmin(admin.ModelAdmin):
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'lottery_number', 'program')
+    list_display = ('id', 'display_user', 'lottery_number', 'program')
+    search_fields = ['user__username', 'lottery_number']
     list_filter = ['program']
-    search_fields = ['program', 'user', 'lottery_number']
 admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
