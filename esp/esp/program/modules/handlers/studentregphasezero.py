@@ -37,7 +37,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
 from esp.users.models import Record, ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
-from esp.program.modules.forms.phasezero import LotteryNumberForm, SubmitForm
+from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 
@@ -134,27 +134,16 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
-                if request.method == 'POST':
-                    form = LotteryNumberForm(request.POST, program=prog)
-                    if form.is_valid():
-                        form.save(user, prog)
-                form = LotteryNumberForm(program=prog)
-                form.load(request.user, prog)
-                context['form'] = form
                 context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
                 context['lottery_size'] = len(context['lottery_group'].user.all())
-                #self.send_confirmation_email(user, note = "You have updated your lottery settings")
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
                 if request.method == 'POST':
                     form = SubmitForm(request.POST, program=prog)
                     if form.is_valid():
                         form.save(user, prog)
-                    form = LotteryNumberForm(program=prog)
-                    form.load(request.user, prog)
                     context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
                     context['lottery_size'] = len(context['lottery_group'].user.all())
-                    context['form'] = form
                     self.send_confirmation_email(user)
                     return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
                 else:

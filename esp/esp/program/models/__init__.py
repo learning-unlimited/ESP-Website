@@ -1913,12 +1913,11 @@ class RegistrationType(models.Model):
 
 class PhaseZeroRecord(models.Model):
     def __unicode__(self):
-        return str(self.lottery_number)
+        return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
     program = models.ForeignKey(Program, blank=True)
     time = models.DateTimeField(auto_now_add=True)
-    lottery_number = models.IntegerField(null=True)
 
     def display_user(self):
         # Creates a string for the Users. This is required to display user in Admin.

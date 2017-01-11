@@ -40,7 +40,6 @@ from esp.tagdict.models import Tag
 
 class SubmitForm(forms.Form):
 
-
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
             self.program = kwargs['program']
@@ -50,33 +49,9 @@ class SubmitForm(forms.Form):
         super(SubmitForm, self).__init__(*args, **kwargs)
 
     def save(self, user, program):
-        #Create new lottery record and assign new lottery number
+        #Create new lottery record and add user to record
         rec = PhaseZeroRecord()
-        rec.lottery_number = 0
         rec.program = program
         rec.save()
         rec.user.add(user)
-        rec.lottery_number = rec.id
-        rec.save()
-
-class LotteryNumberForm(forms.Form):
-
-    lottery_number = forms.IntegerField(max_value=999999,min_value=0, label="Group Lottery Code:")
-
-    def __init__(self, *args, **kwargs):
-        if 'program' in kwargs:
-            self.program = kwargs['program']
-            del kwargs['program']
-        else:
-            raise KeyError('Need to supply program as named argument to LotteryNumberForm')
-        super(LotteryNumberForm, self).__init__(*args, **kwargs)
-
-    def load(self, user, program):
-        #Load assigned lottery number associated with user
-        self.fields['lottery_number'].initial = PhaseZeroRecord.objects.filter(user=user, program=program)[0].lottery_number
-
-    def save(self, user, program):
-        #Save new lottery number
-        rec = PhaseZeroRecord.objects.filter(user=user, program=program)[0]
-        rec.lottery_number = self.cleaned_data['lottery_number']
         rec.save()
