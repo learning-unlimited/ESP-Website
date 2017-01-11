@@ -101,26 +101,35 @@ class StudentRegPhaseZero(ProgramModuleObj):
             else:
                 join_user = request.POST['student_selected']
                 group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
+                if in_lottery:
+                    old_group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
                 users = group.user.all()
                 num_users = len(users)
-                if num_users < 4:
+                if join_user == str(user.id):
+                    join_error = 'Error - You can not select yourself.'
+                elif in_lottery and old_group==group:
+                    join_error = 'Error - You are already in this lottery group.'
+                elif num_users < 4:
                     group.user.add(user)
                     group.save()
                     self.send_confirmation_email(user)
+                    if in_lottery:
+                        old_group.user.remove(user)
+                        old_group.save()
+                        if len(old_group.user.all()) == 0:
+                            old_group.delete()
                 else:
-                    join_error = 'Error - You must select a student\'s username.'
+                    join_error = 'Error - This group already contains the maximum number of students.'
 
-            if join_error:
+            context['join_error'] = join_error
+            if join_error and not in_lottery:
                 form = SubmitForm(program=prog)
                 context['form'] = form
-                context['join_error'] = join_error
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
             else:
-                form = LotteryNumberForm(program=prog)
-                form.load(request.user, prog)
-                context['form'] = form
-                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
+                context['lottery_size'] = len(context['lottery_group'].user.all())
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
@@ -132,7 +141,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 form = LotteryNumberForm(program=prog)
                 form.load(request.user, prog)
                 context['form'] = form
-                context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
+                context['lottery_size'] = len(context['lottery_group'].user.all())
                 #self.send_confirmation_email(user, note = "You have updated your lottery settings")
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
@@ -142,7 +152,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         form.save(user, prog)
                     form = LotteryNumberForm(program=prog)
                     form.load(request.user, prog)
-                    context['lottery_number'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0].lottery_number
+                    context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
+                    context['lottery_size'] = len(context['lottery_group'].user.all())
                     context['form'] = form
                     self.send_confirmation_email(user)
                     return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
