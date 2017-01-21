@@ -125,18 +125,18 @@ class OnSiteClassList(ProgramModuleObj):
 
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
         students_Q = Q()
-        
+
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
 
         students = ESPUser.objects.filter(students_Q)
         program_students_ids = []
 
-        data = [] 
+        data = []
         if search_query:
             #If user provided a search term then we want to expand search to the
             #entire student base
-            
+
             search_tokens = search_query.split(' ',1)
             first_token = search_tokens[0]
 
@@ -145,10 +145,10 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 second_token = search_tokens[1]
                 search_qset = (Q(last_name__icontains=first_token) & Q(first_name__icontains=second_token)) | \
-                            (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token)) 
+                            (Q(first_name__icontains=first_token) & Q(last_name__icontains=second_token))
             program_students_ids = set(students.values_list('id', flat=True).distinct())
             students = ESPUser.objects.filter(search_qset)
-                              
+
         students = students.values_list('id', 'last_name', 'first_name') \
                               .distinct() \
                               .order_by('last_name','first_name')
@@ -180,10 +180,10 @@ class OnSiteClassList(ProgramModuleObj):
 
             for extension in ['paid','Attended','medical','liability','OnSite']:
                 Record.createBit(extension, program, student)
-        
+
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
 
-        json.dump({'status':success}, resp)   
+        json.dump({'status':success}, resp)
         return resp
 
     @aux_call
