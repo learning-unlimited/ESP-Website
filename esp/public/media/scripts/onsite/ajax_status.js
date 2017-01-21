@@ -547,6 +547,17 @@ function remove_student(student_id, section_id)
 
 function register_student(student_id, dialog) 
 {
+    // Add a dummy entry to data.students for now, in case anything
+    // tries to access it.
+    // The real data will be populated by the call to fetch_all() below.
+    var new_student = {};
+    new_student.id = student_id;
+    new_student.first_name = "Unknown";
+    new_student.last_name = "Student";
+    new_student.grade = 0;
+    new_student.sections = [];
+    new_student.checked_in = null;
+    data.students[student_id] = new_student;
    
     $j.ajax({
             url: program_base_url + "register_student",
