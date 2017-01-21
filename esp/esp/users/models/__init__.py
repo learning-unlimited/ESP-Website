@@ -2186,7 +2186,7 @@ class Record(models.Model):
         from esp.accounting.controllers import IndividualAccountingController
         if extension == 'Paid':
             IndividualAccountingController.updatePaid(True, program, user)
-            
+
         if cls.user_completed(user, extension.lower(), program):
             return False
         else:
