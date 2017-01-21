@@ -166,7 +166,7 @@ class OnSiteClassList(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def register_student(self, request, tl, one, two, module, extra, prog):
-        resp = HttpResponse(mimetype='application/json')
+        resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
         student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
