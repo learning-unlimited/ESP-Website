@@ -1,4 +1,3 @@
-
 <div id="list_descriptions" class="commpanel_hidden">
 {% for kv in lists.items %}{% for item in kv.1 %}
 <div id="list_description_{{ item.name }}">{{ item.description }}</div>
@@ -6,19 +5,19 @@
 </div>
 
 <div id="tabs">
-	<ul>
-		<li><a id="tab_select_basic" href="#tab_basic">Basic list</a></li>
-		<li><a id="tab_select_combo" href="#tab_combo">Combination list</a></li>
+    <ul>
+        <li><a id="tab_select_basic" href="#tab_basic">Basic list</a></li>
+        <li><a id="tab_select_combo" href="#tab_combo">Combination list</a></li>
         {% if include_prev_list %}
         <li><a id="tab_select_previous" href="#tab_previous">Previous e-mails</a></li>
         {% endif %}
-	</ul>
-	<div id="tab_basic">
+    </ul>
+    <div id="tab_basic">
         <form id="form_basic_list" method="POST" action="{{ action_path }}">
-        
+
         <div id="basic_step_container">
-        
-		<div id="recipient_type_select">
+
+        <div id="recipient_type_select">
             <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text"> Who would you like to contact?</span></div>
             <div id="recipient_type_options">
                 <select id="recipient_type" name="recipient_type">
@@ -42,10 +41,10 @@
                     </div>
                 </div>
                 <p>&nbsp;</p>
-                <a name="#" class="recipient_step_button" id="recipient_type_next">Continue to select set of contacts</a>
+                <button type="button" class="btn btn-primary recipient_step_button" id="recipient_type_next">Continue to select set of contacts</button>
             </div>
         </div>
-        
+
         <div id="recipient_list_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 2:</span> <span id="recipient_type_name" class="step_text">Which set of would you like to contact?</span></div>
             {% for kv in lists.items %}
@@ -57,83 +56,89 @@
                     <label id="label_{{ item.name }}" for="list_{{ item.name }}">{{ item.description }}</label>
                 </li>
                 {% endfor %}
-                <li id="list_show_all_{{ kv.0 }}" class="commpanel_show_all">Show more list options</li>
-                <li id="list_show_preferred_{{ kv.0 }}" class="commpanel_show_preferred commpanel_hidden">Show fewer list options</li>
-                </ul>
+                <li><button type="button" class="btn btn-info commpanel_show_all">Show more list options</button><button type="button" class="btn btn-info commpanel_show_preferred commpanel_hidden">Show fewer list options</button></li></ul>
             </div>
             {% endfor %}
-            <a name="#" class="recipient_step_button" id="recipient_list_back">Go back</a> 
-            <a name="#" class="recipient_step_button" id="recipient_list_next">Add filters</a>
-            <a name="#" class="recipient_step_button" id="recipient_list_done">Continue</a>
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_list_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_list_next">Add filters</button>
+            <button type="button" class="btn btn-primary recipient_step_button" id="recipient_list_done">Continue</button>
         </div>
-        
+
         <div id="recipient_filter_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div class="step_instructions step_highlight">Currently selected: <span id="filter_current_list"></span></div>
             <div id="filter_accordion">
-            
+
                 <h4><a href="#">User ID</a></h4>
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
-                
+
                 <h4><a href="#">User name</a></h4>
                 <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
-                
+
                 <h4><a href="#">Last name</a></h4>
                 <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
-                
+
                 <h4><a href="#">First name</a></h4>
                 <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
-                
+
                 <h4><a href="#">E-mail address</a></h4>
                 <div>Enter a portion of the e-mail address: <input type="text" size="30" name="email" id="email" /></div>
-                
+
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
                     Center of region: <input type="text" size="5" name="zipcode" value="02139" /> <br />
                     Minimum distance: <input type="text" size="4" name="zipdistance_exclude" value="" /> miles <br />
                     Maximum distance: <input type="text" size="4" name="zipdistance" value="" /> miles
                 </div>
-                
+
                 <h4><a href="#">States</a></h4>
                 <div>Enter a list of states: <input type="text" size="18" name="states" value="" /> <br />
                 <small>Example: MA,CT,NY</small></div>
-                
+
                 <h4><a href="#">School</a></h4>
                 <div>Enter a portion of the school name: <input type="text" size="30" name="school" value="" /></div>
-                
+
                 <h4><a href="#">Grade</a></h4>
                 <div>
                 Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
                 Max Grade: <input type="text" size="3" name="grade_max" value="" />
                 </div>
-                
+
                 <h4><a href="#">Graduation Year</a></h4>
                 <div>
                 Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
-                
+
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
+
             </div>
-            
-            <a name="#" class="recipient_step_button" id="recipient_filter_back">Go back</a>
+
+            <button type="button" class="btn btn-default recipient_step_button" id="recipient_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
-            <a name="#" class="recipient_step_button" id="recipient_filter_checklist">Recipient checklist</a>
+            <button type="button" class="btn btn-info recipient_step_button" id="recipient_filter_checklist">Recipient checklist</button>
             {% endif %}
-            <a name="#" class="recipient_step_button" id="recipient_filter_done">Continue</a>
+            <button type="button" class="btn btn-primary recipient_step_button" id="recipient_filter_done">Continue</button>
         </div>
-        
-        
+
+
         </div>
-        
+
         </form>
-	</div>
-    
-	<div id="tab_combo">
+    </div>
+
+    <div id="tab_combo">
         <form id="form_combo_list" method="POST" action="{{ action_path }}">
         <div id="combo_step_container">
-    
+
         <div id="starting_list_select">
             <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text">Select a starting list</span></div>
             <div class="step_instructions">You may combine this with other lists in the next step.</div>
@@ -157,9 +162,9 @@
                 </div>
             </div>
             <p>&nbsp;</p>
-            <a name="#" class="recipient_step_button" id="combo_base_next">Continue to combine with other lists</a>
+            <button type="button" class="btn btn-primary recipient_step_button" id="combo_base_next">Continue to combine with other lists</button>
         </div>
-        
+
         <div id="combo_list_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 2:</span> <span class="step_text">Combine with other lists</span></div>
             <div class="step_instructions">For each of the lists below, choose whether you would like to combine it with the starting list, and whether you would like to negate it (NOT).  All of the lists selected with AND will be intersected with the starting list, and the result will be unioned with all of the lists marked OR.</div><br />
@@ -181,90 +186,98 @@
             </ul>
             </div>
             <p>&nbsp;</p>
-            <a name="#" class="recipient_step_button" id="combo_options_back">Go back</a>
-            <a name="#" class="recipient_step_button" id="combo_options_next">Add filters</a>
-            <a name="#" class="recipient_step_button" id="combo_options_done">Continue</a>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_options_back">Go back</button>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_options_next">Add filters</button>
+            <button type="button" class="btn btn-primary recipient_step_button" id="combo_options_done">Continue</button>
         </div>
-        
+
         <div id="combo_filter_select" class="commpanel_hidden">
             <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
             <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
             <div id="combo_filter_accordion">
-            
+
                 <h4><a href="#">User ID</a></h4>
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
-                
+
                 <h4><a href="#">User name</a></h4>
                 <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
-                
+
                 <h4><a href="#">Last name</a></h4>
                 <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
-                
+
                 <h4><a href="#">First name</a></h4>
                 <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
-                
+
                 <h4><a href="#">E-mail address</a></h4>
                 <div>Enter a portion of the e-mail address: <input type="text" size="30" name="email" id="email" /></div>
-                
+
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
                     Center of region: <input type="text" size="5" name="zipcode" value="02139" /> <br />
                     Minimum distance: <input type="text" size="4" name="zipdistance_exclude" value="" /> miles <br />
                     Maximum distance: <input type="text" size="4" name="zipdistance" value="" /> miles
                 </div>
-                
+
                 <h4><a href="#">States</a></h4>
                 <div>Enter a list of states: <input type="text" size="18" name="states" value="" /> <br />
                 <small>Example: MA,CT,NY</small></div>
-                
+
                 <h4><a href="#">School</a></h4>
                 <div>Enter a portion of the school name: <input type="text" size="30" name="school" value="" /></div>
-                
+
                 <h4><a href="#">Grade</a></h4>
                 <div>
                 Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
                 Max Grade: <input type="text" size="3" name="grade_max" value="" />
                 </div>
-                
+
                 <h4><a href="#">Graduation Year</a></h4>
                 <div>
                 Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
                 Max: <input type="text" size="3" name="gradyear_max" value="" />
                 </div>
-                
+
+                <h4><a href="#">User Group</a></h4>
+                <div><select name="group" id="user-search-group">
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                    <option value="" selected hidden></option>
+                </select></div>
+
             </div>
-            
-            <a name="#" class="recipient_step_button" id="combo_filter_back">Go back</a>
+
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_back">Go back</button>
             <input type="hidden" name="use_checklist" value="0" />
             {% if include_checklist %}
-            <a name="#" class="recipient_step_button" id="combo_filter_checklist">Recipient checklist</a>
+            <button type="button" class="btn btn-default recipient_step_button" id="combo_filter_checklist">Recipient checklist</button>
             {% endif %}
-            <a name="#" class="recipient_step_button" id="combo_filter_done">Continue</a>
+            <button type="button" class="btn btn-primary recipient_step_button" id="combo_filter_done">Continue</button>
         </div>
-        
+
         </div>
         </form>
-	</div>
-    
+    </div>
+
     {% if include_prev_list %}
     <div id="tab_previous">
 
         <form id="form_previous" method="POST" action="{{ action_path }}">
         <div id="previous_step_container">
-        
+
         <div id="msgreq_selector_area" class="ui-widget">Begin typing an e-mail title to find a previous message:
-        <input type="text" size="60" name="msgreq_id" id="msgreq_selector"/> 
+        <input type="text" size="60" name="msgreq_id" id="msgreq_selector"/>
         <div class="step_instructions">Once you have selected a message, you can view information about it below.  If you would like to use the same list of recipients and edit the message text and settings before sending, click "Continue to compose e-mail" below.</div>
         </div>
-        
+
         <div id="msgreq_info_area">
 
         </div>
-        
-        <a name="#" class="recipient_step_button" id="prev_select_done">Continue to edit e-mail</a>
-        
-        </div>        
+
+        <button type="button" class="btn btn-primary recipient_step_button" id="prev_select_done">Continue to edit e-mail</button>
+
+        </div>
         </form>
-	</div>
+    </div>
     {% endif %}
 </div>

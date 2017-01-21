@@ -18,10 +18,6 @@
 </style>
 {% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
-
 {% block content %}
 <h1>Student Registration for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregtwophase/top" %}

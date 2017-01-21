@@ -33,9 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ContactInfo, ESPUser
-from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
@@ -53,7 +52,7 @@ class ArchiveFilter(object):
     def __init__(self, category = "", options = ""):
         self.category = unicode(category)
         self.options  = unicode(options)
-    
+
     def __unicode__(self):
         return '%s, %s' % (self.category, self.options)
 
@@ -61,26 +60,26 @@ def compute_range(postvars, num_records):
     default_num_records = 10
     results_start = 0
     results_end = None
-    if postvars.has_key('results_start'):
+    if 'results_start' in postvars:
         results_start = int(postvars['results_start'])
-    if postvars.has_key('results_end'):
+    if 'results_end' in postvars:
         results_end = int(postvars['results_end'])
     if (num_records > default_num_records) and results_end == None:
-        if postvars.has_key('max_num_results') and postvars['max_num_results'] == "Show all":
+        if postvars.get('max_num_results') == "Show all":
             results_end = num_records
-        elif postvars.has_key('max_num_results') and postvars['max_num_results'] != "":
+        elif postvars.get('max_num_results'):
             results_end = results_start + int(postvars['max_num_results'])
         else:
             results_end = results_start + default_num_records
-    
+
     return {'start': results_start, 'end': results_end}
-        
+
 def extract_criteria(postvars):
     #    Use filters
     criteria = []
     for key in postvars.keys():
         if len(postvars[key]) > 0 and key.find("filter_") != -1 and len(key) > 7: criteria.append(ArchiveFilter(category = key[7:], options = postvars[key]))
-    
+
     return criteria
 
 def filter_archive(records, criteria):
@@ -98,28 +97,9 @@ def filter_archive(records, criteria):
             result = result.filter(teacher__icontains = c.options)
         elif c.category == 'description':
             result = result.filter(description__icontains = c.options)
-            
+
     return result
-        
-def filter_active(records, criteria):
-    result = records
-    for c in criteria:
-        if c.category == 'year':
-            result = result.filter(parent_program__anchor__name__icontains = c.options)
-        elif c.category == 'program':
-            result = result.filter(parent_program__anchor__parent__name__icontains = c.options)
-        elif c.category == 'title':
-            result = result.filter(anchor__friendly_name__istartswith = c.options)
-        elif c.category == 'category':
-            result = result.filter(category__category__istartswith = c.options)
-        elif c.category == 'teacher':
-            result = result.filter(teacher__icontains = c.options)
-        elif c.category == 'description':
-            result = result.filter(class_info__icontains = c.options)
-        archive_classes = [c.getArchiveClass() for c in result]
-            
-    return ArchiveClass.objects.filter(id__in=[c.id for c in archive_classes])
-        
+
 def title_heading(title_content):
     if len(title_content) > 0:
         return title_content[0]
@@ -130,7 +110,7 @@ def archive_classes(request, category, options, sortorder = None):
     context = {'selection': 'Classes'}
     context['category'] = category
     context['options'] = options
-    
+
     #    Take filtering criteria both from form and from URL
     if category != None and options != None:
         url_criterion = ArchiveFilter(category = category, options = options)
@@ -143,15 +123,15 @@ def archive_classes(request, category, options, sortorder = None):
 
     category_list = list(ArchiveClass.objects.all().values_list('category', flat=True).distinct())
     program_list = list(ArchiveClass.objects.all().values_list('program', flat=True).distinct())
-    
+
     category_dict = {}
     classcatList = ClassCategories.objects.all()
     for letter in map(chr, range(65, 91)):
         category_dict[letter] = 'Unknown Category'
-        
+
     for category in classcatList:
         category_dict[category.category[0].upper()] = category.category
-    
+
     filter_keys = {'category': [{'name': c, 'value': c, 'selected': False} for c in category_list],
             'year': [{'name': str(y), 'value': str(y), 'selected': False} for y in range(1998, datetime.now().year + 1)],
             'title': [{'name': 'Starts with ' + letter, 'value': letter, 'selected': False} for letter in map(chr, range(65,91))],
@@ -159,19 +139,11 @@ def archive_classes(request, category, options, sortorder = None):
             'teacher': [{}],
             'description': [{}]
             }
-    if request.POST.has_key('filter_teacher'): filter_keys['teacher'][0]['default_value'] = request.POST['filter_teacher']
-    if request.POST.has_key('filter_description'): filter_keys['description'][0]['default_value'] = request.POST['filter_description']
-    
+    if 'filter_teacher' in request.POST: filter_keys['teacher'][0]['default_value'] = request.POST['filter_teacher']
+    if 'filter_description' in request.POST: filter_keys['description'][0]['default_value'] = request.POST['filter_description']
+
     results = filter_archive(ArchiveClass.objects.all(), criteria_list)
-    #   We don't need this code because, for now, we will create ArchiveClasses for all
-    #   active classes without actually archiving them.  -Michael
-    """
-    if request.POST.has_key('include_active') and request.POST['include_active'] == 'on':
-        original_id_list = [r['id'] for r in results.values('id')]
-        new_id_list = [r['id'] for r in filter_active(ClassSubject.objects.all(), criteria_list).values('id')]
-        results = ArchiveClass.objects.filter(id__in=(original_id_list + new_id_list))
-    """
-    
+
     #    Sort the results by the specified order
     if (not isinstance(sortorder, list)) or len(sortorder) < 1:
         sortorder = ['year', 'category', 'program', 'title', 'teacher', 'description']
@@ -180,74 +152,74 @@ def archive_classes(request, category, options, sortorder = None):
     for parameter in sortorder:
         results = results.order_by(parameter)
     sortorder.reverse()
-    
+
     context['sortorder'] = sortorder
 
     for c in criteria_list:
-        for k in filter_keys[c.category]: 
-            if k.has_key('name') and k.has_key('value'):
+        for k in filter_keys[c.category]:
+            if 'name' in k and 'value' in k:
                 if c.options == k['value']:
                     k['selected'] = True
-                
+
     context['sortparams'] = [{'name': k, 'options': filter_keys[k]} for k in filter_keys.keys()]
 
     #    Display the appropriate range of results
     postvars = request.POST.copy()
     relevant_keys = ['max_num_results', 'results_start', 'results_end']
     for k in relevant_keys:
-        if request.GET.has_key(k):
+        if k in request.GET:
             postvars[k] = request.GET[k]
-    
+
     res_range = compute_range(postvars, results.count())
     context['results_range'] = res_range
-    
+
     #    Deal with the Django bug preventing you from using no "end"
     if res_range['end'] is None:
         res_range['end'] = results.count()
 
     #    Rename all of the class categories and uppercase the programs
     for entry in results[res_range['start']:res_range['end']]:
-        entry.category = category_dict[entry.category[:1].upper()]    
+        entry.category = category_dict[entry.category[:1].upper()]
         entry.program = entry.program.upper()
         #    entry.title = entry.title.capitalize()
-    
+
     #    Compute the headings for the 'jump to category' part
     if sortorder[0] == 'title':
         headings = [title_heading(item.__dict__['title']) for item in results[res_range['start']:res_range['end']]]
     else:
         headings = [item.__dict__[sortorder[0]] for item in results[res_range['start']:res_range['end']]]
-    
+
     context['headings'] = list(set([unicode(h) for h in headings]))
     context['headings'].sort()
-    
+
     #    Fill in context some more
     context['num_results'] = results.count()
     context['results'] = list(results[res_range['start']:res_range['end']])
     context['results_range']['start'] = context['results_range']['start'] + 1
     if res_range['end'] > context['num_results']:
         context['results_range']['end'] = context['num_results']
-    if request.POST.has_key('max_num_results'):
+    if 'max_num_results' in request.POST:
         context['max_num_results'] = request.POST['max_num_results']
     else:
         context['max_num_results'] = '25'
     context['num_results_list'] = ['10', '25', '50', '100', '250', 'Show all']
     context['num_results_shown'] = len(context['results'])
-    
-    return render_to_response('program/archives.html', request, context) 
+
+    return render_to_response('program/archives.html', request, context)
 
 def archive_teachers(request, category, options):
     context = {'selection': 'Teachers'}
     context['category'] = category
     context['options'] = options
-    
-    return render_to_response('program/archives.html', request, context) 
-    
+
+    return render_to_response('program/archives.html', request, context)
+
 def archive_programs(request, category, options):
     context = {'selection': 'Programs'}
     context['category'] = category
     context['options'] = options
-    
-    return render_to_response('program/archives.html', request, context) 
+
+    return render_to_response('program/archives.html', request, context)
 
 archive_handlers = {    'classes': archive_classes,
             'teachers': archive_teachers,

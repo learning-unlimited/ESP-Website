@@ -61,14 +61,14 @@ Formstack medical/liability forms (FormstackMedLiabModule)
 We are not permitted to directly handle sensitive information such as medical insurance information (just as we are not permitted to see credit card numbers).  If you need students to submit this type of information, you can use a secure 3rd party service (Formstack) along with this module:
 1) Create your form on Formstack.
 2) Create (program-specific) Tags with the form ID and viewing key as "formstack_id" and "formstack_viewkey" respectively.
-3) Configure Formstack to POST an acknowledgement of each form submission to /learn/[prorgram]/[instance]/medicalpostback581309742.
+3) Configure Formstack to POST an acknowledgement of each form submission to /learn/[program]/[instance]/medicalpostback581309742.
 
 This registration step is controlled by the FormstackMedliab deadline type.
 
 Lottery Student Registration (LotteryStudentRegModule) 
 ------------------------------------------------------
 
-There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose .  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
+There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose.  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
 
 If you are using this module, make sure the StudentClassRegModule is not enabled at the same time.  Add only LotteryStudentRegModule to your program for the lottery phase, then remove it when that phase ends.  After running the lottery assignment script, you can add the StudentClassRegModule and set a deadline for first-come first-served registration.
 
@@ -81,7 +81,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
@@ -100,7 +99,7 @@ More details on these Tags can be found here at http://wiki.learningu.org/Custom
 Lunch Preferences and Sibling Discount (SplashInfoModule) 
 ---------------------------------------------------------
 
-This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1--2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
+This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1-2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
 
 * splashinfo_choices: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  Example:
 
@@ -158,7 +157,7 @@ This module should be enabled if your program involves students picking and choo
 * Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
 * Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
 * Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the QSD area on the catalog if you would like students to see their schedule while doing this. 
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
 * Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
 * Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
 * Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
@@ -207,8 +206,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key donation_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 The module, when enabled, is available at the url
 /learn/<program>/<instance>/donation. It will also show up as an item in the
@@ -317,6 +316,9 @@ This is the module that embeds a Formstack form on a student-facing page for
 student applications.  For more information, see
 `</docs/admin/student_apps.rst>`_.
 
+Class Change Request Module (ClassChangeRequest)
+------------------------------------------------
+
 Teacher modules (13)
 ====================
 
@@ -343,7 +345,6 @@ The questions shown on the teacher profile are configurable via the following ta
 * teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------
@@ -466,10 +467,28 @@ The scheduling interface will periodically fetch updates from the server so that
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
 
-Managing Check List Items (CheckListModule)
--------------------------------------------
+Instructions for using the scheduler:
 
-This module is deprecated and will be removed in a future release.  Please consider using the new "class flags" feature described immediately below.
+- Click on the class you want to schedule (either in the directory or on the grid) to select it.
+- On the grid, the places you might put the class are highlighted. Legend:
+ - Green means you can put the class there.
+ - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+ - Yellow means the teacher is available then, but teaching another class.
+- Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
+- When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
+- When no class is selected, the pane in the upper right corner displays scheduling errors.
+- Hovering over a room cell or a class section gives you a tooltip with info about the classes.
+- The lower right pane is the directory. You can search using the search bar at the top and select how you want to search with the radio buttons. You can move to the filters tab of the directory and set bounds on different parameters such as capacity and length.
+- To set a comment on a class's scheduling, select it and click on "Set Comment" in the upper right pane. A dialog for entering a comment will appear.
+- To lock a class, follow the instructions to set a comment, and check the "Lock" box in the comment dialog. A red border will appear around it in the schedule or directory, and no one will be able to move it without unlocking it first. To unlock a class, select it and then click on "Edit Comment or Unlock". Any admin can lock or unlock any class.
+
+Keyboard shortcuts:
+
+- ESC unselects the currently selected class
+- F1 switches to the directory tab
+- F2 switches to the filters tab
+- / selects the search box
+- DEL unschedules the currently selected class
 
 Class Flags (ClassFlagModule)
 -------------------------------------------
@@ -483,9 +502,16 @@ To set up class flags, first add some flag types from the admin panel at
 /admin/program/classflagtype/, then add them to your program by choosing your
 program in /admin/program/program/ and scrolling to the bottom of the page.
 (There is also a place to add them at program creation.) Now you can add and
-view class flags from the edit class or manage class pages.  To create a list
-of classes with(out) some flag, go to the manage page for the program, and in
-the complete list of modules, choose "Manage class flags".
+view class flags from the edit class or manage class pages.
+
+Class Search (ClassSearchModule)
+--------------------------------
+
+This page, formerly a part of the ClassFlagModule allows building queries of
+classes, such as all classes with or without a particular flag, status,
+category, or any combination thereof.  It can be reached by clicking on "Search
+for Classes" under the complete module list on the program management main
+page.
 
 Communications Panel for Admin (CommModule)
 -------------------------------------------
@@ -542,8 +568,8 @@ To override any of these settings, create a Tag (at /admin/tagdict/tag/) for
 the program, with the key stripe_settings, and with the value being a JSON
 object with the overriden keys/values.
 
-The module also has a donation pitch built into the inline QSD on that page. It
-can be edited inline by an admin to something more customized.
+The module also has a donation pitch built into the editable text area on that
+page. It can be edited inline by an admin to something more customized.
 
 Credit Card Viewer
 ------------------
@@ -639,6 +665,17 @@ Admin Admissions Dashboard
 Provides an interface for admins to review all of the applications in the
 program. For more information, see `</docs/admin/student_apps.rst>`_.
 
+Student Registration Big Board
+--------------------------------------
+
+Provides a page for watching the current number of student registrations.
+You can get to it from the link "Student Registration Big Board" on the main
+program management page, or at /manage/[program]/[instance]/bigboard.  It has
+some of the same statistics as the dashboard, but is a lot faster to load, and
+has some fun extra numbers too.  Most of the statistics are most useful during
+lottery registration, but it is not restricted to the lottery.
+
+
 Onsite modules (8)
 ==================
 
@@ -689,6 +726,10 @@ Teacher Check-in (TeacherCheckInModule)
 
 This is a very helpful module for recording which teachers have checked in (/onsite/[program]/[instance]/teachercheckin), avoiding the need for a Google Doc or paper checklist.  It divides teachers by the time of their first class on each day, and shows you their phone number if you need to call them.  Teachers will need to check in before the first class on each day that they are teaching.
 
+Unenroll Students (UnenrollModule)
+----------------------------------
+
+This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
 Volunteer modules (1)
 =====================
@@ -699,5 +740,3 @@ Volunteer Sign-up Module (VolunteerSignup)
 If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
 
 If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
-
-

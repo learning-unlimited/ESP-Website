@@ -34,11 +34,10 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
-from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
@@ -60,17 +59,14 @@ class OnSiteRegister(ProgramModuleObj):
     def onsite_create(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = OnSiteRegForm(request.POST)
-            
+
             if form.is_valid():
                 new_data = form.cleaned_data
                 username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
-                new_user = ESPUser(username = username,
+                new_user = ESPUser.objects.create_user(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
-                                email      = new_data['email'],
-                                is_staff   = False,
-                                is_superuser = False)
-                new_user.save()
+                                email      = new_data['email'])
 
                 self.student = new_user
 
@@ -83,7 +79,7 @@ class OnSiteRegister(ProgramModuleObj):
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade'], ESPUser.program_schoolyear(self.program)))
 
                 try:
                     if isinstance(new_data['k12school'], K12School):
@@ -101,7 +97,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-                
+
                 if new_data['paid']:
                     Record.createBit('paid', self.program, self.user)
                     IndividualAccountingController.updatePaid(True, self.program, self.user)
@@ -118,21 +114,21 @@ class OnSiteRegister(ProgramModuleObj):
 
                 Record.createBit('OnSite', self.program, self.user)
 
-                
+
                 new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
-                
+
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
-                    'student': new_user, 
+                    'student': new_user,
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
 
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form, 'current_year':ESPUser.current_schoolyear()})
+        return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

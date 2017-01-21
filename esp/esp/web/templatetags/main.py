@@ -3,12 +3,12 @@ from esp.themes.controllers import ThemeController
 from django import template
 
 import os.path
-import simplejson as json
+import json
 
 register = template.Library()
 
 def count_matching_chars(str1, str2):
-    """ Determines the length of the common substring at the beginning of 
+    """ Determines the length of the common substring at the beginning of
         str1 and str2.  Used to identify the best matching tab based on
         link URLs in the extract_theme filter below.
     """
@@ -37,7 +37,7 @@ def index(arr,index):
         return arr[index]
     except IndexError:
         return ''
-    
+
 @register.filter
 def concat(str,text):
     return str + text
@@ -48,19 +48,16 @@ def equal(obj1,obj2):
 
 @register.filter
 def notequal(obj1,obj2):
-    #print str(obj1) + " != " + str(obj2) + " --> " + str(obj1 != obj2)
     return obj1 != obj2
 
 @register.filter
 def bool_or(obj1,obj2):
-    #print str(obj1) + " or " + str(obj2) + " --> " + str(obj1 or obj2)
     return obj1 or obj2
 
 @register.filter
 def bool_and(obj1,obj2):
-    #print str(obj1) + " and " + str(obj2) + " --> " + str(obj1 and obj2)
     return obj1 and obj2
-    
+
 @register.filter
 def extract_theme(url):
     #   Get the appropriate color scheme out of the Tag that controls nav structure
@@ -101,17 +98,16 @@ def get_nav_category(path):
 @register.filter
 def truncatewords_char(value, arg):
     """
-    Truncates a string before a certain number of characters, 
+    Truncates a string before a certain number of characters,
     using as many complete words as possible.
 
     Argument: Number of characters to truncate before.
     """
-    from django.utils.text import truncate_words
     try:
         length = int(arg)
     except ValueError: # Invalid literal for int().
         return value # Fail silently.
-    
+
     txt_spaces = value.split()
     txt_result = ''
     for item in txt_spaces:
@@ -120,9 +116,9 @@ def truncatewords_char(value, arg):
         else:
             txt_result += ' ...'
             break
-            
+
     return txt_result
-    
+
 @register.filter
 def as_form_label(str):
     return str.replace('_', ' ').capitalize()

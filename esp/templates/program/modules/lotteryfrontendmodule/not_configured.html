@@ -1,0 +1,15 @@
+{% extends "main.html" %}
+
+{% block title %}Lottery Assignment Tool{% endblock %}
+
+{% block content %}
+
+<h1>Run the Lottery Assignment Thing</h1>
+
+<h2>Error</h2>
+
+<p>The student-facing lottery module (to collect and track lottery preferences) is not currently included in the program.  If you would like to add it, you can do so from the <a href="/admin/program/program/{{ program.id }}/">administration page.</a></p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

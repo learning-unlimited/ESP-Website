@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block xtrajs %}
 {{block.super }}
 <script type="text/javascript">
@@ -17,7 +15,6 @@ function updateDocs(docs) {
 
 <script type="text/javascript"> var base_url = "{{ program.getUrlBase }}" </script>
 <script type="text/javascript"> var program_base_url = "/json/"+base_url+"/"; </script>
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/sorttable.js"></script>
 <script type="text/javascript" src="/media/scripts/program/modules/admincore.js"></script>
@@ -35,8 +32,6 @@ function updateDocs(docs) {
 </style>
 <br />
 <br />
-
-{{ program.mainteacherreg }}
 
 <br /><br />
 <h1>Admin Dashboard for {{program.niceName}} </h1>

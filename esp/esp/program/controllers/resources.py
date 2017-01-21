@@ -32,48 +32,58 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db.models import ProtectedError
+
 from esp.cal.models import Event
+from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 
 class ResourceController(object):
     """ Controller for managing program resources.
-    
+
     This is merely a framework, and most functionality will be added
     in the future when the resources schema is revised.
     """
 
     def __init__(self, program, *args, **kwargs):
         self.program = program
-        
+
     def delete_timeslot(self, id):
         #   delete timeslot
         ts = Event.objects.get(id=id)
         ts.delete()
-        
+
     def add_or_edit_timeslot(self, form):
         """ form is a TimeslotForm object   """
         if form.cleaned_data['id'] is not None:
             new_timeslot = Event.objects.get(id=form.cleaned_data['id'])
         else:
             new_timeslot = Event()
-            
+
         form.save_timeslot(self.program, new_timeslot)
         return new_timeslot
 
     def delete_restype(self, id):
         #   delete restype
         rt = ResourceType.objects.get(id=id)
-        rt.delete()
-        
+        try:
+            rt.delete()
+        except ProtectedError:
+            raise ESPError("This resource type can't be deleted because it has "
+                           "already been requested. If you really want to "
+                           "delete it, first go to the admin panel and delete "
+                           "all ResourceRequests for this resource type.",
+                           log=False)
+
     def add_or_edit_restype(self, form):
         if form.cleaned_data['id'] is not None:
             new_restype = ResourceType.objects.get(id=form.cleaned_data['id'])
         else:
             new_restype = ResourceType()
-            
+
         form.save_restype(self.program, new_restype)
         return new_restype
-        
+
     def delete_classroom(self, id):
         #   delete classroom with specified ID, and associated resources
         target_resource = Resource.objects.get(id=id)
@@ -81,10 +91,10 @@ class ResourceController(object):
         for room in rooms:
             room.associated_resources().delete()
         rooms.delete()
-        
+
     def add_or_edit_classroom(self, form):
         form.save_classroom(self.program)
-        
+
     def delete_equipment(self, id):
         #   delete this resource for all time blocks within the program
         rl = Resource.objects.get(id=id).identical_resources().filter(event__program=self.program)

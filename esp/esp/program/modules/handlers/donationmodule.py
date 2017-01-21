@@ -33,9 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
-from esp.web.util import render_to_response
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.utils.web import render_to_response
 from esp.dbmail.models import send_mail
 from esp.users.models import ESPUser, Record
 from esp.tagdict.models import Tag
@@ -110,9 +109,10 @@ class DonationModule(ProgramModuleObj):
     @main_call
     @usercheck_usetl
     @meets_deadline('/ExtraCosts')
+    @meets_cap
     def donation(self, request, tl, one, two, module, extra, prog):
 
-        user = ESPUser(request.user)
+        user = request.user
 
         iac = IndividualAccountingController(self.program, user)
 
@@ -155,4 +155,4 @@ class DonationModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

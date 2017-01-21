@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
@@ -99,8 +97,8 @@ Max:
 </tr>
 
 <tr><td><label><strong>Options:</strong></label></td><td align="center">
-<input class="fancybutton" type="submit" value="Search for user" name="submitform" /> or
-{% if list %}
+<input class="fancybutton" type="submit" value="Search for user" name="submitform" />
+{% if list %} or
 &nbsp;&nbsp;<input class="fancybutton" type="submit" value="Use Filtered List" name="submitform" />
 {% endif %}</td>
 </tr>

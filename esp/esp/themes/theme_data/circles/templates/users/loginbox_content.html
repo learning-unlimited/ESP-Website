@@ -6,14 +6,14 @@
     <div><center><span style="color: #BCCAF5;">{{ login_result }}{% ifequal "Invalid username or password" login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endifequal %}</span></center><br /></div>
 {% else %}
     <div class="not_logged_in hidden">
-        <div>Log in here.  If you don't know your username, try <a href="/myesp/login/bybday">searching using your birthday</a>.<br /><br /></div>
+        <div>Log in here.  If you don't know your username or password, try <a href="/myesp/passwdrecover/">our password reset page</a>.<br /><br /></div>
     </div>
 {% endif %}
 
 <div class="logged_in hidden">
 <div id="divnav">
   <p align="center">
-    <div id="loginbox_user_name"></div>
+    {% include "users/loginbox_userinfo.html" %}
     <div class="admin hidden">
         <a href="/admin/">Administration pages</a> <br />
         <a href="/manage/programs/">Manage programs</a> <br />

@@ -2,8 +2,6 @@
 
 {% block title %}Under Construction{% endblock %}
 
-{% block subsection_name %}Not Here Yet!{% endblock %}
-
 {% block content %}
 <h1 style="text-align: center">Please pardon our dust&mdash;this page will be working as soon as possible!</h1>
 <h2 style="text-align: center"><a href='/'>Return to the homepage</a></h2>

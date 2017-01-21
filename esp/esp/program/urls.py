@@ -1,17 +1,20 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import url
 
-urlpatterns = patterns('',
-                       # manage stuff
-                       (r'^manage/programs/?$', 'esp.program.views.manage_programs'),
-                       (r'^manage/newprogram/?$', 'esp.program.views.newprogram'),
-                       (r'^manage/submit_transaction/?$', 'esp.program.views.submit_transaction'),
-                       (r'^manage/pages/?$', 'esp.program.views.manage_pages'),
-                       (r'^manage/userview/?$', 'esp.program.views.userview'),
-                       (r'^manage/deactivate_user/?$', 'esp.program.views.deactivate_user'),
-                       (r'^manage/activate_user/?$', 'esp.program.views.activate_user'),
-                       (r'^manage/usersearch/?$', 'esp.program.views.usersearch'),                       
-                       (r'^manage/flushcache/?$', 'esp.program.views.flushcache'),
-                       (r'^manage/statistics/?$', 'esp.program.views.statistics'),
-                       (r'^manage/preview/?$', 'esp.program.views.template_preview'),
-                       (r'^manage/mergeaccounts/?$', 'esp.users.views.merge.merge_accounts'),
-                       )
+from esp.program import views
+import esp.users.views.merge
+
+urlpatterns = [
+    # manage stuff
+    url(r'^manage/programs/?$', views.manage_programs),
+    url(r'^manage/newprogram/?$', views.newprogram),
+    url(r'^manage/submit_transaction/?$', views.submit_transaction),
+    url(r'^manage/pages/?$', views.manage_pages),
+    url(r'^manage/userview/?$', views.userview),
+    url(r'^manage/deactivate_user/?$', views.deactivate_user),
+    url(r'^manage/activate_user/?$', views.activate_user),
+    url(r'^manage/usersearch/?$', views.usersearch),
+    url(r'^manage/flushcache/?$', views.flushcache),
+    url(r'^manage/statistics/?$', views.statistics),
+    url(r'^manage/preview/?$', views.template_preview),
+    url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
+]

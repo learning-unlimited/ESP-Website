@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.cal.models import EventType, Event, EmailReminder
+from esp.cal.models import EventType, Event
 
 admin_site.register(EventType)
 
@@ -45,9 +45,3 @@ class EventAdmin(admin.ModelAdmin):
     search_fields = ('=id', 'name', 'short_description', 'description')
 
 admin_site.register(Event, EventAdmin)
-
-class EmailReminderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'event', 'date_to_send', 'sent')
-    date_hierarchy = 'date_to_send'
-    list_filter = ('event__program', 'event__event_type', 'sent')
-admin_site.register(EmailReminder, EmailReminderAdmin)

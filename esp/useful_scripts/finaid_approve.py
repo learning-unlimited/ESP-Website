@@ -1,56 +1,60 @@
 #!/usr/bin/env python2
 #
 # Approve Financial Aid Requests
-# 
-# Approves not-yet-approved requests where both answers are non-blank/None/whitespace
-# and prints the email address of these users to the screen. Make sure to configure
-# PROGRAM_ID and PROGRAM_COST (in dollars) below.
 #
+# Approves not-yet-approved requests where both answers are non-blank/None/whitespace
+# and prints the email address of these users to the screen.
 
+from __future__ import print_function
 from script_setup import *
 
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
 
+import re
+import sys
 
-# CONFIGURATION
-PROGRAM = "Splash! 2013"
-PROGRAM_COST = 40
+if len(sys.argv) < 2:
+    print("Usage: {} <program name>".format(sys.argv[0]), file=sys.stderr)
+    print("<program name> can be e.g. 'Splash 2016'")
+    exit(1)
 
+# if you call the script with multiple arguments you probably just forgot to
+# quote it
+PROGRAM = ' '.join(sys.argv[1:])
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(done = False, program__name=PROGRAM).exclude(household_income = None, extra_explaination = None)
+reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
 
-print reqs.count()
+# computing len will use the same query we're probably going to use later and
+# populate the query set cache (whereas if we used .exists() or .count(), they
+# wouldn't, and the later iteration would hit the database again)
+if len(reqs) == 0:
+    print("No requests found for program name '%s'!" % PROGRAM)
+    exit(1)
 
-print "New Approvals:"
+print("New Approvals:")
 approved_any = False
 
-emails = []
-errors = []
+def is_blank(x):
+    return x is None or re.match(r'^(\s)*$', x)
 
 for req in reqs:
-#    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
-#        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+    if is_blank(req.household_income) and is_blank(req.extra_explaination):
+        continue
 
-#    if req.household_income is None and req.extra_explaination is None:
-#       continue
+    if req.approved:
+        continue
 
-    print req.user
-
-    if req.financialaidgrant_set.all().count() != 0 : continue
-
-    e = req.user.email
-    print e
-    emails.append(e)
+    print(req.user.email)
     try:
         f = FinancialAidGrant(request = req, percent = 100)
         f.save()
         req.done = True
         req.save()
     except:
-        errors.append(req.user)
+        print("Error on user %s" % req.user.id)
     approved_any = True
 
 if not approved_any:
-    print "None"  # no new (valid) requests to approve
+    print("None") # no new (valid) requests to approve

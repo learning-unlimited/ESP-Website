@@ -116,16 +116,9 @@ img.LaTeX {
     vertical-align: middle;
 }
 
-input.addbutton {
-    background-color: #D9EDF7;
-    color: #000000;
-    border: 1px solid #CCCCCC;
+.btn.addbutton {
     font-weight: bold;
-    font-size: 1.2em;
-    padding: 8px;
-    margin-bottom: 0px;
     width: 100%;
-    font-family: Helvetica, Arial, sans-serif;
     border-radius: 0px;
 }
 

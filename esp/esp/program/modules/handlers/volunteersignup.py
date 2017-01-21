@@ -33,10 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, needs_account
+from esp.middleware import ESPError
+from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
+from esp.program.models import VolunteerOffer
 from django.db.models.query import Q
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
@@ -50,9 +52,10 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             }
 
     @main_call
+    @no_auth
     def signup(self, request, tl, one, two, module, extra, prog):
         context = {}
-        
+
         if request.method == 'POST':
             form = VolunteerOfferForm(request.POST, program=prog)
             if form.is_valid():
@@ -67,11 +70,11 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
                 form = VolunteerOfferForm(program=prog)
         else:
             form = VolunteerOfferForm(program=prog)
-            
+
         #   Pre-fill information if possible
         if hasattr(request.user, 'email'):
             form.load(request.user)
-        
+
         #   Override default appearance; template doesn't mind taking a string instead
         context['form'] = form._html_output(
             normal_row = u'<tr%(html_class_attr)s><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
@@ -79,7 +82,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             row_ender = u'</td></tr>',
             help_text_html = u'%s',
             errors_on_separate_row = False)
-        
+
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 
     def volunteers(self, QObject=False):
@@ -88,15 +91,15 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         for req in requests:
             key = 'volunteer_%d' % req.id
             queries[key] = Q(volunteeroffer__request=req)
-        
+
         result = {}
         for key in queries:
             if QObject:
-                result[key] = self.getQForUser(queries[key])
+                result[key] = queries[key]
             else:
                 result[key] = ESPUser.objects.filter(queries[key]).distinct()
         return result
-        
+
     def volunteerDesc(self):
         base_dict = {'volunteer_all': 'All on-site volunteers for %s' % self.program.niceName()}
         requests = self.program.volunteerrequest_set.all()
@@ -105,6 +108,32 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
         return base_dict
 
+    @aux_call
+    @needs_account
+    def volunteerschedule(self, request, tl, one, two, module, extra, prog):
+        #   Use the template defined in ProgramPrintables
+        from esp.program.modules.handlers import ProgramPrintables
+        context = {'module': self}
+        pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
+        if pmos.count() == 1:
+            pmo = ProgramPrintables(pmos[0])
+            if request.user.isAdmin() and 'user' in request.GET:
+                volunteer = ESPUser.objects.get(id=request.GET['user'])
+            else:
+                volunteer = request.user
+            scheditems = []
+            offers = VolunteerOffer.objects.filter(user=volunteer, request__program=self.program)
+            for offer in offers:
+                scheditems.append({'name': volunteer.name(),
+                                   'volunteer': volunteer,
+                                   'offer' : offer})
+            #sort the offers by timeslot
+            scheditems.sort(key=lambda item: item['offer'].request.timeslot.start)
+            context['scheditems'] = scheditems
+            return render_to_response(pmo.baseDir()+'volunteerschedule.html', request, context)
+        else:
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
+
     class Meta:
         proxy = True
-
+        app_label = 'modules'

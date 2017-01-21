@@ -61,8 +61,8 @@ def random_address():
         state = random.choice(state_names)
         zip = '%05d' % (random.randint(1000, 99999))
         yield RandomAddress(street, city, state, zip)
-    
-    
+
+
 def random_phone():
     while True:
         yield '%03d-%03d-%04d' % (random.randint(100, 700),

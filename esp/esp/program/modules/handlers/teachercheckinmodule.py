@@ -36,21 +36,21 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject
 from esp.program.models.flags import ClassFlagType
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, Record, ContactInfo
 from esp.cal.models import Event
-from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
-import simplejson as json
-
+import collections
+import json
 
 class TeacherCheckinModule(ProgramModuleObj):
     @classmethod
@@ -61,14 +61,14 @@ class TeacherCheckinModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 10
             }
-    
+
     def checkIn(self, teacher, prog, when=None):
         """Check teacher into program for the rest of the day (given by 'when').
 
         'when' defaults to datetime.now()."""
         if when is None:
             when = datetime.now()
-        if teacher.isTeacher() and teacher.getTaughtClassesFromProgram(prog).exists():
+        if teacher.getTaughtClassesFromProgram(prog).exists():
             endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
             checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
             if not checked_in_already:
@@ -78,7 +78,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
             return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
-    
+
     def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
         if when is None:
@@ -89,7 +89,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             return '%s is no longer checked in.' % teacher.name()
         else:
             return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
-    
+
     @main_call
     @needs_onsite
     def teachercheckin(self, request, tl, one, two, module, extra, prog):
@@ -111,11 +111,11 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         context['module'] = self
         context['form'] = form
-        
+
         context['time_slots'] = prog.getTimeSlots()
-        
+
         return render_to_response(self.baseDir()+'teachercheckin.html', request, context)
-    
+
     @aux_call
     @needs_onsite
     def ajaxteachercheckin(self, request, tl, one, two, module, extra, prog):
@@ -147,16 +147,48 @@ class TeacherCheckinModule(ProgramModuleObj):
                     json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
                 else:
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
-        return HttpResponse(json.dumps(json_data), mimetype='text/json')
+        return HttpResponse(json.dumps(json_data), content_type='text/json')
+
+    @aux_call
+    @needs_onsite
+    def ajaxclassdetail(self, request, tl, one, two, module, extra, prog):
+        """
+        AJAX to this endpoint to get the details for a class, as an HTML
+        snippet
+        """
+        context = {}
+        context['class'] = ClassSubject.objects.get(id=request.GET['class'])
+        if request.GET['show_flags']:
+            context['show_flags'] = True
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        return render_to_response(self.baseDir()+'classdetail.html', request, context)
 
     @staticmethod
-    def get_phone(user):
-        """Get the phone number to display for a user."""
-        contact_info = user.getLastProfile().contact_user
+    def get_phones(users):
+        """
+        Given a list or QuerySet of users, create a dictionary that maps user
+        ids to phone numbers for displaying.
+        """
+
         default = '(missing contact info)'
-        if contact_info:
-            return contact_info.phone_cell or contact_info.phone_day or default
-        return default
+
+        # This is an optimized version of doing this for each user:
+
+        #   contact_info = user.getLastProfile().contact_user
+        #   if contact_info:
+        #       return contact_info.phone_cell or contact_info.phone_day or default
+        #   return default
+
+        # Only Postgres supports the following fancy database operation! See
+        # http://stackoverflow.com/a/20129229/3243497 .
+
+        profiles = (RegistrationProfile.objects
+                .filter(user__in=users)
+                .order_by('user__id', '-last_ts')
+                .distinct('user__id')
+                .values_list('user', 'contact_user__phone_cell', 'contact_user__phone_day'))
+        phone_entries = ((user, cell or day or default) for (user, cell, day) in profiles)
+        return collections.defaultdict(lambda _: default, phone_entries)
 
     def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
                            show_flags=True):
@@ -217,6 +249,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         sections = sections.select_related(
             'parent_class',
             'parent_class__category',
+            'parent_class__parent_program',
         ).prefetch_related(
             'parent_class__teachers',
             'parent_class__sections',
@@ -236,7 +269,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   check-in at this time).
         # - which is from the same date as 'when'.
         teachers = ESPUser.objects.filter(
-            classsubject__sections__in=sections,
+            classsubject__sections__in=sections).distinct()
+        arrived_teachers = teachers.filter(
             record__program=prog,
             record__event='teacher_checked_in',
             record__time__lte=when,
@@ -246,16 +280,9 @@ class TeacherCheckinModule(ProgramModuleObj):
 
         # To save multiple calls to getLastProfile, precompute the teacher
         # phones.
-        teacher_phones = {}
-        for section in sections:
-            for teacher in section.teachers:
-                if teacher.id not in teacher_phones:
-                    teacher_phones[teacher.id] = self.get_phone(teacher)
-
-        arrived = {}
-        for teacher in teachers:
-            if teacher.id not in teacher_phones:
-                teacher_phones[teacher.id] = self.get_phone(teacher)
+        teacher_phones = self.get_phones(teachers)
+        arrived = dict()
+        for teacher in arrived_teachers:
             teacher.phone = teacher_phones[teacher.id]
             arrived[teacher.id] = teacher
 
@@ -331,3 +358,4 @@ class TeacherCheckinModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
+        app_label = 'modules'

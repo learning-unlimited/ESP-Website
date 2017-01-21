@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Missing Teachers for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
@@ -17,44 +15,62 @@
             border: 1px solid gray;
             padding: 5px;
             z-index: 100;
-            background-color: white
+            background-color: white;
+            opacity: 0.75;
+            transition: opacity 0.25s ease;
         }
-        
+        #shortcuts-box:hover {
+            opacity: 1;
+        }
+
+        .section-first-row {
+            border-top: 4px solid #ccc;
+        }
+
+        .section-code {
+            background-color: #c6def7;
+            background: linear-gradient(to bottom, white, #c6def7);
+        }
+
         .not-checked-in a {
             font-weight: bold;
         }
-        
+
         .checked-in {
             text-decoration: line-through;
         }
-        
+
         .selected .checkin + span:after {
             content: "◀"; font-weight: bold;
         }
-        
+
         .selected .not-checked-in, .selected .checkin-column, .selected .phone {
             background-color: #FFFF00;
         }
-        
+
         .checkin-column {
             min-width: 90px;
         }
-        
+
         input.found {
             background-color: #AAFFAA;
         }
-        
+
         input.not-found {
             background-color: #FFAAAA;
         }
 
+        .section-detail-td {
+            background-color: #c6def7;
+        }
+
         .section-detail {
             display: inline-block;
-            border: 1px solid #ccc;
+            border-width: 0;
             margin: 0px;
             width: 100%;
         }
-        
+
         .section-detail-header {
             background-color: #c6def7;
             font-size: 1.2em;
@@ -66,12 +82,16 @@
             width: 470px;
             vertical-align: middle;
         }
+
+        .section-detail-include {
+            background-color: white;
+        }
     </style>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
-    <script src="/media/scripts/flag-edit.js"></script>
+    <script src="/media/scripts/program/modules/flag-edit.js"></script>
     <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
@@ -113,18 +133,18 @@
         {% else %} scheduled for the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
         {% endif %}.
     </td>
-</tr>    
+</tr>
 {% endif %}
 {% for section in sections %}
-<tr>
-    <td rowspan="{{ section.teachers|length }}">
+<tr class="section-first-row">
+    <td rowspan="{{ section.teachers|length }}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
     <td class="room" rowspan="{{ section.teachers|length }}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
-            {{ section.begin_time }}
+            {{ section.begin_time }} in {{ section.room }}
         {% endif %}
     </td>
     {% for teacher in section.teachers_list %}
@@ -137,7 +157,8 @@
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
-            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}" 
+            <span class="message"></span>
+            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             Already checked-in
@@ -147,40 +168,20 @@
         </tr>
         <tr>
     {% endfor %}
-    <td colspan="5">
+    <td colspan="5" class="section-detail-td">
         <div class="section-detail fqr-class">
-            <div class="section-detail-header"
-                 onclick="$j(this).siblings('.section-detail-info').toggle('blink');">
+            <div class="section-detail-header">
                 {{section.title}}
+                (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
             </div>
-            <div class="section-detail-info" style="display: none;">
-                {% with section.parent_class as class %}
-                    {% if show_flags %}
-                        <span>
-                            <button class="add-flag btn">add flag</button>
-                            <div class="flag-name-list">
-                                {% for flag in class.flags.all %}
-                                    {% include "program/modules/classflagmodule/flag_name.html" %}
-                                {% endfor %}
-                            </div>
-                        </span>
-                    {% endif %}
-                    <div>
-                        {% include "program/modules/classflagmodule/class_detail.html" %}
-                    </div>
-                    {% if show_flags %}
-                        {% for flag in class.flags.all %}
-                            {% include "program/modules/classflagmodule/flag_detail.html" %}
-                        {% endfor %}
-                        {% include "program/modules/classflagmodule/new_flag_form.html" %}
-                    {% endif %}
-                {% endwith %}
+            <div class="section-detail-info"
+                 style="display: none;"
+                 data-class-id="{{section.parent_class.id}}"
+                 data-show-flags="{% if show_flags %}1{% endif %}">
+                Loading...
             </div>
         </div>
     </td>
-</tr>
-<tr>
-    <td colspan="5"><hr/></td>
 </tr>
 {% endfor %}
 </table>

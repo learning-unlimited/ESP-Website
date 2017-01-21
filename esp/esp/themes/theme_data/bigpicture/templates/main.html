@@ -1,0 +1,90 @@
+{% extends "elements/html" %}
+
+{% block fulltitle %}{% block title %}{% endblock %} - {{ theme.full_group_name }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Patrick+Hand" />
+{% endblock stylesheets %}
+
+{% block body %}
+
+{% comment %}
+{% block navbar %}{% include "navbar.html" %}{% endblock navbar%}
+{% endcomment %}
+{% block navbar %}
+<div class="navbar">
+  <div class="navbar-inner">
+    {% include "users/loginbox_content.html" %}
+  </div>
+</div>
+{% endblock navbar%}
+
+{% block heading %}  
+<header class="jumbotron subhead" id="overview">
+  <div>
+    <div class="header-cell">
+      <a href="/">
+          <img src="/media/images/theme/logo.png" alt="{{theme.full_group_name}}" class="logo">
+      </a>
+    </div>
+    <div class="header-cell jumbotron-announcements">
+      {% load render_qsd %}
+      {% inline_qsd_block "jumbotron" %}
+      {% end_inline_qsd_block %}
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block main %}
+
+<div class="container">
+  <div class="row">
+    {% block sidebar %}
+    <div id="sidebar" class="span3">
+      <ul class="nav nav-list sidebar">
+        {% include "sidebar/nav.html" %}
+        {% include "sidebar/admin.html" %}
+      </ul>
+
+      {% load preview %}
+      {% if request.path == "/teach/index.html" %}
+      {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+      {% else %}
+      {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+      {% endif %}
+      {% if not announcements.announcementList|length_is:0 %}
+      <ul class="nav nav-list sidebar">
+        <li class="nav-header"> Announcements</li>
+        {% for announce in announcements.announcementList %}
+        <li>
+          {% if announce.makeUrl %}
+          <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a> {% else %} {{ announce.makeTitle }} {% endif %}
+        </li>
+        {% endfor %}
+        {% if announcements.overflowed %}
+        <li id="divannouncemore">
+          <a href="/myesp/home/">More Notices...</a>
+        </li>
+        {% endif %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endblock %}
+
+    <div id="main" class="span9 resizable">
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </div>
+</div>
+</div>
+<script>
+  {# TODO(benkraft): this is ugly, find a better way #}
+  $j('.button').addClass('btn').removeClass('button');
+  $j('.fancybutton').addClass('btn').addClass('btn-primary');
+</script>
+{% endblock main %}
+
+{% endblock body %}

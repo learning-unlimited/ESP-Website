@@ -2,8 +2,6 @@
 
 {% block title %}Communications Portal{% endblock %}
 
-{% block subsection_name %}Communications Portal{% endblock %}
-
 {% block xtrajs %}
 {{block.super}}
 <script type="text/javascript">
@@ -173,7 +171,7 @@ into the text of the message&mdash;the parameters are listed below.
 </tr>
 </table>
 
-<input type="submit" value="Go To Preview" name="submitform" />
+<input type="submit" value="Go To Preview" name="submitform" class="btn btn-primary" />
 <input type="hidden" name="listcount" value="{{listcount}}" />
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />

@@ -33,13 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.http                 import Http404
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_account
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_account, needs_teacher
 from esp.middleware              import ESPError
 from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.web.util        import render_to_response
+from esp.utils.web               import render_to_response
 
 class TeacherPreviewModule(ProgramModuleObj):
     """ This program module allows teachers to view classes already added to the program.
@@ -62,10 +62,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if ESPUser(request.user).isAdmin() and 'user' in request.GET:
+            if request.user.isAdmin() and 'user' in request.GET:
                 teacher = ESPUser.objects.get(id=request.GET['user'])
             else:
-                teacher = ESPUser(request.user)
+                teacher = request.user
             scheditems = []
             for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
                 if cls.isAccepted():
@@ -90,6 +90,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 
     @aux_call
+    @needs_teacher
     def catalogpreview(self, request, tl, one, two, module, extra, prog):
         try:
             qs = ClassSubject.objects.filter(id=int(extra))
@@ -98,7 +99,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             raise Http404('The requested class could not be found.')
         cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
-    
+
     def get_handouts(self):
         sections = get_current_request().user.getTaughtSections(self.program)
         sections = filter(lambda x: x.isAccepted() and x.meeting_times.count() > 0, sections)
@@ -111,7 +112,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         if context is None: context = {}
 
         classes = ClassSubject.objects.catalog(self.program, None, True)
-        
+
         #   First, the already-registered classes.
         categories = {}
         for cls in classes:
@@ -119,19 +120,19 @@ class TeacherPreviewModule(ProgramModuleObj):
                 categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'classes': [cls]}
             else:
                 categories[cls.category_id]['classes'].append(cls)
-        
+
         context['categories'] = [categories[cat_id] for cat_id in categories]
         context['prog'] = self.program
-        
+
         #   Then, the printables.
         handout_dict = self.get_handouts()
         context['handouts'] = [{'url': key, 'title': handout_dict[key]} for key in handout_dict]
-        
+
         return context
-    
+
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

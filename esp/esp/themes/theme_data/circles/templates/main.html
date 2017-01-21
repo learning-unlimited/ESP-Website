@@ -102,7 +102,7 @@
 <div id="usersearchform">
 <h3>Search for User</h3>
 <p>
-<form id="user_search_form" name="user_search_form" method="get" action="/manage/usersearch">
+<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">
 <input class="usersearchbox" type="text" id="user_search_field" name="userstr" />
 <input class="usersearchbutton" type="submit" id="user_search_submit" name="search_submit" value="Find User"/>
 </form>
@@ -113,7 +113,7 @@
 </div>
 
 {% load preview %}
-{% miniblog_for_user None as announcements 6 %}
+{% miniblog_for_user AnonymousUser as announcements 6 %}
 
 {% load markup %}
 {% for announce in announcements.announcementList %}

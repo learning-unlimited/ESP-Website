@@ -1,6 +1,5 @@
 {% extends "main.html" %}
 {% load i18n %}
-{% load bootstrap %}
 
 {% block title %}{% trans "Grade Change Request Form" %}{% endblock %}
 
@@ -32,10 +31,10 @@
 		</ul>
 		</p>
 
-		<form id="id-grade-change-request-form" action="{% url grade_change_request %}" method="post" accept-charset="utf-8">
+		<form id="id-grade-change-request-form" action="{% url 'grade_change_request' %}" method="post" accept-charset="utf-8">
 			     {% csrf_token %}
 			
-			{{ form|bootstrap }}
+			{{ form }}
 			
 			<div class="form-actions"><input type="submit" class="btn btn-primary" value="{% trans "Send Request" %}" /></div>
 		</form>

@@ -17,7 +17,18 @@ var ClassSubject = function (data) {
     self.interested_saved = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
-    self.grade_range = data.grade_min + " - " + data.grade_max;
+    if (!increment_grade) {
+        self.grade_range = data.grade_min + " - " + data.grade_max;
+    }
+    else {
+        self.grade_range = "Rising " + data.grade_min + "th graders to ";
+        if (data.grade_max == 13) {
+            self.grade_range += "graduating 12th graders";
+        }
+        else {
+            self.grade_range += "rising " + data.grade_max + "th graders";
+        }
+    }
 
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
@@ -281,8 +292,8 @@ var CatalogViewModel = function () {
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.status <= 0) {
-                // remove unapproved classes
+            if (cls.status <= 5) {
+                // remove unapproved or hidden classes
                 delete data.classes[key];
             }
             else if (cls.category_id == open_class_category_id ||

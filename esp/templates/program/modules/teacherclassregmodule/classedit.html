@@ -4,7 +4,6 @@
 
 {% block title %}Teacher Registration{% endblock %}
 
-{% block subsection_name %}Teach for {{one}} <br>{% endblock %}
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -38,7 +37,7 @@
     {% end_inline_program_qsd_block %}
 
     {% if otherclass.reg_open and addoredit == 'Add' %}
-    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
+    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url 'esp.web.views.main.program' tl one two otherclass.link %}">click here</a>.</p>
     {% endif %}
 {% endif %}
 
@@ -78,30 +77,7 @@
         <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
     </tr>
     -->
-{% if not static_resource_requests %}
-    <tr>
-        <td width="30%">
-            <b>Click to add requests:</b>
-            <noscript>(Note: Please enable Javascript.)</noscript>
-        </td>
-        <td>
-            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %}{% if allow_restype_creation %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>{% endif %}
-        </td>
-    </tr>
-<script type="text/javascript">
-<!--
-    register_fragment({id: "request_forms_html", url: ""});
-    register_fragment({id: "restype_forms_html", url: ""});
-    {% for rt in resource_types %}
-    register_link({id: "add_request_{{ rt.id }}", url: "/teach/{{ program.getUrlBase }}/ajax_requests", content: {action: "add", restype: "{{ rt.id }}"}, post_form: "clsform"});{% endfor %}
-    register_link({id: "add_restype", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "add"}, post_form: "clsform"});
--->
-</script>
-{% endif %}
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
-{% with restype_formset as formset %}
-{% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
-{% endwith %}
     {% endif %}
     <tr>
         <td colspan="2">&nbsp;</td>
@@ -130,15 +106,18 @@
                 <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
             {% else %}
                 {% if module.deadline_met %}
-                    <input class="button" type="submit"
+                    <button type="submit" class="btn btn-primary btn-large">
                     {% if class.id %}
-                        value="Save course!" /><br />
+                        <span class="glyphicon glyphicon-floppy-saved"></span>
+                        Save course!
                     {% else %}
-                        value="Teach for {{ one }}!" /><br />
+                        <span class="glyphicon glyphicon-education"></span>
+                        Teach for {{one}}!
                     {% endif %}
+                    </button><br />
                 {% endif %}
             {% endif %}
-            <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            <input class="btn btn-default" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
             <br /><br />
         </td>
     </tr>    

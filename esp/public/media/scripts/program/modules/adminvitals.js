@@ -9,6 +9,7 @@ function fillStats(data)
     grades = stats.grades;
     shirtnum = stats.shirtnum;
     splashinfo = stats.splashinfo;
+    accounting = stats.accounting;
 
     // Fill in student num data
     $studentnum = $j("#stats_students > .module_group_body");
@@ -158,6 +159,11 @@ function fillStats(data)
     }
     else
         $splashinfo.html("SplashInfo module is not enabled -- no statistics");
+    
+    //  Fill in the accounting table
+    $accounting = $j("#stats_accounting > .module_group_body");
+    $accounting.html("<strong>Number of credit card payments</strong>: " + accounting.data.num_payments + "<br />");
+    $accounting.append("<strong>Total amount of credit card payments</strong>: $" + accounting.data.total_payments.toFixed(2));
 }
 
 function getStats()

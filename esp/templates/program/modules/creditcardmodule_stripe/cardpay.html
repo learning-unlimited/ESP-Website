@@ -3,8 +3,6 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <style type="text/css">
@@ -108,6 +106,8 @@ Check here to support <a href="http://www.learningu.org/about" target="_blank">L
     data-key="{{ module.settings.publishable_key }}"
     data-name="{{ institution }} Splash Payment"
     data-description="Registration for {{ program.niceName }}"
+    data-zip-code="true"
+    data-allow-remember-me="false"
   >
   </script>
 

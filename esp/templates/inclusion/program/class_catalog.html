@@ -1,86 +1,86 @@
 {% if show_class %}
   {% load class_render %}
+  <div id="class_{{ class.id }}" class="show_class{% if errormsg %} class_error{% endif %}">
+  {% render_class_core class %}
+  {% if prereg_url %}
+      <div id="class_{{ class.id }}_regbuttons" class="class_buttons">
+      {% if errormsg %}
+          <div class="addbutton_error">{% autoescape off %}{{ errormsg }}{% endautoescape %}</div>
+          {% if user.onsite_local %}
+              <br />
+              <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+              <input type="hidden" name="class_id" value="{{ class.id }}" />
+              <input type="hidden" name="section_id" value="{{ section.id }}" />
+              <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
+              id="submitbutton{{ section.id }}" />
+              </form>
+          {% endif %}
+      {% else %}
+          {% if section %}
+              {% if section.isAccepted and not section.isRegClosed %}
+                  <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+                  <script type="text/javascript">add_csrf_token();</script>
+                  <input type="hidden" name="class_id" value="{{ class.id }}" />
+                  <input type="hidden" name="section_id" value="{{ section.id }}" />
+                  {% if not section.isFull %}
+                  <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton{{ class.id }}">
+                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                          Click here to add this class
+                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span></button></div>
+                      <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
+                  {% else %}
+                      <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
+                      <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
+                  {% endif %}
+                  </form>
+              {% endif %}
+          {% else %}
+              {% for sec in class.get_sections %}
+                  {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                      <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+                      <script type="text/javascript">add_csrf_token();</script>
+                      <input type="hidden" name="class_id" value="{{ class.id }}" />
+                      <input type="hidden" name="section_id" value="{{ sec.id }}" />
+                      <div id="addbutton_catalog_sec{{ sec.id }}">
+                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
+                      <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      </div>
+                      </form>
+                  {% endif %}
+              {% endfor %}
+          {% endif %}
+      {% endif %}
+      </div>
+  {% endif %}
+  </div>
 
-    {% if not hide_full or not class.isFullOrClosed %}
-        <div id="class_{{ class.id }}" class="show_class{% if errormsg %} class_error{% endif %}">
-        {% render_class_core class %}
-        {% if prereg_url %}
-            <div id="class_{{ class.id }}_regbuttons" class="class_buttons">
-            {% if errormsg %}
-                <div class="addbutton_error">{% autoescape off %}{{ errormsg }}{% endautoescape %}</div>
-                {% if user.onsite_local %}
-                    <br />
-                    <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}" style="margin: 0px;">
-                    <input type="hidden" name="class_id" value="{{ class.id }}" />
-                    <input type="hidden" name="section_id" value="{{ section.id }}" />
-                    <input type="submit" class="addbutton" name="action" value="Add this class anyway!"
-                    id="submitbutton{{ section.id }}" />
-                    </form>
-                {% endif %}
-            {% else %}
-                {% if section %}
-                    {% if section.isAccepted and not section.isRegClosed %}
-                        <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
-                        <script type="text/javascript">add_csrf_token();</script>
-                        <input type="hidden" name="class_id" value="{{ class.id }}" />
-                        <input type="hidden" name="section_id" value="{{ section.id }}" />
-                        {% if not section.isFull %}
-                            <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Click here to add this class" id="submitbutton{{ class.id }}" /></div>
-                            <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
-                        {% else %}
-                            <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
-                            <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
-                        {% endif %}
-                        </form>
-                    {% endif %}
-                {% else %}
-                    {% for sec in class.get_sections %}
-                        {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
-                            <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
-                            <script type="text/javascript">add_csrf_token();</script>
-                            <input type="hidden" name="class_id" value="{{ class.id }}" />
-                            <input type="hidden" name="section_id" value="{{ sec.id }}" />
-                            <div id="addbutton_catalog_sec{{ sec.id }}">
-                            <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
-                            <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
-                            </div>
-                            </form>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-            {% endif %}
-            </div>
-        {% endif %}
-        </div>
-
-        <script type="text/javascript">
-        function initialize_prereg_{{ class.id }}() 
-        {
-            {% if section %}
-               //  Section defined!
-               {% if not section.isRegClosed %}
-                    {% if not sec.friendly_times|length_is:0 %}
-            register_form({id: "prereg_{{ section.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
-            register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
-                    {% endif %}
-                {% endif %}
-            {% else %}
-               //  Section not defined!
-                {% for sec in class.get_sections %}
-                    {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
-                        {% if sec.isAccepted %}
-                            {% if not sec.friendly_times|length_is:0 %}
-           register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
-            register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
-                            {% endif %}
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-            {% endif %}
-        }
-        if (document.getElementById("student_schedule")) {
-          setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
-        }
-        </script>
-    {% endif %}
+  <script type="text/javascript">
+  function initialize_prereg_{{ class.id }}() 
+  {
+      {% if section %}
+         //  Section defined!
+         {% if not section.isRegClosed %}
+              {% if not sec.friendly_times|length_is:0 %}
+      register_form({id: "prereg_{{ section.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
+      register_fragment({id: "addbutton_fillslot_sec{{ section.id }}_html", url: ""});
+              {% endif %}
+          {% endif %}
+      {% else %}
+         //  Section not defined!
+          {% for sec in class.get_sections %}
+              {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
+                  {% if sec.isAccepted %}
+                      {% if not sec.friendly_times|length_is:0 %}
+     register_form({id: "prereg_{{ sec.id }}", url: "/learn/{{ class.parent_program.getUrlBase }}/ajax_addclass"});
+      register_fragment({id: "addbutton_catalog_sec{{ sec.id }}_html", url: ""});
+                      {% endif %}
+                  {% endif %}
+              {% endif %}
+          {% endfor %}
+      {% endif %}
+  }
+  if (document.getElementById("student_schedule")) {
+    setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
+  }
+  </script>
 {% endif %}

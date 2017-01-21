@@ -2,8 +2,6 @@
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
-{% block subsection_name %}Documents for Class{% endblock %}
-
 {% block content %}
 
 {% load render_qsd %}
@@ -74,7 +72,7 @@ You submitted a schedule with no available times.  You can't register a class wi
         {% endfor %}
     {% endfor %}
     <tr>
-        <td align="center" colspan="2"><input type="submit" class="fancybutton" value="Submit" /></td>
+        <td align="center" colspan="2"><input type="submit" class="btn btn-primary" value="Submit" /></td>
     </tr>
 </table>
 </form>

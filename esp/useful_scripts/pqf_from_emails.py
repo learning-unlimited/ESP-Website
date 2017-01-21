@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 from esp.users.models import User, ESPUser, PersistentQueryFilter
 from django.db.models.query import Q
@@ -14,7 +14,7 @@ addr_list = []
 for line in data:
     addr_list.append(line.strip())
 print 'Read %d addresses' % len(addr_list)
-    
+
 addr_list = list(set(addr_list))
 print 'Found %d distinct addresses' % len(addr_list)
 
@@ -32,5 +32,5 @@ pqf = PersistentQueryFilter.create_from_Q(User, user_q, 'Custom list generated f
 print 'Found %d users' % ESPUser.objects.filter(user_q).distinct().count()
 
 print 'Created filter.  Edit and send your e-mail at: %s' % ("""
-%s?extra=%d&op=usersearch&userid=&username=&last_name=&first_name=&email=&zipdistance_exclude=&zipdistance=&zipcode=02139&states=&grade_min=7&grade_max=13&submitform=Use+Filtered+List""" % (url, pqf.id)) 
+%s?extra=%d&op=usersearch&userid=&username=&last_name=&first_name=&email=&zipdistance_exclude=&zipdistance=&zipcode=02139&states=&grade_min=7&grade_max=13&submitform=Use+Filtered+List""" % (url, pqf.id))
 

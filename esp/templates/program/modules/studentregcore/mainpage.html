@@ -2,10 +2,6 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
-
 {% block xtrajs %}
 <script type="text/javascript">
 <!--
@@ -50,7 +46,7 @@
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
 <div class="alert alert-info">
-<i class="icon-info-sign"></i>
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
 <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
 </div>
     
@@ -102,14 +98,36 @@
         </form>
     {% else %}
         {% if can_confirm %}
-        <input id="confirmbutton" class="button" type="submit" value="{% if not isConfirmed %}{{ scrmi.confirm_button_text }}{% else %}{{ scrmi.view_button_text }}{% endif %}" {% if not completedAll %}disabled{% endif %} {% if program.isFull and not canRegToFullProgram and not isConfirmed %}disabled{% endif %}/>
-        {% endif %}
+            {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full) #}
+            {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
+                <button id="confirmbutton" type="submit"
+                        class="btn btn-default btn-large"
+                        disabled="disabled" />
+                    <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
+                    {{ scrmi.confirm_button_text }}
+                </button>
+            {% else %}
+                <button id="confirmbutton" type="submit"
+                        class="btn btn-primary btn-large" />
+                    {% if isConfirmed %}
+                        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+                        {{ scrmi.view_button_text }}
+                    {% else %}
+                        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                        {{ scrmi.confirm_button_text }}
+                    {% endif %}
+                </button>
+            {% endif %}
         </form>
-        {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
-           <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
-           <input id="cancelbutton" class="button" type="submit" value="{{ scrmi.cancel_button_text }}" />
-            </form>
-        {% endif %}{% endif %}
+            {% if isConfirmed or scrmi.cancel_button_dereg %}{% if not have_paid %}
+                <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+                    <button type="submit" id="cancelbutton" class="btn btn-danger btn-large">
+                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                        {{ scrmi.cancel_button_text }}
+                    </button>
+                </form>
+            {% endif %}{% endif %}
+        {% endif %}
     {% endif %}
     </center>
 {% endif %}
