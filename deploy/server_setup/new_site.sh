@@ -8,7 +8,6 @@ set -ef -o pipefail
 
 # Parameters
 GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
-GIT_BRANCH="stable-release-7"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
 AUTH_USER_FILE="/lu/auth/dav_auth"
@@ -219,6 +218,8 @@ read THROWAWAY
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
+    echo -n "Enter the current release branch --> "
+    read GIT_BRANCH
     if [[ -e "$BASEDIR/.git" ]] ; then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
         cd "$BASEDIR"
