@@ -99,10 +99,6 @@ input.button {
     display: none;
 }
 
-input.addbutton.show{
-    display: block;
-}
-
 input.button:hover {
     background-color: #333399;
     color: #c6def7;
