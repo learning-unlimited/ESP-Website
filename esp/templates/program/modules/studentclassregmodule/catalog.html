@@ -159,7 +159,7 @@ function configure_addbuttons()
 {
     {% if register_from_catalog %}
     //  Registration from the catalog is allowed
-    $j("input.addbutton").addClass("show");
+    $j("input.addbutton").show();
     {% endif %}
 }
 $j(document).ready(configure_addbuttons);
