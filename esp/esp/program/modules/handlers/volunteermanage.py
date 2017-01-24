@@ -110,9 +110,7 @@ class VolunteerManage(ProgramModuleObj):
         context = {}
         response = None
 
-        import_mode = 'preview'
-        if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
-            import_mode = 'save'
+        has_confirmed = request.POST.get('import_confirm') == 'yes'
 
         import_form = VolunteerImportForm(request.POST)
         if not import_form.is_valid():
@@ -129,31 +127,35 @@ class VolunteerManage(ProgramModuleObj):
                 prev_timeslots.append(prev_request.timeslot)
             time_delta = start_date - prev_timeslots[0].start.date()
             for i,orig_timeslot in enumerate(prev_timeslots):
-                new_timeslot = Event(
+                new_timeslot = Event.objects.get_or_create(
                     program = self.program,
-                    event_type = orig_timeslot.event_type,
-                    short_description = orig_timeslot.short_description,
-                    description = orig_timeslot.description,
-                    priority = orig_timeslot.priority,
                     start = orig_timeslot.start + time_delta,
                     end   = orig_timeslot.end + time_delta,
-                )
-                #   Save the new timeslot and request only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists():
-                    new_timeslot.save()
-                new_request = VolunteerRequest()
-                new_request.program = self.program
-                new_request.timeslot = new_timeslot
-                new_request.num_volunteers = prev_requests[i].num_volunteers
-                if import_mode == 'save' and not VolunteerRequest.objects.filter(program=new_timeslot.program, timeslot=new_timeslot).exists():
+                    event_type = orig_timeslot.event_type,
+                    defaults={
+                        'short_description': orig_timeslot.short_description,
+                        'description': orig_timeslot.description,
+                        'priority': orig_timeslot.priority,
+                    }
+                )[0]
+                new_timeslot.save()
+                new_request = VolunteerRequest.objects.get_or_create(
+                    program = self.program,
+                    timeslot = new_timeslot,
+                    defaults={
+                        'num_volunteers': prev_requests[i].num_volunteers,
+                    }
+                )[0]
+                #With get_or_create above, this seems pointless now
+                if has_confirmed:
                     new_request.save()
                 new_requests.append(new_request)
 
-            #   Render a preview page showing the resources for the previous program if desired
+            #Render a preview page showing the resources for the previous program if desired
             context['past_program'] = past_program
             context['start_date'] = start_date.strftime('%m/%d/%Y')
             context['new_requests'] = new_requests
-            if import_mode == 'preview':
+            if not has_confirmed:
                 context['prog'] = self.program
                 response = render_to_response(self.baseDir()+'request_import.html', request, context)
             else:
