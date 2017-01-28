@@ -24,7 +24,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
 </tr>
 {% if requests|length_is:0 %}
-    <tr><td colspan="3">No requests at this time.  Please add some using the form below.</td></tr>
+    <tr><td colspan="3">No requests at this time.  Please add some using one of the forms below.</td></tr>
 {% else %}
     {% for vr in requests %}
     <tr>
@@ -49,11 +49,15 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 
 <br />
 <center>
-<form method="post" action="/manage/{{ program.getUrlBase }}/volunteering/request_import">
+<form method="post" action="#">
 <table align="center" cellpadding="0" cellspacing="0" width="450">
     <tr><th colspan="2" class="small">Import volunteer shifts from a previous program</th></tr>
     {{ import_request_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
+    <input type="hidden" name="import" value="import" />
+    {% if import_error %}
+    <tr><td colspan="2" align="center"><font color="red">{{ import_error }}</font></td></tr>
+    {% endif %}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Import" /></td></tr>
 </table>
 </form>
 <form method="POST" action="{{ request.path }}">
