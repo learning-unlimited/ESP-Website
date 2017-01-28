@@ -108,8 +108,6 @@ class VolunteerManage(ProgramModuleObj):
         context = {}
         response = None
 
-        has_confirmed = request.POST.get('import_confirm') == 'yes'
-
         import_form = VolunteerImportForm(request.POST)
         if not import_form.is_valid():
             context['import_request_form'] = import_form
@@ -119,8 +117,7 @@ class VolunteerManage(ProgramModuleObj):
             if past_program == prog:
                 context['import_error'] = "You can only import shifts from previous programs"
             else:
-                #   Figure out timeslot dates
-                new_requests = []
+                #Figure out timeslot dates
                 prev_timeslots = []
                 prev_requests = past_program.getVolunteerRequests().order_by('timeslot__start')
                 for prev_request in prev_requests:
@@ -146,20 +143,7 @@ class VolunteerManage(ProgramModuleObj):
                             'num_volunteers': prev_requests[i].num_volunteers,
                         }
                     )[0]
-                    #With get_or_create above, this seems pointless now
-                    if has_confirmed:
-                        new_request.save()
-                    new_requests.append(new_request)
-
-                #Render a preview page showing the resources for the previous program if desired
-                context['past_program'] = past_program
-                context['start_date'] = start_date.strftime('%m/%d/%Y')
-                context['new_requests'] = new_requests
-                if not has_confirmed:
-                    context['prog'] = self.program
-                    response = render_to_response(self.baseDir()+'request_import.html', request, context)
-                else:
-                    extra = 'timeslot'
+                    new_request.save()
 
         return context
 
