@@ -688,7 +688,7 @@ function setup_autocomplete()
     var student_strings = [];
     for (var i in data.students) {
         var student = data.students[i];
-        var studentItem = {}
+        var studentItem = {};
         studentItem.value = i;
         studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
         studentItem.noProfile = false;
