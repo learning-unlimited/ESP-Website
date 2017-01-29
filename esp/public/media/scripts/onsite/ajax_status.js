@@ -686,36 +686,64 @@ function autocomplete_select_item(event, ui)
 function setup_autocomplete()
 {
     var student_strings = [];
+    for (var i in data.students) {
+        var student = data.students[i];
+        var studentItem = {}
+        studentItem.value = i;
+        studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
+        studentItem.noProfile = false;
+
+        student_strings.push(studentItem);
+    }
+    student_strings.sort(function (a, b) {
+        if (a.label > b.label) {
+            return 1;
+        }
+        if (a.label < b.label) {
+            return -1;
+        }
+        return 0;
+    });
 
     $j("#student_selector").autocomplete({
         width: 400,
         max: 20,
         source: function( request, response ) {
-            $j.ajax({
-                url: program_base_url + "students_status",
-                data: {
-                    q: request.term
-                },
-                success: function (new_data) {
-                    var student_strings = [];
-                    for (var i in new_data) {
-                        var student = new_data[i];
-                        var studentItem = {};
-                        studentItem.value = student[0];
-                        studentItem.label = student[1] + ", " + student[2] + " (" + student[0] + ")";
-                        studentItem.noProfile = !student[3];
-                        
-                        student_strings.push(studentItem);
-                     
-                    }
-                    response(student_strings);
+            var results = $j.ui.autocomplete.filter(student_strings, request.term);
+            if (results.length >= 1) {
+                response(results);
+            }
+            else {
+                // expand search to entire student base
+                $j.ajax({
+                    url: program_base_url + "students_status",
+                    data: {
+                        q: request.term
+                    },
+                    success: function (new_data) {
+                        var results = [];
+                        for (var i in new_data) {
+                            var student = new_data[i];
+                            var id = student[0];
+                            var last_name = student[1];
+                            var first_name = student[2];
+                            var has_profile = student[3];
+                            var studentItem = {};
+                            studentItem.value = id;
+                            studentItem.label = first_name + " " + last_name + " (" + id + ")";
+                            studentItem.noProfile = !has_profile;
 
-                },
-                error: function (result) {
-                    alert(result);
-                }
-            });
-        
+                            results.push(studentItem);
+                        }
+                        response(results);
+
+                    },
+                    error: function (result) {
+                        alert(result);
+                        response(results);
+                    }
+                });
+            }
         },
         select: autocomplete_select_item,
         focus: function( event, ui ) {
