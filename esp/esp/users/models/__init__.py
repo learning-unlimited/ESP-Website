@@ -2181,6 +2181,22 @@ class Record(models.Model):
                                    time__day=when.day)
         return filter.distinct()
 
+    @classmethod
+    def createBit(cls, extension, program, user):
+        from esp.accounting.controllers import IndividualAccountingController
+        if extension == 'Paid':
+            IndividualAccountingController.updatePaid(True, program, user)
+
+        if cls.user_completed(user, extension.lower(), program):
+            return False
+        else:
+            cls.objects.create(
+                user = user,
+                event = extension.lower(),
+                program = program
+            )
+            return True
+
     def __unicode__(self):
         return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
 

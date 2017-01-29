@@ -375,6 +375,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
 //  Set the currently active student
 function set_current_student(student_id)
 {
+
     if (student_id)
     {
         state.student_id = student_id;
@@ -385,6 +386,7 @@ function set_current_student(student_id)
             dataType: 'json',
             success: handle_schedule_response
         });
+
         render_classchange_table(student_id);
         $j("#status_switch").removeAttr("disabled");
         $j("#schedule_print").removeAttr("disabled");
@@ -543,6 +545,46 @@ function remove_student(student_id, section_id)
     });
 }
 
+function register_student(student_id, dialog) 
+{
+    // Add a dummy entry to data.students for now, in case anything
+    // tries to access it.
+    // The real data will be populated by the call to fetch_all() below.
+    var new_student = {};
+    new_student.id = student_id;
+    new_student.first_name = "Unknown";
+    new_student.last_name = "Student";
+    new_student.grade = 0;
+    new_student.sections = [];
+    new_student.checked_in = null;
+    data.students[student_id] = new_student;
+   
+    $j.ajax({
+            url: program_base_url + "register_student",
+            type:'POST',
+            data: {
+                csrfmiddlewaretoken: csrf_token(),
+                student_id: student_id
+            },
+
+            success: function(data) {
+                if(data.status) {
+                    fetch_all();
+                    set_current_student(parseInt(student_id));
+                    dialog.dialog("close");
+                } else {
+                    $j('#not-registered-msg').hide();
+                    $j('#noinfo-msg').show();
+                    $j("#dialog-confirm-button-register").button("disable");
+                }
+            },
+
+            error: function (result) {
+                console.log(result);
+            }
+    });
+}
+
 //  Figure out what to do when one of the checkboxes is hit.
 //  It could be either "on" or "off".
 function handle_checkbox(event)
@@ -612,14 +654,32 @@ function handle_checkbox(event)
 function autocomplete_select_item(event, ui)
 {
     event.preventDefault();
-    var student_id = ui.item.value;
     
+    last_select_event = [event, ui];
+    var student_id = ui.item.value;
     //  Refresh the table of checkboxes for the newly selected student.
-    if ((student_id > 0) && (student_id < 99999999))
-        set_current_student(parseInt(student_id));
+
+    if ((student_id > 0) && (student_id < 99999999)) 
+    {
+        if(ui.item.noProfile)
+        {
+            var dialog = $j("#dialog-confirm");
+            $j("#not-registered-msg").show();
+            $j("#noinfo-msg").hide();
+            $j("#dialog-confirm-button-register").button("enable");
+            dialog.data('student_id', student_id);
+            dialog.dialog('open');
+        }
+        else 
+        {
+            fetch_all();
+            set_current_student(parseInt(student_id));
+        }
+        
+    }    
     else
     {
-        //  console.log("Invalid student selected: " + s);
+        console.log("Invalid student selected: " + student_id);
     }
 }
 
@@ -631,18 +691,79 @@ function setup_autocomplete()
         var studentItem = {};
         studentItem.value = i;
         studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
-        
+        studentItem.noProfile = false;
+
         student_strings.push(studentItem);
     }
+    student_strings.sort(function (a, b) {
+        if (a.label > b.label) {
+            return 1;
+        }
+        if (a.label < b.label) {
+            return -1;
+        }
+        return 0;
+    });
 
     $j("#student_selector").autocomplete({
-        source: student_strings,
+        width: 400,
+        max: 20,
+        source: function( request, response ) {
+            var results = $j.ui.autocomplete.filter(student_strings, request.term);
+            if (results.length >= 1) {
+                response(results);
+            }
+            else {
+                // expand search to entire student base
+                $j.ajax({
+                    url: program_base_url + "students_status",
+                    data: {
+                        q: request.term
+                    },
+                    success: function (new_data) {
+                        var results = [];
+                        for (var i in new_data) {
+                            var student = new_data[i];
+                            var id = student[0];
+                            var last_name = student[1];
+                            var first_name = student[2];
+                            var has_profile = student[3];
+                            var studentItem = {};
+                            studentItem.value = id;
+                            studentItem.label = first_name + " " + last_name + " (" + id + ")";
+                            studentItem.noProfile = !has_profile;
+
+                            results.push(studentItem);
+                        }
+                        response(results);
+
+                    },
+                    error: function (result) {
+                        alert(result);
+                        response(results);
+                    }
+                });
+            }
+        },
         select: autocomplete_select_item,
         focus: function( event, ui ) {
             $j( "#student_selector" ).val( ui.item.label );
             return false;
         },
-    });
+    }).data("autocomplete")._renderItem = function (ul, item) {
+        var listItem = $j("<li>")
+                        .attr( "data-value", item.value )
+                        .append("<a href='#'>" + item.label + "</a>")
+                        .data("item.autocomplete", item);
+
+        if(item.noProfile) {
+            listItem.addClass('no-profile');
+        }
+
+        listItem.appendTo(ul);
+        ul.css('z-index','30');
+        return listItem
+    }
 }
 
 function clear_table()
@@ -825,7 +946,7 @@ function update_category_filters()
 
         if (!settings.categories_to_display[id])
         {
-            console.log("Hiding category .section_category_" + id);
+            //  console.log("Hiding category .section_category_" + id);
             $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
     }
@@ -1189,6 +1310,29 @@ $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
     //  class changes grid will be displayed.
+
+    var dialog = $j("#dialog-confirm").dialog({
+        resizable: true,
+        width: 450,
+        height:250,
+        modal: true,
+        buttons: [{
+            id: "dialog-confirm-button-register",
+            text: "Register Account",
+            click: function() {
+                register_student($j(this).data('student_id'),$j(this));
+            }
+        },
+        {
+            id: "dialog-confirm-button-cancel",
+            text: "Cancel",
+            click: function() {
+                $j(this).dialog( "close" );
+            }
+        }]
+    });
+
+    dialog.dialog("close");
 
     $j("#messages").html("Loading class and student data...");
     
