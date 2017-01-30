@@ -60,6 +60,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         ("****", "**** - You should not expect to be able to understand most of this class.",),
     ]
 
+    style_choices = [
+        ("Lecture", "Lecture"),
+        ("Seminar", "Seminar"),
+        ("Discussion", "Discussion"),
+        ("Activity", "Activity")
+    ]
+
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
@@ -86,6 +93,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
+    class_style = forms.ChoiceField( label='Class Style', choices=style_choices)
     hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
@@ -229,6 +237,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
             self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
+
+        if Tag.getTag('class_style_choices'):
+            self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
 
         # plus subprogram section wizard
 
