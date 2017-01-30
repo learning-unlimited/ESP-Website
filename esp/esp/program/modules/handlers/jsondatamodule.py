@@ -384,6 +384,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             classes.append(cls)
             if catalog:
                 cls['class_info'] = c.class_info
+                cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()

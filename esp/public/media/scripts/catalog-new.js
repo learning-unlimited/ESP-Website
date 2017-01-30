@@ -11,6 +11,7 @@ var ClassSubject = function (data) {
     self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
+    self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
