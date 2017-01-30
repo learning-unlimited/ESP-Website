@@ -106,6 +106,7 @@ function fill_class_popup(clsid, classes_data) {
     .append(make_attrib_para("Location", class_info.location))
     .append(make_attrib_para("Grade Range", class_info.grade_range))
     .append(make_attrib_para("Category", class_info.category))
+    .append(make_attrib_para("Style", class_info.class_style))
     //.append("<p>Difficulty: " + class_info.difficulty))
     .append(make_attrib_para("Prereqs", class_info.prereqs))
     // Ensure the class description gets HTML-escaped

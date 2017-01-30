@@ -647,6 +647,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'title': cls.title,
             'class_info': cls.class_info,
             'category': cls.category.category,
+            'class_style': cls.class_style,
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs,
             'sections': section_info,
