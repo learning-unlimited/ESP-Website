@@ -64,9 +64,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     # Tag class_style_choices with value in the following JSON format, where the first element of each list
     # is the value stored in the database, and the second value is the option shown on the form.
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
-    style_choices = [
-        ("Style", "Style")
-    ]
+    style_choices = []
 
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
