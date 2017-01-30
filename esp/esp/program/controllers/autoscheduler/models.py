@@ -21,9 +21,8 @@ class AS_Schedule:
                                             exclude_scheduled)
 
         # List of classrooms
-        self.classrooms = map(
-                lambda c: AS_Classroom(c, self.program),
-                program.groupedClassrooms())
+        self.classrooms = AS_Classroom.batch_convert(
+                program.groupedClassrooms(), self.program)
 
     def load_sections_and_teachers(
             self, exclude_lunch, exclude_walkins, exclude_scheduled):
@@ -51,8 +50,9 @@ class AS_Schedule:
         teachers = {}
 
         # Return!
-        return map(lambda s: AS_ClassSection(
-            s, self.program, teachers), sections), teachers
+        return AS_ClassSection.batch_convert(
+                sections, self.program, teachers), \
+            teachers
 
 
 class AS_ClassSection:
@@ -67,11 +67,15 @@ class AS_ClassSection:
                 teachers_dict[teacher.id] = AS_Teacher(teacher, program)
             self.teachers.append(teachers_dict[teacher.id])
         self.capacity = section.capacity
-        self.resource_requests = \
-            map(lambda r: AS_ResourceType(r.res_type),
-                section.getResourceRequests())
-        self.viable_times = map(lambda e: AS_Timeblock(e, program),
-                                section.viable_times())
+        self.resource_requests = AS_ResourceType.batch_convert(
+                section.getResourceRequests(), program)
+        self.viable_times = \
+            AS_Timeblock.batch_convert(section.viable_times(), program)
+
+    @staticmethod
+    def batch_convert(sections, program, teachers_dict):
+        return map(lambda s: AS_ClassSection(
+            s, program, teachers_dict), sections)
 
 
 class AS_Teacher:
@@ -79,9 +83,13 @@ class AS_Teacher:
         """Create a AS_Teacher from an ESPUser"""
         assert teacher.isTeacher()
         self.id = teacher.id
-        self.availability = map(lambda e: AS_Timeblock(e, program),
-                                teacher.getAvailableTimes(program))
+        self.availability = AS_Timeblock.batch_convert(
+            teacher.getAvailableTimes(program, ignore_classes=False), program)
         self.is_admin = teacher.isAdministrator()
+
+    @staticmethod
+    def batch_convert(teachers, program):
+        return map(lambda t: AS_Teacher(t, program), teachers)
 
 
 class AS_Classroom:
@@ -91,10 +99,14 @@ class AS_Classroom:
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
         self.id = classroom.id
         self.room = classroom.name
-        self.availability = map(lambda e: AS_Timeblock(e, program),
-                                classroom.timeslots)
-        self.furnishings = map(lambda r: AS_ResourceType(r.res_type),
-                               classroom.furnishings)
+        self.availability = \
+            AS_Timeblock.batch_convert(classroom.timeslots, program)
+        self.furnishings = AS_ResourceType.batch_convert(
+               classroom.furnishings, program)
+
+    @staticmethod
+    def batch_convert(classrooms, program):
+        return map(lambda c: AS_Classroom(c, program), classrooms)
 
 
 # Ordered by start time, then by end time.
@@ -135,6 +147,10 @@ class AS_Timeblock:
         else:
             return False
 
+    @staticmethod
+    def batch_convert(events, program):
+        return map(lambda e: AS_Timeblock(e, program), events)
+
 
 class AS_ResourceType:
     def __init__(self, restype):
@@ -142,3 +158,7 @@ class AS_ResourceType:
         self.id = restype.id
         self.name = restype.name
         self.description = restype.description
+
+    @staticmethod
+    def batch_convert(restypes, program):
+        return map(lambda r: AS_ResourceType(r, program), restypes)

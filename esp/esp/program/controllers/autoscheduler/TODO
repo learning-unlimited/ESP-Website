@@ -1,7 +1,5 @@
 Think about what classrooms not to use
 
-rewrite models with helpers to convert blocks instead of using map
-
 sanity checks:
 timeblocks shouldn't overlap
 classrooms shouldn't have duplicate timeblocks in availability
