@@ -1,3 +1,8 @@
-Might want to handle timeslots a bit differently, or add behavior checks
-Might want to think more about how to handle resources
 Think about what classrooms not to use
+
+rewrite models with helpers to convert blocks instead of using map
+
+sanity checks:
+timeblocks shouldn't overlap
+classrooms shouldn't have duplicate timeblocks in availability
+more assumption checks
