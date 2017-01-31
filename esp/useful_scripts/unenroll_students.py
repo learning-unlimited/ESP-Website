@@ -37,7 +37,7 @@ students = all_students.exclude(id__in=students_checked_in)
 
 # classes that start in the next 120 minutes
 upcoming_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10, parent_class__parent_program=prog, begin_time__start__lt=datetime.now() + timedelta(minutes=120))
-    
+
 # registrations of missing students for upcoming classes
 registrations = StudentRegistration.valid_objects().filter(user__in=students, section__in=upcoming_sections, relationship__name='Enrolled')
 print "Candidate Registrations to Delete:", len(registrations)
