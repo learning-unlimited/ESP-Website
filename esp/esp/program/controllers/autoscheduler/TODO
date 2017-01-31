@@ -1,4 +1,11 @@
 Think about what classrooms not to use
+Logic about resources being required or optional
+
+Logic relating to locked classes
+
+Potentially make a distinction between a required and optional constraint
+(required constraint is also reflected in the search logic)
+Or, constraints can have a search pruning functionality.
 
 sanity checks:
 timeblocks shouldn't overlap
