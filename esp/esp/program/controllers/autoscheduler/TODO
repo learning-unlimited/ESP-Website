@@ -4,6 +4,16 @@ Logic about resources being required or optional
 some lists probably want to be sets, but sections want to have a sorted list of
 timeslots (have consistency check for this)
 
+need unittests for schedule operations and saving somehow
+be able to deal with schedules with multi-scheduled rooms
+
+saving needs better error handling
+saving should check constraints as well before saving
+saving is probably really slow
+saving errors should be more informative
+
+generally try to be robust to single section errors
+
 Logic relating to locked classes
 If a class is already scheduled, it should be assigned to the relevant event
 make sure classrooms which already have classes in them don't get double-booked

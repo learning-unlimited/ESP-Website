@@ -1,11 +1,19 @@
 from functools import total_ordering
 from datetime import timedelta
+import hashlib
+import json
 
 from django.db.models import Count
+from django.db import transaction
 
-from esp.resources.models import ResourceType
+from esp.program.controllers.autoscheduler.consistency_checks import \
+        ConsistencyChecker
+from esp.program.controllers.autoscheduler.exceptions import \
+        ConsistencyError, SchedulingError
+from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
+from esp.cal.models import Event
 
 
 class AS_Schedule:
@@ -34,12 +42,10 @@ class AS_Schedule:
             self, exclude_lunch, exclude_walkins, exclude_scheduled):
         """Loads the program's approved and unscheduled sections from db, and
         registers all teachers into the dict of teachers"""
-        ClassSection.objects.annotate(num_meeting_times=Count('meeting_times'))
-
         # Get all the approved class sections for the program
         sections = ClassSection.objects.filter(
                 parent_class__parent_program=self.program,
-                status=10)
+                status=10).select_related()
 
         if exclude_scheduled:
             # Exclude all already-scheduled classes
@@ -60,9 +66,124 @@ class AS_Schedule:
                 sections, self.program, teachers, self.timeslot_dict)), \
             teachers
 
-    def save(self):
+    def save(self, check_consistency=True):
         """Saves the schedule."""
-        pass
+        # TODO: run a constraint check first
+        if check_consistency:
+            # Run a consistency check first.
+            try:
+                ConsistencyChecker().run_all_consistency_checks(self)
+            except ConsistencyError:
+                raise  # TODO
+
+        # Find all sections which we've actually moved.
+        changed_sections = set(
+            [section for section in self.class_sections
+             if section.initial_state
+             != section.scheduling_hash()])
+        # These are all the sections we are okay changing.
+        sections_by_id = {section.id: section for section in
+                          self.class_sections}
+        unscheduled_sections = set()  # Sections we unscheduled temporarily
+        with transaction.atomic():
+            for section in changed_sections:
+                section_obj = ClassSection.objects.get(id=section.id)
+                # Make sure nobody else touched the section
+                if section.id in unscheduled_sections:
+                    # Ensure the section is in fact unscheduled.
+                    if len(section_obj.get_meeting_times()) > 0 \
+                            or len(section_obj.classrooms()) > 0:
+                        raise SchedulingError("Someone else moved a section.")
+                else:
+                    self.ensure_section_not_moved(section_obj, section)
+                start_time = section.assigned_roomslots[0].timeslot.start
+                end_time = section.assigned_roomslots[-1].timeslot.end
+                # Make sure the teacher is available
+                for teacher in section.teachers:
+                    teacher_obj = ESPUser.objects.get(id=teacher.id)
+                    other_sections = \
+                        teacher_obj.getTaughtSections(self.program)
+                    for other_section in other_sections:
+                        conflict = False
+                        for other_time in other_section.get_meeting_times():
+                            if not (other_time.start >= end_time
+                                    or other_time.end <= start_time):
+                                conflict = True
+                                break
+                        if conflict:
+                            self.try_unschedule_section(
+                                    other_section,
+                                    sections_by_id,
+                                    unscheduled_sections,
+                                    "Teacher is already teaching")
+
+                # Compute our meeting times and classroom
+                meeting_times = Event.objects.filter(
+                        id__in=[roomslot.timeslot.id
+                                for roomslot in section.roomslots])
+                initial_room_num = section.roomslots[0].room.room
+                assert all([roomslot.room.room == initial_room_num
+                            for roomslot in section.roomslots]), \
+                    "Section was assigned to multiple rooms"
+                room_objs = Resource.objects.get(
+                        name=initial_room_num,
+                        res_type__name="Classroom",
+                        event__in=meeting_times)
+
+                # Make sure the room is available
+                for room_obj in room_objs:
+                    if room_obj.is_taken():
+                        occupiers = room_obj.assignments()
+                        for occupier in occupiers:
+                            other_section = occupier.target
+                            self.try_unschedule_section(
+                                    other_section,
+                                    sections_by_id,
+                                    unscheduled_sections,
+                                    "Room is occupied")
+
+                # Schedule the section!
+                section_obj.assign_meeting_times(meeting_times)
+                status, errors = section_obj.assign_room(room_objs[0])
+                if not status:
+                    section_obj.clear_meeting_times()
+                    raise SchedulingError(
+                            "Room assignment failed with errors: "
+                            + " | ".join(errors))
+
+    @staticmethod
+    def try_unschedule_section(section, sections_by_id, unscheduled_sections,
+                               error_message):
+        """Tries to unschedule the given ClassSection. If it's not in the list
+        of known sections (sections_by_id), throw a SchedulingError with the
+        given error message. Otherwise, make sure the section wasn't moved by
+        external sources, and unschedule it."""
+        if section.id not in sections_by_id:
+            raise SchedulingError(error_message)
+        else:
+            AS_Schedule.ensure_section_not_moved(section,
+                                                 sections_by_id[section.id])
+            AS_Schedule.unschedule_section(section, unscheduled_sections)
+
+    @staticmethod
+    def ensure_section_not_moved(section, as_section):
+        """Ensures that a ClassSection hasn't moved, according to the record
+        stored in its corresponding AS_Section. Raises a SchedulingError if it
+        was moved, otherwise does nothing."""
+        assert section.id == as_section.id, "Unexpected ID mismatch"
+        if AS_ClassSection.scheduling_hash_of(section) \
+                != as_section.initial_state:
+            raise SchedulingError("Section {} was \
+                    moved.".format(section.emailcode))
+
+    @staticmethod
+    def unschedule_section(section, unscheduled_sections_log=None):
+        """Unschedules a ClassSection and records it as needed."""
+        # Unschedule the offending section.
+        section.clear_meeting_times()
+        section.clearRooms()
+        if unscheduled_sections_log is not None:
+            unscheduled_sections_log.add(section.id)
 
 
 class AS_ClassSection:
@@ -70,6 +191,7 @@ class AS_ClassSection:
         """Create a AS_ClassSection from a ClassSection and Program"""
         assert section.parent_class.parent_program == program
         self.id = section.id
+        self.initial_state = self.scheduling_hash_of(section)
         self.duration = section.duration
         self.teachers = []
         for teacher in section.teachers:
@@ -83,13 +205,33 @@ class AS_ClassSection:
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
         self.assigned_roomslots = []
-        # self.viable_times = \
-        #     set(AS_Timeslot.batch_convert(section.viable_times(), program))
+        assert self.scheduling_hash() == self.initial_state, \
+            "AS_ClassSection state doesn't match ClassSection state"
+
+    def scheduling_hash(self):
+        """Creates a unique hash based on the timeslots and rooms assigned to
+        this section."""
+        meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
+                                for e in self.assigned_roomslots])
+        rooms = sorted(list(set([r.room.room for r in
+                                self.assigned_roomslots])))
+        state_str = json.dumps([meeting_times, rooms])
+        return hashlib.md5(state_str).hexdigest()
 
     @staticmethod
     def batch_convert(sections, program, teachers_dict, timeslot_dict):
         return map(lambda s: AS_ClassSection(
             s, program, teachers_dict, timeslot_dict), sections)
+
+    @staticmethod
+    def scheduling_hash_of(section):
+        """Creates a unique hash based on the timeslots and rooms assigned to a
+        section."""
+        meeting_times = sorted([(str(e.start), str(e.end))
+                                for e in section.get_meeting_times()])
+        rooms = sorted([r.name for r in section.classrooms()])
+        state_str = json.dumps([meeting_times, rooms])
+        return hashlib.md5(state_str).hexdigest()
 
 
 class AS_Teacher:
@@ -134,6 +276,7 @@ class AS_Timeslot:
         """Create an AS_Timeslot from an Event."""
         assert event.parent_program() == program, \
             "Event parent program doesn't match"
+        self.id = event.id
         self.start = event.start
         self.end = event.end
         assert self.start < self.end, "Timeslot doesn't end after start time"
@@ -175,8 +318,15 @@ class AS_Timeslot:
     def batch_find(events, timeslot_dict):
         """Finds the timeslots in the dict matching the events. Ignores if it
         doesn't exit."""
-        return [timeslot_dict[(e.start, e.end)] for e in events
-                if (e.start, e.end) in timeslot_dict]
+        timeslots = []
+        for event in events:
+            times = (event.start, event.end)
+            if times in timeslot_dict:
+                timeslot = timeslot_dict[times]
+                assert timeslot.id == event.id, \
+                    "Timeslot and event ID didn't match"
+                timeslots.append(timeslot)
+        return timeslots
 
 
 class AS_RoomSlot:

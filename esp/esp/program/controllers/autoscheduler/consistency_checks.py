@@ -1,10 +1,8 @@
+from esp.program.controllers.autoscheduler.exceptions import ConsistencyError
+
 """
 Consistency checks for an AS_Schedule. For debugging purposes.
 """
-
-
-class ConsistencyError(Exception):
-    pass
 
 
 class ConsistencyChecker:
