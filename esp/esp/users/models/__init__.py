@@ -1367,7 +1367,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
-    affiliation = models.CharField(max_length=100, blank=True, null=True)
+    affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)

@@ -345,15 +345,14 @@ class TeacherInfoForm(FormWithRequiredCss):
         cleaned_data = self.cleaned_data
 
         affiliation_field = self.fields['affiliation']
-        affiliation_with_data = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
-        affiliation = affiliation_with_data[0]
-        if affiliation == 'Pick' or affiliation == '':
+        affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
+        if affiliation == '':
             msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
             self.add_error('affiliation', msg)
         elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
             cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
         else: # OTHER or NONE -- Make sure they entered something into the other box
-            if affiliation_with_data[1].strip() == '':
+            if school.strip() == '':
                 msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
                 if affiliation == AFFILIATION_OTHER:
                     msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
