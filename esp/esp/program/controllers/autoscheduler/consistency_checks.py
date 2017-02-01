@@ -55,44 +55,47 @@ class ConsistencyChecker:
         versa."""
         pass  # teachers don't have sections teaching yet
 
-    def check_events_consistency(self, schedule):
-        """Check to make sure that events, are consistent with timeslots,
+    def check_roomslots_consistency(self, schedule):
+        """Check to make sure that roomslots, are consistent with timeslots,
         classrooms, and sections."""
-        # Find all the events we can find, and make sure they're consistent
+        # Find all the roomslots we can find, and make sure they're consistent
         # with their sources.
-        existing_events = set()
+        existing_roomslots = set()
         for room in schedule.classrooms:
-            for event in room.availability:
-                if event.room != room:
-                    raise ConsistencyError("Room and event were inconsistent")
-            existing_events.update(room.availability)
+            for roomslot in room.availability:
+                if roomslot.room != room:
+                    raise ConsistencyError(
+                            "Room and roomslot were inconsistent")
+            existing_roomslots.update(room.availability)
         for section in schedule.class_sections:
-            for event in section.assigned_events:
-                if event.assigned_section != section:
+            for roomslot in section.assigned_roomslots:
+                if roomslot.assigned_section != section:
                     raise ConsistencyError(
-                            "Section and event were inconsistent")
-            existing_events.update(section.assigned_events)
+                            "Section and roomslot were inconsistent")
+            existing_roomslots.update(section.assigned_roomslots)
         for timeslot in schedule.timeslots:
-            for event in timeslot.associated_events:
-                if event.timeslot is not timeslot:
+            for roomslot in timeslot.associated_roomslots:
+                if roomslot.timeslot is not timeslot:
                     raise ConsistencyError(
-                            "Timeslot and event were inconsistent")
-            existing_events.update(section.assigned_events)
+                            "Timeslot and roomslot were inconsistent")
+            existing_roomslots.update(section.assigned_roomslots)
 
-        # Make sure all events we found are listed everywhere they should be.
-        for event in existing_events:
-            if event.timeslot not in schedule.timeslots:
+        # Make sure all roomslots we found are listed everywhere they should
+        # be.
+        for roomslot in existing_roomslots:
+            if roomslot.timeslot not in schedule.timeslots:
                 raise ConsistencyError("Event's timeslot wasn't registered")
-            if event not in event.timeslot.associated_events:
+            if roomslot not in roomslot.timeslot.associated_roomslots:
                 raise ConsistencyError(
-                    "Event wasn't in timeslots's associated events")
-            if event.room not in schedule.classrooms:
+                    "Event wasn't in timeslots's associated roomslots")
+            if roomslot.room not in schedule.classrooms:
                 raise ConsistencyError("Event's room wasn't registered")
-            if event not in event.room.availability:
+            if roomslot not in roomslot.room.availability:
                 raise ConsistencyError("Event wasn't in room's availability")
-            if event.assigned_section is not None:
-                if event.assigned_section not in schedule.class_sections:
+            if roomslot.assigned_section is not None:
+                if roomslot.assigned_section not in schedule.class_sections:
                     raise ConsistencyError("Event had an unregistered section")
-                if event not in event.assigned_section.assigned_events:
+                if roomslot not in \
+                        roomslot.assigned_section.assigned_roomslots:
                     raise ConsistencyError(
-                        "Event wasn't in section's assigned events")
+                        "Event wasn't in section's assigned roomslots")

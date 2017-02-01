@@ -60,6 +60,10 @@ class AS_Schedule:
                 sections, self.program, teachers, self.timeslot_dict)), \
             teachers
 
+    def save(self):
+        """Saves the schedule."""
+        pass
+
 
 class AS_ClassSection:
     def __init__(self, section, program, teachers_dict, timeslot_dict):
@@ -78,7 +82,7 @@ class AS_ClassSection:
                 section.getResourceRequests()))
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
-        self.assigned_events = []
+        self.assigned_roomslots = []
         # self.viable_times = \
         #     set(AS_Timeslot.batch_convert(section.viable_times(), program))
 
@@ -111,7 +115,8 @@ class AS_Classroom:
         self.id = classroom.id
         self.room = classroom.name
         self.availability = set(
-            AS_Event.batch_convert(classroom.timeslots, self, timeslot_dict))
+            AS_RoomSlot.batch_convert(
+                classroom.timeslots, self, timeslot_dict))
         self.furnishings = set(
             AS_ResourceType.batch_convert(classroom.furnishings))
 
@@ -132,7 +137,7 @@ class AS_Timeslot:
         self.start = event.start
         self.end = event.end
         assert self.start < self.end, "Timeslot doesn't end after start time"
-        self.associated_events = set()  # AS_Events during this timeslot
+        self.associated_roomslots = set()  # AS_RoomSlots during this timeslot
 
     def __eq__(self, other):
         if type(other) is type(self):
@@ -174,17 +179,17 @@ class AS_Timeslot:
                 if (e.start, e.end) in timeslot_dict]
 
 
-class AS_Event:
+class AS_RoomSlot:
     """A specific timeslot where a specific room is available."""
     def __init__(self, timeslot, room):
         self.timeslot = timeslot
-        timeslot.associated_events.add(self)
+        timeslot.associated_roomslots.add(self)
         self.room = room
         self.assigned_section = None
 
     @staticmethod
     def batch_convert(events, room, timeslot_dict):
-        return map(lambda e: AS_Event(
+        return map(lambda e: AS_RoomSlot(
             timeslot_dict[(e.start, e.end)], room), events)
 
 
