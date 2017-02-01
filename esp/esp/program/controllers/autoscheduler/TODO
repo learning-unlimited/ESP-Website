@@ -1,10 +1,15 @@
 Think about what classrooms not to use
 Logic about resources being required or optional
 
+some lists probably want to be sets 
+
 Logic relating to locked classes
 If a class is already scheduled, it should be assigned to the relevant event
 make sure classrooms which already have classes in them don't get double-booked
 teachers should have list of sections they're teaching
+
+Think more about section scheduling consistency-- it's a consistency check but
+should probably also be either logic- or constraint-enforced.
 
 Potentially make a distinction between a required and optional constraint
 (required constraint is also reflected in the search logic)

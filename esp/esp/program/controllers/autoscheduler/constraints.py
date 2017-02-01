@@ -57,13 +57,6 @@ class CompositeConstraint(BaseConstraint):
             self.constraints))
 
 
-class ConsistencyConstraint(BaseConstraint):
-    """Different parts of the schedule should be consistent.
-    For example, if a section thinks it is scheduled in a room,
-    the room should think a section is scheduled in it."""
-    pass  # TODO
-
-
 class ContiguousConstraint(BaseConstraint):
     """Multi-hour sections may only be scheduled across
     contiguous timeblocks."""

@@ -27,8 +27,8 @@ class AS_Schedule:
                                             exclude_scheduled)
 
         # List of classrooms
-        self.classrooms = AS_Classroom.batch_convert(
-                program.groupedClassrooms(), self.program, self.timeslot_dict)
+        self.classrooms = set(AS_Classroom.batch_convert(
+                program.groupedClassrooms(), self.program, self.timeslot_dict))
 
     def load_sections_and_teachers(
             self, exclude_lunch, exclude_walkins, exclude_scheduled):
@@ -56,8 +56,8 @@ class AS_Schedule:
         teachers = {}
 
         # Return!
-        return AS_ClassSection.batch_convert(
-                sections, self.program, teachers, self.timeslot_dict), \
+        return set(AS_ClassSection.batch_convert(
+                sections, self.program, teachers, self.timeslot_dict)), \
             teachers
 
 
@@ -74,13 +74,13 @@ class AS_ClassSection:
                         teacher, program, timeslot_dict)
             self.teachers.append(teachers_dict[teacher.id])
         self.capacity = section.capacity
-        self.resource_requests = AS_ResourceType.batch_convert(
-                section.getResourceRequests())
+        self.resource_requests = set(AS_ResourceType.batch_convert(
+                section.getResourceRequests()))
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
-        self.assigned_event = None
+        self.assigned_events = []
         # self.viable_times = \
-        #     AS_Timeslot.batch_convert(section.viable_times(), program)
+        #     set(AS_Timeslot.batch_convert(section.viable_times(), program))
 
     @staticmethod
     def batch_convert(sections, program, teachers_dict, timeslot_dict):
@@ -110,9 +110,10 @@ class AS_Classroom:
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
         self.id = classroom.id
         self.room = classroom.name
-        self.availability = \
-            AS_Event.batch_convert(classroom.timeslots, self, timeslot_dict)
-        self.furnishings = AS_ResourceType.batch_convert(classroom.furnishings)
+        self.availability = set(
+            AS_Event.batch_convert(classroom.timeslots, self, timeslot_dict))
+        self.furnishings = set(
+            AS_ResourceType.batch_convert(classroom.furnishings))
 
     @staticmethod
     def batch_convert(classrooms, program, timeslot_dict):
@@ -131,7 +132,7 @@ class AS_Timeslot:
         self.start = event.start
         self.end = event.end
         assert self.start < self.end, "Timeslot doesn't end after start time"
-        self.associated_events = []  # AS_Events during this timeslot
+        self.associated_events = set()  # AS_Events during this timeslot
 
     def __eq__(self, other):
         if type(other) is type(self):
@@ -177,7 +178,7 @@ class AS_Event:
     """A specific timeslot where a specific room is available."""
     def __init__(self, timeslot, room):
         self.timeslot = timeslot
-        timeslot.associated_events.append(self)
+        timeslot.associated_events.add(self)
         self.room = room
         self.assigned_section = None
 
