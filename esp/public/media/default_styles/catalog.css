@@ -96,6 +96,7 @@ input.button {
     font-weight: bold;
     font-size: 13px;
     font-family: Arial, Helvetica, sans-serif;
+    display: none;
 }
 
 input.button:hover {
