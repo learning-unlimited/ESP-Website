@@ -17,6 +17,12 @@ class BaseConstraint:
         violate the constraint, True otherwise."""
         return self.check_schedule(schedule)
 
+    def check_move_section(self, section, room, start_time, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if moving the already-scheduled section to the room at the start time
+        would violate the constraint, True otherwise."""
+        return self.check_schedule(schedule)
+
     def check_remove_section(self, section, schedule):
         """Assuming that we start with a valid schedule, returns False
         if unscheduling the specified section will violate the constraint,
@@ -45,6 +51,12 @@ class CompositeConstraint(BaseConstraint):
     def check_add_section(self, section, room, start_time, schedule):
         return all(map(
             lambda c: c.check_add_section(section, room, start_time, schedule),
+            self.constraints))
+
+    def check_move_section(self, section, room, start_time, schedule):
+        return all(map(
+            lambda c: c.check_move_section(
+                section, room, start_time, schedule),
             self.constraints))
 
     def check_remove_section(self, section, schedule):

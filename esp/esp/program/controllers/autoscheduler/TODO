@@ -1,7 +1,8 @@
 Think about what classrooms not to use
 Logic about resources being required or optional
 
-some lists probably want to be sets 
+some lists probably want to be sets, but sections want to have a sorted list of
+timeslots (have consistency check for this)
 
 Logic relating to locked classes
 If a class is already scheduled, it should be assigned to the relevant event

@@ -36,6 +36,8 @@ Algorithmic complexity
     - 10 timeslots
     - Moves:
         - Schedule a class: 1000 * 100 * 10 = 10^6
+        - Move a scheduled class: 1000 * 100 * 10 = 10^6  (has different
+          chaining behaviors from scheduling a class)
         - Unschedule a class: 1000
         - Swap two classes: 1000
         - Chain of related moves: >10^9
