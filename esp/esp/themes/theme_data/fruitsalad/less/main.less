@@ -594,6 +594,29 @@ content: '*';
 color: #fff;
 }
 
+#submenu li.navbar-manage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  line-height: normal;
+}
+#submenu li.navbar-manage:before {
+  content: '';
+}
+#submenu li.navbar-manage a, #submenu li.navbar-manage .navbar-manage-expander {
+  color: white;
+  display: block;
+  padding: 2px 5px 5px;
+  background-color: rgba(0, 0, 0, 75%);
+}
+#submenu li.navbar-manage .navbar-manage-expander {
+  font-weight: bold;
+  cursor: pointer;
+}
+#submenu li.navbar-manage a:hover, #submenu li.navbar-manage .navbar-manage-expander:hover {
+  background-color: #000;
+}
+
 /* ANNOUNCEMENTS */
 
 #divannouncements {

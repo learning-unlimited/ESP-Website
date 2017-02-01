@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, Permission
-from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
