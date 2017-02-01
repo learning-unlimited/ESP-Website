@@ -63,7 +63,6 @@ class VolunteerManage(ProgramModuleObj):
     @needs_admin
     def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
-        response = None
 
         if extra == 'csv':
             response = HttpResponse(content_type="text/csv")
@@ -124,7 +123,7 @@ class VolunteerManage(ProgramModuleObj):
                     prev_timeslots.append(prev_request.timeslot)
                 time_delta = start_date - prev_timeslots[0].start.date()
                 for i,orig_timeslot in enumerate(prev_timeslots):
-                    new_timeslot = Event.objects.get_or_create(
+                    new_timeslot, _ = Event.objects.get_or_create(
                         program = self.program,
                         start = orig_timeslot.start + time_delta,
                         end   = orig_timeslot.end + time_delta,
@@ -134,15 +133,15 @@ class VolunteerManage(ProgramModuleObj):
                             'description': orig_timeslot.description,
                             'priority': orig_timeslot.priority,
                         }
-                    )[0]
+                    )
                     new_timeslot.save()
-                    new_request = VolunteerRequest.objects.get_or_create(
+                    new_request, _ = VolunteerRequest.objects.get_or_create(
                         program = self.program,
                         timeslot = new_timeslot,
                         defaults={
                             'num_volunteers': prev_requests[i].num_volunteers,
                         }
-                    )[0]
+                    )
                     new_request.save()
 
         return context
