@@ -14,6 +14,7 @@ from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
 from esp.cal.models import Event
+import esp.program.controllers.autoscheduler.constants as constants
 
 
 class AS_Schedule:
@@ -257,12 +258,34 @@ class AS_Classroom:
         self.id = classroom.id
         self.room = classroom.name
         # Availabilities as roomslots, sorted by the associated timeslot.
+        # Does not account for sections the scheduler knows are scheduled.
         self.availability = sorted(
             AS_RoomSlot.batch_convert(
                 classroom.timeslots, self, timeslot_dict),
             key=lambda r: r.timeslot)
         self.furnishings = set(
             AS_ResourceType.batch_convert(classroom.furnishings))
+
+    def get_roomslots_by_duration(self, start_roomslot, duration):
+        """Given a starting roomslot, returns a list of roomslots that
+        will cover the length of time specified by duration. If unable
+        to do so, return as many roomslots as possible."""
+        list_of_roomslots = [start_roomslot]
+        classroom_availability = start_roomslot.room.availability
+        if start_roomslot not in classroom_availability:
+            return []
+        index_of_roomslot = classroom_availability.index(start_roomslot)
+        start_time = start_roomslot.timeslot.start
+        end_time = start_roomslot.timeslot.end
+        while abs((end_time - start_time).seconds/60.0 - duration) \
+                > constants.DELTA_TIME:
+            index_of_roomslot += 1
+            if index_of_roomslot >= len(classroom_availability):
+                break
+            current_roomslot = classroom_availability[index_of_roomslot]
+            list_of_roomslots.append(current_roomslot)
+            end_time = current_roomslot.timeslot.end
+        return list_of_roomslots
 
     @staticmethod
     def batch_convert(classrooms, program, timeslot_dict):

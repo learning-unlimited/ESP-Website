@@ -102,19 +102,16 @@ class ContiguousConstraint(BaseConstraint):
         """Assuming that we start with a valid schedule, returns False
         if moving the already-scheduled section to the given starting roomslot
         would violate the constraint, True otherwise."""
-        return self.check_schedule(schedule)
+        return self.check_schedule_section(
+                self, section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
-        if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return self.check_schedule(schedule)
+        """Always True"""
+        return True
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
-        if swapping two sections will violate the constraint,
-        True otherwise."""
-        return self.check_schedule(schedule)
+        """Always True"""
+        return True
 
 
 class LunchConstraint(BaseConstraint):
