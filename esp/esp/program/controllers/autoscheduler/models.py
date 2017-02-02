@@ -204,7 +204,7 @@ class AS_ClassSection:
                 section.getResourceRequests()))
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
-        self.assigned_roomslots = []
+        self.assigned_roomslots = []  # This will be sorted
         assert self.scheduling_hash() == self.initial_state, \
             "AS_ClassSection state doesn't match ClassSection state"
 
@@ -256,9 +256,11 @@ class AS_Classroom:
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
         self.id = classroom.id
         self.room = classroom.name
-        self.availability = set(
+        # Availabilities as roomslots, sorted by the associated timeslot.
+        self.availability = sorted(
             AS_RoomSlot.batch_convert(
-                classroom.timeslots, self, timeslot_dict))
+                classroom.timeslots, self, timeslot_dict),
+            key=lambda r: r.timeslot)
         self.furnishings = set(
             AS_ResourceType.batch_convert(classroom.furnishings))
 
@@ -326,7 +328,7 @@ class AS_Timeslot:
                 assert timeslot.id == event.id, \
                     "Timeslot and event ID didn't match"
                 timeslots.append(timeslot)
-        return timeslots
+        return sorted(timeslots)
 
 
 class AS_RoomSlot:

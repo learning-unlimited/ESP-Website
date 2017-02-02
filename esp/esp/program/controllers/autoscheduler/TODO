@@ -7,8 +7,6 @@ timeslots (have consistency check for this)
 need unittests for schedule operations and saving somehow
 be able to deal with schedules with multi-scheduled rooms
 
-teacher availability should probably either be sorted or a set
-
 saving needs better error handling
 saving should check constraints as well before saving
 saving is probably really slow
@@ -27,6 +25,8 @@ should probably also be either logic- or constraint-enforced.
 Potentially make a distinction between a required and optional constraint
 (required constraint is also reflected in the search logic)
 Or, constraints can have a search pruning functionality.
+
+RoomAvailability is required for schedule_section
 
 sanity checks:
 timeblocks shouldn't overlap

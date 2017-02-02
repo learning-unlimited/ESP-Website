@@ -48,6 +48,29 @@ class ConsistencyChecker:
                 raise ConsistencyError(
                         "Timeslot didn't match key in dict")
 
+    def check_sorting_consistency(self, schedule):
+        """Checks whether section assigned roomslots, classroom availability,
+        and teacher availability are sorted."""
+        for section in schedule.class_sections:
+            if not self.roomslot_sorting_helper(section.assigned_roomslots):
+                raise ConsistencyError(
+                    "Section assigned roomslots weren't sorted.")
+        for classroom in schedule.classrooms:
+            if not self.roomslot_sorting_helper(classroom.availability):
+                raise ConsistencyError(
+                    "Classroom availability wasn't sorted.")
+        for teacher in schedule.teachers.values():
+            if not all(t1 < t2 for t1, t2 in
+                       zip(teacher.availability, teacher.availability[1:])):
+                raise ConsistencyError(
+                    "Teacher availability wasn't sorted.")
+
+    def roomslot_sorting_helper(self, roomslots):
+        """Returns True if the roomslots are sorted by timeslot, False
+        otherwise. There should not be duplicated timeslots."""
+        return all(rs1.timeslot < rs2.timeslot for rs1, rs2 in
+                   zip(roomslots, roomslots[1:]))
+
     def check_section_and_teacher_consistency(self, schedule):
         """Make sure that teachers know what sections they're teaching and vice
         versa."""
