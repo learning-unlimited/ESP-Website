@@ -24,26 +24,39 @@ import esp.program.controllers.autoscheduler.constants as constants
 
 
 class AS_Schedule:
-    def __init__(self, program, exclude_lunch=True, exclude_walkins=True,
-                 exclude_scheduled=True):
-        ESPUser.create_membership_methods()
-
+    def __init__(self, program=None, timeslots=None, class_sections=None,
+                 teachers=None, classrooms=None):
         self.program = program
-
-        self.timeslots = \
-            sorted(AS_Timeslot.batch_convert(program.getTimeSlots(), program))
+        self.timeslots = timeslots if timeslots is not None else []
 
         # Maps from start and end times to a timeslot.
         self.timeslot_dict = {(t.start, t.end): t for t in self.timeslots}
+        # Set of class sections
+        self.class_sections = class_sections if class_sections is not None \
+            else set()
+        # Dict of teachers by ID
+        self.teachers = teachers if teachers is not None else {}
+        # Set of classrooms
+        self.classrooms = classrooms if classrooms is not None else set()
 
-        # List of class sections and dict of teachers by id
-        self.class_sections, self.teachers = \
-            self.load_sections_and_teachers(exclude_lunch, exclude_walkins,
-                                            exclude_scheduled)
+    @staticmethod
+    def load_from_db(program, exclude_lunch=True, exclude_walkins=True,
+                     exclude_scheduled=True):
+        ESPUser.create_membership_methods()
 
-        # List of classrooms
-        self.classrooms = set(AS_Classroom.batch_convert(
-                program.groupedClassrooms(), self.program, self.timeslot_dict))
+        timeslots = \
+            sorted(AS_Timeslot.batch_convert(program.getTimeSlots(), program))
+
+        schedule = AS_Schedule(program=program, timeslots=timeslots)
+
+        schedule.class_sections, schedule.teachers = \
+            schedule.load_sections_and_teachers(exclude_lunch, exclude_walkins,
+                                                exclude_scheduled)
+
+        schedule.classrooms = set(AS_Classroom.batch_convert(
+                program.groupedClassrooms(), program, schedule.timeslot_dict))
+
+        return schedule
 
     def load_sections_and_teachers(
             self, exclude_lunch, exclude_walkins, exclude_scheduled):
@@ -201,26 +214,54 @@ class AS_Schedule:
 
 
 class AS_ClassSection:
-    def __init__(self, section, program, teachers_dict, timeslot_dict):
-        """Create a AS_ClassSection from a ClassSection and Program"""
+    def __init__(self, teachers, duration, capacity, assigned_roomslots,
+                 section_id=0, resource_requests=None):
+        self.id = section_id
+        # Duration, in hours.
+        self.duration = duration
+        # A list of teachers.
+        self.teachers = teachers
+        # Capacity, an int.
+        self.capacity = capacity
+        # A sorted list of assigned roomslots.
+        self.assigned_roomslots = assigned_roomslots
+        # A set of resource requests.
+        self.resource_requests = resource_requests \
+            if resource_requests is not None else set()
+
+        # A hash of the initial state.
+        self.initial_state = self.scheduling_hash()
+
+    @staticmethod
+    def convert_from_classection_obj(
+            section, program, teachers_dict, timeslot_dict):
+        """Create a AS_ClassSection from a ClassSection and Program. Will also
+        populate the given dictionary of teachers and uses the given dictionary
+        of timeslots for availabilities."""
         assert section.parent_class.parent_program == program
-        self.id = section.id
-        self.initial_state = self.scheduling_hash_of(section)
-        self.duration = float(section.duration)
-        self.teachers = []
+
+        teachers = []
         for teacher in section.teachers:
             if teacher.id not in teachers_dict:
-                teachers_dict[teacher.id] = AS_Teacher(
+                teachers_dict[teacher.id] = AS_Teacher.convert_from_espuser(
                         teacher, program, timeslot_dict)
-            self.teachers.append(teachers_dict[teacher.id])
-        self.capacity = section.capacity
-        self.resource_requests = set(AS_ResourceType.batch_convert(
+            teachers.append(teachers_dict[teacher.id])
+
+        resource_requests = set(AS_ResourceType.batch_convert(
                 section.getResourceRequests()))
+
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
-        self.assigned_roomslots = []  # This will be sorted
-        assert self.scheduling_hash() == self.initial_state, \
+
+        as_section = AS_ClassSection(
+                teachers, float(section.duration), section.capacity, [],
+                section_id=section.id, resource_requests=resource_requests)
+
+        assert as_section.scheduling_hash_of(section) == \
+            as_section.initial_state, \
             "AS_ClassSection state doesn't match ClassSection state"
+
+        return as_section
 
     def assign_roomslots(self, roomslots, clear_existing=False):
         if not clear_existing:
@@ -254,7 +295,7 @@ class AS_ClassSection:
 
     @staticmethod
     def batch_convert(sections, program, teachers_dict, timeslot_dict):
-        return map(lambda s: AS_ClassSection(
+        return map(lambda s: AS_ClassSection.convert_from_classection_obj(
             s, program, teachers_dict, timeslot_dict), sections)
 
     @staticmethod
@@ -269,35 +310,50 @@ class AS_ClassSection:
 
 
 class AS_Teacher:
-    def __init__(self, teacher, program, timeslot_dict):
-        """Create a AS_Teacher from an ESPUser"""
+    def __init__(self, availability, teacher_id=0, is_admin=False):
+        self.id = teacher_id
+        self.availability = availability if availability is not None \
+            else []
+        self.is_admin = is_admin
+
+    @staticmethod
+    def convert_from_espuser(teacher, program, timeslot_dict):
+        """Create a AS_Teacher from an ESPUser using a timeslot_dict"""
         assert teacher.isTeacher()
-        self.id = teacher.id
-        self.availability = AS_Timeslot.batch_find(
+        availability = AS_Timeslot.batch_find(
             teacher.getAvailableTimes(program, ignore_classes=False),
             timeslot_dict)
-        self.is_admin = teacher.isAdministrator()
+        is_admin = teacher.isAdministrator()
+        return AS_Teacher(availability, teacher.id, is_admin)
 
     @staticmethod
     def batch_convert(teachers, program, timeslot_dict):
-        return map(lambda t: AS_Teacher(t, program, timeslot_dict), teachers)
+        return map(lambda t: AS_Teacher.convert_from_espuser(
+            t, program, timeslot_dict), teachers)
 
 
 class AS_Classroom:
-    def __init__(self, classroom, program, timeslot_dict):
+    def __init__(self, room, available_timeslots,
+                 classroom_id=3, furnishings=None):
+        self.id = classroom_id
+        self.room = room
+        # Availabilities as roomslots, sorted by the associated timeslot.
+        # Does not account for sections the scheduler knows are scheduled.
+        self.availability = [AS_RoomSlot(timeslot, self) for timeslot in
+                             sorted(available_timeslots)]
+        self.furnishings = furnishings if furnishings is not None else set()
+
+    @staticmethod
+    def convert_from_groupedclassroom(classroom, program, timeslot_dict):
         """Create a AS_Classroom from a grouped Classroom (see
         Program.groupedClassrooms()) and Program"""
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
-        self.id = classroom.id
-        self.room = classroom.name
-        # Availabilities as roomslots, sorted by the associated timeslot.
-        # Does not account for sections the scheduler knows are scheduled.
-        self.availability = sorted(
-            AS_RoomSlot.batch_convert(
-                classroom.timeslots, self, timeslot_dict),
-            key=lambda r: r.timeslot)
-        self.furnishings = set(
+        available_timeslots = \
+            AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
+        furnishings = set(
             AS_ResourceType.batch_convert(classroom.furnishings))
+        return AS_Classroom(classroom.name, available_timeslots,
+                            classroom.id, furnishings)
 
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that
@@ -322,7 +378,7 @@ class AS_Classroom:
 
     @staticmethod
     def batch_convert(classrooms, program, timeslot_dict):
-        return map(lambda c: AS_Classroom(
+        return map(lambda c: AS_Classroom.convert_from_groupedclassroom(
             c, program, timeslot_dict), classrooms)
 
 
@@ -330,15 +386,21 @@ class AS_Classroom:
 @total_ordering
 class AS_Timeslot:
     """A timeslot, not specific to any teacher or class or room."""
-    def __init__(self, event, program):
+    def __init__(self, start, end, event_id=4, associated_roomslots=None):
+        self.id = event_id
+        self.start = start
+        self.end = end
+        # AS_RoomSlots during this timeslot
+        self.associated_roomslots = associated_roomslots \
+            if associated_roomslots is not None else set()
+
+    @staticmethod
+    def convert_from_event(event, program):
         """Create an AS_Timeslot from an Event."""
         assert event.parent_program() == program, \
             "Event parent program doesn't match"
-        self.id = event.id
-        self.start = event.start
-        self.end = event.end
-        assert self.start < self.end, "Timeslot doesn't end after start time"
-        self.associated_roomslots = set()  # AS_RoomSlots during this timeslot
+        assert event.start < event.end, "Timeslot doesn't end after start time"
+        return AS_Timeslot(event.start, event.end, event.id, None)
 
     def __eq__(self, other):
         if type(other) is type(self):
@@ -370,7 +432,8 @@ class AS_Timeslot:
 
     @staticmethod
     def batch_convert(events, program):
-        return map(lambda e: AS_Timeslot(e, program), events)
+        return map(lambda e: AS_Timeslot.convert_from_event(
+            e, program), events)
 
     @staticmethod
     def batch_find(events, timeslot_dict):
@@ -402,11 +465,15 @@ class AS_RoomSlot:
 
 
 class AS_ResourceType:
-    def __init__(self, restype):
+    def __init__(self, name, restype_id=5, description=""):
+        self.id = restype_id
+        self.name = name
+        self.description = description
+
+    @staticmethod
+    def convert_from_restype(restype):
         """Create an AS_ResourceType from a ResourceType"""
-        self.id = restype.id
-        self.name = restype.name
-        self.description = restype.description
+        return AS_ResourceType(restype.name, restype.id, restype.description)
 
     @staticmethod
     def batch_convert(res):
