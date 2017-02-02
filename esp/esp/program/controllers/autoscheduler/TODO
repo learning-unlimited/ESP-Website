@@ -4,6 +4,9 @@ Logic about resources being required or optional
 some lists probably want to be sets, but sections want to have a sorted list of
 timeslots (have consistency check for this)
 
+classrooms don't currently account for classes which are already scheduled in
+them
+
 need unittests for schedule operations and saving somehow
 be able to deal with schedules with multi-scheduled rooms
 

@@ -89,6 +89,7 @@ class AS_Schedule:
         with transaction.atomic():
             for section in changed_sections:
                 section_obj = ClassSection.objects.get(id=section.id)
+                print "Saving {}".format(section_obj.emailcode())
                 # Make sure nobody else touched the section
                 if section.id in unscheduled_sections:
                     # Ensure the section is in fact unscheduled.
@@ -112,21 +113,27 @@ class AS_Schedule:
                                 conflict = True
                                 break
                         if conflict:
+                            err_msg = (
+                                "Teacher {} is already teaching "
+                                "from {} to {}".format(
+                                    teacher.id,
+                                    str(other_time.start),
+                                    str(other_time.end)))
                             self.try_unschedule_section(
-                                    other_section,
-                                    sections_by_id,
-                                    unscheduled_sections,
-                                    "Teacher is already teaching")
+                                other_section,
+                                sections_by_id,
+                                unscheduled_sections,
+                                err_msg)
 
                 # Compute our meeting times and classroom
                 meeting_times = Event.objects.filter(
                         id__in=[roomslot.timeslot.id
-                                for roomslot in section.roomslots])
-                initial_room_num = section.roomslots[0].room.room
+                                for roomslot in section.assigned_roomslots])
+                initial_room_num = section.assigned_roomslots[0].room.room
                 assert all([roomslot.room.room == initial_room_num
-                            for roomslot in section.roomslots]), \
+                            for roomslot in section.assigned_roomslots]), \
                     "Section was assigned to multiple rooms"
-                room_objs = Resource.objects.get(
+                room_objs = Resource.objects.filter(
                         name=initial_room_num,
                         res_type__name="Classroom",
                         event__in=meeting_times)
@@ -193,7 +200,7 @@ class AS_ClassSection:
         assert section.parent_class.parent_program == program
         self.id = section.id
         self.initial_state = self.scheduling_hash_of(section)
-        self.duration = section.duration
+        self.duration = float(section.duration)
         self.teachers = []
         for teacher in section.teachers:
             if teacher.id not in teachers_dict:
@@ -208,6 +215,26 @@ class AS_ClassSection:
         self.assigned_roomslots = []  # This will be sorted
         assert self.scheduling_hash() == self.initial_state, \
             "AS_ClassSection state doesn't match ClassSection state"
+
+    def assign_roomslots(self, roomslots, clear_existing=False):
+        if not clear_existing:
+            assert self.assigned_roomslots == [], \
+                    "Already assigned to roomslots"
+        else:
+            self.clear_roomslots()
+        self.assigned_roomslots = sorted(roomslots, key=lambda r: r.timeslot)
+        for roomslot in self.assigned_roomslots:
+            assert roomslot.assigned_section is None, \
+                    "Roomslot is occupied"
+            roomslot.assigned_section = self
+
+    def clear_roomslots(self):
+        for roomslot in self.assigned_roomslots:
+            roomslot.assigned_section = None
+        self.assigned_roomslots = []
+
+    def is_scheduled(self):
+        return len(self.assigned_roomslots) > 0
 
     def scheduling_hash(self):
         """Creates a unique hash based on the timeslots and rooms assigned to
@@ -277,7 +304,7 @@ class AS_Classroom:
         index_of_roomslot = classroom_availability.index(start_roomslot)
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
-        while abs((end_time - start_time).seconds/60.0 - duration) \
+        while abs((end_time - start_time).seconds/3600.0 - duration) \
                 > constants.DELTA_TIME:
             index_of_roomslot += 1
             if index_of_roomslot >= len(classroom_availability):
