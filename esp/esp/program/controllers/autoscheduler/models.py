@@ -1,3 +1,9 @@
+
+"""Models for the autoscheduler. Mostly reflects the database on the rest of
+the website, but having separate models should be a bit more robust to changes
+in website structure and should also be more performant.
+"""
+
 from functools import total_ordering
 from datetime import timedelta
 import hashlib
