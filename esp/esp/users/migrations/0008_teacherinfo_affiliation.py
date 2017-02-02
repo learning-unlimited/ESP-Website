@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='teacherinfo',
             name='affiliation',
-            field=models.CharField(max_length=100, null=True, blank=True),
+            field=models.CharField(max_length=100, blank=True),
         ),
     ]
