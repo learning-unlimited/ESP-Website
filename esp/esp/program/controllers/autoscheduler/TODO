@@ -7,6 +7,8 @@ timeslots (have consistency check for this)
 need unittests for schedule operations and saving somehow
 be able to deal with schedules with multi-scheduled rooms
 
+teacher availability should probably either be sorted or a set
+
 saving needs better error handling
 saving should check constraints as well before saving
 saving is probably really slow

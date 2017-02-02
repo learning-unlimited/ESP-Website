@@ -11,7 +11,7 @@ class BaseConstraint:
         raise NotImplementedError
 
     # These local checks are for performance reasons.
-    def check_add_section(self, section, room, start_time, schedule):
+    def check_schedule_section(self, section, room, start_time, schedule):
         """Assuming that we start with a valid schedule, returns False
         if scheduling the section in the room at the start time would
         violate the constraint, True otherwise."""
@@ -23,7 +23,7 @@ class BaseConstraint:
         would violate the constraint, True otherwise."""
         return self.check_schedule(schedule)
 
-    def check_remove_section(self, section, schedule):
+    def check_unschedule_section(self, section, schedule):
         """Assuming that we start with a valid schedule, returns False
         if unscheduling the specified section will violate the constraint,
         True otherwise."""
@@ -48,9 +48,10 @@ class CompositeConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         return all(map(lambda c: c.check_schedule(schedule), self.constraints))
 
-    def check_add_section(self, section, room, start_time, schedule):
+    def check_schedule_section(self, section, room, start_time, schedule):
         return all(map(
-            lambda c: c.check_add_section(section, room, start_time, schedule),
+            lambda c: c.check_schedule_section(
+                section, room, start_time, schedule),
             self.constraints))
 
     def check_move_section(self, section, room, start_time, schedule):
@@ -59,8 +60,8 @@ class CompositeConstraint(BaseConstraint):
                 section, room, start_time, schedule),
             self.constraints))
 
-    def check_remove_section(self, section, schedule):
-        return all(map(lambda c: c.check_remove_section(section, schedule),
+    def check_unschedule_section(self, section, schedule):
+        return all(map(lambda c: c.check_unschedule_section(section, schedule),
                        self.constraints))
 
     def check_swap_sections(self, section1, section2, schedule):
