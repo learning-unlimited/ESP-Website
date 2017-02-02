@@ -1,4 +1,5 @@
 # TODO: documentation on adding constraints
+from esp.program.controllers.autoscheduler.models import AS_Timeslot
 
 
 class BaseConstraint:
@@ -72,8 +73,48 @@ class CompositeConstraint(BaseConstraint):
 
 class ContiguousConstraint(BaseConstraint):
     """Multi-hour sections may only be scheduled across
-    contiguous timeblocks."""
-    pass  # TODO
+    contiguous timeblocks in the same room."""
+    def check_schedule(self, schedule):
+        """Returns False if an AS_Schedule violates the constraint,
+        True otherwise."""
+        for section in schedule.class_sections:
+            if len(section.assigned_roomslots) > 1:
+                section_room = section.assigned_roomslots[0].room
+                prev_timeslot = \
+                    section.assigned_roomslots[0].timeslot
+                for roomslot in section.assigned_roomslots[1:]:
+                    if not AS_Timeslot.contiguous(
+                            prev_timeslot, roomslot.timeslot):
+                        return False
+                    if roomslot.room.id != section_room.id:
+                        return False
+                    prev_timeslot = roomslot.timeslot
+        return True
+
+    # These local checks are for performance reasons.
+    def check_add_section(self, section, room, start_time, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if scheduling the section in the room at the start time would
+        violate the constraint, True otherwise."""
+        return self.check_schedule(schedule)
+
+    def check_move_section(self, section, room, start_time, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if moving the already-scheduled section to the room at the start time
+        would violate the constraint, True otherwise."""
+        return self.check_schedule(schedule)
+
+    def check_remove_section(self, section, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if unscheduling the specified section will violate the constraint,
+        True otherwise."""
+        return self.check_schedule(schedule)
+
+    def check_swap_sections(self, section1, section2, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if swapping two sections will violate the constraint,
+        True otherwise."""
+        return self.check_schedule(schedule)
 
 
 class LunchConstraint(BaseConstraint):

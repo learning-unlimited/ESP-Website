@@ -205,6 +205,7 @@ class AS_ClassSection:
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
         self.assigned_roomslots = []
+        # TODO ensure assigned roomslots are sorted
         assert self.scheduling_hash() == self.initial_state, \
             "AS_ClassSection state doesn't match ClassSection state"
 
