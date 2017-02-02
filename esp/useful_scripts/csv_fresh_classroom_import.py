@@ -58,7 +58,7 @@ while True:
                     "in spreadsheet. Available furnishings ('None' if none): ").format(resource_name)
             for f in available_furnishings:
                 print f
-            idx = raw_input("Input furnishing index: ")
+            idx = raw_input("Input furnishing index (or 'None'): ")
             if idx == "None":
                 idx = None
             else:
@@ -82,12 +82,16 @@ def parse_time(date, time):
     time = (time + "m").upper()
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
+print "Reading from furnishings csv..."
 for row in furnish_classrooms:
     room_number = row[0]
-    capacity = int(row[1])
-    others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
-            is not None else False for name in RESOURCE_NAMES]
-    rooms_dict[room_number] = [capacity] + others
+    try:
+        capacity = int(row[1])
+        others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
+                is not None else False for name in RESOURCE_NAMES]
+        rooms_dict[room_number] = [capacity] + others
+    except:
+        print "Error reading furnishings for room {}; skipping".format(room_number)
 
 for row in sched_reader:
     if row[0] == "Date":
