@@ -11,15 +11,15 @@ class BaseConstraint:
         raise NotImplementedError
 
     # These local checks are for performance reasons.
-    def check_schedule_section(self, section, room, start_time, schedule):
+    def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns False
-        if scheduling the section in the room at the start time would
+        if scheduling the section starting at the given roomslot would
         violate the constraint, True otherwise."""
         return self.check_schedule(schedule)
 
-    def check_move_section(self, section, room, start_time, schedule):
+    def check_move_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns False
-        if moving the already-scheduled section to the room at the start time
+        if moving the already-scheduled section to the given starting roomslot
         would violate the constraint, True otherwise."""
         return self.check_schedule(schedule)
 
@@ -48,16 +48,16 @@ class CompositeConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         return all(map(lambda c: c.check_schedule(schedule), self.constraints))
 
-    def check_schedule_section(self, section, room, start_time, schedule):
+    def check_schedule_section(self, section, start_roomslot, schedule):
         return all(map(
             lambda c: c.check_schedule_section(
-                section, room, start_time, schedule),
+                section, start_roomslot, schedule),
             self.constraints))
 
-    def check_move_section(self, section, room, start_time, schedule):
+    def check_move_section(self, section, start_roomslot, schedule):
         return all(map(
             lambda c: c.check_move_section(
-                section, room, start_time, schedule),
+                section, start_roomslot, schedule),
             self.constraints))
 
     def check_unschedule_section(self, section, schedule):
