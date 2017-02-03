@@ -28,6 +28,8 @@ class ConsistencyChecker:
             if timeslot1 > timeslot2:
                 raise ConsistencyError("Timeslots weren't sorted.")
             if timeslot1.end > timeslot2.start:
+                # Strictly speaking this is the only test we need.
+                # But we can keep the other two for debugging clarity.
                 raise ConsistencyError("Timeslots are overlapping.")
 
     def check_timeslots_list_and_dict_consistency(self, schedule):
