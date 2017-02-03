@@ -25,7 +25,15 @@ import esp.program.controllers.autoscheduler.constants as constants
 
 class AS_Schedule:
     def __init__(self, program=None, timeslots=None, class_sections=None,
-                 teachers=None, classrooms=None):
+                 teachers=None, classrooms=None, lunch_timeslots=None):
+        """Argument types:
+         - program is a Program object
+         - timeslots is a sorted list of AS_Timeslots
+         - class_sections is a dict of {section_id: AS_ClassSection}
+         - teachers is a dict of {teacher_id: AS_Teacher}
+         - classrooms is a dict of {classroom_name: AS_Classroom}
+         - lunch_timeslots is a list of (lunch_start, lunch_end).
+        """
         self.program = program
         self.timeslots = timeslots if timeslots is not None else []
 
@@ -38,6 +46,21 @@ class AS_Schedule:
         self.teachers = teachers if teachers is not None else {}
         # Dict of classrooms by name
         self.classrooms = classrooms if classrooms is not None else {}
+        # A dict of lunch timeslots by day, i.e maps from (year, month, day)
+        # to a list of timeslots. Timeslots should also be in timeslot_dict.
+        self.lunch_timeslots = self.build_lunch_timeslots(lunch_timeslots)
+
+    def build_lunch_timeslots(self, lunch_timeslots):
+        timeslots_by_day = {}
+        for (start, end) in lunch_timeslots:
+            if (start, end) not in self.timeslot_dict:
+                continue
+            day = (start.year, start.month, start.day)
+            assert (end.year, end.month, end.day) == day, \
+                "Timeslot spans multiple days"
+            timeslots_by_day.get(day, []).append(
+                    self.timeslot_dict[(start, end)])
+        return timeslots_by_day
 
     @staticmethod
     def load_from_db(program, exclude_lunch=True, exclude_walkins=True,
@@ -47,7 +70,14 @@ class AS_Schedule:
         timeslots = \
             sorted(AS_Timeslot.batch_convert(program.getTimeSlots(), program))
 
-        schedule = AS_Schedule(program=program, timeslots=timeslots)
+        lunch_events = Event.objects.filter(
+                meeting_times__parent_class__category__category="Lunch",
+                meeting_times__parent_class__parent_program=program)
+
+        lunch_timeslots = [(e.start, e.end) for e in lunch_events]
+
+        schedule = AS_Schedule(program=program, timeslots=timeslots,
+                               lunch_timeslots=lunch_timeslots)
 
         schedule.class_sections, schedule.teachers = \
             schedule.load_sections_and_teachers(exclude_lunch, exclude_walkins,
@@ -228,6 +258,7 @@ class AS_ClassSection:
 
         # A hash of the initial state.
         self.initial_state = self.scheduling_hash()
+        self.register_teachers()
 
     @staticmethod
     def convert_from_classection_obj(
@@ -259,6 +290,12 @@ class AS_ClassSection:
             "AS_ClassSection state doesn't match ClassSection state"
 
         return as_section
+
+    def register_teachers(self):
+        """Makes sure that all teachers have this section listed in their taught
+        sections."""
+        for teacher in self.teachers:
+            teacher.taught_sections[self.id] = self
 
     def assign_roomslots(self, roomslots, clear_existing=False):
         if not clear_existing:
@@ -311,6 +348,8 @@ class AS_Teacher:
         self.id = teacher_id
         self.availability = availability if availability is not None \
             else []
+        # Dict from section ID to section
+        self.taught_sections = {}
         self.is_admin = is_admin
         # TODO: consistency check
         self.availability_dict = {}
