@@ -1,11 +1,14 @@
 # TODO: documentation on adding constraints
+import inspect
+
 from esp.program.controllers.autoscheduler.models import AS_Timeslot
 import esp.program.controllers.autoscheduler.constants as constants
 
 
 class BaseConstraint:
     """Abstract class for constraints."""
-    default_on = True
+    # A constraint is required when the logic either enforces or assumes it.
+    required = False
 
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
@@ -46,7 +49,14 @@ class CompositeConstraint(BaseConstraint):
         """Takes in a list of constraint names, as strings."""
         self.constraints = []
         available_constraints = globals()
-        for constraint in constraint_names:
+        required_constraints = [
+                name for name, constraint in available_constraints.iteritems()
+                if inspect.isclass(constraint)
+                and issubclass(constraint, BaseConstraint)
+                and constraint.required]
+        constraints_to_use = set(constraint_names + required_constraints)
+        for constraint in constraints_to_use:
+            print "Using constraint {}".format(constraint)
             self.constraints.append(available_constraints[constraint]())
 
     def check_schedule(self, schedule):
@@ -75,6 +85,9 @@ class CompositeConstraint(BaseConstraint):
 
 
 class ContiguousConstraint(BaseConstraint):
+
+    required = True  # Maybe it isn't actually, but it seems like it is.
+
     """Multi-hour sections may only be scheduled across
     contiguous timeblocks in the same room."""
     def check_schedule(self, schedule):
@@ -138,6 +151,9 @@ class LunchConstraint(BaseConstraint):
 class PreconditionConstraint(BaseConstraint):
     """Checks to see if any action made satisfies its preconditions.
     The schedule check is trivial"""
+
+    required = True
+
     def check_schedule(self, schedule):
         """Always True"""
         return True
@@ -179,6 +195,9 @@ class RestrictedRoomConstraint(BaseConstraint):
 
 class RoomAvailabilityConstraint(BaseConstraint):
     """Sections can only be in rooms which are available."""
+
+    required = True  # See note about triviality below.
+
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
@@ -218,6 +237,9 @@ class RoomAvailabilityConstraint(BaseConstraint):
 
 class RoomConcurrencyConstraint(BaseConstraint):
     """Rooms can't be double-booked."""
+
+    required = True  # A double-booked room will violate consistency checks.
+
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
@@ -271,11 +293,14 @@ class SectionDurationConstraint(BaseConstraint):
     """Sections must be scheduled for exactly their length.
     This also accounts for not scheduling a section twice,
     in conjunction with consistency constraints."""
+
+    required = True
+
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
         for section in schedule.class_sections.itervalues():
-            if len(section.assigned_roomslots != 0):
+            if len(section.assigned_roomslots) != 0:
                 start_time = section.assigned_roomslots[0].timeslot.start
                 end_time = section.assigned_roomslots[-1].timeslot.end
                 if abs((end_time - start_time).seconds/3600.0 -
@@ -309,11 +334,11 @@ class SectionDurationConstraint(BaseConstraint):
         return True
 
 
-class TeacherAvailabilityConstraint(BaseConstraint):
+class TeacherAvailabilityConstraint(BaseConstraint):  # TODO: be required
     """Teachers can only teach during times they are available."""
     pass  # TODO
 
 
-class TeacherConcurrencyConstraint(BaseConstraint):
+class TeacherConcurrencyConstraint(BaseConstraint):  # TODO: be required
     """Teachers can't teach two classes at once."""
     pass  # TODO

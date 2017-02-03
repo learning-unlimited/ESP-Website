@@ -191,7 +191,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
 
         sched.classrooms["10-250"].availability.append(new_roomslot)
-        new_section = models.AS_ClassSection(sched.teachers[1], 0.83, 20,
+        new_section = models.AS_ClassSection([sched.teachers[1]], 0.83, 20,
                                              [new_roomslot], 3)
         new_roomslot.assigned_section = new_section
         with self.assertRaises(ConsistencyError):

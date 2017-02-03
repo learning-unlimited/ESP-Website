@@ -1,24 +1,20 @@
-Think about what classrooms not to use
 Logic about resources being required or optional
-
 implement resources and restricted rooms
+
+Think about what classrooms not to use
 
 lunch needs consistency checks
 teacher availability dict needs consistency checks
 teacher sections teaching needs consistency checks
-
-some lists probably want to be sets, but sections want to have a sorted list of
-timeslots (have consistency check for this)
+consistency checks for teacher dict, class section dict, classroom dict
 
 classrooms don't currently account for classes which are already scheduled in
 them
 
 save() might want to check to make sure that the lists of teachers don't change
 either
-
-add asserts for types for constructor inputs
-
-consistency checks for teacher dict, class section dict, classroom dict
+save() should update initial states to prevent getting confused by multiple
+saves
 
 handle having two classrooms of the same name
 
@@ -47,6 +43,8 @@ Or, constraints can have a search pruning functionality.
 RoomAvailability is required for schedule_section
 
 sanity checks:
-timeblocks shouldn't overlap
-classrooms shouldn't have duplicate timeblocks in availability
 more assumption checks
+
+Unittests should include:
+Constraints account for classrooms which already have sections in them
+

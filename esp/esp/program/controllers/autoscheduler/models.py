@@ -48,7 +48,9 @@ class AS_Schedule:
         self.classrooms = classrooms if classrooms is not None else {}
         # A dict of lunch timeslots by day, i.e maps from (year, month, day)
         # to a list of timeslots. Timeslots should also be in timeslot_dict.
-        self.lunch_timeslots = self.build_lunch_timeslots(lunch_timeslots)
+        self.lunch_timeslots = self.build_lunch_timeslots(
+                lunch_timeslots if lunch_timeslots is not None else [])
+        self.run_consistency_checks()
 
     def build_lunch_timeslots(self, lunch_timeslots):
         timeslots_by_day = {}
@@ -124,7 +126,7 @@ class AS_Schedule:
         if check_consistency:
             # Run a consistency check first.
             try:
-                ConsistencyChecker().run_all_consistency_checks(self)
+                self.run_consistency_checks()
             except ConsistencyError:
                 raise  # TODO
 
@@ -218,6 +220,9 @@ class AS_Schedule:
             AS_Schedule.ensure_section_not_moved(
                     section, self.class_sections[section.id])
             AS_Schedule.unschedule_section(section, unscheduled_sections)
+
+    def run_consistency_checks(self):
+        ConsistencyChecker().run_all_consistency_checks(self)
 
     @staticmethod
     def ensure_section_not_moved(section, as_section):
