@@ -31,13 +31,13 @@ class AS_Schedule:
 
         # Maps from start and end times to a timeslot.
         self.timeslot_dict = {(t.start, t.end): t for t in self.timeslots}
-        # Set of class sections
+        # Dict of class sections by ID
         self.class_sections = class_sections if class_sections is not None \
-            else set()
+            else {}
         # Dict of teachers by ID
         self.teachers = teachers if teachers is not None else {}
-        # Set of classrooms
-        self.classrooms = classrooms if classrooms is not None else set()
+        # Dict of classrooms by name
+        self.classrooms = classrooms if classrooms is not None else {}
 
     @staticmethod
     def load_from_db(program, exclude_lunch=True, exclude_walkins=True,
@@ -53,8 +53,9 @@ class AS_Schedule:
             schedule.load_sections_and_teachers(exclude_lunch, exclude_walkins,
                                                 exclude_scheduled)
 
-        schedule.classrooms = set(AS_Classroom.batch_convert(
-                program.groupedClassrooms(), program, schedule.timeslot_dict))
+        classrooms = AS_Classroom.batch_convert(
+                program.groupedClassrooms(), program, schedule.timeslot_dict)
+        schedule.classrooms = {room.name: room for room in classrooms}
 
         return schedule
 
@@ -81,10 +82,11 @@ class AS_Schedule:
                     parent_class__category=self.program.open_class_category)
         teachers = {}
 
+        converted_sections = AS_ClassSection.batch_convert(
+            sections, self.program, teachers, self.timeslot_dict)
+
         # Return!
-        return set(AS_ClassSection.batch_convert(
-                sections, self.program, teachers, self.timeslot_dict)), \
-            teachers
+        return {sec.id: sec for sec in converted_sections}, teachers
 
     def save(self, check_consistency=True):
         """Saves the schedule."""
@@ -98,12 +100,10 @@ class AS_Schedule:
 
         # Find all sections which we've actually moved.
         changed_sections = set(
-            [section for section in self.class_sections
+            [section for section in self.class_sections.itervalues()
              if section.initial_state
              != section.scheduling_hash()])
         # These are all the sections we are okay changing.
-        sections_by_id = {section.id: section for section in
-                          self.class_sections}
         unscheduled_sections = set()  # Sections we unscheduled temporarily
         with transaction.atomic():
             for section in changed_sections:
@@ -140,7 +140,6 @@ class AS_Schedule:
                                     str(other_time.end)))
                             self.try_unschedule_section(
                                 other_section,
-                                sections_by_id,
                                 unscheduled_sections,
                                 err_msg)
 
@@ -148,8 +147,8 @@ class AS_Schedule:
                 meeting_times = Event.objects.filter(
                         id__in=[roomslot.timeslot.id
                                 for roomslot in section.assigned_roomslots])
-                initial_room_num = section.assigned_roomslots[0].room.room
-                assert all([roomslot.room.room == initial_room_num
+                initial_room_num = section.assigned_roomslots[0].room.name
+                assert all([roomslot.room.name == initial_room_num
                             for roomslot in section.assigned_roomslots]), \
                     "Section was assigned to multiple rooms"
                 room_objs = Resource.objects.filter(
@@ -165,7 +164,6 @@ class AS_Schedule:
                             other_section = occupier.target
                             self.try_unschedule_section(
                                     other_section,
-                                    sections_by_id,
                                     unscheduled_sections,
                                     "Room is occupied")
 
@@ -178,18 +176,17 @@ class AS_Schedule:
                             "Room assignment failed with errors: "
                             + " | ".join(errors))
 
-    @staticmethod
-    def try_unschedule_section(section, sections_by_id, unscheduled_sections,
+    def try_unschedule_section(self, section, unscheduled_sections,
                                error_message):
         """Tries to unschedule the given ClassSection. If it's not in the list
         of known sections (sections_by_id), throw a SchedulingError with the
         given error message. Otherwise, make sure the section wasn't moved by
         external sources, and unschedule it."""
-        if section.id not in sections_by_id:
+        if section.id not in self.class_sections:
             raise SchedulingError(error_message)
         else:
-            AS_Schedule.ensure_section_not_moved(section,
-                                                 sections_by_id[section.id])
+            AS_Schedule.ensure_section_not_moved(
+                    section, self.class_sections[section.id])
             AS_Schedule.unschedule_section(section, unscheduled_sections)
 
     @staticmethod
@@ -288,7 +285,7 @@ class AS_ClassSection:
         this section."""
         meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
                                 for e in self.assigned_roomslots])
-        rooms = sorted(list(set([r.room.room for r in
+        rooms = sorted(list(set([r.room.name for r in
                                 self.assigned_roomslots])))
         state_str = json.dumps([meeting_times, rooms])
         return hashlib.md5(state_str).hexdigest()
@@ -333,10 +330,10 @@ class AS_Teacher:
 
 
 class AS_Classroom:
-    def __init__(self, room, available_timeslots,
+    def __init__(self, name, available_timeslots,
                  classroom_id=3, furnishings=None):
         self.id = classroom_id
-        self.room = room
+        self.name = name
         # Availabilities as roomslots, sorted by the associated timeslot.
         # Does not account for sections the scheduler knows are scheduled.
         self.availability = [AS_RoomSlot(timeslot, self) for timeslot in

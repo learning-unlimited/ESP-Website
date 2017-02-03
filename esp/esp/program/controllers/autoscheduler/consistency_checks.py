@@ -53,15 +53,15 @@ class ConsistencyChecker:
     def check_sorting_consistency(self, schedule):
         """Checks whether section assigned roomslots, classroom availability,
         and teacher availability are sorted."""
-        for section in schedule.class_sections:
+        for section in schedule.class_sections.itervalues():
             if not self.roomslot_sorting_helper(section.assigned_roomslots):
                 raise ConsistencyError(
                     "Section assigned roomslots weren't sorted.")
-        for classroom in schedule.classrooms:
+        for classroom in schedule.classrooms.itervalues():
             if not self.roomslot_sorting_helper(classroom.availability):
                 raise ConsistencyError(
                     "Classroom availability wasn't sorted.")
-        for teacher in schedule.teachers.values():
+        for teacher in schedule.teachers.itervalues():
             if not all(t1 < t2 for t1, t2 in
                        zip(teacher.availability, teacher.availability[1:])):
                 raise ConsistencyError(
@@ -84,13 +84,13 @@ class ConsistencyChecker:
         # Find all the roomslots we can find, and make sure they're consistent
         # with their sources.
         existing_roomslots = set()
-        for room in schedule.classrooms:
+        for room in schedule.classrooms.itervalues():
             for roomslot in room.availability:
                 if roomslot.room != room:
                     raise ConsistencyError(
                             "Room and roomslot were inconsistent")
             existing_roomslots.update(room.availability)
-        for section in schedule.class_sections:
+        for section in schedule.class_sections.itervalues():
             for roomslot in section.assigned_roomslots:
                 if roomslot.assigned_section != section:
                     raise ConsistencyError(
@@ -111,12 +111,13 @@ class ConsistencyChecker:
             if roomslot not in roomslot.timeslot.associated_roomslots:
                 raise ConsistencyError(
                     "Event wasn't in timeslots's associated roomslots")
-            if roomslot.room not in schedule.classrooms:
+            if roomslot.room.name not in schedule.classrooms:
                 raise ConsistencyError("Event's room wasn't registered")
             if roomslot not in roomslot.room.availability:
                 raise ConsistencyError("Event wasn't in room's availability")
             if roomslot.assigned_section is not None:
-                if roomslot.assigned_section not in schedule.class_sections:
+                if roomslot.assigned_section.id not in \
+                        schedule.class_sections:
                     raise ConsistencyError("Event had an unregistered section")
                 if roomslot not in \
                         roomslot.assigned_section.assigned_roomslots:

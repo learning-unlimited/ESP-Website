@@ -79,7 +79,7 @@ class ContiguousConstraint(BaseConstraint):
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
-        for section in schedule.class_sections:
+        for section in schedule.class_sections.itervalues():
             if len(section.assigned_roomslots) > 1:
                 section_room = section.assigned_roomslots[0].room
                 prev_timeslot = \
