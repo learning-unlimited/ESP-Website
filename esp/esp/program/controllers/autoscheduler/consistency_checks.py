@@ -101,7 +101,7 @@ class ConsistencyChecker:
                 if roomslot.timeslot is not timeslot:
                     raise ConsistencyError(
                             "Timeslot and roomslot were inconsistent")
-            existing_roomslots.update(section.assigned_roomslots)
+            existing_roomslots.update(timeslot.associated_roomslots)
 
         # Make sure all roomslots we found are listed everywhere they should
         # be.

@@ -18,7 +18,7 @@ def create_test_schedule_1():
     }
     teachers = {
         1: models.AS_Teacher(timeslots, 1, True),
-        2: models.AS_Teacher(timeslots[:2], 2),
+        2: models.AS_Teacher(timeslots[:3], 2),
         3: models.AS_Teacher(timeslots[1:], 3)
     }
     sections = {
@@ -26,3 +26,10 @@ def create_test_schedule_1():
         2: models.AS_ClassSection([teachers[2], teachers[3]], 1.83, 50, [], 2)}
     return models.AS_Schedule(timeslots=timeslots, class_sections=sections,
                               teachers=teachers, classrooms=classrooms)
+
+
+def create_test_schedule_2():
+    sched = create_test_schedule_1()
+    classroom = sched.classrooms["26-100"]
+    sched.class_sections[2].assign_roomslots(classroom.availability[1:3])
+    return sched
