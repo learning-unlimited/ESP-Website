@@ -169,6 +169,7 @@ class Resource(models.Model):
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
+    attribute_value = models.TextField()
 
     def __unicode__(self):
         if self.user is not None:
