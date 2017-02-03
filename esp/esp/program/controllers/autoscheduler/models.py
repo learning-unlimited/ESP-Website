@@ -356,6 +356,11 @@ class AS_Teacher:
         # Dict from section ID to section
         self.taught_sections = {}
         self.is_admin = is_admin
+        # TODO: consistency check
+        self.availability_dict = {}
+        for timeslot in self.availability:
+            self.availability_dict[(
+                timeslot.start, timeslot.end)] = timeslot
 
     @staticmethod
     def convert_from_espuser(teacher, program, timeslot_dict):

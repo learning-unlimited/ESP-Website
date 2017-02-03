@@ -336,9 +336,114 @@ class SectionDurationConstraint(BaseConstraint):
 
 class TeacherAvailabilityConstraint(BaseConstraint):  # TODO: be required
     """Teachers can only teach during times they are available."""
-    pass  # TODO
+    def check_schedule(self, schedule):
+        """Returns False if an AS_Schedule violates the constraint,
+        True otherwise."""
+        for teacher in schedule.teachers.itervalues():
+            for section in teacher.taught_sections.itervalues():
+                if len(section.assigned_roomslots) > 0:
+                    for roomslot in section.assigned_roomslots:
+                        start_time = roomslot.timeslot.start
+                        end_time = roomslot.timeslot.end
+                        if (start_time, end_time) \
+                                not in teacher.availability_dict:
+                                    return False
+        return True
+
+    # These local checks are for performance reasons. These also check
+    # hypothetical operations, whereas check_schedule checks an existing
+    # schedule.
+    def check_schedule_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if scheduling the section starting at the given roomslot would
+        violate the constraint, True otherwise."""
+        room = start_roomslot.room
+        roomslots = room.get_roomslots_by_duration(
+                start_roomslot, section.duration)
+        for teacher in section.teachers:
+            for roomslot in roomslots:
+                start_time = roomslot.timeslot.start
+                end_time = roomslot.timeslot.end
+                if (start_time, end_time) not in \
+                        teacher.availability_dict:
+                            return False
+        return True
+
+    def check_move_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if moving the already-scheduled section to the given starting roomslot
+        would violate the constraint, True otherwise."""
+        return self.check_schedule_section(section, start_roomslot, schedule)
+
+    def check_unschedule_section(self, section, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if unscheduling the specified section will violate the constraint,
+        True otherwise."""
+        return True
+
+    def check_swap_sections(self, section1, section2, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if swapping two sections will violate the constraint,
+        True otherwise."""
+        roomslots1 = section1.assigned_roomslots
+        roomslots2 = section2.assigned_roomslots
+        teachers1 = section1.teachers
+        teachers2 = section2.teachers
+        for teacher in teachers1:
+            for roomslot in roomslots2:
+                start_time = roomslot.timeslot.start
+                end_time = roomslot.timeslot.end
+                if (start_time, end_time) not in teacher.availability_dict:
+                    return False
+        for teacher in teachers2:
+            for roomslot in roomslots1:
+                start_time = roomslot.timeslot.start
+                end_time = roomslot.timeslot.end
+                if (start_time, end_time) not in teacher.availability_dict:
+                    return False
+        return True
 
 
 class TeacherConcurrencyConstraint(BaseConstraint):  # TODO: be required
     """Teachers can't teach two classes at once."""
-    pass  # TODO
+    def check_schedule(self, schedule):
+        """Returns False if an AS_Schedule violates the constraint,
+        True otherwise."""
+        for teacher in schedule.teachers.itervalues():
+            already_teaching = set()
+            for section in teacher.taught_sections.itervalues():
+                if len(section.assigned_roomslots) > 0:
+                    for roomslot in section.assigned_roomslots:
+                        start_time = roomslot.timeslot.start
+                        end_time = roomslot.timeslot.end
+                        if (start_time, end_time) in already_teaching:
+                            return False
+                        already_teaching.add((start_time, end_time))
+        return True
+
+    # These local checks are for performance reasons. These also check
+    # hypothetical operations, whereas check_schedule checks an existing
+    # schedule.
+    def check_schedule_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if scheduling the section starting at the given roomslot would
+        violate the constraint, True otherwise."""
+        raise NotImplementedError
+
+    def check_move_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if moving the already-scheduled section to the given starting roomslot
+        would violate the constraint, True otherwise."""
+        raise NotImplementedError
+
+    def check_unschedule_section(self, section, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if unscheduling the specified section will violate the constraint,
+        True otherwise."""
+        raise NotImplementedError
+
+    def check_swap_sections(self, section1, section2, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if swapping two sections will violate the constraint,
+        True otherwise."""
+        raise NotImplementedError
