@@ -108,7 +108,7 @@ class AS_Schedule:
         with transaction.atomic():
             for section in changed_sections:
                 section_obj = ClassSection.objects.get(id=section.id)
-                print "Saving {}".format(section_obj.emailcode())
+                print("Saving {}".format(section_obj.emailcode()))
                 # Make sure nobody else touched the section
                 if section.id in unscheduled_sections:
                     # Ensure the section is in fact unscheduled.

@@ -1,6 +1,8 @@
 Think about what classrooms not to use
 Logic about resources being required or optional
 
+implement lunch and resources and restricted rooms
+
 some lists probably want to be sets, but sections want to have a sorted list of
 timeslots (have consistency check for this)
 
