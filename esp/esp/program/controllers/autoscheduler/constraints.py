@@ -145,7 +145,56 @@ class ContiguousConstraint(BaseConstraint):
 
 class LunchConstraint(BaseConstraint):
     """Multi-hour sections can't be scheduled over both blocks of lunch."""
-    pass  # TODO
+    def check_schedule(self, schedule):
+        """Returns False if an AS_Schedule violates the constraint,
+        True otherwise."""
+        for list_lunch_slots in schedule.lunch_timeslots.itervalues():
+            start_lunch = list_lunch_slots[0].start
+            end_lunch = list_lunch_slots[-1].end
+            for section in schedule.class_sections:
+                start_section = section.assigned_roomslots[0].timeslot.start
+                end_section = section.assigned_roomslots[-1].timeslot.end
+                if start_section <= start_lunch \
+                        and end_section >= end_lunch:
+                            return False
+        return True
+
+    # These local checks are for performance reasons. These also check
+    # hypothetical operations, whereas check_schedule checks an existing
+    # schedule.
+    def check_schedule_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if scheduling the section starting at the given roomslot would
+        violate the constraint, True otherwise."""
+        for list_lunch_slots in schedule.lunch_timeslots.itervalues():
+            start_lunch = list_lunch_slots[0].start
+            end_lunch = list_lunch_slots[0].end
+            roomslots = start_roomslot.room.get_roomslots_by_duration(
+                    start_roomslot, section.duration)
+            start_section = roomslots[0].timeslot.start
+            end_section = roomslots[-1].timeslot.end
+            if start_section <= start_lunch and \
+                    end_section >= end_lunch:
+                        return False
+        return True
+
+    def check_move_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if moving the already-scheduled section to the given starting roomslot
+        would violate the constraint, True otherwise."""
+        return self.check_schedule_section(section, start_roomslot, schedule)
+
+    def check_unschedule_section(self, section, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if unscheduling the specified section will violate the constraint,
+        True otherwise."""
+        return True
+
+    def check_swap_sections(self, section1, section2, schedule):
+        """Assuming that we start with a valid schedule, returns False
+        if swapping two sections will violate the constraint,
+        True otherwise."""
+        return True
 
 
 class PreconditionConstraint(BaseConstraint):
@@ -308,18 +357,26 @@ class SectionDurationConstraint(BaseConstraint):
                     return False
         return True
 
-    # These are trivially true because of the roomslots assignment process.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns False
         if scheduling the section starting at the given roomslot would
         violate the constraint, True otherwise."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+                start_roomslot, section.duration)
+        if len(roomslots) == 0:
+            return False
+        start_time = roomslots[0].timeslot.start
+        end_time = roomslots[-1].timeslot.end
+        if abs((end_time - start_time).seconds/3600.0 -
+                section.duration) > constants.DELTA_TIME:
+            return False
         return True
 
     def check_move_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns False
         if moving the already-scheduled section to the given starting roomslot
         would violate the constraint, True otherwise."""
-        return True
+        return self.check_schedule_section(section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
         """Assuming that we start with a valid schedule, returns False
