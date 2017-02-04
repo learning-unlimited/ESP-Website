@@ -8,15 +8,21 @@ do something about resources having IDs and names; are they both unique? Maybe
 we don't need IDs.
 
 Think about what classrooms not to use
+section duration constraint is NOT trivial
 
-lunch needs consistency checks
+lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks
 teacher sections teaching needs consistency checks
 consistency checks for teacher dict, class section dict, classroom dict,
 resources dicts
+consistency check that timeslots not span multiple days
+
+better constraint diagonstics
 
 classrooms don't currently account for classes which are already scheduled in
 them
+
+complain if timeslots are too short (maybe compare to DELTA_TIME in constants)
 
 save() might want to check to make sure that the lists of teachers don't change
 either

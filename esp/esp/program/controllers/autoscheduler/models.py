@@ -5,7 +5,6 @@ in website structure and should also be more performant.
 """
 
 from functools import total_ordering
-from datetime import timedelta
 import hashlib
 import json
 
@@ -16,17 +15,19 @@ from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyChecker
 from esp.program.controllers.autoscheduler.exceptions import \
         ConsistencyError, SchedulingError
+import esp.program.controllers.autoscheduler.constants as constants
+from esp.program.controllers.autoscheduler.constraints import \
+        CompositeConstraint
 from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
 from esp.cal.models import Event
-import esp.program.controllers.autoscheduler.constants as constants
 
 
 class AS_Schedule:
     def __init__(self, program=None, timeslots=None, class_sections=None,
                  teachers=None, classrooms=None, lunch_timeslots=None,
-                 required_resource_criteria=None):
+                 required_resource_criteria=None, constraints=None):
         """Argument types:
          - program is a Program object
          - timeslots is a sorted list of AS_Timeslots
@@ -34,6 +35,8 @@ class AS_Schedule:
          - teachers is a dict of {teacher_id: AS_Teacher}
          - classrooms is a dict of {classroom_name: AS_Classroom}
          - lunch_timeslots is a list of (lunch_start, lunch_end).
+         - constraints is a subclass of BaseConstraint (e.g.
+           CompositeConstraint)
         """
         self.program = program
         self.timeslots = timeslots if timeslots is not None else []
@@ -55,7 +58,11 @@ class AS_Schedule:
         self.required_resource_criteria = required_resource_criteria \
             if required_resource_criteria is not None else []
 
+        self.constraints = constraints if constraints is not None else \
+            CompositeConstraint([])
+
         self.run_consistency_checks()
+        self.run_constraint_checks()
 
     def build_lunch_timeslots(self, lunch_timeslots):
         timeslots_by_day = {}
@@ -125,13 +132,18 @@ class AS_Schedule:
         # Return!
         return {sec.id: sec for sec in converted_sections}, teachers
 
-    def save(self, check_consistency=True):
+    def save(self, check_consistency=True, check_constraints=True):
         """Saves the schedule."""
-        # TODO: run a constraint check first
         if check_consistency:
             # Run a consistency check first.
             try:
                 self.run_consistency_checks()
+            except ConsistencyError:
+                raise  # TODO
+        if check_constraints:
+            # Run a constraint check first.
+            try:
+                self.run_constraint_checks()
             except ConsistencyError:
                 raise  # TODO
 
@@ -228,6 +240,10 @@ class AS_Schedule:
 
     def run_consistency_checks(self):
         ConsistencyChecker().run_all_consistency_checks(self)
+
+    def run_constraint_checks(self):
+        if not self.constraints.check_schedule(self):
+            raise SchedulingError("Schedule violated constraints")
 
     @staticmethod
     def ensure_section_not_moved(section, as_section):
@@ -422,7 +438,7 @@ class AS_Classroom:
         index_of_roomslot = classroom_availability.index(start_roomslot)
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
-        while abs((end_time - start_time).seconds/3600.0 - duration) \
+        while duration - (end_time - start_time).seconds/3600.0 \
                 > constants.DELTA_TIME:
             index_of_roomslot += 1
             if index_of_roomslot >= len(classroom_availability):
@@ -471,20 +487,6 @@ class AS_Timeslot:
     def overlaps(timeslot1, timeslot2):
         return (timeslot1.start < timeslot2.end) \
                 and (timeslot2.start < timeslot1.end)
-
-    @staticmethod
-    def contiguous(timeslot1, timeslot2):
-        """ Returns true if the second argument is less than 20 minutes apart
-        from the first one.
-
-        Duplicates logic from esp.cal.Event.
-        """
-        tol = timedelta(minutes=20)
-
-        if (timeslot2.start - timeslot2.end) < tol:
-            return True
-        else:
-            return False
 
     @staticmethod
     def batch_convert(events, program):

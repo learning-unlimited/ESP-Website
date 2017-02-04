@@ -4,9 +4,10 @@ A schedule manipulator. Stores and makes changes to an AS_schedule.
 
 
 class ScheduleManipulator:
-    def __init__(self, schedule, constraints):
+    def __init__(self, schedule, constraints=None):
         self.schedule = schedule
-        self.constraints = constraints
+        self.constraints = constraints if constraints is not None else \
+            schedule.constraints
 
     def schedule_section(self, section, start_roomslot):
         """Schedules the given section starting at the given roomslot;

@@ -1,7 +1,7 @@
 # TODO: documentation on adding constraints
 import inspect
 
-from esp.program.controllers.autoscheduler.models import AS_Timeslot
+import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.constants as constants
 
 
@@ -99,7 +99,7 @@ class ContiguousConstraint(BaseConstraint):
                 prev_timeslot = \
                     section.assigned_roomslots[0].timeslot
                 for roomslot in section.assigned_roomslots[1:]:
-                    if not AS_Timeslot.contiguous(
+                    if not util.contiguous(
                             prev_timeslot, roomslot.timeslot):
                         return False
                     if roomslot.room.id != section_room.id:
@@ -121,7 +121,7 @@ class ContiguousConstraint(BaseConstraint):
             return True
         prev_timeslot = start_roomslot.timeslot
         for roomslot in assigned_slots[1:]:
-            if not AS_Timeslot.contiguous(
+            if not util.contiguous(
                     prev_timeslot, roomslot.timeslot):
                 return False
             prev_timeslot = roomslot.timeslot
@@ -294,7 +294,7 @@ class SectionDurationConstraint(BaseConstraint):
     This also accounts for not scheduling a section twice,
     in conjunction with consistency constraints."""
 
-    required = True
+    required = True  # I think some of the other constraints assume this.
 
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
@@ -334,8 +334,11 @@ class SectionDurationConstraint(BaseConstraint):
         return True
 
 
-class TeacherAvailabilityConstraint(BaseConstraint):  # TODO: be required
+class TeacherAvailabilityConstraint(BaseConstraint):
     """Teachers can only teach during times they are available."""
+
+    required = True  # I'm not sure if it actually is, but let's be safe.
+
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
@@ -426,8 +429,11 @@ class TeacherAvailabilityConstraint(BaseConstraint):  # TODO: be required
         return True
 
 
-class TeacherConcurrencyConstraint(BaseConstraint):  # TODO: be required
+class TeacherConcurrencyConstraint(BaseConstraint):
     """Teachers can't teach two classes at once."""
+
+    required = True  # This would cause a consistency check to be violated.
+
     def get_already_teaching_set(self, teacher):
         already_teaching = set()
         for section in teacher.taught_sections.itervalues():
