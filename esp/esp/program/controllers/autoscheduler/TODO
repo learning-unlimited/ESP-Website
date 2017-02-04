@@ -1,12 +1,19 @@
 Logic about resources being required or optional
 implement resources and restricted rooms
 
+resources should handle values whenever that becomes available or needed
+What if a section or classroom has multiple resources or resource requests of
+the same name but different values?
+do something about resources having IDs and names; are they both unique? Maybe
+we don't need IDs.
+
 Think about what classrooms not to use
 
 lunch needs consistency checks
 teacher availability dict needs consistency checks
 teacher sections teaching needs consistency checks
-consistency checks for teacher dict, class section dict, classroom dict
+consistency checks for teacher dict, class section dict, classroom dict,
+resources dicts
 
 classrooms don't currently account for classes which are already scheduled in
 them
