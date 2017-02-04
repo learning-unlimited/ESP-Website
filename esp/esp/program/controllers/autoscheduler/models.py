@@ -25,7 +25,8 @@ import esp.program.controllers.autoscheduler.constants as constants
 
 class AS_Schedule:
     def __init__(self, program=None, timeslots=None, class_sections=None,
-                 teachers=None, classrooms=None, lunch_timeslots=None):
+                 teachers=None, classrooms=None, lunch_timeslots=None,
+                 required_resource_criteria=None):
         """Argument types:
          - program is a Program object
          - timeslots is a sorted list of AS_Timeslots
@@ -50,6 +51,10 @@ class AS_Schedule:
         # to a list of timeslots. Timeslots should also be in timeslot_dict.
         self.lunch_timeslots = self.build_lunch_timeslots(
                 lunch_timeslots if lunch_timeslots is not None else [])
+        # A list of ResourceCriterions which are required (i.e. constraining).
+        self.required_resource_criteria = required_resource_criteria \
+            if required_resource_criteria is not None else []
+
         self.run_consistency_checks()
 
     def build_lunch_timeslots(self, lunch_timeslots):
@@ -257,9 +262,9 @@ class AS_ClassSection:
         self.capacity = capacity
         # A sorted list of assigned roomslots.
         self.assigned_roomslots = assigned_roomslots
-        # A set of resource requests.
+        # Dict from restype names to AS_Restypes requested
         self.resource_requests = resource_requests \
-            if resource_requests is not None else set()
+            if resource_requests is not None else {}
 
         # A hash of the initial state.
         self.initial_state = self.scheduling_hash()
@@ -280,15 +285,18 @@ class AS_ClassSection:
                         teacher, program, timeslot_dict)
             teachers.append(teachers_dict[teacher.id])
 
-        resource_requests = set(AS_ResourceType.batch_convert(
-                section.getResourceRequests()))
+        resource_requests = AS_ResourceType.batch_convert(
+                section.getResourceRequests())
+
+        resource_requests_dict = {r.name: r for r in resource_requests}
 
         assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
             aren't supported yet"
 
         as_section = AS_ClassSection(
                 teachers, float(section.duration), section.capacity, [],
-                section_id=section.id, resource_requests=resource_requests)
+                section_id=section.id,
+                resource_requests=resource_requests_dict)
 
         assert as_section.scheduling_hash_of(section) == \
             as_section.initial_state, \
@@ -387,7 +395,9 @@ class AS_Classroom:
         # Does not account for sections the scheduler knows are scheduled.
         self.availability = [AS_RoomSlot(timeslot, self) for timeslot in
                              sorted(available_timeslots)]
-        self.furnishings = furnishings if furnishings is not None else set()
+        # Dict of resources available in the classroom, mapping from the
+        # resource name to AS_Restype.
+        self.furnishings = furnishings if furnishings is not None else {}
 
     @staticmethod
     def convert_from_groupedclassroom(classroom, program, timeslot_dict):
@@ -396,10 +406,10 @@ class AS_Classroom:
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
         available_timeslots = \
             AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
-        furnishings = set(
-            AS_ResourceType.batch_convert(classroom.furnishings))
+        furnishings = AS_ResourceType.batch_convert(classroom.furnishings)
+        furnishings_dict = {r.name: r for r in furnishings}
         return AS_Classroom(classroom.name, available_timeslots,
-                            classroom.id, furnishings)
+                            classroom.id, furnishings_dict)
 
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that
@@ -511,17 +521,18 @@ class AS_RoomSlot:
 
 
 class AS_ResourceType:
-    def __init__(self, name, restype_id=5, description=""):
+    def __init__(self, name, restype_id=5, value=""):
         self.id = restype_id
         self.name = name
-        self.description = description
+        self.value = value  # Not in use yet
 
     @staticmethod
     def convert_from_restype(restype):
         """Create an AS_ResourceType from a ResourceType"""
-        return AS_ResourceType(restype.name, restype.id, restype.description)
+        return AS_ResourceType(restype.name, restype.id)
 
     @staticmethod
     def batch_convert(res):
         """Converts from ResourceRequests or Resources."""
-        return map(lambda r: AS_ResourceType(r.res_type), res)
+        return map(
+            lambda r: AS_ResourceType.convert_from_restype(r.res_type), res)
