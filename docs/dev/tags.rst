@@ -8,7 +8,8 @@ file https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/tagdict
 To create a *program-specific tag*, add the new tag's name to the program tag dictionary ``all_program_tags`` in the same file as above.
 
 The format for tags in both dictionaries is ``'tag_name': (is the tag boolean?, 'some help text for admins')``, where the first
-variable in the tuple determines whether the tag is meant to contain only a boolean value (if so, set the first variable to ``True``) or other data (set it to ``False``).
+variable in the tuple determines whether the tag is meant to contain only a boolean value (if so, set the first variable to ``True``)
+or other data (set it to ``False``).
 
 In order to make use of your new tag, find the file(s) where you want to use the tag's data, and make sure to include the
 line ``from esp.tagdict.models import Tag``.
@@ -19,7 +20,8 @@ Program tags can be used with ``Tag.getProgramTag('tag_name', program)`` or by p
 
 *Notes:*
 
-* Due to the import line, it is not possible to retrieve tag data at the top-level of any ``models`` file or any other file that a ``models`` file imports.
+* It is not recommended (and in some cases not possible) to access  tag data at import time because tag data is stored in the database.
 * You may want to implement checks against the validity of the tag's data.
-  It is especially helpful to send a descriptive error message to the admin when the tag is set.
+  For instance, it is helpful to send a descriptive error message to an admin who's trying access invalid tag data (unfortunately, there
+  is not currently an easy way to notify an admin immediately when an invalid tag is set in the admin panel).
 * Please also add a description of your tag to the `LU Wiki page on Tags <https://wiki.learningu.org/Customize_behavior_with_Tags>`_.
