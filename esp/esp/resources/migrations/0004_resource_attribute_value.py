@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='resource',
             name='attribute_value',
-            field=models.TextField(default=b''),
+            field=models.TextField(default=b'', blank=True),
         ),
     ]
