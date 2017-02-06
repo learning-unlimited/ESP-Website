@@ -123,7 +123,9 @@ class K12SchoolAdmin(admin.ModelAdmin):
     search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
     list_filter = ['school_type']
     def contact_name(self, obj):
-        return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+        if obj.contact:
+            return "%s %s" % (obj.contact.first_name, obj.contact.last_name)
+        return None
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)
