@@ -1273,8 +1273,6 @@ class RegistrationProfile(models.Model):
     guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
     last_ts = models.DateTimeField(default=timezone.now)
-    emailverifycode = models.TextField(blank=True, null=True)
-    email_verified  = models.BooleanField(default=False, blank=True)
     most_recent_profile = models.BooleanField(default=False)
 
     old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
