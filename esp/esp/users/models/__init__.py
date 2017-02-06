@@ -1337,6 +1337,13 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+
+AFFILIATION_UNDERGRAD = 'Undergrad'
+AFFILIATION_GRAD = 'Grad'
+AFFILIATION_POSTDOC = 'Postdoc'
+AFFILIATION_OTHER = 'Other'
+AFFILIATION_NONE = 'None'
+
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1345,6 +1352,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     link_fields_list = [
         ('graduation_year', 'Graduation year'),
         ('from_here', 'Current student checkbox'),
+        ('affiliation', 'School affiliation type'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1359,6 +1367,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
@@ -1404,9 +1413,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['from_here']        = self.from_here
-        form_dict['is_graduate_student'] = self.is_graduate_student
-        form_dict['school']          = self.college
+        form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
@@ -1422,12 +1429,17 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
-        teacherInfo.from_here        = (new_data['from_here'] == "True")
-        teacherInfo.is_graduate_student = new_data['is_graduate_student']
-        teacherInfo.college         = new_data['school']
-        teacherInfo.major           = new_data['major']
-        teacherInfo.shirt_size      = new_data['shirt_size']
-        teacherInfo.shirt_type      = new_data['shirt_type']
+        teacherInfo.affiliation = new_data['affiliation']
+        affiliation = teacherInfo.affiliation.split(':', 1)[0]
+        teacherInfo.from_here           = affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER)
+        teacherInfo.is_graduate_student = (affiliation == AFFILIATION_GRAD)
+        if affiliation == AFFILIATION_NONE:
+            teacherInfo.college         = teacherInfo.affiliation.split(':', 1)[1]
+        else:
+            teacherInfo.college         = ''
+        teacherInfo.major               = new_data['major']
+        teacherInfo.shirt_size          = new_data['shirt_size']
+        teacherInfo.shirt_type          = new_data['shirt_type']
         teacherInfo.save()
         return teacherInfo
 
@@ -2181,6 +2193,22 @@ class Record(models.Model):
                                    time__day=when.day)
         return filter.distinct()
 
+    @classmethod
+    def createBit(cls, extension, program, user):
+        from esp.accounting.controllers import IndividualAccountingController
+        if extension == 'Paid':
+            IndividualAccountingController.updatePaid(True, program, user)
+
+        if cls.user_completed(user, extension.lower(), program):
+            return False
+        else:
+            cls.objects.create(
+                user = user,
+                event = extension.lower(),
+                program = program
+            )
+            return True
+
     def __unicode__(self):
         return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
 
@@ -2249,6 +2277,10 @@ class Permission(ExpirableModel):
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+        )),
+        ("Volunteer Deadlines", (
+            ("Volunteer", "Basic volunteer access"),
+            ("Volunteer/Signup", "Volunteer signup"),
         )),
     )
 
@@ -2347,7 +2379,7 @@ class Permission(ExpirableModel):
         return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
 
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student") or x.startswith("Volunteer")]
 
     @classmethod
     def deadlines(cls):

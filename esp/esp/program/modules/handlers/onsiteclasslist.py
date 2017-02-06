@@ -40,10 +40,15 @@ from datetime import datetime, timedelta
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
+
+from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.program.models import RegistrationProfile
+
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
@@ -52,6 +57,7 @@ from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
+from esp.accounting.controllers import IndividualAccountingController
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -113,14 +119,69 @@ class OnSiteClassList(ProgramModuleObj):
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
         #   Try to ensure we don't miss anyone
+
         students_dict = self.program.students(QObjects=True)
+        search_query = request.GET.get('q')
+
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
         students_Q = Q()
+
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
-        students = ESPUser.objects.filter(students_Q).distinct()
-        data = students.values_list('id', 'last_name', 'first_name').distinct()
-        json.dump(list(data), resp)
+
+        students = ESPUser.objects.filter(students_Q)
+        program_students_ids = []
+
+        if search_query:
+            #If user provided a search term then we want to expand search to the
+            #entire student base
+
+            search_tokens = search_query.split(' ')
+            search_qset = Q()
+
+            for token in search_tokens:
+                search_qset = search_qset & (Q(last_name__icontains=token) | Q(first_name__icontains=token))
+
+            program_students_ids = set(students.values_list('id', flat=True).distinct())
+            students = ESPUser.objects.filter(search_qset)
+
+        students = students.values_list('id', 'last_name', 'first_name') \
+                           .distinct() \
+                           .order_by('first_name', 'last_name')
+
+        data = []
+        for student in students:
+            has_profile = not search_query or student[0] in program_students_ids
+            data.append(list(student) + [has_profile])
+
+        data.sort(key=lambda x: not x[3])
+        if search_query:
+            data = data[:20]
+
+        json.dump(data, resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
+    def register_student(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(content_type='application/json')
+        program = self.program
+        success = False
+        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+
+        registration_profile = RegistrationProfile.getLastForProgram(student,
+                                                                program)
+        success = registration_profile.student_info is not None
+
+        if success:
+            registration_profile.save()
+
+            for extension in ['paid','Attended','medical','liability','OnSite']:
+                Record.createBit(extension, program, student)
+
+            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+
+        json.dump({'status':success}, resp)
         return resp
 
     @aux_call

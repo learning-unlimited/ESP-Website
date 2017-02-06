@@ -589,5 +589,15 @@ class IndividualAccountingController(ProgramAccountingController):
             # This will cause all changes to be rolled back
             raise ValueError("Transfers do not sum to target: %.2f" % target)
 
+    @staticmethod
+    def updatePaid(program, user, paid=True):
+        """ Create an invoice for the user and, if paid is True, create a receipt showing
+        that they have paid all of the money they owe for the program. """
+        iac = IndividualAccountingController(program, user)
+        if not iac.has_paid():
+            iac.ensure_required_transfers()
+            if paid:
+                iac.submit_payment(iac.amount_due())
+
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

@@ -100,9 +100,9 @@ class StudentInfoAdmin(UserInfoAdmin):
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
 class TeacherInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student']
+    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student', 'affiliation']
     search_fields = default_user_search() + ['college']
-    list_filter = ('from_here', 'is_graduate_student', 'graduation_year')
+    list_filter = ('from_here', 'is_graduate_student', 'graduation_year', 'affiliation')
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
 class GuardianInfoAdmin(UserInfoAdmin):
