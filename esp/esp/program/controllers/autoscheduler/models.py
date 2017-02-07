@@ -267,8 +267,10 @@ class AS_Schedule:
 
 
 class AS_ClassSection:
-    def __init__(self, teachers, duration, capacity, assigned_roomslots,
-                 section_id=0, resource_requests=None):
+    def __init__(self, teachers, duration, capacity,
+                 category, assigned_roomslots,
+                 section_id=0, grade_min=7, grade_max=12,
+                 resource_requests=None):
         self.id = section_id
         # Duration, in hours.
         self.duration = duration
@@ -276,6 +278,11 @@ class AS_ClassSection:
         self.teachers = teachers
         # Capacity, an int.
         self.capacity = capacity
+        # Min and max grade, integers
+        self.grade_min = grade_min
+        self.grade_max = grade_max
+        # Category ID
+        self.category = category
         # A sorted list of assigned roomslots.
         self.assigned_roomslots = assigned_roomslots
         # Dict from restype names to AS_Restypes requested
@@ -310,8 +317,11 @@ class AS_ClassSection:
             aren't supported yet"
 
         as_section = AS_ClassSection(
-                teachers, float(section.duration), section.capacity, [],
+                teachers, float(section.duration), section.capacity,
+                section.category.id, [],
                 section_id=section.id,
+                grade_min=section.parent_class.grade_min,
+                grade_max=section.parent_class.grade_max,
                 resource_requests=resource_requests_dict)
 
         assert as_section.scheduling_hash_of(section) == \

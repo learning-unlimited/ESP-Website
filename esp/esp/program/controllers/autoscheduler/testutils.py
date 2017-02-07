@@ -22,8 +22,9 @@ def create_test_schedule_1():
         3: models.AS_Teacher(timeslots[1:], 3)
     }
     sections = {
-        1: models.AS_ClassSection([teachers[1]], 0.83, 20, [], 1),
-        2: models.AS_ClassSection([teachers[2], teachers[3]], 1.83, 50, [], 2)}
+        1: models.AS_ClassSection([teachers[1]], 0.83, 20, 0, [], 1),
+        2: models.AS_ClassSection(
+            [teachers[2], teachers[3]], 1.83, 50, 1, [], 2)}
     return models.AS_Schedule(timeslots=timeslots, class_sections=sections,
                               teachers=teachers, classrooms=classrooms)
 
