@@ -301,7 +301,7 @@ class AS_ClassSection:
                         teacher, program, timeslot_dict)
             teachers.append(teachers_dict[teacher.id])
 
-        resource_requests = AS_ResourceType.batch_convert(
+        resource_requests = AS_ResourceType.batch_convert_resource_requests(
                 section.getResourceRequests())
 
         resource_requests_dict = {r.name: r for r in resource_requests}
@@ -380,7 +380,6 @@ class AS_Teacher:
         # Dict from section ID to section
         self.taught_sections = {}
         self.is_admin = is_admin
-        # TODO: consistency check
         self.availability_dict = {}
         for timeslot in self.availability:
             self.availability_dict[(
@@ -422,7 +421,8 @@ class AS_Classroom:
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
         available_timeslots = \
             AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
-        furnishings = AS_ResourceType.batch_convert(classroom.furnishings)
+        furnishings = AS_ResourceType.batch_convert_resources(
+                classroom.furnishings)
         furnishings_dict = {r.name: r for r in furnishings}
         return AS_Classroom(classroom.name, available_timeslots,
                             classroom.id, furnishings_dict)
@@ -529,12 +529,20 @@ class AS_ResourceType:
         self.value = value  # Not in use yet
 
     @staticmethod
-    def convert_from_restype(restype):
+    def convert_from_restype(restype, value=""):
         """Create an AS_ResourceType from a ResourceType"""
-        return AS_ResourceType(restype.name, restype.id)
+        return AS_ResourceType(restype.name, restype.id, value)
 
     @staticmethod
-    def batch_convert(res):
-        """Converts from ResourceRequests or Resources."""
+    def batch_convert_resource_requests(res):
+        """Converts from ResourceRequests."""
         return map(
-            lambda r: AS_ResourceType.convert_from_restype(r.res_type), res)
+            lambda r: AS_ResourceType.convert_from_restype(
+                r.res_type, r.desired_value), res)
+
+    @staticmethod
+    def batch_convert_resources(res):
+        """Converts from Resources."""
+        return map(
+            lambda r: AS_ResourceType.convert_from_restype(
+                r.res_type, r.attribute_value), res)

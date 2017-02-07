@@ -1,15 +1,50 @@
-Logic about resources being required or optional
-implement resources and restricted rooms
+Bugs:
 
-resources should handle values whenever that becomes available or needed
-What if a section or classroom has multiple resources or resource requests of
-the same name but different values?
+classrooms don't currently account for classes which are already scheduled in
+them
+
+save() should update initial states to prevent getting confused by multiple
+saves
+
+New features:
+Implement a way to attach ResourceCriteria to schedules
+Implement a way to define ResourceCriteria
+
+Be able to specify a regex for importing classrooms
+
+Constraints should be able to report where they failed (e.g. return a
+ConstraintViolation or None instead of True/False)
+Consistency checks should have better reporting where they failed as well
+
+Be able to import classes which are already scheduled (make sure teacher
+availability is fixed in this case)
+Be able to ignore locked classes
+
+Implement search, possibly with constraints having a pruning mechanism
+
+Robustness:
+Handle sections/rooms having multiple resources/resource requests of the same
+name but different values
+
+Handle two classrooms having the same name
+
 do something about resources having IDs and names; are they both unique? Maybe
 we don't need IDs.
 
-Think about what classrooms not to use
-section duration constraint is NOT trivial
+complain if timeslots are too short (maybe compare to DELTA_TIME in constants)
 
+save() might want to check to make sure that the lists of teachers teaching each
+section don't change either
+
+saving is probably really slow
+saving errors should be more informative
+save() should have some way to do partial saves so you don't lose a ton of work
+save() probably shouldn't just crash on errors
+
+be able to deal with schedules with multi-scheduled rooms
+
+Tests and checks:
+tests for resource checker
 lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks
 teacher sections teaching needs consistency checks
@@ -17,47 +52,9 @@ consistency checks for teacher dict, class section dict, classroom dict,
 resources dicts
 consistency check that timeslots not span multiple days
 
-better constraint diagonstics
-
-classrooms don't currently account for classes which are already scheduled in
-them
-
-complain if timeslots are too short (maybe compare to DELTA_TIME in constants)
-
-save() might want to check to make sure that the lists of teachers don't change
-either
-save() should update initial states to prevent getting confused by multiple
-saves
-
-handle having two classrooms of the same name
-
 need unittests for schedule operations and saving somehow
-be able to deal with schedules with multi-scheduled rooms
 
-saving needs better error handling
-saving should check constraints as well before saving
-saving is probably really slow
-saving errors should be more informative
+unittest that Constraints account for classrooms which already have sections in them
 
-generally try to be robust to single section errors
-
-Logic relating to locked classes
-If a class is already scheduled, it should be assigned to the relevant event
-make sure classrooms which already have classes in them don't get double-booked
-teachers should have list of sections they're teaching
-
-Think more about section scheduling consistency-- it's a consistency check but
-should probably also be either logic- or constraint-enforced.
-
-Potentially make a distinction between a required and optional constraint
-(required constraint is also reflected in the search logic)
-Or, constraints can have a search pruning functionality.
-
-RoomAvailability is required for schedule_section
-
-sanity checks:
-more assumption checks
-
-Unittests should include:
-Constraints account for classrooms which already have sections in them
+assumption checks on the website??
 
