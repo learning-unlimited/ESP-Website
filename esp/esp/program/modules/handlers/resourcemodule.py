@@ -193,6 +193,11 @@ class ResourceModule(ProgramModuleObj):
             past_program = import_form.cleaned_data['program']
             start_date = import_form.cleaned_data['start_date']
 
+            if past_program == prog:
+                raise ESPError("You're trying to import timeslots from a program"
+                               " to itself! Try a different program instead.",
+                               log=False)
+
             #   Figure out timeslot dates
             new_timeslots = []
             prev_timeslots = past_program.getTimeSlots().order_by('start')
