@@ -1,5 +1,6 @@
 import datetime
 
+import esp.program.controllers.autoscheduler.models as models
 from esp.cal.models import Event
 from esp.program.models.class_ import ClassSubject
 from esp.resources.models import Resource, ResourceType, ResourceRequest
@@ -125,5 +126,38 @@ class ScheduleTest(ProgramFrameworkTest):
                 extra_settings["teacher_admin_idx"]].makeRole("Administrator")
 
     def setUpSchedule(self, settings, extra_settings):
+        # Create timeslots
+        timeslots = []
+        for i in xrange(settings["num_timeslots"]):
+            start_time = settings["start_time"] \
+                + datetime.timedelta(minutes=(
+                    i * (settings["timeslot_length"]
+                         + settings["timeslot_gap"])))
+            end_time = start_time + \
+                datetime.timedelta(minutes=settings["timeslot_length"])
+            timeslots.append(models.AS_Timeslot(
+                start_time, end_time, i+1, None))
+        start_time = extra_settings["extra_timeslot_start"]
+        end_time = start_time + datetime.timedelta(
+                minutes=settings["timeslot_length"])
+        timeslots.append(models.AS_Timeslot(
+            start_time, end_time, len(timeslots) + 1, None))
+
+        # Create classrooms and furnishings
+        classrooms = []
+        for i in xrange(settings["num_rooms"]):
+            classrooms.append(models.AS_Classroom(
+                "Room {}".format(str(i)), timeslots[:-1], i + 1))
+        restype_id = ResourceType.objects.get(
+            extra_settings["extra_resource_type_name"]).id
+        extra_resource_type = models.AS_ResourceType(
+            extra_settings["extra_resource_type_name"],
+            restype_id,
+            extra_settings["extra_resource_value"])
+        room_timeslots = [timeslots[i] for i in
+                          extra_settings["extra_room_availability"]]
+        classrooms.append(models.AS_Classroom(
+                "Extra Room", room_timeslots, len(classrooms) + 1,
+                {extra_resource_type.name: extra_resource_type}))
+
         # TODO
-        pass
