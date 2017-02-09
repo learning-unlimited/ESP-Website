@@ -177,7 +177,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
 
         sched.timeslots[2].associated_roomslots.add(new_roomslot)
-        new_classroom = models.AS_Classroom("1-190", [], 3)
+        new_classroom = models.AS_Classroom("1-190", [])
         new_roomslot.room = new_classroom
         new_classroom.availability.append(new_roomslot)
         sched.classrooms["10-250"].availability.remove(new_roomslot)

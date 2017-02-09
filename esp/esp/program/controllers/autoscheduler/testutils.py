@@ -13,8 +13,8 @@ def create_test_schedule_1():
         datetime(2017, 02, 02, 10+i, 55),
         event_id=i + 1) for i in xrange(6)]
     classrooms = {
-        "26-100": models.AS_Classroom("26-100", timeslots, 1),
-        "10-250": models.AS_Classroom("10-250", timeslots[3:], 2)
+        "26-100": models.AS_Classroom("26-100", timeslots),
+        "10-250": models.AS_Classroom("10-250", timeslots[3:])
     }
     teachers = {
         1: models.AS_Teacher(timeslots, 1, True),

@@ -413,8 +413,7 @@ class AS_Teacher:
 
 class AS_Classroom:
     def __init__(self, name, available_timeslots,
-                 classroom_id=3, furnishings=None):
-        self.id = classroom_id
+                 furnishings=None):
         self.name = name
         # Availabilities as roomslots, sorted by the associated timeslot.
         # Does not account for sections the scheduler knows are scheduled.
@@ -435,7 +434,7 @@ class AS_Classroom:
                 classroom.furnishings)
         furnishings_dict = {r.name: r for r in furnishings}
         return AS_Classroom(classroom.name, available_timeslots,
-                            classroom.id, furnishings_dict)
+                            furnishings_dict)
 
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that

@@ -1,10 +1,15 @@
 import datetime
 
+from django.db.models import Min
+
 import esp.program.controllers.autoscheduler.models as models
+import esp.program.controllers.autoscheduler.util as util
 from esp.cal.models import Event
-from esp.program.models.class_ import ClassSubject
+from esp.program.models.class_ import \
+        ClassSubject, ClassCategories, ClassSection
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.program.tests import ProgramFrameworkTest
+from esp.users.models import ESPUser
 
 
 class ScheduleTest(ProgramFrameworkTest):
@@ -51,6 +56,12 @@ class ScheduleTest(ProgramFrameworkTest):
     def setUpProgram(self, settings, extra_settings):
         # Initialize the program.
         super(ScheduleTest, self).setUp(**settings)
+        self.initial_teacher_id = util.get_min_id(self.teachers)
+        self.initial_category_id = util.get_min_id(self.categories)
+        self.initial_restype_id = 1 + len(ResourceType.objects.all())
+        self.initial_section_id = ClassSection.objects.filter(
+                parent_class__parent_program=self.program
+        ).aggregate(Min('id'))['id__min']
         # Create an extra timeslot.
         start_time = extra_settings["extra_timeslot_start"]
         end_time = start_time + datetime.timedelta(
@@ -151,7 +162,7 @@ class ScheduleTest(ProgramFrameworkTest):
         classrooms = []
         for i in xrange(settings["num_rooms"]):
             classrooms.append(models.AS_Classroom(
-                "Room {}".format(str(i)), timeslots[:-1], i + 1))
+                "Room {}".format(str(i)), timeslots[:-1]))
         restype_id = ResourceType.objects.get(
             name=extra_settings["extra_resource_type_name"]).id
         extra_resource_type = models.AS_ResourceType(
@@ -161,14 +172,14 @@ class ScheduleTest(ProgramFrameworkTest):
         room_timeslots = [timeslots[i] for i in
                           extra_settings["extra_room_availability"]]
         classrooms.append(models.AS_Classroom(
-                "Extra Room", room_timeslots, len(classrooms) + 1,
+                "Extra Room", room_timeslots,
                 {extra_resource_type.name: extra_resource_type}))
         classrooms_dict = {room.name: room for room in classrooms}
 
         # Create teachers
         teachers = []
         for i in xrange(settings["num_teachers"]):
-            teacher_id = i + 1
+            teacher_id = i + self.initial_teacher_id
             teacher_availability = [
                     ts for j, ts in enumerate(timeslots) if j != i]
             is_admin = (i == extra_settings["teacher_admin_idx"])
@@ -178,11 +189,12 @@ class ScheduleTest(ProgramFrameworkTest):
 
         # Create sections
         subject_count = 0
-        section_id = 1
+        section_id = self.initial_section_id
         sections = []
         for t in teachers:
             for i in xrange(settings["classes_per_teacher"]):
-                category_id = 1 + (subject_count % settings["num_categories"])
+                category_id = self.initial_category_id + \
+                    (subject_count % settings["num_categories"])
                 grade_min = 7
                 grade_max = 12
                 capacity = settings["room_capacity"]
@@ -195,7 +207,8 @@ class ScheduleTest(ProgramFrameworkTest):
                         section_id=section_id,
                         grade_min=grade_min, grade_max=grade_max))
                     section_id += 1
-        category_id = extra_settings["extra_class_category"] + 1
+        category_id = extra_settings["extra_class_category"] \
+                + self.initial_category_id
         grade_min = extra_settings["extra_class_grade_min"]
         grade_max = extra_settings["extra_class_grade_max"]
         capacity = extra_settings["extra_class_size"]
@@ -208,12 +221,14 @@ class ScheduleTest(ProgramFrameworkTest):
         section_teachers = [
             t for i, t in enumerate(teachers)
             if i in extra_settings["extra_class_teachers"]]
+        resource_requests = {extra_resource_type.name: extra_resource_type}
         for i in xrange(extra_settings["extra_class_sections"]):
             sections.append(models.AS_ClassSection(
                 section_teachers, duration, capacity,
                 category_id, [],
                 section_id=section_id,
-                grade_min=grade_min, grade_max=grade_max))
+                grade_min=grade_min, grade_max=grade_max,
+                resource_requests=resource_requests))
             section_id += 1
         sections_dict = {section.id: section for section in sections}
 
@@ -222,6 +237,93 @@ class ScheduleTest(ProgramFrameworkTest):
             class_sections=sections_dict, teachers=teachers_dict,
             classrooms=classrooms_dict)
 
+    def assert_roomslot_equality(self, roomslot1, roomslot2):
+        """Performs asserts to check two roomslots are equal."""
+        self.assertEqual(roomslot1.timeslot, roomslot2.timeslot)
+        self.assertEqual(roomslot1.room.name, roomslot2.room.name)
+        if (roomslot1.assigned_section is None):
+            self.assertEqual(roomslot2.assigned_section, None)
+        else:
+            self.assertEqual(roomslot1.assigned_section.id,
+                             roomslot2.assigned_section.id)
+
+    def assert_restype_equality(self, restype1, restype2):
+        """Performs asserts to check that two AS_ResTypes are equal."""
+        self.assertEqual(restype1.id, restype2.id)
+        self.assertEqual(restype1.name, restype2.name)
+        self.assertEqual(restype1.value, restype2.value)
+
+    def assert_section_equality(self, section1, section2):
+        """Performs asserts to check two sections are equal."""
+        self.assertEqual(section1.id, section2.id)
+        self.assertAlmostEqual(section1.duration, section2.duration, places=2)
+        self.assertEqual(
+            set([t.id for t in section1.teachers]),
+            set([t.id for t in section2.teachers]))
+        self.assertEqual(section1.grade_min, section2.grade_min)
+        self.assertEqual(section1.grade_max, section2.grade_max)
+        self.assertEqual(section1.category, section2.category)
+        self.assertEqual(len(section1.assigned_roomslots),
+                         len(section2.assigned_roomslots))
+        for rs1, rs2 in \
+                zip(section1.assigned_roomslots, section2.assigned_roomslots):
+            self.assert_roomslot_equality(rs1, rs2)
+
+        self.assertSetEqual(set(section1.resource_requests.keys()),
+                            set(section2.resource_requests.keys()))
+        for restype_name in section1.resource_requests:
+            self.assert_restype_equality(
+                section1.resource_requests[restype_name],
+                section2.resource_requests[restype_name])
+
+        self.assertEqual(section1.initial_state, section2.initial_state)
+
+    def assert_teacher_equality(self, teacher1, teacher2):
+        """Perform asserts to check that two AS_Teachers are equal."""
+        self.assertEqual(teacher1.id, teacher2.id)
+        self.assertEqual(teacher1.availability, teacher2.availability)
+        self.assertSetEqual(set(teacher1.taught_sections.keys()),
+                            set(teacher2.taught_sections.keys()))
+        self.assertEqual(teacher1.is_admin, teacher2.is_admin)
+
+    def assert_classroom_equality(self, room1, room2):
+        """Perform asserts to check that two AS_Classrooms are equal."""
+        self.assertEqual(room1.name, room2.name)
+        self.assertEqual(len(room1.availability), len(room2.availability))
+        for rs1, rs2 in zip(room1.availability, room2.availability):
+            self.assert_roomslot_equality(rs1, rs2)
+        self.assertSetEqual(set(room1.furnishings.keys()),
+                            set(room2.furnishings.keys()))
+        for furnishing_name in room1.furnishings:
+            self.assert_restype_equality(
+                room1.furnishings[furnishing_name],
+                room2.furnishings[furnishing_name])
+
+    def assert_schedule_equality(self, schedule1, schedule2):
+        """Perform asserts to check that two schedules are equal."""
+        self.assertEqual(schedule1.program, schedule2.program)
+        self.assertEqual(schedule1.timeslots, schedule2.timeslots)
+        self.assertSetEqual(set(schedule1.class_sections.keys()),
+                            set(schedule2.class_sections.keys()))
+        for section_id in schedule1.class_sections:
+            self.assert_section_equality(
+                    schedule1.class_sections[section_id],
+                    schedule2.class_sections[section_id])
+        self.assertSetEqual(set(schedule1.teachers.keys()),
+                            set(schedule2.teachers.keys()))
+        for teacher_id in schedule1.teachers:
+            self.assert_teacher_equality(
+                schedule1.teachers[teacher_id], schedule2.teachers[teacher_id])
+
+        self.assertSetEqual(set(schedule1.classrooms.keys()),
+                            set(schedule2.classrooms.keys()))
+        for room_name in schedule1.classrooms:
+            self.assert_classroom_equality(
+                schedule1.classrooms[room_name],
+                schedule2.classrooms[room_name])
+
     def test_schedule_load(self):
+        """Make sure that loading a schedule matches the schedule we
+        constructed."""
         loaded_schedule = models.AS_Schedule.load_from_db(self.program)
-        # TODO: check that the schedules match
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
