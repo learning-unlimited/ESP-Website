@@ -45,6 +45,8 @@ save() probably shouldn't just crash on errors
 be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
+model tests should load lunch blocks, resource criteria, and constraints
+model tests should test for when classes are already scheduled, also saving
 tests for resource checker
 lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks
