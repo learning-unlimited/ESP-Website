@@ -7,7 +7,6 @@ save() should update initial states to prevent getting confused by multiple
 saves
 
 New features:
-Class categories, grade ranges
 Implement a way to attach ResourceCriteria to schedules
 Implement a way to define ResourceCriteria
 

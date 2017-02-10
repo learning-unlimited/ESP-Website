@@ -20,6 +20,85 @@ class ResourceCriterion:
         self.classroom_matcher = classroom_matcher
         self.condition_on_section = condition_on_section
 
+    @staticmethod
+    def create_from_specification(spec):
+        """Construct a ResourceCriterion based on a specification string.
+
+        The syntax is as follows, where all caps denotes a variable and
+        brackets denote an optional argument:
+            if PREMISE then CONCLUSION
+
+        where PREMISE and CONCLUSION can be of the form
+            section [not] requests RESTYPE [with VALUE_REGEX]
+        or
+            classroom [not] has RESTYPE [with VALUE_REGEX]
+        or
+            classroom [not] matches NAME_REGEX
+        or
+            any section
+
+        and where PREMISE and CONCLUSION must not both be section criteria or
+        both be classroom criteria.
+        """
+        criterion = re.match(r"if (.+) then (.+)", spec)
+        if not criterion:
+            raise ValueError(
+                "ResourceCriteron spec must match 'if PREMISE then CONCLUSION")
+        matchers = []
+        for group in criterion.group(1, 2):
+            resource_request_match = re.match(
+                r"section (not)? requests (.+) (with (.+))?", group)
+            if resource_request_match:
+                negate, res_type, value_regex = \
+                    resource_request_match.group(1, 2, 4)
+                if value_regex:
+                    matcher = ResourceRequestMatcher(res_type, value_regex)
+                else:
+                    matcher = ResourceRequestMatcher(res_type)
+                if negate:
+                    matcher = NegatingSectionMatcher(matcher)
+                matchers.append(matcher)
+                continue
+            resource_classroom_match = re.match(
+                r"classroom (not)? has (.+) (with (.+))?", group)
+            if resource_classroom_match:
+                negate, res_type, value_regex = \
+                    resource_classroom_match.group(1, 2, 4)
+                if value_regex:
+                    matcher = ResourceClassroomMatcher(res_type, value_regex)
+                else:
+                    matcher = ResourceClassroomMatcher(res_type)
+                if negate:
+                    matcher = NegatingClassroomMatcher(matcher)
+                matchers.append(matcher)
+                continue
+            classroom_name_match = re.match(
+                r"classroom (not)? matches (.+)", group)
+            if classroom_name_match:
+                negate, name_regex = classroom_name_match.groups()
+                matcher = ClassroomNameMatcher(name_regex)
+                if negate:
+                    matcher = NegatingClassroomMatcher(matcher)
+                matchers.append(matcher)
+                continue
+            if group == "any section":
+                matchers.append(TrivialSectionMatcher())
+                continue
+            raise ValueError(
+                "Clause '{}' doesn't match a valid pattern.".format(group))
+        if isinstance(matchers[0], BaseSectionMatcher):
+            condition_on_section = True
+            section_matcher, classroom_matcher = matchers
+            if isinstance(classroom_matcher, BaseSectionMatcher):
+                raise ValueError("Cannot specify two section matchers")
+        else:
+            condition_on_section = False
+            classroom_matcher, section_matcher = matchers
+            if isinstance(section_matcher, BaseClassroomMatcher):
+                raise ValueError("Cannot specify two classroom matchers")
+        return ResourceCriterion(section_matcher, classroom_matcher,
+                                 condition_on_section)
+
     def check_match(self, section, room):
         """Returns False if the premise holds but the conclusion fails, True
         otherwise."""
