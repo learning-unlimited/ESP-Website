@@ -30,8 +30,11 @@
         <th class="smaller">Number of Students: </th>
         <td>
             {% for sec in sections %}
-                Section {{ sec.index }}: {{ sec.num_students }} (<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">View section list</a>) <br />
-            {% endfor %} 
+                Section {{ sec.index }}:
+                {{ sec.num_students }} enrolled / {{ sec.capacity }} capacity
+                (<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">View section list</a>)
+                <br />
+            {% endfor %}
             <b>Total: </b> {{ class.num_students }} (<a href="/teach/{{ program.getUrlBase }}/class_students/{{ class.id }}">View class list</a>)
         </td>
     </tr>
@@ -47,8 +50,10 @@
         <th class="smaller">Enrollment: </th>
         <td>
             {% for sec in sections %}
-                Section {{ sec.index }}: {{ sec.num_students }} / {{ sec.num_students_prereg }} enrolled.
-            {% endfor %} 
+                Section {{ sec.index }}:
+                {{ sec.num_students }} enrolled / {{ sec.num_students_prereg }} preregistered
+                <br />
+            {% endfor %}
         <td>
     </tr>
     <tr>
