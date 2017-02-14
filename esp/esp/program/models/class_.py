@@ -39,6 +39,8 @@ from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
 
+import random
+
 # django Util
 from django.conf import settings
 from django.db import models
@@ -288,6 +290,10 @@ class ClassManager(Manager):
     catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
+    def random_class(self):
+        classes = self.filter(self.approved(return_q_obj=True))
+        count = classes.count()
+        return classes[random.randint(0, count - 1)]
 
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
