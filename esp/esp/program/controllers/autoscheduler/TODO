@@ -1,3 +1,5 @@
+(Also check TODOs in comments)
+
 Bugs:
 
 classrooms don't currently account for classes which are already scheduled in
@@ -7,7 +9,6 @@ save() should update initial states to prevent getting confused by multiple
 saves
 
 New features:
-Implement a way to attach ResourceCriteria to schedules
 Implement a way to define ResourceCriteria
 
 Be able to specify a regex for importing classrooms
@@ -20,6 +21,7 @@ Be able to import classes which are already scheduled (make sure teacher
 availability is fixed in this case)
 Be able to ignore locked classes
 
+Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
 Robustness:
@@ -57,6 +59,8 @@ consistency check that timeslots not span multiple days
 need unittests for schedule operations and saving somehow
 
 unittest that Constraints account for classrooms which already have sections in them
+
+scoring student-class-hours should account for classroom capacity
 
 assumption checks on the website??
 

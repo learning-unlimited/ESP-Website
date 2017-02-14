@@ -1,7 +1,11 @@
 from esp.program.controllers.autoscheduler.exceptions import ConsistencyError
 
-"""
-Consistency checks for an AS_Schedule. For debugging purposes.
+""" A consistency check verifies whether an AS_Schedule satisfies various
+invariants in the models/data structures, and which we assume the code enforces
+implicitly; for example, if a certain fact is stored in two different ways in
+an AS_Schedule, then we expect these two different ways to always agree with
+each other. Conversely, it is expected to be impossible for a schedule to fail
+a consistency check unless there are bugs in the code.
 """
 
 

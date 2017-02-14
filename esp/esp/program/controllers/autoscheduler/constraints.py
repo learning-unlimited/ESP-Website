@@ -1,4 +1,28 @@
+""" A Constraint checks whether a schedule is "legal", e.g. teachers teaching
+when they aren't available is illegal. Constraints are used to determine which
+schedule manipulations are possible at any given point.
+
+Constraints differ from ConsistencyChecks in that (typically) we expect it is
+possible for data structures to store a self-consistent representation which
+violates a constraint but not a consistency check.
+
+Note, however, that the code may assume or enforce that some constraint is met;
+since constraints are what the code uses to determine which schedule
+manipulations are possible, we mark those constraints as required to avoid
+violating these assumptions, or avoid giving the impression that the code is
+not following the constraint.
+
+Constraints are generally expected to be local, i.e. to only depend on a few
+things, e.g. teachers-can't-teach-two-classes-at-once only depends on the
+teacher's taught classes. Consequently, we don't allow Constraints to store
+state for simplicity. (Many of these constraints also cannot reasonably depend
+exclusively on state, because although constraints are local, their
+dependencies often cannot be summarized in a structure much simpler than an
+AS_Schedule itself. Having an internal state and also passing in a schedule
+seems too fragile.)
+"""
 # TODO: documentation on adding constraints
+
 import inspect
 
 import esp.program.controllers.autoscheduler.util as util
@@ -6,7 +30,9 @@ import esp.program.controllers.autoscheduler.constants as constants
 
 
 class BaseConstraint:
-    """Abstract class for constraints."""
+    """Abstract class for constraints. A Constraint can check whether a schedule
+    satisfies a constraint, as well as whether a schedule would continue to
+    satisfy a constraint after a hypothetical schedule manipulation."""
     # A constraint is required when the logic either enforces or assumes it.
     required = False
 
@@ -15,9 +41,6 @@ class BaseConstraint:
         True otherwise."""
         raise NotImplementedError
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns False
         if scheduling the section starting at the given roomslot would
@@ -46,7 +69,8 @@ class BaseConstraint:
 class CompositeConstraint(BaseConstraint):
     """A constraint which checks all the constraints you actually want."""
     def __init__(self, constraint_names):
-        """Takes in a list of constraint names, as strings."""
+        """Takes in a list of constraint names, as strings. Loads those
+        constraints, as well as all the required constraints."""
         self.constraints = []
         available_constraints = globals()
         required_constraints = [
@@ -245,15 +269,23 @@ class RestrictedRoomConstraint(BaseConstraint):
 class RoomAvailabilityConstraint(BaseConstraint):
     """Sections can only be in rooms which are available."""
 
-    required = True  # See note about triviality below.
+    # This constraint is trivial (see below) and therefore enforced, therefore
+    # required.
+    required = True
 
     def check_schedule(self, schedule):
         """Returns False if an AS_Schedule violates the constraint,
         True otherwise."""
-        # Because of the nature of the data structure (roomslots),
-        # Sections can only be scheduled if the room is available
-        # at the specified timeslot. Hence everything in this constraint
-        # is trivially true.
+
+        # Because of the nature of the data structure (roomslots), Sections can
+        # only be scheduled if the room is available at the specified timeslot.
+        # Hence everything in this constraint is trivially true. We
+        # nevertheless decide to have this trivial constraint because we don't
+        # expect it to be a significant performance detriment, and if the
+        # autoscheduler models ever change, we'd like this constraint to still
+        # be enforced (and plus this shows that we have explicitly thought
+        # about this constraint.)
+
         return True
 
     # These local checks are for performance reasons. These also check
