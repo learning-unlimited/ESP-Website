@@ -8,7 +8,6 @@ from functools import total_ordering
 import hashlib
 import json
 
-from django.db.models import Count
 from django.db import transaction
 
 from esp.program.controllers.autoscheduler.consistency_checks import \
@@ -77,8 +76,9 @@ class AS_Schedule:
         return timeslots_by_day
 
     @staticmethod
-    def load_from_db(program, exclude_lunch=True, exclude_walkins=True,
-                     exclude_scheduled=True):
+    def load_from_db(
+            program, require_approved=True, exclude_lunch=True,
+            exclude_walkins=True, exclude_scheduled=True):
         ESPUser.create_membership_methods()
 
         timeslots = \
@@ -93,44 +93,63 @@ class AS_Schedule:
         schedule = AS_Schedule(program=program, timeslots=timeslots,
                                lunch_timeslots=lunch_timeslots)
 
-        schedule.class_sections, schedule.teachers = \
-            schedule.load_sections_and_teachers(exclude_lunch, exclude_walkins,
-                                                exclude_scheduled)
-
-        classrooms = AS_Classroom.batch_convert(
-                program.groupedClassrooms(), program, schedule.timeslot_dict)
-        schedule.classrooms = {room.name: room for room in classrooms}
+        schedule.class_sections, schedule.teachers, schedule.classrooms = \
+            schedule.load_sections_and_teachers_and_classrooms(
+                require_approved, exclude_lunch,
+                exclude_walkins, exclude_scheduled)
 
         return schedule
 
-    def load_sections_and_teachers(
-            self, exclude_lunch, exclude_walkins, exclude_scheduled):
+    def load_sections_and_teachers_and_classrooms(
+            self, require_approved, exclude_lunch,
+            exclude_walkins, exclude_scheduled):
         """Loads the program's approved and unscheduled sections from db, and
         registers all teachers into the dict of teachers"""
+
         # Get all the approved class sections for the program
-        sections = ClassSection.objects.filter(
+        all_sections = ClassSection.objects.filter(
                 parent_class__parent_program=self.program,
-                status=10).select_related()
+                ).select_related()
 
-        if exclude_scheduled:
-            # Exclude all already-scheduled classes
-            sections = sections.annotate(
-                    num_meeting_times=Count("meeting_times"))
-            sections = sections.filter(num_meeting_times=0)
+        # We create a list of sections and a dict mapping from rooms to
+        # timeslots when they aren't available due to already-scheduled
+        # sections.
+        sections = []
+        exclude_availabilities = {}
+        for section in all_sections:
+            exclude = (
+              (require_approved and section.status != 10)
+              or (exclude_scheduled and len(section.get_meeting_times()) > 0)
+              or (exclude_lunch and
+                  section.parent_class.category.category == "Lunch")
+              or (exclude_walkins and section.parent_class.category ==
+                  self.program.open_class_category)
+            )
+            if exclude:
+                for c in section.classrooms():
+                    if c.name not in exclude_availabilities:
+                        exclude_availabilities[c.name] = set()
+                    exclude_availabilities[c.name].update(
+                        [ts.id for ts in section.get_meeting_times()])
+            else:
+                sections.append(section)
 
-        if exclude_lunch:
-            sections = sections.exclude(
-                    parent_class__category__category="Lunch")
-        if exclude_walkins:
-            sections = sections.exclude(
-                    parent_class__category=self.program.open_class_category)
+        # For all excluded sections, remove their availabilities
+
         teachers = {}
 
         converted_sections = AS_ClassSection.batch_convert(
             sections, self.program, teachers, self.timeslot_dict)
 
+        sections_dict = {sec.id: sec for sec in converted_sections}
+        # Load classrooms from groupedClassrooms
+        classrooms = AS_Classroom.batch_convert(
+                self.program.groupedClassrooms(), self.program,
+                self.timeslot_dict, exclude_availabilities)
+        classrooms_dict = {room.name: room for room in classrooms}
+
         # Return!
-        return {sec.id: sec for sec in converted_sections}, teachers
+        return sections_dict, teachers, classrooms_dict
 
     def save(self, check_consistency=True, check_constraints=True):
         """Saves the schedule."""
@@ -429,12 +448,17 @@ class AS_Classroom:
         self.furnishings = furnishings if furnishings is not None else {}
 
     @staticmethod
-    def convert_from_groupedclassroom(classroom, program, timeslot_dict):
+    def convert_from_groupedclassroom(
+            classroom, program, timeslot_dict, exclude_availabilities):
         """Create a AS_Classroom from a grouped Classroom (see
         Program.groupedClassrooms()) and Program"""
         assert classroom.res_type == ResourceType.get_or_create("Classroom")
+        excluded_availabilities = \
+            exclude_availabilities.get(classroom.name, [])
+        timeslots = [t for t in classroom.timeslots if
+                     t.id not in excluded_availabilities]
         available_timeslots = \
-            AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
+            AS_Timeslot.batch_find(timeslots, timeslot_dict)
         furnishings = AS_ResourceType.batch_convert_resources(
                 classroom.furnishings)
         furnishings_dict = {r.name: r for r in furnishings}
@@ -463,9 +487,10 @@ class AS_Classroom:
         return list_of_roomslots
 
     @staticmethod
-    def batch_convert(classrooms, program, timeslot_dict):
+    def batch_convert(
+            classrooms, program, timeslot_dict, exclude_availabilities):
         return map(lambda c: AS_Classroom.convert_from_groupedclassroom(
-            c, program, timeslot_dict), classrooms)
+            c, program, timeslot_dict, exclude_availabilities), classrooms)
 
 
 # Ordered by start time, then by end time.

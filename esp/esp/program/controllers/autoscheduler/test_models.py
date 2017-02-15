@@ -8,10 +8,9 @@ import esp.program.controllers.autoscheduler.util as util
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.cal.models import Event
 from esp.program.models.class_ import \
-        ClassSubject, ClassCategories, ClassSection
+        ClassSubject, ClassSection
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser
 
 
 class ScheduleTest(ProgramFrameworkTest):
@@ -330,24 +329,51 @@ class ScheduleTest(ProgramFrameworkTest):
                 schedule1.classrooms[room_name],
                 schedule2.classrooms[room_name])
 
-    def test_schedule_load(self):
-        """Make sure that loading a schedule matches the schedule we
-        constructed."""
-        loaded_schedule = models.AS_Schedule.load_from_db(self.program)
-        self.assert_schedule_equality(loaded_schedule, self.schedule)
-
-    def schedule_class_simple(self):
+    def schedule_class_simple_model(self):
         """Schedules section 0 in timeslot 1 of room 1.
-        Returns said section. and roomslot"""
+        Returns said section and roomslot. This operates on self.schedule."""
         section = self.schedule.class_sections[self.initial_section_id]
         room = self.schedule.classrooms["Room 1"]
         roomslot = room.availability[1]
         section.assign_roomslots([roomslot])
         return section, roomslot
 
+    def schedule_class_simple_db(self):
+        """Schedules section 0 in timeslot 1 of room 1.
+        Returns said section, timeslot, and room.
+        This operates on the database."""
+        section_obj = ClassSection.objects.get(id=self.initial_section_id)
+        timeslot = self.timeslots[1]
+        room = Resource.objects.get(
+            name="Room 1", res_type__name="Classroom", event=timeslot)
+        # Make sure the room is available. If not, this is a bug in the test.
+        assert room.is_available(), "Room wasn't available??"
+        section_obj.assign_meeting_times([timeslot])
+        section_obj.assign_room(room)
+        return section_obj, timeslot, room
+
+    def test_schedule_load(self):
+        """Make sure that loading a schedule matches the schedule we
+        constructed."""
+        loaded_schedule = models.AS_Schedule.load_from_db(self.program)
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
+
+    def test_load_existing_class(self):
+        """Make sure that existing classes are accounted for regardless of
+        whether we specify to load existing classes. This means to either load
+        them with the correct scheduling specified, or to block out the room's
+        availability."""
+        section_obj, event, room_obj = self.schedule_class_simple_db()
+        section, roomslot = self.schedule_class_simple_model()
+        loaded_schedule = models.AS_Schedule.load_from_db(
+            self.program, exclude_scheduled=True)
+        room = loaded_schedule.classrooms[room_obj.name]
+        # Assert that the room isn't available at that time.
+        self.assertNotIn(event.id, [r.timeslot.id for r in room.availability])
+
     def test_schedule_save(self):
         """Make a simple modification to the schedule and save it."""
-        section, roomslot = self.schedule_class_simple()
+        section, roomslot = self.schedule_class_simple_model()
         section_obj = ClassSection.objects.get(id=section.id)
         self.assertEqual(len(section_obj.get_meeting_times()), 0,
                          "Section already had meeting times")
@@ -364,7 +390,7 @@ class ScheduleTest(ProgramFrameworkTest):
 
     def test_schedule_double_save(self):
         """Test that saving twice in a row works."""
-        self.schedule_class_simple()
+        self.schedule_class_simple_model()
         try:
             self.schedule.save()
         except SchedulingError:

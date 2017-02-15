@@ -2,8 +2,6 @@
 
 Bugs:
 
-classrooms don't currently account for classes which are already scheduled in
-them
 
 New features:
 Implement a way to define ResourceCriteria
@@ -22,6 +20,9 @@ Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
 Robustness:
+
+loading is now really slow :(
+
 Handle sections/rooms having multiple resources/resource requests of the same
 name but different values
 
@@ -44,7 +45,8 @@ be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
 model tests should load lunch blocks, resource criteria, and constraints
-model tests should test for when classes are already scheduled, also saving
+model tests should test for when classes are already scheduled (or otherwise
+excluded classes), also saving
 tests for resource checker
 lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks
