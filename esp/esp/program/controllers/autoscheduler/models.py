@@ -455,27 +455,36 @@ class AS_Classroom:
         classroom_info_dict = {}
         # Dict mapping from section IDs to timeslot ids and rooms.
         sections_to_schedule = {}
+        # Build a dict mapping from resources and events to lists of targets
+        all_assignments = (
+            ResourceAssignment.objects.filter(resource__in=classrooms)
+            .values_list(
+                "resource__name", "resource__event__id", "target__id"))
+        assignments_dict = {}
+        for resource, event, target in all_assignments:
+            if resource not in assignments_dict:
+                assignments_dict[(resource, event)] = []
+            assignments_dict[(resource, event)].append(target)
         for classroom in classrooms:
             assert classroom.res_type == \
                 ResourceType.get_or_create("Classroom")
-            assignments = ResourceAssignment.objects.filter(resource=classroom)
+            assignments = assignments_dict.get(
+                (classroom.name, classroom.event.id), [])
             unavailable = False
             section_to_schedule = None
             if len(assignments) > 1:
                 # If a room is double-booked, we can ignore it if it doesn't
                 # contain any sections we care about. Otherwise, give up.
                 unavailable = True
-                for assignment in assignments:
-                    if assignment.target.id in known_sections_dict:
+                for target_id in assignments:
+                    if target_id in known_sections_dict:
                         raise SchedulingError(
                             "Room {} is double-booked and has known section " +
-                            "{}".format(classroom.name,
-                                        assignment.target.emailcode()))
+                            "num {}".format(classroom.name, target_id))
             elif len(assignments) == 1:
-                assignment = assignments[0]
-                if assignment.target.id in known_sections_dict:
-                    section_to_schedule = \
-                        known_sections_dict[assignment.target.id]
+                target_id = assignments[0]
+                if target_id in known_sections_dict:
+                    section_to_schedule = known_sections_dict[target_id]
                 else:
                     unavailable = True
             if not unavailable:
