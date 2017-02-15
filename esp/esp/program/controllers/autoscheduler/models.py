@@ -8,6 +8,7 @@ from functools import total_ordering
 import hashlib
 import json
 
+from django.db.models import Count
 from django.db import transaction
 
 from esp.program.controllers.autoscheduler.consistency_checks import \
@@ -17,7 +18,7 @@ from esp.program.controllers.autoscheduler.exceptions import \
 import esp.program.controllers.autoscheduler.constants as constants
 from esp.program.controllers.autoscheduler.constraints import \
         CompositeConstraint
-from esp.resources.models import ResourceType, Resource
+from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
 from esp.cal.models import Event
@@ -105,34 +106,27 @@ class AS_Schedule:
             exclude_walkins, exclude_scheduled):
         """Loads the program's approved and unscheduled sections from db, and
         registers all teachers into the dict of teachers"""
+        print "Loading"
 
         # Get all the approved class sections for the program
-        all_sections = ClassSection.objects.filter(
+        sections = ClassSection.objects.filter(
                 parent_class__parent_program=self.program,
                 ).select_related()
 
-        # We create a list of sections and a dict mapping from rooms to
-        # timeslots when they aren't available due to already-scheduled
-        # sections.
-        sections = []
-        exclude_availabilities = {}
-        for section in all_sections:
-            exclude = (
-              (require_approved and section.status != 10)
-              or (exclude_scheduled and len(section.get_meeting_times()) > 0)
-              or (exclude_lunch and
-                  section.parent_class.category.category == "Lunch")
-              or (exclude_walkins and section.parent_class.category ==
-                  self.program.open_class_category)
-            )
-            if exclude:
-                for c in section.classrooms():
-                    if c.name not in exclude_availabilities:
-                        exclude_availabilities[c.name] = set()
-                    exclude_availabilities[c.name].update(
-                        [ts.id for ts in section.get_meeting_times()])
-            else:
-                sections.append(section)
+        if require_approved:
+            sections = sections.filter(status=10)
+        if exclude_scheduled:
+            # Exclude all already-scheduled classes
+            sections = sections.annotate(
+                    num_meeting_times=Count("meeting_times"))
+            sections = sections.filter(num_meeting_times=0)
+
+        if exclude_lunch:
+            sections = sections.exclude(
+                    parent_class__category__category="Lunch")
+        if exclude_walkins:
+            sections = sections.exclude(
+                    parent_class__category=self.program.open_class_category)
 
         # For all excluded sections, remove their availabilities
 
@@ -140,16 +134,19 @@ class AS_Schedule:
 
         converted_sections = AS_ClassSection.batch_convert(
             sections, self.program, teachers, self.timeslot_dict)
+        print "Sections converted"
 
         sections_dict = {sec.id: sec for sec in converted_sections}
+        print "Sections dict loaded"
+
         # Load classrooms from groupedClassrooms
-        classrooms = AS_Classroom.batch_convert(
-                self.program.groupedClassrooms(), self.program,
-                self.timeslot_dict, exclude_availabilities)
-        classrooms_dict = {room.name: room for room in classrooms}
+        classrooms = AS_Classroom.convert_from_resources(
+                self.program.getClassrooms(), self.program,
+                self.timeslot_dict, sections_dict)
+        print "Classrooms loaded"
 
         # Return!
-        return sections_dict, teachers, classrooms_dict
+        return sections_dict, teachers, classrooms
 
     def save(self, check_consistency=True, check_constraints=True):
         """Saves the schedule."""
@@ -448,17 +445,76 @@ class AS_Classroom:
         self.furnishings = furnishings if furnishings is not None else {}
 
     @staticmethod
-    def convert_from_groupedclassroom(
-            classroom, program, timeslot_dict, exclude_availabilities):
+    def convert_from_resources(classrooms, program, timeslot_dict,
+                               known_sections_dict):
+        """Create a dict by roon name of AS_Classroms from a collection of
+        Resources. Also takes in a dict of known sections. If a resource is
+        unavailable, then either schedule the offending class in it (if we know
+        about said section) or don't mark it as an availability."""
+        # Dict mapping from names to timeslots and furnishings.
+        classroom_info_dict = {}
+        # Dict mapping from section IDs to timeslot ids and rooms.
+        sections_to_schedule = {}
+        for classroom in classrooms:
+            assert classroom.res_type == \
+                ResourceType.get_or_create("Classroom")
+            assignments = ResourceAssignment.objects.filter(resource=classroom)
+            unavailable = False
+            section_to_schedule = None
+            if len(assignments) > 1:
+                # If a room is double-booked, we can ignore it if it doesn't
+                # contain any sections we care about. Otherwise, give up.
+                unavailable = True
+                for assignment in assignments:
+                    if assignment.target.id in known_sections_dict:
+                        raise SchedulingError(
+                            "Room {} is double-booked and has known section " +
+                            "{}".format(classroom.name,
+                                        assignment.target.emailcode()))
+            elif len(assignments) == 1:
+                assignment = assignments[0]
+                if assignment.target.id in known_sections_dict:
+                    section_to_schedule = \
+                        known_sections_dict[assignment.target.id]
+                else:
+                    unavailable = True
+            if not unavailable:
+                if classroom.name not in classroom_info_dict:
+                    furnishings = AS_ResourceType.batch_convert_resources(
+                        classroom.associated_resources())
+                    furnishings_dict = {r.name: r for r in furnishings}
+                    classroom_info_dict[classroom.name] = \
+                        ([], furnishings_dict)
+                event = classroom.event
+                timeslot = timeslot_dict[(event.start, event.end)]
+                classroom_info_dict[classroom.name][0].append(timeslot)
+                if section_to_schedule is not None:
+                    section_id = section_to_schedule.id
+                    if section_id not in sections_to_schedule:
+                        sections_to_schedule[section_id] = \
+                            (set(), classroom.name)
+                    assert sections_to_schedule[section_id][1] == \
+                        classroom.name, \
+                        ("Section {} is in 2 rooms"
+                            .format(section_to_schedule.emailcode()))
+                    sections_to_schedule[section_id][0].add(timeslot.id)
+        classroom_dict = {}
+        for room in classroom_info_dict:
+            timeslots, furnishings = classroom_info_dict[room]
+            classroom_dict[room] = AS_Classroom(room, timeslots, furnishings)
+        for section_id in sections_to_schedule:
+            section = known_sections_dict[section_id]
+            timeslot_ids, room = sections_to_schedule[section_id]
+            roomslots = [r for r in classroom_dict[room].availability
+                         if r.timeslot.id in timeslot_ids]
+            section.assign_roomslots(roomslots)
+        return classroom_dict
+
+    def convert_from_groupedclassroom(classroom, program, timeslot_dict):
         """Create a AS_Classroom from a grouped Classroom (see
         Program.groupedClassrooms()) and Program"""
-        assert classroom.res_type == ResourceType.get_or_create("Classroom")
-        excluded_availabilities = \
-            exclude_availabilities.get(classroom.name, [])
-        timeslots = [t for t in classroom.timeslots if
-                     t.id not in excluded_availabilities]
         available_timeslots = \
-            AS_Timeslot.batch_find(timeslots, timeslot_dict)
+            AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
         furnishings = AS_ResourceType.batch_convert_resources(
                 classroom.furnishings)
         furnishings_dict = {r.name: r for r in furnishings}
@@ -487,10 +543,9 @@ class AS_Classroom:
         return list_of_roomslots
 
     @staticmethod
-    def batch_convert(
-            classrooms, program, timeslot_dict, exclude_availabilities):
+    def batch_convert(classrooms, program, timeslot_dict):
         return map(lambda c: AS_Classroom.convert_from_groupedclassroom(
-            c, program, timeslot_dict, exclude_availabilities), classrooms)
+            c, program, timeslot_dict), classrooms)
 
 
 # Ordered by start time, then by end time.
