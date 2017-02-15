@@ -1,9 +1,11 @@
 import datetime
+import traceback
 
 from django.db.models import Min
 
 import esp.program.controllers.autoscheduler.models as models
 import esp.program.controllers.autoscheduler.util as util
+from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.cal.models import Event
 from esp.program.models.class_ import \
         ClassSubject, ClassCategories, ClassSection
@@ -18,7 +20,7 @@ class ScheduleTest(ProgramFrameworkTest):
         # The new class and room will request and have a new resource,
         # respectively.
         # This increases the complexity of the program for stricter testing.
-        settings = {
+        self.settings = {
             'num_timeslots': 6,
             'timeslot_length': 50,
             'timeslot_gap': 10,
@@ -35,7 +37,7 @@ class ScheduleTest(ProgramFrameworkTest):
             'program_instance_label': 'Summer 2222',
             'start_time': datetime.datetime(2222, 7, 7, 7, 5),
         }
-        extra_settings = {
+        self.extra_settings = {
             "extra_timeslot_start": datetime.datetime(2222, 7, 8, 7, 5),
             "extra_room_capacity": 151,
             "extra_room_availability": [1, 2, 4, 5],  # Timeslot indices
@@ -50,18 +52,20 @@ class ScheduleTest(ProgramFrameworkTest):
             "extra_resource_type_name": "Projector",
             "extra_resource_value": "Foo",
         }
-        self.setUpProgram(settings, extra_settings)
-        self.setUpSchedule(settings, extra_settings)
+        self.setUpProgram(self.settings, self.extra_settings)
+        self.setUpSchedule(self.settings, self.extra_settings)
 
     def setUpProgram(self, settings, extra_settings):
         # Initialize the program.
         super(ScheduleTest, self).setUp(**settings)
+        self.initial_timeslot_id = util.get_min_id(self.timeslots)
         self.initial_teacher_id = util.get_min_id(self.teachers)
         self.initial_category_id = util.get_min_id(self.categories)
         self.initial_restype_id = 1 + len(ResourceType.objects.all())
         self.initial_section_id = ClassSection.objects.filter(
                 parent_class__parent_program=self.program
         ).aggregate(Min('id'))['id__min']
+
         # Create an extra timeslot.
         start_time = extra_settings["extra_timeslot_start"]
         end_time = start_time + datetime.timedelta(
@@ -143,6 +147,7 @@ class ScheduleTest(ProgramFrameworkTest):
 
         # Create timeslots
         timeslots = []
+        timeslot_id = self.initial_timeslot_id
         for i in xrange(settings["num_timeslots"]):
             start_time = settings["start_time"] \
                 + datetime.timedelta(minutes=(
@@ -151,12 +156,13 @@ class ScheduleTest(ProgramFrameworkTest):
             end_time = start_time + \
                 datetime.timedelta(minutes=settings["timeslot_length"])
             timeslots.append(models.AS_Timeslot(
-                start_time, end_time, i+1, None))
+                start_time, end_time, timeslot_id, None))
+            timeslot_id += 1
         start_time = extra_settings["extra_timeslot_start"]
         end_time = start_time + datetime.timedelta(
                 minutes=settings["timeslot_length"])
         timeslots.append(models.AS_Timeslot(
-            start_time, end_time, len(timeslots) + 1, None))
+            start_time, end_time, timeslot_id, None))
 
         # Create classrooms and furnishings
         classrooms = []
@@ -208,7 +214,7 @@ class ScheduleTest(ProgramFrameworkTest):
                         grade_min=grade_min, grade_max=grade_max))
                     section_id += 1
         category_id = extra_settings["extra_class_category"] \
-                + self.initial_category_id
+            + self.initial_category_id
         grade_min = extra_settings["extra_class_grade_min"]
         grade_max = extra_settings["extra_class_grade_max"]
         capacity = extra_settings["extra_class_size"]
@@ -222,7 +228,9 @@ class ScheduleTest(ProgramFrameworkTest):
             t for i, t in enumerate(teachers)
             if i in extra_settings["extra_class_teachers"]]
         resource_requests = {extra_resource_type.name: extra_resource_type}
+        self.extra_section_ids = []
         for i in xrange(extra_settings["extra_class_sections"]):
+            self.extra_section_ids.append(section_id)
             sections.append(models.AS_ClassSection(
                 section_teachers, duration, capacity,
                 category_id, [],
@@ -239,7 +247,7 @@ class ScheduleTest(ProgramFrameworkTest):
 
     def assert_roomslot_equality(self, roomslot1, roomslot2):
         """Performs asserts to check two roomslots are equal."""
-        self.assertEqual(roomslot1.timeslot, roomslot2.timeslot)
+        self.assertEqual(roomslot1.timeslot.id, roomslot2.timeslot.id)
         self.assertEqual(roomslot1.room.name, roomslot2.room.name)
         if (roomslot1.assigned_section is None):
             self.assertEqual(roomslot2.assigned_section, None)
@@ -327,3 +335,43 @@ class ScheduleTest(ProgramFrameworkTest):
         constructed."""
         loaded_schedule = models.AS_Schedule.load_from_db(self.program)
         self.assert_schedule_equality(loaded_schedule, self.schedule)
+
+    def schedule_class_simple(self):
+        """Schedules section 0 in timeslot 1 of room 1.
+        Returns said section. and roomslot"""
+        section = self.schedule.class_sections[self.initial_section_id]
+        room = self.schedule.classrooms["Room 1"]
+        roomslot = room.availability[1]
+        section.assign_roomslots([roomslot])
+        return section, roomslot
+
+    def test_schedule_save(self):
+        """Make a simple modification to the schedule and save it."""
+        section, roomslot = self.schedule_class_simple()
+        section_obj = ClassSection.objects.get(id=section.id)
+        self.assertEqual(len(section_obj.get_meeting_times()), 0,
+                         "Section already had meeting times")
+        try:
+            self.schedule.save()
+        except SchedulingError:
+            self.fail("Schedule saving crashed with error: \n{}"
+                      .format(traceback.format_exc()))
+        self.assertEqual(len(section_obj.get_meeting_times()), 1,
+                         "Section should have been scheduled for 1 timeslot")
+        self.assertEqual(section_obj.get_meeting_times()[0].id,
+                         roomslot.timeslot.id,
+                         "Section was assigned to wrong timeslot")
+
+    def test_schedule_double_save(self):
+        """Test that saving twice in a row works."""
+        self.schedule_class_simple()
+        try:
+            self.schedule.save()
+        except SchedulingError:
+            self.fail("Schedule saving crashed with error: \n{}"
+                      .format(traceback.format_exc()))
+        try:
+            self.schedule.save()
+        except SchedulingError:
+            self.fail("Schedule second save crashed with error: \n{}"
+                      .format(traceback.format_exc()))

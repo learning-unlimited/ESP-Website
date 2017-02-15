@@ -21,6 +21,7 @@ def contiguous(timeslot1, timeslot2):
     else:
         return False
 
+
 def get_min_id(objects):
     """Gets the minimum ID from a list of objects."""
     return min([o.id for o in objects])

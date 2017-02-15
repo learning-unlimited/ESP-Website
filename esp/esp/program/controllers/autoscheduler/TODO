@@ -5,9 +5,6 @@ Bugs:
 classrooms don't currently account for classes which are already scheduled in
 them
 
-save() should update initial states to prevent getting confused by multiple
-saves
-
 New features:
 Implement a way to define ResourceCriteria
 

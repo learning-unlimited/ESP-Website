@@ -200,6 +200,7 @@ class AS_Schedule:
                 assert all([roomslot.room.name == initial_room_num
                             for roomslot in section.assigned_roomslots]), \
                     "Section was assigned to multiple rooms"
+
                 room_objs = Resource.objects.filter(
                         name=initial_room_num,
                         res_type__name="Classroom",
@@ -224,6 +225,10 @@ class AS_Schedule:
                     raise SchedulingError(
                             "Room assignment failed with errors: "
                             + " | ".join(errors))
+
+                # Update the section's initial_state so we don't confuse
+                # ourselves
+                section.initial_state = section.scheduling_hash()
 
     def try_unschedule_section(self, section, unscheduled_sections,
                                error_message):
