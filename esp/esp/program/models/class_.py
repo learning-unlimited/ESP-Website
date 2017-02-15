@@ -290,8 +290,9 @@ class ClassManager(Manager):
     catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
-    def random_class(self):
+    def random_class(self, q=None):
         classes = self.filter(self.approved(return_q_obj=True))
+        if q is not None: classes = classes.filter(q)
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
