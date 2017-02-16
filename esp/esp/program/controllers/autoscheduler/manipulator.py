@@ -16,7 +16,7 @@ class ScheduleManipulator:
         if section.is_scheduled():
             return False
 
-        if not self.constraints.check_schedule_section(
+        if self.constraints.check_schedule_section(
                 section, start_roomslot, self.schedule):
             return False
 
@@ -32,7 +32,7 @@ class ScheduleManipulator:
         if not section.is_scheduled():
             return False
 
-        if not self.constraints.check_move_section(
+        if self.constraints.check_move_section(
                 section, start_roomslot, self.schedule):
             return False
 
@@ -47,7 +47,7 @@ class ScheduleManipulator:
         if not section.is_scheduled():
             return False
 
-        if not self.constraints.check_unschedule_section(
+        if self.constraints.check_unschedule_section(
                 section, self.schedule):
             return False
 
@@ -62,7 +62,7 @@ class ScheduleManipulator:
         if section1.duration != section2.duration:
             return False
 
-        if not self.constraints.check_swap_sections(
+        if self.constraints.check_swap_sections(
                 section1, section2, self.schedule):
             return False
 

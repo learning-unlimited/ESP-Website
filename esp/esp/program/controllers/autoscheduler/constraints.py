@@ -29,6 +29,17 @@ import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.constants as constants
 
 
+class ConstraintViolation:
+    """A constraint violation. Contains help text."""
+    def __init__(self, constraint_name, reason):
+        self.constraint_name = constraint_name
+        self.reason = reason
+
+    def __str__(self):
+        return "Constraint {} was violated because {}".format(
+            self.constraint_name, self.reason)
+
+
 class BaseConstraint:
     """Abstract class for constraints. A Constraint can check whether a schedule
     satisfies a constraint, as well as whether a schedule would continue to
@@ -37,32 +48,33 @@ class BaseConstraint:
     required = False
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         raise NotImplementedError
 
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a
+        ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         raise NotImplementedError
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         raise NotImplementedError
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
+        None otherwise."""
         raise NotImplementedError
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
+        None otherwise."""
         raise NotImplementedError
 
 
@@ -84,28 +96,40 @@ class CompositeConstraint(BaseConstraint):
             self.constraints.append(available_constraints[constraint]())
 
     def check_schedule(self, schedule):
-        return all(map(lambda c: c.check_schedule(schedule), self.constraints))
+        for c in self.constraints:
+            violation = c.check_schedule(schedule)
+            if violation:
+                return violation
+        return None
 
     def check_schedule_section(self, section, start_roomslot, schedule):
-        return all(map(
-            lambda c: c.check_schedule_section(
-                section, start_roomslot, schedule),
-            self.constraints))
+        for c in self.constraints:
+            violation = c.check_schedule_section(
+                section, start_roomslot, schedule)
+            if violation:
+                return violation
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        return all(map(
-            lambda c: c.check_move_section(
-                section, start_roomslot, schedule),
-            self.constraints))
+        for c in self.constraints:
+            violation = c.check_move_section(section, start_roomslot, schedule)
+            if violation:
+                return violation
+        return None
 
     def check_unschedule_section(self, section, schedule):
-        return all(map(lambda c: c.check_unschedule_section(section, schedule),
-                       self.constraints))
+        for c in self.constraints:
+            violation = c.check_unschedule_section(section, schedule)
+            if violation:
+                return violation
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        return all(map(
-            lambda c: c.check_swap_sections(section1, section2, schedule),
-            self.constraints))
+        for c in self.constraints:
+            violation = c.check_swap_section(section1, section2, schedule)
+            if violation:
+                return violation
+        return None
 
 
 class ContiguousConstraint(BaseConstraint):
@@ -115,8 +139,8 @@ class ContiguousConstraint(BaseConstraint):
     """Multi-hour sections may only be scheduled across
     contiguous timeblocks in the same room."""
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         for section in schedule.class_sections.itervalues():
             if len(section.assigned_roomslots) > 1:
                 section_room = section.assigned_roomslots[0].room
@@ -125,53 +149,63 @@ class ContiguousConstraint(BaseConstraint):
                 for roomslot in section.assigned_roomslots[1:]:
                     if not util.contiguous(
                             prev_timeslot, roomslot.timeslot):
-                        return False
+                        return ConstraintViolation(
+                            self.__class__.__name__,
+                            "Section id {} had noncontiguous rooms"
+                            .format(section.id))
                     if roomslot.room.name != section_room.name:
-                        return False
+                        return ConstraintViolation(
+                            self.__class__.__name__,
+                            "Section id {} is in 2 different rooms"
+                            .format(section.id))
                     prev_timeslot = roomslot.timeslot
-        return True
+        return None
 
     # These local checks are for performance reasons.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         classroom = start_roomslot.room
         assigned_slots = classroom.get_roomslots_by_duration(
                 start_roomslot, section.duration)
         if len(assigned_slots) == 0:
-            return False
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section won't be assigned any roomslots")
         if len(assigned_slots) == 1:
-            return True
+            return None
         prev_timeslot = start_roomslot.timeslot
         for roomslot in assigned_slots[1:]:
             if not util.contiguous(
                     prev_timeslot, roomslot.timeslot):
-                return False
+                return ConstraintViolation(
+                    self.__class__.__name__,
+                    "Insufficiently many contiguous timeslots to schedule")
             prev_timeslot = roomslot.timeslot
-        return True
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         return self.check_schedule_section(
                 self, section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
-        """Always True"""
-        return True
+        """Always None"""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Always True"""
-        return True
+        """Always None"""
+        return None
 
 
 class LunchConstraint(BaseConstraint):
     """Multi-hour sections can't be scheduled over both blocks of lunch."""
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         for list_lunch_slots in schedule.lunch_timeslots.itervalues():
             start_lunch = list_lunch_slots[0].start
             end_lunch = list_lunch_slots[-1].end
@@ -180,16 +214,19 @@ class LunchConstraint(BaseConstraint):
                 end_section = section.assigned_roomslots[-1].timeslot.end
                 if start_section <= start_lunch \
                         and end_section >= end_lunch:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                "Section id {} is scheduled over lunch"
+                                .format(section.id))
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
     # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         for list_lunch_slots in schedule.lunch_timeslots.itervalues():
             start_lunch = list_lunch_slots[0].start
             end_lunch = list_lunch_slots[0].end
@@ -199,26 +236,28 @@ class LunchConstraint(BaseConstraint):
             end_section = roomslots[-1].timeslot.end
             if start_section <= start_lunch and \
                     end_section >= end_lunch:
-                        return False
-        return True
+                        return ConstraintViolation(
+                            self.__class__.__name__,
+                            "Section would be scheduled over lunch")
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         return self.check_schedule_section(section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
 
 class PreconditionConstraint(BaseConstraint):
@@ -228,8 +267,8 @@ class PreconditionConstraint(BaseConstraint):
     required = True
 
     def check_schedule(self, schedule):
-        """Always True"""
-        return True
+        """Always None"""
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
@@ -237,22 +276,41 @@ class PreconditionConstraint(BaseConstraint):
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Ensures that the section to be scheduled is not already
         scheduled."""
-        return (len(section.assigned_roomslots) == 0)
+        if not (len(section.assigned_roomslots) == 0):
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section is already scheduled.")
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
         """Ensures that the section to be section is already scheduled."""
-        return (len(section.assigned_roomslots) != 0)
+        if not (len(section.assigned_roomslots) != 0):
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section isn't scheduled")
+        return None
 
     def check_unschedule_section(self, section, schedule):
         """Ensures that the section is already scheduled."""
-        return (len(section.assigned_roomslots) != 0)
+        if not (len(section.assigned_roomslots) != 0):
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section isn't scheduled")
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
         """Ensures that both sections are already scheduled and
         they are the same duration"""
-        return (len(section1.assigned_roomslots) ==
-                section2.assigned_roomslots) and (
-                        len(section1.assigned_roomslots) != 0)
+        if not (len(section1.assigned_roomslots) ==
+                section2.assigned_roomslots):
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Sections aren't assigned to the same number of roomslots")
+        if not len(section1.assigned_roomslots) != 0:
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Sections aren't scheduled")
+        return None
 
 
 class ResourceConstraint(BaseConstraint):
@@ -274,8 +332,8 @@ class RoomAvailabilityConstraint(BaseConstraint):
     required = True
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
 
         # Because of the nature of the data structure (roomslots), Sections can
         # only be scheduled if the room is available at the specified timeslot.
@@ -286,34 +344,34 @@ class RoomAvailabilityConstraint(BaseConstraint):
         # be enforced (and plus this shows that we have explicitly thought
         # about this constraint.)
 
-        return True
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
     # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
-        return True
+        violate the constraint, None otherwise."""
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
-        return True
+        would violate the constraint, None otherwise."""
+        return None
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
 
 class RoomConcurrencyConstraint(BaseConstraint):
@@ -322,52 +380,60 @@ class RoomConcurrencyConstraint(BaseConstraint):
     required = True  # A double-booked room will violate consistency checks.
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
-        return True
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
     # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         classroom = start_roomslot.room
         assigned_roomslots = classroom.get_roomslots_by_duration(
                 start_roomslot, section.duration)
         if len(assigned_roomslots) == 0:
-            return False
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section wouldn't be assigned any roomslots")
         for roomslot in assigned_roomslots:
             if roomslot.assigned_section is not None:
-                return False
-        return True
+                return ConstraintViolation(
+                    self.__class__.__name__,
+                    "Room would be double-booked")
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         classroom = start_roomslot.room
         assigned_roomslots = classroom.get_roomslots_by_duration(
                 start_roomslot, section.duration)
         if len(assigned_roomslots) == 0:
-            return False
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section wouldn't be assigned any roomslots")
         for roomslot in assigned_roomslots:
             if not (roomslot.assigned_section in [None, section]):
-                return False
-        return True
+                return ConstraintViolation(
+                    self.__class__.__name__,
+                    "Room would be double-booked")
+        return None
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
 
 class SectionDurationConstraint(BaseConstraint):
@@ -378,49 +444,61 @@ class SectionDurationConstraint(BaseConstraint):
     required = True  # I think some of the other constraints assume this.
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         for section in schedule.class_sections.itervalues():
             if len(section.assigned_roomslots) != 0:
                 start_time = section.assigned_roomslots[0].timeslot.start
                 end_time = section.assigned_roomslots[-1].timeslot.end
-                if abs((end_time - start_time).seconds/3600.0 -
-                        section.duration) > constants.DELTA_TIME:
-                    return False
-        return True
+                scheduled_duration = (end_time - start_time).seconds/3600.0
+                if abs(scheduled_duration - section.duration) \
+                        > constants.DELTA_TIME:
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        ("Section {} is scheduled for {} hours but "
+                         "should be scheduled for {} hours"
+                         .format(section.id, scheduled_duration,
+                                 section.duration)))
+        return None
 
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         roomslots = start_roomslot.room.get_roomslots_by_duration(
                 start_roomslot, section.duration)
         if len(roomslots) == 0:
-            return False
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section wouldn't receive any roomslots")
         start_time = roomslots[0].timeslot.start
         end_time = roomslots[-1].timeslot.end
-        if abs((end_time - start_time).seconds/3600.0 -
-                section.duration) > constants.DELTA_TIME:
-            return False
-        return True
+        scheduled_duration = (end_time - start_time).seconds/3600.0
+
+        if abs(scheduled_duration - section.duration) > constants.DELTA_TIME:
+            return ConstraintViolation(
+                self.__class__.__name__,
+                "Section would be scheduled for {} hours instead of {}"
+                .format(scheduled_duration, section.duration))
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         return self.check_schedule_section(section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
 
 class TeacherAvailabilityConstraint(BaseConstraint):
@@ -429,8 +507,8 @@ class TeacherAvailabilityConstraint(BaseConstraint):
     required = True  # I'm not sure if it actually is, but let's be safe.
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         for teacher in schedule.teachers.itervalues():
             for section in teacher.taught_sections.itervalues():
                 if len(section.assigned_roomslots) > 0:
@@ -439,16 +517,23 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                         end_time = roomslot.timeslot.end
                         if (start_time, end_time) \
                                 not in teacher.availability_dict:
-                                    return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                ("User {} is teaching from {} to {} but isn't "
+                                 "available".format(
+                                     teacher.id,
+                                     str(start_time),
+                                     str(end_time))))
+
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
     # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         room = start_roomslot.room
         roomslots = room.get_roomslots_by_duration(
                 start_roomslot, section.duration)
@@ -458,13 +543,15 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in \
                         teacher.availability_dict:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                "Teacher isn't available")
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         roomslots = start_roomslot.room.get_roomslots_by_duration(
                 start_roomslot, section.duration)
         existing_timeslots = set()
@@ -478,19 +565,21 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in \
                         existing_timeslots:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                "Teacher isn't available")
+        return None
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
+        None otherwise."""
         roomslots1 = section1.assigned_roomslots
         roomslots2 = section2.assigned_roomslots
         teachers1 = section1.teachers
@@ -507,15 +596,23 @@ class TeacherAvailabilityConstraint(BaseConstraint):
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in timeslots1:
-                            return False
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                ("Teacher from first section won't "
+                                 "be available"))
+
         for teacher in teachers2:
             for roomslot in roomslots1:
                 start_time = roomslot.timeslot.start
                 end_time = roomslot.timeslot.end
                 if (start_time, end_time) not in teacher.availability_dict \
                         and (start_time, end_time) not in timeslots2:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                ("Teacher from second section won't "
+                                 "be available"))
+
+        return None
 
 
 class TeacherConcurrencyConstraint(BaseConstraint):
@@ -532,8 +629,8 @@ class TeacherConcurrencyConstraint(BaseConstraint):
         return already_teaching
 
     def check_schedule(self, schedule):
-        """Returns False if an AS_Schedule violates the constraint,
-        True otherwise."""
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
         for teacher in schedule.teachers.itervalues():
             already_teaching = set()
             for section in teacher.taught_sections.itervalues():
@@ -541,17 +638,20 @@ class TeacherConcurrencyConstraint(BaseConstraint):
                     start_time = roomslot.timeslot.start
                     end_time = roomslot.timeslot.end
                     if (start_time, end_time) in already_teaching:
-                        return False
+                        return ConstraintViolation(
+                            self.__class__.__name__,
+                            "Teacher id {} is teaching twice at once"
+                            .format(teacher.id))
                     already_teaching.add((start_time, end_time))
-        return True
+        return None
 
     # These local checks are for performance reasons. These also check
     # hypothetical operations, whereas check_schedule checks an existing
     # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
-        violate the constraint, True otherwise."""
+        violate the constraint, None otherwise."""
         for teacher in section.teachers:
             already_teaching = self.get_already_teaching_set(teacher)
             assigned_roomslots = start_roomslot.room.get_roomslots_by_duration(
@@ -559,13 +659,15 @@ class TeacherConcurrencyConstraint(BaseConstraint):
             for roomslot in assigned_roomslots:
                 if (roomslot.timeslot.start, roomslot.timeslot.end) \
                         in already_teaching:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                "Teacher is already teaching")
+        return None
 
     def check_move_section(self, section, start_roomslot, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if moving the already-scheduled section to the given starting roomslot
-        would violate the constraint, True otherwise."""
+        would violate the constraint, None otherwise."""
         for teacher in section.teachers:
             already_teaching = self.get_already_teaching_set(teacher)
             for roomslot in section.assigned_roomslots:
@@ -577,19 +679,22 @@ class TeacherConcurrencyConstraint(BaseConstraint):
             for roomslot in assigned_roomslots:
                 if (roomslot.timeslot.start, roomslot.timeslot.end) \
                         in already_teaching:
-                            return False
-        return True
+                            return ConstraintViolation(
+                                self.__class__.__name__,
+                                "Teacher is already teaching")
+
+        return None
 
     def check_unschedule_section(self, section, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if unscheduling the specified section will violate the constraint,
-        True otherwise."""
-        return True
+        None otherwise."""
+        return None
 
     def check_swap_sections(self, section1, section2, schedule):
-        """Assuming that we start with a valid schedule, returns False
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if swapping two sections will violate the constraint,
-        True otherwise."""
+        None otherwise."""
         timeslots1 = set()
         timeslots2 = set()
         for roomslot in section1.assigned_roomslots:
@@ -600,10 +705,14 @@ class TeacherConcurrencyConstraint(BaseConstraint):
             already_teaching = self.get_already_teaching_set(teacher)
             for time in timeslots2:
                 if time in already_teaching and time not in timeslots1:
-                    return False
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher in first section is already teaching")
         for teacher in section2.teachers:
             already_teaching = self.get_already_teaching_set(teacher)
             for time in timeslots1:
                 if time in already_teaching and time not in timeslots2:
-                    return False
-        return True
+                    return ConstraintViolation(
+                        self.__class__.__name__,
+                        "Teacher in second section is already teaching")
+        return None

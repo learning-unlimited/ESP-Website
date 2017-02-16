@@ -16,7 +16,9 @@ def contiguous(timeslot1, timeslot2):
     """
     tol = timedelta(minutes=20)
 
-    if (timeslot2.start - timeslot2.end) < tol:
+    if (timeslot2.start < timeslot1.end):
+        return False
+    if (timeslot2.start - timeslot1.end) < tol:
         return True
     else:
         return False

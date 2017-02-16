@@ -101,6 +101,9 @@ class AS_Schedule:
                 require_approved, exclude_lunch,
                 exclude_walkins, exclude_scheduled)
 
+        schedule.run_consistency_checks()
+        schedule.run_constraint_checks()
+
         return schedule
 
     def load_sections_and_teachers_and_classrooms(
@@ -185,65 +188,71 @@ class AS_Schedule:
                         raise SchedulingError("Someone else moved a section.")
                 else:
                     self.ensure_section_not_moved(section_obj, section)
-                start_time = section.assigned_roomslots[0].timeslot.start
-                end_time = section.assigned_roomslots[-1].timeslot.end
-                # Make sure the teacher is available
-                for teacher in section.teachers:
-                    teacher_obj = ESPUser.objects.get(id=teacher.id)
-                    other_sections = \
-                        teacher_obj.getTaughtSections(self.program)
-                    for other_section in other_sections:
-                        conflict = False
-                        for other_time in other_section.get_meeting_times():
-                            if not (other_time.start >= end_time
-                                    or other_time.end <= start_time):
-                                conflict = True
-                                break
-                        if conflict:
-                            err_msg = (
-                                "Teacher {} is already teaching "
-                                "from {} to {}".format(
-                                    teacher.id,
-                                    str(other_time.start),
-                                    str(other_time.end)))
-                            self.try_unschedule_section(
-                                other_section,
-                                unscheduled_sections,
-                                err_msg)
-
-                # Compute our meeting times and classroom
-                meeting_times = Event.objects.filter(
-                        id__in=[roomslot.timeslot.id
-                                for roomslot in section.assigned_roomslots])
-                initial_room_num = section.assigned_roomslots[0].room.name
-                assert all([roomslot.room.name == initial_room_num
-                            for roomslot in section.assigned_roomslots]), \
-                    "Section was assigned to multiple rooms"
-
-                room_objs = Resource.objects.filter(
-                        name=initial_room_num,
-                        res_type__name="Classroom",
-                        event__in=meeting_times)
-
-                # Make sure the room is available
-                for room_obj in room_objs:
-                    if room_obj.is_taken():
-                        occupiers = room_obj.assignments()
-                        for occupier in occupiers:
-                            other_section = occupier.target
-                            self.try_unschedule_section(
+                if section.is_scheduled():
+                    start_time = section.assigned_roomslots[0].timeslot.start
+                    end_time = section.assigned_roomslots[-1].timeslot.end
+                    # Make sure the teacher is available
+                    for teacher in section.teachers:
+                        teacher_obj = ESPUser.objects.get(id=teacher.id)
+                        other_sections = \
+                            teacher_obj.getTaughtSections(self.program)
+                        for other_section in other_sections:
+                            conflict = False
+                            for other_time in \
+                                    other_section.get_meeting_times():
+                                if not (other_time.start >= end_time
+                                        or other_time.end <= start_time):
+                                    conflict = True
+                                    break
+                            if conflict:
+                                err_msg = (
+                                    "Teacher {} is already teaching "
+                                    "from {} to {}".format(
+                                        teacher.id,
+                                        str(other_time.start),
+                                        str(other_time.end)))
+                                self.try_unschedule_section(
                                     other_section,
                                     unscheduled_sections,
-                                    "Room is occupied")
+                                    err_msg)
 
-                # Schedule the section!
-                section_obj.assign_meeting_times(meeting_times)
-                status, errors = section_obj.assign_room(room_objs[0])
-                if not status:
+                    # Compute our meeting times and classroom
+                    meeting_times = Event.objects.filter(
+                            id__in=[roomslot.timeslot.id
+                                    for roomslot
+                                    in section.assigned_roomslots])
+                    initial_room_num = section.assigned_roomslots[0].room.name
+                    assert all([roomslot.room.name == initial_room_num
+                                for roomslot in section.assigned_roomslots]), \
+                        "Section was assigned to multiple rooms"
+
+                    room_objs = Resource.objects.filter(
+                            name=initial_room_num,
+                            res_type__name="Classroom",
+                            event__in=meeting_times)
+
+                    # Make sure the room is available
+                    for room_obj in room_objs:
+                        if room_obj.is_taken():
+                            occupiers = room_obj.assignments()
+                            for occupier in occupiers:
+                                other_section = occupier.target
+                                self.try_unschedule_section(
+                                        other_section,
+                                        unscheduled_sections,
+                                        "Room is occupied")
+
+                    # Schedule the section!
+                    section_obj.assign_meeting_times(meeting_times)
+                    status, errors = section_obj.assign_room(room_objs[0])
+                    if not status:
+                        section_obj.clear_meeting_times()
+                        raise SchedulingError(
+                                "Room assignment failed with errors: "
+                                + " | ".join(errors))
+                else:
+                    section_obj.clearRooms()
                     section_obj.clear_meeting_times()
-                    raise SchedulingError(
-                            "Room assignment failed with errors: "
-                            + " | ".join(errors))
 
                 # Update the section's initial_state so we don't confuse
                 # ourselves
@@ -266,8 +275,10 @@ class AS_Schedule:
         ConsistencyChecker().run_all_consistency_checks(self)
 
     def run_constraint_checks(self):
-        if not self.constraints.check_schedule(self):
-            raise SchedulingError("Schedule violated constraints")
+        violation = self.constraints.check_schedule(self)
+        if violation is not None:
+            raise SchedulingError(("Schedule violated constraints: {}"
+                                  .format(violation)))
 
     @staticmethod
     def ensure_section_not_moved(section, as_section):
@@ -329,7 +340,7 @@ class AS_ClassSection:
         of timeslots for availabilities. """
         assert section.parent_class.parent_program == program
         if not AS_ClassSection.section_satisfies_constraints(section):
-            print ("Warning: Section {} didn't satisfy constraints"
+            print ("Warning: Autoscheduler can't handle section {}"
                    .format(section.emailcode()))
             return None
 
@@ -371,7 +382,8 @@ class AS_ClassSection:
         """Returns False if the section:
          - Is scheduled in more than one classroom
          - Meeting times disagree with classroomassignments
-         - Is scheduled in nonconsecutive timeslots"""
+         - Is scheduled in nonconsecutive timeslots
+         - Isn't scheduled for its duration"""
         classrooms = sorted(section_obj.classrooms(), key=lambda c: c.event)
         meeting_times = sorted(section_obj.get_meeting_times())
         if len(classrooms) != len(meeting_times):
@@ -386,6 +398,13 @@ class AS_ClassSection:
                 return False  # Not the same time
             if room1.name != room2.name:
                 return False  # Different rooms
+        if len(meeting_times) > 0:
+            start_time = meeting_times[0].start
+            end_time = meeting_times[-1].end
+            scheduled_duration = (end_time - start_time).seconds / 3600.0
+            if abs(scheduled_duration - float(section_obj.duration)) \
+                    > constants.DELTA_TIME:
+                return False
         return True
 
     def register_teachers(self):
