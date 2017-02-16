@@ -302,7 +302,7 @@ function Matrix(
         var rows = {}; //table rows by room name
         var room_ids = Object.keys(this.rooms);
         room_ids.sort(function (room1, room2) {
-	    // sort by building number
+            // sort by building number
             var bldg1 = parseInt(room1, 10);
             var bldg2 = parseInt(room2, 10);
             if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
@@ -334,14 +334,18 @@ function Matrix(
         this.el.tooltip({
             content: function() {
                 var room = that.rooms[$j(this)[0].innerHTML];
-                var resource_names = [];
+                var resource_lines = [];
                 $j.each(room.resources, function(index, resource) {
-                    resource_names.push(resource.name);
+                    var desc = resource.resource_type.name;
+                    if(resource.value) {
+                        desc += ': ' + resource.value;
+                    }
+                    resource_lines.push(desc);
                 });
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
-                    "Resources: " + "<ul><li>"+ resource_names.join("</li><li>") + "</li></ul>",
+                    "Resources: " + "<ul><li>"+ resource_lines.join("</li><li>") + "</li></ul>",
                 ];
                 return tooltipParts.join("</br>");
             },
