@@ -4,13 +4,11 @@ Bugs:
 
 
 New features:
-Teacher loading should be fast even without cache
+Teacher loading should become fast even without cache
 Implement a way to define ResourceCriteria
 
 Be able to specify a regex for importing classrooms
 
-Constraints should be able to report where they failed (e.g. return a
-ConstraintViolation or None instead of True/False)
 Consistency checks should have better reporting where they failed as well
 
 Be able to ignore locked classes
@@ -19,8 +17,6 @@ Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
 Robustness:
-
-loading is now really slow :(
 
 Handle sections/rooms having multiple resources/resource requests of the same
 name but different values
