@@ -7,6 +7,7 @@ in website structure and should also be more performant.
 from functools import total_ordering
 import hashlib
 import json
+import bisect
 
 from django.db.models import Count
 from django.db import transaction
@@ -18,6 +19,7 @@ from esp.program.controllers.autoscheduler.exceptions import \
 import esp.program.controllers.autoscheduler.constants as constants
 from esp.program.controllers.autoscheduler.constraints import \
         CompositeConstraint
+from esp.program.controllers.autoscheduler import util
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
@@ -132,18 +134,19 @@ class AS_Schedule:
 
         teachers = {}
 
+        known_sections = set([section.id for section in sections])
+        # Load classrooms from groupedClassrooms
+        classrooms = AS_Classroom.convert_from_resources(
+                self.program.getClassrooms(), self.program,
+                self.timeslot_dict, known_sections)
+        print "Classrooms loaded"
+
         converted_sections = AS_ClassSection.batch_convert(
-            sections, self.program, teachers, self.timeslot_dict)
+            sections, self.program, teachers, self.timeslot_dict, classrooms)
         print "Sections converted"
 
         sections_dict = {sec.id: sec for sec in converted_sections}
         print "Sections dict loaded"
-
-        # Load classrooms from groupedClassrooms
-        classrooms = AS_Classroom.convert_from_resources(
-                self.program.getClassrooms(), self.program,
-                self.timeslot_dict, sections_dict)
-        print "Classrooms loaded"
 
         # Return!
         return sections_dict, teachers, classrooms
@@ -244,7 +247,7 @@ class AS_Schedule:
 
                 # Update the section's initial_state so we don't confuse
                 # ourselves
-                section.initial_state = section.scheduling_hash()
+                section.recompute_hash()
 
     def try_unschedule_section(self, section, unscheduled_sections,
                                error_message):
@@ -306,21 +309,29 @@ class AS_ClassSection:
         self.category = category
         # A sorted list of assigned roomslots.
         self.assigned_roomslots = assigned_roomslots
+        for roomslot in assigned_roomslots:
+            roomslot.assigned_section = self
+            for teacher in self.teachers:
+                teacher.add_availability(roomslot.timeslot)
         # Dict from restype names to AS_Restypes requested
         self.resource_requests = resource_requests \
             if resource_requests is not None else {}
 
         # A hash of the initial state.
-        self.initial_state = self.scheduling_hash()
+        self.recompute_hash()
         self.register_teachers()
 
     @staticmethod
     def convert_from_classection_obj(
-            section, program, teachers_dict, timeslot_dict):
+            section, program, teachers_dict, timeslot_dict, rooms):
         """Create a AS_ClassSection from a ClassSection and Program. Will also
         populate the given dictionary of teachers and uses the given dictionary
-        of timeslots for availabilities."""
+        of timeslots for availabilities. """
         assert section.parent_class.parent_program == program
+        if not AS_ClassSection.section_satisfies_constraints(section):
+            print ("Warning: Section {} didn't satisfy constraints"
+                   .format(section.emailcode()))
+            return None
 
         teachers = []
         for teacher in section.teachers:
@@ -333,13 +344,16 @@ class AS_ClassSection:
                 section.getResourceRequests())
 
         resource_requests_dict = {r.name: r for r in resource_requests}
-
-        assert len(section.meeting_times.all()) == 0, "Already-scheduled sections \
-            aren't supported yet"
+        roomslots = []
+        for classroom in section.classrooms():
+            room = rooms[classroom.name]
+            event = classroom.event
+            roomslots.append(room.availability_dict[(event.start, event.end)])
+        roomslots.sort(key=lambda r: r.timeslot)
 
         as_section = AS_ClassSection(
                 teachers, float(section.duration), section.capacity,
-                section.category.id, [],
+                section.category.id, roomslots,
                 section_id=section.id,
                 grade_min=section.parent_class.grade_min,
                 grade_max=section.parent_class.grade_max,
@@ -347,9 +361,32 @@ class AS_ClassSection:
 
         assert as_section.scheduling_hash_of(section) == \
             as_section.initial_state, \
-            "AS_ClassSection state doesn't match ClassSection state"
+            ("AS_ClassSection state doesn't match ClassSection state "
+             "for section {}".format(section.emailcode()))
 
         return as_section
+
+    @staticmethod
+    def section_satisfies_constraints(section_obj):
+        """Returns False if the section:
+         - Is scheduled in more than one classroom
+         - Meeting times disagree with classroomassignments
+         - Is scheduled in nonconsecutive timeslots"""
+        classrooms = sorted(section_obj.classrooms(), key=lambda c: c.event)
+        meeting_times = sorted(section_obj.get_meeting_times())
+        if len(classrooms) != len(meeting_times):
+            return False
+        for room1, time1, room2, time2 in zip(
+                classrooms, meeting_times, classrooms[1:], meeting_times[1:]):
+            # This function was written for AS_Timeslots, but it also works
+            # with Events.
+            if not util.contiguous(time1, time2):
+                return False  # Not contiguous
+            if room1.event != time1 or room2.event != time2:
+                return False  # Not the same time
+            if room1.name != room2.name:
+                return False  # Different rooms
+        return True
 
     def register_teachers(self):
         """Makes sure that all teachers have this section listed in their taught
@@ -377,6 +414,9 @@ class AS_ClassSection:
     def is_scheduled(self):
         return len(self.assigned_roomslots) > 0
 
+    def recompute_hash(self):
+        self.initial_state = self.scheduling_hash()
+
     def scheduling_hash(self):
         """Creates a unique hash based on the timeslots and rooms assigned to
         this section."""
@@ -388,9 +428,11 @@ class AS_ClassSection:
         return hashlib.md5(state_str).hexdigest()
 
     @staticmethod
-    def batch_convert(sections, program, teachers_dict, timeslot_dict):
-        return map(lambda s: AS_ClassSection.convert_from_classection_obj(
-            s, program, teachers_dict, timeslot_dict), sections)
+    def batch_convert(sections, program, teachers_dict, timeslot_dict, rooms):
+        return [s for s in
+                map(lambda s: AS_ClassSection.convert_from_classection_obj(
+                    s, program, teachers_dict, timeslot_dict, rooms), sections)
+                if s is not None]
 
     @staticmethod
     def scheduling_hash_of(section):
@@ -398,7 +440,7 @@ class AS_ClassSection:
         section."""
         meeting_times = sorted([(str(e.start), str(e.end))
                                 for e in section.get_meeting_times()])
-        rooms = sorted([r.name for r in section.classrooms()])
+        rooms = sorted(list(set([r.name for r in section.classrooms()])))
         state_str = json.dumps([meeting_times, rooms])
         return hashlib.md5(state_str).hexdigest()
 
@@ -415,6 +457,11 @@ class AS_Teacher:
         for timeslot in self.availability:
             self.availability_dict[(
                 timeslot.start, timeslot.end)] = timeslot
+
+    def add_availability(self, timeslot):
+        if (timeslot.start, timeslot.end) not in self.availability_dict:
+            bisect.insort_left(self.availability, timeslot)
+            self.availability_dict[(timeslot.start, timeslot.end)] = timeslot
 
     @staticmethod
     def convert_from_espuser(teacher, program, timeslot_dict):
@@ -443,18 +490,18 @@ class AS_Classroom:
         # Dict of resources available in the classroom, mapping from the
         # resource name to AS_Restype.
         self.furnishings = furnishings if furnishings is not None else {}
+        self.availability_dict = {(r.timeslot.start, r.timeslot.end): r
+                                  for r in self.availability}
 
     @staticmethod
     def convert_from_resources(classrooms, program, timeslot_dict,
-                               known_sections_dict):
+                               known_sections):
         """Create a dict by roon name of AS_Classroms from a collection of
         Resources. Also takes in a dict of known sections. If a resource is
         unavailable, then either schedule the offending class in it (if we know
         about said section) or don't mark it as an availability."""
         # Dict mapping from names to timeslots and furnishings.
         classroom_info_dict = {}
-        # Dict mapping from section IDs to timeslot ids and rooms.
-        sections_to_schedule = {}
         # Build a dict mapping from resources and events to lists of targets
         all_assignments = (
             ResourceAssignment.objects.filter(resource__in=classrooms)
@@ -464,28 +511,29 @@ class AS_Classroom:
         for resource, event, target in all_assignments:
             if resource not in assignments_dict:
                 assignments_dict[(resource, event)] = []
-            assignments_dict[(resource, event)].append(target)
+            assignments_dict[
+                (resource, event)].append(ClassSection.objects.get(id=target))
         for classroom in classrooms:
             assert classroom.res_type == \
                 ResourceType.get_or_create("Classroom")
             assignments = assignments_dict.get(
                 (classroom.name, classroom.event.id), [])
             unavailable = False
-            section_to_schedule = None
             if len(assignments) > 1:
                 # If a room is double-booked, we can ignore it if it doesn't
                 # contain any sections we care about. Otherwise, give up.
                 unavailable = True
-                for target_id in assignments:
-                    if target_id in known_sections_dict:
+                for target in assignments:
+                    if target.id in known_sections:
                         raise SchedulingError(
                             "Room {} is double-booked and has known section " +
-                            "num {}".format(classroom.name, target_id))
+                            "num {}".format(classroom.name, target.id))
             elif len(assignments) == 1:
-                target_id = assignments[0]
-                if target_id in known_sections_dict:
-                    section_to_schedule = known_sections_dict[target_id]
-                else:
+                target = assignments[0]
+                if target.id not in known_sections:
+                    unavailable = True
+                elif not AS_ClassSection.section_satisfies_constraints(
+                        target):
                     unavailable = True
             if not unavailable:
                 if classroom.name not in classroom_info_dict:
@@ -497,38 +545,11 @@ class AS_Classroom:
                 event = classroom.event
                 timeslot = timeslot_dict[(event.start, event.end)]
                 classroom_info_dict[classroom.name][0].append(timeslot)
-                if section_to_schedule is not None:
-                    section_id = section_to_schedule.id
-                    if section_id not in sections_to_schedule:
-                        sections_to_schedule[section_id] = \
-                            (set(), classroom.name)
-                    assert sections_to_schedule[section_id][1] == \
-                        classroom.name, \
-                        ("Section {} is in 2 rooms"
-                            .format(section_to_schedule.emailcode()))
-                    sections_to_schedule[section_id][0].add(timeslot.id)
         classroom_dict = {}
         for room in classroom_info_dict:
             timeslots, furnishings = classroom_info_dict[room]
             classroom_dict[room] = AS_Classroom(room, timeslots, furnishings)
-        for section_id in sections_to_schedule:
-            section = known_sections_dict[section_id]
-            timeslot_ids, room = sections_to_schedule[section_id]
-            roomslots = [r for r in classroom_dict[room].availability
-                         if r.timeslot.id in timeslot_ids]
-            section.assign_roomslots(roomslots)
         return classroom_dict
-
-    def convert_from_groupedclassroom(classroom, program, timeslot_dict):
-        """Create a AS_Classroom from a grouped Classroom (see
-        Program.groupedClassrooms()) and Program"""
-        available_timeslots = \
-            AS_Timeslot.batch_find(classroom.timeslots, timeslot_dict)
-        furnishings = AS_ResourceType.batch_convert_resources(
-                classroom.furnishings)
-        furnishings_dict = {r.name: r for r in furnishings}
-        return AS_Classroom(classroom.name, available_timeslots,
-                            furnishings_dict)
 
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that
@@ -550,11 +571,6 @@ class AS_Classroom:
             list_of_roomslots.append(current_roomslot)
             end_time = current_roomslot.timeslot.end
         return list_of_roomslots
-
-    @staticmethod
-    def batch_convert(classrooms, program, timeslot_dict):
-        return map(lambda c: AS_Classroom.convert_from_groupedclassroom(
-            c, program, timeslot_dict), classrooms)
 
 
 # Ordered by start time, then by end time.

@@ -50,16 +50,20 @@ excluded classes), also saving
 tests for resource checker
 lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks
+section availability dict needs consistency checks
 teacher sections teaching needs consistency checks
 consistency checks for teacher dict, class section dict, classroom dict,
 resources dicts
 consistency check that timeslots not span multiple days
 
 need unittests for schedule operations and saving somehow
+unittest for scheduled multihour class
 
 unittest that Constraints account for classrooms which already have sections in them
 
 scoring student-class-hours should account for classroom capacity
 
 assumption checks on the website??
+
+test to be able to handle sections which don't satsify constraints
 

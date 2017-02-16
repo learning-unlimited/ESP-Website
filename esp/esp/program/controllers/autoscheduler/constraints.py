@@ -126,7 +126,7 @@ class ContiguousConstraint(BaseConstraint):
                     if not util.contiguous(
                             prev_timeslot, roomslot.timeslot):
                         return False
-                    if roomslot.room.id != section_room.id:
+                    if roomslot.room.name != section_room.name:
                         return False
                     prev_timeslot = roomslot.timeslot
         return True

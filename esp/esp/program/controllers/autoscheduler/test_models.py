@@ -52,7 +52,7 @@ class ScheduleTest(ProgramFrameworkTest):
             "extra_resource_value": "Foo",
         }
         self.setUpProgram(self.settings, self.extra_settings)
-        self.setUpSchedule(self.settings, self.extra_settings)
+        self.schedule = self.setUpSchedule(self.settings, self.extra_settings)
 
     def setUpProgram(self, settings, extra_settings):
         # Initialize the program.
@@ -140,10 +140,10 @@ class ScheduleTest(ProgramFrameworkTest):
                 extra_settings["teacher_admin_idx"]].makeRole("Administrator")
 
     def setUpSchedule(self, settings, extra_settings):
-        # This creates the schedule we expect to see, reflecting the
-        # combination of the implementation of ProgramFrameworkTest.setUp and
-        # setUpProgram above.
-
+        """Creates the schedule we expect to see for the given settings and
+        extra settings, reflecting the combination of the implementation of
+        ProgramFrameworkTest.setUp and setUpProgram above. Returns said
+        schedule."""
         # Create timeslots
         timeslots = []
         timeslot_id = self.initial_timeslot_id
@@ -239,7 +239,7 @@ class ScheduleTest(ProgramFrameworkTest):
             section_id += 1
         sections_dict = {section.id: section for section in sections}
 
-        self.schedule = models.AS_Schedule(
+        return models.AS_Schedule(
             program=self.program, timeslots=timeslots,
             class_sections=sections_dict, teachers=teachers_dict,
             classrooms=classrooms_dict)
@@ -329,14 +329,42 @@ class ScheduleTest(ProgramFrameworkTest):
                 schedule1.classrooms[room_name],
                 schedule2.classrooms[room_name])
 
-    def schedule_class_simple_model(self):
+    def schedule_class_simple_model(self, schedule=None, recompute_hash=False):
         """Schedules section 0 in timeslot 1 of room 1.
-        Returns said section and roomslot. This operates on self.schedule."""
-        section = self.schedule.class_sections[self.initial_section_id]
-        room = self.schedule.classrooms["Room 1"]
+        Returns said section and roomslot. This operates on self.schedule, or a
+        provided one."""
+        if schedule is None:
+            schedule = self.schedule
+        section = schedule.class_sections[self.initial_section_id]
+        room = schedule.classrooms["Room 1"]
         roomslot = room.availability[1]
         section.assign_roomslots([roomslot])
+        if recompute_hash:
+            section.recompute_hash()
+        schedule.run_consistency_checks()
+        schedule.run_constraint_checks()
         return section, roomslot
+
+    def remove_class_simple_model(self, schedule=None):
+        """Removes section 0, as well as timeslot 1 of room 1. (This corresponds
+        to section 0 being scheduled in this roomslot and us not knowing about
+        section 0."""
+        if schedule is None:
+            schedule = self.schedule
+        section = schedule.class_sections[self.initial_section_id]
+        room = schedule.classrooms["Room 1"]
+        roomslot = room.availability[1]
+        timeslot = roomslot.timeslot
+        del schedule.class_sections[section.id]
+        del section.teachers[0].taught_sections[section.id]
+        section.teachers[0].availability.remove(timeslot)
+        del section.teachers[0].availability_dict[
+                (timeslot.start, timeslot.end)]
+        timeslot.associated_roomslots.remove(roomslot)
+        room.availability.remove(roomslot)
+        del room.availability_dict[(timeslot.start, timeslot.end)]
+        schedule.run_consistency_checks()
+        schedule.run_constraint_checks()
 
     def schedule_class_simple_db(self):
         """Schedules section 0 in timeslot 1 of room 1.
@@ -364,12 +392,18 @@ class ScheduleTest(ProgramFrameworkTest):
         them with the correct scheduling specified, or to block out the room's
         availability."""
         section_obj, event, room_obj = self.schedule_class_simple_db()
-        section, roomslot = self.schedule_class_simple_model()
+        self.remove_class_simple_model()
         loaded_schedule = models.AS_Schedule.load_from_db(
             self.program, exclude_scheduled=True)
         room = loaded_schedule.classrooms[room_obj.name]
         # Assert that the room isn't available at that time.
         self.assertNotIn(event.id, [r.timeslot.id for r in room.availability])
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
+        self.schedule = self.setUpSchedule(self.settings, self.extra_settings)
+        self.schedule_class_simple_model(recompute_hash=True)
+        loaded_schedule = models.AS_Schedule.load_from_db(
+            self.program, exclude_scheduled=False)
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
 
     def test_schedule_save(self):
         """Make a simple modification to the schedule and save it."""
