@@ -12,8 +12,6 @@ Constraints should be able to report where they failed (e.g. return a
 ConstraintViolation or None instead of True/False)
 Consistency checks should have better reporting where they failed as well
 
-Be able to import classes which are already scheduled (make sure teacher
-availability is fixed in this case)
 Be able to ignore locked classes
 
 Implement scoring
@@ -39,7 +37,6 @@ section don't change either
 saving is probably really slow
 saving errors should be more informative
 save() should have some way to do partial saves so you don't lose a ton of work
-save() probably shouldn't just crash on errors
 
 be able to deal with schedules with multi-scheduled rooms
 
@@ -57,13 +54,9 @@ resources dicts
 consistency check that timeslots not span multiple days
 
 need unittests for schedule operations and saving somehow
-unittest for scheduled multihour class
-
-unittest that Constraints account for classrooms which already have sections in them
+unittest for already-scheduled multihour class
 
 scoring student-class-hours should account for classroom capacity
-
-assumption checks on the website??
 
 test to be able to handle sections which don't satsify constraints
 
