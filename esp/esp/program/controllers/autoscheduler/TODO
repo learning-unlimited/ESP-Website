@@ -4,6 +4,7 @@ Bugs:
 
 
 New features:
+Teacher loading should be fast even without cache
 Implement a way to define ResourceCriteria
 
 Be able to specify a regex for importing classrooms
