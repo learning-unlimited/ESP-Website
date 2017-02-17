@@ -5,6 +5,7 @@ from django.db.models import Min
 
 import esp.program.controllers.autoscheduler.models as models
 import esp.program.controllers.autoscheduler.util as util
+import esp.program.controllers.autoscheduler.db_interface as db_interface
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.cal.models import Event
 from esp.program.models.class_ import \
@@ -13,7 +14,7 @@ from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.program.tests import ProgramFrameworkTest
 
 
-class ScheduleTest(ProgramFrameworkTest):
+class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
     def setUp(self):
         # Explicit settings, but we'll also add a new timeslot, room and class.
         # The new class and room will request and have a new resource,
@@ -56,7 +57,7 @@ class ScheduleTest(ProgramFrameworkTest):
 
     def setUpProgram(self, settings, extra_settings):
         # Initialize the program.
-        super(ScheduleTest, self).setUp(**settings)
+        super(ScheduleLoadAndSaveTest, self).setUp(**settings)
         self.initial_timeslot_id = util.get_min_id(self.timeslots)
         self.initial_teacher_id = util.get_min_id(self.teachers)
         self.initial_category_id = util.get_min_id(self.categories)
@@ -383,7 +384,7 @@ class ScheduleTest(ProgramFrameworkTest):
     def test_schedule_load(self):
         """Make sure that loading a schedule matches the schedule we
         constructed."""
-        loaded_schedule = models.AS_Schedule.load_from_db(self.program)
+        loaded_schedule = db_interface.load_schedule_from_db(self.program)
         self.assert_schedule_equality(loaded_schedule, self.schedule)
 
     def test_load_existing_class(self):
@@ -393,7 +394,7 @@ class ScheduleTest(ProgramFrameworkTest):
         availability."""
         section_obj, event, room_obj = self.schedule_class_simple_db()
         self.remove_class_simple_model()
-        loaded_schedule = models.AS_Schedule.load_from_db(
+        loaded_schedule = db_interface.load_schedule_from_db(
             self.program, exclude_scheduled=True)
         room = loaded_schedule.classrooms[room_obj.name]
         # Assert that the room isn't available at that time.
@@ -401,7 +402,7 @@ class ScheduleTest(ProgramFrameworkTest):
         self.assert_schedule_equality(loaded_schedule, self.schedule)
         self.schedule = self.setUpSchedule(self.settings, self.extra_settings)
         self.schedule_class_simple_model(recompute_hash=True)
-        loaded_schedule = models.AS_Schedule.load_from_db(
+        loaded_schedule = db_interface.load_schedule_from_db(
             self.program, exclude_scheduled=False)
         self.assert_schedule_equality(loaded_schedule, self.schedule)
 
@@ -412,7 +413,7 @@ class ScheduleTest(ProgramFrameworkTest):
         self.assertEqual(len(section_obj.get_meeting_times()), 0,
                          "Section already had meeting times")
         try:
-            self.schedule.save()
+            db_interface.save(self.schedule)
         except SchedulingError:
             self.fail("Schedule saving crashed with error: \n{}"
                       .format(traceback.format_exc()))
@@ -426,12 +427,12 @@ class ScheduleTest(ProgramFrameworkTest):
         """Test that saving twice in a row works."""
         self.schedule_class_simple_model()
         try:
-            self.schedule.save()
+            db_interface.save(self.schedule)
         except SchedulingError:
             self.fail("Schedule saving crashed with error: \n{}"
                       .format(traceback.format_exc()))
         try:
-            self.schedule.save()
+            db_interface.save(self.schedule)
         except SchedulingError:
             self.fail("Schedule second save crashed with error: \n{}"
                       .format(traceback.format_exc()))
