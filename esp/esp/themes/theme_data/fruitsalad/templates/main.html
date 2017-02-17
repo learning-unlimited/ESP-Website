@@ -209,17 +209,29 @@ var currentProgram = undefined;
 {% endblock %}
 
       <div id="content">
+          {% if request.show_perm_info %}
+          <div class="alert alert-info">
+              <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+              Permission/deadline controlling this page: {{ request.perm_names|join:", " }}
+              <br />
+              {% if request.roles_with_perm %}
+                  Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
+              {% else %}
+                  No roles with permission to view this page!
+              {% endif %}
+          </div>
+          {% endif %}
 {% block content %}{% endblock %}
       </div>
       <!--[if lte IE 6]>
-	  <div id="ie6_warning">
+      <div id="ie6_warning">
 <p>You're using a really old Web browser!  This site will look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
-	  </div>
+      </div>
       <![endif]-->
       {% with request.path|split:"/"|index:1 as split_url %}
       {% if program and split_url|notequal:"manage" %}
       <div class="admin hidden" id="admin_link">
-	<a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
+          <a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
       </div>
       {% endif %}
       {% endwith %}

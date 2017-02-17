@@ -512,27 +512,55 @@ def meets_grade(method):
 
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
+
+# Combined deadlines are annoying; meets_deadline has been absorbed into
+# meets_any_deadline and meets_all_deadlines has been deleted --bpchen,
+# 2017-02-17
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
+    """
+    Given information about a request, return a pair of type (bool, None |
+    response), which indicates whether the user can view the requested page,
+    and an optional redirect if not.
+
+    If the user is an administrator, annotate the request with information
+    about what roles have permission to view the requested page.
+    """
     if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
         return (True, None)
     response = None
     canView = False
     perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
     if not_logged_in(request):
-        if not moduleObj.require_auth() and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+        if not moduleObj.require_auth() and Permission.null_user_has_perm(permission_type=perm_name, program=request.program):
             canView = True
         else:
             response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
     else:
-        canView = request.user.updateOnsite(request)
+        user = request.user
+        program = request.program
+        canView = user.updateOnsite(request)
         if not canView:
-            canView = Permission.user_has_perm(request.user,
+            canView = Permission.user_has_perm(user,
                                                perm_name,
-                                               program=request.program)
+                                               program=program)
             #   For now, allow an exception if the user is of the wrong type
             #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
-            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=program, user__isnull=True).exists():
                 canView = True
+
+            #   Give administrators additional information
+            if user.isAdministrator(program=program):
+                request.show_perm_info = True
+                if hasattr(request, 'perm_names'):
+                    request.perm_names.append(perm_name)
+                else:
+                    request.perm_names = [perm_name]
+
+                roles_with_perm = Permission.list_roles_with_perm(perm_name, program)
+                if hasattr(request, 'roles_with_perm'):
+                    request.roles_with_perm += roles_with_perm
+                else:
+                    request.roles_with_perm = roles_with_perm
 
     return (canView, response)
 
@@ -547,31 +575,22 @@ def list_extensions(tl, extensions, andor=''):
     else:
         return 'the deadlines '+', '.join([nicetl+e for e in extensions[:-1]])+', '+andor+' '+nicetl+extensions[-1]+' were'
 
+def render_deadline_for_tl(tl, request, context):
+    errorpage = 'errors/program/deadline-%s.html' % tl
+    return render_to_response(errorpage, request, context)
+
 #   Return a decorator that returns a function calling the decorated function if
 #   the deadline is met, or a function that generates an error page if the
 #   deadline is not met.
 def meets_deadline(extension=''):
-    def meets_deadline(method):
-        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
-            if canView:
-                return method(moduleObj, request, tl, *args, **kwargs)
-            else:
-                if response:
-                    return response
-                else:
-                    return render_to_response(errorpage, request, {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
-        return _checkDeadline
-    return meets_deadline
+    return meets_any_deadline([extension])
 
-#   Behaves like the meets_deadline function above, but accepts a list of
-#   userbit names.  The returned decorator returns the decorated function if
-#   any of the deadlines are met.
+#   Return a decorator that returns a function calling the decorated function
+#   if at least one of the deadlines is met, or a function that generates an
+#   error page if none of the deadlines are met.
 def meets_any_deadline(extensions=[]):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
                 (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if canView:
@@ -579,26 +598,10 @@ def meets_any_deadline(extensions=[]):
             if response:
                 return response
             else:
-                return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
+                return render_deadline_for_tl(tl, request,
+                        {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
-
-#   Line meets_any_deadline above, but requires that all deadlines are met.
-def meets_all_deadlines(extensions=[]):
-    def meets_deadline(method):
-        def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            for ext in extensions:
-                (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
-                if not canView:
-                    if response:
-                        return response
-                    else:
-                        return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
-            return method(moduleObj, request, tl, *args, **kwargs)
-        return _checkDeadline
-    return meets_deadline
-
 
 def meets_cap(view_method):
     """Only allow students who meet the program cap past this point."""
@@ -633,12 +636,8 @@ def user_passes_test(test_func, error_message):
         def _check(moduleObj, request, tl, *args, **kwargs):
             if test_func(moduleObj):
                 return view_method(moduleObj, request, tl, *args, **kwargs)
-            errorpage = 'errors/program/deadline-%s.html' % tl
-            return render_to_response(
-                errorpage,
-                request,
-                {'extension': error_message, 'moduleObj': moduleObj},
-            )
+            return render_deadline_for_tl(tl, request,
+                    {'extension': error_message, 'moduleObj': moduleObj})
         return _check
     return user_passes_test
 
