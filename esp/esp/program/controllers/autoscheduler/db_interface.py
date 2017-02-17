@@ -12,7 +12,7 @@ from django.db import transaction
 from esp.resources.models import \
     ResourceType, Resource, ResourceAssignment, ResourceRequest
 from esp.program.models import ClassSection
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
 from esp.program.modules import module_ext
 
@@ -89,7 +89,42 @@ def load_sections_and_teachers_and_classrooms(
 
     # For all excluded sections, remove their availabilities
 
-    teachers = {}
+    teacher_ids = sections.values_list("parent_class__teachers", flat=True)
+    teaching_times = ClassSection.objects.filter(
+        parent_class__parent_program=schedule.program).values_list(
+            "parent_class__teachers", "meeting_times")
+    teaching_times_by_teacher = {teacher: set() for teacher in teacher_ids}
+    availabilities_by_teacher = {teacher: [] for teacher in teacher_ids}
+    for teacher, time in teaching_times:
+        if time is not None and teacher in teaching_times_by_teacher:
+            teaching_times_by_teacher[teacher].add(time)
+    if schedule.program.hasModule("AvailabilityModule"):
+        user_availabilities = UserAvailability.objects.filter(
+            event__program=schedule.program).order_by(
+                "event__start").select_related()
+        for availability in user_availabilities:
+            teacher = availability.user.id
+            if teacher in teacher_ids:
+                event = availability.event
+                teaching = teaching_times_by_teacher[teacher]
+                times = (event.start, event.end)
+                if event.id not in teaching \
+                        and times in schedule.timeslot_dict:
+                    availabilities_by_teacher[teacher].append(
+                        schedule.timeslot_dict[times])
+    else:
+        for teacher in availabilities_by_teacher:
+            teaching = teaching_times_by_teacher[teacher]
+            availabilities_by_teacher[teacher] = [
+                t for t in schedule.timeslots if t.id not in teaching]
+    admins = set(
+        ESPUser.objects.filter(groups__name="Administrator").values_list(
+            "id", flat=True))
+    teachers = {
+        teacher: AS_Teacher(
+            availabilities_by_teacher[teacher], teacher, teacher in admins)
+        for teacher in teacher_ids}
+    print "Teachers loaded"
 
     known_sections = {section.id: section for section in sections}
     rooms_by_section, meeting_times_by_section, requests_by_section = \
@@ -102,10 +137,15 @@ def load_sections_and_teachers_and_classrooms(
             rooms_by_section, meeting_times_by_section)
     print "Classrooms loaded"
 
+    section_teachers = sections.values_list("id", "parent_class__teachers")
+    teachers_by_section = {section: [] for section in known_sections}
+    for section, teacher in section_teachers:
+        teachers_by_section[section].append(teachers[teacher])
+
     converted_sections = batch_convert_sections(
-        sections, schedule.program, teachers, schedule.timeslot_dict,
-        classrooms, rooms_by_section, meeting_times_by_section,
-        requests_by_section)
+        sections, schedule.program, teachers_by_section,
+        schedule.timeslot_dict, classrooms,
+        rooms_by_section, meeting_times_by_section, requests_by_section)
     print "Sections converted"
 
     sections_dict = {sec.id: sec for sec in converted_sections}
@@ -247,7 +287,7 @@ def unschedule_section(section, unscheduled_sections_log=None):
 
 
 def convert_classection_obj(
-        section, program, teachers_dict, timeslot_dict, rooms,
+        section, program, teachers_by_section, timeslot_dict, rooms,
         rooms_by_section, meeting_times_by_section,
         requests_by_section):
     """Create a AS_ClassSection from a ClassSection and Program. Will also
@@ -259,12 +299,7 @@ def convert_classection_obj(
                .format(section.emailcode()))
         return None
 
-    teachers = []
-    for teacher in section.teachers:
-        if teacher.id not in teachers_dict:
-            teachers_dict[teacher.id] = convert_espuser(
-                    teacher, program, timeslot_dict)
-        teachers.append(teachers_dict[teacher.id])
+    teachers = teachers_by_section[section.id]
 
     resource_requests = batch_convert_resource_requests(
             requests_by_section[section.id])
@@ -368,12 +403,12 @@ def section_satisfies_constraints(
 
 
 def batch_convert_sections(
-        sections, program, teachers_dict, timeslot_dict, rooms,
+        sections, program, teachers_by_section, timeslot_dict, rooms,
         rooms_by_section, meeting_times_by_section,
         requests_by_section):
     return [s for s in
             map(lambda s: convert_classection_obj(
-                s, program, teachers_dict, timeslot_dict, rooms,
+                s, program, teachers_by_section, timeslot_dict, rooms,
                 rooms_by_section, meeting_times_by_section,
                 requests_by_section), sections)
             if s is not None]
@@ -393,20 +428,6 @@ def scheduling_hash_of(
     rooms = sorted(list(set([r.name for r in rooms])))
     state_str = json.dumps([meeting_times, rooms])
     return hashlib.md5(state_str).hexdigest()
-
-
-def convert_espuser(teacher, program, timeslot_dict):
-    """Create a AS_Teacher from an ESPUser using a timeslot_dict"""
-    availability = batch_find_events(
-        teacher.getAvailableTimes(program, ignore_classes=False),
-        timeslot_dict)
-    is_admin = teacher.isAdministrator()
-    return AS_Teacher(availability, teacher.id, is_admin)
-
-
-def batch_convert_teachers(teachers, program, timeslot_dict):
-    return map(lambda t: convert_espuser(
-        t, program, timeslot_dict), teachers)
 
 
 def convert_classroom_resources(

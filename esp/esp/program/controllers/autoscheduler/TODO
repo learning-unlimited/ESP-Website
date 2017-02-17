@@ -2,9 +2,10 @@
 
 Bugs:
 
+What if a teacher is teaching two classes at once, and we know about one of
+them?
 
 New features:
-Teacher loading should become fast even without cache
 Implement a way to define ResourceCriteria
 
 Be able to specify a regex for importing classrooms
@@ -38,6 +39,7 @@ be able to deal with schedules with multi-scheduled rooms
 Tests and checks:
 model tests should load lunch blocks, resource criteria, constraints, and
 locked sections
+more tests for loading teacher availabilities with classes already scheduled
 model tests should test for when classes are already scheduled (or otherwise
 excluded classes), also saving
 tests for resource checker
