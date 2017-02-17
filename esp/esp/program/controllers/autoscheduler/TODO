@@ -11,8 +11,6 @@ Be able to specify a regex for importing classrooms
 
 Consistency checks should have better reporting where they failed as well
 
-Be able to ignore locked classes
-
 Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
@@ -38,7 +36,8 @@ save() should have some way to do partial saves so you don't lose a ton of work
 be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
-model tests should load lunch blocks, resource criteria, and constraints
+model tests should load lunch blocks, resource criteria, constraints, and
+locked sections
 model tests should test for when classes are already scheduled (or otherwise
 excluded classes), also saving
 tests for resource checker

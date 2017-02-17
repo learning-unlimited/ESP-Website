@@ -14,7 +14,7 @@ from esp.resources.models import \
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
 from esp.cal.models import Event
-
+from esp.program.modules import module_ext
 
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.program.controllers.autoscheduler.models import \
@@ -26,7 +26,7 @@ import esp.program.controllers.autoscheduler.constants as constants
 
 def load_schedule_from_db(
         program, require_approved=True, exclude_lunch=True,
-        exclude_walkins=True, exclude_scheduled=True):
+        exclude_walkins=True, exclude_scheduled=True, exclude_locked=True):
     ESPUser.create_membership_methods()
 
     timeslots = \
@@ -44,7 +44,7 @@ def load_schedule_from_db(
     schedule.class_sections, schedule.teachers, schedule.classrooms = \
         load_sections_and_teachers_and_classrooms(
             schedule, require_approved, exclude_lunch,
-            exclude_walkins, exclude_scheduled)
+            exclude_walkins, exclude_scheduled, exclude_locked)
 
     schedule.run_consistency_checks()
     schedule.run_constraint_checks()
@@ -54,7 +54,7 @@ def load_schedule_from_db(
 
 def load_sections_and_teachers_and_classrooms(
         schedule, require_approved, exclude_lunch,
-        exclude_walkins, exclude_scheduled):
+        exclude_walkins, exclude_scheduled, exclude_locked):
     """Loads sections, teachers, and classrooms into the schedule from the
     database. Helper function for load_schedule_from_db, to make use of the
     schedule's construction of the timeslot dict."""
@@ -79,6 +79,11 @@ def load_sections_and_teachers_and_classrooms(
     if exclude_walkins:
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)
+    if exclude_locked:
+        locked_sections = module_ext.AJAXSectionDetail.objects.filter(
+            program=schedule.program, locked=True).values_list(
+                    "cls_id", flat=True)
+        sections = sections.exclude(id__in=locked_sections)
 
     print "Filtered"
 
