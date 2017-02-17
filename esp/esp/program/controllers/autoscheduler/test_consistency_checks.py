@@ -143,8 +143,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
         sched.timeslots[1].associated_roomslots.remove(roomslot)
 
         new_timeslot = models.AS_Timeslot(
-                datetime.datetime(2017, 02, 02, 16, 05),
-                datetime.datetime(2017, 02, 02, 16, 55),
+                datetime.datetime(2017, 2, 2, 16, 5),
+                datetime.datetime(2017, 2, 2, 16, 55),
                 7)
         new_roomslot = models.AS_RoomSlot(new_timeslot, None)
         # This should be okay, because we made a "rogue" roomslot but it's

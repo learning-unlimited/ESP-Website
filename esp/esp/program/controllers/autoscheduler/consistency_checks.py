@@ -20,8 +20,33 @@ class ConsistencyChecker:
         which are named check_[something]_consistency."""
         for attr in dir(self):
             if attr.startswith("check_") and attr.endswith("_consistency"):
-                print "Running: {}".format(attr)
+                print("Running: {}".format(attr))
                 getattr(self, attr)(schedule)
+
+    def check_lunch_consistency(self, schedule):
+        """Checks that lunch dictionary maps correctly,
+        and slots are sorted"""
+        # TODO: tests
+        for day in schedule.lunch_timeslots.keys():
+            for timeslot1, timeslot2 in zip(
+                    schedule.lunch_timeslots[day]):
+                if timeslot1 == timeslot2:
+                    raise ConsistencyError("Duplicate timeslots detected.")
+                if timeslot1 > timeslot2:
+                    raise ConsistencyError("Timeslots weren't sorted.")
+                if timeslot1.end > timeslot2.start:
+                    raise ConsistencyError("Timeslots are overlapping.")
+            for timeslot in schedule.lunch_timeslots[day]:
+                if (timeslot.start.year, timeslot.start.month,
+                        timeslot.start.day) != (
+                                timeslot.end.year, timeslot.end.month,
+                                timeslot.end.day):
+                            raise ConsistencyError(
+                                    "Timeslot is not in the same day.")
+                if (timeslot.start.year, timeslot.start.month,
+                        timeslot.start.day) != day:
+                    raise ConsistencyError("Incorrect mapping of slots\
+                            in lunch.")
 
     def check_timeslot_consistency(self, schedule):
         """Checks that timeslots are sorted and non-overlapping."""
