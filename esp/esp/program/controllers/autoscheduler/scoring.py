@@ -78,18 +78,24 @@ class CompositeScorer(BaseScorer):
         floats), and loads them, initializing them to the specified schedule.
         All weights should be positive."""
         self.scorers_and_weights = []
-        self.total_weight = 0.0
-        available_scorers = globals()
-        for scorer, weight in scorer_names_and_weights:
-            assert weight > 0, "Scorer weights should be positive"
-            print("Using scorer {}".format(scorer))
-            self.scorers_and_weights.append(
-                (available_scorers[scorer](schedule), weight))
-            self.total_weight.append(weight)
+        if len(scorer_names_and_weights) == 0:
+            # If we didn't receive any names and weights, we are a trivial
+            # scorer. Set total weight to 1 to avoid division by 0.
+            self.total_weight = 1.0
+        else:
+            self.total_weight = 0.0
+            available_scorers = globals()
+            for scorer, weight in scorer_names_and_weights:
+                assert weight > 0, "Scorer weights should be positive"
+                print("Using scorer {}".format(scorer))
+                self.scorers_and_weights.append(
+                    (available_scorers[scorer](schedule), weight))
+                self.total_weight.append(weight)
 
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
-        current state."""
+        current state. This should be implemented efficiently so it can be
+        called frequently."""
         total_score = 0.0
         for scorer, weight in self.scorers_and_weights:
             total_score += scorer.score_schedule() * weight
