@@ -15,15 +15,15 @@ Consistency checks should have better reporting where they failed as well
 Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
+save() should send updates to the AJAX scheduler, and this should be tested
+carefully (as well as making sure partial changes don't get committed)
+
 Robustness:
 
 Handle sections/rooms having multiple resources/resource requests of the same
 name but different values
 
 Handle two classrooms having the same name
-
-do something about resources having IDs and names; are they both unique? Maybe
-we don't need IDs.
 
 complain if timeslots are too short (maybe compare to DELTA_TIME in constants)
 

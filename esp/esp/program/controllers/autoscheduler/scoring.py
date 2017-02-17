@@ -22,28 +22,33 @@ class BaseScorer:
         current state."""
         raise NotImplementedError
 
-    def score_schedule_section(self, section, start_roomslot):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state schedules the specified section starting at
-        the specified roomslot."""
-        raise NotImplementedError
+    # I've commented out all the predictive scorers because they aren't
+    # strictly necessary; unlike constraints, which need to prune illegal
+    # operations, you can always just make the operation, score it, and then
+    # undo it. It's a little slower but if implemented correctly shouldn't be
+    # much slower.
+    # def score_schedule_section(self, section, start_roomslot):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state schedules the specified section starting
+    #     at the specified roomslot."""
+    #     raise NotImplementedError
 
-    def score_move_section(self, section, start_roomslot):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state moves the specified already-scheduled
-        section to start at the specified roomslot."""
-        raise NotImplementedError
+    # def score_move_section(self, section, start_roomslot):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state moves the specified already-scheduled
+    #     section to start at the specified roomslot."""
+    #     raise NotImplementedError
 
-    def score_unschedule_section(self, section):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state unschedules the specified section."""
-        raise NotImplementedError
+    # def score_unschedule_section(self, section):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state unschedules the specified section."""
+    #     raise NotImplementedError
 
-    def score_swap_sections(self, section1, section2):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state swaps the two specified already-scheduled
-        sections."""
-        raise NotImplementedError
+    # def score_swap_sections(self, section1, section2):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state swaps the two specified already-scheduled
+    #     sections."""
+    #     raise NotImplementedError
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
@@ -101,44 +106,47 @@ class CompositeScorer(BaseScorer):
             total_score += scorer.score_schedule() * weight
         return total_score / self.total_weight
 
-    def score_schedule_section(self, section, start_roomslot):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state schedules the specified section starting at
-        the specified roomslot."""
-        total_score = 0.0
-        for scorer, weight in self.scorers_and_weights:
-            total_score += \
-                scorer.score_schedule_section(section, start_roomslot) * weight
-        return total_score / self.total_weight
+    # See note in BaseScorer about these being commented out.
+    #
+    # def score_schedule_section(self, section, start_roomslot):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state schedules the specified section starting
+    #     at the specified roomslot."""
+    #     total_score = 0.0
+    #     for scorer, weight in self.scorers_and_weights:
+    #         total_score += \
+    #             scorer.score_schedule_section(
+    #                 section, start_roomslot) * weight
+    #     return total_score / self.total_weight
 
-    def score_move_section(self, section, start_roomslot):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state moves the specified already-scheduled
-        section to start at the specified roomslot."""
-        total_score = 0.0
-        for scorer, weight in self.scorers_and_weights:
-            total_score += \
-                scorer.score_move_section(section, start_roomslot) * weight
-        return total_score / self.total_weight
+    # def score_move_section(self, section, start_roomslot):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state moves the specified already-scheduled
+    #     section to start at the specified roomslot."""
+    #     total_score = 0.0
+    #     for scorer, weight in self.scorers_and_weights:
+    #         total_score += \
+    #             scorer.score_move_section(section, start_roomslot) * weight
+    #     return total_score / self.total_weight
 
-    def score_unschedule_section(self, section):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state unschedules the specified section."""
-        total_score = 0.0
-        for scorer, weight in self.scorers_and_weights:
-            total_score += \
-                scorer.score_unschedule_section(section) * weight
-        return total_score / self.total_weight
+    # def score_unschedule_section(self, section):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state unschedules the specified section."""
+    #     total_score = 0.0
+    #     for scorer, weight in self.scorers_and_weights:
+    #         total_score += \
+    #             scorer.score_unschedule_section(section) * weight
+    #     return total_score / self.total_weight
 
-    def score_swap_sections(self, section1, section2):
-        """Returns a score in the range [0, 1] if the schedule currently
-        reflected in internal state swaps the two specified already-scheduled
-        sections."""
-        total_score = 0.0
-        for scorer, weight in self.scorers_and_weights:
-            total_score += \
-                scorer.score_swap_sections(section1, section2) * weight
-        return total_score / self.total_weight
+    # def score_swap_sections(self, section1, section2):
+    #     """Returns a score in the range [0, 1] if the schedule currently
+    #     reflected in internal state swaps the two specified already-scheduled
+    #     sections."""
+    #     total_score = 0.0
+    #     for scorer, weight in self.scorers_and_weights:
+    #         total_score += \
+    #             scorer.score_swap_sections(section1, section2) * weight
+    #     return total_score / self.total_weight
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
