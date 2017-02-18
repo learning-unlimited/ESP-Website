@@ -65,6 +65,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.initial_section_id = ClassSection.objects.filter(
                 parent_class__parent_program=self.program
         ).aggregate(Min('id'))['id__min']
+        self.initial_subject_id = ClassSubject.objects.filter(
+                parent_program=self.program).aggregate(Min('id'))['id__min']
 
         # Create an extra timeslot.
         start_time = extra_settings["extra_timeslot_start"]
@@ -196,6 +198,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         # Create sections
         subject_count = 0
         section_id = self.initial_section_id
+        subject_id = self.initial_subject_id
         sections = []
         for t in teachers:
             for i in xrange(settings["classes_per_teacher"]):
@@ -210,9 +213,10 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                     sections.append(models.AS_ClassSection(
                         [t], duration, capacity,
                         category_id, [],
-                        section_id=section_id,
+                        section_id=section_id, parent_class_id=subject_id,
                         grade_min=grade_min, grade_max=grade_max))
                     section_id += 1
+                subject_id += 1
         category_id = extra_settings["extra_class_category"] \
             + self.initial_category_id
         grade_min = extra_settings["extra_class_grade_min"]
@@ -234,10 +238,11 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             sections.append(models.AS_ClassSection(
                 section_teachers, duration, capacity,
                 category_id, [],
-                section_id=section_id,
+                section_id=section_id, parent_class_id=subject_id,
                 grade_min=grade_min, grade_max=grade_max,
                 resource_requests=resource_requests))
             section_id += 1
+        subject_id += 1
         sections_dict = {section.id: section for section in sections}
 
         return models.AS_Schedule(
@@ -264,6 +269,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
     def assert_section_equality(self, section1, section2):
         """Performs asserts to check two sections are equal."""
         self.assertEqual(section1.id, section2.id)
+        self.assertEqual(section1.parent_class, section2.parent_class)
         self.assertAlmostEqual(section1.duration, section2.duration, places=2)
         self.assertEqual(
             set([t.id for t in section1.teachers]),

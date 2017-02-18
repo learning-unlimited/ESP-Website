@@ -83,9 +83,11 @@ class AS_Schedule:
 class AS_ClassSection:
     def __init__(self, teachers, duration, capacity,
                  category, assigned_roomslots,
-                 section_id=0, grade_min=7, grade_max=12,
+                 section_id=0, parent_class_id=0,
+                 grade_min=7, grade_max=12,
                  resource_requests=None):
         self.id = section_id
+        self.parent_class = parent_class_id
         # Duration, in hours.
         self.duration = duration
         # A list of teachers.

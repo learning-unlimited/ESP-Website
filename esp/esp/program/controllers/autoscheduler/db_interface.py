@@ -315,7 +315,7 @@ def convert_classection_obj(
     as_section = AS_ClassSection(
             teachers, float(section.duration), section.capacity,
             section.category.id, roomslots,
-            section_id=section.id,
+            section_id=section.id, parent_class_id=section.parent_class.id,
             grade_min=section.parent_class.grade_min,
             grade_max=section.parent_class.grade_max,
             resource_requests=resource_requests_dict)
