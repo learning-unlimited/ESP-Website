@@ -6,7 +6,8 @@ can initialize (or re-initialize) to a schedule, score the schedule it is
 currently set to, predict a score for a hypothetical change (without changing
 its state), or perform a change (i.e. updating its state).
 
-A Scorer is expected to return a score in the range [0, 1].
+A Scorer is expected to return a score in the range [0, 1], where 1 is good and
+0 is bad.
 """
 # TODO documentation on adding scorers
 
@@ -21,6 +22,32 @@ class BaseScorer:
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         raise NotImplementedError
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        raise NotImplementedError
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        raise NotImplementedError
+
+    def update_move_section(self, section, start_roomslot):
+        """Update the internal state to reflect the moving of the specified
+        already-scheduled section to start at the specified roomslot."""
+        self.update_unschedule_section(section)
+        self.update_schedule_section(section, start_roomslot)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        raise NotImplementedError
+
+    def update_swap_sections(self, section1, section2):
+        """Update the internal state to reflect the swapping of the two
+        specified sections."""
+        self.update_move_section(section1, section2.assigned_roomslots[0])
+        self.update_move_section(section2, section1.assigned_roomslots[0])
 
     # I've commented out all the predictive scorers because they aren't
     # strictly necessary; unlike constraints, which need to prune illegal
@@ -49,30 +76,6 @@ class BaseScorer:
     #     reflected in internal state swaps the two specified already-scheduled
     #     sections."""
     #     raise NotImplementedError
-
-    def update_schedule(self, schedule):
-        """Overwrite internal state to reflect the given schedule."""
-        raise NotImplementedError
-
-    def update_schedule_section(self, section, start_roomslot):
-        """Update the internal state to reflect the scheduling of the specified
-        section to start at the specified roomslot."""
-        raise NotImplementedError
-
-    def update_move_section(self, section, start_roomslot):
-        """Update the internal state to reflect the moving of the specified
-        already-scheduled section to start at the specified roomslot."""
-        raise NotImplementedError
-
-    def update_unschedule_section(self, section):
-        """Update the internal state to reflect the uncsheduling of the
-        specified section."""
-        raise NotImplementedError
-
-    def update_swap_sections(self, section1, section2):
-        """Update the internal state to reflect the swapping of the two
-        specified sections."""
-        raise NotImplementedError
 
 
 class CompositeScorer(BaseScorer):
@@ -181,13 +184,128 @@ class CompositeScorer(BaseScorer):
 class AdminDistributionScorer(BaseScorer):
     """Admins' classes should be spread out over the day, and minimally in the
     mornings."""
-    pass
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # We do a simple linear penalty: for each timeslot, if the proportion
+        # of admins teaching in each timeslot exceeds the ideal distribution by
+        # x, contribute x to the penalty. Cap the penalty at 1.
+        self.penalty = 0.0
+        for t in self.ideal_distribution_dict:
+            ideal = self.ideal_distribution_dict[t]
+            actual = self.admins_per_timeslot[t] / self.total_admins
+            if actual > ideal:
+                self.penalty += actual - ideal
+        return max(0.0, 1 - self.penalty)
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        # The ideal distribution indicates what fraction of all admins should
+        # be teaching during each timeslot. We approximate the ideal
+        # distribution saying that at most 1/3 of all admins should be teaching
+        # during any given timeslot, and no admins should teach in first
+        # timeslot each day.
+        ideal_distribution = [0.0]
+        prev_timeslot = schedule.timeslots[0]
+        for t in schedule.timeslots[1:]:
+            if t.day == prev_timeslot.day:
+                ideal_distribution.append(1/3.0)
+            else:
+                ideal_distribution.append(0.0)
+            prev_timeslot = t
+        self.ideal_distribution_dict = {}
+        for x, ts in zip(ideal_distribution, schedule.timeslots):
+            self.ideal_distribution_dict[ts.id] = x
+        self.total_admins = float(sum(
+            [t.is_admin for t in schedule.teachers.itervalues()]))
+        self.admins_per_timeslot = {t.id: 0.0 for t in schedule.timeslots}
+        for section in schedule.class_sections.itervalues():
+            for teacher in section.teachers:
+                if teacher.is_admin:
+                    for roomslot in section.assigned_roomslots:
+                        self.admins_per_timeslot[roomslot.timeslot.id] += 1
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        for teacher in section.teachers:
+            if teacher.is_admin:
+                for roomslot in roomslots:
+                    self.admins_per_timeslot[roomslot.timeslot.id] += 1
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        for teacher in section.teachers:
+            if teacher.is_admin:
+                for roomslot in section.assigned_roomslots:
+                    self.admins_per_timeslot[roomslot.timeslot.id] -= 1
 
 
 class CategoryBalanceScorer(BaseScorer):
     """Each category should have its student-capacity spread out evenly over
     the timeblocks in each day."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # For each category, track a penalty; for each timeslot, if the
+        # fraction of total student_class_hours in that category (computed as
+        # capacity times timeslot duration divided by total student-class-hours
+        # for that category) exceeds one over the number of timeslots, add this
+        # excess (as a decimal) to the penalty. Average this penalty over all
+        # categories. Note that this gives some slack because total
+        # student-class-hours includes time between two timeslots in multi-hour
+        # classes.
+        total_penalty = 0.0
+        for category, student_class_hours in \
+                self.student_class_hours_by_category.iteritems():
+            capacity_per_timeslot = \
+                self.capacity_per_timeslot_by_category[category]
+            leeway = 1.0 / len(capacity_per_timeslot)
+            for timeslot, capacity in capacity_per_timeslot.iteritems():
+                fractional_capacity = \
+                    capacity * timeslot.duration / student_class_hours
+                if fractional_capacity > leeway:
+                    total_penalty += capacity / student_class_hours - leeway
+        return 1 - (total_penalty / len(self.student_class_hours_by_category))
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.student_class_hours_by_category = {}
+        for sec in schedule.class_sections.itervalues():
+            self.student_class_hours_by_category[sec.category] = \
+                self.student_class_hours_by_category.get(sec.category, 0.0) \
+                + sec.capacity * sec.duration
+        self.capacity_per_timeslot_by_category = {
+            c: {t.id: 0.0 for t in schedule.timeslots} for c in
+            self.student_class_hours_by_category}
+        for section in schedule.class_sections.itervalues():
+            capacity_per_timeslot = self.capacity_per_timeslot_by_category[
+                section.category]
+            for roomslot in section.assigned_roomslots:
+                actual_capacity = min(section.capacity, roomslot.room.capacity)
+                capacity_per_timeslot[roomslot.timeslot.id] += actual_capacity
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        for roomslot in roomslots:
+            actual_capacity = min(section.capacity, roomslot.room.capacity)
+            self.capacity_per_timeslot_by_category[section.category][
+                roomslot.timeslot.id] += actual_capacity
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        for roomslot in section.assigned_roomslots:
+            actual_capacity = min(section.capacity, roomslot.room.capacity)
+            self.capacity_per_timeslot_by_category[section.category][
+                roomslot.timeslot.id] -= actual_capacity
 
 
 class LunchStudentClassHoursScorer(BaseScorer):
@@ -195,19 +313,153 @@ class LunchStudentClassHoursScorer(BaseScorer):
     assuming (some fraction of) students are required to have lunch during
     those times so there will be less demand."""
 
-    # Make sure this accounts for room capacities
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # We return simply the fraction of all possible student-class-hours
+        # which are scheduled during non-lunch timeslots. Note that this is an
+        # underestimate because the denominator accounts for time between
+        # timeslots in multi-hour classes, and the numerator does not.
+        return self.non_lunch_student_class_hours / \
+            self.total_student_class_hours
 
-    pass
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.lunch_timeslots = set()
+        for timeslots in schedule.lunch_timeslots.itervalues():
+            self.lunch_timeslots.update([t.id for t in timeslots])
+        self.total_student_class_hours = float(sum(
+            [sec.capacity * sec.duration for sec in
+             schedule.class_sections.iteritems()]))
+        self.non_lunch_student_class_hours = 0.0
+        for section in schedule.class_sections.itervalues():
+            for roomslot in section.assigned_roomslots:
+                actual_capacity = min(section.capacity, roomslot.room.capacity)
+                if roomslot.timeslot.id not in self.lunch_timeslots:
+                    self.non_lunch_student_class_hours += \
+                        actual_capacity * roomslot.timeslot.duration
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        for roomslot in roomslots:
+            actual_capacity = min(section.capacity, roomslot.room.capacity)
+            if roomslot.timeslot.id not in self.lunch_timeslots:
+                self.non_lunch_student_class_hours += \
+                    actual_capacity * roomslot.timeslot.duration
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        for roomslot in section.assigned_roomslots:
+            actual_capacity = min(section.capacity, roomslot.room.capacity)
+            if roomslot.timeslot.id not in self.lunch_timeslots:
+                self.non_lunch_student_class_hours -= \
+                    actual_capacity * roomslot.timeslot.duration
 
 
 class HungryTeacherScorer(BaseScorer):
     """Avoid teachers having to teach during both blocks of lunch."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the total fraction of non-hungry teachers.
+        return 1 - len(self.hungry_teachers) / self.total_teachers
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.total_teachers = float(len(schedule.teachers))
+        lunch_timeslots = []
+        for timeslots in schedule.lunch_timeslots.itervalues():
+            lunch_timeslots += timeslots
+        self.lunch_timeslots = schedule.lunch_timeslots
+        # Dict of whether the teachers are teaching in each lunch timeslot.
+        self.lunch_timeslots_by_teacher = {
+            teacher_id: {timeslot.id: False for timeslot in lunch_timeslots}
+            for teacher_id in schedule.teachers}
+        for section in schedule.class_sections.itervalues():
+            for teacher in section.teachers:
+                lunch_timeslots_teaching = self.lunch_timeslots_by_teacher[
+                    teacher.id]
+                for roomslot in section.assigned_roomslots:
+                    if roomslot.timeslot.id in lunch_timeslots_teaching:
+                        lunch_timeslots_teaching[roomslot.timeslot.id] = True
+        self.hungry_teachers = set()
+        for t in self.lunch_timeslots_by_teacher:
+            self.update_teacher_hungriness(t)
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        for teacher in section.teachers:
+            lunch_timeslots_teaching = self.lunch_timeslots_by_teacher[
+                teacher.id]
+            for roomslot in roomslots:
+                if roomslot.timeslot.id in lunch_timeslots_teaching:
+                    lunch_timeslots_teaching[roomslot.timeslot.id] = True
+            self.update_teacher_hungriness(teacher.id)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        for teacher in section.teachers:
+            lunch_timeslots_teaching = self.lunch_timeslots_by_teacher[
+                teacher.id]
+            for roomslot in section.assigned_roomslots:
+                if roomslot.timeslot.id in lunch_timeslots_teaching:
+                    lunch_timeslots_teaching[roomslot.timeslot.id] = False
+            self.update_teacher_hungriness(teacher.id)
+
+    def update_teacher_hungriness(self, teacher_id):
+        """Update the teacher's membership in self.hungry_teachers."""
+        timeslots_teaching = self.lunch_timeslots_by_teacher[teacher_id]
+        for timeslots in self.lunch_timeslots.itervalues():
+            if all([timeslots_teaching[t] for t in timeslots]):
+                self.hungry_teachers.add(teacher_id)
+                return
+        if teacher_id in self.hungry_teachers:
+            self.hungry_teachers.remove(teacher_id)
 
 
 class NumSectionsScorer(BaseScorer):
     """Schedule as many sections as possible."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the fraction of sections which are scheduled.
+        return self.scheduled_sections / self.total_sections
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.total_sections = float(len(schedule.class_sections))
+        self.scheduled_sections = sum(
+            [s.is_scheduled() for s in schedule.class_sections.itervalues()])
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.scheduled_sections += 1
+
+    def update_move_section(self, section, start_roomslot):
+        """Update the internal state to reflect the moving of the specified
+        already-scheduled section to start at the specified roomslot."""
+        pass
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        self.scheduled_sections -= 1
+
+    def update_swap_sections(self, section1, section2):
+        """Update the internal state to reflect the swapping of the two
+        specified sections."""
+        pass
 
 
 class NumSubjectsScorer(BaseScorer):

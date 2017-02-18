@@ -15,6 +15,7 @@ from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.constants as constants
 from esp.program.controllers.autoscheduler.constraints import \
         CompositeConstraint
+import esp.program.controllers.autoscheduler.util as util
 
 
 class AS_Schedule:
@@ -213,9 +214,13 @@ class AS_Timeslot:
         self.id = event_id
         self.start = start
         self.end = end
+        self.duration = util.hours_difference(start, end)
         # AS_RoomSlots during this timeslot
         self.associated_roomslots = associated_roomslots \
             if associated_roomslots is not None else set()
+        if self.duration < constants.DELTA_TIME:
+            raise SchedulingError(
+                "Timeslot duration {} is too short".format(self.duration))
 
     def __eq__(self, other):
         if type(other) is type(self):

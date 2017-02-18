@@ -5,8 +5,14 @@ Bugs:
 What if a teacher is teaching two classes at once, and we know about one of
 them?
 
+constraints (and anywhere else) which tries to use timedelta.seconds won't work
+across multiple days
+
 New features:
 Implement a way to define ResourceCriteria
+Implement resource constraints
+
+Cache common functions like AS_Classroom.get_roomslots_by_duration
 
 Be able to specify a regex for importing classrooms
 
@@ -50,6 +56,7 @@ teacher sections teaching needs consistency checks
 consistency checks for teacher dict, class section dict, classroom dict,
 resources dicts
 consistency check that timeslots not span multiple days
+consistency check for timeslot duration
 
 need unittests for schedule operations and saving somehow
 unittest for already-scheduled multihour class
