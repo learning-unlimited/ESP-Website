@@ -2,17 +2,15 @@
 
 Bugs:
 
-What if a teacher is teaching two classes at once, and we know about one of
-them?
-
 constraints (and anywhere else) which tries to use timedelta.seconds won't work
 across multiple days
 
 New features:
 Implement a way to define ResourceCriteria
-Implement resource constraints
+Implement resource constraints and resource scoring
 
-Cache common functions like AS_Classroom.get_roomslots_by_duration
+Cache common functions like AS_Classroom.get_roomslots_by_duration and/or speed
+them up (if cache, be very careful about making availability changes)
 
 Be able to specify a regex for importing classrooms
 

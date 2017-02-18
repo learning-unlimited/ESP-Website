@@ -454,6 +454,7 @@ class NumSectionsScorer(BaseScorer):
     def update_unschedule_section(self, section):
         """Update the internal state to reflect the uncsheduling of the
         specified section."""
+        assert self.scheduled_sections > 0
         self.scheduled_sections -= 1
 
     def update_swap_sections(self, section1, section2):
@@ -464,12 +465,101 @@ class NumSectionsScorer(BaseScorer):
 
 class NumSubjectsScorer(BaseScorer):
     """Schedule as many unique classes (i.e. subjects) as possible."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the fraction of subjects which are scheduled.
+        return self.scheduled_subjects / self.total_subjects
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        subjects = set(
+            [s.parent_class for s in schedule.class_sections.itervalues()])
+        self.total_subjects = float(len(subjects))
+        self.num_scheduled_sections_by_subject = {s: 0 for s in subjects}
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                self.num_scheduled_sections_by_subject[
+                    section.parent_class] += 1
+        self.scheduled_subjects = sum(
+            [(num_sections > 0) for num_sections in
+                self.num_scheduled_sections_by_subject.itervalues()])
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.num_scheduled_sections_by_subject[section.parent_class] += 1
+        if self.num_scheduled_sections_by_subject[section.parent_class] == 1:
+            self.scheduled_sections += 1
+
+    def update_move_section(self, section, start_roomslot):
+        """Update the internal state to reflect the moving of the specified
+        already-scheduled section to start at the specified roomslot."""
+        pass
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        assert self.num_scheduled_sections_by_subject[section.parent_class] > 0
+        self.num_scheduled_sections_by_subject[section.parent_class] -= 1
+        if self.num_scheduled_sections_by_subject[section.parent_class] == 0:
+            self.scheduled_sections -= 1
+
+    def update_swap_sections(self, section1, section2):
+        """Update the internal state to reflect the swapping of the two
+        specified sections."""
+        pass
 
 
 class NumTeachersScorer(BaseScorer):
     """Schedule as many distinct teachers' classes as possible."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the fraction of teachers which have scheduled classes.
+        return self.scheduled_teachers / self.total_teachers
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.total_teachers = float(len(schedule.teachers))
+        self.num_scheduled_sections_by_teacher = \
+            {t: 0 for t in schedule.teachers}
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                for t in section.teachers:
+                    self.num_scheduled_sections_by_teacher[t.id] += 1
+        self.scheduled_teachers = sum(
+            [(num_sections > 0) for num_sections in
+                self.num_scheduled_sections_by_teacher.itervalues()])
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        for t in section.teachers:
+            self.num_scheduled_sections_by_teacher[t.id] += 1
+            if self.num_scheduled_sections_by_teacher[t.id] == 1:
+                self.scheduled_teachers += 1
+
+    def update_move_section(self, section, start_roomslot):
+        """Update the internal state to reflect the moving of the specified
+        already-scheduled section to start at the specified roomslot."""
+        pass
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        for t in section.teachers:
+            assert self.num_scheduled_sections_by_teacher[t.id] > 0
+            self.num_scheduled_sections_by_teacher[t.id] -= 1
+            if self.num_scheduled_sections_by_teacher[t.id] == 0:
+                self.scheduled_teachers -= 1
+
+    def update_swap_sections(self, section1, section2):
+        """Update the internal state to reflect the swapping of the two
+        specified sections."""
+        pass
 
 
 class ResourceCriterionScorer(BaseScorer):
