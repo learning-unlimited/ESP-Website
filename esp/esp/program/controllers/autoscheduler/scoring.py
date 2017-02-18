@@ -15,7 +15,7 @@ import esp.program.controllers.autoscheduler.util as util
 
 class BaseScorer:
     """Abstract class for scorers."""
-    def __init__(self, schedule):
+    def __init__(self, schedule, **kwargs):
         """Initialize the scorer to the specified schedule."""
         self.update_schedule(schedule)
 
@@ -82,7 +82,7 @@ class BaseScorer:
 class CompositeScorer(BaseScorer):
     """A scorer which checks all the scorers you actually want, and weights them
     according to pre-specified weights."""
-    def __init__(self, scorer_names_and_weights, schedule):
+    def __init__(self, scorer_names_and_weights, schedule, **kwargs):
         """Takes in a list of pairs of scorer names (as strings) and weights (as
         floats), and loads them, initializing them to the specified schedule.
         All weights should be positive."""
@@ -98,7 +98,7 @@ class CompositeScorer(BaseScorer):
                 assert weight > 0, "Scorer weights should be positive"
                 print("Using scorer {}".format(scorer))
                 self.scorers_and_weights.append(
-                    (available_scorers[scorer](schedule), weight))
+                    (available_scorers[scorer](schedule, **kwargs), weight))
                 self.total_weight.append(weight)
 
     def score_schedule(self):

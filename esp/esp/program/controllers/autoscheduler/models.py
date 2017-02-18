@@ -21,7 +21,8 @@ import esp.program.controllers.autoscheduler.util as util
 class AS_Schedule(object):
     def __init__(self, program=None, timeslots=None, class_sections=None,
                  teachers=None, classrooms=None, lunch_timeslots=None,
-                 required_resource_criteria=None, constraints=None):
+                 required_resource_criteria=None,
+                 optional_resource_criteria=None, constraints=None):
         """Argument types:
          - program is a Program object
          - timeslots is a sorted list of AS_Timeslots
@@ -48,10 +49,8 @@ class AS_Schedule(object):
         # to a list of timeslots. Timeslots should also be in timeslot_dict.
         self.lunch_timeslots = self.build_lunch_timeslots(
                 lunch_timeslots if lunch_timeslots is not None else [])
-        # A list of ResourceCriterions which are required (i.e. constraining).
-        self.required_resource_criteria = required_resource_criteria \
-            if required_resource_criteria is not None else []
-
+        # We have constraints here more or less as an extra set of consistency
+        # checks.
         self.constraints = constraints if constraints is not None else \
             CompositeConstraint([])
 

@@ -47,6 +47,11 @@ class BaseConstraint:
     # A constraint is required when the logic either enforces or assumes it.
     required = False
 
+    def __init__(self, **kwargs):
+        # Create a constructor wihch takes in arbitrary kwargs in case any
+        # subclass needs them.
+        pass
+
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
@@ -80,20 +85,24 @@ class BaseConstraint:
 
 class CompositeConstraint(BaseConstraint):
     """A constraint which checks all the constraints you actually want."""
-    def __init__(self, constraint_names):
+    def __init__(self, constraint_names, **kwargs):
         """Takes in a list of constraint names, as strings. Loads those
         constraints, as well as all the required constraints."""
         self.constraints = []
-        available_constraints = globals()
+        available_constraints = {
+                name: item for name, item in globals().iteritems()
+                if inspect.isclass(item)
+                and issubclass(item, BaseConstraint)
+                and item not in [BaseConstraint, CompositeConstraint]}
+
         required_constraints = [
                 name for name, constraint in available_constraints.iteritems()
-                if inspect.isclass(constraint)
-                and issubclass(constraint, BaseConstraint)
-                and constraint.required]
+                if constraint.required]
         constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
             print("Using constraint {}".format(constraint))
-            self.constraints.append(available_constraints[constraint]())
+            self.constraints.append(
+                available_constraints[constraint](**kwargs))
 
     def check_schedule(self, schedule):
         for c in self.constraints:
