@@ -173,9 +173,10 @@ class AS_Teacher(object):
 
 
 class AS_Classroom(object):
-    def __init__(self, name, available_timeslots,
+    def __init__(self, name, capacity, available_timeslots,
                  furnishings=None):
         self.name = name
+        self.capacity = capacity
         # Availabilities as roomslots, sorted by the associated timeslot.
         # Does not account for sections the scheduler knows are scheduled.
         # Note that if you modify this, you need to invalidate roomslot

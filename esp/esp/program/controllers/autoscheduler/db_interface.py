@@ -494,14 +494,15 @@ def convert_classroom_resources(
                     furnishing_objs)
                 furnishings_dict = {r.name: r for r in furnishings}
                 classroom_info_dict[classroom.name] = \
-                    ([], furnishings_dict)
+                    ([], classroom.num_students, furnishings_dict)
             event = classroom.event
             timeslot = timeslot_dict[(event.start, event.end)]
             classroom_info_dict[classroom.name][0].append(timeslot)
     classroom_dict = {}
     for room in classroom_info_dict:
-        timeslots, furnishings = classroom_info_dict[room]
-        classroom_dict[room] = AS_Classroom(room, timeslots, furnishings)
+        timeslots, capacity, furnishings = classroom_info_dict[room]
+        classroom_dict[room] = AS_Classroom(
+            room, capacity, timeslots, furnishings)
     return classroom_dict
 
 

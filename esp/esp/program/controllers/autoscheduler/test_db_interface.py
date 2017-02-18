@@ -168,9 +168,10 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
 
         # Create classrooms and furnishings
         classrooms = []
+        capacity = settings["room_capacity"]
         for i in xrange(settings["num_rooms"]):
             classrooms.append(models.AS_Classroom(
-                "Room {}".format(str(i)), timeslots[:-1]))
+                "Room {}".format(str(i)), capacity, timeslots[:-1]))
         restype_id = ResourceType.objects.get(
             name=extra_settings["extra_resource_type_name"]).id
         extra_resource_type = models.AS_ResourceType(
@@ -180,7 +181,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         room_timeslots = [timeslots[i] for i in
                           extra_settings["extra_room_availability"]]
         classrooms.append(models.AS_Classroom(
-                "Extra Room", room_timeslots,
+                "Extra Room", extra_settings["extra_room_capacity"],
+                room_timeslots,
                 {extra_resource_type.name: extra_resource_type}))
         classrooms_dict = {room.name: room for room in classrooms}
 
@@ -303,6 +305,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
     def assert_classroom_equality(self, room1, room2):
         """Perform asserts to check that two AS_Classrooms are equal."""
         self.assertEqual(room1.name, room2.name)
+        self.assertEqual(room1.capacity, room2.capacity)
         self.assertEqual(len(room1.availability), len(room2.availability))
         for rs1, rs2 in zip(room1.availability, room2.availability):
             self.assert_roomslot_equality(rs1, rs2)
