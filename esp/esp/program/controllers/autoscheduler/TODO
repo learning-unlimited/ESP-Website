@@ -3,7 +3,7 @@
 Bugs:
 
 constraints (and anywhere else) which tries to use timedelta.seconds won't work
-across multiple days
+across multiple days (RESOLVED)
 
 save() should check whether sections are locked before saving
 

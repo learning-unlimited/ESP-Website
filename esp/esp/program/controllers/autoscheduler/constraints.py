@@ -459,7 +459,8 @@ class SectionDurationConstraint(BaseConstraint):
             if len(section.assigned_roomslots) != 0:
                 start_time = section.assigned_roomslots[0].timeslot.start
                 end_time = section.assigned_roomslots[-1].timeslot.end
-                scheduled_duration = (end_time - start_time).seconds/3600.0
+                scheduled_duration = util.hours_difference(
+                        start_time, end_time)
                 if abs(scheduled_duration - section.duration) \
                         > constants.DELTA_TIME:
                     return ConstraintViolation(
@@ -482,7 +483,8 @@ class SectionDurationConstraint(BaseConstraint):
                 "Section wouldn't receive any roomslots")
         start_time = roomslots[0].timeslot.start
         end_time = roomslots[-1].timeslot.end
-        scheduled_duration = (end_time - start_time).seconds/3600.0
+        scheduled_duration = util.hours_difference(
+                start_time, end_time)
 
         if abs(scheduled_duration - section.duration) > constants.DELTA_TIME:
             return ConstraintViolation(

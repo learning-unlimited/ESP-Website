@@ -1,3 +1,4 @@
+from esp.program.controllers.autoscheduler import util
 from esp.program.controllers.autoscheduler.exceptions import ConsistencyError
 
 """ A consistency check verifies whether an AS_Schedule satisfies various
@@ -245,8 +246,8 @@ class ConsistencyChecker:
     def check_timeslot_duration_consistency(self, schedule):
         """Ensure that timeslots' durations match their actual durations."""
         for timeslot in schedule.timeslots:
-            actual_duration = (
-                timeslot.end - timeslot.start).total_seconds() / 3600.0
+            actual_duration = util.hours_difference(
+                    timeslot.start, timeslot.end)
             if abs(timeslot.duration - actual_duration) > 1e-4:
                 raise ConsistencyError(
                     "Timeslot actual duration {} didn't match advertised {}"

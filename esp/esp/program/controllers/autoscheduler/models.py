@@ -202,7 +202,7 @@ class AS_Classroom(object):
         index_of_roomslot = start_roomslot.index()
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
-        while duration - (end_time - start_time).seconds/3600.0 \
+        while duration - util.hours_difference(start_time, end_time)\
                 > constants.DELTA_TIME:
             index_of_roomslot += 1
             if index_of_roomslot >= len(classroom_availability):
