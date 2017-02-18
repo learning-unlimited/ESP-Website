@@ -675,7 +675,7 @@ class RoomSizeMismatchScorer(BaseScorer):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
         # See update_schedule for a description of how scoring works here.
-        raise NotImplementedError
+        return 1.0 - self.total_penalty
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
@@ -761,10 +761,91 @@ class StudentClassHoursScorer(BaseScorer):
 class TeachersWhoLikeRunningScorer(BaseScorer):
     """Minimize teachers teaching back-to-back classes in different
     locations."""
-    pass
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # We count the number of times anyone is teaching two consecutive
+        # timeslots in different rooms, and divide by the number of total
+        # sections.
+        return self.running_count / self.num_sections
 
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.num_sections = float(len(schedule.class_sections))
+        self.timeslot_indices = {
+            t.id: i for i, t in enumerate(schedule.timeslots)}
+        self.timeslots = schedule.timeslots
+        # Maps from teacher IDs to dicts from timeslot IDs to roomslots.
+        self.times_teacher_is_teaching = {
+            teacher: {} for teacher in schedule.teachers}
+        for section in schedule.class_sections.itervalues():
+            for teacher in section.teachers:
+                for roomslot in section.assigned_roomslots:
+                    self.times_teacher_is_teaching[
+                        roomslot.timeslot.id] = roomslot
+        self.running_count = 0.0
+        for teacher, times_teaching in \
+                self.times_teacher_is_teaching.iteritems():
+            for timeslot_id, roomslot in times_teaching.iteritems():
+                timeslot = self.timeslots[timeslot_id]
+                timeslot_index = self.timeslot_indices[timeslot_id]
+                if timeslot_index < len(self.timeslots) - 1:
+                    next_timeslot = self.timeslots[timeslot_index + 1]
+                    if next_timeslot.id in times_teaching \
+                            and util.contiguous(timeslot, next_timeslot):
+                        next_roomslot = times_teaching[next_timeslot.id]
+                        if next_roomslot.room != roomslot.room:
+                            self.running_count += 1
 
-class TiredTeacherScorer(BaseScorer):
-    """Avoid teachers teaching too many back-to-back classes in a row."""
-    # Make sure this doesn't prevent teachers from teaching a full schedule.
-    pass
+    def process_section(self, section, roomslots):
+        """Returns the number of running counts associated with this section
+        assuming it is in the specified set of roomslots."""
+        timeslot_pairs = []
+        running_count = 0.0
+
+        start_roomslot = roomslots[0]
+        start_timeslot = start_roomslot.timeslot
+        start_timeslot_idx = self.timeslot_indices[start_timeslot.id]
+        if start_timeslot_idx > 0:
+            prev_timeslot = self.timeslots[start_timeslot_idx - 1]
+            if util.contiguous(prev_timeslot, start_timeslot):
+                timeslot_pairs.append((prev_timeslot, start_timeslot))
+        end_roomslot = roomslots[0]
+        end_timeslot = end_roomslot.timeslot
+        end_timeslot_idx = self.timeslot_indices[end_timeslot.id]
+        if end_timeslot_idx < len(self.timeslots) - 1:
+            next_timeslot = self.timeslots[end_timeslot_idx + 1]
+            if util.contiguous(end_timeslot, next_timeslot):
+                timeslot_pairs.append((end_timeslot, next_timeslot))
+        for teacher in section.teachers:
+            times_teaching = self.times_teacher_is_teaching[teacher.id]
+            for timeslot1, timeslot2 in timeslot_pairs:
+                if timeslot1.id in times_teaching \
+                        and timeslot2.id in times_teaching:
+                    roomslot1 = times_teaching[timeslot1.id]
+                    roomslot2 = times_teaching[timeslot2.id]
+                    if roomslot1.room != roomslot2.room:
+                        running_count += 1
+        return running_count
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        for teacher in section.teachers:
+            times_teaching = self.times_teacher_is_teaching[teacher.id]
+            for roomslot in roomslots:
+                times_teaching[roomslot.timeslot.id] = roomslot
+
+        self.running_count += self.process_section(section, roomslots)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        roomslots = section.assigned_roomslots
+        self.running_count += self.process_section(section, roomslots)
+        for teacher in section.teachers:
+            times_teaching = self.times_teacher_is_teaching[teacher.id]
+            for roomslot in roomslots:
+                del times_teaching[roomslot.timeslot.id]

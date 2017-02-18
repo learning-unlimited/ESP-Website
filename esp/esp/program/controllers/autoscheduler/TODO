@@ -5,6 +5,8 @@ Bugs:
 constraints (and anywhere else) which tries to use timedelta.seconds won't work
 across multiple days
 
+save() should check whether sections are locked before saving
+
 New features:
 Implement a way to define ResourceCriteria
 Implement resource constraints and resource scoring
