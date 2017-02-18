@@ -369,6 +369,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 (timeslot.start, timeslot.end)]
         timeslot.associated_roomslots.remove(roomslot)
         room.availability.remove(roomslot)
+        room.flush_roomslot_caches()
         del room.availability_dict[(timeslot.start, timeslot.end)]
         schedule.run_consistency_checks()
         schedule.run_constraint_checks()

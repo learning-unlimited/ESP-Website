@@ -24,6 +24,53 @@ class ConsistencyCheckerTest(unittest.TestCase):
             self.fail("Unexpectedly failed consistency check with error: \n{}"
                       .format(traceback.format_exc()))
 
+    def test_roomslot_next_and_index_consistency(self):
+        checker = consistency_checks.ConsistencyChecker()
+        sched = testutils.create_test_schedule_1()
+        room = sched.classrooms["10-250"]
+        room.load_roomslot_caches()
+        try:
+            checker.check_roomslot_next_and_index_consistency(sched)
+        except ConsistencyError:
+            self.fail((
+                        "Unexpectedly failed roomslot next/index "
+                        "consistency with error: \n{}"
+                    ).format(traceback.format_exc()))
+
+        room.load_roomslot_caches()
+        last_roomslot = room.availability.pop()
+        with self.assertRaises(ConsistencyError):
+            # Last roomslot now points at nonexistent roomslot
+            checker.check_roomslot_next_and_index_consistency(sched)
+        room.availability.append(last_roomslot)
+
+        new_roomslot = models.AS_RoomSlot(last_roomslot.timeslot, room)
+        room.load_roomslot_caches()
+        room.availability.append(new_roomslot)
+        with self.assertRaises(ConsistencyError):
+            # Penultimate roomslot doesn't point at last roomslot.
+            checker.check_roomslot_next_and_index_consistency(sched)
+
+        # The schedule isn't actually consistent, but the indices and next
+        # roomslots should be.
+        room.flush_roomslot_caches()
+        try:
+            checker.check_roomslot_next_and_index_consistency(sched)
+        except ConsistencyError:
+            self.fail((
+                        "Unexpectedly failed roomslot next/index "
+                        "consistency with error: \n{}"
+                    ).format(traceback.format_exc()))
+
+        room.availability.pop()
+        room.flush_roomslot_caches()
+        room.load_roomslot_caches()
+        room.availability.insert(0, new_roomslot)
+        new_roomslot.flush_cache()
+        with self.assertRaises(ConsistencyError):
+            # Indices for everything but the first roomslot are wrong.
+            checker.check_roomslot_next_and_index_consistency(sched)
+
     def test_timeslot_inconsistency(self):
         checker = consistency_checks.ConsistencyChecker()
         sched = testutils.create_test_schedule_1()

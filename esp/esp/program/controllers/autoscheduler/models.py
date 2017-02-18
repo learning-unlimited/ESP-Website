@@ -18,7 +18,7 @@ from esp.program.controllers.autoscheduler.constraints import \
 import esp.program.controllers.autoscheduler.util as util
 
 
-class AS_Schedule:
+class AS_Schedule(object):
     def __init__(self, program=None, timeslots=None, class_sections=None,
                  teachers=None, classrooms=None, lunch_timeslots=None,
                  required_resource_criteria=None, constraints=None):
@@ -80,7 +80,7 @@ class AS_Schedule:
                                   .format(violation)))
 
 
-class AS_ClassSection:
+class AS_ClassSection(object):
     def __init__(self, teachers, duration, capacity,
                  category, assigned_roomslots,
                  section_id=0, parent_class_id=0,
@@ -153,7 +153,7 @@ class AS_ClassSection:
         return hashlib.md5(state_str).hexdigest()
 
 
-class AS_Teacher:
+class AS_Teacher(object):
     def __init__(self, availability, teacher_id=0, is_admin=False):
         self.id = teacher_id
         self.availability = availability if availability is not None \
@@ -172,12 +172,14 @@ class AS_Teacher:
             self.availability_dict[(timeslot.start, timeslot.end)] = timeslot
 
 
-class AS_Classroom:
+class AS_Classroom(object):
     def __init__(self, name, available_timeslots,
                  furnishings=None):
         self.name = name
         # Availabilities as roomslots, sorted by the associated timeslot.
         # Does not account for sections the scheduler knows are scheduled.
+        # Note that if you modify this, you need to invalidate roomslot
+        # next-roomslot caching.
         self.availability = [AS_RoomSlot(timeslot, self) for timeslot in
                              sorted(available_timeslots)]
         # Dict of resources available in the classroom, mapping from the
@@ -194,7 +196,7 @@ class AS_Classroom:
         classroom_availability = start_roomslot.room.availability
         if start_roomslot not in classroom_availability:
             return []
-        index_of_roomslot = classroom_availability.index(start_roomslot)
+        index_of_roomslot = start_roomslot.index()
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
         while duration - (end_time - start_time).seconds/3600.0 \
@@ -207,10 +209,23 @@ class AS_Classroom:
             end_time = current_roomslot.timeslot.end
         return list_of_roomslots
 
+    def load_roomslot_caches(self):
+        """Calls index() and next() for all roomslots to load their caches.
+        This is mostly for testing purposes."""
+        for roomslot in self.availability:
+            roomslot.index()
+            roomslot.next()
+
+    def flush_roomslot_caches(self):
+        """Flush each roomslot's caches for their next_roomslot and index
+        values."""
+        for roomslot in self.availability:
+            roomslot.flush_cache()
+
 
 # Ordered by start time, then by end time.
 @total_ordering
-class AS_Timeslot:
+class AS_Timeslot(object):
     """A timeslot, not specific to any teacher or class or room."""
     def __init__(self, start, end, event_id=4, associated_roomslots=None):
         self.id = event_id
@@ -239,7 +254,7 @@ class AS_Timeslot:
                 and (timeslot2.start < timeslot1.end)
 
 
-class AS_RoomSlot:
+class AS_RoomSlot(object):
     """A specific timeslot where a specific room is available."""
     def __init__(self, timeslot, room):
         self.timeslot = timeslot
@@ -247,8 +262,40 @@ class AS_RoomSlot:
         self.room = room
         self.assigned_section = None
 
+        # These next two properties are cached when their getter functions are
+        # first called. As a corollary, their getter functions shouldn't be
+        # called until the availability is finalized, and the availability
+        # shouldn't be changed afterwards unless the cache is flushed. This is
+        # pretty sketchy, which is why we have consistency checks for them.
+        # The classroom's next roomslot.
+        self._next_is_cached = False
+        self._next = None
+        # The index of this roomslot in the classroom's availability.
+        self._index = None
 
-class AS_ResourceType:
+    def index(self):
+        if self._index is None:
+            self._index = self.room.availability.index(self)
+        return self._index
+
+    def next(self):
+        if not self._next_is_cached:
+            idx = self.index()
+            if idx == len(self.room.availability) - 1:
+                self.next_roomslot = None
+            else:
+                self.next_roomslot = \
+                    self.room.availability[idx + 1]
+            self._next_is_cached = True
+        return self.next_roomslot
+
+    def flush_cache(self):
+        """Flushes the caches for index and next. Floosh!"""
+        self._index = None
+        self._next_is_cached = False
+
+
+class AS_ResourceType(object):
     def __init__(self, name, restype_id=5, value=""):
         self.id = restype_id
         self.name = name

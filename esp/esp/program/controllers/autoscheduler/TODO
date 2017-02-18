@@ -41,11 +41,12 @@ save() should have some way to do partial saves so you don't lose a ton of work
 be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
-model tests should load lunch blocks, resource criteria, constraints, and
+db tests should load lunch blocks, resource criteria, constraints, and
 locked sections
 more tests for loading teacher availabilities with classes already scheduled
-model tests should test for when classes are already scheduled (or otherwise
+db tests should test for when classes are already scheduled (or otherwise
 excluded classes), also saving
+model tests for model functions
 tests for resource checker
 lunch needs consistency checks, including that the timeslots are sorted
 teacher availability dict needs consistency checks

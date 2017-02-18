@@ -48,6 +48,26 @@ class ConsistencyChecker:
                     raise ConsistencyError("Incorrect mapping of slots\
                             in lunch.")
 
+    def check_roomslot_next_and_index_consistency(self, schedule):
+        """Checks that all roomslots' next and index values are set
+        correctly."""
+        for room in schedule.classrooms.itervalues():
+            for i, roomslot in enumerate(room.availability):
+                if i != roomslot.index():
+                    raise ConsistencyError((
+                            "Roomslot index for room {} was {} instead of {}."
+                    ).format(room.name, roomslot.index(), i))
+                if i < len(room.availability) - 1:
+                    if room.availability[i + 1] != roomslot.next():
+                        raise ConsistencyError(
+                            "Roomslot next for room {} was wrong.".format(
+                                room.name))
+                else:
+                    if roomslot.next() is not None:
+                        raise ConsistencyError((
+                                "Last roomslot next for room {} was not None."
+                        ).format(room.name))
+
     def check_timeslot_consistency(self, schedule):
         """Checks that timeslots are sorted and non-overlapping."""
         for timeslot1, timeslot2 in zip(
@@ -105,7 +125,7 @@ class ConsistencyChecker:
     def check_section_and_teacher_consistency(self, schedule):
         """Make sure that teachers know what sections they're teaching and vice
         versa."""
-        pass  # teachers don't have sections teaching yet
+        pass  # TODO: teachers don't have sections teaching yet
 
     def check_roomslots_consistency(self, schedule):
         """Check to make sure that roomslots, are consistent with timeslots,
