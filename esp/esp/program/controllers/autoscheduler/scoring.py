@@ -9,6 +9,7 @@ its state), or perform a change (i.e. updating its state).
 A Scorer is expected to return a score in the range [0, 1], where 1 is good and
 0 is bad.
 """
+import esp.program.controllers.autoscheduler.util as util
 # TODO documentation on adding scorers
 
 
@@ -579,14 +580,117 @@ class RoomConsecutivityScorer(BaseScorer):
     """Try to schedule classes consecutively in classrooms. This is a good
     heuristic for being able to schedule long classes later, as well as for
     minimizing having to repeatedly clean or lock/unlock rooms."""
-    pass
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return simply the fraction of all sections which are nonfollowed.
+        return self.nonfollowed_sections / self.num_sections
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.num_sections = float(len(schedule.class_sections))
+        # A count of the number of sections which don't immediately have a
+        # following section.
+        self.nonfollowed_sections = 0.0
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                last_roomslot = section.assigned_roomslots[-1]
+                next_roomslot = last_roomslot.next()
+                if next_roomslot is None \
+                        or next_roomslot.assigned_section is None \
+                        or not util.contiguous(
+                            last_roomslot.timeslot, next_roomslot.timeslot):
+                    self.nonfollowed_sections += 1
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        room = start_roomslot.room
+        roomslots = room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        nonfollowed_sections_delta = 1
+        start_idx = start_roomslot.index()
+        if start_idx > 0:
+            prev_roomslot = room.availability[start_idx - 1]
+            if prev_roomslot.assigned_section is not None \
+                    and util.contiguous(
+                        prev_roomslot.timeslot, start_roomslot.timeslot):
+                nonfollowed_sections_delta -= 1
+        last_roomslot = roomslots[-1]
+        next_roomslot = last_roomslot.next()
+        if next_roomslot is not None \
+                and next_roomslot.assigned_section is not None \
+                and util.contiguous(
+                    last_roomslot.timeslot, next_roomslot.timeslot):
+            nonfollowed_sections_delta -= 1
+        self.nonfollowed_sections += nonfollowed_sections_delta
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        roomslots = section.assigned_roomslots
+        start_roomslot = roomslots[0]
+        room = start_roomslot.room
+        nonfollowed_sections_delta = -1
+        start_idx = start_roomslot.index()
+        if start_idx > 0:
+            prev_roomslot = room.availability[start_idx - 1]
+            if prev_roomslot.assigned_section is not None \
+                    and util.contiguous(
+                        prev_roomslot.timeslot, start_roomslot.timeslot):
+                nonfollowed_sections_delta += 1
+        last_roomslot = roomslots[-1]
+        next_roomslot = last_roomslot.next()
+        if next_roomslot is not None \
+                and next_roomslot.assigned_section is not None \
+                and util.contiguous(
+                    last_roomslot.timeslot, next_roomslot.timeslot):
+            nonfollowed_sections_delta += 1
+        self.nonfollowed_sections += nonfollowed_sections_delta
 
 
 class RoomSizeMismatchScorer(BaseScorer):
     """Match room sizes to classes as much as possible."""
     # Make sure this doesn't get really sad trying to schedule a 200-capacity
     # class in 26-100, or a 600-capacity class in 1-190
-    pass
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        raise NotImplementedError
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        # To deal with huge rooms and classes, if any class is larger than the
+        # largest room, we consider its capacity to just match that of the
+        # largest room, and vice versa.
+        self.max_class_size = max(
+            [s.capacity for s in schedule.class_sections.itervalues()])
+        self.max_room_size = max(
+            [c.capacity for c in schedule.classrooms.itervalues()])
+        pass  # TODO
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        raise NotImplementedError
+
+    def update_move_section(self, section, start_roomslot):
+        """Update the internal state to reflect the moving of the specified
+        already-scheduled section to start at the specified roomslot."""
+        self.update_unschedule_section(section)
+        self.update_schedule_section(section, start_roomslot)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        raise NotImplementedError
+
+    def update_swap_sections(self, section1, section2):
+        """Update the internal state to reflect the swapping of the two
+        specified sections."""
+        self.update_move_section(section1, section2.assigned_roomslots[0])
+        self.update_move_section(section2, section1.assigned_roomslots[0])
 
 
 class StudentClassHoursScorer(BaseScorer):
