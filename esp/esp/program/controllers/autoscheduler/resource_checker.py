@@ -29,11 +29,11 @@ class ResourceCriterion:
             if PREMISE then CONCLUSION
 
         where PREMISE and CONCLUSION can be of the form
-            section [not] requests RESTYPE [with VALUE_REGEX]
+            [not] section requests RESTYPE [with VALUE_REGEX]
         or
-            classroom [not] has RESTYPE [with VALUE_REGEX]
+            [not] classroom has RESTYPE [with VALUE_REGEX]
         or
-            classroom [not] matches NAME_REGEX
+            [not] classroom matches NAME_REGEX
         or
             any section
 
@@ -47,7 +47,7 @@ class ResourceCriterion:
         matchers = []
         for group in criterion.group(1, 2):
             resource_request_match = re.match(
-                r"section (not)? requests (.+) (with (.+))?", group)
+                r"(not)? section requests (.+) (with (.+))?", group)
             if resource_request_match:
                 negate, res_type, value_regex = \
                     resource_request_match.group(1, 2, 4)
@@ -60,7 +60,7 @@ class ResourceCriterion:
                 matchers.append(matcher)
                 continue
             resource_classroom_match = re.match(
-                r"classroom (not)? has (.+) (with (.+))?", group)
+                r"(not)? classroom has (.+) (with (.+))?", group)
             if resource_classroom_match:
                 negate, res_type, value_regex = \
                     resource_classroom_match.group(1, 2, 4)
@@ -73,7 +73,7 @@ class ResourceCriterion:
                 matchers.append(matcher)
                 continue
             classroom_name_match = re.match(
-                r"classroom (not)? matches (.+)", group)
+                r"(not)? classroom matches (.+)", group)
             if classroom_name_match:
                 negate, name_regex = classroom_name_match.groups()
                 matcher = ClassroomNameMatcher(name_regex)
@@ -100,14 +100,24 @@ class ResourceCriterion:
                                  condition_on_section)
 
     def check_match(self, section, room):
-        """Returns False if the premise holds but the conclusion fails, True
-        otherwise."""
+        """Returns False if the premise holds but the conclusion fails, i.e.
+        the criterion isn't met, True otherwise."""
         if self.condition_on_section:
             return (self.classroom_matcher.room_matches(room)
                     or (not self.section_matcher.section_matches(section)))
         else:
             return (not self.classroom_matcher.room_matches(room)
                     or (self.section_matcher.section_matches(section)))
+
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        create_from_specification above."""
+        if self.condition_on_section:
+            return "if {} then {}".format(
+                    self.section_matcher, self.classroom_matcher)
+        else:
+            return "if {} then {}".format(
+                    self.classroom_matcher, self.section_matcher)
 
 
 class BaseSectionMatcher:
@@ -122,6 +132,11 @@ class TrivialSectionMatcher(BaseSectionMatcher):
     def section_matches(self, section):
         return True
 
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        return "any section"
+
 
 class NegatingSectionMatcher(BaseSectionMatcher):
     """Negates another SectionMatcher."""
@@ -130,6 +145,11 @@ class NegatingSectionMatcher(BaseSectionMatcher):
 
     def section_matches(self, section):
         return not(self.section_matcher.section_matches(section))
+
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        return "not " + str(self.section_matcher)
 
 
 class ResourceRequestMatcher(BaseSectionMatcher):
@@ -149,6 +169,14 @@ class ResourceRequestMatcher(BaseSectionMatcher):
             section.resource_requests[self.res_type.name].value)
             is not None)
 
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        string = "section requests {}".format(self.res_type.name)
+        if self.desired_value_regex != ".*":
+            string += " with {}".format(self.desired_value_regex)
+        return string
+
 
 class BaseClassroomMatcher:
     """A base class for classroom matchers, which determine whether rooms match
@@ -164,6 +192,11 @@ class NegatingClassroomMatcher:
 
     def section_matches(self, room):
         return not(self.room_matcher.room_matches(room))
+
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        return "not " + str(self.room_matcher)
 
 
 class ResourceClassroomMatcher(BaseClassroomMatcher):
@@ -182,6 +215,14 @@ class ResourceClassroomMatcher(BaseClassroomMatcher):
             room.furnishings[self.res_type.name].value)
             is not None)
 
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        string = "classroom has {}".format(self.res_type.name)
+        if self.attribute_value_regex != ".*":
+            string += " with {}".format(self.attribute_value_regex)
+        return string
+
 
 class ClassroomNameMatcher(BaseClassroomMatcher):
     """Determines whether a classroom's name matches a given regex."""
@@ -191,3 +232,8 @@ class ClassroomNameMatcher(BaseClassroomMatcher):
     def room_matches(self, room):
         """Returns True if the room name matches the regex, else False."""
         return (re.match(self.name_regex, room.name) is not None)
+
+    def __str__(self):
+        """Returns the specification of this criterion; see
+        ResourceCriterion.create_from_specification."""
+        return "classroom matches {}".format(self.name_regex)

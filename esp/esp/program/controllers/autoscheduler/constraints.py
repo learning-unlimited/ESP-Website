@@ -142,11 +142,11 @@ class CompositeConstraint(BaseConstraint):
 
 
 class ContiguousConstraint(BaseConstraint):
+    """Multi-hour sections may only be scheduled across
+    contiguous timeblocks in the same room."""
 
     required = True  # Maybe it isn't actually, but it seems like it is.
 
-    """Multi-hour sections may only be scheduled across
-    contiguous timeblocks in the same room."""
     def check_schedule(self, schedule):
         """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
         None otherwise."""
@@ -322,15 +322,56 @@ class PreconditionConstraint(BaseConstraint):
         return None
 
 
-class ResourceConstraint(BaseConstraint):
-    """If a section demands an unprovided required resource."""
-    pass  # TODO
+class ResourceCriteriaConstraint(BaseConstraint):
+    """Check to make sure all resource criteria (passed to the constructor with
+    the keyword arg resource_criteria) are satisfied. This does NOT check
+    whether existing sections satisfy these resource criteria, so that we can
+    specify resource-based constraints to the autoscheduler but humans can
+    make exceptions manually."""
+    def __init__(self, **kwargs):
+        super(ResourceCriteriaConstraint, self).__init__(**kwargs)
+        self.resource_criteria = kwargs.get("resource_criteria", [])
 
+    def check_schedule(self, schedule):
+        """Returns a ConstraintViolation if an AS_Schedule violates the constraint,
+        None otherwise."""
+        # This is trivial; see above note.
+        return None
 
-class RestrictedRoomConstraint(BaseConstraint):
-    """If a room demands only sections of a particular type
-    (e.g. if only computer classes may be scheduled in computer labs)"""
-    pass  # TODO
+    def check_schedule_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns a
+        ConstraintViolation
+        if scheduling the section starting at the given roomslot would
+        violate the constraint, None otherwise."""
+        for resource_criterion in self.resource_criteria:
+            if not resource_criterion.check_match(
+                    section, start_roomslot.room):
+                return ConstraintViolation(
+                    self.__class__.__name__,
+                    "Violates resource criterion '{}'.".format(
+                        resource_criterion))
+        return None
+
+    def check_move_section(self, section, start_roomslot, schedule):
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
+        if moving the already-scheduled section to the given starting roomslot
+        would violate the constraint, None otherwise."""
+        return self.check_schedule_section(section, start_roomslot, schedule)
+
+    def check_unschedule_section(self, section, schedule):
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
+        if unscheduling the specified section will violate the constraint,
+        None otherwise."""
+        return None
+
+    def check_swap_sections(self, section1, section2, schedule):
+        """Assuming that we start with a valid schedule, returns a ConstraintViolation
+        if swapping two sections will violate the constraint,
+        None otherwise."""
+        return self.check_schedule_section(
+                section1, section2.assigned_roomslots[0]) \
+            or self.check_schedule_section(
+                section2, section1.assigned_roomslots[0])
 
 
 class RoomAvailabilityConstraint(BaseConstraint):
