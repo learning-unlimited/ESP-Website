@@ -331,7 +331,7 @@ class LunchStudentClassHoursScorer(BaseScorer):
             self.lunch_timeslots.update([t.id for t in timeslots])
         self.total_student_class_hours = float(sum(
             [sec.capacity * sec.duration for sec in
-             schedule.class_sections.iteritems()]))
+             schedule.class_sections.itervalues()]))
         self.non_lunch_student_class_hours = 0.0
         for section in schedule.class_sections.itervalues():
             for roomslot in section.assigned_roomslots:
@@ -652,11 +652,29 @@ class RoomConsecutivityScorer(BaseScorer):
 
 class RoomSizeMismatchScorer(BaseScorer):
     """Match room sizes to classes as much as possible."""
-    # Make sure this doesn't get really sad trying to schedule a 200-capacity
-    # class in 26-100, or a 600-capacity class in 1-190
+    def penalty_for_section_and_room(self, section, room):
+        """
+        For each section assigned to a room, we assign a penalty equal to the
+        fraction that the larger capacity is greater than the lesser
+        capacity, up to a maximum of 100%. For an unscheduled section, this
+        penalty is 0. We square each penalty and average this over all
+        sections."""
+
+        section_capacity = min(self.max_room_size, section.capacity)
+        room_capacity = min(self.max_class_size, room.capacity)
+        numerator = max(section_capacity, room_capacity)
+        denominator = min(section_capacity, room_capacity)
+        if denominator == 0:
+            # Something's wrong here, but let's just give the maximum
+            # penalty instead of crashing.
+            return 1.0
+        else:
+            return min(1.0, ((1.0 * numerator / denominator) - 1.0) ** 2)
+
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
+        # See update_schedule for a description of how scoring works here.
         raise NotImplementedError
 
     def update_schedule(self, schedule):
@@ -668,35 +686,76 @@ class RoomSizeMismatchScorer(BaseScorer):
             [s.capacity for s in schedule.class_sections.itervalues()])
         self.max_room_size = max(
             [c.capacity for c in schedule.classrooms.itervalues()])
-        pass  # TODO
+        self.num_sections = float(len(schedule.class_sections))
+        self.total_penalty = 0.0
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                room = section.assigned_roomslots[0].room
+                penalty = self.penalty_for_section_and_room(section, room)
+                self.total_penalty += penalty / self.num_sections
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
         section to start at the specified roomslot."""
-        raise NotImplementedError
-
-    def update_move_section(self, section, start_roomslot):
-        """Update the internal state to reflect the moving of the specified
-        already-scheduled section to start at the specified roomslot."""
-        self.update_unschedule_section(section)
-        self.update_schedule_section(section, start_roomslot)
+        room = start_roomslot.room
+        penalty = self.penalty_for_section_and_room(section, room)
+        self.total_penalty += penalty / self.num_sections
 
     def update_unschedule_section(self, section):
         """Update the internal state to reflect the uncsheduling of the
         specified section."""
-        raise NotImplementedError
-
-    def update_swap_sections(self, section1, section2):
-        """Update the internal state to reflect the swapping of the two
-        specified sections."""
-        self.update_move_section(section1, section2.assigned_roomslots[0])
-        self.update_move_section(section2, section1.assigned_roomslots[0])
+        room = section.assigned_roomslots[0].room
+        penalty = self.penalty_for_section_and_room(section, room)
+        self.total_penalty -= penalty / self.num_sections
 
 
 class StudentClassHoursScorer(BaseScorer):
     """Schedule as many student-class-hours as possible."""
-    # Make sure this accounts for room capacities
-    pass
+
+    def get_effective_student_class_hours(self, section, roomslot=None):
+        """Compute the effective student-class-hours for a section, which is
+        the capacity clamped by room size times duration. If no roomslot is
+        provided, we use the section's first roomslot instead; if it doesn't
+        exist, return 0."""
+
+        if roomslot is None:
+            if not section.is_scheduled():
+                return 0.0
+            else:
+                roomslot = section.assigned_roomslots[0]
+        else:
+            room_capacity = roomslot.room.capacity
+            actual_capacity = min(section.capacity, room_capacity)
+            return actual_capacity * section.duration
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # We return simply the fraction of all possible student-class-hours
+        # which are scheduled.
+        return self.scheduled_student_class_hours / \
+            self.total_student_class_hours
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.total_student_class_hours = float(sum(
+            [sec.capacity * sec.duration for sec in
+             schedule.class_sections.itervalues()]))
+        self.scheduled_student_class_hours = sum(
+            [self.get_effective_student_class_hours(sec)
+             for sec in schedule.class_sections.itervalues()])
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.scheduled_student_class_hours += \
+            self.get_effective_student_class_hours(section, start_roomslot)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        self.scheduled_student_class_hours -= \
+            self.get_effective_student_class_hours(section)
 
 
 class TeachersWhoLikeRunningScorer(BaseScorer):
