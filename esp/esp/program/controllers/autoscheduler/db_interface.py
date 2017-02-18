@@ -395,7 +395,7 @@ def section_satisfies_constraints(
     if len(meeting_times) > 0:
         start_time = meeting_times[0].start
         end_time = meeting_times[-1].end
-        scheduled_duration = (end_time - start_time).seconds / 3600.0
+        scheduled_duration = util.hours_difference(start_time, end_time)
         if abs(scheduled_duration - float(section_obj.duration)) \
                 > constants.DELTA_TIME:
             return False
