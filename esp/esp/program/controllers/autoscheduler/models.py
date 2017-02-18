@@ -36,7 +36,7 @@ class AS_Schedule(object):
         self.timeslots = timeslots if timeslots is not None else []
 
         # Maps from start and end times to a timeslot.
-        self.timeslot_dict = {(t.start, t.end): t for t in self.timeslots}
+        self.timeslot_dict = self.build_timeslot_dict()
         # Dict of class sections by ID
         self.class_sections = class_sections if class_sections is not None \
             else {}
@@ -57,6 +57,9 @@ class AS_Schedule(object):
 
         self.run_consistency_checks()
         self.run_constraint_checks()
+
+    def build_timeslot_dict(self):
+        return {(t.start, t.end): t for t in self.timeslots}
 
     def build_lunch_timeslots(self, lunch_timeslots):
         timeslots_by_day = {}

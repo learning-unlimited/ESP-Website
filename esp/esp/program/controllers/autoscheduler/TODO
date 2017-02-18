@@ -14,15 +14,15 @@ Implement resource constraints and resource scoring
 Cache common functions like AS_Classroom.get_roomslots_by_duration and/or speed
 them up (if cache, be very careful about making availability changes)
 
-Be able to specify a regex for importing classrooms
+Be able to specify a regex for importing classrooms (resource criterion?
+Possibly also make resource criteria be able to specify whether they only apply
+to newly scheduled rooms)
 
-Consistency checks should have better reporting where they failed as well
-
-Implement scoring
 Implement search, possibly with constraints having a pruning mechanism
 
 save() should send updates to the AJAX scheduler, and this should be tested
-carefully (as well as making sure partial changes don't get committed)
+carefully (as well as making sure partial changes don't get committed, and that
+arbitrary AJAX updates don't fuck us over)
 
 Robustness:
 
@@ -50,14 +50,6 @@ db tests should test for when classes are already scheduled (or otherwise
 excluded classes), also saving
 model tests for model functions
 tests for resource checker
-lunch needs consistency checks, including that the timeslots are sorted
-teacher availability dict needs consistency checks
-section availability dict needs consistency checks
-teacher sections teaching needs consistency checks
-consistency checks for teacher dict, class section dict, classroom dict,
-resources dicts
-consistency check that timeslots not span multiple days
-consistency check for timeslot duration
 
 need unittests for schedule operations and saving somehow
 unittest for already-scheduled multihour class
