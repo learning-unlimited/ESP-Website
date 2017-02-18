@@ -31,8 +31,6 @@ name but different values
 
 Handle two classrooms having the same name
 
-complain if timeslots are too short (maybe compare to DELTA_TIME in constants)
-
 save() might want to check to make sure that the lists of teachers teaching each
 section don't change either
 

@@ -12,7 +12,7 @@ import bisect
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyChecker
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-import esp.program.controllers.autoscheduler.constants as constants
+import esp.program.controllers.autoscheduler.config as config
 from esp.program.controllers.autoscheduler.constraints import \
         CompositeConstraint
 import esp.program.controllers.autoscheduler.util as util
@@ -203,7 +203,7 @@ class AS_Classroom(object):
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
         while duration - util.hours_difference(start_time, end_time)\
-                > constants.DELTA_TIME:
+                > config.DELTA_TIME:
             index_of_roomslot += 1
             if index_of_roomslot >= len(classroom_availability):
                 break
@@ -238,7 +238,7 @@ class AS_Timeslot(object):
         # AS_RoomSlots during this timeslot
         self.associated_roomslots = associated_roomslots \
             if associated_roomslots is not None else set()
-        if self.duration < constants.DELTA_TIME:
+        if self.duration < config.DELTA_TIME:
             raise SchedulingError(
                 "Timeslot duration {} is too short".format(self.duration))
 

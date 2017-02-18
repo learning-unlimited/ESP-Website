@@ -26,7 +26,7 @@ seems too fragile.)
 import inspect
 
 import esp.program.controllers.autoscheduler.util as util
-import esp.program.controllers.autoscheduler.constants as constants
+import esp.program.controllers.autoscheduler.config as config
 
 
 class ConstraintViolation:
@@ -503,7 +503,7 @@ class SectionDurationConstraint(BaseConstraint):
                 scheduled_duration = util.hours_difference(
                         start_time, end_time)
                 if abs(scheduled_duration - section.duration) \
-                        > constants.DELTA_TIME:
+                        > config.DELTA_TIME:
                     return ConstraintViolation(
                         self.__class__.__name__,
                         ("Section {} is scheduled for {} hours but "
@@ -527,7 +527,7 @@ class SectionDurationConstraint(BaseConstraint):
         scheduled_duration = util.hours_difference(
                 start_time, end_time)
 
-        if abs(scheduled_duration - section.duration) > constants.DELTA_TIME:
+        if abs(scheduled_duration - section.duration) > config.DELTA_TIME:
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Section would be scheduled for {} hours instead of {}"

@@ -21,7 +21,7 @@ from esp.program.controllers.autoscheduler.models import \
     AS_Schedule, AS_ClassSection, AS_Teacher, AS_Classroom, \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
 from esp.program.controllers.autoscheduler import util
-import esp.program.controllers.autoscheduler.constants as constants
+import esp.program.controllers.autoscheduler.config as config
 
 
 def load_schedule_from_db(
@@ -397,7 +397,7 @@ def section_satisfies_constraints(
         end_time = meeting_times[-1].end
         scheduled_duration = util.hours_difference(start_time, end_time)
         if abs(scheduled_duration - float(section_obj.duration)) \
-                > constants.DELTA_TIME:
+                > config.DELTA_TIME:
             return False
     return True
 
