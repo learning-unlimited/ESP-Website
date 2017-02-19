@@ -563,10 +563,60 @@ class NumTeachersScorer(BaseScorer):
         pass
 
 
-class ResourceCriterionScorer(BaseScorer):
+class ResourceCriteriaScorer(BaseScorer):
     """Match ResourceCriteria (according to given weights) as well as
     possible."""
-    pass
+
+    def __init__(self, schedule, **kwargs):
+        """Initialize the scorer to the specified schedule, with the given
+        ResourceCriteria. kwargs should contain the key resource_criteria,
+        which is a list of pairs of ResourceCriterions and weights."""
+        # Resource criteria needs to be loaded before super() is called, or
+        # else update_schedule won't have resource criteria to refer to.
+        self.resource_criteria = kwargs.get("resource_criteria", [])
+        super(ResourceCriteriaScorer, self).__init__(**kwargs)
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the average score, averaged across all sections. Each score is
+        # the weighted average (over all resource criteria) of 1 if the
+        # criterion is met, 0 if not. If the section isn't scheduled, score
+        # is 0.
+        return self.total_score / (self.total_weight * self.num_sections)
+
+    def process_section(self, section, room):
+        """Computes the score for a given section assigned to the given
+        room."""
+        output = 0.0
+        for resource_criterion, weight in self.resource_criteria:
+            if resource_criterion.check_match(section, room):
+                output += weight
+        return output
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        self.total_weight = float(sum(
+            [weight for criterion, weight in self.resource_criteria]))
+        if self.total_weight == 0:
+            self.total_weight = 1  # Avoid division by 0
+        self.num_sections = len(schedule.class_sections)
+        self.total_score = 0.0
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                self.total_score += self.process_section(
+                    section, section.assigned_roomslots[0].room)
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.total_score += self.process_section(section, start_roomslot.room)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        self.total_score -= self.process_section(
+            section, section.assigned_roomslots[0].room)
 
 
 class ResourceMovementScorer(BaseScorer):
@@ -584,8 +634,8 @@ class RoomConsecutivityScorer(BaseScorer):
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
-        # Return simply the fraction of all sections which are nonfollowed.
-        return self.nonfollowed_sections / self.num_sections
+        # Return simply the fraction of all sections which are not followed.
+        return 1.0 - self.nonfollowed_sections / self.num_sections
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""

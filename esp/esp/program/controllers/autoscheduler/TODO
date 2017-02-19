@@ -2,10 +2,9 @@
 
 Bugs:
 
-constraints (and anywhere else) which tries to use timedelta.seconds won't work
-across multiple days (RESOLVED)
-
 save() should check whether sections are locked before saving
+
+make sure scorers are all going in the right direction
 
 New features:
 Implement a way to define ResourceCriteria for scoring
@@ -21,6 +20,8 @@ carefully (as well as making sure partial changes don't get committed, and that
 arbitrary AJAX updates don't fuck us over)
 
 Implement a frontend
+
+Add the license/LU header to all files
 
 Robustness:
 
