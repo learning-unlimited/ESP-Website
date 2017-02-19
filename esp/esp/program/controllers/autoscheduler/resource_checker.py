@@ -4,11 +4,18 @@ Utilities for use in resource constraints and scoring.
 
 import re
 
+from esp.program.controllers.autoscheduler import util
+
 
 class ResourceCriterion(object):
-    """A criterion for resource constraints. Has a section matcher and a
-    classroom matcher. Either checks that if the section matches then the
-    classroom does as well, or vice versa."""
+
+    """A criterion for complex resource constraints. Has a section matcher and
+    a classroom matcher. Either checks that if the section matches then the
+    classroom does as well, or vice versa. Note that there exists the
+    ResourceMatchingScorer and ResourceValueMatchingScorer for generic 'if I
+    ask for a resource, give it to me' and 'if I ask for a resource with a
+    certain value, give it to me' for all resource types."""
+
     def __init__(self, section_matcher, classroom_matcher,
                  condition_on_section=True, name="unnamed"):
         """Construct a ResourceCriterion with the given section matcher and
@@ -240,15 +247,17 @@ class ClassroomNameMatcher(BaseClassroomMatcher):
         return "classroom matches {}".format(self.name_regex)
 
 
-def create_resource_criteria(specification_dicts):
+def create_resource_criteria(specification_dicts, use_weights=False):
     """Returns a list of resource criteria given a list of specification dicts;
     specification dicts later in the list override specification dicts earlier
     in the list. Specification dicts should map from resource criterion names
     to specifications."""
-    specifications = {}
-    for specification_dict in specification_dicts:
-        for name, spec in specification_dict.iteritems():
-            specifications[name] = spec
-    return [ResourceCriterion.create_from_specification(spec, name)
-            for name, spec in specifications.iteritems()
-            if spec != "None" and spec is not None]
+    specifications = util.override(specification_dicts)
+    if use_weights:
+        return [(ResourceCriterion.create_from_specification(spec, name),
+                 weight) for name, (spec, weight) in specifications.iteritems()
+                if spec != "None" and spec is not None]
+    else:
+        return [ResourceCriterion.create_from_specification(spec, name)
+                for name, spec in specifications.iteritems()
+                if spec != "None" and spec is not None]

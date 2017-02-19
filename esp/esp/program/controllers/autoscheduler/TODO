@@ -3,12 +3,13 @@
 Bugs:
 
 save() should check whether sections are locked before saving
+save() can have an issue if someone moves a class after you saved but before
+you committed
 
-make sure scorers are all going in the right direction
+Make sure that resource criteria names are escaped appropriately.
 
 New features:
 Implement a way to define ResourceCriteria for scoring
-Implement resource scoring
 
 Implement search, possibly with constraints having a pruning mechanism
 
@@ -17,6 +18,8 @@ AJAX change log entries can include users
 Implement a frontend
 
 Add the license/LU header to all files
+
+Implement ResourceMovementScorer
 
 Robustness:
 

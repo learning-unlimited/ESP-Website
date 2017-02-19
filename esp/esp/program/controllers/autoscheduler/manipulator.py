@@ -12,7 +12,7 @@ class ScheduleManipulator:
     subject to a particular set of constraints. Can optionally hold a scorer to
     keep updated."""
     def __init__(self, schedule, constraint_names=None, constraint_kwargs={},
-                 scorer_names_and_weights=(), scorer_kwargs={}):
+                 scorer_names_and_weights={}, scorer_kwargs={}):
         """Initializes with the given schedule, and uses given constraint names
         and scorer names and weights (if provided)."""
         self.schedule = schedule

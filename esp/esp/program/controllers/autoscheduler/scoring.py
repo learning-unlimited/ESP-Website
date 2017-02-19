@@ -7,8 +7,17 @@ currently set to, predict a score for a hypothetical change (without changing
 its state), or perform a change (i.e. updating its state).
 
 A Scorer is expected to return a score in the range [0, 1], where 1 is good and
-0 is bad.
-"""
+0 is bad. Each Scorer is also expected to keep a 'scaling' attribute, e.g.
+initialized in update_schedule(), so that when its score is multiplied by the
+scaling attribute, any given section will (in general) have an impact of
+approximately at most 1. Note this is maximum impact, not expected impact,
+though in some cases we might not care about the difference. The logic is: if
+I'm scheduling a section, how much does this evaluation decide whether I want
+to schedule it (assuming the evaluation is relevant)?  (For example,
+AdminDistributionScorer will be impacted only by sections with admins teaching,
+so we need to scale down.) This allows scorer weights to be determined by
+relative importance to scheduling a section without accounting for this sort of
+behavior."""
 import esp.program.controllers.autoscheduler.util as util
 # TODO documentation on adding scorers
 
@@ -17,6 +26,7 @@ class BaseScorer(object):
     """Abstract class for scorers."""
     def __init__(self, schedule, **kwargs):
         """Initialize the scorer to the specified schedule."""
+        self.scaling = 1.0  # default
         self.update_schedule(schedule)
 
     def score_schedule(self):
@@ -83,7 +93,7 @@ class CompositeScorer(BaseScorer):
     """A scorer which checks all the scorers you actually want, and weights them
     according to pre-specified weights."""
     def __init__(self, scorer_names_and_weights, schedule, **kwargs):
-        """Takes in a list of pairs of scorer names (as strings) and weights (as
+        """Takes in a dict of scorer names (as strings) mapping to weights (as
         floats), and loads them, initializing them to the specified schedule.
         All weights should be positive."""
         self.scorers_and_weights = []
@@ -94,12 +104,19 @@ class CompositeScorer(BaseScorer):
         else:
             self.total_weight = 0.0
             available_scorers = globals()
-            for scorer, weight in scorer_names_and_weights:
+            for scorer, weight in scorer_names_and_weights.iteritems():
                 assert weight > 0, "Scorer weights should be positive"
                 print("Using scorer {}".format(scorer))
-                self.scorers_and_weights.append(
-                    (available_scorers[scorer](schedule, **kwargs), weight))
-                self.total_weight.append(weight)
+                scorer_obj = available_scorers[scorer](schedule, **kwargs)
+                self.scorers_and_weights.append((scorer_obj, weight))
+        self.compute_total_weight()
+
+    def compute_total_weight(self):
+        """Updates the value of total_weight. Each Scorer is weighted by its
+        scaling factor times the user-specified weight."""
+        self.total_weight = 0.0
+        for scorer, weight in self.scorers_and_weights:
+            self.total_weight += scorer.scaling * weight
 
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
@@ -107,10 +124,16 @@ class CompositeScorer(BaseScorer):
         called frequently."""
         total_score = 0.0
         for scorer, weight in self.scorers_and_weights:
-            total_score += scorer.score_schedule() * weight
+            score = scorer.score_schedule()
+            print "Scorer {} has score {}".format(
+                    scorer.__class__.__name__, score)
+            total_score += score * weight * scorer.scaling
         return total_score / self.total_weight
 
     # See note in BaseScorer about these being commented out.
+    # NOTE: If you uncomment these, make sure you update the computation to
+    # account for scorer scaling, since these were written before that was
+    # introduced!
     #
     # def score_schedule_section(self, section, start_roomslot):
     #     """Returns a score in the range [0, 1] if the schedule currently
@@ -156,6 +179,7 @@ class CompositeScorer(BaseScorer):
         """Overwrite internal state to reflect the given schedule."""
         for scorer, weight in self.scorers_and_weights:
             scorer.update_schedule(schedule)
+        self.compute_total_weight()
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
@@ -209,7 +233,7 @@ class AdminDistributionScorer(BaseScorer):
         ideal_distribution = [0.0]
         prev_timeslot = schedule.timeslots[0]
         for t in schedule.timeslots[1:]:
-            if t.day == prev_timeslot.day:
+            if t.start.day == prev_timeslot.start.day:
                 ideal_distribution.append(1/3.0)
             else:
                 ideal_distribution.append(0.0)
@@ -225,6 +249,24 @@ class AdminDistributionScorer(BaseScorer):
                 if teacher.is_admin:
                     for roomslot in section.assigned_roomslots:
                         self.admins_per_timeslot[roomslot.timeslot.id] += 1
+        # Each section's can have impact up to its duration times the number of
+        # admins teaching, divided by the number of admins.
+        # So we divide by:
+        #     average duration
+        #     average teacher count
+        #     number of sections
+        # and multiply by number of admins. This is technically wrong if
+        # timeblocks aren't one hour long, but whatever.
+        average_duration = 0.0
+        average_num_teachers = 0.0
+        for section in schedule.class_sections.itervalues():
+            average_duration += section.duration
+            average_num_teachers += len(section.teachers)
+        num_sections = len(schedule.class_sections)
+        average_duration /= num_sections
+        average_num_teachers /= num_sections
+        self.scaling = self.total_admins / (
+            average_duration * average_num_teachers * num_sections)
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
@@ -267,14 +309,20 @@ class CategoryBalanceScorer(BaseScorer):
                 self.capacity_per_timeslot_by_category[category]
             leeway = 1.0 / len(capacity_per_timeslot)
             for timeslot, capacity in capacity_per_timeslot.iteritems():
+                duration = self.timeslot_durations[timeslot]
                 fractional_capacity = \
-                    capacity * timeslot.duration / student_class_hours
+                    capacity * duration / student_class_hours
                 if fractional_capacity > leeway:
                     total_penalty += capacity / student_class_hours - leeway
         return 1 - (total_penalty / len(self.student_class_hours_by_category))
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # Each section has impart proportional to its student-class-hours,
+        # which is probably fine if we just leave it at 1 since we probably do
+        # want large sections to care more about this..
+        self.timeslot_durations = {
+                t.id: t.duration for t in schedule.timeslots}
         self.student_class_hours_by_category = {}
         for sec in schedule.class_sections.itervalues():
             self.student_class_hours_by_category[sec.category] = \
@@ -326,6 +374,10 @@ class LunchStudentClassHoursScorer(BaseScorer):
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # Each section has impart proportional to its student-class-hours,
+        # which is probably fine if we just leave it at 1 since we probably do
+        # want large sections to care more about this..
+
         self.lunch_timeslots = set()
         for timeslots in schedule.lunch_timeslots.itervalues():
             self.lunch_timeslots.update([t.id for t in timeslots])
@@ -391,6 +443,12 @@ class HungryTeacherScorer(BaseScorer):
         self.hungry_teachers = set()
         for t in self.lunch_timeslots_by_teacher:
             self.update_teacher_hungriness(t)
+        # Each section can have impact equal to the number of teacheres in it,
+        # divided by the total number of teachers.
+        num_section_teachers = 0.0
+        for section in schedule.class_sections.itervalues():
+            num_section_teachers += len(section.teachers)
+        self.scaling = self.total_teachers / num_section_teachers
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
@@ -420,7 +478,7 @@ class HungryTeacherScorer(BaseScorer):
         """Update the teacher's membership in self.hungry_teachers."""
         timeslots_teaching = self.lunch_timeslots_by_teacher[teacher_id]
         for timeslots in self.lunch_timeslots.itervalues():
-            if all([timeslots_teaching[t] for t in timeslots]):
+            if all([timeslots_teaching[t.id] for t in timeslots]):
                 self.hungry_teachers.add(teacher_id)
                 return
         if teacher_id in self.hungry_teachers:
@@ -438,6 +496,7 @@ class NumSectionsScorer(BaseScorer):
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # The scaling is trivially 1.
         self.total_sections = float(len(schedule.class_sections))
         self.scheduled_sections = sum(
             [s.is_scheduled() for s in schedule.class_sections.itervalues()])
@@ -486,13 +545,14 @@ class NumSubjectsScorer(BaseScorer):
         self.scheduled_subjects = sum(
             [(num_sections > 0) for num_sections in
                 self.num_scheduled_sections_by_subject.itervalues()])
+        self.scaling = self.total_subjects / len(schedule.class_sections)
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
         section to start at the specified roomslot."""
         self.num_scheduled_sections_by_subject[section.parent_class] += 1
         if self.num_scheduled_sections_by_subject[section.parent_class] == 1:
-            self.scheduled_sections += 1
+            self.scheduled_subjects += 1
 
     def update_move_section(self, section, start_roomslot):
         """Update the internal state to reflect the moving of the specified
@@ -534,6 +594,7 @@ class NumTeachersScorer(BaseScorer):
         self.scheduled_teachers = sum(
             [(num_sections > 0) for num_sections in
                 self.num_scheduled_sections_by_teacher.itervalues()])
+        self.scaling = self.total_teachers / len(schedule.class_sections)
 
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
@@ -574,7 +635,18 @@ class ResourceCriteriaScorer(BaseScorer):
         # Resource criteria needs to be loaded before super() is called, or
         # else update_schedule won't have resource criteria to refer to.
         self.resource_criteria = kwargs.get("resource_criteria", [])
-        super(ResourceCriteriaScorer, self).__init__(**kwargs)
+        super(ResourceCriteriaScorer, self).__init__(schedule, **kwargs)
+        # We want to avoid the situation where adding more ResourceCriteria
+        # dilutes existing ones; at the same time, we want to avoid the
+        # situation where adding low-weight ResourceCriteria makes high-weight
+        # overweighted. So we scale so that the highest-weight
+        # ResourceCriterion has weight 1. Yes, this means we're scaling up.
+        if len(self.resource_criteria) == 0:
+            self.scaling = 1.0
+        else:
+            max_weight = max([
+                weight for criterion, weight in self.resource_criteria])
+            self.scaling = self.total_weight / max_weight
 
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
@@ -596,6 +668,7 @@ class ResourceCriteriaScorer(BaseScorer):
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # See constructor for scaling.
         self.total_weight = float(sum(
             [weight for criterion, weight in self.resource_criteria]))
         if self.total_weight == 0:
@@ -619,11 +692,119 @@ class ResourceCriteriaScorer(BaseScorer):
             section, section.assigned_roomslots[0].room)
 
 
-class ResourceMovementScorer(BaseScorer):
-    """Try to group unmatched ResourceCriteria into consecutive timeblocks in
-    the same classroom, e.g. to minimize having to move projectors between
-    classrooms."""
-    pass
+class ResourceMatchingScorer(BaseScorer):
+    """If a section asks for a resource, try to satisfy this request."""
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the average fraction of matches over all sections. Unscheduled
+        # sections are counted as no matches.
+        return self.total_score / self.num_sections
+
+    def process_section(self, section, room):
+        """Computes the score for a given section assigned to the given
+        room."""
+        # Return the fraction of satisfied resource requests.
+        if len(section.resource_requests) == 0:
+            return 1.0
+        met_criteria = 0.0
+        for restype_name in section.resource_requests:
+            if restype_name in room.furnishings:
+                met_criteria += 1
+        return met_criteria / len(section.resource_requests)
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        # Scaling is just the default 1 because we're just scoring by section.
+        self.num_sections = len(schedule.class_sections)
+        self.total_score = 0.0
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                self.total_score += self.process_section(
+                    section, section.assigned_roomslots[0].room)
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.total_score += self.process_section(section, start_roomslot.room)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        self.total_score -= self.process_section(
+            section, section.assigned_roomslots[0].room)
+
+
+# I don't feel like implementing this right now :(
+# class ResourceMovementScorer(BaseScorer):
+#     """Try to group unmatched ResourceCriteria into consecutive timeblocks in
+#     the same classroom, e.g. to minimize having to move projectors between
+#     classrooms."""
+#     pass
+
+
+class ResourceValueMatchingScorer(BaseScorer):
+    """If a section asks for a resource with a specific value, try to satisfy
+    this request. If all classrooms have the same value for a resource type,
+    ignore that resource for this purpose."""
+
+    def score_schedule(self):
+        """Returns a score in the range [0, 1] for the schedule reflected in its
+        current state."""
+        # Return the average fraction of matches over all sections. Unscheduled
+        # sections are counted as no matches.
+        return self.total_score / self.num_sections
+
+    def process_section(self, section, room):
+        """Computes the score for a given section assigned to the given
+        room."""
+        # Return the fraction of satisfied resource requests.
+        met_criteria = 0.0
+        requested_criteria = 0.0
+        for request in section.resource_requests.itervalues():
+            if request.name not in self.requests_to_ignore \
+                    and request.value != "":
+                requested_criteria += 1
+                if request.name in room.furnishings \
+                        and room.furnishings[request.name].value \
+                        == request.value:
+                    met_criteria += 1
+        if requested_criteria == 0.0:
+            return 1.0
+        else:
+            return met_criteria / requested_criteria
+
+    def update_schedule(self, schedule):
+        """Overwrite internal state to reflect the given schedule."""
+        # Scaling is just the default 1 because we're just scoring by section.
+        self.num_sections = len(schedule.class_sections)
+
+        furnishing_values = {}
+        for room in schedule.classrooms.itervalues():
+            for furnishing in room.furnishings.itervalues():
+                if furnishing.name not in furnishing_values:
+                    furnishing_values[furnishing.name] = set()
+                furnishing_values[furnishing.name].add(furnishing.value)
+        self.requests_to_ignore = set()
+        for name, values in furnishing_values.iteritems():
+            if len(values) == 1:
+                self.requests_to_ignore.add(name)
+        self.total_score = 0.0
+        for section in schedule.class_sections.itervalues():
+            if section.is_scheduled():
+                self.total_score += self.process_section(
+                    section, section.assigned_roomslots[0].room)
+
+    def update_schedule_section(self, section, start_roomslot):
+        """Update the internal state to reflect the scheduling of the specified
+        section to start at the specified roomslot."""
+        self.total_score += self.process_section(section, start_roomslot.room)
+
+    def update_unschedule_section(self, section):
+        """Update the internal state to reflect the uncsheduling of the
+        specified section."""
+        self.total_score -= self.process_section(
+            section, section.assigned_roomslots[0].room)
 
 
 class RoomConsecutivityScorer(BaseScorer):
@@ -639,6 +820,7 @@ class RoomConsecutivityScorer(BaseScorer):
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # Scaling is just the default 1 because we're just scoring by section.
         self.num_sections = float(len(schedule.class_sections))
         # A count of the number of sections which don't immediately have a
         # following section.
@@ -732,6 +914,8 @@ class RoomSizeMismatchScorer(BaseScorer):
         # To deal with huge rooms and classes, if any class is larger than the
         # largest room, we consider its capacity to just match that of the
         # largest room, and vice versa.
+
+        # Scaling is the default 1 because we're already scoring per section.
         self.max_class_size = max(
             [s.capacity for s in schedule.class_sections.itervalues()])
         self.max_room_size = max(
@@ -773,10 +957,9 @@ class StudentClassHoursScorer(BaseScorer):
                 return 0.0
             else:
                 roomslot = section.assigned_roomslots[0]
-        else:
-            room_capacity = roomslot.room.capacity
-            actual_capacity = min(section.capacity, room_capacity)
-            return actual_capacity * section.duration
+        room_capacity = roomslot.room.capacity
+        actual_capacity = min(section.capacity, room_capacity)
+        return actual_capacity * section.duration
 
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
@@ -788,6 +971,8 @@ class StudentClassHoursScorer(BaseScorer):
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # A section's impact is proportional to its student-class-hours, which
+        # should be fine for leaving the scaling at 1.
         self.total_student_class_hours = float(sum(
             [sec.capacity * sec.duration for sec in
              schedule.class_sections.itervalues()]))
@@ -817,10 +1002,11 @@ class TeachersWhoLikeRunningScorer(BaseScorer):
         # We count the number of times anyone is teaching two consecutive
         # timeslots in different rooms, and divide by the number of total
         # sections.
-        return self.running_count / self.num_sections
+        return 1.0 - self.running_count / self.num_sections
 
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
+        # Since this is a per-section scorer, the scaling is left at 1.
         self.num_sections = float(len(schedule.class_sections))
         self.timeslot_indices = {
             t.id: i for i, t in enumerate(schedule.timeslots)}
@@ -831,14 +1017,14 @@ class TeachersWhoLikeRunningScorer(BaseScorer):
         for section in schedule.class_sections.itervalues():
             for teacher in section.teachers:
                 for roomslot in section.assigned_roomslots:
-                    self.times_teacher_is_teaching[
+                    self.times_teacher_is_teaching[teacher.id][
                         roomslot.timeslot.id] = roomslot
         self.running_count = 0.0
         for teacher, times_teaching in \
                 self.times_teacher_is_teaching.iteritems():
             for timeslot_id, roomslot in times_teaching.iteritems():
-                timeslot = self.timeslots[timeslot_id]
                 timeslot_index = self.timeslot_indices[timeslot_id]
+                timeslot = self.timeslots[timeslot_index]
                 if timeslot_index < len(self.timeslots) - 1:
                     next_timeslot = self.timeslots[timeslot_index + 1]
                     if next_timeslot.id in times_teaching \

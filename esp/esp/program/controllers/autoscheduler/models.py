@@ -62,14 +62,15 @@ class AS_Schedule(object):
 
     def build_lunch_timeslots(self, lunch_timeslots):
         timeslots_by_day = {}
-        for (start, end) in lunch_timeslots:
+        for (start, end) in sorted(lunch_timeslots):
             if (start, end) not in self.timeslot_dict:
                 continue
             day = (start.year, start.month, start.day)
+            if day not in timeslots_by_day:
+                timeslots_by_day[day] = []
             assert (end.year, end.month, end.day) == day, \
                 "Timeslot spans multiple days"
-            timeslots_by_day.get(day, []).append(
-                    self.timeslot_dict[(start, end)])
+            timeslots_by_day[day].append(self.timeslot_dict[(start, end)])
         return timeslots_by_day
 
     def run_consistency_checks(self):

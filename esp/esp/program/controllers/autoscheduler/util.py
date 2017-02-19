@@ -32,3 +32,13 @@ def get_min_id(objects):
 def hours_difference(datetime1, datetime2):
     """Returns the number of hours between two datetime objects."""
     return (datetime2 - datetime1).total_seconds() / 3600.0
+
+
+def override(dicts):
+    """Given list of dicts, overrides values from left to right, i.e. last dict
+    in key has highest precedence."""
+    output = {}
+    for d in dicts:
+        for k, v in d.iteritems():
+            output[k] = v
+    return output

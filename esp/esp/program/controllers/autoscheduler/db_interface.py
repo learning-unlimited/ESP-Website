@@ -247,10 +247,10 @@ def save(schedule, check_consistency=True, check_constraints=True):
             # Update the section's initial_state so we don't confuse
             # ourselves
             section.recompute_hash()
-        print "Waiting..."
-        for i in xrange(int(5e8)):
-            pass
-        print "Done"
+        # print "Waiting..."
+        # for i in xrange(int(5e8)):
+        #     pass
+        # print "Done"
 
 
 def try_unschedule_section(section, unscheduled_sections, class_sections,
@@ -433,6 +433,26 @@ def section_satisfies_constraints(
     return True
 
 
+def load_scorers(program, scorer_overrides=None):
+    """Returns scorer names and weights loading from defaults, the Tag in the
+    db, and the given overrides, in increasing order of precedence."""
+    if scorer_overrides is None:
+        scorer_overrides = {}
+
+    tag_value = Tag.getProgramTag(config.SCORER_TAG,
+                                  program=program,
+                                  default="{}")
+
+    try:
+        tag_overrides = json.loads(tag_value)
+    except:
+        raise SchedulingError("Scoring Tag is malformatted: {}"
+                              .format(tag_value))
+
+    return util.override(
+        [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides])
+
+
 def load_resource_constraints(program, specification_overrides=None):
     if specification_overrides is None:
         specification_overrides = {}
@@ -449,6 +469,25 @@ def load_resource_constraints(program, specification_overrides=None):
         [config.DEFAULT_RESOURCE_CONSTRAINTS,
          tag_overrides,
          specification_overrides])
+
+
+def load_resource_scoring(program, specification_overrides=None):
+    if specification_overrides is None:
+        specification_overrides = {}
+
+    tag_value = Tag.getProgramTag(config.RESOURCE_SCORING_TAG,
+                                  program=program,
+                                  default="{}")
+    try:
+        tag_overrides = json.loads(tag_value)
+    except:
+        raise SchedulingError("Resource scoring Tag is malformatted: {}"
+                              .format(tag_value))
+
+    return resource_checker.create_resource_criteria(
+        [config.DEFAULT_RESOURCE_CONSTRAINTS,
+         tag_overrides,
+         specification_overrides], use_weights=True)
 
 
 def batch_convert_sections(
