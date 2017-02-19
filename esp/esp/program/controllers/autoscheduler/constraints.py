@@ -203,7 +203,7 @@ class ContiguousConstraint(BaseConstraint):
         if moving the already-scheduled section to the given starting roomslot
         would violate the constraint, None otherwise."""
         return self.check_schedule_section(
-                self, section, start_roomslot, schedule)
+                section, start_roomslot, schedule)
 
     def check_unschedule_section(self, section, schedule):
         """Always None"""
@@ -242,7 +242,7 @@ class LunchConstraint(BaseConstraint):
         violate the constraint, None otherwise."""
         for list_lunch_slots in schedule.lunch_timeslots.itervalues():
             start_lunch = list_lunch_slots[0].start
-            end_lunch = list_lunch_slots[0].end
+            end_lunch = list_lunch_slots[-1].end
             roomslots = start_roomslot.room.get_roomslots_by_duration(
                     start_roomslot, section.duration)
             start_section = roomslots[0].timeslot.start

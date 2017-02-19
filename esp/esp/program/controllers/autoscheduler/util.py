@@ -2,7 +2,7 @@
 Various utility functions.
 """
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 def contiguous(timeslot1, timeslot2):
@@ -42,3 +42,14 @@ def override(dicts):
         for k, v in d.iteritems():
             output[k] = v
     return output
+
+
+def datetimedump(dt):
+    """Turns a datetime object into a json-like object loadable by
+    datetimeload."""
+    return list(dt.utctimetuple())[:6]
+
+
+def datetimeloads(dt_tuple):
+    """Turns a json-like datetime dump into a datetime object."""
+    return datetime(*dt_tuple)

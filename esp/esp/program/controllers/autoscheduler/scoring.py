@@ -96,6 +96,7 @@ class CompositeScorer(BaseScorer):
         """Takes in a dict of scorer names (as strings) mapping to weights (as
         floats), and loads them, initializing them to the specified schedule.
         All weights should be positive."""
+        self.verbose = False if "verbose" not in kwargs else kwargs["verbose"]
         self.scorers_and_weights = []
         if len(scorer_names_and_weights) == 0:
             # If we didn't receive any names and weights, we are a trivial
@@ -125,8 +126,9 @@ class CompositeScorer(BaseScorer):
         total_score = 0.0
         for scorer, weight in self.scorers_and_weights:
             score = scorer.score_schedule()
-            print "Scorer {} has score {}".format(
-                    scorer.__class__.__name__, score)
+            if self.verbose:
+                print "Scorer {} has score {}".format(
+                        scorer.__class__.__name__, score)
             total_score += score * weight * scorer.scaling
         return total_score / self.total_weight
 
@@ -565,7 +567,7 @@ class NumSubjectsScorer(BaseScorer):
         assert self.num_scheduled_sections_by_subject[section.parent_class] > 0
         self.num_scheduled_sections_by_subject[section.parent_class] -= 1
         if self.num_scheduled_sections_by_subject[section.parent_class] == 0:
-            self.scheduled_sections -= 1
+            self.scheduled_subjects -= 1
 
     def update_swap_sections(self, section1, section2):
         """Update the internal state to reflect the swapping of the two
@@ -1080,7 +1082,7 @@ class TeachersWhoLikeRunningScorer(BaseScorer):
         """Update the internal state to reflect the uncsheduling of the
         specified section."""
         roomslots = section.assigned_roomslots
-        self.running_count += self.process_section(section, roomslots)
+        self.running_count -= self.process_section(section, roomslots)
         for teacher in section.teachers:
             times_teaching = self.times_teacher_is_teaching[teacher.id]
             for roomslot in roomslots:
