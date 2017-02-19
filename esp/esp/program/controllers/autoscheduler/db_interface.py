@@ -15,13 +15,14 @@ from esp.program.models import ClassSection
 from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
 from esp.program.modules import module_ext
+from esp.tagdict.models import Tag
 
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.program.controllers.autoscheduler.models import \
     AS_Schedule, AS_ClassSection, AS_Teacher, AS_Classroom, \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
-from esp.program.controllers.autoscheduler import util
-import esp.program.controllers.autoscheduler.config as config
+from esp.program.controllers.autoscheduler import \
+    util, config, resource_checker
 
 
 def load_schedule_from_db(
@@ -400,6 +401,24 @@ def section_satisfies_constraints(
                 > config.DELTA_TIME:
             return False
     return True
+
+
+def load_resource_constraints(program, specification_overrides=None):
+    if specification_overrides is None:
+        specification_overrides = {}
+
+    tag_value = Tag.getProgramTag(config.RESOURCE_CONSTRAINTS_TAG,
+                                  program=program,
+                                  default="{}")
+    try:
+        tag_overrides = json.loads(tag_value)
+    except:
+        raise SchedulingError("Resource constraints Tag is malformatted: {}"
+                              .format(tag_value))
+    return resource_checker.create_resource_criteria(
+        [config.DEFAULT_RESOURCE_CONSTRAINTS,
+         tag_overrides,
+         specification_overrides])
 
 
 def batch_convert_sections(

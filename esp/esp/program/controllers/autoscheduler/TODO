@@ -8,8 +8,8 @@ across multiple days (RESOLVED)
 save() should check whether sections are locked before saving
 
 New features:
-Implement a way to define ResourceCriteria
-Implement resource constraints and resource scoring
+Implement a way to define ResourceCriteria for scoring
+Implement resource scoring
 
 Cache common functions like AS_Classroom.get_roomslots_by_duration and/or speed
 them up (if cache, be very careful about making availability changes)

@@ -29,7 +29,7 @@ import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.config as config
 
 
-class ConstraintViolation:
+class ConstraintViolation(object):
     """A constraint violation. Contains help text."""
     def __init__(self, constraint_name, reason):
         self.constraint_name = constraint_name
@@ -40,7 +40,7 @@ class ConstraintViolation:
             self.constraint_name, self.reason)
 
 
-class BaseConstraint:
+class BaseConstraint(object):
     """Abstract class for constraints. A Constraint can check whether a schedule
     satisfies a constraint, as well as whether a schedule would continue to
     satisfy a constraint after a hypothetical schedule manipulation."""
@@ -87,7 +87,8 @@ class CompositeConstraint(BaseConstraint):
     """A constraint which checks all the constraints you actually want."""
     def __init__(self, constraint_names, **kwargs):
         """Takes in a list of constraint names, as strings. Loads those
-        constraints, as well as all the required constraints."""
+        constraints, as well as all the required constraints. You can also use
+        'all' for the list of constraint names."""
         self.constraints = []
         available_constraints = {
                 name: item for name, item in globals().iteritems()
@@ -98,7 +99,10 @@ class CompositeConstraint(BaseConstraint):
         required_constraints = [
                 name for name, constraint in available_constraints.iteritems()
                 if constraint.required]
-        constraints_to_use = set(constraint_names + required_constraints)
+        if constraint_names == "all":
+            constraints_to_use = available_constraints
+        else:
+            constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
             print("Using constraint {}".format(constraint))
             self.constraints.append(

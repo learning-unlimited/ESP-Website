@@ -11,14 +11,16 @@ class ScheduleManipulator:
     """Class which stores a schedule and contains functions for modifying it
     subject to a particular set of constraints. Can optionally hold a scorer to
     keep updated."""
-    def __init__(self, schedule, constraint_names=None,
-                 scorer_names_and_weights=()):
+    def __init__(self, schedule, constraint_names=None, constraint_kwargs={},
+                 scorer_names_and_weights=(), scorer_kwargs={}):
         """Initializes with the given schedule, and uses given constraint names
         and scorer names and weights (if provided)."""
         self.schedule = schedule
-        self.constraints = CompositeConstraint(constraint_names) \
+        self.constraints = CompositeConstraint(
+                constraint_names, **constraint_kwargs) \
             if constraint_names is not None else schedule.constraints
-        self.scorer = CompositeScorer(scorer_names_and_weights, schedule)
+        self.scorer = CompositeScorer(
+                scorer_names_and_weights, schedule, **scorer_kwargs)
 
         # History of actions taken. Also contains enough additional information
         # for actions to be undone. Each record is a dict containing an

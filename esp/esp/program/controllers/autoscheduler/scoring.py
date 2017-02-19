@@ -13,7 +13,7 @@ import esp.program.controllers.autoscheduler.util as util
 # TODO documentation on adding scorers
 
 
-class BaseScorer:
+class BaseScorer(object):
     """Abstract class for scorers."""
     def __init__(self, schedule, **kwargs):
         """Initialize the scorer to the specified schedule."""

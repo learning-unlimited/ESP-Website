@@ -5,12 +5,12 @@ Utilities for use in resource constraints and scoring.
 import re
 
 
-class ResourceCriterion:
+class ResourceCriterion(object):
     """A criterion for resource constraints. Has a section matcher and a
     classroom matcher. Either checks that if the section matches then the
     classroom does as well, or vice versa."""
     def __init__(self, section_matcher, classroom_matcher,
-                 condition_on_section=True):
+                 condition_on_section=True, name="unnamed"):
         """Construct a ResourceCriterion with the given section matcher and
         classroom matcher. condition_on_section means we check that the section
         matching implies the classroom also matches. So if condition_on_section
@@ -19,9 +19,10 @@ class ResourceCriterion:
         self.section_matcher = section_matcher
         self.classroom_matcher = classroom_matcher
         self.condition_on_section = condition_on_section
+        self.name = name
 
     @staticmethod
-    def create_from_specification(spec):
+    def create_from_specification(spec, name="unnamed"):
         """Construct a ResourceCriterion based on a specification string.
 
         The syntax is as follows, where all caps denotes a variable and
@@ -97,7 +98,7 @@ class ResourceCriterion:
             if isinstance(section_matcher, BaseClassroomMatcher):
                 raise ValueError("Cannot specify two classroom matchers")
         return ResourceCriterion(section_matcher, classroom_matcher,
-                                 condition_on_section)
+                                 condition_on_section, name)
 
     def check_match(self, section, room):
         """Returns False if the premise holds but the conclusion fails, i.e.
@@ -113,14 +114,14 @@ class ResourceCriterion:
         """Returns the specification of this criterion; see
         create_from_specification above."""
         if self.condition_on_section:
-            return "if {} then {}".format(
-                    self.section_matcher, self.classroom_matcher)
+            return "{}: if {} then {}".format(
+                    self.name, self.section_matcher, self.classroom_matcher)
         else:
-            return "if {} then {}".format(
-                    self.classroom_matcher, self.section_matcher)
+            return "{}: if {} then {}".format(
+                    self.name, self.classroom_matcher, self.section_matcher)
 
 
-class BaseSectionMatcher:
+class BaseSectionMatcher(object):
     """A base class for section matches, which Determine whether a section
     matches a given criterion."""
     def section_matches(self, section):
@@ -178,19 +179,19 @@ class ResourceRequestMatcher(BaseSectionMatcher):
         return string
 
 
-class BaseClassroomMatcher:
+class BaseClassroomMatcher(object):
     """A base class for classroom matchers, which determine whether rooms match
     a particular criterion."""
     def room_matches(self, room):
         raise NotImplementedError
 
 
-class NegatingClassroomMatcher:
+class NegatingClassroomMatcher(BaseClassroomMatcher):
     """Negates another ClassroomMatcher."""
     def __init__(self, room_matcher):
         self.room_matcher = room_matcher
 
-    def section_matches(self, room):
+    def room_matches(self, room):
         return not(self.room_matcher.room_matches(room))
 
     def __str__(self):
@@ -237,3 +238,17 @@ class ClassroomNameMatcher(BaseClassroomMatcher):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
         return "classroom matches {}".format(self.name_regex)
+
+
+def create_resource_criteria(specification_dicts):
+    """Returns a list of resource criteria given a list of specification dicts;
+    specification dicts later in the list override specification dicts earlier
+    in the list. Specification dicts should map from resource criterion names
+    to specifications."""
+    specifications = {}
+    for specification_dict in specification_dicts:
+        for name, spec in specification_dict.iteritems():
+            specifications[name] = spec
+    return [ResourceCriterion.create_from_specification(spec, name)
+            for name, spec in specifications.iteritems()
+            if spec != "None" and spec is not None]

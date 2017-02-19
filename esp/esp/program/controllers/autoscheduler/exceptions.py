@@ -4,5 +4,5 @@ class ConsistencyError(Exception):
 
 
 class SchedulingError(Exception):
-    """An error trying to save a schedule."""
+    """An error trying to load or save a schedule."""
     pass
