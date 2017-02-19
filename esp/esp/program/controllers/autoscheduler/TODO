@@ -14,22 +14,15 @@ Implement resource scoring
 Cache common functions like AS_Classroom.get_roomslots_by_duration and/or speed
 them up (if cache, be very careful about making availability changes)
 
-Be able to specify a regex for importing classrooms (resource criterion?
-Possibly also make resource criteria be able to specify whether they only apply
-to newly scheduled rooms)
-
 Implement search, possibly with constraints having a pruning mechanism
 
 save() should send updates to the AJAX scheduler, and this should be tested
 carefully (as well as making sure partial changes don't get committed, and that
 arbitrary AJAX updates don't fuck us over)
 
+Implement a frontend
+
 Robustness:
-
-Handle sections/rooms having multiple resources/resource requests of the same
-name but different values
-
-Handle two classrooms having the same name
 
 save() might want to check to make sure that the lists of teachers teaching each
 section don't change either
