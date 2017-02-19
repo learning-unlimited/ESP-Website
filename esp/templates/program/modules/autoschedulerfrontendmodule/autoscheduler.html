@@ -1,0 +1,78 @@
+{% extends "main.html" %}
+
+{% block title %}Run Automatic Scheduling Tool{% endblock %}
+
+{% block subsection_name %}Autoscheduler Options{% endblock %}
+
+{% block content %}
+
+<script>
+var program_url_base = '{{ program.getUrlBase }}';
+</script>
+<script type="text/javascript" src="/media/scripts/program/modules/autoschedulerfrontend.js"></script>
+
+<h1>Run the Automatic Scheduler</h1>
+
+<p>Below appear constraints, scorers, and resource options. Constraints can be
+enabled or disabled. Scorers can have their weight changed; roughly speaking,
+the weight determines the relative importance of that criterion to scheduling
+a section. Resource criteria can have their weights configured; set their
+weight to -1 to make them required. If you want to add more types of resource
+criteria, you can modify the appropriate Tags for your program in the admin
+panel.</p>
+
+<p><b>Warning: Save frequently or you may lose your work because someone else moved a section you wanted.</b></p>
+
+<form id="autoschedulerform" action="javascript:runAutoscheduler()" class="form-inline" method="POST">
+<center>
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in constraints.items %}
+<tr>
+	<th>{{ option_key }}</th>
+	<td><input type="text" class="input-small" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+{% for option_key, option_value in scorers.items %}
+<tr>
+	<th>{{ option_key }}</th>
+	<td><input type="text" class="input-small" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+{% for option_key, option_value in resources.items %}
+<tr>
+	<th>{{ option_key }}</th>
+	<td><input type="text" class="input-small" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+{% for option_key, option_value in search.items %}
+<tr>
+	<th>{{ option_key }}</th>
+	<td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+
+<tr>
+    <td colspan="3"><button type="submit" class="btn btn-primary btn-large" style="background-color:red; background-image: none;">Whee... Run Autoscheduler!</button></td>
+</tr>
+<tr>
+    <td colspan="3">
+        <a href="javascript:saveAutoscheduler()"><button type="button" class="btn btn-success">Save room assignments</button></a>
+        <a href="javascript:clearAutoscheduler()"><button type="button" class="btn btn-danger">Clear saved assignments</button></a>
+    </td>
+</tr>
+</table>
+</center>
+</form>
+
+<h1>Scheduling Information</h1>
+<p>Scheduling information should appear below after you run the automatic scheduling tool.</p>
+
+<div id="autoschedulerinfo"></div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

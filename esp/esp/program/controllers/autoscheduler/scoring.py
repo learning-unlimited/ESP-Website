@@ -1,4 +1,9 @@
-"""A Scorer can score a schedule, or (for performance reasons) predict the
+"""
+TO ADD NEW SCORERS:
+Extend and implement BaseScorer, and update config.py with a description and
+default weight. Set self.scaling for your scorer as appropriate (see below).
+
+A Scorer can score a schedule, or (for performance reasons) predict the
 change in score a particular schedule hypothetical schedule manipulation would
 cause. Since some of these scorers are fairly global, e.g. depend on a
 distribution, scorers are allowed to maintain an internal state; so a scorer
@@ -19,7 +24,6 @@ so we need to scale down.) This allows scorer weights to be determined by
 relative importance to scheduling a section without accounting for this sort of
 behavior."""
 import esp.program.controllers.autoscheduler.util as util
-# TODO documentation on adding scorers
 
 
 class BaseScorer(object):
@@ -118,6 +122,8 @@ class CompositeScorer(BaseScorer):
         self.total_weight = 0.0
         for scorer, weight in self.scorers_and_weights:
             self.total_weight += scorer.scaling * weight
+        if self.total_weight == 0:
+            self.total_weight = 1.0
 
     @util.timed_func("CompositeScorer_score_schedule")
     def score_schedule(self):

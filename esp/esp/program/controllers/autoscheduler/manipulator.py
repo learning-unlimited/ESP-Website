@@ -163,14 +163,15 @@ class ScheduleManipulator:
         """Performs the given action, as specified in the same way as
         history (though possibly without extraneous undo-ing information)."""
         if action["action"] == "schedule":
-            self.schedule_section(action["section"], action["start_roomslot"])
+            return self.schedule_section(
+                    action["section"], action["start_roomslot"])
         elif action["action"] == "move":
-            self.move_section(action["section"],
-                              action["start_roomslot"])
+            return self.move_section(action["section"],
+                                     action["start_roomslot"])
         elif action["action"] == "unschedule":
-            self.unschedule_section(action["section"])
+            return self.unschedule_section(action["section"])
         elif action["action"] == "swap":
-            self.swap_sections(*action["sections"])
+            return self.swap_sections(*action["sections"])
 
     def jsonify_action(self, action):
         """Turns an action (i.e. history item) into a json-like dict."""
@@ -217,6 +218,13 @@ class ScheduleManipulator:
 
     def jsonify_history(self):
         return [self.jsonify_action(action) for action in self.history]
+
+    def load_history(self, jsonified_dicts):
+        actions = [self.dejsonify_action(d) for d in jsonified_dicts]
+        for action in actions:
+            if not self.perform_action(action):
+                return False
+        return True
 
     def get_recorded_times(self):
         """Gets the times recorded, not necessarily by this manipulator."""

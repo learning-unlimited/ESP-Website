@@ -4,6 +4,40 @@ which is also the minimum allowed length of a timeslot."""
 DELTA_TIME = 0.34
 
 
+"""*******************Constraints*******************"""
+"""Default configuration for whether constraints are enabled. Format is:
+    ConstraintClassName: True/False
+This will be overridden by a tag, and then by use input. Note that this will
+only have an effect on optional constraints; see the docstring at the top of
+constraints.py for more details."""
+DEFAULT_CONSTRAINTS_ENABLED = {
+    "LunchConstraint": True,
+    "ResourceCriteriaConstraint": True,
+}
+
+CONSTRAINT_TAG = "autoscheduler_constraint_overrides"
+
+"""Descriptions for each constraint. Dict mapping from constraint name to short
+description."""
+CONSTRAINT_DESCRIPTIONS = {
+    "ContiguousConstraint": "Schedule sections over contiguous timeblocks.",
+    "LunchConstraint": "Don't schedule multi-hour sections over lunch.",
+    "PreconditionConstraint":
+        "Only unschedule already-scheduled classes, etc.",
+    "ResourceCriteriaConstraint":
+        "Specially specified resource criteria must be met.",
+    "RoomAvailabilityConstraint":
+        "Only schedule classes in rooms that we have reserved.",
+    "RoomConcurrencyConstraint":
+        "Don't double-book rooms.",
+    "SectionDurationConstraint": "Schedule sections for their duration.",
+    "TeacherAvailabilityConstraint":
+        "Teachers can only teach when they're available.",
+    "TeacherConcurrencyConstraint":
+        "Teachers can't teach two classes at once."
+}
+
+
 """*******************Scoring**********************"""
 """Default scorer names and weights for scorers. Format is:
     ScorerClassName: weight
@@ -30,6 +64,38 @@ DEFAULT_SCORER_WEIGHTS = {
 }
 
 SCORER_TAG = "autoscheduler_scorer_weight_overrides"
+
+"""Dict mapping from scorer class name to short description."""
+SCORER_DESCRIPTIONS = {
+    "AdminDistributionScorer":
+        "Schedule admin classes evenly and not in the morning.",
+    "CategoryBalanceScorer":
+        "Schedule each category's student-class-hours evenly.",
+    "LunchStudentClassHoursScorer":
+        "Prioritize scheduling classes away from lunchtime.",
+    "HungryTeacherScorer":
+        "Avoid teachers teaching both blocks of lunch.",
+    "NumSectionsScorer":
+        "Schedule as many class sections as possible.",
+    "NumSubjectsScorer":
+        "Schedule as many distinct classes as possible.",
+    "NumTeachersScorer":
+        "Schedule as many distinct teachers' classes as possible.",
+    "ResourceCriteriaScorer":
+        "If we have specially defined resource criteria, score them.",
+    "ResourceMatchingScorer":
+        "If a section requested a resource, give it to them.",
+    "ResourceValueMatchingScorer":
+        "If a section requested a resource and value, do it.",
+    "RoomConsecutivityScorer":
+        "Try to schedule classes consecutively in rooms.",
+    "RoomSizeMismatchScorer":
+        "Schedule classes in appropriately sized rooms.",
+    "StudentClassHoursScorer":
+        "Schedule as many student-class-hours as possible.",
+    "TeachersWhoLikeRunningScorer":
+        "Avoid teachers teaching back-to-back in different rooms.",
+}
 
 
 """********************Resources********************"""

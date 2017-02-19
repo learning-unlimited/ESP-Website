@@ -5,13 +5,11 @@ Bugs:
 save() should check whether sections are locked before saving
 save() can have an issue if someone moves a class after you saved but before
 you committed
-
-Make sure that resource criteria names are escaped appropriately.
+pass section scheduling infos in histories
 
 New features:
-Implement a way to define ResourceCriteria for scoring
-
-Implement search, possibly with constraints having a pruning mechanism
+Implement a timeout on search
+Implement a faster search
 
 AJAX change log entries can include users
 

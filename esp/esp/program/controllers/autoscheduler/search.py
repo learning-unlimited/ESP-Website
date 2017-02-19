@@ -10,7 +10,7 @@ class SearchOptimizer:
         for room in manipulator.schedule.classrooms.itervalues():
             self.roomslots += room.availability
 
-    def optimize_section(self, section, depth):
+    def optimize_section(self, section, depth, timeout=None):
         """Tries to schedule (if it is not scheduled) or move (if it is already
         scheduled) the specified section by moving or unscheduling other
         sections, searching up to the specified depth. Returns the actions

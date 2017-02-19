@@ -1,4 +1,11 @@
-""" A Constraint checks whether a schedule is "legal", e.g. teachers teaching
+"""
+TO ADD NEW CONSTRAINTS:
+Create a class to extend the BaseConstraint class, and update config.py to list
+a description. If your constraint is required, set the
+appropriate attribute to override the value set in BaseConstraint; otherwise,
+set a default for it in config.py.
+
+A Constraint checks whether a schedule is "legal", e.g. teachers teaching
 when they aren't available is illegal. Constraints are used to determine which
 schedule manipulations are possible at any given point.
 
@@ -21,7 +28,6 @@ dependencies often cannot be summarized in a structure much simpler than an
 AS_Schedule itself. Having an internal state and also passing in a schedule
 seems too fragile.)
 """
-# TODO: documentation on adding constraints
 
 import inspect
 
@@ -90,15 +96,8 @@ class CompositeConstraint(BaseConstraint):
         constraints, as well as all the required constraints. You can also use
         'all' for the list of constraint names."""
         self.constraints = []
-        available_constraints = {
-                name: item for name, item in globals().iteritems()
-                if inspect.isclass(item)
-                and issubclass(item, BaseConstraint)
-                and item not in [BaseConstraint, CompositeConstraint]}
-
-        required_constraints = [
-                name for name, constraint in available_constraints.iteritems()
-                if constraint.required]
+        available_constraints = get_all_constraints_dict()
+        required_constraints = get_required_constraints()
         if constraint_names == "all":
             constraints_to_use = available_constraints
         else:
@@ -332,11 +331,11 @@ class PreconditionConstraint(BaseConstraint):
 
 
 class ResourceCriteriaConstraint(BaseConstraint):
-    """Check to make sure all resource criteria (passed to the constructor with
-    the keyword arg resource_criteria) are satisfied. This does NOT check
-    whether existing sections satisfy these resource criteria, so that we can
-    specify resource-based constraints to the autoscheduler but humans can
-    make exceptions manually."""
+    """Check to make sure all resource criteria (a list passed to the
+    constructor with the keyword arg resource_criteria) are satisfied. This
+    does NOT check whether existing sections satisfy these resource criteria,
+    so that we can specify resource-based constraints to the autoscheduler but
+    humans can make exceptions manually."""
     def __init__(self, **kwargs):
         super(ResourceCriteriaConstraint, self).__init__(**kwargs)
         self.resource_criteria = kwargs.get("resource_criteria", [])
@@ -777,3 +776,23 @@ class TeacherConcurrencyConstraint(BaseConstraint):
                         self.__class__.__name__,
                         "Teacher in second section is already teaching")
         return None
+
+
+def get_all_constraints_dict():
+    return {
+        name: item for name, item in globals().iteritems()
+        if inspect.isclass(item)
+        and issubclass(item, BaseConstraint)
+        and item not in [BaseConstraint, CompositeConstraint]}
+
+
+def get_required_constraints():
+    return [
+        name for name, constraint in get_all_constraints_dict().iteritems()
+        if constraint.required]
+
+
+def get_optional_constraints():
+    return [
+        name for name, constraint in get_all_constraints_dict().iteritems()
+        if not constraint.required]
