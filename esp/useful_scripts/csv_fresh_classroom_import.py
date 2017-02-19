@@ -26,9 +26,9 @@ RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("program", help="Program name")
-parser.add_argument("sched_filename", 
+parser.add_argument("sched_filename",
         help="Full path to CSV file from schedules")
-parser.add_argument("furnish_filename", 
+parser.add_argument("furnish_filename",
         help="Full path to CSV file with furnishings")
 args = parser.parse_args()
 
