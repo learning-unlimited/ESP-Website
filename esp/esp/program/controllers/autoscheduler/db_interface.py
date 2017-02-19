@@ -173,6 +173,7 @@ def save(schedule, check_consistency=True, check_constraints=True):
     # These are all the sections we are okay changing.
     unscheduled_sections = set()  # Sections we unscheduled temporarily
     with transaction.atomic():
+        ajax_change_log = get_ajax_change_log(schedule.program)
         for section in changed_sections:
             section_obj = ClassSection.objects.get(id=section.id)
             print("Saving {}".format(section_obj.emailcode()))
@@ -209,7 +210,8 @@ def save(schedule, check_consistency=True, check_constraints=True):
                                     str(other_time.end)))
                             try_unschedule_section(
                                 other_section, unscheduled_sections,
-                                schedule.class_sections, err_msg)
+                                schedule.class_sections, err_msg,
+                                ajax_change_log)
 
                 # Compute our meeting times and classroom
                 meeting_times = Event.objects.filter(
@@ -235,27 +237,24 @@ def save(schedule, check_consistency=True, check_constraints=True):
                             try_unschedule_section(
                                     other_section, unscheduled_sections,
                                     schedule.class_sections,
-                                    "Room is occupied")
+                                    "Room is occupied", ajax_change_log)
 
-                # Schedule the section!
-                section_obj.assign_meeting_times(meeting_times)
-                status, errors = section_obj.assign_room(room_objs[0])
-                if not status:
-                    section_obj.clear_meeting_times()
-                    raise SchedulingError(
-                            "Room assignment failed with errors: "
-                            + " | ".join(errors))
+                schedule_section(
+                    section_obj, meeting_times, room_objs[0], ajax_change_log)
             else:
-                section_obj.clearRooms()
-                section_obj.clear_meeting_times()
+                unschedule_section(section_obj, ajax_change_log)
 
             # Update the section's initial_state so we don't confuse
             # ourselves
             section.recompute_hash()
+        print "Waiting..."
+        for i in xrange(int(5e8)):
+            pass
+        print "Done"
 
 
 def try_unschedule_section(section, unscheduled_sections, class_sections,
-                           error_message):
+                           error_message, ajax_change_log):
     """Tries to unschedule the given ClassSection. If it's not in the list
     of known sections (class_sections), throw a SchedulingError with the
     given error message. Otherwise, make sure the section wasn't moved by
@@ -265,7 +264,7 @@ def try_unschedule_section(section, unscheduled_sections, class_sections,
     else:
         ensure_section_not_moved(
                 section, class_sections[section.id])
-        unschedule_section(section, unscheduled_sections)
+        unschedule_section(section, ajax_change_log, unscheduled_sections)
 
 
 def ensure_section_not_moved(section, as_section):
@@ -278,13 +277,44 @@ def ensure_section_not_moved(section, as_section):
                 moved.".format(section.emailcode))
 
 
-def unschedule_section(section, unscheduled_sections_log=None):
+def unschedule_section(
+        section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    # Unschedule the offending section.
+    print "Unscheduling {}".format(section.id)
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
         unscheduled_sections_log.add(section.id)
+    ajax_change_log.appendScheduling([], "", section.id, None)
+
+
+def schedule_section(section, times, room, ajax_change_log):
+    """Schedules the section in the times and rooms."""
+    print "Executing save."
+    section.assign_meeting_times(times)
+    status, errors = section.assign_room(room)
+    if not status:
+        section.clear_meeting_times()
+        raise SchedulingError(
+                "Room assignment failed with errors: "
+                + " | ".join(errors))
+    ajax_change_log.appendScheduling(
+        [t.id for t in times], room.name, section.id, None)
+
+
+def get_ajax_change_log(prog):
+    """Returns the AJAXChangeLog for a program. Duplicates logic from
+    the ajaxschedulingmodule handler's get_change_log."""
+    change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+
+    if change_log.count() == 0:
+        change_log = module_ext.AJAXChangeLog()
+        change_log.update(prog)
+        change_log.save()
+    else:
+        change_log = change_log[0]
+
+    return change_log
 
 
 def convert_classection_obj(

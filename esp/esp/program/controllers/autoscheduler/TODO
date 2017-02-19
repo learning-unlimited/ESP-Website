@@ -10,14 +10,9 @@ New features:
 Implement a way to define ResourceCriteria for scoring
 Implement resource scoring
 
-Cache common functions like AS_Classroom.get_roomslots_by_duration and/or speed
-them up (if cache, be very careful about making availability changes)
-
 Implement search, possibly with constraints having a pruning mechanism
 
-save() should send updates to the AJAX scheduler, and this should be tested
-carefully (as well as making sure partial changes don't get committed, and that
-arbitrary AJAX updates don't fuck us over)
+AJAX change log entries can include users
 
 Implement a frontend
 
