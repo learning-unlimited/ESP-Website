@@ -3,6 +3,36 @@ Various utility functions.
 """
 
 from datetime import timedelta, datetime
+from timeit import default_timer
+
+from esp.program.controllers.autoscheduler import config
+
+
+TIMES = {}
+
+
+def timed_func(key):
+    if not config.USE_TIMER:
+        return lambda x: x
+    """Generates a decorator which times a function and records its total time
+    under the specified key."""
+    if key not in TIMES:
+        TIMES[key] = 0.0
+
+    def timer(func):
+        def wrapper(*args, **kwargs):
+            start = default_timer()
+            retval = func(*args, **kwargs)
+            end = default_timer()
+            TIMES[key] += (end - start)
+            return retval
+        return wrapper
+    return timer
+
+
+def total_time_recorded(key):
+    """Returns the total time recorded under the key."""
+    return TIMES.get(key, None)
 
 
 def contiguous(timeslot1, timeslot2):

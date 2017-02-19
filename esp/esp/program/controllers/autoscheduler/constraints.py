@@ -108,6 +108,7 @@ class CompositeConstraint(BaseConstraint):
             self.constraints.append(
                 available_constraints[constraint](**kwargs))
 
+    @util.timed_func("CompositeConstraint_check_schedule")
     def check_schedule(self, schedule):
         for c in self.constraints:
             violation = c.check_schedule(schedule)
@@ -115,6 +116,7 @@ class CompositeConstraint(BaseConstraint):
                 return violation
         return None
 
+    @util.timed_func("CompositeConstraint_check_schedule_section")
     def check_schedule_section(self, section, start_roomslot, schedule):
         for c in self.constraints:
             violation = c.check_schedule_section(
@@ -123,6 +125,7 @@ class CompositeConstraint(BaseConstraint):
                 return violation
         return None
 
+    @util.timed_func("CompositeConstraint_check_move_section")
     def check_move_section(self, section, start_roomslot, schedule):
         for c in self.constraints:
             violation = c.check_move_section(section, start_roomslot, schedule)
@@ -130,6 +133,7 @@ class CompositeConstraint(BaseConstraint):
                 return violation
         return None
 
+    @util.timed_func("CompositeConstraint_check_unschedule_section")
     def check_unschedule_section(self, section, schedule):
         for c in self.constraints:
             violation = c.check_unschedule_section(section, schedule)
@@ -137,6 +141,7 @@ class CompositeConstraint(BaseConstraint):
                 return violation
         return None
 
+    @util.timed_func("CompositeConstraint_check_swap_sections")
     def check_swap_sections(self, section1, section2, schedule):
         for c in self.constraints:
             violation = c.check_swap_section(section1, section2, schedule)

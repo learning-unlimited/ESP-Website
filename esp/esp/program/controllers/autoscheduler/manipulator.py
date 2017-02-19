@@ -217,3 +217,7 @@ class ScheduleManipulator:
 
     def jsonify_history(self):
         return [self.jsonify_action(action) for action in self.history]
+
+    def get_recorded_times(self):
+        """Gets the times recorded, not necessarily by this manipulator."""
+        return util.TIMES

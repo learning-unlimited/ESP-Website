@@ -60,3 +60,8 @@ DEFAULT_RESOURCE_SCORING = {
 }
 
 RESOURCE_SCORING_TAG = "autoscheduler_resource_scoring_overrides"
+
+
+"""Whether or not to use the timer in util.py. If not, code will be somewhat
+faster."""
+USE_TIMER = False
