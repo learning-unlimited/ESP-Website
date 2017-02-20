@@ -6,6 +6,7 @@ save() should check whether sections are locked before saving
 save() can have an issue if someone moves a class after you saved but before
 you committed
 pass section scheduling infos in histories
+search might try to unschedule sections multiple times
 
 New features:
 Implement a timeout on search
