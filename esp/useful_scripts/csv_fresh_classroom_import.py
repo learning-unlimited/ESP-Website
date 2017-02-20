@@ -181,6 +181,7 @@ def parse_time(date, time):
     time = (time + "m").upper()
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
+OFFSET = 2
 print "Reading from furnishings csv..."
 for row in furnish_classrooms:
     room_number = row[FURNISH_ROOM_NUMBER_COL]
@@ -227,7 +228,7 @@ for row in sched_rows:
             continue
         else:
             idx = RESOURCE_NAMES.index(res.name)
-            if idx is not None and room_desc[idx + 1]:
+            if idx is not None and room_desc[idx + OFFSET]:
                 furnishings.add(res)
 
     # Create Clasrooms with Furnishings
