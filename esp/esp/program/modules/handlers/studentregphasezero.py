@@ -102,7 +102,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 join_user = request.POST['student_selected']
                 group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
                 if in_lottery:
-                    old_group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
+                    old_group = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
                 users = group.user.all()
                 num_users = len(users)
                 if join_user == str(user.id):
