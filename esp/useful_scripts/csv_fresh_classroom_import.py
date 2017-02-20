@@ -149,19 +149,18 @@ if SPACE_TYPE_IDX is not None:
                 possible_types = get_possible_space_Types()
                 if force_manual:
                     print "Manual mode forced due to attempt failure."
+                print ("Unable to automatically match space type "
+                "{} to possible space types.").format(space_type)
+                print "Available space types:"
+                for space in possible_types:
+                    print space
+                match_attempt = raw_input(
+                    "Input space type index (or 'None'): ")
+                if match_attempt == "None":
+                    match_attempt = ""
                 else:
-                    print ("Unable to automatically match space type "
-                    "{} to possible space types.").format(space_type)
-                    print "Available space types:"
-                    for space in possible_types:
-                        print space
-                    match_attempt = raw_input(
-                        "Input space type index (or 'None'): ")
-                    if match_attempt == "None":
-                        match_attempt = ""
-                    else:
-                        match_attempt = POSSIBLE_SPACE_TYPES[
-                            int(match_attempt)]
+                    match_attempt = POSSIBLE_SPACE_TYPES[
+                        int(match_attempt)]
             SPACE_TYPE_MATCHING[space_type] = match_attempt
         print "We have the following matchings:"
         for space, possible in SPACE_TYPE_MATCHING.iteritems():
