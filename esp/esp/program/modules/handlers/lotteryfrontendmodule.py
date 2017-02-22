@@ -27,9 +27,9 @@ class LotteryFrontendModule(ProgramModuleObj):
 
         #   Render control page with lottery options
         context = {
-        	'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False},
-        	'has_old_schedules': StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Enrolled').count() > 0,
-    	}
+            'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False},
+            'has_old_schedules': StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Enrolled').count() > 0,
+        }
         return render_to_response(self.baseDir()+'lottery.html', request, context)
 
     def is_float(self, s):
