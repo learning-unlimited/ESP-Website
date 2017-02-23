@@ -147,7 +147,7 @@ class ClassChangeController(object):
             self.students_not_checked_in = list(self.students.exclude(id__in=self.program.students()['attended']).values_list('id',flat=True).distinct())
         self.priority_limit = self.program.priorityLimit()
         self._init_Q_objects()
-        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
+        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program').distinct()
         if not self.options['use_closed_classes']:
             self.sections = self.sections.filter(registration_status=0).distinct()
         self.timeslots = self.program.getTimeSlots().order_by('id').distinct()
