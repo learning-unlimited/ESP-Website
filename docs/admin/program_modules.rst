@@ -8,6 +8,8 @@ When you create a program, your primary means of controlling the registration pr
 
 You may select which program modules to include on the program creation form at http://[hostname]/manage/newprogram.  After a program has been created, you can select which modules to include within the administration pages; go to http://[hostname]/admin/program/program/, select your program and edit the "Program modules" multi-select field.
 
+You can also change the displayed name of program modules at http://[hostname]/admin/program/programmodule/.
+
 More background on program modules
 ==================================
 
