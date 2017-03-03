@@ -7,12 +7,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0009_auto_20170109_1715'),
+        ('users', '0007_auto_20160709_2038'),
+        ('program', '0010_phasezerorecord'),
     ]
 
     operations = [
         migrations.RemoveField(
             model_name='phasezerorecord',
-            name='lottery_number',
+            name='user',
+        ),
+        migrations.AddField(
+            model_name='phasezerorecord',
+            name='user',
+            field=models.ManyToManyField(to='users.ESPUser'),
         ),
     ]
