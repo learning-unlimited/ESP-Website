@@ -8,8 +8,8 @@ import esp.db.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0007_auto_20160709_2038'),
-        ('program', '0007_auto_20160709_1856'),
+        ('users', '0009_auto_20170205_2131'),
+        ('program', '0009_auto_20170205_2119'),
     ]
 
     operations = [
