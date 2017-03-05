@@ -1,0 +1,12 @@
+{% extends "main.html" %}
+
+{% block title %}Bulk Account Error{% endblock %}
+
+{% block content %}
+<h1>Error</h1>
+
+<p>Invalid data for bulk account creation.  {{ bulk_account_error_message }}</p>
+
+<p>Please <a href="javascript:history.go(-1)">go back</a> to correct this error.</p>
+
+{% endblock %}
