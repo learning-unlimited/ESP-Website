@@ -1446,7 +1446,7 @@ class BulkCreateAccountTest(ProgramFrameworkTest):
                 self.assertTrue(student_group in account.groups.all())
                 self.assertTrue(bulk_group in account.groups.all())
         except ESPUser.DoesNotExist:
-            raise AssertionError('bulk_account_create did not create all accounts it was supposed to: %s')
+            raise AssertionError('bulk_account_create did not create all accounts it was supposed to')
 
     def checkForBulkCreateError(self, test_case, form_data):
         bulk_account_create_response = self.client.post('/manage/%s/bulk_account_create' % self.program.getUrlBase(),
