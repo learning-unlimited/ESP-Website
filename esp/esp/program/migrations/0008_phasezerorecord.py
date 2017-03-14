@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0007_auto_20161017_1848'),
-        ('program', '0007_classsubject_class_style'),
+        ('program', '0006_classsubject_timestamp')
     ]
 
     operations = [

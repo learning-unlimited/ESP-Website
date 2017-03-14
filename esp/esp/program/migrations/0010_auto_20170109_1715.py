@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0008_auto_20170131_0056'),
-        ('program', '0008_phasezerorecord'),
+        ('program', '0009_classsubject_class_style'),
     ]
 
     operations = [
