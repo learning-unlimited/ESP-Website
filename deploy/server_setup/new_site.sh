@@ -334,6 +334,12 @@ ALLOWED_HOSTS = ['$ESPHOSTNAME']
 EOF
 
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    # TODO(benkraft): This shouldn't be necessary; we should just set things up
+    # to get the right perms on creation.
+    for ext in .shell.log .log ; do
+        touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        chown -R $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME"*
+    done
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
