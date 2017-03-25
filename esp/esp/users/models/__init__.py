@@ -1663,6 +1663,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
+        verbose_name_plural = 'Zip Code Searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
