@@ -40,6 +40,9 @@ from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
+from django.contrib.auth.models import Group
+from django.db.models.query import Q
+
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
@@ -57,6 +60,7 @@ class NameTagModule(ProgramModuleObj):
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
         context = {'module': self}
+        context['groups'] = Group.objects.all()
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
@@ -106,6 +110,25 @@ class NameTagModule(ProgramModuleObj):
                               'name' : '%s %s' % (teacher.first_name, teacher.last_name),
                               'id'   : teacher.id,
                               'username': teacher.username})
+
+        elif idtype == 'other':
+            users_list = []
+            if request.POST['group'] == '':
+                raise ESPError("You need to select a group", log=False)
+            group = request.POST['group']
+            user_Q = Q(groups=group)
+            users_list = ESPUser.objects.filter(user_Q).distinct()
+
+            users_list = [ user for user in users_list ]
+            users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
+            users_list.sort()
+
+            user_title = request.POST['blanktitle']
+            for user in users_list:
+                users.append({'title': user_title,
+                              'name' : '%s %s' % (user.first_name, user.last_name),
+                              'id'   : user.id,
+                              'username': user.username})
 
         elif idtype == 'volunteers':
             users = []
