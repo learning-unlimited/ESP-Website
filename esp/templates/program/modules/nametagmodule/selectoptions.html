@@ -47,15 +47,15 @@ To have good quality IDs:<br />
 <strong>ID Type</strong>
 <ul>
   <li><input type="radio" name="type" value="students" id="students"
-       onclick="document.getElementById('volunteers').disabled = true; document.getElementById('group').disabled = true;" checked="checked" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" checked="checked" />
       <label for="students">Students</label>
   </li>
   <li><input type="radio" name="type" value="teacher" id="teachers"
-       onclick="document.getElementById('volunteers').disabled = true; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="teachers">Teachers</label>
   </li>
   <li><input type="radio" name="type" value="other" id="other"
-       onclick="document.getElementById('volunteers').disabled = true; document.getElementById('group').disabled = false;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = false;" />
       <label for="teachers">Other Group</label>
   </li>
 <select name="group" id="group" disabled>
@@ -65,21 +65,25 @@ To have good quality IDs:<br />
     <option value="" selected hidden></option>
 </select>
   <li><input type="radio" name="type" value="volunteers" id="volunt"
-       onclick="document.getElementById('volunteers').disabled = false; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="volunt">Volunteers</label>
   </li>
+  <li><input type="radio" name="type" value="misc" id="misc"
+       onclick="document.getElementById('misc_info').disabled = false; document.getElementById('group').disabled = true;" />
+      <label for="volunt">Miscellaneous (enter info below)</label>
+  </li>
   <li><input type="radio" name="type" value="blank" id="blank"
-       onclick="document.getElementById('volunteers').disabled = true; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="blank">Blank</label>
   </li>
 </ul>
 
 <br />
 <br />
-<label for="volunteers"><strong>Volunteers:</strong></label>
+<label for="misc_info"><strong>Miscellaneous:</strong></label>
 <br />
 (&quot;Name, Title&quot; on each line, without quotes.)<br />
-<textarea name="volunteers" id="volunteers" rows="25" cols="40" disabled></textarea>
+<textarea name="misc_info" id="misc_info" rows="25" cols="40" disabled></textarea>
 <br />
 <br />
 <label for="number"><strong>Number (if blank chosen) of IDs:</strong></label>

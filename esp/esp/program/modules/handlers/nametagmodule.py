@@ -131,9 +131,25 @@ class NameTagModule(ProgramModuleObj):
                               'username': user.username})
 
         elif idtype == 'volunteers':
+            volunteers = []
+            volunteer_dict = self.program.volunteers(QObjects=True)
+            volunteers = ESPUser.objects.filter(volunteer_dict['volunteer_all']).distinct()
+
+            volunteers = [ volunteer for volunteer in volunteers ]
+            volunteers = filter(lambda x: len(x.first_name+x.last_name), volunteers)
+            volunteers.sort()
+
+            user_title = "Volunteer"
+            for volunteer in volunteers:
+                users.append({'title': user_title,
+                              'name' : '%s %s' % (volunteer.first_name, volunteer.last_name),
+                              'id'   : volunteer.id,
+                              'username': volunteer.username})
+
+        elif idtype == 'misc':
             users = []
-            volunteers = request.POST['volunteers']
-            for user in volunteers.split("\n"):
+            misc = request.POST['misc_info']
+            for user in misc.split("\n"):
                 arruser = user.split(",", 1)
 
                 if len(arruser) >= 2:
