@@ -743,7 +743,7 @@ teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
-        
+
         volunteer_list = []
         volunteer_dict = prog.volunteers()
         volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))

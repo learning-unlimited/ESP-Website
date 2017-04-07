@@ -63,7 +63,7 @@ class VolunteerManage(ProgramModuleObj):
     @needs_admin
     def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
-        
+
         volunteer_dict = self.program.volunteers()
         context['num_vol'] = volunteer_dict['volunteer_all'].count()
 
