@@ -35,6 +35,18 @@ function fillStats(data)
 	}
     }
 
+    // Fill in the volunteer num data
+    $volunteernum = $j("#stats_volunteers > .module_group_body");
+    $volunteernum.html('');
+    for (var i = 0; i < vitals.volunteernum.length; i++)
+    {
+	$volunteernum.append("<strong>"+vitals.volunteernum[i][0]+"</strong> &ndash; "+vitals.volunteernum[i][1]);
+	if (i != vitals.volunteernum.length - 1)
+	{
+	   $volunteernum.append("<br />");
+	}
+    }
+
     // Fill in the classes num data
     $classnum = $j("#stats_classes > .module_group_body");
     $classnum.html('');
