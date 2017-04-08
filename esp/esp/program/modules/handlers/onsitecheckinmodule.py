@@ -190,6 +190,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         student = ESPUser.objects.get(id=code)
                     except (ValueError, ESPUser.DoesNotExist):
                         results['not_found'].append(code)
+                        continue
 
                     if student.isStudent():
                         existing = Record.user_completed(student, 'attended', prog)
