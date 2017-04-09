@@ -56,14 +56,15 @@ To have good quality IDs:<br />
   </li>
   <li><input type="radio" name="type" value="other" id="other"
        onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = false;" />
-      <label for="teachers">Other Group</label>
+      <label for="teachers">Other Group</label>&nbsp;&nbsp;&nbsp;
+      <select name="group" id="group" disabled>
+        {% for group in groups %}
+        <option value="{{ group.id }}">{{ group.name }}</option>
+        {% endfor %}
+        <option value="" selected hidden></option>
+      </select>
   </li>
-<select name="group" id="group" disabled>
-    {% for group in groups %}
-    <option value="{{ group.id }}">{{ group.name }}</option>
-    {% endfor %}
-    <option value="" selected hidden></option>
-</select>
+
   <li><input type="radio" name="type" value="volunteers" id="volunt"
        onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="volunt">Volunteers</label>

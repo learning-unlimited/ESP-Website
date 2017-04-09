@@ -64,6 +64,19 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
+    def nametag_data(self, users_list, user_title):
+        users = []
+        users_list = [ user for user in users_list ]
+        users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
+        users_list.sort()
+
+        for user in users_list:
+            users.append({'title': user_title,
+                          'name' : '%s %s' % (user.first_name, user.last_name),
+                          'id'   : user.id,
+                          'username': user.username})
+        return users
+
     @aux_call
     @needs_admin
     def generatetags(self, request, tl, one, two, module, extra, prog):
@@ -79,72 +92,38 @@ class NameTagModule(ProgramModuleObj):
         user_title = idtype
 
         if idtype == 'students':
+            user_title = "Student"
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
                 students = ESPUser.objects.filter(student_dict['classreg']).distinct()
             else:
                 students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
 
-            students = filter(lambda x: len(x.first_name+x.last_name), students)
-            students.sort()
-
-            user_title = "Student"
-            for student in students:
-                users.append({'title': user_title,
-                              'name' : '%s %s' % (student.first_name, student.last_name),
-                              'id'   : student.id,
-                              'username': student.username})
+            users = self.nametag_data(students, user_title)
 
         elif idtype == 'teacher':
-            teachers = []
+            user_title = "Teacher"
             teacher_dict = self.program.teachers(QObjects=True)
             teachers = ESPUser.objects.filter(teacher_dict['class_approved']).distinct()
 
-            teachers = [ teacher for teacher in teachers ]
-            teachers = filter(lambda x: len(x.first_name+x.last_name), teachers)
-            teachers.sort()
-
-            user_title = "Teacher"
-            for teacher in teachers:
-                users.append({'title': user_title,
-                              'name' : '%s %s' % (teacher.first_name, teacher.last_name),
-                              'id'   : teacher.id,
-                              'username': teacher.username})
+            users = self.nametag_data(teachers, user_title)
 
         elif idtype == 'other':
-            users_list = []
+            user_title = request.POST['blanktitle']
             if request.POST['group'] == '':
                 raise ESPError("You need to select a group", log=False)
             group = request.POST['group']
             user_Q = Q(groups=group)
             users_list = ESPUser.objects.filter(user_Q).distinct()
 
-            users_list = [ user for user in users_list ]
-            users_list = filter(lambda x: len(x.first_name+x.last_name), users_list)
-            users_list.sort()
-
-            user_title = request.POST['blanktitle']
-            for user in users_list:
-                users.append({'title': user_title,
-                              'name' : '%s %s' % (user.first_name, user.last_name),
-                              'id'   : user.id,
-                              'username': user.username})
+            users = self.nametag_data(users_list, user_title)
 
         elif idtype == 'volunteers':
-            volunteers = []
+            user_title = "Volunteer"
             volunteer_dict = self.program.volunteers(QObjects=True)
             volunteers = ESPUser.objects.filter(volunteer_dict['volunteer_all']).distinct()
 
-            volunteers = [ volunteer for volunteer in volunteers ]
-            volunteers = filter(lambda x: len(x.first_name+x.last_name), volunteers)
-            volunteers.sort()
-
-            user_title = "Volunteer"
-            for volunteer in volunteers:
-                users.append({'title': user_title,
-                              'name' : '%s %s' % (volunteer.first_name, volunteer.last_name),
-                              'id'   : volunteer.id,
-                              'username': volunteer.username})
+            users = self.nametag_data(volunteers, user_title)
 
         elif idtype == 'misc':
             users = []
@@ -196,7 +175,6 @@ class NameTagModule(ProgramModuleObj):
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
-
 
 
     class Meta:
