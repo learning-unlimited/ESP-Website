@@ -746,7 +746,8 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         volunteer_list = []
         volunteer_dict = prog.volunteers()
-        volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
+        if 'volunteer_all' in volunteer_dict:
+            volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
         vitals['volunteernum'] = volunteer_list
 
         timeslots = prog.getTimeSlots()

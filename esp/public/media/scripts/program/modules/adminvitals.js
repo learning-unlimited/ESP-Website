@@ -1,5 +1,20 @@
 statsFilled = false;
 
+function fillData(ID, stats)
+{
+    $field = $j(ID.concat(" > .module_group_body"));
+    $field.html('');
+    for (var i = 0; i < stats.length; i++)
+    {
+	$field.append("<strong>"+stats[i][0]+"</strong> &ndash; "+stats[i][1]);
+	if (i != stats.length - 1)
+	{
+	    $field.append("<br />");
+	}
+    }
+    
+}
+
 function fillStats(data)
 {
     // Pull out the stats data
@@ -12,52 +27,16 @@ function fillStats(data)
     accounting = stats.accounting;
 
     // Fill in student num data
-    $studentnum = $j("#stats_students > .module_group_body");
-    $studentnum.html('');
-    for (var i = 0; i < vitals.studentnum.length; i++)
-    {
-	$studentnum.append("<strong>"+vitals.studentnum[i][0]+"</strong> &ndash; "+vitals.studentnum[i][1]);
-	if (i != vitals.studentnum.length - 1)
-	{
-	    $studentnum.append("<br />");
-	}
-    }
+    fillData("#stats_students", vitals.studentnum)
 
     // Fill in the teacher num data
-    $teachernum = $j("#stats_teachers > .module_group_body");
-    $teachernum.html('');
-    for (var i = 0; i < vitals.teachernum.length; i++)
-    {
-	$teachernum.append("<strong>"+vitals.teachernum[i][0]+"</strong> &ndash; "+vitals.teachernum[i][1]);
-	if (i != vitals.teachernum.length - 1)
-	{
-	    $teachernum.append("<br />");
-	}
-    }
+    fillData("#stats_teachers", vitals.teachernum)
 
     // Fill in the volunteer num data
-    $volunteernum = $j("#stats_volunteers > .module_group_body");
-    $volunteernum.html('');
-    for (var i = 0; i < vitals.volunteernum.length; i++)
-    {
-	$volunteernum.append("<strong>"+vitals.volunteernum[i][0]+"</strong> &ndash; "+vitals.volunteernum[i][1]);
-	if (i != vitals.volunteernum.length - 1)
-	{
-	   $volunteernum.append("<br />");
-	}
-    }
+    fillData("#stats_volunteers", vitals.volunteernum)
 
     // Fill in the classes num data
-    $classnum = $j("#stats_classes > .module_group_body");
-    $classnum.html('');
-    for (var i = 0; i < vitals.classnum.length; i++)
-    {
-	$classnum.append("<strong>"+vitals.classnum[i][0]+"</strong> &ndash; "+vitals.classnum[i][1]);
-	if (i != vitals.classnum.length - 1)
-	{
-	    $classnum.append("<br />");
-	}
-    }
+    fillData("#stats_classes", vitals.classnum)
 
     // Fill in the categories table
     $categories = $j("#stats_categories > .module_group_body");
@@ -92,16 +71,7 @@ function fillStats(data)
     }
 
     // Fill in the hours num data
-    $hournum = $j("#stats_hours > .module_group_body");
-    $hournum.html('');
-    for (var i = 0; i < vitals.hournum.length; i++)
-    {
-	$hournum.append("<strong>"+vitals.hournum[i][0]+"</strong> &ndash; "+Math.round(100.0*vitals.hournum[i][1])/100.0);
-	if (i != vitals.hournum.length - 1)
-	{
-	    $hournum.append("<br />");
-	}
-    }
+    fillData("#stats_hours", vitals.hournum)
 
     // Fill in the timeslots table
     $timeslots = $j("#stats_timeslots > .module_group_body");
