@@ -64,6 +64,9 @@ class VolunteerManage(ProgramModuleObj):
     def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
 
+        volunteer_dict = self.program.volunteers()
+        context['num_vol'] = volunteer_dict['volunteer_all'].count()
+
         if extra == 'csv':
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
