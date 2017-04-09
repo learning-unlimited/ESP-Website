@@ -128,15 +128,18 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             if Tag.getBooleanTag('student_lottery_run', prog, default=False):
                 context['error'] = "You've already run the student lottery!"
             else:
-                role = request.POST['rolename']
-                context['role'] = role
                 if "confirm" in request.POST:
-                    success = False
-                    success = self.lottery(prog, role)
-                    if success:
-                        context['success'] = "The student lottery has been run successfully."
+                    if Tag.getProgramTag('program_size_by_grade', prog):
+                        role = request.POST['rolename']
+                        context['role'] = role
+                        success = False
+                        success = self.lottery(prog, role)
+                        if success:
+                            context['success'] = "The student lottery has been run successfully."
+                        else:
+                            context['error'] = "The student lottery did not run successfully."
                     else:
-                        context['error'] = "The student lottery did not run successfully."
+                        context['error'] = "You haven't set the grade caps tag yet."
                 else:
                     context['error'] = "You did not confirm that you would like to run the lottery"
 
