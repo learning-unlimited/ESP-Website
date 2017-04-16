@@ -504,7 +504,7 @@ class SchedulingCheckRunner:
          teachers = self.p.teachers()['class_approved'].distinct()
          for teacher in teachers:
              sections = ClassSection.objects.filter(
-                 parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status=10).distinct(),status=10).distinct().order_by('meeting_times__start')
+                 parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status=10).distinct(),status=10).exclude(parent_class__category__id=self.p.open_class_category.id).distinct().order_by('meeting_times__start')
              for i in range(sections.count()-1):
                  try:
                      time1 = sections[i+1].meeting_times.all().order_by('start')[0]
