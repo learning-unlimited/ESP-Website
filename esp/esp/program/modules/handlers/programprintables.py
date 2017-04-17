@@ -55,9 +55,13 @@ from decimal import Decimal
 import json
 import collections
 
+test_comment =  "Just a minor change to check the travis build."
+
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
-    Things from checklists to rosters to attendance sheets can be found here. """
+    Things from checklists to rosters to attendance sheets can be found here. 
+
+    """
     @classmethod
     def module_properties(cls):
         return {
