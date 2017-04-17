@@ -25,6 +25,7 @@ class Tag(models.Model):
     ## End Generic ForeignKey ##
 
     class Meta:
+        app_label = 'tagdict'
         ordering = ["key"]
 
         unique_together = (("key", "content_type", "object_id"),)
