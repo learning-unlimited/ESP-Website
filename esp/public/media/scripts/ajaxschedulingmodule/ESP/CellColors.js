@@ -14,9 +14,9 @@ function CellColors() {
      * @param section: The section to compute the background color of
      */
     this.color = function(section) {
-        return [17*(+section.emailcode[2]),
-                17*(+section.emailcode[3]),
-                17*(+section.emailcode[4])];
+        return [16*(+section.emailcode[2]),
+                16*(+section.emailcode[3]),
+                16*(+section.emailcode[4])];
     };
     this.background = function(section) {
         var color = this.color(section);
