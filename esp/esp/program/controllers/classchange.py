@@ -373,7 +373,12 @@ class ClassChangeController(object):
 
         candidate_students = numpy.nonzero(possible_students)[0]
         num_spaces = self.section_capacities[si]
-        if candidate_students.shape[0] <= num_spaces:
+        if self.options['stats_display']:
+            logger.info('   About to try to add %d candidates to %d spaces', candidate_students.shape[0], num_spaces)
+            logger.info('   ' + str(candidate_students.shape))
+        # Clamp num_spaces to 0. It can be negative if students enrolled in a
+        # class before it was moved to a smaller classroom. Whoops.
+        if candidate_students.shape[0] <= max(num_spaces, 0):
             #   If the section has enough space for all students that applied, let them all in.
             selected_students = candidate_students
             section_filled = False
