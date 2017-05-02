@@ -62,7 +62,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
     {% if import_error %}
     <tr><td colspan="2" align="center"><font color="red">{{ import_error }}</font></td></tr>
     {% endif %}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Import" /></td></tr>
+    <tr><td colspan="2" align="center"><button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-import" aria-hidden="true"></span> Import</button></td></tr>
 </table>
 </form>
 <form method="POST" action="{{ request.path }}">
@@ -71,8 +71,8 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
     <th colspan="2">Create New Volunteer Shift</th>
 </tr>
     {{ shift_form }}
-<tr>   
-    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+<tr>
+    <td colspan="2" align="center"><button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</button></td>
 </tr>
 </table>
 </center>
