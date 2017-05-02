@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
@@ -74,7 +75,8 @@ class VolunteerManage(ProgramModuleObj):
             write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
             for request in requests:
                 for offer in request.get_offers():
-                    write_csv.writerow((request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email))
+                    write_csv.writerow([codecs.encode(entry, 'utf-8') for entry in
+                        (request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email)])
             response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
             return response
 
