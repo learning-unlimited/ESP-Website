@@ -27,7 +27,7 @@ class TimeslotForm(forms.Form):
         slot.program = program
         slot.short_description = slot.start.strftime('%A, %B %d %Y %I:%M %p') + " to " + slot.end.strftime('%I:%M %p')
         if not self.cleaned_data['description']:
-            slot.description == slot.short_description
+            slot.description = slot.short_description
         else:
             slot.description = self.cleaned_data['description']
 
