@@ -72,7 +72,7 @@ function Matrix(
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: An object of arrays from getAvailableTimeslots
          * @param className: The class to add to the cells
          */
         addClassToTimeslots = function(timeslots, className) {
@@ -86,9 +86,12 @@ function Matrix(
                 }.bind(this));
             }.bind(this));
         }.bind(this);
-        var available_timeslots = timeslots[0];
-        var teaching_timeslots = timeslots[1];
+        var available_timeslots = timeslots.available;
+        var teaching_timeslots = timeslots.teaching;
         addClassToTimeslots(available_timeslots, "teacher-available-cell");
+        if (timeslots.usedEmptyFallback) {
+            addClassToTimeslots(available_timeslots, "teacher-available-with-fallback-cell");
+        }
         addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
         if(section.length<=1) {
             return;
@@ -121,17 +124,19 @@ function Matrix(
     /**
      * Unhighlight the cells that are currently highlighted
      *
-     * @param timeslots: A 2-d array. The first element is an array of
-     *                   timeslots where all teachers are completely available.
-     *                   The second is an array of timeslots where one or more
-     *                   teachers are teaching, but would be available otherwise.
+     * @param timeslots: An object of arrays from getAvailableTimeslots.
+     *                   Under the key "available" is an array of timeslots
+     *                   where all teachers are completely available.
+     *                   Under the key "teaching" is an array of timeslots
+     *                   where one or more teachers are teaching, but would be
+     *                   available otherwise.
      */
     this.unhighlightTimeslots = function(timeslots) {
         /**
          * Removes a class from all non-disabled cells corresponding to each
          * timeslot in timeslots.
          *
-         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param timeslots: A 1-d array of timeslot IDs
          * @param className: The class to remove from the cells
          */
         removeClassFromTimeslots = function(timeslots, className) {
@@ -144,9 +149,9 @@ function Matrix(
             }.bind(this));
         }.bind(this);
 
-        var available_timeslots = timeslots[0];
-        var teaching_timeslots = timeslots[1];
-        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
+        var available_timeslots = timeslots.available;
+        var teaching_timeslots = timeslots.teaching;
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-with-fallback-cell teacher-available-not-first-cell");
         removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
     };
 
@@ -225,7 +230,7 @@ function Matrix(
             return result;
         }
 
-        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var availableTimeslots = this.sections.getAvailableTimeslots(section).available;
         var validateIndividualCell = function(index, cell) {
             return !(cell.disabled || (cell.section && cell.section !== section) ||
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);

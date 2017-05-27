@@ -242,23 +242,49 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
 
     /**
      * Get the timeslots available for scheduling this section.
-     * Returns an array of two lists.
+     * Returns an object { available: int[], teaching: int[],
+     * usedEmptyFallback: boolean }.
      *
-     * The first has all the timeslots where all teachers are available and
-     * none are teaching.
+     * available is a list of all the timeslots where all teachers are
+     * available and none are teaching. Teachers who haven't filled out any
+     * availabilities will be assumed to be available during all slots.
      *
-     * The second has all the timeslots where teachers are available but already teaching
+     * teaching is a list of all the timeslots where at least one teacher is
+     * teaching (whether or not the remaining teachers are available). This is
+     * kind of misleading and in theory it should probably be all the timeslots
+     * where all teachers are not unavailable (i.e. either available or
+     * teaching), but either way you can't schedule onto those slots, so I'm
+     * leaving this logic for now.
+     *
+     * usedEmptyFallback is a boolean, true if at least one teacher hasn't
+     * filled out any availabilities and the fallback to being available during
+     * all slots occurred.
      *
      * @param section: The section to check availability.
      */
     this.getAvailableTimeslots = function(section) {
         var availabilities = [];
         var already_teaching = [];
+        var usedEmptyFallback = false;
         $j.each(section.teacher_data, function(index, teacher) {
             var teacher_availabilities = teacher.availability.slice();
+
+            // Filter out availabilities that are not teaching time slots
+            // (which might be other events like teacher orientations):
             teacher_availabilities = teacher_availabilities.filter(function(val) {
                 return this.matrix.timeslots.get_by_id(val);
             }.bind(this));
+
+            // If the teacher has not filled out availabilities (possibly
+            // because the module isn't enabled and/or we have decided not to
+            // ask for availabilities for this program), fall back to being
+            // available during all timeslots:
+            if (!teacher_availabilities.length) {
+                usedEmptyFallback = true;
+                teacher_availabilities = this.matrix.timeslots.timeslots_sorted_ids.slice();
+            }
+
+            console.log(teacher_availabilities);
             $j.each(teacher.sections, function(index, section_id) {
                 var assignment = this.scheduleAssignments[section_id];
                 if(assignment && section_id != section.id) {
@@ -274,7 +300,11 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             availabilities.push(teacher_availabilities);
         }.bind(this));
         var availableTimeslots = helpersIntersection(availabilities, true);
-        return [availableTimeslots, already_teaching];
+        return {
+            available: availableTimeslots,
+            teaching: already_teaching,
+            usedEmptyFallback: usedEmptyFallback,
+        };
     };
 
     /**

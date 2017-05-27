@@ -7,6 +7,9 @@ function Timeslots(timeslots_data, lunch_timeslots){
     // TODO: move helper to add timeslot order here
     this.timeslots_sorted = helpers_add_timeslots_order(timeslots_data);
     this.timeslots = timeslots_data;
+    this.timeslots_sorted_ids = this.timeslots_sorted.map(function(timeslot) {
+      return timeslot.id;
+    });
     this.lunch_timeslots = {};
 
     if(lunch_timeslots) {
