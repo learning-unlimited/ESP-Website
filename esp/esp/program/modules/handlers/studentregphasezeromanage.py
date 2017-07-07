@@ -82,7 +82,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
             if cpass:
-                winner.users.add(*sibs)
+                winners.users.add(*sibs)
                 counts = newcounts
 
         ###############################################################################
