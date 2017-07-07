@@ -62,7 +62,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         # Run lottery algorithm.
         # Get grade caps
         grade_caps_str = prog.grade_caps()
-        grade_caps = {int(key[0]):grade_caps_str[key] for key in grade_caps_str}
+        grade_caps = {int(key): value for key, value in grade_caps_str.iteritems()}
 
         #Get lottery records and randomize them
         records = PhaseZeroRecord.objects.filter(program=prog).order_by('?')
@@ -82,8 +82,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
             if cpass:
-                for user in sibs:
-                    user.groups.add(winners)
+                winner.users.add(*sibs)
                 counts = newcounts
 
         ###############################################################################

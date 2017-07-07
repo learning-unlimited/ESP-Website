@@ -169,7 +169,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
         limit = 10
 
-        queryset = ESPUser.objects.filter(Q(phasezerorecord__program=prog)).distinct()
+        queryset = ESPUser.objects.filter(phasezerorecord__program=prog).distinct()
 
         if not 'username' in request.GET:
             startswith = request.POST['username']
