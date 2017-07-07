@@ -62,7 +62,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return {'phasezero': """Students who have entered the Student Lottery."""}
 
     def isCompleted(self):
-        return get_current_request().user.canPassPhaseZero(self.program)
+        return get_current_request().user.can_skip_phase_zero(self.program)
 
     @classmethod
     def module_properties(cls):
@@ -139,8 +139,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     form = SubmitForm(request.POST, program=prog)
                     if form.is_valid():
                         form.save(user, prog)
-                    context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
-                    context['lottery_size'] = len(context['lottery_group'].user.all())
+                    context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
+                    context['lottery_size'] = context['lottery_group'].user.count()
                     self.send_confirmation_email(user)
                     return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
                 else:

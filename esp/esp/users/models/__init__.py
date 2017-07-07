@@ -613,7 +613,7 @@ class BaseESPUser(object):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
 
-    def canPassPhaseZero(self, program):
+    def can_skip_phase_zero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
 
     def getRegistrationPriority(self, prog, timeslots):

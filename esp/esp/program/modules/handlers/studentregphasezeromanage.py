@@ -47,7 +47,7 @@ import copy, datetime, json
 
 class StudentRegPhaseZeroManage(ProgramModuleObj):
     def isCompleted(self):
-        return get_current_request().user.canPassPhaseZero(self.program)
+        return get_current_request().user.can_skip_phase_zero(self.program)
 
     @classmethod
     def module_properties(cls):
