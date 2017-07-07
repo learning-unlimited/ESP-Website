@@ -40,6 +40,7 @@ from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
+from esp.web.views.json_utils import JsonResponse
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -53,15 +54,12 @@ class StudentRegPhaseZero(ProgramModuleObj):
         q_phasezero = Q(phasezerorecord__program=self.program)
 
         if QObject:
-            retVal = {'phasezero': q_phasezero}
-            return retVal
+            return {'phasezero': q_phasezero}
 
-        retVal = {'phasezero': ESPUser.objects.filter(q_phasezero).distinct()}
-        return retVal
+        return {'phasezero': ESPUser.objects.filter(q_phasezero).distinct()}
 
     def studentDesc(self):
-        retVal = {'phasezero': """Students who have entered the Student Lottery."""}
-        return retVal
+        return {'phasezero': """Students who have entered the Student Lottery."""}
 
     def isCompleted(self):
         return get_current_request().user.canPassPhaseZero(self.program)
@@ -95,16 +93,15 @@ class StudentRegPhaseZero(ProgramModuleObj):
         if 'op' in request.POST:
             op = request.POST['op']
         if op == 'join':
-            if len(request.POST['student_selected'].strip()) == 0:
+            if len(request.POST.get('student_selected', '').strip()) == 0:
                 join_error = 'Error - You must select a student\'s username.'
 
             else:
                 join_user = request.POST['student_selected']
-                group = PhaseZeroRecord.objects.filter(user=join_user, program=prog)[0]
+                group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
                 if in_lottery:
-                    old_group = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
-                users = group.user.all()
-                num_users = len(users)
+                    old_group = PhaseZeroRecord.objects.get(user=user, program=prog)
+                num_users = group.user.count()
                 if join_user == str(user.id):
                     join_error = 'Error - You can not select yourself.'
                 elif in_lottery and old_group==group:
@@ -116,7 +113,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     if in_lottery:
                         old_group.user.remove(user)
                         old_group.save()
-                        if len(old_group.user.all()) == 0:
+                        if not old_group.user.exists():
                             old_group.delete()
                 else:
                     join_error = 'Error - This group already contains the maximum number of students.'
@@ -128,14 +125,14 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
             else:
-                context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
-                context['lottery_size'] = len(context['lottery_group'].user.all())
+                context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
+                context['lottery_size'] = context['lottery_group'].user.count()
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
         elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
-                context['lottery_group'] = PhaseZeroRecord.objects.filter(user=user, program=prog)[0]
-                context['lottery_size'] = len(context['lottery_group'].user.all())
+                context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
+                context['lottery_size'] = context['lottery_group'].user.count()
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
                 if request.method == 'POST':
@@ -170,15 +167,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
         if not 'username' in request.GET or 'username' in request.POST:
             return self.goToCore(tl)
 
-        return StudentRegPhaseZero.studentlookup_logic(request, tl, one, two, module, extra, prog, newclass)
-
-    @staticmethod
-    def studentlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
-        from esp.web.views.json_utils import JsonResponse
 
-        q_phasezero = Q(phasezerorecord__program=prog)
-        queryset = ESPUser.objects.filter(q_phasezero).distinct()
+        queryset = ESPUser.objects.filter(Q(phasezerorecord__program=prog)).distinct()
 
         if not 'username' in request.GET:
             startswith = request.POST['username']

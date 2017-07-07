@@ -61,7 +61,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
     def lottery(self, prog, role):
         # Run lottery algorithm.
         # Get grade caps
-        grade_caps_str = prog._grade_caps()
+        grade_caps_str = prog.grade_caps()
         grade_caps = {int(key[0]):grade_caps_str[key] for key in grade_caps_str}
 
         #Get lottery records and randomize them
@@ -71,23 +71,20 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         # The lottery algorithm is run, with randomization and processing in order.
         # If any one in the group doesn't get in (due to cap size), no one in that group gets in.
         counts = {key:0 for key in grade_caps}
-        winners = Group.objects.get_or_create(name=role)[0]
+        winners, _ = Group.objects.get_or_create(name=role)
 
         for i in records:
             sibs = i.user.all()
-            newcounts = copy.copy(counts)
+            newcounts = counts
             for j in sibs:
                 newcounts[j.getGrade(prog)] += 1
 
-            cpass = True
-            for c in counts.keys():
-                if newcounts[c] > grade_caps[c]:
-                    cpass = False
+            cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
             if cpass:
                 for user in sibs:
                     user.groups.add(winners)
-                counts = copy.copy(newcounts)
+                counts = newcounts
 
         ###############################################################################
         # Post lottery, assign permissions to people in the lottery winners group
@@ -132,12 +129,8 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     if Tag.getProgramTag('program_size_by_grade', prog):
                         role = request.POST['rolename']
                         context['role'] = role
-                        success = False
-                        success = self.lottery(prog, role)
-                        if success:
-                            context['success'] = "The student lottery has been run successfully."
-                        else:
-                            context['error'] = "The student lottery did not run successfully."
+                        self.lottery(prog, role)
+                        context['success'] = "The student lottery has been run successfully."
                     else:
                         context['error'] = "You haven't set the grade caps tag yet."
                 else:
