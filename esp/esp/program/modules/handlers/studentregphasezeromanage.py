@@ -62,7 +62,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         # Run lottery algorithm.
         # Get grade caps
         grade_caps_str = prog.grade_caps()
-        grade_caps = {int(key): value for key, value in grade_caps_str.iteritems()}
+        grade_caps = {int(key[0]): value for key, value in grade_caps_str.iteritems()}
 
         #Get lottery records and randomize them
         records = PhaseZeroRecord.objects.filter(program=prog).order_by('?')
@@ -82,7 +82,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
             cpass = not any(newcounts[c] > grade_caps[c] for c in counts)
 
             if cpass:
-                winners.users.add(*sibs)
+                winners.user_set.add(*sibs)
                 counts = newcounts
 
         ###############################################################################
@@ -139,8 +139,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
         if Tag.getBooleanTag('student_lottery_run', prog, default=False):
             for grade in grades:
                 stats[grade]['num_accepted'] = stats[grade]['per_accepted'] = 0
-            q_winners = Q(groups__name=role)
-            winners = ESPUser.objects.filter(q_winners).distinct()
+            winners = ESPUser.objects.filter(groups__name=role).distinct()
             for winner in winners:
                 stats[winner.getGrade(prog)]['num_accepted'] += 1
             for grade in grades:
