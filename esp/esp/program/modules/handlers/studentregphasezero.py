@@ -81,55 +81,16 @@ class StudentRegPhaseZero(ProgramModuleObj):
         """
         Serves the Phase Zero student reg page. The initial page includes a button
         to enter the student lottery. Following entering the lottery, students are
-        served a confirmation page and lottery number form (for self-assigning groups).
+        served a confirmation page.
         """
         context = {}
         context['program'] = prog
+        context['one'] = one
+        context['two'] = two
         user = request.user
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
 
-        op = ''
-        join_error = False
-        if 'op' in request.POST:
-            op = request.POST['op']
-        if op == 'join':
-            if len(request.POST.get('student_selected', '').strip()) == 0:
-                join_error = 'Error - You must select a student\'s username.'
-
-            else:
-                join_user = request.POST['student_selected']
-                group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
-                if in_lottery:
-                    old_group = PhaseZeroRecord.objects.get(user=user, program=prog)
-                num_users = group.user.count()
-                if join_user == str(user.id):
-                    join_error = 'Error - You can not select yourself.'
-                elif in_lottery and old_group==group:
-                    join_error = 'Error - You are already in this lottery group.'
-                elif num_users < 4:
-                    group.user.add(user)
-                    group.save()
-                    self.send_confirmation_email(user)
-                    if in_lottery:
-                        old_group.user.remove(user)
-                        old_group.save()
-                        if not old_group.user.exists():
-                            old_group.delete()
-                else:
-                    join_error = 'Error - This group already contains the maximum number of students.'
-
-            context['join_error'] = join_error
-            if join_error and not in_lottery:
-                form = SubmitForm(program=prog)
-                context['form'] = form
-                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-
-            else:
-                context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
-                context['lottery_size'] = context['lottery_group'].user.count()
-                return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-
-        elif Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
+        if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
             if in_lottery:
                 context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
                 context['lottery_size'] = context['lottery_group'].user.count()
@@ -158,6 +119,57 @@ class StudentRegPhaseZero(ProgramModuleObj):
             else:
                 #Generic error page
                 return render_to_response('errors/program/phasezero_closed.html', request, context)
+
+    @aux_call
+    @needs_student
+    def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        context = {}
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
+        user = request.user
+        in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+        
+        join_error = False
+        if len(request.POST.get('student_selected', '').strip()) == 0:
+            join_error = 'Error - You must select a student\'s username.'
+
+        else:
+            join_user = request.POST['student_selected']
+            try:
+                group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
+            except DoesNotExist:
+                join_error = 'Error - That student is not in a lottery group.'
+            else:
+                if in_lottery:
+                    old_group = PhaseZeroRecord.objects.get(user=user, program=prog)
+                num_users = group.user.count()
+                if join_user == str(user.id):
+                    join_error = 'Error - You can not select yourself.'
+                elif in_lottery and old_group==group:
+                    join_error = 'Error - You are already in this lottery group.'
+                elif num_users < 4:
+                    group.user.add(user)
+                    group.save()
+                    self.send_confirmation_email(user)
+                    if in_lottery:
+                        old_group.user.remove(user)
+                        old_group.save()
+                        if not old_group.user.exists():
+                            old_group.delete()
+                else:
+                    join_error = 'Error - This group already contains the maximum number of students.'
+
+        context['join_error'] = join_error
+        if join_error and not in_lottery:
+            form = SubmitForm(program=prog)
+            context['form'] = form
+            return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+
+        else:
+            context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
+            context['lottery_size'] = context['lottery_group'].user.count()
+            return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
 
     @aux_call
     @needs_student

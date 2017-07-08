@@ -75,7 +75,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         for i in records:
             sibs = i.user.all()
-            newcounts = counts
+            newcounts = copy.copy(counts)
             for j in sibs:
                 newcounts[j.getGrade(prog)] += 1
 

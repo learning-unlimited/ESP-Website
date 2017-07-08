@@ -107,9 +107,8 @@ If you would like to join a different lottery group, please click the button bel
 1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button.<br><br>Note: the student must already have a lottery ticket.
 </p>
 {% end_inline_program_qsd_block %}
-<form action="{{request.path}}" method="post" name="addstudent">
+<form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
 
-<input type="hidden" name="op" value="join" />
 <input type="text" name="student_username" id="student_username" />
 <input type="hidden" name="student_selected" id="student_id" />
 <br><br>

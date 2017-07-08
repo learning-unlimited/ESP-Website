@@ -72,7 +72,7 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
     <td width=8%><b><i>OR</i></b></td>
 
     <td width=46% class="option">
-        <form action="{{request.path}}" method="post" name="addstudent">
+        <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
             <table width=100%>
                 <tr>
                     <th><br>Join An Existing Lottery Ticket</th>
@@ -82,7 +82,6 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
                 </tr>
                 <tr>
                     <td>
-                        <input type="hidden" name="op" value="join" />
                         <input type="text" name="student_username" id="student_username" />
                         <input type="hidden" name="student_selected" id="student_id" />
                     </td>
