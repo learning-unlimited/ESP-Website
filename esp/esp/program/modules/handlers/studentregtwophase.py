@@ -77,7 +77,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "link_title": "Two-Phase Student Registration",
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
-            "seq": 5,
+            "seq": 3,
             "required": True
             }
 

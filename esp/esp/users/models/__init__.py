@@ -613,6 +613,9 @@ class BaseESPUser(object):
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
 
+    def can_skip_phase_zero(self, program):
+        return Permission.user_has_perm(self, 'OverridePhaseZero', program)
+
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots.
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
@@ -2238,6 +2241,7 @@ class Permission(ExpirableModel):
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
+        ("OverridePhaseZero", "Bypass Phase Zero to proceed to other student reg modules"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
@@ -2245,6 +2249,7 @@ class Permission(ExpirableModel):
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),
             ("Student/MainPage", "Registration mainpage"),

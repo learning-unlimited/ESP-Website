@@ -591,7 +591,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         if self._student_is_in_program(user):
             return True
-        caps = self._grade_caps()
+        caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
         for grades, cap in caps.iteritems():
             if (grade in grades and
@@ -600,7 +600,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return True
 
     @cache_function
-    def _grade_caps(self):
+    def grade_caps(self):
         """Parses the program_size_by_grade Tag.
 
         See user_can_join for the tag syntax.
@@ -617,7 +617,7 @@ class Program(models.Model, CustomFormsLinkModel):
             else:
                 size_dict[(int(k),)] = v
         return size_dict
-    _grade_caps.depend_on_model('tagdict.Tag')
+    grade_caps.depend_on_model('tagdict.Tag')
 
     def _user_can_join_at_all(self, user):
         """Helper function for user_can_join, when using program_size_max.
@@ -1910,6 +1910,19 @@ class RegistrationType(models.Model):
             return self.displayName
         else:
             return self.name
+
+class PhaseZeroRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = models.ManyToManyField(ESPUser)
+    program = models.ForeignKey(Program, blank=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+    def display_user(self):
+        # Creates a string for the Users. This is required to display user in Admin.
+        return ', '.join([user.username for user in self.user.all()])
+    display_user.short_description = 'Username(s)'
 
 class StudentRegistration(ExpirableModel):
     """
