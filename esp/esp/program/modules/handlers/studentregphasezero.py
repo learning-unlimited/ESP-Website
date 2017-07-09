@@ -129,7 +129,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['two'] = two
         user = request.user
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        
+
         join_error = False
         if len(request.POST.get('student_selected', '').strip()) == 0:
             join_error = 'Error - You must select a student\'s username.'
