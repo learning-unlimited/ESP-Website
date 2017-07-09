@@ -138,7 +138,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             join_user = request.POST['student_selected']
             try:
                 group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
-            except DoesNotExist:
+            except PhaseZeroRecord.DoesNotExist:
                 join_error = 'Error - That student is not in a lottery group.'
             else:
                 if in_lottery:
