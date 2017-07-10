@@ -59,22 +59,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
             ("number of approved classes", self.app_classes(prog)),
             ("number of teachers teaching", self.teach_times(prog)),
         ]
-        timess = [(desc, times) for desc, times in timess]
-        # Round start down and end up to the nearest day.  If
-        # there aren't many registrations, don't bother with the graph.
-        if not timess:
-            graph_data = []
-            start = None
-        else:
-            start = min([times[0] for desc, times in timess])
-            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([times[-1] for desc, times in timess])
-            end = end.replace(hour=0, minute=0, second=0, microsecond=0)
-            end += datetime.timedelta(1)
-            end = min(end, datetime.datetime.now())
-            graph_data = [{"description": desc,
-                           "data": BigBoardModule.chunk_times(times, start, end)}
-                          for desc, times in timess]
+
+        graph_data, start = BigBoardModule.make_graph_data(timess)
 
         context = {
             "type": "Teacher",

@@ -64,24 +64,8 @@ class BigBoardModule(ProgramModuleObj):
             ("completed the medical form", self.times_medical(prog)),
             ("signed up for classes", self.times_classes(prog)),
         ]
-        timess = [(desc, times) for desc, times in timess if len(times) >= 25]
-        # Drop the first and last 10 times, because those are usually
-        # special snowflakes or admins and really aren't worth getting excited
-        # about.  Then round start down and end up to the nearest day.  If
-        # there aren't many registrations, don't bother with the graph.
-        if not timess:
-            graph_data = []
-            start = None
-        else:
-            start = min([times[10:-10][0] for desc, times in timess])
-            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([times[10:-10][-1] for desc, times in timess])
-            end = end.replace(hour=0, minute=0, second=0, microsecond=0)
-            end += datetime.timedelta(1)
-            end = min(end, datetime.datetime.now())
-            graph_data = [{"description": desc,
-                           "data": BigBoardModule.chunk_times(times, start, end)}
-                          for desc, times in timess]
+
+        graph_data, start = self.make_graph_data(timess, 10, 10, 25)
 
         context = {
             "type": "Student",
@@ -276,6 +260,36 @@ class BigBoardModule(ProgramModuleObj):
                 chunks.append(i)
                 start += delta
         return chunks
+
+    @staticmethod
+    def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 0):
+        """Given a dict of time series, return graph data series.
+
+        `timess` should be a dict of descriptions and sorted lists of datetime.datetime objects.
+        `drop_beg` should be a number of items to drop from the beginning of each list
+        `drop_end` should be a number of items to drop from the end of each list
+        `cutoff` should be the minimum number of items that must exist in a time series
+        
+        Returns a dict of cleaned time series and the start time for graphing
+        """
+        #Remove any time series without at least min times
+        timess = [(desc, times) for desc, times in timess if len(times) >= cutoff]
+        # Drop the first and last times if specified
+        # Then round start down and end up to the nearest day.
+        if not timess:
+            graph_data = []
+            start = None
+        else:
+            start = min([times[drop_beg:(len(times)-drop_end)][0] for desc, times in timess])
+            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+            end = max([times[drop_beg:(len(times)-drop_end)][-1] for desc, times in timess])
+            end = end.replace(hour=0, minute=0, second=0, microsecond=0)
+            end += datetime.timedelta(1)
+            end = min(end, datetime.datetime.now())
+            graph_data = [{"description": desc,
+                           "data": BigBoardModule.chunk_times(times, start, end)}
+                          for desc, times in timess]
+        return graph_data, start
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):
