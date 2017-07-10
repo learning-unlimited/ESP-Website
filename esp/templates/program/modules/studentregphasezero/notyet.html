@@ -1,0 +1,16 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+{% endblock %}
+
+{% block content %}
+<h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+</br>
+<center><h2>We haven't run the student lottery yet. Please check back later.</h2></center>
+{% endblock %}

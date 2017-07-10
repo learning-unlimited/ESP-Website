@@ -41,7 +41,7 @@
     </tr>
         {% for t in h.selections %}
         <tr>
-            <td>{{ t.short_description }} ({{ t.duration_str }})</td>
+            <td>{{ t.short_description }} <small>({{ t.event_type }}: {{ t.duration_str }})</small></td>
             <td>
                 <a href="/manage/{{ prog.url }}/resources/timeslot?op=edit&id={{ t.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/timeslot?op=delete&id={{ t.id }}">[Delete]</a>
