@@ -2321,6 +2321,8 @@ class Permission(ExpirableModel):
     @classmethod
     def q_permissions_on_program(cls, perm_q, name, program=None, when=None, program_is_none_implies_all=False):
         """
+        Build a QuerySet of permissions that would grant a permission.
+
         Given a Q object on Permission, a permission type, and a program,
         return a QuerySet of permissions satisfying the Q object constraint
         that would grant the permission on the program.
@@ -2421,8 +2423,8 @@ class Permission(ExpirableModel):
         """
 
         qrole = Q(user=None, role__isnull=False)
-        return [permission.role.name for permission in
-                cls.q_permissions_on_program(qrole, name, program)]
+        return list(cls.q_permissions_on_program(
+                qrole, name, program).values_list('role__name', flat=True))
 
     #list of all the permission types which are deadlines
     deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student") or x.startswith("Volunteer")]

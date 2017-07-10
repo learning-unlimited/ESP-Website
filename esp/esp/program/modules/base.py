@@ -508,16 +508,10 @@ def meets_grade(method):
 
     return _checkGrade
 
-# Anything you can do, I can do meta
-
-# Just broke out this function to allow combined deadlines (see meets_any_deadline,
-# meets_all_deadlines functions below).  -Michael P, 6/23/2009
-
-# Combined deadlines are annoying; meets_deadline has been absorbed into
-# meets_any_deadline and meets_all_deadlines has been deleted --bpchen,
-# 2017-02-17
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     """
+    Decide if a user can view a requested page; if not, offer a redirect.
+
     Given information about a request, return a pair of type (bool, None |
     response), which indicates whether the user can view the requested page,
     and an optional redirect if not.
@@ -551,13 +545,13 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
             #   Give administrators additional information
             if user.isAdministrator(program=program):
                 request.show_perm_info = True
-                if hasattr(request, 'perm_names'):
+                if getattr(request, 'perm_names', None) is not None:
                     request.perm_names.append(perm_name)
                 else:
                     request.perm_names = [perm_name]
 
                 roles_with_perm = Permission.list_roles_with_perm(perm_name, program)
-                if hasattr(request, 'roles_with_perm'):
+                if getattr(request, 'roles_with_perm', None) is not None:
                     request.roles_with_perm += roles_with_perm
                 else:
                     request.roles_with_perm = roles_with_perm
@@ -579,16 +573,24 @@ def render_deadline_for_tl(tl, request, context):
     errorpage = 'errors/program/deadline-%s.html' % tl
     return render_to_response(errorpage, request, context)
 
-#   Return a decorator that returns a function calling the decorated function if
-#   the deadline is met, or a function that generates an error page if the
-#   deadline is not met.
 def meets_deadline(extension=''):
+    """
+    Decorate a function to check if a deadline is met.
+
+    Return a decorator that returns a function calling the decorated function if
+    the deadline is met, or a function that generates an error page if the
+    deadline is not met.
+    """
     return meets_any_deadline([extension])
 
-#   Return a decorator that returns a function calling the decorated function
-#   if at least one of the deadlines is met, or a function that generates an
-#   error page if none of the deadlines are met.
 def meets_any_deadline(extensions=[]):
+    """
+    Decorate a function to check if at least one deadline is met.
+
+    Return a decorator that returns a function calling the decorated function
+    if at least one of the deadlines is met, or a function that generates an
+    error page if none of the deadlines are met.
+    """
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:

@@ -212,12 +212,12 @@ var currentProgram = undefined;
           {% if request.show_perm_info %}
           <div class="alert alert-info">
               <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-              Permission/deadline controlling this page: {{ request.perm_names|join:", " }}
+              <a href="/manage/{{ one }}/{{ two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
               <br />
               {% if request.roles_with_perm %}
                   Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
               {% else %}
-                  No roles with permission to view this page!
+                  <strong>No roles have permission to view this page!</strong>
               {% endif %}
           </div>
           {% endif %}
