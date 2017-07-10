@@ -269,7 +269,7 @@ class BigBoardModule(ProgramModuleObj):
         `drop_beg` should be a number of items to drop from the beginning of each list
         `drop_end` should be a number of items to drop from the end of each list
         `cutoff` should be the minimum number of items that must exist in a time series
-        
+
         Returns a dict of cleaned time series and the start time for graphing
         """
         #Remove any time series without at least min times
