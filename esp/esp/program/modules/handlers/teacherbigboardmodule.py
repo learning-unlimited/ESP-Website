@@ -6,11 +6,11 @@ from django.db.models.query import Q
 
 from argcache import cache_function_for
 from esp.program.models import ClassSubject
-from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
 from esp.utils.web import render_to_response
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 
 
 class TeacherBigBoardModule(ProgramModuleObj):
@@ -73,16 +73,17 @@ class TeacherBigBoardModule(ProgramModuleObj):
             end += datetime.timedelta(1)
             end = min(end, datetime.datetime.now())
             graph_data = [{"description": desc,
-                           "data": TeacherBigBoardModule.chunk_times(times, start, end)}
+                           "data": BigBoardModule.chunk_times(times, start, end)}
                           for desc, times in timess]
 
         context = {
+            "type": "Teacher",
             "numbers": numbers,
             "first_hour": start,
             "graph_data": graph_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
-        return render_to_response(self.baseDir()+'teacherbigboard.html',
+        return render_to_response('program/modules/bigboardmodule/bigboard.html',
                                   request, context)
 
     # Numbers computed for the big board are below.  They're cached for 105
@@ -132,33 +133,6 @@ class TeacherBigBoardModule(ProgramModuleObj):
         teacher_times = dict(ClassSubject.objects.filter(parent_program=prog
         ).values_list('teachers').annotate(Min('timestamp')))
         return sorted(teacher_times.itervalues())
-
-    @staticmethod
-    def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600)):
-        """Given a list of times, return hourly summaries.
-
-        `times` should be a list of datetime.datetime objects.
-        `start` and `end` should be datetimes; the chunks will be for hours
-        between them, inclusive.
-        Returns a list of integers, each of which is the number of times that
-        precede the given hour.
-        """
-        # Round down to the nearest hour.
-        chunks = []
-        i = 0
-        # Unpythonic, I know.  Iterating over hours is annoying, and we're also
-        # iterating over timestamps at the same time.
-        while start < end + delta:
-            if i < len(times) and times[i] < start:
-                # If this time is in the hour we're currently processing, just
-                # go to the next time.
-                i += 1
-            else:
-                # Otherwise, move to the next hour, and save the number of
-                # times preceding it for the previous hour.
-                chunks.append(i)
-                start += delta
-        return chunks
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):

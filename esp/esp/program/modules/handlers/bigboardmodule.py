@@ -84,6 +84,7 @@ class BigBoardModule(ProgramModuleObj):
                           for desc, times in timess]
 
         context = {
+            "type": "Student",
             "numbers": numbers,
             "popular_classes": self.popular_classes(prog),
             "first_hour": start,

@@ -1,5 +1,5 @@
 {% extends "elements/html" %}
-{% block fulltitle %}Student Registration Summary for {{program.niceName}}{% endblock %}
+{% block fulltitle %}{{type}} Registration Summary for {{program.niceName}}{% endblock %}
 
 {% block meta %}
   {{ block.super }}
@@ -155,25 +155,26 @@
   {% endfor %}
 </div>
 
-
-<div class="popular-classeses">
-  {% for description, classes in popular_classes %}
-    <div class="popular-classes-block">
-      <div class="popular-classes-heading">
-        {{description}}
-      </div>
-      <table class="popular-classes bigboard-description">
-        {% for class in classes %}
-          <tr>
-            <td class="popular-class-num">{{class.points}}</td>
-            <td class="popular-class-title">
-              {{class.category__symbol}}{{class.id}}: {{class.title}}
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
+{% if popular_classes %}
+    <div class="popular-classeses">
+      {% for description, classes in popular_classes %}
+        <div class="popular-classes-block">
+          <div class="popular-classes-heading">
+            {{description}}
+          </div>
+          <table class="popular-classes bigboard-description">
+            {% for class in classes %}
+              <tr>
+                <td class="popular-class-num">{{class.points}}</td>
+                <td class="popular-class-title">
+                  {{class.category__symbol}}{{class.id}}: {{class.title}}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
-</div>
+{% endif %}
 
 {% endblock %}
