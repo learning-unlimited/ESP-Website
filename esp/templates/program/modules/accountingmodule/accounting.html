@@ -1,0 +1,54 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Accounting{% endblock %}
+
+{% block content %}
+<h2>Accounting for {{ target_user.name }} ({{ target_user.username }} / {{ target_user.id }})</h2>
+<h3>Transfers</h3>
+<table class="table">
+    <tr><th>Type</th><th>Line Item</th><th>Amount</th></tr>
+    {% for transfer in transfers %}
+    <tr>
+        <td>{{ transfer.type }}</td>
+        <td>{{ transfer.transfer.line_item }}</td>
+        <td>${{ transfer.transfer.amount|floatformat:"-2" }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<p><code>{{ identifier }}</code></p>
+<h3>Financial Aid Grant</h3>
+{% if grant %}
+<table class="table">
+    <tr><th>Amount</th>
+        <td>
+            {% if grant.amount_max_dec %}
+            ${{ grant.amount_max_dec|floatformat:"-2" }}
+            {% else %}
+            (none)
+            {% endif %}
+        </td>
+    </tr>
+    <tr><th>Percent</th>
+        <td>
+            {% if grant.percent %}
+            {{ grant.percent|floatformat:"-2" }}%
+            {% else %}
+            (none)
+            {% endif %}
+        </td>
+    </tr>
+</table>
+{% else %}
+No grant
+{% endif %}
+<h3>Summary</h3>
+<table class="table">
+    <tr><th>Category</th><th>Amount</th></tr>
+    <tr><td>Requested</td><td>${{ requested|floatformat:"-2" }}</td></tr>
+    <tr><td>Financial Aid</td><td>${{ finaid|floatformat:"-2" }}</td></tr>
+    <tr><td>Sibling Discount</td><td>${{ siblingdiscount|floatformat:"-2" }}</td></tr>
+    <tr><td><em>Paid</em></td><td><em>${{ paid|floatformat:"-2" }}</em></td></tr>
+    <tr><td><strong>Owed</strong></td><td><strong>${{ due|floatformat:"-2" }}</strong></td></tr>
+</table>
+</div>
+{% endblock %}

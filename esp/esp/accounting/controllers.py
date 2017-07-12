@@ -232,10 +232,34 @@ class ProgramAccountingController(BaseAccountingController):
         payments = Transfer.objects.filter(line_item=payment_li_type)
         return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
 
+    def classify_transfer(self, transfer):
+        """Give a short human-readable description of a transfer.
+
+        Given a transfer, return a short human-readable phrase describing
+        the type of the transfer."""
+
+        line_item = transfer.line_item
+        if line_item == self.default_payments_lineitemtype():
+            return 'Payment'
+        elif line_item == self.default_finaid_lineitemtype():
+            return 'Financial aid'
+        elif line_item == self.default_siblingdiscount_lineitemtype():
+            return 'Sibling discount'
+        elif transfer.destination == self.default_program_account():
+            req_desc = "required" if line_item.required else "optional"
+            return "Cost ({})".format(req_desc)
+        else:
+            return 'Unrelated!?'
+
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
         super(IndividualAccountingController, self).__init__(program, *args, **kwargs)
         self.user = user
+
+    def transfers_to_program_exist(self):
+        return Transfer.objects.filter(
+                destination=self.default_program_account(),
+                user=self.user).exists()
 
     def ensure_required_transfers(self):
         """ Function to ensure there are transfers for this user corresponding
@@ -482,17 +506,20 @@ class IndividualAccountingController(ProgramAccountingController):
     def revoke_financial_aid(self):
         FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).delete()
 
-    def amount_requested(self):
-        self.ensure_required_transfers()
-        program_account = self.default_program_account()
+    def requested_transfers(self, ensure_required=True):
+        if ensure_required:
+            self.ensure_required_transfers()
+        return Transfer.objects.filter(user=self.user, destination=self.default_program_account())
 
+    def amount_requested(self, ensure_required=True):
         #   Compute sum of all transfers into program that are for this user
-        if Transfer.objects.filter(user=self.user, destination=program_account).exists():
-            amount_requested = Transfer.objects.filter(user=self.user, destination=program_account).aggregate(Sum('amount_dec'))['amount_dec__sum']
-        else:
-            amount_requested = Decimal('0')
+        return self.requested_transfers(ensure_required).aggregate(Sum('amount_dec'))['amount_dec__sum']
 
-        return amount_requested
+    def latest_finaid_grant(self):
+        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
+            return FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
+        else:
+            return None
 
     def amount_finaid(self, amount_requested=None, amount_siblingdiscount=None):
         if amount_requested is None:
@@ -501,8 +528,8 @@ class IndividualAccountingController(ProgramAccountingController):
             amount_siblingdiscount = self.amount_siblingdiscount()
 
         aid_amount = Decimal('0')
-        if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            latest_grant = FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
+        latest_grant = self.latest_finaid_grant()
+        if latest_grant is not None:
             if latest_grant.amount_max_dec is not None:
                 if amount_requested - amount_siblingdiscount > latest_grant.amount_max_dec:
                     aid_amount = latest_grant.amount_max_dec
