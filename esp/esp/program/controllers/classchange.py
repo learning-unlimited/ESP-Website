@@ -63,6 +63,7 @@ class ClassChangeController(object):
         'stats_display': False,
         'use_closed_classes': True,
         'request_relationships': ('Request',),
+        'prioritize_students_without_classes': False,
     }
 
     WAIT_REGEX_PATTERN = r"^Waitlist/(\d+)$"
@@ -535,7 +536,7 @@ class ClassChangeController(object):
         self.enroll_final_orig = numpy.copy(self.enroll_final)
         self.clear_assignments()
 
-    def fill_section(self, si, waitlist_priority=False, request_priority=0):
+    def fill_section(self, si, waitlist_priority=False, request_priority=0, only_without_classes=False):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
 
@@ -553,6 +554,9 @@ class ClassChangeController(object):
             possible_students *= self.waitlist[waitlist_priority][:, si, :].any(axis=1)
         else:
             possible_students *= self.waitlist[0][:, si, :].any(axis=1)
+
+        if only_without_classes:
+            possible_students *= ~(self.enroll_orig.any(axis=(1,2)) | self.enroll_final.any(axis=(1,2)))
 
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
@@ -693,16 +697,19 @@ class ClassChangeController(object):
         #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
-        for rp, rp_name in enumerate(self.request_relationships):
-            for wp in range(1,self.priority_limit+1) + [False,]:
-                if self.options['stats_display']:
-                    logger.info('\n== Assigning %s, waitlist priority %s students',
-                            rp_name, str(wp) if self.priority_limit > 1 else '')
-                for section_index in self.sorted_section_indices:
-                    self.fill_section(
-                            section_index,
-                            waitlist_priority=wp,
-                            request_priority=rp)
+        owcs = (True, False) if self.options['prioritize_students_without_classes'] else (False,)
+        for owc in owcs:
+            for rp, rp_name in enumerate(self.request_relationships):
+                for wp in range(1,self.priority_limit+1) + [False,]:
+                    if self.options['stats_display']:
+                        logger.info('\n== Assigning %s, waitlist priority %s students',
+                                rp_name, str(wp) if self.priority_limit > 1 else '')
+                    for section_index in self.sorted_section_indices:
+                        self.fill_section(
+                                section_index,
+                                waitlist_priority=wp,
+                                request_priority=rp,
+                                only_without_classes=owc)
 
         self.push_back_students()
 
