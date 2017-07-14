@@ -30,10 +30,12 @@
               enabled: false
           },
           legend: {
-            align: "right",
+            align: "left",
+            x: 40,
             floating: true,
             layout: "vertical",
-            verticalAlign: "middle",
+            verticalAlign: "top",
+            //backgroundColor: '#FFFFFF'
           },
           plotOptions: {
             line: {
@@ -56,8 +58,15 @@
             maxPadding: 0.01,
             endOnTick: false,
           }
-          {% if student_hours %}
+          {% if hours_data %}
           ,{
+            title: {text: 'Class-Hours'},
+            min: 0,
+            maxPadding: 0.01,
+            endOnTick: false,
+            opposite: true,
+          },
+          {
             title: {text: 'Class-Student-Hours'},
             min: 0,
             maxPadding: 0.01,
@@ -78,16 +87,26 @@
                 data: {{series.data}},
               },
             {% endfor %}
-            {% if student_hours %}
-                {
+            {% if hours_data %}
+              {
                 type: 'line',
                 yAxis: 1,
-                name: '{{student_hours.description}}',
+                name: '{{hours_data.0.description}}',
                 pointInterval: 60 * 60 * 1000, // one hour
                 pointStart: Date.UTC(
                     {{first_hour.year}}, {{first_hour.month}} - 1,
                     {{first_hour.day}}, {{first_hour.hour}}),
-                data: {{student_hours.data}},
+                data: {{hours_data.0.data}},
+              },
+              {
+                type: 'line',
+                yAxis: 2,
+                name: '{{hours_data.1.description}}',
+                pointInterval: 60 * 60 * 1000, // one hour
+                pointStart: Date.UTC(
+                    {{first_hour.year}}, {{first_hour.month}} - 1,
+                    {{first_hour.day}}, {{first_hour.hour}}),
+                data: {{hours_data.1.data}},
               },
             {% endif %}
           ],

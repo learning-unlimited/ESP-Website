@@ -70,15 +70,14 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
         hourss = self.get_hours(prog)
 
-        class_hours, student_hours = self.make_hours_data(hourss)
-        graph_data.append(class_hours)
+        hours_data = self.make_hours_data(hourss)
 
         context = {
             "type": "Teacher",
             "numbers": numbers,
             "first_hour": start,
             "graph_data": graph_data,
-            "student_hours": student_hours,
+            "hours_data": hours_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
         return render_to_response('program/modules/bigboardmodule/bigboard.html',
