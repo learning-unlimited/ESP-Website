@@ -272,7 +272,7 @@ class BigBoardModule(ProgramModuleObj):
 
         Returns a dict of cleaned time series and the start time for graphing
         """
-        #Remove any time series without at least min times
+        #Remove any time series without at least 'cutoff' times
         timess = [(desc, times) for desc, times in timess if len(times) >= cutoff]
         # Drop the first and last times if specified
         # Then round start down and end up to the nearest day.

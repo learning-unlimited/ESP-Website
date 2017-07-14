@@ -50,12 +50,22 @@
             type: 'datetime',
             minRange: 24 * 60 * 60 * 1000, // one day
           },
-          yAxis: {
+          yAxis: [{
             title: {text: null},
             min: 0,
             maxPadding: 0.01,
             endOnTick: false,
-          },
+          }
+          {% if student_hours %}
+          ,{
+            title: {text: 'Class-Student-Hours'},
+            min: 0,
+            maxPadding: 0.01,
+            endOnTick: false,
+            opposite: true,
+          }
+          {% endif %}
+          ],
           series: [
             {% for series in graph_data %}
               {
@@ -68,6 +78,18 @@
                 data: {{series.data}},
               },
             {% endfor %}
+            {% if student_hours %}
+                {
+                type: 'line',
+                yAxis: 1,
+                name: '{{student_hours.description}}',
+                pointInterval: 60 * 60 * 1000, // one hour
+                pointStart: Date.UTC(
+                    {{first_hour.year}}, {{first_hour.month}} - 1,
+                    {{first_hour.day}}, {{first_hour.hour}}),
+                data: {{student_hours.data}},
+              },
+            {% endif %}
           ],
         });
       });
