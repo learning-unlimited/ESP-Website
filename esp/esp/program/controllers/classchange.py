@@ -61,7 +61,8 @@ class ClassChangeController(object):
     default_options = {
         'check_grade': False,
         'stats_display': False,
-        'use_closed_classes': True
+        'use_closed_classes': True,
+        'request_relationships': ('Request',),
     }
 
     WAIT_REGEX_PATTERN = r"^Waitlist/(\d+)$"
@@ -134,15 +135,17 @@ class ClassChangeController(object):
         self.deadline = self.now
         if 'deadline' in self.options.keys():
             self.deadline = self.options['deadline']
+        if 'request_relationships' in self.options:
+            self.request_relationships = self.options['request_relationships']
 
         self.Q_SR_NOW = nest_Q(StudentRegistration.is_valid_qobject(self.now), 'studentregistration')
         self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
-        self.Q_SR_REQ = Q(studentregistration__relationship__name="Request") & self.Q_SR_PROG
+        self.Q_SR_REQ_EXISTS = Q(studentregistration__relationship__name__in=self.request_relationships) & self.Q_SR_PROG
         self.Q_NOW = StudentRegistration.is_valid_qobject(self.now)
         self.Q_PROG = Q(section__parent_class__parent_program=self.program, section__meeting_times__isnull=False) & self.Q_NOW
-        self.Q_REQ = Q(relationship__name="Request") & self.Q_PROG
+        self.Q_REQ = [Q(relationship__name=name) & self.Q_PROG for name in self.request_relationships]
 
-        self.students = ESPUser.objects.filter(self.Q_SR_REQ).order_by('id').distinct()
+        self.students = ESPUser.objects.filter(self.Q_SR_REQ_EXISTS).order_by('id').distinct()
         if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
             self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
         else:
@@ -410,6 +413,7 @@ class ClassChangeController(object):
         self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.request_by_priority = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for _ in self.Q_REQ]
         self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         # section_capacities tracks *remaining* capacity.
@@ -465,12 +469,18 @@ class ClassChangeController(object):
         self.student_not_checked_in[numpy.transpose(numpy.nonzero(True-self.enroll_orig.any(axis=(1,2))))] = True
 
         #   Populate request matrix
-        request_regs = StudentRegistration.objects.filter(self.Q_REQ).values_list('user__id', 'section__id', 'section__meeting_times__id').distinct()
-        rra = numpy.array(request_regs, dtype=numpy.uint32)
-        try:
-            self.request[self.student_indices[rra[:, 0]], self.section_indices[rra[:, 1]], self.timeslot_indices[rra[:, 2]]] = True
-        except IndexError:
-            pass
+        request_regs = [
+                StudentRegistration.objects.filter(cur_q)
+                .values_list('user__id', 'section__id', 'section__meeting_times__id')
+                .distinct()
+                for cur_q in self.Q_REQ]
+        rra = [numpy.array(reg, dtype=numpy.uint32) for reg in request_regs]
+        for i in range(len(self.Q_REQ)):
+            try:
+                self.request_by_priority[i][self.student_indices[rra[i][:, 0]], self.section_indices[rra[i][:, 1]], self.timeslot_indices[rra[i][:, 2]]] = True
+            except IndexError:
+                pass
+            self.request |= self.request_by_priority[i]
 
         #   Populate waitlist matrix
         waitlist_regs = [StudentRegistration.objects.filter(self.Q_WAIT[i]).values_list('user__id', 'section__id', 'section__meeting_times__id').distinct() for i in range(self.priority_limit+1)]
@@ -525,18 +535,22 @@ class ClassChangeController(object):
         self.enroll_final_orig = numpy.copy(self.enroll_final)
         self.clear_assignments()
 
-    def fill_section(self, si, priority=False):
+    def fill_section(self, si, waitlist_priority=False, request_priority=0):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
 
         timeslots = numpy.transpose(numpy.nonzero(self.section_schedules[si, :]))
 
-        if self.options['stats_display']: logger.info('-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s', self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
+        if self.options['stats_display']:
+            logger.info(
+                    '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s',
+                    self.section_ids[si], si, self.section_capacities[si],
+                    self.timeslot_ids[timeslots], waitlist_priority)
 
         #   Get students who have indicated interest in the section
-        possible_students = self.request[:, si, :].any(axis=1)
-        if priority:
-            possible_students *= self.waitlist[priority][:, si, :].any(axis=1)
+        possible_students = self.request_by_priority[request_priority][:, si, :].any(axis=1)
+        if waitlist_priority:
+            possible_students *= self.waitlist[waitlist_priority][:, si, :].any(axis=1)
         else:
             possible_students *= self.waitlist[0][:, si, :].any(axis=1)
 
@@ -679,11 +693,16 @@ class ClassChangeController(object):
         #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
-        for i in range(1,self.priority_limit+1) + [False,]:
-            if self.options['stats_display']:
-                logger.info('\n== Assigning priority%s students', str(i) if self.priority_limit > 1 else '')
-            for section_index in self.sorted_section_indices:
-                self.fill_section(section_index, priority=i)
+        for rp, rp_name in enumerate(self.request_relationships):
+            for wp in range(1,self.priority_limit+1) + [False,]:
+                if self.options['stats_display']:
+                    logger.info('\n== Assigning %s, waitlist priority %s students',
+                            rp_name, str(wp) if self.priority_limit > 1 else '')
+                for section_index in self.sorted_section_indices:
+                    self.fill_section(
+                            section_index,
+                            waitlist_priority=wp,
+                            request_priority=rp)
 
         self.push_back_students()
 
