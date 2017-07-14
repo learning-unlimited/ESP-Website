@@ -201,7 +201,16 @@ class ClassChangeController(object):
         print "Request counts"
         print "--------------"
         print "{:5d} requests".format(numpy.count_nonzero(self.request))
+        for req, name in zip(self.request_by_priority, self.request_relationships):
+            print "    {:5d} of type {}".format(numpy.count_nonzero(req), name)
         print "{:5d} student-timeslots with requests".format(numpy.count_nonzero(self.request.any(axis=1)))
+
+        print
+        print "Buggy or weird requests"
+        print "-----------------------"
+        print "{:5d} requests for already enrolled classes".format(numpy.count_nonzero(self.request & self.enroll_orig))
+        print "{:5d} duplicate (differently-ranked) requests".format(
+                numpy.count_nonzero(numpy.sum(numpy.array(self.request_by_priority), axis=0) > 1))
         print
         print "Student histograms"
         print "(only students with >= 1 request)"
@@ -239,7 +248,16 @@ class ClassChangeController(object):
         print "{:5d} unchanged".format(numpy.sum(self.enroll_orig & self.enroll_final))
         print "{:5d} dropped".format(numpy.sum(dropped_counts))
         print "{:5d} added".format(numpy.sum(added_counts))
+        # Crude metric of the priorities of requests students got
+        happiness = 0
+        cur_happiness = len(self.request_relationships)
+        for req, name in zip(self.request_by_priority, self.request_relationships):
+            cnt = numpy.sum(self.enroll_final & req)
+            print "    {:5d} added from {}".format(cnt, name)
+            happiness += cur_happiness * cnt
+            cur_happiness -= 1
         print
+        print "    Happiness:", happiness
         print "Most popularly requested sections"
         print "---------------------------------"
         if print_section_notation:
