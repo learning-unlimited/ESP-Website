@@ -74,6 +74,7 @@ from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
+from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
 from argcache.extras.derivedfield import DerivedField
@@ -961,7 +962,7 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=True):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, explanation=None, unschedule=True):
         if include_lottery_students:
             student_verbs = ['Enrolled', 'Interested', 'Priority/1']
         else:
@@ -1001,6 +1002,12 @@ class ClassSection(models.Model):
                     send_mail(email_title, msgtext, from_email, to_email)
                 else:
                     send_mail(ssi_email_title, msgtext, from_email, to_email)
+
+        if self.parent_program.hasModule('GroupTextModule') and text_students:
+            #Send text messages if GroupTextModule is enabled
+            gtm = GroupTextModule()
+            msgtext = render_to_string('texts/class_cancellation.txt', context)
+            send_log = gtm.sendMessages(self.students(student_verbs), msgtext)
 
         #   Send e-mail to administrators as well
         context['classreg'] = True
