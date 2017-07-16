@@ -262,7 +262,7 @@ class ClassChangeController(object):
         print "---------------------------------"
         if print_section_notation:
             print
-            print "  Notation: # = N (C -> O / T) [E - D + A = F]"
+            print "  Notation: # = N (C -> O / T) [E - D + A = F] G!"
             print "    N = number of requests"
             print "    C = original remaining capacity"
             print "    O = original optimistic capacity if all requesters switch out"
@@ -271,23 +271,29 @@ class ClassChangeController(object):
             print "    D = requesters (tentatively) dropped"
             print "    A = requesters (tentatively) added"
             print "    F = requesters enrolled in (tentative) final assignment"
+            print "    G = (tentative) final total remaining capacity"
             print
             print "---------------------------------"
         # argsort returns the indices that would sort the array of frequencies;
         # then we iterate over it backwards to get indices sorted by decreasing
         # frequency
+        badness = 0
         for section_index in numpy.argsort(request_freq)[::-1][:popular_count]:
             section = self.sections[section_index]
-            print "# = {:5d} ({:3d} ->{:3d} /{:3d}) [{:3d} -{:3d} +{:3d} =>{:3d}]: {}".format(
+            pure_cap = section.capacity - section.num_students()
+            overflow = pure_cap + dropped_counts[section_index] - added_counts[section_index]
+            print "# = {:5d} ({:3d} ->{:3d} /{:3d}) [{:3d} -{:3d} +{:3d} =>{:3d}]{:3d}!: {}".format(
                     request_freq[section_index],
-                    section.capacity - section.num_students(),
+                    pure_cap,
                     self.section_capacities_orig[section_index],
                     section.capacity,
                     enroll_orig_counts[section_index],
                     dropped_counts[section_index],
                     added_counts[section_index],
                     enroll_final_counts[section_index],
+                    overflow,
                     section)
+            if overflow < 0: badness += overflow
 
         print
         print "Students by number of changes"
@@ -330,6 +336,7 @@ class ClassChangeController(object):
                             section.capacity,
                             section)
                 print
+        return badness
 
     def sanity_check(self):
         """Print a report checking that students didn't lose classes.
@@ -437,6 +444,7 @@ class ClassChangeController(object):
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
+        self.section_optimistic_drops = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
@@ -543,7 +551,9 @@ class ClassChangeController(object):
             sec_enroll_orig = self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)
             any_overlapping_requests = self.request[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
             # Optimistically add number enrolled but want to switch out to capacity
-            self.section_capacities[sec_ind] += numpy.count_nonzero(sec_enroll_orig * any_overlapping_requests)
+            opt_drops = numpy.count_nonzero(sec_enroll_orig * any_overlapping_requests)
+            self.section_optimistic_drops[sec_ind] = opt_drops
+            self.section_capacities[sec_ind] += opt_drops
             # Commit to enrolling students into this section if they were
             # originally in it and they didn't request any overlapping classes
             self.enroll_final[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
@@ -554,7 +564,7 @@ class ClassChangeController(object):
         self.enroll_final_orig = numpy.copy(self.enroll_final)
         self.clear_assignments()
 
-    def fill_section(self, si, waitlist_priority=False, request_priority=0, only_without_classes=False):
+    def fill_section(self, si, pessimism, waitlist_priority=False, request_priority=0, only_without_classes=False):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
 
@@ -616,6 +626,7 @@ class ClassChangeController(object):
 
         candidate_students = numpy.nonzero(possible_students)[0]
         num_spaces = self.section_capacities[si]
+        num_spaces -= int(round(self.section_optimistic_drops[si]) * pessimism)
         if self.options['stats_display']:
             logger.info('   About to try to add %d candidates to %d spaces', candidate_students.shape[0], num_spaces)
             logger.info('   ' + str(candidate_students.shape))
@@ -705,12 +716,11 @@ class ClassChangeController(object):
                         except Queue.Empty:
                             pass
 
-    def compute_assignments(self):
+    def compute_assignments(self, pessimism=0.0, incremental=False):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
             Can be run any number of times. """
-
-        self.clear_assignments()
+        if not incremental: self.clear_assignments()
 
         #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
@@ -725,6 +735,7 @@ class ClassChangeController(object):
                     for section_index in self.sorted_section_indices:
                         self.fill_section(
                                 section_index,
+                                pessimism,
                                 waitlist_priority=wp,
                                 request_priority=rp,
                                 only_without_classes=owc)
