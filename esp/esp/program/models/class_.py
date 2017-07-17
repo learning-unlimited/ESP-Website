@@ -1012,6 +1012,17 @@ class ClassSection(models.Model):
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 
+        #   Send e-mail to teachers
+        context['director_email'] = self.parent_program.director_email
+        email_content = render_to_string('email/class_cancellation_teacher.txt', context)
+        from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+        if email_ssis:
+            email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
+        teachers = self.get_teachers()
+        for t in teachers:
+            to_email = ['%s <%s>' % (t.name(), t.email)]
+            send_mail(email_title, email_content, from_email, to_email)
+
         self.clearStudents()
 
         #   If specified, remove the class's time and room assignment.
