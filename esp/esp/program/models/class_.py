@@ -1018,7 +1018,7 @@ class ClassSection(models.Model):
         from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
         if email_ssis:
             email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
-        teachers = self.get_teachers()
+        teachers = self.parent_class.get_teachers()
         for t in teachers:
             to_email = ['%s <%s>' % (t.name(), t.email)]
             send_mail(email_title, email_content, from_email, to_email)
