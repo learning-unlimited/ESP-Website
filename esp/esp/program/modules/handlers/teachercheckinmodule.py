@@ -365,6 +365,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         elif 'date' in request.GET:
             date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
         context = {}
+        group_text = GroupTextModule()
+        if not group_text.is_configured():
+            context['text_not_config'] = True
         form = TeacherCheckinForm(request.GET)
         if form.is_valid():
             when = form.cleaned_data['when']

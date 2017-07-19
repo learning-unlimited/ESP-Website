@@ -168,7 +168,8 @@
         <td class="text-teacher">
             <span class="message"></span>
             <input id="text_{{ teacher.username }}" name="{{ section.id }}"
-                   class="button text" type="button" value="Text Teacher" />
+                   class="button text" type="button" value="Text Teacher"
+                   {% if text_not_config %} disabled{% endif %}/>
         </tr>
         <tr>
     {% endfor %}
