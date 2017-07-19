@@ -112,6 +112,31 @@ $j(function(){
         $msg.text('Checking in...');
     });
 
+    function textTeacher(user, sec, callback, errorCallback){
+        refresh_csrf_cookie();
+        var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
+        $j.post('ajaxteachertext', data, "json").success(callback)
+        .error(function(){
+            alert("An error occurred while atempting to text " + user + ".");
+            if (errorCallback) {
+                errorCallback();
+            }
+        });
+    }
+
+    $j(".text").click(function(){
+        var username = this.id.replace("text_", "");
+        var section = this.name;
+        var $me = $j(this);
+        var $td = $j(this.parentNode);
+        var $msg = $td.children('.message');
+        textTeacher(username, section, function(response) {
+            // alert('Hello');
+            alert(response.message);
+        });
+        // $msg.text('Texted teacher');
+    });
+
     $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
