@@ -131,10 +131,8 @@ $j(function(){
         var $td = $j(this.parentNode);
         var $msg = $td.children('.message');
         textTeacher(username, section, function(response) {
-            // alert('Hello');
-            alert(response.message);
+            $msg.text(response.message);
         });
-        // $msg.text('Texted teacher');
     });
 
     $j(".uncheckin:enabled").click(function(){
