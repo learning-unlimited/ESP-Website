@@ -127,12 +127,13 @@ $j(function(){
     $j(".text").click(function(){
         var username = this.id.replace("text_", "");
         var section = this.name;
-        var $me = $j(this);
         var $td = $j(this.parentNode);
         var $msg = $td.children('.message');
         textTeacher(username, section, function(response) {
             $msg.text(response.message);
         });
+        $j(this).attr("disabled",true);
+        $msg.text('Texting teacher...');
     });
 
     $j(".uncheckin:enabled").click(function(){

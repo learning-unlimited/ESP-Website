@@ -166,11 +166,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         group_text = GroupTextModule()
         if group_text.is_configured():
             if 'username' in request.POST and 'section' in request.POST:
-                sec = ClassSection.objects.filter(id=request.POST['section'])
+                sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
-                # Concatenate message
-                message = "This is a test"
-                # Send message
+                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
                 group_text.sendMessages(teacher, message, True)
                 json_data['message'] = "Texted teacher"
         else:
