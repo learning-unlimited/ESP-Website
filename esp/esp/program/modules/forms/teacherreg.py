@@ -290,8 +290,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
             cleaned_data['class_size_optimal'] = None
 
         # If using grade ranges instead of min and max, extract min and max from grade range.
-        grade_range = json.loads(cleaned_data.get('grade_range'))
-        if grade_range:
+        if cleaned_data.get('grade_range'):
+            grade_range = json.loads(cleaned_data.get('grade_range'))
             cleaned_data['grade_min'] = grade_range[0]
             cleaned_data['grade_max'] = grade_range[1]
 
