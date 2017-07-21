@@ -66,6 +66,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
     style_choices = []
 
+    # To enable class styles, admins should set the Tag grade_ranges.
+    # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12)
+    grade_range_choices = []
+
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
@@ -81,6 +85,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='(How many days will your class take to complete?)' )
 
 
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=grade_range_choices, required=False)
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -146,6 +151,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
+        grade_ranges = json.loads(Tag.getTag('grade_ranges'))
+        if grade_ranges:
+            self.fields['grade_range'].choices = [(range,`range[0]` + " - " + `range[1]`) for range in grade_ranges]
+            hide_field( self.fields['grade_min'] )
+            hide_field( self.fields['grade_max'] )
+        else:
+            hide_field( self.fields['grade_range'] )
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
             self.fields['class_size_max'].choices = class_sizes
@@ -276,6 +288,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         if class_size_optimal == '':
             cleaned_data['class_size_optimal'] = None
+
+        # If using grade ranges instead of min and max, extract min and max from grade range.
+        grade_range = json.loads(cleaned_data.get('grade_range'))
+        if grade_range:
+            cleaned_data['grade_min'] = grade_range[0]
+            cleaned_data['grade_max'] = grade_range[1]
 
         # Return cleaned data
         return cleaned_data
