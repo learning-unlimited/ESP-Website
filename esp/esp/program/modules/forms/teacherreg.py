@@ -67,7 +67,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     style_choices = []
 
     # To enable class styles, admins should set the Tag grade_ranges.
-    # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12)
+    # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
     grade_range_choices = []
 
     # Grr, TypedChoiceField doesn't seem to exist yet
