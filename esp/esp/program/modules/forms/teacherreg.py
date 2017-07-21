@@ -151,9 +151,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        grade_ranges = json.loads(Tag.getTag('grade_ranges'))
-        if grade_ranges:
-            self.fields['grade_range'].choices = [(range,`range[0]` + " - " + `range[1]`) for range in grade_ranges]
+        if Tag.getTag('grade_ranges'):
+            grade_ranges = json.loads(Tag.getTag('grade_ranges'))
+            self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
             hide_field( self.fields['grade_min'] )
             hide_field( self.fields['grade_max'] )
         else:
