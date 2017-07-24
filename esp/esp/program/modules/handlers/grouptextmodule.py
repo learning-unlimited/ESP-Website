@@ -62,7 +62,8 @@ class GroupTextModule(ProgramModuleObj):
             "seq": 10
         }
 
-    def is_configured(self):
+    @staticmethod
+    def is_configured():
         """ Check if Twilio configuration settings are set.
             The text message module will not work without them. """
 
@@ -116,7 +117,8 @@ class GroupTextModule(ProgramModuleObj):
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
-    def sendMessages(self, filterobj, body, override = False):
+    @staticmethod
+    def sendMessages(filterobj, body, override = False):
         """ Attempts to send a text message with body to users matching filterobj
             Returns a log of actions which can be displayed to user. """
 

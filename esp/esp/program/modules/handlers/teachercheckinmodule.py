@@ -41,6 +41,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
+from esp.utils.decorators import json_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, PersistentQueryFilter, Record, ContactInfo
 from esp.cal.models import Event
@@ -153,6 +154,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
+    @json_response(None)
     @needs_onsite
     def ajaxteachertext(self, request, tl, one, two, module, extra, prog):
         """
@@ -162,18 +164,17 @@ class TeacherCheckinModule(ProgramModuleObj):
           'username':       The teacher's username.
           'section':        Section ID number.
         """
-        json_data = {}
-        group_text = GroupTextModule()
-        if group_text.is_configured():
+        if GroupTextModule.is_configured():
             if 'username' in request.POST and 'section' in request.POST:
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
                 message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
-                group_text.sendMessages(teacher, message, True)
-                json_data['message'] = "Texted teacher"
+                GroupTextModule.sendMessages(teacher, message, True)
+                return {'message': "Texted teacher"}
+            else:
+                return {'message': "Username and/or section not provided"}
         else:
-            json_data['message'] = "Twilio not configured."
-        return HttpResponse(json.dumps(json_data), content_type='text/json')
+            return {'message': "Twilio not configured"}
 
     @aux_call
     @needs_onsite
@@ -363,9 +364,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         elif 'date' in request.GET:
             date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
         context = {}
-        group_text = GroupTextModule()
-        if not group_text.is_configured():
-            context['text_not_config'] = True
+        context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
         if form.is_valid():
             when = form.cleaned_data['when']

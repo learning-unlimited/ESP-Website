@@ -167,9 +167,9 @@
         <td class="phone"> {{ teacher.phone }} </td>
         <td class="text-teacher">
             <span class="message"></span>
-            <input id="text_{{ teacher.username }}" name="{{ section.id }}"
+            <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
                    class="button text" type="button" value="Text Teacher"
-                   {% if text_not_config %} disabled{% endif %}/>
+                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
         </tr>
         <tr>
     {% endfor %}
