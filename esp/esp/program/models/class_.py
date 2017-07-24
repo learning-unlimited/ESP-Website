@@ -69,12 +69,11 @@ from esp.cal.models import Event
 from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
-from esp.users.models import ESPUser, Permission
+from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
-from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
 from argcache.extras.derivedfield import DerivedField
@@ -963,6 +962,9 @@ class ClassSection(models.Model):
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
     def cancel(self, email_students=True, include_lottery_students=False, text_students=False, explanation=None, unschedule=True):
+        # To avoid circular imports
+        from esp.program.modules.handlers.grouptextmodule import GroupTextModule
+
         if include_lottery_students:
             student_verbs = ['Enrolled', 'Interested', 'Priority/1']
         else:
@@ -1003,11 +1005,15 @@ class ClassSection(models.Model):
                 else:
                     send_mail(ssi_email_title, msgtext, from_email, to_email)
 
-        if self.parent_program.hasModule('GroupTextModule') and text_students:
-            #Send text messages if GroupTextModule is enabled
-            gtm = GroupTextModule()
-            msgtext = render_to_string('texts/class_cancellation.txt', context)
-            send_log = gtm.sendMessages(self.students(student_verbs), msgtext)
+        if text_students and self.parent_program.hasModule('GroupTextModule') and GroupTextModule.is_configured():
+            if self.students(student_verbs).distinct().count() > 0:
+                msgtext = render_to_string('texts/class_cancellation.txt', context)
+                students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
+                send_log = GroupTextModule.sendMessages(students_to_text, msgtext)
+            else:
+                send_log = "No students to text"
+        else:
+            send_log = "GroupTextModule is not enabled or configured"
 
         #   Send e-mail to administrators as well
         context['classreg'] = True
@@ -1767,10 +1773,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.clearStudents()
         self.set_all_sections_to_status(REJECTED)
 
-    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, include_lottery_students, explanation, unschedule)
+            sec.cancel(email_students, include_lottery_students, text_students, explanation, unschedule)
         self.status = CANCELLED
         self.save()
 
