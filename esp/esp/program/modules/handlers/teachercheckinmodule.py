@@ -36,17 +36,22 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.program.models.class_ import ClassSubject
+from esp.program.modules.handlers.grouptextmodule import GroupTextModule
+from esp.program.models import RegistrationProfile
+from esp.program.models.class_ import ClassSubject, ClassSection
 from esp.program.models.flags import ClassFlagType
 from esp.utils.web import render_to_response
+from esp.utils.decorators import json_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, Record, ContactInfo
+from esp.users.models    import ESPUser, PersistentQueryFilter, Record, ContactInfo
 from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
+from django.db.models.query   import Q
 from datetime import datetime, timedelta
+from twilio.rest import TwilioRestClient
 
 import json
 
@@ -147,6 +152,43 @@ class TeacherCheckinModule(ProgramModuleObj):
                 else:
                     json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), content_type='text/json')
+
+    @aux_call
+    @json_response(None)
+    @needs_onsite
+    def ajaxteachertext(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to text a teacher a reminder to check-in.
+
+        POST data:
+          'username':       The teacher's username.
+          'section':        Section ID number.
+        """
+        if GroupTextModule.is_configured():
+            if 'username' in request.POST and 'section' in request.POST:
+                sec = ClassSection.objects.get(id=request.POST['section'])
+                teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
+                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
+                GroupTextModule.sendMessages(teacher, message, True)
+                return {'message': "Texted teacher"}
+            else:
+                return {'message': "Username and/or section not provided"}
+        else:
+            return {'message': "Twilio not configured"}
+
+    @aux_call
+    @needs_onsite
+    def ajaxclassdetail(self, request, tl, one, two, module, extra, prog):
+        """
+        AJAX to this endpoint to get the details for a class, as an HTML
+        snippet
+        """
+        context = {}
+        context['class'] = ClassSubject.objects.get(id=request.GET['class'])
+        if request.GET['show_flags']:
+            context['show_flags'] = True
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
+        return render_to_response(self.baseDir()+'classdetail.html', request, context)
 
     @staticmethod
     def get_phone(user):
@@ -309,6 +351,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         elif 'date' in request.GET:
             date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
         context = {}
+        context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
         if form.is_valid():
             when = form.cleaned_data['when']

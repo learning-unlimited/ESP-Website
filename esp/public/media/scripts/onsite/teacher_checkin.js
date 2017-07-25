@@ -8,14 +8,14 @@ $j(function(){
     var checkins = [];
 
     $j(".flag-detail").hide();
-    
+
     //Replace hyphens with non-breaking hyphens, to stop Chrome from breaking up phone numbers
     function changeHyphens(n, node){
         node.innerHTML = node.innerHTML.replace(/-/g, "&#8209;");
     }
     $j(".room").map(changeHyphens);
     $j(".phone").map(changeHyphens);
-    
+
     function updateSelected(scroll){
         var buttons = $j(".checkin");
         if(selected >= buttons.length)
@@ -37,7 +37,7 @@ $j(function(){
             $j("#last_checkin").parent().hide();
     }
     updateSelected(false);
-    
+
     function checkIn(username, callback, undo){
         refresh_csrf_cookie();
         var data = {teacher: username, csrfmiddlewaretoken: csrf_token()};
@@ -48,11 +48,11 @@ $j(function(){
             alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
         });
     }
-    
+
     function undoCheckIn(username, callback){
         checkIn(username, callback, true);
     }
-    
+
     $j(".checkin:enabled").click(function(){
         var username = this.id.replace("checkin_", "");
         var td = this.parentNode;
@@ -65,7 +65,30 @@ $j(function(){
         });
         this.value += "...";
     });
-    
+
+    function textTeacher(user, sec, callback, errorCallback){
+        var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
+        $j.post('ajaxteachertext', data, "json").success(callback)
+        .error(function(){
+            alert("An error occurred while atempting to text " + user + ".");
+            if (errorCallback) {
+                errorCallback();
+            }
+        });
+    }
+
+    $j(".text").click(function(){
+        var username = $j(this).data("username");
+        var section = $j(this).data("section");
+        var $td = $j(this.parentNode);
+        var $msg = $td.children('.message');
+        textTeacher(username, section, function(response) {
+            $msg.text(response.message);
+        });
+        $j(this).attr("disabled",true);
+        $msg.text('Texting teacher...');
+    });
+
     $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
@@ -122,7 +145,7 @@ $j(function(){
     }).keyup(function(e){
         input.change();
     });
-    
+
     var lastLength=0;
     input.change(function(e){
         if(input.val().length == 0)
