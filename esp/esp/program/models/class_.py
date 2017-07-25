@@ -961,7 +961,7 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, explanation=None, unschedule=True):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         # To avoid circular imports
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
@@ -1019,6 +1019,18 @@ class ClassSection(models.Model):
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
+
+        #   Send e-mail to teachers
+        if email_teachers:
+            context['director_email'] = self.parent_program.director_email
+            email_content = render_to_string('email/class_cancellation_teacher.txt', context)
+            from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+            if email_ssis:
+                email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
+            teachers = self.parent_class.get_teachers()
+            for t in teachers:
+                to_email = ['%s <%s>' % (t.name(), t.email)]
+                send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
 
@@ -1768,10 +1780,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.clearStudents()
         self.set_all_sections_to_status(REJECTED)
 
-    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, explanation=None, unschedule=False):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, include_lottery_students, text_students, explanation, unschedule)
+            sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
         self.status = CANCELLED
         self.save()
 

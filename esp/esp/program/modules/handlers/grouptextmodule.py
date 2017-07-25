@@ -118,7 +118,7 @@ class GroupTextModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @staticmethod
-    def sendMessages(filterobj, body):
+    def sendMessages(filterobj, body, override = False):
         """ Attempts to send a text message with body to users matching filterobj
             Returns a log of actions which can be displayed to user. """
 
@@ -158,7 +158,8 @@ class GroupTextModule(ProgramModuleObj):
             send_log.append("Found contact info for "+str(user))
 
             # the user has elected to not receive text messages
-            if not contactInfo.receive_txt_message:
+            # unless override is true
+            if not contactInfo.receive_txt_message and not override:
                 send_log.append(str(user)+" does not want text messages, fine")
                 continue
             client = TwilioRestClient(account_sid, auth_token)
