@@ -166,14 +166,19 @@ hideClassesOutOfGradeRange(student_grade);
 </script>
 
 <script type="text/javascript">
-$j("#grade_filter").change(function(){
-		var grade =  $j(this).find('option:selected').prop('value');
+function hideOtherGrades(grade){
     if(grade == "all"){
         $j('.show_class').show();
     }else{
     	$j('.show_class').hide();
         $j('.grade_' + grade).show();
     }
+}
+
+hideOtherGrades($j("#grade_filter").find('option:selected').prop('value'));
+
+$j("#grade_filter").change(function(){
+	hideOtherGrades($j(this).find('option:selected').prop('value'));
 });
 </script>
 
