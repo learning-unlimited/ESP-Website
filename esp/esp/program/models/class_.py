@@ -1009,11 +1009,6 @@ class ClassSection(models.Model):
             if self.students(student_verbs).distinct().count() > 0:
                 msgtext = render_to_string('texts/class_cancellation.txt', context)
                 students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
-                send_log = GroupTextModule.sendMessages(students_to_text, msgtext)
-            else:
-                send_log = "No students to text"
-        else:
-            send_log = "GroupTextModule is not enabled or configured"
 
         #   Send e-mail to administrators as well
         context['classreg'] = True
