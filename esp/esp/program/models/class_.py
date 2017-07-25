@@ -1487,6 +1487,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def max_students(self):
         return self.sections.count()*self.class_size_max
 
+    def grades(self):
+        """ Return an iterable list of the grades for a class. """
+        return range(self.grade_min, self.grade_max + 1)
+
     def emailcode(self):
         """ Return the emailcode for this class.
 

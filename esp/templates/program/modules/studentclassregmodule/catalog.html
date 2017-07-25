@@ -62,14 +62,12 @@ Viewing classes for: {{ timeslot.friendly_name }}
 
 <div id="catalog">
 
-{% load intrange %}
-
 <br>
 <div align="right">
 <b>Filter Catalog by Grade:</b><br>
 <select id = "grade_filter" style="width:auto !important">
   <option value="all" selected="selected">All Grades</option>
-  {% for grade in program.grade_min|intrange:program.grade_max %}
+  {% for grade in program.grades %}
     <option value="{{ grade }}">Grade {{ grade }}</option>
   {% endfor %}
 </select>
@@ -172,9 +170,8 @@ $j("#grade_filter").change(function(){
 		var grade =  $j(this).find('option:selected').prop('value');
     if(grade == "all"){
         $j('.show_class').show();
-    }
-    else{
-    		$j('.show_class').hide();
+    }else{
+    	$j('.show_class').hide();
         $j('.grade_' + grade).show();
     }
 });
