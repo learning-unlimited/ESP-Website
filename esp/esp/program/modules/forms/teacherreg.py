@@ -66,10 +66,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
     #     [["Lecture", "Lecture Style Class"], ["Seminar", "Seminar Style Class"]]
     style_choices = []
 
-    # To enable class styles, admins should set the Tag grade_ranges.
-    # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range_choices = []
-
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
@@ -84,8 +80,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
     session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
 
-
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=grade_range_choices, required=False)
+    # To enable grade ranges, admins should set the Tag grade_ranges.
+    # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False)
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -290,10 +287,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             cleaned_data['class_size_optimal'] = None
 
         # If using grade ranges instead of min and max, extract min and max from grade range.
-        if cleaned_data.get('grade_range'):
-            grade_range = json.loads(cleaned_data.get('grade_range'))
-            cleaned_data['grade_min'] = grade_range[0]
-            cleaned_data['grade_max'] = grade_range[1]
+        cleaned_data['grade_min'], cleaned_data['grade_max'] = json.loads(cleaned_data.get('grade_range'))
 
         # Return cleaned data
         return cleaned_data
