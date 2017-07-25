@@ -144,7 +144,8 @@ class ClassCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSubject.objects.all(), widget=forms.HiddenInput)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule all sections of this class, in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
-    email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
+    email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail all students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
+    email_teachers = forms.BooleanField(initial=True, help_text='Check this box to notify all teachers of this class that this class has been cancelled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
 
     def __init__(self, *args, **kwargs):
@@ -157,7 +158,8 @@ class SectionCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
-    email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
+    email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this section in a lottery, in addition to those that are actually enrolled.', required=False)
+    email_teachers = forms.BooleanField(initial=True, help_text='Check this box to notify all teachers of this class that this section has been cancelled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
 
     def __init__(self, *args, **kwargs):
