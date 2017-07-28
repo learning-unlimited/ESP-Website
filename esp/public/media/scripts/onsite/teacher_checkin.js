@@ -210,7 +210,7 @@ $j(function(){
             e.preventDefault();
         }
     }).keydown(function(e){
-        if(e.target.nodeName !== "TEXTAREA") {
+        if(e.target.nodeName !== "TEXTAREA" && e.target.nodeName !== "INPUT") {
             input.focus();
             if(e.which==38)
                 selected--;
