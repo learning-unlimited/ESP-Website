@@ -248,6 +248,12 @@ class BaseESPUser(object):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
 
+    def get_last_program_with_profile(self):
+        # as in getLastProfile, caching is handled in
+        # RegistrationProfile.getLastProfile for coherence
+        from esp.program.models import RegistrationProfile
+        return RegistrationProfile.get_last_program_with_profile(self)
+
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
