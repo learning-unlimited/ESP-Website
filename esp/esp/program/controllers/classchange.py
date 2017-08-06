@@ -281,12 +281,12 @@ class ClassChangeController(object):
         badness = 0
         for section_index in numpy.argsort(request_freq)[::-1][:popular_count]:
             section = self.sections[section_index]
-            pure_cap = section.capacity - section.num_students()
-            overflow = pure_cap + dropped_counts[section_index] - added_counts[section_index]
+            orig_cap = self.section_capacities_orig[section_index]
+            overflow = orig_cap + dropped_counts[section_index] - added_counts[section_index]
             print "# = {:5d} ({:3d} ->{:3d} /{:3d}) [{:3d} -{:3d} +{:3d} =>{:3d}]{:3d}!: {}".format(
                     request_freq[section_index],
-                    pure_cap,
-                    self.section_capacities_orig[section_index],
+                    orig_cap,
+                    self.section_capacities_base[section_index],
                     section.capacity,
                     enroll_orig_counts[section_index],
                     dropped_counts[section_index],
@@ -333,7 +333,7 @@ class ClassChangeController(object):
                     print "# = {:5d} ({:3d} ->{:3d} /{:3d}): {}".format(
                             request_freq[section_index],
                             section.capacity - section.num_students(),
-                            self.section_capacities_orig[section_index],
+                            self.section_capacities_base[section_index],
                             section.capacity,
                             section)
                 print
@@ -420,15 +420,6 @@ class ClassChangeController(object):
         a2 = self.get_index_array(a1)
         return (a1, a2)
 
-    def clear_assignments(self):
-        """ Reset the state of the controller so that new assignments may be computed,
-            but without fetching any information from the database. """
-
-        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
-        self.section_capacities = numpy.copy(self.section_capacities_orig)
-        self.section_scores = numpy.copy(self.section_scores_orig)
-        self.enroll_final = numpy.copy(self.enroll_final_orig)
-
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
             This includes:
@@ -438,18 +429,18 @@ class ClassChangeController(object):
         """
 
         self.enroll_orig = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        self.enroll_final = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        self.enroll_final_base = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.request_by_priority = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for _ in self.Q_REQ]
         self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
-        # section_capacities tracks *remaining* capacity.
-        self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
+        # section_capacities will track *remaining* capacity.
+        self.section_capacities_orig = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         self.section_optimistic_drops = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         # A section's score is number of students requesting minus capacity.
         # It's positive if we can't let everybody who wants it take it. Higher
         # scores mean a class is more in demand.
-        self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
+        self.section_scores_base = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
         self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
 
@@ -545,25 +536,40 @@ class ClassChangeController(object):
         gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
         self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.program_schoolyear(self.program) - gradyear_pairs[:, 1]
 
-        #   Find section capacities (TODO: convert to single query)
+        self.section_capacities_base = numpy.copy(self.section_capacities_orig)
+
+        # "*_orig" refers to the state of enrollments before any modifications
+        # from the lottery at all.
+        # "*_base" refers to the state of enrollments after unenrolling any
+        # students from any classes they want to switch out from; it is the
+        # blank slate the lottery starts from each time.
+
+        # Find base section capacities (TODO: convert to single query):
         for sec in self.sections:
             sec_ind = self.section_indices[sec.id]
-            self.section_capacities[sec_ind] = sec.capacity - sec.num_students()
+            self.section_capacities_base[sec_ind] = sec.capacity - sec.num_students()
             sec_enroll_orig = self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)
             any_overlapping_requests = self.request[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
             # Optimistically add number enrolled but want to switch out to capacity
             opt_drops = numpy.count_nonzero(sec_enroll_orig * any_overlapping_requests)
             self.section_optimistic_drops[sec_ind] = opt_drops
-            self.section_capacities[sec_ind] += opt_drops
+            self.section_capacities_base[sec_ind] += opt_drops
             # Commit to enrolling students into this section if they were
             # originally in it and they didn't request any overlapping classes
-            self.enroll_final[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
-            self.section_scores[sec_ind] = -self.section_capacities[sec_ind]
-            self.section_scores[sec_ind] += numpy.count_nonzero(self.request[:, sec_ind, :].any(axis=1)) # number who want to switch in
-        self.section_capacities_orig = numpy.copy(self.section_capacities)
-        self.section_scores_orig = numpy.copy(self.section_scores)
-        self.enroll_final_orig = numpy.copy(self.enroll_final)
-        self.clear_assignments()
+            self.enroll_final_base[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
+            self.section_scores_base[sec_ind] = -self.section_capacities_base[sec_ind]
+            self.section_scores_base[sec_ind] += numpy.count_nonzero(self.request[:, sec_ind, :].any(axis=1)) # number who want to switch in
+
+        self.reset_assignments_to_base()
+
+    def reset_assignments_to_base(self):
+        """ Reset the state of the controller so that new assignments may be computed,
+            but without fetching any information from the database. """
+
+        self.changed = numpy.zeros((self.num_students,), dtype=numpy.bool)
+        self.section_capacities = numpy.copy(self.section_capacities_base)
+        self.section_scores = numpy.copy(self.section_scores_base)
+        self.enroll_final = numpy.copy(self.enroll_final_base)
 
     def fill_section(self, si, pessimism, waitlist_priority=False, request_priority=0, only_without_classes=False):
         """ Assigns students to the section with index si.
@@ -728,7 +734,7 @@ class ClassChangeController(object):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
             Can be run any number of times. """
-        if not incremental: self.clear_assignments()
+        if not incremental: self.reset_assignments_to_base()
 
         #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
