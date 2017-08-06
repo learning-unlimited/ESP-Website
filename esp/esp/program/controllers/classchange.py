@@ -68,17 +68,28 @@ class ClassChangeController(object):
         sections = list(self.students[student_ind].getSections(self.program, ["Enrolled"]).distinct())
         sections.sort(key = lambda section: section.meeting_times.order_by('start')[0].start)
         for cls in sections:
-            schedule += "<tr>\n<td>"+", ".join(cls.friendly_times())+("<br />"+", ".join(cls.prettyrooms()) if show_rooms else "")+"</td>\n<td>"+cls.title()+"<br />"+", ".join(cls.parent_class.getTeacherNames())+"</td>\n<td>"+cls.emailcode()+"</td>\n</tr>\n"
+            schedule += ("<tr>\n<td>" + ", ".join(cls.friendly_times()) +
+                    ("<br />" + ", ".join(cls.prettyrooms()) if show_rooms else "") +
+                    "</td>\n<td>" + cls.title() + "<br />" +
+                    ", ".join(cls.parent_class.getTeacherNames()) +
+                    "</td>\n<td>" + cls.emailcode() + "</td>\n</tr>\n")
         schedule += "</table>\n"
         return schedule.encode('ascii','ignore')
 
     def get_changed_student_email_text(self, student_ind, for_real = False):
+        if not self.check_in_room:
+            self.check_in_room = raw_input("What room should students check in at? ")
+            assert self.check_in_room
         student = self.students[student_ind]
         text = "<html>\nHello "+student.first_name+",<br /><br />\n\n"
-        text += "We've processed your class change request, and have updated your schedule. Your new schedule is as follows: <br /><br />\n\n"
+        text += "We've processed your class change request, and have updated your schedule. "
+        text += "Your new schedule is as follows: <br /><br />\n\n"
         text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
         if self.student_not_checked_in[student_ind]:
-            text += "On your first day, you must check in at room 1-136, turn in your completed liability form, and pay the program fee (unless you are a financial aid recipient or have paid online). We will give you the room numbers of your classes at check-in.<br /><br />\n\n"
+            text += "On your first day, you must check in at room %s, " % (self.check_in_room,)
+            text += "turn in your completed liability form, and pay the program fee "
+            text += "(unless you are a financial aid recipient or have paid online). "
+            text += "We will give you the room numbers of your classes at check-in.<br /><br />\n\n"
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
@@ -94,7 +105,8 @@ class ClassChangeController(object):
             text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accomodate your class preferences this time, and we hope to see you at a future ESP program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accomodate your class preferences this time, "
+            text += "and we hope to see you at a future ESP program.<br /><br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
         text = text.encode('ascii','ignore')
@@ -118,7 +130,8 @@ class ClassChangeController(object):
             use_closed_classes=True,
             request_relationships=('Request',),
             students_not_checked_in=None, # type: QuerySet
-            prioritize_students_without_classes=False):
+            prioritize_students_without_classes=False,
+            check_in_room=None):
         """ Set constant parameters for class changes. """
 
         assert isinstance(program,(Program,int))
@@ -138,6 +151,9 @@ class ClassChangeController(object):
         self.use_closed_classes = use_closed_classes
         self.request_relationships = request_relationships
         self.prioritize_students_without_classes = prioritize_students_without_classes
+        self.check_in_room = check_in_room
+
+        self.from_email = "%s <%s>" % (self.program.niceName(), self.program.director_email)
 
         self.Q_SR_NOW = nest_Q(StudentRegistration.is_valid_qobject(self.now), 'studentregistration')
         self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
@@ -803,7 +819,13 @@ class ClassChangeController(object):
             self.timeout = 2
         f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
         self.subject = "[" + self.program.niceName() + "] Class Change"
-        self.from_email = "%s <%s>" % (self.program.niceName(), self.program.director_email)
+        while True:
+            print("Do you want to send from '%s'? Press Enter if so," % (self.from_email,))
+            new_email = raw_input("or enter a new email in this format if not:")
+            if new_email:
+                self.from_email = new_email
+            else:
+                break
         self.bcc = [self.from_email]
         self.extra_headers = {}
         self.extra_headers['Reply-To'] = self.from_email
