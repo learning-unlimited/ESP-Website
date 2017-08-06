@@ -80,8 +80,8 @@ class ThemesTest(TestCase):
 
         # Move the existing images dir out of the way, so we don't conflict
         # with it (either what the user has there, or between themes).
-        # TODO(benkraft): Do the same for styles, although in practice
-        # conflicts there are less likely.
+        # TODO(benkraft): Do the same for styles and scripts, although in
+        # practice conflicts there are less likely.
         # TODO(benkraft): This is a super hacky way to do things!  Instead we
         # should be doing all these tests in some sort of tmpdir to avoid
         # touching anything of the user's.
