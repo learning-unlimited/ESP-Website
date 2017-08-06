@@ -58,14 +58,6 @@ from django.db.models import Q
 
 class ClassChangeController(object):
 
-    default_options = {
-        'check_grade': False,
-        'stats_display': False,
-        'use_closed_classes': True,
-        'request_relationships': ('Request',),
-        'prioritize_students_without_classes': False,
-    }
-
     WAIT_REGEX_PATTERN = r"^Waitlist/(\d+)$"
     WAIT_REGEX = re.compile(WAIT_REGEX_PATTERN)
 
@@ -119,7 +111,14 @@ class ClassChangeController(object):
         self.Q_WAIT[0] = Q(relationship__name__regex=ClassChangeController.WAIT_REGEX_PATTERN) & self.Q_STUDENTS
         self.Q_EN = Q(relationship__name="Enrolled") & self.Q_STUDENTS
 
-    def __init__(self, program, **kwargs):
+    def __init__(self, program,
+            deadline=None,
+            check_grade=False,
+            stats_display=False,
+            use_closed_classes=True,
+            request_relationships=('Request',),
+            students_not_checked_in=None, # type: QuerySet
+            prioritize_students_without_classes=False):
         """ Set constant parameters for class changes. """
 
         assert isinstance(program,(Program,int))
@@ -130,14 +129,15 @@ class ClassChangeController(object):
         iscorrect = raw_input("Is this the correct program (y/[n])? ")
         assert (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes')
         self.now = datetime.now()
-        self.options = ClassChangeController.default_options.copy()
-        self.options.update(kwargs)
         self.students_not_checked_in = []
-        self.deadline = self.now
-        if 'deadline' in self.options.keys():
-            self.deadline = self.options['deadline']
-        if 'request_relationships' in self.options:
-            self.request_relationships = self.options['request_relationships']
+
+        # options
+        self.deadline = self.now if deadline is None else deadline
+        self.check_grade = check_grade
+        self.stats_display = stats_display
+        self.use_closed_classes = use_closed_classes
+        self.request_relationships = request_relationships
+        self.prioritize_students_without_classes = prioritize_students_without_classes
 
         self.Q_SR_NOW = nest_Q(StudentRegistration.is_valid_qobject(self.now), 'studentregistration')
         self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
@@ -147,15 +147,16 @@ class ClassChangeController(object):
         self.Q_REQ = [Q(relationship__name=name) & self.Q_PROG for name in self.request_relationships]
 
         self.students = ESPUser.objects.filter(self.Q_SR_REQ_EXISTS).order_by('id').distinct()
-        if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
-            self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
+        if isinstance(students_not_checked_in, QuerySet):
+            self.students_not_checked_in = list(students_not_checked_in
+                    .values_list('id',flat=True).distinct())
         else:
             self.students_not_checked_in = list(self.students.exclude(id__in=self.program.students()['attended']).values_list('id',flat=True).distinct())
 
         self.priority_limit = self.program.priorityLimit()
         self._init_Q_objects()
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program').distinct()
-        if not self.options['use_closed_classes']:
+        if not self.use_closed_classes:
             self.sections = self.sections.filter(registration_status=0).distinct()
         self.timeslots = self.program.getTimeSlots().order_by('id').distinct()
         self.num_timeslots = len(self.timeslots)
@@ -171,7 +172,7 @@ class ClassChangeController(object):
 
         self.initialize()
 
-        if self.options['stats_display']:
+        if self.stats_display:
             logger.info('Initialized lottery assignment for %d students, %d sections, %d timeslots', self.num_students, self.num_sections, self.num_timeslots)
 
     def print_stats(self, popular_count=10,
@@ -570,7 +571,7 @@ class ClassChangeController(object):
 
         timeslots = numpy.transpose(numpy.nonzero(self.section_schedules[si, :]))
 
-        if self.options['stats_display']:
+        if self.stats_display:
             logger.info(
                     '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s',
                     self.section_ids[si], si, self.section_capacities[si],
@@ -588,21 +589,24 @@ class ClassChangeController(object):
 
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
-            if self.options['stats_display']: logger.info('   Section was not assigned to any timeslots, aborting')
+            if self.stats_display:
+                logger.info('   Section was not assigned to any timeslots, aborting')
             return False
 
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
-                if self.options['stats_display']: logger.info('   Section covered all lunch timeslots %s on day %d, aborting', self.lunch_timeslots[i, :], i)
+                if self.stats_display:
+                    logger.info('   Section covered all lunch timeslots %s on day %d, aborting',
+                            self.lunch_timeslots[i, :], i)
                 return False
 
 
 
 
         #   Filter students by the section's grade limits
-        if self.options['check_grade']:
+        if self.check_grade:
             possible_students *= (self.student_grades >= self.section_grade_min[si])
             possible_students *= (self.student_grades <= self.section_grade_max[si])
 
@@ -627,7 +631,7 @@ class ClassChangeController(object):
         candidate_students = numpy.nonzero(possible_students)[0]
         num_spaces = self.section_capacities[si]
         num_spaces -= int(round(self.section_optimistic_drops[si]) * pessimism)
-        if self.options['stats_display']:
+        if self.stats_display:
             logger.info('   About to try to add %d candidates to %d spaces', candidate_students.shape[0], num_spaces)
             logger.info('   ' + str(candidate_students.shape))
         # Clamp num_spaces to 0. It can be negative if students enrolled in a
@@ -649,7 +653,11 @@ class ClassChangeController(object):
         self.enroll_final[selected_students, si, timeslots] = True
         self.section_capacities[si] -= selected_students.shape[0]
 
-        if self.options['stats_display']: logger.info('   Added %d/%d students (section filled: %s)', selected_students.shape[0], candidate_students.shape[0], section_filled)
+        if self.stats_display:
+            logger.info('   Added %d/%d students (section filled: %s)',
+                    selected_students.shape[0],
+                    candidate_students.shape[0],
+                    section_filled)
 
         return section_filled
 
@@ -725,11 +733,11 @@ class ClassChangeController(object):
         #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
-        owcs = (True, False) if self.options['prioritize_students_without_classes'] else (False,)
+        owcs = (True, False) if self.prioritize_students_without_classes else (False,)
         for owc in owcs:
             for rp, rp_name in enumerate(self.request_relationships):
                 for wp in range(1,self.priority_limit+1) + [False,]:
-                    if self.options['stats_display']:
+                    if self.stats_display:
                         logger.info('\n== Assigning %s, waitlist priority %s students',
                                 rp_name, str(wp) if self.priority_limit > 1 else '')
                     for section_index in self.sorted_section_indices:
@@ -769,7 +777,7 @@ class ClassChangeController(object):
         else:
             text_fn = self.get_unchanged_student_email_text
         sent_to = "\n\nSent to " + student.username + ", " + student.name() + " <" + student.email + ">\n\n------------------------\n\n"
-        if self.options['stats_display']:
+        if self.stats_display:
             logger.info(text_fn(student_ind,for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
@@ -779,7 +787,7 @@ class ClassChangeController(object):
             time.sleep(self.timeout)
 
     def send_emails(self, for_real = False):
-        if self.options['stats_display']:
+        if self.stats_display:
             logger.info("Sending emails....")
             sys.stdout.flush()
         if hasattr(settings, 'EMAILTIMEOUT') and \
