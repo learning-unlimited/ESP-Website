@@ -13,12 +13,22 @@
 
 {% block content %}
 {% with user.getLastProfile as profile %}
-{% with user.get_last_program_with_profile as program %}
 <h1>User Information</h1>
 
 <div id="user-sidebar">
     {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
+    <form class="change-program" method="get">
+        <input type="hidden" name="username" value="{{user.username}}"/>
+        View:
+        <select name="program" onchange="$j(this).parent().submit();return false;">
+            {% for prog in all_programs %}
+            <option value="{{prog.id}}" {% if prog == program %}selected="selected"{% endif %}>
+                {{prog.name}}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     {% if program %}
     <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}&onsite={{program.id}}">Onsite for {{program.niceName}}</a>
@@ -45,9 +55,9 @@
         {% if program %}
         <div id="print-student-schedule">
             <h2>
-                Student schedule<br/>
-                (for {{program.niceName}})
+                Student schedule
             </h2>
+            <p>(for {{program.niceName}})</p>
             <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print locally</a>
             <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print to default printer</a>
             {% if printers %}
@@ -74,7 +84,6 @@
         {% endif %}
     {% endif %}
 </div>
-{% endwith %}
 
 <table class="dottedtable">
 <tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
