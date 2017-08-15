@@ -592,6 +592,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.title
                 current_data['url']   = newclass.emailcode()
+                min_grade = newclass.grade_min
+                max_grade = newclass.grade_max
+                if Tag.getTag('grade_ranges'):
+                    current_data['grade_range'] = [min_grade,max_grade]
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:
                         current_data[field_name] = newclass.custom_form_data[field_name]

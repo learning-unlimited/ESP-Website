@@ -1301,12 +1301,19 @@ class RegistrationProfile(models.Model):
 
     @cache_function
     def getLastProfile(user):
+        """Return the user's most recent profile, or an empty profile.
+
+        Return the user's most recently written profile if one exists. If none
+        exist because the user has no profiles or is an AnonymousUser, create
+        and return (but don't save) an empty profile for the user.
+        """
         regProf = None
 
+        # check if this is an actual User, not an AnonymousUser
         if isinstance(user.id, (int, long)):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
-            except:
+            except RegistrationProfile.DoesNotExist:
                 pass
 
         if regProf != None:
@@ -1318,6 +1325,30 @@ class RegistrationProfile(models.Model):
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
+
+    @cache_function
+    def get_last_program_with_profile(user):
+        """Return the program for which the user most recently wrote a profile.
+
+        Look up the profile most recently written by the user, skipping
+        profiles not associated with a program, and return the associated
+        program. If no such programs exist, return None. Used as an
+        approximation of the most recent program attended by the user, which is
+        also often a currently running program.
+        """
+        try:
+            return (
+                RegistrationProfile.objects
+                .filter(user__exact=user, program__isnull=False)
+                .select_related('program')
+                .latest('last_ts')
+                .program
+            )
+        except RegistrationProfile.DoesNotExist:
+            return None
+    get_last_program_with_profile.depend_on_row('program.RegistrationProfile',
+            lambda profile: {'user': profile.user})
+    get_last_program_with_profile = staticmethod(get_last_program_with_profile)
 
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """

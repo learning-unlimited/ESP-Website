@@ -1076,7 +1076,7 @@ Volunteer schedule for %s:
                     else:
                         rooms[room.name] = [update_dict]
 
-        for room_name in rooms:
+        for room_name in sorted(rooms.keys()):
             rooms[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms[room_name]:
                 scheditems.append(val)

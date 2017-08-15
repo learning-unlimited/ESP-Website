@@ -54,6 +54,7 @@ all_global_tags = {
     'automatic_registration_redirect': (True, "If student/teacher registration is open for exactly one program, redirect to student registration after student account creation (enabled by default)"),
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
+    'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag")
 }
 
 # Any tag used with Tag.getProgramTag(),
