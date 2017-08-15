@@ -32,6 +32,13 @@
         {% autoescape off %}
          {{ class.class_info|escape|linebreaksbr }}<br />
         {% endautoescape %}
+       {% if class.class_style %}
+       <br /><br />
+       <b>Class Style</b><br />
+       <span style="font-style:italic;">
+         {{ class.class_style }}
+       </span>
+       {% endif %}
        {% if class.prereqs %}
        <br /><br />
        <b>Prerequisites</b><br />

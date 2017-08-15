@@ -48,7 +48,7 @@ import time
 
 from esp.cal.models import Event
 from esp.users.models import ESPUser
-from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program
+from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program, ClassSection
 from esp.dbmail.models import send_mail
 from esp.utils.query_utils import nest_Q
 
@@ -134,17 +134,20 @@ class ClassChangeController(object):
         self.deadline = self.now
         if 'deadline' in self.options.keys():
             self.deadline = self.options['deadline']
+
         self.Q_SR_NOW = nest_Q(StudentRegistration.is_valid_qobject(self.now), 'studentregistration')
         self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
         self.Q_SR_REQ = Q(studentregistration__relationship__name="Request") & self.Q_SR_PROG
         self.Q_NOW = StudentRegistration.is_valid_qobject(self.now)
         self.Q_PROG = Q(section__parent_class__parent_program=self.program, section__meeting_times__isnull=False) & self.Q_NOW
         self.Q_REQ = Q(relationship__name="Request") & self.Q_PROG
+
         self.students = ESPUser.objects.filter(self.Q_SR_REQ).order_by('id').distinct()
         if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
             self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
         else:
             self.students_not_checked_in = list(self.students.exclude(id__in=self.program.students()['attended']).values_list('id',flat=True).distinct())
+
         self.priority_limit = self.program.priorityLimit()
         self._init_Q_objects()
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program').distinct()
@@ -166,6 +169,201 @@ class ClassChangeController(object):
 
         if self.options['stats_display']:
             logger.info('Initialized lottery assignment for %d students, %d sections, %d timeslots', self.num_students, self.num_sections, self.num_timeslots)
+
+    def print_stats(self, popular_count=10,
+            print_section_notation=False, list_no_class_students=False):
+        """Print basic stats about the program and class changes.
+
+        Print some basic stats about the program and this class changes
+        controller that you might want to verify before running anything.
+        Partly cribbed from the stub wiki page that tells people how to run this
+        module. Includes a list of the <popular_count> most requested classes
+        and their capacities."""
+
+
+        print "Class Changes Stats"
+        print "==================="
+        print
+        print "Student counts"
+        print "--------------"
+        print "{:5d} not checked in".format(len(self.students_not_checked_in))
+        print "{:5d} attended".format(len(self.program.students()['attended']))
+        print "{:5d} with requests".format(len(self.students))
+        print "{:5d} attended with requests".format(len(
+                set(self.students.values_list('id', flat=True)) &
+                set(self.program.students()['attended'].values_list('id', flat=True))))
+
+        print
+        print "Request counts"
+        print "--------------"
+        print "{:5d} requests".format(numpy.count_nonzero(self.request))
+        print "{:5d} student-timeslots with requests".format(numpy.count_nonzero(self.request.any(axis=1)))
+        print
+        print "Student histograms"
+        print "(only students with >= 1 request)"
+        print "---------------------------------"
+        req_freqs = numpy.bincount(self.request.sum(axis=(1,2)))
+        for i in range(req_freqs.size):
+            if req_freqs[i]:
+                print "{:5d} students with {:3d} request(s)".format(req_freqs[i], i)
+
+        print
+        ts_freqs = numpy.bincount(self.request.any(axis=1).sum(axis=1))
+        for i in range(ts_freqs.size):
+            if ts_freqs[i]:
+                print "{:5d} students with {:3d} timeslot(s) with requests".format(ts_freqs[i], i)
+        print
+        oe_freqs = numpy.bincount(self.enroll_orig.any(axis=1).sum(axis=1))
+        for i in range(ts_freqs.size):
+            if oe_freqs[i]:
+                print "{:5d} students originally enrolled in {:3d} section(s)".format(oe_freqs[i], i)
+
+        # Sum requests, enrollments, etc. along the student and timeslot axis
+        # to get a count for each section
+        request_freq = numpy.sum(self.request, axis=(0, 2))
+
+        enroll_orig_counts = numpy.sum(self.enroll_orig, axis=(0, 2))
+        enroll_final_counts = numpy.sum(self.enroll_final, axis=(0, 2))
+        dropped_counts = numpy.sum(self.enroll_orig & ~self.enroll_final, axis=(0, 2))
+        added_counts = numpy.sum(~self.enroll_orig & self.enroll_final, axis=(0, 2))
+
+
+        print
+        print "Tentatively changed enrollments"
+        print "(not useful if you haven't run compute_assignments)"
+        print "---------------------------------------------------"
+        print "{:5d} unchanged".format(numpy.sum(self.enroll_orig & self.enroll_final))
+        print "{:5d} dropped".format(numpy.sum(dropped_counts))
+        print "{:5d} added".format(numpy.sum(added_counts))
+        print
+        print "Most popularly requested sections"
+        print "---------------------------------"
+        if print_section_notation:
+            print
+            print "  Notation: # = N (C -> O / T) [E - D + A = F]"
+            print "    N = number of requests"
+            print "    C = original remaining capacity"
+            print "    O = original optimistic capacity if all requesters switch out"
+            print "    T = total capacity"
+            print "    E = requesters enrolled originally"
+            print "    D = requesters (tentatively) dropped"
+            print "    A = requesters (tentatively) added"
+            print "    F = requesters enrolled in (tentative) final assignment"
+            print
+            print "---------------------------------"
+        # argsort returns the indices that would sort the array of frequencies;
+        # then we iterate over it backwards to get indices sorted by decreasing
+        # frequency
+        for section_index in numpy.argsort(request_freq)[::-1][:popular_count]:
+            section = self.sections[section_index]
+            print "# = {:5d} ({:3d} ->{:3d} /{:3d}) [{:3d} -{:3d} +{:3d} =>{:3d}]: {}".format(
+                    request_freq[section_index],
+                    section.capacity - section.num_students(),
+                    self.section_capacities_orig[section_index],
+                    section.capacity,
+                    enroll_orig_counts[section_index],
+                    dropped_counts[section_index],
+                    added_counts[section_index],
+                    enroll_final_counts[section_index],
+                    section)
+
+        print
+        print "Students by number of changes"
+        print "-----------------------------"
+        changed_classes_freq = numpy.bincount(
+                (self.enroll_final & ~self.enroll_orig).sum(axis=(1,2)))
+        for i in range(changed_classes_freq.size):
+            if changed_classes_freq[i]:
+                print "{:5d} students with {:3d} added sections".format(changed_classes_freq[i], i)
+
+        print
+        print "Students originally with no classes"
+        print "-----------------------------------"
+        orig_no_class_student_indices = numpy.nonzero(~self.enroll_orig.any(axis=(1, 2)))
+        final_classes_freq = numpy.bincount(
+                self.enroll_final.sum(axis=(1,2))[orig_no_class_student_indices])
+        for i in range(final_classes_freq.size):
+            if final_classes_freq[i]:
+                print "{:5d} students with {:3d} classes".format(final_classes_freq[i], i)
+
+        print
+        print "Students who still have no classes"
+        print "----------------------------------"
+        final_no_class_student_indices, = numpy.nonzero(~self.enroll_final.any(axis=(1, 2)))
+        no_class_request_freq = numpy.bincount(
+                self.request.sum(axis=(1,2))[final_no_class_student_indices])
+        for i in range(no_class_request_freq.size):
+            if no_class_request_freq[i]:
+                print "{:5d} students made {:3d} requests".format(no_class_request_freq[i], i)
+
+        if list_no_class_students:
+            for student_index in final_no_class_student_indices:
+                print self.students[student_index], "requested:"
+                for section_index in numpy.nonzero(self.request[student_index,:,:].any(axis=1))[0]:
+                    section = self.sections[section_index]
+                    print "# = {:5d} ({:3d} ->{:3d} /{:3d}): {}".format(
+                            request_freq[section_index],
+                            section.capacity - section.num_students(),
+                            self.section_capacities_orig[section_index],
+                            section.capacity,
+                            section)
+                print
+
+    def sanity_check(self):
+        """Print a report checking that students didn't lose classes.
+
+        For each student and each slot they originally had a class,
+        sanity-check that they either stayed in it or got into a class they
+        preferred.
+
+        In other words, find all student-timeslots where the student had a
+        section but no longer does, or now has a section they didn't request;
+        these are usually bad. They might not be, if the student dropped a
+        class spanning multiple timeslots to switch into a class that partially
+        overlaps. Still, hopefully multiple-timeslot classes are rare enough
+        that this is useful."""
+
+        print "Sanity check"
+        print "(this will look bad if you haven't computed assignments)"
+
+        bad_drops = self.enroll_orig.any(axis=1) & ~self.enroll_final.any(axis=1)
+        num_bad_drops = numpy.count_nonzero(bad_drops)
+        print
+        print "Bad student-timeslot drops:", num_bad_drops
+        print "---------------------------------"
+        print "(May not be bad if students drop a class spanning multiple"
+        print "timeslots to switch into a class that partially overlaps)"
+        for student_index, timeslot_index in numpy.transpose(
+                numpy.nonzero(bad_drops)):
+            orig_section_indices, = numpy.nonzero(self.enroll_orig[student_index, :, timeslot_index])
+            # there should really be only one such index??
+            if orig_section_indices.size == 1:
+                orig_section = self.sections[orig_section_indices[0]]
+            else:
+                orig_section = "(????? {} sections found)".format(orig_section_indices.size)
+
+            print "{:>20} had {} @ {}".format(
+                    self.students[student_index],
+                    orig_section,
+                    self.timeslots[timeslot_index])
+
+        unrequested_changes = self.enroll_final & ~self.enroll_orig & ~self.request
+        num_unrequested_changes = numpy.count_nonzero(unrequested_changes)
+        print
+        print "Unrequested changes:", num_unrequested_changes
+        print "-------------------------"
+        for student_index, section_index, timeslot_index in numpy.transpose(
+                numpy.nonzero(unrequested_changes)):
+            print "{:>20} got {} @ {}".format(
+                    self.students[student_index],
+                    self.sections[section_index],
+                    self.timeslots[timeslot_index])
+
+        print
+        if num_bad_drops or num_unrequested_changes:
+            print "^^^", num_bad_drops + num_unrequested_changes, "possible issues found ^^^"
+        else:
+            print "All good!"
 
     def get_index_array(self, arr):
         """ Given an array of arbitrary integers, create a new array that maps
@@ -214,7 +412,11 @@ class ClassChangeController(object):
         self.request = numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.waitlist = [numpy.zeros((self.num_students, self.num_sections, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+1)]
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
+        # section_capacities tracks *remaining* capacity.
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.int32)
+        # A section's score is number of students requesting minus capacity.
+        # It's positive if we can't let everybody who wants it take it. Higher
+        # scores mean a class is more in demand.
         self.section_scores = numpy.zeros((self.num_sections,), dtype=numpy.int32)
         self.same_subject = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
         self.section_conflict = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool) # is this a section that takes place in the same timeblock
@@ -262,7 +464,7 @@ class ClassChangeController(object):
 
         self.student_not_checked_in[numpy.transpose(numpy.nonzero(True-self.enroll_orig.any(axis=(1,2))))] = True
 
-        #   Populate old enrollment matrix
+        #   Populate request matrix
         request_regs = StudentRegistration.objects.filter(self.Q_REQ).values_list('user__id', 'section__id', 'section__meeting_times__id').distinct()
         rra = numpy.array(request_regs, dtype=numpy.uint32)
         try:
@@ -309,8 +511,13 @@ class ClassChangeController(object):
         for sec in self.sections:
             sec_ind = self.section_indices[sec.id]
             self.section_capacities[sec_ind] = sec.capacity - sec.num_students()
-            self.section_capacities[sec_ind] += numpy.count_nonzero((self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1) * self.request[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2)))) # number enrolled but want to switch out
-            self.enroll_final[numpy.transpose(numpy.nonzero((self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1) * (True - self.request[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2)))))), sec_ind, self.section_schedules[sec_ind,:]] = True
+            sec_enroll_orig = self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)
+            any_overlapping_requests = self.request[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
+            # Optimistically add number enrolled but want to switch out to capacity
+            self.section_capacities[sec_ind] += numpy.count_nonzero(sec_enroll_orig * any_overlapping_requests)
+            # Commit to enrolling students into this section if they were
+            # originally in it and they didn't request any overlapping classes
+            self.enroll_final[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
             self.section_scores[sec_ind] = -self.section_capacities[sec_ind]
             self.section_scores[sec_ind] += numpy.count_nonzero(self.request[:, sec_ind, :].any(axis=1)) # number who want to switch in
         self.section_capacities_orig = numpy.copy(self.section_capacities)
@@ -404,26 +611,59 @@ class ClassChangeController(object):
         students_to_kick = {}
         while more_pushing:
             more_pushing = False
+            # Sort sections by decreasing capacity
             self.sorted_section_indices.sort(key = lambda sec_ind: -self.section_capacities[sec_ind])
             for sec_ind in self.sorted_section_indices:
-                students_to_push = numpy.transpose(numpy.nonzero((self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1) * (True - self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))))))
+                # 1-dimensional matrix of whether students were originally
+                # enrolled in this class section
+                any_enroll_orig = self.enroll_orig[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)
+                # 1-dimensional matrix of whether students are free during the
+                # times of this class section in the enrollment we've computed
+                # so far
+                no_enroll_final = True - self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
+                # Find students that were originally enrolled in this class and
+                # did not get any classes overlapping it in the enrollment
+                # we've computed so far
+                students_to_push = numpy.transpose(numpy.nonzero(any_enroll_orig * no_enroll_final))
                 more_pushing |= bool(len(students_to_push))
                 for student_ind in students_to_push:
+                    # Enroll them back into this class, since we guarantee that
+                    # if you didn't get anything better, you get your old
+                    # classes.
                     self.enroll_final[student_ind, sec_ind, self.section_schedules[sec_ind,:]] = True
                     if self.section_capacities[sec_ind] > 0:
                         self.section_capacities[sec_ind] -= 1
                     else:
+                        # If the class is out of capacity, we have to kick
+                        # students who got it in the lottery.
+
+                        # The first time we ever encounter this section, build
+                        # a priority queue of students to kick.
                         if not sec_ind in students_to_kick.keys():
+                            # Indices of students that are enrolled in this
+                            # class by requesting it, in the enrollment we've
+                            # computed so far.
                             students_to_kick[sec_ind] = numpy.transpose(numpy.nonzero((self.enroll_final*self.request)[:, sec_ind, self.section_schedules[sec_ind,:]].any(axis=1)))
                             pq = Queue.PriorityQueue()
                             random.shuffle(students_to_kick[sec_ind])
                             for [student] in students_to_kick[sec_ind]:
+                                # For each student, get class sections they
+                                # were previously enrolled in at any timeslot
+                                # overlapping the section we're kicking them
+                                # from.
                                 old_sections = numpy.transpose(numpy.nonzero(self.enroll_orig[student, :, self.section_schedules[sec_ind,:]].any(axis=1)))
+                                # Put the student in the priority queue,
+                                # prioritizing noisily based on how in-demand
+                                # their old section was. Prefer to kick
+                                # students whose old sections have empty spaces
+                                # or are less in demand.
                                 if not len(old_sections):
                                     pq.put((0, random.random(), student), False)
                                 for [old_section] in old_sections:
                                     pq.put((self.section_scores[old_section], random.random(), student), False)
                             students_to_kick[sec_ind] = pq
+
+                        # Try to kick a student.
                         try:
                             self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
                         except Queue.Empty:
