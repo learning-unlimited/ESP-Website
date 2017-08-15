@@ -263,9 +263,9 @@ class BigBoardModule(ProgramModuleObj):
 
     @staticmethod
     def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 0):
-        """Given a dict of time series, return graph data series.
+        """Given a list of time series, return graph data series.
 
-        `timess` should be a dict of descriptions and sorted lists of datetime.datetime objects.
+        `timess` should be a list of pairs (description, sorted list of datetime.datetime objects).
         `drop_beg` should be a number of items to drop from the beginning of each list
         `drop_end` should be a number of items to drop from the end of each list
         `cutoff` should be the minimum number of items that must exist in a time series

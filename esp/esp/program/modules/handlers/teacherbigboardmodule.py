@@ -145,7 +145,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         hours = ClassSubject.objects.filter(parent_program=prog
         ).exclude(category__category__iexact="Lunch").values_list('id','duration','class_size_max'
         )
-        hours = [[float(j[1])] + [float(j[1])*j[2]] for j in hours]
+        hours = [[float(j[1])], [float(j[1])*j[2]] for j in hours]
         return [sum(j) for j in zip(*hours)]
 
     @staticmethod
