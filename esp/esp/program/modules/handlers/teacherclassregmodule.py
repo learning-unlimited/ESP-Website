@@ -279,7 +279,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
             email_to = ['Directors <%s>' % (cls.parent_program.director_email)]
             send_mail(email_title, email_contents, email_from, email_to, False)
-            
+
         return self.goToCore(tl)
 
     @aux_call
