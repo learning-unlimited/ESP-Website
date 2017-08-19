@@ -353,7 +353,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         old_coteachers_set = set(cls.get_teachers())
         ccc = ClassCreationController(self.program)
-        
+
         conflictinguser = ''
 
         if op == 'add':
