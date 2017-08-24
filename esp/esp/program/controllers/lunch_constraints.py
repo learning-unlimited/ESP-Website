@@ -65,6 +65,8 @@ class LunchConstraintGenerator(object):
                     self.days[day]['before'].append(timeslot)
 
     def clear_existing_constraints(self):
+        for lunch in ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category()):
+            lunch.delete()
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
