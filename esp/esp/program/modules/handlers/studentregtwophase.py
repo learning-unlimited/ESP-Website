@@ -46,6 +46,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
@@ -92,6 +93,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         for registration, and links to the phase1/phase2 sub-pages.
         """
 
+        context = {}
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
@@ -134,6 +136,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
         blockCount = 0
         schedule = []
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+
+        context['num_priority'] = prog.priorityLimit()
+        context['num_star'] = Tag.getProgramTag("num_stars", program = prog, default = 10)
+
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             if prevTimeSlot != None:
@@ -146,14 +152,13 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
                 priority_list = []
+            star_count = 0
             if timeslot.id in star_counts:
-                priority_list.append((
-                    'Starred', "(%d classes)" % star_counts[timeslot.id]))
-            schedule.append((timeslot, priority_list, blockCount + 1))
+                star_count = star_counts[timeslot.id]
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count))
 
             prevTimeSlot = timeslot
 
-        context = {}
         context['timeslots'] = schedule
 
         return render_to_response(
