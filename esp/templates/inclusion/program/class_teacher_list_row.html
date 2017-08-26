@@ -4,7 +4,7 @@
   {% block cls_title %}
     <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
-      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+      <br><a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">(Catalog Preview)</a>
     </span>
   {% endblock %}
   </td>
