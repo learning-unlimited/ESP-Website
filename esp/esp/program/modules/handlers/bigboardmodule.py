@@ -61,8 +61,8 @@ class BigBoardModule(ProgramModuleObj):
         numbers = [(desc, num) for desc, num in numbers if num]
 
         timess = [
-            ("completed the medical form", self.times_medical(prog)),
-            ("signed up for classes", self.times_classes(prog)),
+            ("completed the medical form", [(1, time) for time in self.times_medical(prog)]),
+            ("signed up for classes", [(1, time) for time in self.times_classes(prog)]),
         ]
 
         graph_data, start = self.make_graph_data(timess, 10, 10, 25)
@@ -238,7 +238,7 @@ class BigBoardModule(ProgramModuleObj):
     def chunk_times(times, start, end, delta=datetime.timedelta(0, 3600)):
         """Given a list of times, return hourly summaries.
 
-        `times` should be a list of datetime.datetime objects.
+        `times` should be a list of tuples, sorted by time, containing some metric (duration, capacity, etc.) and datetime.datetime objects
         `start` and `end` should be datetimes; the chunks will be for hours
         between them, inclusive.
         Returns a list of integers, each of which is the number of times that
@@ -247,25 +247,27 @@ class BigBoardModule(ProgramModuleObj):
         # Round down to the nearest hour.
         chunks = []
         i = 0
+        count = 0
         # Unpythonic, I know.  Iterating over hours is annoying, and we're also
         # iterating over timestamps at the same time.
         while start < end + delta:
-            if i < len(times) and times[i] < start:
+            if i < len(times) and times[i][1] < start:
                 # If this time is in the hour we're currently processing, just
                 # go to the next time.
+                count += times[i][0]
                 i += 1
             else:
                 # Otherwise, move to the next hour, and save the number of
                 # times preceding it for the previous hour.
-                chunks.append(i)
+                chunks.append(float(count))
                 start += delta
         return chunks
 
     @staticmethod
-    def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 0):
+    def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 1):
         """Given a list of time series, return graph data series.
 
-        `timess` should be a list of pairs (description, sorted list of datetime.datetime objects).
+        `timess` should be a list of pairs (description, sorted tuples of metrics and datetime.datetime objects).
         `drop_beg` should be a number of items to drop from the beginning of each list
         `drop_end` should be a number of items to drop from the end of each list
         `cutoff` should be the minimum number of items that must exist in a time series
@@ -280,9 +282,9 @@ class BigBoardModule(ProgramModuleObj):
             graph_data = []
             start = None
         else:
-            start = min([times[drop_beg:(len(times)-drop_end)][0] for desc, times in timess])
+            start = min([times[drop_beg:(len(times)-drop_end)][0][1] for desc, times in timess])
             start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([times[drop_beg:(len(times)-drop_end)][-1] for desc, times in timess])
+            end = max([times[drop_beg:(len(times)-drop_end)][-1][1] for desc, times in timess])
             end = end.replace(hour=0, minute=0, second=0, microsecond=0)
             end += datetime.timedelta(1)
             end = min(end, datetime.datetime.now())

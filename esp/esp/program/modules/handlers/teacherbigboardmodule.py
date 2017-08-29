@@ -61,16 +61,21 @@ class TeacherBigBoardModule(ProgramModuleObj):
         numbers = [(desc, num) for desc, num in numbers if num]
 
         timess = [
-            ("number of registered classes", self.reg_classes(prog)),
-            ("number of approved classes", self.app_classes(prog)),
-            ("number of teachers teaching", self.teach_times(prog)),
+            ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
+            ("number of approved classes", [(1, time) for time in self.app_classes(prog)]),
+            ("number of teachers teaching", [(1, time) for time in self.teach_times(prog)]),
         ]
 
         graph_data, start = BigBoardModule.make_graph_data(timess)
 
-        hourss = self.get_hours(prog)
+        class_hours, student_hours = self.get_hours(prog)
 
-        hours_data = self.make_hours_data(hourss)
+        hourss = [
+            ("number of registered class-hours", class_hours),
+            ("number of registered class-student-hours", student_hours),
+        ]
+
+        hours_data, _ = BigBoardModule.make_graph_data(hourss)
 
         context = {
             "type": "Teacher",
@@ -115,16 +120,16 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def reg_classes(self, prog):
-        class_times = dict(ClassSubject.objects.filter(parent_program=prog
-        ).values_list('id').annotate(Min('timestamp')))
-        return sorted(class_times.itervalues())
+        class_times = ClassSubject.objects.filter(parent_program=prog
+        ).values_list('timestamp', flat=True)
+        return sorted(class_times)
 
     @cache_function_for(105)
     def app_classes(self, prog):
         #all ClassSubjects that are approved (and have an approved section)
-        class_times = dict(ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
-        ).values_list('id').annotate(Min('timestamp')))
-        return sorted(class_times.itervalues())
+        class_times = ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
+        ).values_list('timestamp', flat=True)
+        return sorted(class_times)
 
     @cache_function_for(105)
     def teach_times(self, prog):
@@ -135,66 +140,18 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def get_hours(self, prog):
         hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('id','duration','class_size_max'
-        ).annotate(Min('timestamp'))
+        ).exclude(category__category__iexact="Lunch").values_list('timestamp','duration','class_size_max')
         sorted_hours = sorted(hours, key=operator.itemgetter(2))
-        return [hour[1:] for hour in sorted_hours]
+        class_hours = [(hour[1],hour[0]) for hour in sorted_hours]
+        student_hours = [(hour[1]*hour[2], hour[0]) for hour in sorted_hours]
+        return class_hours, student_hours
 
     @cache_function_for(105)
     def static_hours(self, prog):
         hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('id','duration','class_size_max'
-        )
+        ).exclude(category__category__iexact="Lunch").values_list('id','duration','class_size_max')
         hours = [[float(j[1]), float(j[1])*j[2]] for j in hours]
         return [sum(j) for j in zip(*hours)]
-
-    @staticmethod
-    def make_hours_data(hourss, drop_beg = 0, drop_end = 0, cutoff = 0, delta=datetime.timedelta(0, 3600)):
-        """Given a dict of time series, return graph data series.
-
-        `hourss` should be a list of class tuples, sorted by time, containing duration, capacity, and datetime.datetime objects
-        `drop_beg` should be a number of items to drop from the beginning of each list
-        `drop_end` should be a number of items to drop from the end of each list
-        `cutoff` should be the minimum number of items that must exist in a time series
-
-        Returns a dict of cleaned time series and the start time for graphing
-        """
-        if not len(hourss) >= cutoff:
-            hours_data = []
-        else:
-            start = min([hours[drop_beg:(len(hours)-drop_end)][2] for hours in hourss])
-            start = start.replace(hour=0, minute=0, second=0, microsecond=0)
-            end = max([hours[drop_beg:(len(hours)-drop_end)][2] for hours in hourss])
-            end = end.replace(hour=0, minute=0, second=0, microsecond=0)
-            end += datetime.timedelta(1)
-            end = min(end, datetime.datetime.now())
-
-        class_hours = []
-        student_hours = []
-        i = 0
-        hours_c = 0
-        hours_s = 0
-        # Unpythonic, I know. Iterating over hours is annoying, and we're also
-        # iterating over timestamps at the same time.
-        while start < end + delta:
-            if i < len(hourss) and hourss[i][2] < start:
-                # If this time is in the hour we're currently processing, just
-                # go to the next time.
-                hours_c += hourss[i][0]
-                hours_s += hourss[i][0] * hourss[i][1]
-                i += 1
-            else:
-                # Otherwise, move to the next hour, and save the number of
-                # times preceding it for the previous hour.
-                class_hours.append(float(hours_c))
-                student_hours.append(float(hours_s))
-                start += delta
-
-        hours_data = [{"description": "number of registered class-hours",
-                       "data": class_hours},
-                      {"description": "number of registered class-student-hours",
-                       "data": student_hours}]
-        return hours_data
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):
