@@ -82,7 +82,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False)
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False, widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -151,8 +151,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if Tag.getTag('grade_ranges'):
             grade_ranges = json.loads(Tag.getTag('grade_ranges'))
             self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
+            self.fields['grade_range'].required = True
             hide_field( self.fields['grade_min'] )
+            self.fields['grade_min'].required = False
             hide_field( self.fields['grade_max'] )
+            self.fields['grade_max'].required = False
         else:
             hide_field( self.fields['grade_range'] )
         if crmi.use_class_size_max:
