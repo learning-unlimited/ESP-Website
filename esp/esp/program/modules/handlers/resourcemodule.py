@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib.auth.decorators import login_required
+from django.forms import formset_factory
 
 from esp.utils.web import render_to_response
 
@@ -46,7 +47,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -115,6 +116,9 @@ class ResourceModule(ProgramModuleObj):
             current_slot = ResourceType.objects.get(id=request.GET['id'])
             context['restype_form'] = ResourceTypeForm()
             context['restype_form'].load_restype(current_slot)
+            choices = [{'choice': choice} for choice in current_slot.choices]
+            ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if len(choices) else 1)
+            context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
@@ -131,8 +135,16 @@ class ResourceModule(ProgramModuleObj):
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = ResourceTypeForm(data)
+                num_choices = int(data['form-TOTAL_FORMS'])
+                ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
+                choices, choices_list = [],[]
+                for i in range(0,num_choices):
+                    choice = data['form-'+str(i)+'-choice']
+                    choices.append({'choice': choice})
+                    choices_list.append(choice)
+                context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
                 if form.is_valid():
-                    controller.add_or_edit_restype(form)
+                    controller.add_or_edit_restype(form, choices_list)
                 else:
                     context['restype_form'] = form
 
@@ -377,6 +389,8 @@ class ResourceModule(ProgramModuleObj):
                 c.is_global = True
 
         if 'restype_form' not in context:
+            ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10)
+            context['reschoice_formset'] = ResourceChoiceSet
             context['restype_form'] = ResourceTypeForm()
 
         if 'classroom_form' not in context:
