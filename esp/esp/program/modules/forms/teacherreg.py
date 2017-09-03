@@ -94,7 +94,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
-    class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False)
+    class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False, widget=BlankSelectWidget())
     hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
@@ -256,6 +256,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Get class_style_choices from tag, otherwise hide the field
         if Tag.getTag('class_style_choices'):
             self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
+            self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])
         # plus subprogram section wizard
