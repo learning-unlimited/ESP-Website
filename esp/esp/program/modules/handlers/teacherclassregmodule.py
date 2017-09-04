@@ -41,14 +41,17 @@ from esp.program.controllers.classreg import ClassCreationController, ClassCreat
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
 from esp.utils.web               import render_to_response
+from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
+from django.conf                 import settings
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.utils          import ErrorDict
+from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
@@ -363,6 +366,38 @@ class TeacherClassRegModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'toomanystudents.html', request, {})
 
         cls.delete()
+        return self.goToCore(tl)
+
+    @aux_call
+    @needs_teacher
+    def cancelrequest(self, request, tl, one, two, module, extra, prog):
+        if request.method == "POST" and 'reason' in request.POST:
+            cls = ClassSubject.objects.get(id=request.POST['cls'])
+            reason = request.POST['reason']
+            request_teacher = request.user
+
+            email_title = 'Class Cancellation Request for %s' % self.program.niceName()
+            email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+            email_context = {'request_teacher': request_teacher,
+                             'program': self.program,
+                             'cls': cls,
+                             'reason': reason,
+                             'DEFAULT_HOST': settings.DEFAULT_HOST,
+                             'one': cls.parent_program.program_type,
+                             'two': cls.parent_program.program_instance}
+
+            #Send email to all teachers confirming cancellation request
+            email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
+            for teacher in cls.get_teachers():
+                email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+                send_mail(email_title, email_contents, email_from, email_to, False)
+
+            #Send email to admin with link to manageclass page
+            email_context['admin'] = True
+            email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
+            email_to = ['Directors <%s>' % (cls.parent_program.director_email)]
+            send_mail(email_title, email_contents, email_from, email_to, False)
+
         return self.goToCore(tl)
 
     @aux_call
