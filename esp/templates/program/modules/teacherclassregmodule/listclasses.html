@@ -26,6 +26,7 @@ function requestCancel(cls) {
         closeText: "Close",
         closeOnEscape: true,
         title: "Class Cancellation Request",
+        // Allows user to escape popup by clicking outside of it
         open: function(event, ui) { 
             $j('.ui-widget-overlay').bind('click', function()
             { 
