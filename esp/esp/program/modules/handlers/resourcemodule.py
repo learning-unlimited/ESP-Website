@@ -135,7 +135,7 @@ class ResourceModule(ProgramModuleObj):
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = ResourceTypeForm(data)
-                num_choices = int(data['form-TOTAL_FORMS'])
+                num_choices = int(data.get('form-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
                 choices, choices_list = [],[]
                 for i in range(0,num_choices):
