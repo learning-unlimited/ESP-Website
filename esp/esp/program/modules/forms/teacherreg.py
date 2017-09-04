@@ -322,7 +322,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
 
         fields = [('category', open_class_category.id),
                   ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
-                  ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
+                  ('grade_range', ''), ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
         for field, default in fields:
