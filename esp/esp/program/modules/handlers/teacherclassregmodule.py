@@ -384,11 +384,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         if 'op' in request.POST:
             op = request.POST['op']
 
-        conflictingusers = []
         error = False
 
-        if op == 'add':
+        old_coteachers_set = set(cls.get_teachers())
+        ccc = ClassCreationController(self.program)
 
+        conflictinguser = ''
+
+        if op == 'add':
 
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
@@ -404,16 +407,18 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                      'txtTeachers': txtTeachers,
                                                                                      'coteachers':  coteachers,
                                                                                      'error': error,
-                                                                                     'conflicts': []})
+                                                                                     'conflict': []})
 
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
-                conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+                conflictinguser = (teacher.first_name+' '+teacher.last_name)
             else:
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
+                ccc.associate_teacher_with_class(cls, teacher)
+                ccc.send_class_mail_to_directors(cls)
 
         elif op == 'del':
             ids = request.POST.getlist('delete_coteachers')
@@ -425,39 +430,22 @@ class TeacherClassRegModule(ProgramModuleObj):
             coteachers = newcoteachers
             txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
 
-
-        elif op == 'save':
-            old_coteachers_set = set(cls.get_teachers())
             new_coteachers_set = set(coteachers)
-
-            to_be_added = new_coteachers_set - old_coteachers_set
             to_be_deleted = old_coteachers_set - new_coteachers_set
 
-            # don't delete the current user
             if request.user in to_be_deleted:
                 to_be_deleted.remove(request.user)
 
-            for teacher in to_be_added:
-                if cls.conflicts(teacher):
-                    conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+            for teacher in to_be_deleted:
+                cls.removeTeacher(teacher)
 
-            if len(conflictingusers) == 0:
-                # remove some old coteachers
-                for teacher in to_be_deleted:
-                    cls.removeTeacher(teacher)
-
-                # add bits for all new coteachers
-                ccc = ClassCreationController(self.program)
-                for teacher in to_be_added:
-                    ccc.associate_teacher_with_class(cls, teacher)
-                ccc.send_class_mail_to_directors(cls)
-                return self.goToCore(tl)
+            ccc.send_class_mail_to_directors(cls)
 
         return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
                                                                              'ajax':ajax,
                                                                              'txtTeachers': txtTeachers,
                                                                              'coteachers':  coteachers,
-                                                                             'conflicts':   conflictingusers})
+                                                                             'conflict':    conflictinguser})
 
     @aux_call
     @needs_teacher
