@@ -209,7 +209,7 @@ function md(td) {
   mo(td);
 }
 
-//Enables hightlighting multiple cells
+//Enables highlighting multiple cells
 function mo(td) {
   if (!down) return;
   if (setting) {
@@ -235,7 +235,7 @@ function on(td) {
 //Deactivate checkbox
 function off(td) {
   var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-  if (!checkbox.disabled) {
+  if (td.className == "canDo") {
     td.className = "proposed";
     checkbox.checked = false;
   }
@@ -259,12 +259,12 @@ function header(e, col) {
   }
 }
 
-//Sets colors of cells based on status of checkboxes upon loading page
+//Sets classes of cells based on status of checkboxes upon loading page
 $j(document).ready(function() {
   $j('#grid input:checked').each(function(i, e) {
     if (this.disabled == true) {
       document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
-      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach during this timeblock";
+      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
     } else {
       document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
     }
