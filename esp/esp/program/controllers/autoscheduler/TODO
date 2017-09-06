@@ -5,8 +5,10 @@ Bugs:
 save() should check whether sections are locked before saving
 save() can have an issue if someone moves a class after you saved but before
 you committed
-pass section scheduling infos in histories
+ - The fix assumes that saving is what takes the most time, and checking is
+   cheap. This is probably not a bad assumption but might want to be checked.
 search might try to unschedule sections multiple times
+pass section scheduling infos in histories in order to detect external changes (frontend)
 
 New features:
 Implement a timeout on search
@@ -14,11 +16,12 @@ Implement a faster search
 
 AJAX change log entries can include users
 
-Implement a frontend
-
 Add the license/LU header to all files
 
 Implement ResourceMovementScorer
+
+Clean up frontend display (e.g. hide stuff, split sections)
+Frontend should warn that you haven't saved yet
 
 Robustness:
 
@@ -27,7 +30,6 @@ section don't change either
 
 saving is probably really slow
 saving errors should be more informative
-save() should have some way to do partial saves so you don't lose a ton of work
 
 be able to deal with schedules with multi-scheduled rooms
 
