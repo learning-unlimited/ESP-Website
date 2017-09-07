@@ -74,11 +74,18 @@ while True:
                     "in spreadsheet. Available furnishings ('None' if none): ").format(resource_name)
             for f in available_furnishings:
                 print f
-            idx = raw_input("Input furnishing index (or 'None'): ")
-            if idx == "None":
-                idx = None
-            else:
-                idx = int(idx)
+            valid = False
+            while not valid:
+                idx = raw_input("Input furnishing index (or 'None'): ")
+                if idx == "None":
+                    idx = None
+                    valid = True
+                else:
+                    try:
+                        idx = int(idx)
+                        valid = True
+                    except:
+                        print "Invalid choice: {}; try again.".format(idx)
             RESOURCE_MATCHING[resource_name] = idx
     print "We have the following matchings:"
     for res, idx in RESOURCE_MATCHING.iteritems():
@@ -105,8 +112,8 @@ def match_space_type(space_type):
     else:
         return None
 
-def get_possible_space_Types():
-    return [(i, space) for i, space in enumerate(POSSIBLE_SPACE_TYPES) if i not in
+def get_possible_space_types():
+    return [space for i, space in enumerate(POSSIBLE_SPACE_TYPES) if i not in
             SPACE_TYPE_MATCHING.values()]
 
 force_manual = False
@@ -146,21 +153,30 @@ if SPACE_TYPE_IDX is not None:
         for space_type in space_types:
             match_attempt = match_space_type(space_type)
             if match_attempt is None or force_manual:
-                possible_types = get_possible_space_Types()
+                possible_types = get_possible_space_types()
                 if force_manual:
                     print "Manual mode forced due to attempt failure."
                 print ("Unable to automatically match space type "
                 "{} to possible space types.").format(space_type)
                 print "Available space types:"
-                for space in possible_types:
-                    print space
-                match_attempt = raw_input(
-                    "Input space type index (or 'None'): ")
-                if match_attempt == "None":
-                    match_attempt = ""
-                else:
-                    match_attempt = POSSIBLE_SPACE_TYPES[
-                        int(match_attempt)]
+                for i, space in enumerate(possible_types):
+                    print i, space
+
+                valid = False
+                while not valid:
+                    match_attempt = raw_input(
+                        "Input space type index (or 'None'): ")
+                    if match_attempt == "None":
+                        match_attempt = ""
+                        valid = True
+                    else:
+                        try:
+                            match_attempt = POSSIBLE_SPACE_TYPES[
+                                int(match_attempt)]
+                            valid = True
+                        except:
+                            print "Invalid choice: {}; try again.".format(
+                                    match_attempt)
             SPACE_TYPE_MATCHING[space_type] = match_attempt
         print "We have the following matchings:"
         for space, possible in SPACE_TYPE_MATCHING.iteritems():
