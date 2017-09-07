@@ -33,11 +33,7 @@ args = parser.parse_args()
 PROGRAM = Program.objects.get(name=args.program)
 
 RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
-RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
-POSSIBLE_SPACE_TYPES = RTYPE_CLASS_SPACE.attributes_pickled.split("|")
-
-RESOURCE_NAMES = [x[0] for x in RESOURCE_TYPES.values_list("name") if x[0] !=
-                  RTYPE_CLASS_SPACE.name]
+RESOURCE_NAMES = [x[0] for x in RESOURCE_TYPES.values_list("name")]
 
 sched_filename = os.path.expanduser(args.sched_filename)
 sched_csvfile = open(sched_filename, "r")
@@ -53,152 +49,108 @@ furnish_rows = list(furnish_reader)
 furnish_headers = furnish_rows[0]
 furnish_classrooms = furnish_rows[1:]
 FURNISH_ROOM_NUMBER_COL = 0
+FURNISH_CAPACITY_COL = 1
 
-RESOURCE_MATCHING = {}
 rooms_dict = {}
 
 
-def get_available_furnishings():
-    return [(i, header) for i, header in enumerate(furnish_headers) if i not in
-            RESOURCE_MATCHING.values()]
-
-
-while True:
-    print "Now attempting to match resource types..."
-    for resource_name in RESOURCE_NAMES:
-        if resource_name in furnish_headers:
-            RESOURCE_MATCHING[resource_name] = \
-                furnish_headers.index(resource_name)
-        else:
-            available_furnishings = get_available_furnishings()
-            print (
-                "Unable to automatically match resource type {} to "
-                "furnishings in spreadsheet. \n\n"
-                "Available furnishings ('None' if none): "
-            ).format(resource_name)
-            for f in available_furnishings:
-                print f
-            valid = False
-            while not valid:
-                idx = raw_input("Input furnishing index (or 'None'): ")
-                if idx == "None":
-                    idx = None
-                    valid = True
-                else:
-                    try:
-                        idx = int(idx)
-                        valid = True
-                    except:
-                        print "Invalid choice: {}; try again.".format(idx)
-            RESOURCE_MATCHING[resource_name] = idx
-    print "We have the following matchings:"
-    for res, idx in RESOURCE_MATCHING.iteritems():
-        furnish_name = furnish_headers[idx] if idx is not None else "None"
-        print "{}: {} (Column {})".format(res, furnish_name, str(idx))
-    conf = raw_input("Confirm correctness: y/n ")
-    if "y" in conf.lower():
-        break
-    else:
-        RESOURCE_MATCHING = {}
-
-
-SPACE_TYPE_MATCHING = {}
-
-
-def match_space_type(space_type):
-    if space_type == "":
-        return ""
+def subsequence_match(item, options, exclude):
+    item = item.lower()
+    if item == "":
+        return None
     # http://stackoverflow.com/questions/3673434/find-subsequences-of-strings-within-strings
-    pattern = ".*".join(space_type)
+    pattern = ".*".join(item)
     matches = []
-    for possible_type in POSSIBLE_SPACE_TYPES:
-        if re.search(pattern, possible_type):
-            matches.append(possible_type)
+    for i, option in enumerate(options):
+        if re.search(pattern, option.lower()):
+            matches.append(i)
     if len(matches) == 1:
         return matches[0]
     else:
         return None
 
 
-def get_possible_space_types():
-    return [space for i, space in enumerate(POSSIBLE_SPACE_TYPES) if i not in
-            SPACE_TYPE_MATCHING.values()]
-
-
-force_manual = False
-SPACE_TYPE_IDX = None
-while True:
-    print "Now attempting to match space type header..."
-    space_header_candidates = ["space type", "classroom space"]
-    for i, header in enumerate(furnish_headers):
-        if header.lower() in space_header_candidates:
-            SPACE_TYPE_IDX = i
-            break
-    if SPACE_TYPE_IDX is None or force_manual:
-        print "Unable to automatically determine space type header."
-        print "Available columns:"
-        for f in get_available_furnishings():
-            print f
-        idx = raw_input("Input furnishing index (or 'None'): ")
-        if idx == "None":
-            SPACE_TYPE_IDX = None
-        else:
-            SPACE_TYPE_IDX = int(idx)
-    print "Header for the classroom space type data is {}".format(
-        furnish_headers[SPACE_TYPE_IDX])
-    conf = raw_input("Confirm correctness: y/n ")
-    if "y" in conf.lower():
-        break
-    else:
-        SPACE_TYPE_IDX = None
-        force_manual = True
-
-force_manual = False
-if SPACE_TYPE_IDX is not None:
-    space_types = set([row[SPACE_TYPE_IDX] for row in furnish_classrooms
-                      if row[FURNISH_ROOM_NUMBER_COL] in ALL_USED_ROOMS])
+def do_match(items_to_match, possible_options, description,
+             force_unique=False):
+    print "Now attempting to match {}s...".format(description)
+    matching_idx = {}
+    force_manual = False
     while True:
-        print "Now attempting to match space types..."
-        for space_type in space_types:
-            match_attempt = match_space_type(space_type)
+        for item in items_to_match:
+            # We match subsequences in order to match as loosely as
+            # possible. Since the user is supposed to verify anyway,
+            # this shouldn't cause any major issues.
+            match_attempt = subsequence_match(
+                    item, possible_options, matching_idx.values())
             if match_attempt is None or force_manual:
-                possible_types = get_possible_space_types()
                 if force_manual:
                     print "Manual mode forced due to attempt failure."
                 print (
-                    "Unable to automatically match space type "
-                    "{} to possible space types."
-                ).format(space_type)
+                    "Unable to automatically match {desc} "
+                    "'{}' to possible {desc}s."
+                ).format(item, desc=description)
                 print ""
-                print "Available space types:"
-                for i, space in enumerate(possible_types):
-                    print i, space
+                print "Available {}s:".format(description)
+                allowed = set()
+                for i, option in enumerate(possible_options):
+                    if force_unique and i in matching_idx.values():
+                        continue
+                    else:
+                        allowed.add(i)
+                        print i, option
 
                 valid = False
                 while not valid:
-                    match_attempt = raw_input(
-                        "Input space type index (or 'None'): ")
-                    if match_attempt == "None":
-                        match_attempt = ""
+                    input_idx = raw_input(
+                        "Input {desc} index for '{}' (or 'None'): ".format(
+                            item, desc=description))
+                    if input_idx == "None":
+                        match_attempt = None
                         valid = True
                     else:
                         try:
-                            match_attempt = POSSIBLE_SPACE_TYPES[
-                                int(match_attempt)]
+                            match_attempt = int(input_idx)
+                            assert match_attempt in allowed, "Invalid index"
                             valid = True
                         except:
                             print "Invalid choice: {}; try again.".format(
-                                    match_attempt)
-            SPACE_TYPE_MATCHING[space_type] = match_attempt
+                                    input_idx)
+            matching_idx[item] = match_attempt
         print "We have the following matchings:"
-        for space, possible in SPACE_TYPE_MATCHING.iteritems():
-            print "{}: {}".format(space, possible)
+        print matching_idx
+        for item, match_idx in matching_idx.iteritems():
+            match_name = None if match_idx is None else \
+                possible_options[match_idx]
+            print "{}: {} ({})".format(item, match_name, match_idx)
         conf = raw_input("Confirm correctness: y/n")
         if "y" in conf.lower():
-            break
+            return matching_idx
         else:
-            SPACE_TYPE_MATCHING = {}
+            matching_idx = {}
             force_manual = True
+
+
+resource_matching = do_match(RESOURCE_NAMES, furnish_headers, "resource type",
+                             force_unique=True)
+
+resource_value_matching = {}
+for rtype in RESOURCE_TYPES:
+    possible_values = rtype.attributes_pickled.split("|")
+    if len(possible_values) == 1:
+        resource_value_matching[rtype.name] = None
+    else:
+        rtype_idx = resource_matching[rtype.name]
+        if rtype_idx is None:
+            resource_value_matching[rtype.name] = None
+        else:
+            known_values = set(
+                [row[rtype_idx] for row in furnish_classrooms
+                 if row[FURNISH_ROOM_NUMBER_COL] in ALL_USED_ROOMS])
+            resource_value_matching[rtype.name] = {
+                    known: (possible_values[idx] if idx is not None else "")
+                    for known, idx in
+                    do_match(
+                        known_values, possible_values, rtype.name).iteritems()}
 
 
 def parse_time(date, time):
@@ -210,24 +162,28 @@ def parse_time(date, time):
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
 
 
-OFFSET = 2
+EXTRA_DATA = 1  # Number of extra data entries in rooms_dict
 print "Reading from furnishings csv..."
 for row in furnish_classrooms:
     room_number = row[FURNISH_ROOM_NUMBER_COL]
     if room_number not in ALL_USED_ROOMS:
         continue
     try:
-        capacity = int(row[1])
-        space_type = SPACE_TYPE_MATCHING[row[SPACE_TYPE_IDX]] \
-            if SPACE_TYPE_IDX is not None else ""
+        capacity = int(row[FURNISH_CAPACITY_COL])
         others = [
-            (row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
-            is not None else False for name in RESOURCE_NAMES]
-        rooms_dict[room_number] = [capacity] + [space_type] + others
+            False if resource_matching[name] is None else
+            row[resource_matching[name]] == "Yes" if
+            resource_value_matching[name] is None else
+            resource_value_matching[name][row[resource_matching[name]]]
+            for name in RESOURCE_NAMES]
+        rooms_dict[room_number] = [capacity] + others
+        assert len(rooms_dict[room_number]) == EXTRA_DATA + len(others), \
+            "value of EXTRA_DATA is incorrect"
     except:
         print "Error reading furnishings for room {}; skipping".format(
             room_number)
 
+skipped_rooms = set()
 for row in sched_rows:
     if row[0] == "Date":
         continue
@@ -244,23 +200,17 @@ for row in sched_rows:
                                       event_type=ETYPE_CLASSBLOCK,
                                       program=PROGRAM)
 
-    # Because most ResourceTypes are tied to a specific program, convert from
-    # last year's ResourceTypes to this year's by comparing the names. Nasty
-    # caveat: 'Sound system' is now called 'Speakers'.
-    furnishings = set()  # a set of ResourceTypes, not Resources
-    furnishings.add(RTYPE_CLASS_SPACE)  # always add classroom space
+    furnishings = []  # a list of ResourceTypes and values, not Resources
 
     if room_number not in rooms_dict:
+        skipped_rooms.add(room_number)
         print "WARNING: {} not found; skipping".format(room_number)
         continue
     room_desc = rooms_dict[room_number]
     for i, res in enumerate(list(RESOURCE_TYPES)):
-        if res == RTYPE_CLASS_SPACE:
-            continue
-        else:
-            idx = RESOURCE_NAMES.index(res.name)
-            if idx is not None and room_desc[idx + OFFSET]:
-                furnishings.add(res)
+        idx = RESOURCE_NAMES.index(res.name)
+        if idx is not None and room_desc[idx + EXTRA_DATA]:
+            furnishings.append((res, room_desc[idx + EXTRA_DATA]))
 
     # Create Clasrooms with Furnishings
     for block in timeblocks:
@@ -271,14 +221,18 @@ for row in sched_rows:
         room.name = room_number
         room.save()
 
-        for res_type in furnishings:
+        for res_type, val in furnishings:
             resource = Resource()
             resource.event = block
             resource.res_type = res_type
             resource.name = res_type.name + ' for ' + room_number
             resource.res_group = room.res_group
-            if res_type == RTYPE_CLASS_SPACE:
-                resource.attribute_value = room_desc[1]
+            if val is not True:
+                resource.attribute_value = val
             resource.save()
+
+print "Done creating resources."
+for r in skipped_rooms:
+    print "Skipped: {}".format(r)
 
 print "Done!"
