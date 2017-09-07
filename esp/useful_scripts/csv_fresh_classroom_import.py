@@ -1,17 +1,15 @@
 #!/usr/bin/env python2
 #
-# Import classrooms from two csv files: one from schedules, and one we make with furnishings.
+# Import classrooms from two csv files: one from schedules, and one we make
+# with furnishings.
 # From schedules, columns should be:
 #   Date: 11/22/2014
 #   Begin Time: noon
 #   End Time: 10:00p
 #   Classroom: 1-115
 #
-# Resource types are specific to Spark 2015. If you are trying to use this script on
-# a different program, check them.
-#
 
-from script_setup import *
+from script_setup import EventType, ResourceType, Program, Event, Resource
 
 import csv
 import os
@@ -27,9 +25,9 @@ RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
 parser = argparse.ArgumentParser()
 parser.add_argument("program", help="Program name")
 parser.add_argument("sched_filename",
-        help="Full path to CSV file from schedules")
+                    help="Full path to CSV file from schedules")
 parser.add_argument("furnish_filename",
-        help="Full path to CSV file with furnishings")
+                    help="Full path to CSV file with furnishings")
 args = parser.parse_args()
 
 PROGRAM = Program.objects.get(name=args.program)
@@ -39,7 +37,7 @@ RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
 POSSIBLE_SPACE_TYPES = RTYPE_CLASS_SPACE.attributes_pickled.split("|")
 
 RESOURCE_NAMES = [x[0] for x in RESOURCE_TYPES.values_list("name") if x[0] !=
-        RTYPE_CLASS_SPACE.name]
+                  RTYPE_CLASS_SPACE.name]
 
 sched_filename = os.path.expanduser(args.sched_filename)
 sched_csvfile = open(sched_filename, "r")
@@ -58,9 +56,12 @@ FURNISH_ROOM_NUMBER_COL = 0
 
 RESOURCE_MATCHING = {}
 rooms_dict = {}
+
+
 def get_available_furnishings():
     return [(i, header) for i, header in enumerate(furnish_headers) if i not in
             RESOURCE_MATCHING.values()]
+
 
 while True:
     print "Now attempting to match resource types..."
@@ -70,8 +71,11 @@ while True:
                 furnish_headers.index(resource_name)
         else:
             available_furnishings = get_available_furnishings()
-            print ("Unable to automatically match resource type {} to furnishings "
-                    "in spreadsheet. Available furnishings ('None' if none): ").format(resource_name)
+            print (
+                "Unable to automatically match resource type {} to "
+                "furnishings in spreadsheet. \n\n"
+                "Available furnishings ('None' if none): "
+            ).format(resource_name)
             for f in available_furnishings:
                 print f
             valid = False
@@ -97,7 +101,10 @@ while True:
     else:
         RESOURCE_MATCHING = {}
 
+
 SPACE_TYPE_MATCHING = {}
+
+
 def match_space_type(space_type):
     if space_type == "":
         return ""
@@ -112,9 +119,11 @@ def match_space_type(space_type):
     else:
         return None
 
+
 def get_possible_space_types():
     return [space for i, space in enumerate(POSSIBLE_SPACE_TYPES) if i not in
             SPACE_TYPE_MATCHING.values()]
+
 
 force_manual = False
 SPACE_TYPE_IDX = None
@@ -156,8 +165,11 @@ if SPACE_TYPE_IDX is not None:
                 possible_types = get_possible_space_types()
                 if force_manual:
                     print "Manual mode forced due to attempt failure."
-                print ("Unable to automatically match space type "
-                "{} to possible space types.").format(space_type)
+                print (
+                    "Unable to automatically match space type "
+                    "{} to possible space types."
+                ).format(space_type)
+                print ""
                 print "Available space types:"
                 for i, space in enumerate(possible_types):
                     print i, space
@@ -188,6 +200,7 @@ if SPACE_TYPE_IDX is not None:
             SPACE_TYPE_MATCHING = {}
             force_manual = True
 
+
 def parse_time(date, time):
     if time == "noon":
         time = "12:00p"
@@ -195,6 +208,7 @@ def parse_time(date, time):
         time = "11:00p"
     time = (time + "m").upper()
     return datetime.combine(date, datetime.strptime(time, "%I:%M%p").time())
+
 
 OFFSET = 2
 print "Reading from furnishings csv..."
@@ -206,11 +220,13 @@ for row in furnish_classrooms:
         capacity = int(row[1])
         space_type = SPACE_TYPE_MATCHING[row[SPACE_TYPE_IDX]] \
             if SPACE_TYPE_IDX is not None else ""
-        others = [(row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
-                is not None else False for name in RESOURCE_NAMES]
+        others = [
+            (row[RESOURCE_MATCHING[name]] == "Yes") if RESOURCE_MATCHING[name]
+            is not None else False for name in RESOURCE_NAMES]
         rooms_dict[room_number] = [capacity] + [space_type] + others
     except:
-        print "Error reading furnishings for room {}; skipping".format(room_number)
+        print "Error reading furnishings for room {}; skipping".format(
+            room_number)
 
 for row in sched_rows:
     if row[0] == "Date":
@@ -231,8 +247,8 @@ for row in sched_rows:
     # Because most ResourceTypes are tied to a specific program, convert from
     # last year's ResourceTypes to this year's by comparing the names. Nasty
     # caveat: 'Sound system' is now called 'Speakers'.
-    furnishings = set() # a set of ResourceTypes, not Resources
-    furnishings.add(RTYPE_CLASS_SPACE) # always add classroom space
+    furnishings = set()  # a set of ResourceTypes, not Resources
+    furnishings.add(RTYPE_CLASS_SPACE)  # always add classroom space
 
     if room_number not in rooms_dict:
         print "WARNING: {} not found; skipping".format(room_number)
