@@ -334,6 +334,12 @@ ALLOWED_HOSTS = ['$ESPHOSTNAME']
 EOF
 
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    # TODO(benkraft): This shouldn't be necessary; we should just set things up
+    # to get the right perms on creation.
+    for ext in .shell.log .log ; do
+        touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        chown -R $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME"*
+    done
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -425,10 +431,13 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
 
 EOF
     service apache2 graceful
+    # TODO(benkraft): put the renewal script in git too.
+    /lu/certbot/renew_lu.py
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
 
-    echo "Apache has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    echo "Apache has been set up, and a new SSL cert has been requested."
+    echo "Please check them by looking over the output above, then press"
+    echo -n "enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 

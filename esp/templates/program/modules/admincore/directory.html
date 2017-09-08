@@ -16,16 +16,6 @@
 <script type="text/javascript">
 function initialize()
 {
-    $j("#hide_complete_list").click(function () {
-        $j("#show_complete_list").removeClass("manage_hidden");
-        $j("#hide_complete_list").addClass("manage_hidden");
-        $j("#complete_list").addClass("manage_hidden");
-    });
-    $j("#show_complete_list").click(function () {
-        $j("#show_complete_list").addClass("manage_hidden");
-        $j("#hide_complete_list").removeClass("manage_hidden");
-        $j("#complete_list").removeClass("manage_hidden");
-    });
     $j("div.module_link_large").button();
 }
 
@@ -162,10 +152,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 </tr>
 </table>
 
-<div id="show_complete_list" class="module_group_header header_special">Show Complete Module List</div>
-<div id="hide_complete_list" class="module_group_header header_special manage_hidden">Hide Complete Module List</div>
-
-<div id="complete_list" class="manage_hidden">
+<div class="module_group_header">Complete Module List</div>
+<div id="complete_list">
 <table border="0" width="100%">
 <tr>
  <td width="40%">
@@ -208,6 +196,3 @@ Please select an option to the left to continue, or look down below to select fu
 </td>
 
 {% endblock %}
-
-
-

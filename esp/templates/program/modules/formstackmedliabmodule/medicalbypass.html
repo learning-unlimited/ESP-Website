@@ -5,37 +5,39 @@
 {% block content %}
 <h1>Med-liab Override for Paper Forms</h1>
 
-{% if status == 'invalid user' %}
+{% if status %}
+{% if status_type == 'error' %}
 <div class="alert alert-danger" role="alert">
 <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-Invalid user.
-</div>
-{% endif %}
-{% if status == 'bypass exists' %}
-<div class="alert alert-danger" role="alert">
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-Bypass record already exists.
-</div>
-{% endif %}
-{% if status == 'reg bit exists' %}
-<div class="alert alert-danger" role="alert">
-<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-User has already submitted form.
-</div>
-{% endif %}
-{% if status == 'success' %}
+{% elif status_type == 'success' %}
 <div class="alert alert-success" role="alert">
 <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
-Bypass record added successfully.
+{% else %}
+<div class="alert alert-info" role="alert">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+{% endif %}
+{{ status }}
 </div>
 {% endif %}
 
 
-<p>Enter a username to allow them to bypass the online medical form.</p>
+<p>Enter a username to allow them to bypass the online medical form, delete.</p>
 
 <form method="POST">{% csrf_token %}
 {{ form.as_p }}
-<input type="submit" value="Submit" class="btn btn-primary" />
+<button type="submit" name="add-bypass" class="btn btn-primary">
+    <span class="glyphicon glyphicon-plus"></span>
+    Add medical bypass
+</button>
+<br />
+<button type="submit" name="query-status" class="btn btn-default btn-small">
+    <span class="glyphicon glyphicon-search"></span>
+    Query medical form/bypass status
+</button>
+<button type="submit" name="delete-bypass" class="btn btn-danger btn-small">
+    <span class="glyphicon glyphicon-trash"></span>
+    Delete medical bypass
+</button>
 </form>
 
 {% endblock %}
