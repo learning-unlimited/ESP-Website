@@ -88,7 +88,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
         context['open_class_category'] = self.program.open_class_category.category
         context['num_hours_registered'] = sum(ceil(cls.duration)*cls.session_count for cls in context['clslist'])
-        context['num_hours_available'] = self.get_current_request().user.getTaughtTime(self.program) 
         return context
 
 
