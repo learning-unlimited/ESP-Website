@@ -56,6 +56,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 from copy import deepcopy
+from math import ceil
 
 class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -86,6 +87,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
         context['open_class_category'] = self.program.open_class_category.category
+        context['num_hours_registered'] = sum(ceil(cls.duration)*cls.session_count for cls in context['clslist'])
+        context['num_hours_available'] = self.get_current_request().user.getTaughtTime(self.program) 
         return context
 
 
