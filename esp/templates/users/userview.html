@@ -44,6 +44,9 @@
             Check availability for {{program.niceName}}</a>
     {% endif %}
     {% if profile.student_info %}
+        {% if program and program|hasModule:"AccountingModule" %}
+            <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
+        {% endif %}
         {% if program and program|hasModule:"FormstackMedliabModule" %}
             <form action="/manage/{{program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
                 <input type="hidden" name="target_user" value="{{user.id}}"/>
