@@ -96,7 +96,6 @@ input.button {
     font-weight: bold;
     font-size: 13px;
     font-family: Arial, Helvetica, sans-serif;
-    display: none;
 }
 
 input.button:hover {
@@ -115,6 +114,20 @@ input.addbutton_added {
 
 img.LaTeX {
     vertical-align: middle;
+}
+
+input.addbutton {
+    background-color: #D9EDF7;
+    color: #000000;
+    border: 1px solid #CCCCCC;
+    font-weight: bold;
+    font-size: 1.2em;
+    padding: 8px;
+    margin-bottom: 0px;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
+    border-radius: 0px;
+    display: none;
 }
 
 .btn.addbutton {

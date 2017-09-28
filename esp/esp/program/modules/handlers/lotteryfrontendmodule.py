@@ -1,4 +1,4 @@
-from esp.program.models import Program, ClassSection
+from esp.program.models import Program, ClassSection, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
 from esp.utils.web import render_to_response
@@ -26,7 +26,10 @@ class LotteryFrontendModule(ProgramModuleObj):
             return render_to_response(self.baseDir() + 'not_configured.html', request, {'program': prog})
 
         #   Render control page with lottery options
-        context = {'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False}}
+        context = {
+            'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False},
+            'has_old_schedules': StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Enrolled').count() > 0,
+        }
         return render_to_response(self.baseDir()+'lottery.html', request, context)
 
     def is_float(self, s):
@@ -79,14 +82,6 @@ class LotteryFrontendModule(ProgramModuleObj):
         lotteryObj = LotteryAssignmentController(prog)
         lotteryObj.import_assignments(request.POST['lottery_data'])
         lotteryObj.save_assignments()
-        return {'response': [{'success': 'yes'}]};
-
-    @aux_call
-    @json_response()
-    @needs_admin
-    def lottery_clear(self, request, tl, one, two, module, extra, prog):
-        lotteryObj = LotteryAssignmentController(prog)
-        lotteryObj.clear_saved_assignments()
         return {'response': [{'success': 'yes'}]};
 
     class Meta:

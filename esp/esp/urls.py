@@ -49,6 +49,7 @@ import esp.customforms.urls
 import esp.formstack.urls
 import esp.program.urls
 import esp.qsdmedia.urls
+import esp.random.urls
 import esp.survey.urls
 import esp.tests.urls
 import esp.themes.urls
@@ -100,6 +101,7 @@ urlpatterns += [
     url(r'^__debug__/', include(debug_toolbar.urls)),
     url(r'^accounting/', include(esp.accounting.urls)),
     url(r'^customforms', include(esp.customforms.urls)),
+    url(r'^random', include(esp.random.urls)),
     url(r'^', include(esp.formstack.urls)),
     url(r'^',  include(esp.program.urls)),
     url(r'^download', include(esp.qsdmedia.urls)),

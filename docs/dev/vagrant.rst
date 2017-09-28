@@ -15,7 +15,7 @@ A dev server requires a lot of software components to run properly, and it would
 
 For some time, we provided dev servers as Virtualbox images, which were prepared by (manually) creating a VM with Ubuntu installed, and then running our setup script inside the VM.  This worked well except that it was time-consuming to create these images (especially with chapter-specific databases and media files), and the files were very large (on the order of 5--10 GB) and time consuming to download.  That is what motivated the development of an alternative setup process, where the VM is created and prepared on your machine (with few manual steps).
 
-With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 12.04) without tying developers to that platform.
+With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 14.04) without tying developers to that platform.
 
 Setup procedure
 ---------------
@@ -142,3 +142,18 @@ Problems
     You won't be able to recover the data, but you can start over by dropping the tablespace ``encrypted`` and then re-running ``fab setup``.
 
 Some other common dev setup issues are discussed `here <https://github.com/learning-unlimited/ESP-Website/issues/1432>`_.
+
+Creating a new dev VM
+---------------------
+
+Changes to the base VM should be needed very rarely, but you can't stay on the same Ubuntu version forever. Outline of steps used for the most recent upgrade:
+
+1. Find a Vagrant .box file for Virtualbox with the version of Ubuntu that you want. You might do this by downloading a publicly available one or by running ``sudo do-release-upgrade`` from an older base VM. Be sure to start from a base VM, not your current dev server with a database on it.
+
+2. Run ``esp/update_deps.sh`` on the VM from step 1. This isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
+
+3. Follow Vagrant's documentation to export the box you have to a .box file.
+
+4. Upload the .box file to S3. If you don't have access, ask someone.
+
+5. Update the Vagrantfile with the new VM's URL.

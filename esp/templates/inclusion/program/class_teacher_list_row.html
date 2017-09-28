@@ -1,18 +1,23 @@
 {# expects program, class, and crmi (ClassRegModuleInfo) #}
+
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
     <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
-      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+      <br><a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">(Catalog Preview)</a>
     </span>
   {% endblock %}
   </td>
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
-    <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-      <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
-    </form>
+    {% if cls.num_students or not module.deadline_met %}
+        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+    {% else %}
+        <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+          <input class="button" type="submit" value="Delete"/>
+        </form>
+    {% endif %}
   </td>
   <td class="clsmiddle bordertop2">
     <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
@@ -39,6 +44,20 @@
   </td>
   {% endblock %}
 </tr>
+
+<!--
+Popup div for class cancellation request
+-->
+<div hidden id="request_{{ cls.id }}">
+  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
+    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
+    <input type="hidden" name="cls" value="{{ cls.id }}">
+    <label for="reason" class="ui-hidden-accessible">Reason for Cancellation:</label>
+    <textarea rows="4" style="width: 450px;" name="reason" placeholder="Enter text here..." required></textarea><br>
+    <input type="checkbox" name="confirm" required> I confirm I would like this class to be cancelled.<br>
+    <input type="submit" value="Submit">
+  </form>
+</div>
 
 <tr>
   <td class="clsleft" colspan="6">

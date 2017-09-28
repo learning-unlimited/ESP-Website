@@ -24,8 +24,12 @@ function Scheduler(
     // Populate data with resources
     $j.each(data.rooms, function(index, room) {
         room.resources = [];
-        $j.each(room.associated_resources, function(index, resource_id) {
-            room.resources.push(data.resource_types[resource_id]);
+        $j.each(room.associated_resources, function(index, resource) {
+            var resource_type = data.resource_types[resource.res_type_id];
+            room.resources.push({
+                'resource_type': resource_type,
+                'value': resource.value,
+            });
         });
     });
 

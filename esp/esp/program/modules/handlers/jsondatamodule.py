@@ -100,7 +100,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [
+                    {
+                        'res_type_id': ar.res_type_id,
+                        'value': ar.attribute_value,
+                    }
+                    for ar in classrooms_grouped[room_id][0].associated_resources()
+                ],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
@@ -736,6 +742,13 @@ teachers[key].filter(is_active = True).distinct().count()))
                 vitals['studentnum'].append((student_labels_dict[key], students[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
+
+
+        volunteer_list = []
+        volunteer_dict = prog.volunteers()
+        if 'volunteer_all' in volunteer_dict:
+            volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
+        vitals['volunteernum'] = volunteer_list
 
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []

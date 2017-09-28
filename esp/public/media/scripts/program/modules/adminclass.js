@@ -224,24 +224,6 @@ function createClassTitleTd(clsObj) {
     );
 }
 
-function createSectionListTd(clsObj) {
-    var td = $j('<td/>', {
-        'class': 'clsmiddle',
-        'style': 'font-size: 12px',
-        'width': '40px',
-        'title': "Control the enrollment of the class's sections",
-    });
-    $j.each(clsObj.sections, function(index, sectionId) {
-        if (index) {
-            td.append(', ');
-        }
-        var section = sections[sectionId];
-        var href = '/teach/' + base_url + '/select_students/' + section.id;
-        td.append($j('<a/>', {href: href}).text(
-            'Sec. ' + section.index));
-    });
-    return td;
-}
 function createTeacherListTd(clsObj) {
     var td = $j('<td/>', {
         'class': 'clsleft classname',
@@ -310,7 +292,6 @@ function createClassRow(clsObj)
     var tr = $j(document.createElement('tr'));
     tr.append(
         createClassTitleTd(clsObj),
-        createSectionListTd(clsObj),
         createTeacherListTd(clsObj),
         createDeleteButtonTd(clsObj),
         createLinkButtonTd(clsObj, 'editclass', 'Edit'),

@@ -39,6 +39,8 @@ from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
 
+import random
+
 # django Util
 from django.conf import settings
 from django.db import models
@@ -67,7 +69,7 @@ from esp.cal.models import Event
 from esp.dbmail.models import send_mail
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
-from esp.users.models import ESPUser, Permission
+from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import Program
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType
 from esp.program.models import ScheduleMap, ScheduleConstraint
@@ -288,6 +290,10 @@ class ClassManager(Manager):
     catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
+    def random_class(self):
+        classes = self.filter(self.approved(return_q_obj=True))
+        count = classes.count()
+        return classes[random.randint(0, count - 1)]
 
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
@@ -955,7 +961,10 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=True):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
+        # To avoid circular imports
+        from esp.program.modules.handlers.grouptextmodule import GroupTextModule
+
         if include_lottery_students:
             student_verbs = ['Enrolled', 'Interested', 'Priority/1']
         else:
@@ -996,6 +1005,12 @@ class ClassSection(models.Model):
                 else:
                     send_mail(ssi_email_title, msgtext, from_email, to_email)
 
+        if text_students and self.parent_program.hasModule('GroupTextModule') and GroupTextModule.is_configured():
+            if self.students(student_verbs).distinct().count() > 0:
+                msgtext = render_to_string('texts/class_cancellation.txt', context)
+                students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
+                GroupTextModule.sendMessages(students_to_text, msgtext)
+
         #   Send e-mail to administrators as well
         context['classreg'] = True
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
@@ -1005,6 +1020,18 @@ class ClassSection(models.Model):
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
+
+        #   Send e-mail to teachers
+        if email_teachers:
+            context['director_email'] = self.parent_program.director_email
+            email_content = render_to_string('email/class_cancellation_teacher.txt', context)
+            from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
+            if email_ssis:
+                email_content += '\n' + render_to_string('email/class_cancellation_body.txt', context)
+            teachers = self.parent_class.get_teachers()
+            for t in teachers:
+                to_email = ['%s <%s>' % (t.name(), t.email)]
+                send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
 
@@ -1754,10 +1781,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.clearStudents()
         self.set_all_sections_to_status(REJECTED)
 
-    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
+    def cancel(self, email_students=True, include_lottery_students=False, text_students=False, email_teachers=True, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, include_lottery_students, explanation, unschedule)
+            sec.cancel(email_students, include_lottery_students, text_students, email_teachers, explanation, unschedule)
         self.status = CANCELLED
         self.save()
 

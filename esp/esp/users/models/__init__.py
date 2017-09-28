@@ -253,6 +253,12 @@ class BaseESPUser(object):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
 
+    def get_last_program_with_profile(self):
+        # as in getLastProfile, caching is handled in
+        # RegistrationProfile.getLastProfile for coherence
+        from esp.program.models import RegistrationProfile
+        return RegistrationProfile.get_last_program_with_profile(self)
+
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
@@ -612,6 +618,9 @@ class BaseESPUser(object):
             else:
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+
+    def can_skip_phase_zero(self, program):
+        return Permission.user_has_perm(self, 'OverridePhaseZero', program)
 
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots.
@@ -1663,6 +1672,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
+        verbose_name_plural = 'Zip Code Searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
@@ -2237,6 +2247,7 @@ class Permission(ExpirableModel):
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
+        ("OverridePhaseZero", "Bypass Phase Zero to proceed to other student reg modules"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
@@ -2244,6 +2255,7 @@ class Permission(ExpirableModel):
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),
             ("Student/MainPage", "Registration mainpage"),
@@ -2270,7 +2282,6 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
-            ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
             ("Teacher/Events", "Teacher training signup"),
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/MainPage", "Registration mainpage"),
@@ -2313,6 +2324,39 @@ class Permission(ExpirableModel):
 
     class Meta:
         app_label = 'users'
+
+    @classmethod
+    def null_user_has_perm(cls, permission_type, program):
+        return cls.valid_objects().filter(permission_type=permission_type,
+                program=program, user__isnull=True).exists()
+
+    @classmethod
+    def q_permissions_on_program(cls, perm_q, name, program=None, when=None, program_is_none_implies_all=False):
+        """
+        Build a QuerySet of permissions that would grant a permission.
+
+        Given a Q object on Permission, a permission type, and a program,
+        return a QuerySet of permissions satisfying the Q object constraint
+        that would grant the permission on the program.
+        """
+        # As explained above, some Permissions have no specified Program; for
+        # some types these are global across all programs, but for most they
+        # are not:
+        if name in cls.deadline_types:
+            program_is_none_implies_all = False
+
+        perms = [name]
+        for k,v in cls.implications.items():
+            # k implies v: it's a parent permission that includes v
+            if name in v: perms.append(k)
+        # perms is the list of all permission types that might imply the
+        # requested permission
+
+        qprogram = Q(program=program)
+        if program_is_none_implies_all:
+            qprogram |= Q(program=None)
+        initial_qset = cls.objects.filter(perm_q & qprogram).filter(permission_type__in=perms)
+        return initial_qset.filter(cls.is_valid_qobject(when=when))
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2365,18 +2409,34 @@ class Permission(ExpirableModel):
         """
         if user.isAdministrator(program=program):
             return True
-        if name in cls.deadline_types:
-            program_is_none_implies_all = False
-        perms=[name]
-        for k,v in cls.implications.items():
-            if name in v: perms.append(k)
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        qprogram = Q(program=program)
-        if program_is_none_implies_all:
-            qprogram |= Q(program=None)
-        initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
-        return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
+        return cls.q_permissions_on_program(quser, name, program, when,
+                program_is_none_implies_all).exists()
+
+    @classmethod
+    def list_roles_with_perm(cls, name, program):
+        """Given a permission type on a program, list roles that would give the
+        permission on the program.
+
+        :param name:
+            The unique identifier of the permission identifier to check for.
+            Must be in PERMISSION_CHOICES_FLAT.
+        :type name:
+            `str`
+        :param program:
+            Check for permission for `name` on this program.
+        :type program:
+            `Program`
+        :return:
+            List of role names that would give the specified permission.
+        :rtype:
+            `list` of `str`
+        """
+
+        qrole = Q(user=None, role__isnull=False)
+        return list(cls.q_permissions_on_program(
+                qrole, name, program).values_list('role__name', flat=True))
 
     #list of all the permission types which are deadlines
     deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student") or x.startswith("Volunteer")]
