@@ -30,6 +30,7 @@ class ScheduleManipulator:
         # action or to undoing it.
         self.history = []
 
+    @util.timed_func("ScheduleManipulator_schedule_section")
     def schedule_section(self, section, start_roomslot, force=False):
         """Schedules the given section starting at the given roomslot;
         returns True if successful, False if not. Iterates over the roomslot's
@@ -54,6 +55,7 @@ class ScheduleManipulator:
         section.assign_roomslots(roomslots_to_use)
         return True
 
+    @util.timed_func("ScheduleManipulator_move_section")
     def move_section(self, section, start_roomslot, force=False):
         """Moves an already-scheduled section to a different given roomslot;
         returns True if successful, False if not. Has the same behavior as
@@ -79,6 +81,7 @@ class ScheduleManipulator:
         section.assign_roomslots(roomslots_to_use)
         return True
 
+    @util.timed_func("ScheduleManipulator_unschedule_section")
     def unschedule_section(self, section, force=False):
         """Unschedules an already_scheduled section. Returns True if successful,
         False if not."""
@@ -99,6 +102,7 @@ class ScheduleManipulator:
         section.clear_roomslots()
         return True
 
+    @util.timed_func("ScheduleManipulator_swap_sections")
     def swap_sections(self, section1, section2, force=False):
         """Swaps two already-scheduled sections of the same duration. Returns
         True if successful, False if not."""
@@ -124,6 +128,7 @@ class ScheduleManipulator:
         section2.assign_roomslots(roomslots1)
         return True
 
+    @util.timed_func("ScheduleManipulator_undo")
     def undo(self):
         """Undoes the last action. Returns True if there was anything to undo.
         """
@@ -159,6 +164,7 @@ class ScheduleManipulator:
             self.history.pop()
             return True
 
+    @util.timed_func("ScheduleManipulator_perform_action")
     def perform_action(self, action):
         """Performs the given action, as specified in the same way as
         history (though possibly without extraneous undo-ing information)."""
@@ -173,6 +179,7 @@ class ScheduleManipulator:
         elif action["action"] == "swap":
             return self.swap_sections(*action["sections"])
 
+    @util.timed_func("ScheduleManipulator_jsonify_action")
     def jsonify_action(self, action):
         """Turns an action (i.e. history item) into a json-like dict."""
         jsonified_dict = {"action": action["action"]}
@@ -229,3 +236,11 @@ class ScheduleManipulator:
     def get_recorded_times(self):
         """Gets the times recorded, not necessarily by this manipulator."""
         return util.TIMES
+
+    def print_recorded_times(self):
+        """Prints a sorted list of times recorded, not necessarily by this
+        manipulator."""
+        times = self.get_recorded_times()
+        items = sorted(times.items(), key=lambda x: -x[1][0])
+        for i in items:
+            print i

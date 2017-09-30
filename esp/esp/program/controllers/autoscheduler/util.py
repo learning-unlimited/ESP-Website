@@ -4,6 +4,7 @@ Various utility functions.
 
 from datetime import timedelta, datetime
 from timeit import default_timer
+from functools import wraps
 
 from esp.program.controllers.autoscheduler import config
 
@@ -11,20 +12,49 @@ from esp.program.controllers.autoscheduler import config
 TIMES = {}
 
 
+class Timer(object):
+    def __init__(self):
+        self.stack = []
+        self.times = []
+        self.last_started = None
+
+    def update_time(self):
+        time = default_timer()
+        if len(self.stack) > 0:
+            self.times[-1] += time - self.last_started
+        self.last_started = time
+
+    def start(self, key):
+        self.update_time()
+        self.stack.append(key)
+        self.times.append(0)
+
+    def end(self, key):
+        assert self.stack[-1] == key, "Wasn't a stack"
+        self.update_time()
+        TIMES[key][0] += self.times[-1]
+        TIMES[key][1] += 1
+        self.times.pop()
+        self.stack.pop()
+
+
+TIMER = Timer()
+
+
 def timed_func(key):
     if not config.USE_TIMER:
         return lambda x: x
-    """Generates a decorator which times a function and records its total time
+    """Generates a decorator which times a function (but not including
+    subroutines that are also timed) and records its total time
     under the specified key."""
     if key not in TIMES:
-        TIMES[key] = 0.0
+        TIMES[key] = [0.0, 0]
 
     def timer(func):
         def wrapper(*args, **kwargs):
-            start = default_timer()
+            TIMER.start(key)
             retval = func(*args, **kwargs)
-            end = default_timer()
-            TIMES[key] += (end - start)
+            TIMER.end(key)
             return retval
         return wrapper
     return timer
@@ -83,3 +113,15 @@ def datetimedump(dt):
 def datetimeloads(dt_tuple):
     """Turns a json-like datetime dump into a datetime object."""
     return datetime(*dt_tuple)
+
+
+def memoize(f):
+    """Memoizes a function that doesn't take kwargs."""
+    cache = {}
+
+    @wraps(f)
+    def memoized_f(*args):
+        if args not in cache:
+            cache[args] = f(*args)
+        return cache[args]
+    return memoized_f

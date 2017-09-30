@@ -2,6 +2,8 @@
 A class for using depth-limited DFS to try to find improvements to a schedule.
 """
 
+import esp.program.controllers.autoscheduler.util as util
+
 
 class SearchOptimizer:
     def __init__(self, manipulator):
@@ -10,6 +12,7 @@ class SearchOptimizer:
         for room in manipulator.schedule.classrooms.itervalues():
             self.roomslots += room.availability
 
+    @util.timed_func("SearchOptimizer_optimize_section")
     def optimize_section(self, section, depth, timeout=None):
         """Tries to schedule (if it is not scheduled) or move (if it is already
         scheduled) the specified section by moving or unscheduling other
@@ -72,6 +75,7 @@ class SearchOptimizer:
         """Append the last item in history to the proposed actions."""
         proposed_actions.append(self.manipulator.history[-1])
 
+    @util.timed_func("SearchOptimizer_revert")
     def revert(self, n):
         """Undo the last n actions."""
         for action in xrange(n):

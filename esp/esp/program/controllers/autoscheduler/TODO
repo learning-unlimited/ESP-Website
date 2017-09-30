@@ -1,5 +1,7 @@
 (Also check TODOs in comments)
 
+Double-check that locked classes are ignored?
+
 Bugs:
 
 save() should check whether sections are locked before saving
@@ -13,6 +15,7 @@ pass section scheduling infos in histories in order to detect external changes (
 New features:
 Implement a timeout on search
 Implement a faster search
+Return multiple results?
 
 AJAX change log entries can include users
 

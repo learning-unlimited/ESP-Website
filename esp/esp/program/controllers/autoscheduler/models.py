@@ -192,6 +192,8 @@ class AS_Classroom(object):
         self.availability_dict = {(r.timeslot.start, r.timeslot.end): r
                                   for r in self.availability}
 
+    @util.timed_func("AS_Classroom_get_roomslots_by_duration")
+    @util.memoize
     def get_roomslots_by_duration(self, start_roomslot, duration):
         """Given a starting roomslot, returns a list of roomslots that
         will cover the length of time specified by duration. If unable
