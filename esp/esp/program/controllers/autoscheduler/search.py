@@ -33,6 +33,10 @@ class SearchOptimizer:
             # Kick everyone else out of those slots.
             for needed_slot in needed_slots:
                 if needed_slot.assigned_section is not None:
+                    if depth == 1:
+                        failed = True
+                        # Don't eject a class if there's depth 1
+                        break
                     other_section = needed_slot.assigned_section
                     other_sections.append(other_section)
                     success = \
@@ -59,6 +63,10 @@ class SearchOptimizer:
             for other_section in other_sections:
                 proposed_actions += \
                         self.optimize_section(other_section, depth - 1)
+                if not other_section.is_scheduled():
+                    # Evicted sections must be scheduled
+                    self.revert(len(proposed_actions))
+                    continue
             # Compute the score.
             new_score = self.manipulator.scorer.score_schedule()
             if new_score > best_score:
