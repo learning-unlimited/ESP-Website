@@ -42,11 +42,12 @@ TIMER = Timer()
 
 
 def timed_func(key):
-    if not config.USE_TIMER:
-        return lambda x: x
     """Generates a decorator which times a function (but not including
     subroutines that are also timed) and records its total time
     under the specified key."""
+
+    if not config.USE_TIMER:
+        return lambda x: x  # Decorator does nothing
     if key not in TIMES:
         TIMES[key] = [0.0, 0]
 

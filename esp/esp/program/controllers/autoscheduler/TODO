@@ -5,6 +5,8 @@ Double-check that locked classes are ignored?
 Bugs:
 
 save() should check whether sections are locked before saving
+save() might have an issue if a teacher is teaching a non-recognized class and
+it gets moved?
 save() can have an issue if someone moves a class after you saved but before
 you committed
  - The fix assumes that saving is what takes the most time, and checking is
@@ -42,6 +44,7 @@ locked sections
 more tests for loading teacher availabilities with classes already scheduled
 db tests should test for when classes are already scheduled (or otherwise
 excluded classes), also saving
+db test for partial save rollback
 model tests for model functions
 tests for resource checker
 
