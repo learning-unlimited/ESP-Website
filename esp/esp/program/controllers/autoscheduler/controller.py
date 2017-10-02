@@ -75,9 +75,9 @@ class AutoschedulerController(object):
 
     @staticmethod
     def resource_options(prog):
-        """Map from resource criterion name to (weight, spec). If criterion is
-        required, mark as -1."""
-        resource_criteria = load_all_resource_criteria(prog)
+        """Map from resource criterion name to (weight, spec_or_comment). If
+        criterion is required, mark as -1."""
+        resource_criteria = load_all_resource_criteria(prog, use_comments=True)
         resource_options = {k: (wt, spec) for k, (spec, wt)
                             in resource_criteria.iteritems()}
         return resource_options
@@ -202,13 +202,23 @@ class AutoschedulerController(object):
         db_interface.save(self.optimizer.manipulator.schedule)
 
 
-def load_all_resource_criteria(prog):
+def load_all_resource_criteria(prog, use_comments=False):
+    """If use_comments is true, we load comments (where available) instead
+    of specs."""
     resource_constraints = db_interface.load_resource_constraints(
-            prog, specs_only=True)
+            prog, specs_only=True, ignore_comments=(not use_comments))
     overrides = {k: (v, -1) for k, v in resource_constraints.iteritems()}
-    resource_scoring = db_interface.load_resource_scoring(
-            prog, overrides, specs_only=True)
-    return resource_scoring
+    resource_criteria = db_interface.load_resource_scoring(
+            prog, overrides, specs_only=True,
+            ignore_comments=(not use_comments))
+    if use_comments:
+        for k in resource_criteria:
+            comment = "{}_comment".format(k)
+            if comment in resource_criteria:
+                resource_criteria[k] = \
+                    (resource_criteria[comment][0], resource_criteria[k][1])
+    return {k: v for k, v in resource_criteria.iteritems() if "_comment" not in
+            k}
 
 
 def get_section_by_emailcode(emailcode, schedule):

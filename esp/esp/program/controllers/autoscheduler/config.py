@@ -110,7 +110,9 @@ DEFAULT_RESOURCE_CONSTRAINTS = {
     # If you don't want to use a classroom, mark its name with a star.
     "restrict_star_classrooms":
         "if any section then not classroom matches {}".format(
-            r"^\*.*$")
+            r"^\*.*$"),
+    "restrict_star_classrooms_comment":
+        "Ignore all classrooms with names marked with a star, e.g. *16-628.",
 }
 
 """Create a tag containing a JSON dict with this key to the relevant program.

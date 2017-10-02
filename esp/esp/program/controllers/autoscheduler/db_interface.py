@@ -496,7 +496,8 @@ def load_scorers(program, scorer_overrides=None):
 
 
 def load_resource_constraints(
-        program, specification_overrides=None, specs_only=False):
+        program, specification_overrides=None, specs_only=False,
+        ignore_comments=True):
     if specification_overrides is None:
         specification_overrides = {}
 
@@ -505,8 +506,10 @@ def load_resource_constraints(
                                   default="{}")
     try:
         tag_overrides = json.loads(tag_value)
-        tag_overrides = {
-            k: v for k, v in tag_overrides.iteritems() if "_comment" not in k}
+        if ignore_comments:
+            tag_overrides = {
+                k: v for k, v in tag_overrides.iteritems()
+                if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
             "Resource constraints Tag is malformatted with error {}: {}"
@@ -525,7 +528,8 @@ def load_resource_constraints(
 
 
 def load_resource_scoring(
-        program, specification_overrides=None, specs_only=True):
+        program, specification_overrides=None, specs_only=True,
+        ignore_comments=True):
     if specification_overrides is None:
         specification_overrides = {}
 
@@ -534,9 +538,10 @@ def load_resource_scoring(
                                   default="{}")
     try:
         tag_overrides = json.loads(tag_value)
-        tag_overrides = {
-            k: v for k, v in tag_overrides.iteritems() if "_comment" not in k}
-
+        if ignore_comments:
+            tag_overrides = {
+                k: v for k, v in tag_overrides.iteritems()
+                if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
             "Resource scoring Tag is malformatted with error {}: {}"
