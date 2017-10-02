@@ -517,3 +517,86 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         loaded_schedule = db_interface.load_schedule_from_db(
             self.program, exclude_scheduled=False, exclude_locked=False)
         self.assert_schedule_equality(loaded_schedule, self.schedule)
+
+    def test_schedule_save_swap_and_rollback(self):
+        """Schedules two classes and saves. Then swaps them and saves. Then
+        swaps them again and saves, but the save crashes partway through.
+        The crashing part is supposed to roll back the whole transaction.
+        It's kind of brittle to the implementation, however, because it assumes
+        that the check_can_schedule_sections function is called once at the
+        beginning and once at the end."""
+        sections = [self.schedule.class_sections[i] for i in xrange(
+                self.initial_section_id, self.initial_section_id + 2)]
+        room = self.schedule.classrooms["Room 1"]
+        roomslots = room.availability[1:3]
+        for s, r in zip(sections, roomslots):
+            s.assign_roomslots([r])
+
+        section_objs = [ClassSection.objects.get(id=s.id) for s in sections]
+        for s in section_objs:
+            self.assertEqual(len(s.get_meeting_times()), 0,
+                             "Section already had meeting times")
+        try:
+            db_interface.save(self.schedule)
+        except SchedulingError:
+            self.fail("Schedule saving crashed with error: \n{}"
+                      .format(traceback.format_exc()))
+        for r, so in zip(roomslots, section_objs):
+            self.assertEqual(
+                    len(so.get_meeting_times()), 1,
+                    "Section should have been scheduled for 1 timeslot but "
+                    "was scheduled for {}".format(len(so.get_meeting_times())))
+            self.assertEqual(so.get_meeting_times()[0].id,
+                             r.timeslot.id,
+                             "Section was assigned to wrong timeslot")
+
+        for s in sections:
+            s.clear_roomslots()
+        for s, r in zip(sections, reversed(roomslots)):
+            s.assign_roomslots([r])
+            self.assertEqual(len(s.assigned_roomslots), 1)
+        try:
+            db_interface.save(self.schedule)
+        except SchedulingError:
+            self.fail("Schedule saving crashed with error: \n{}"
+                      .format(traceback.format_exc()))
+        for r, so in zip(reversed(roomslots), section_objs):
+            self.assertEqual(
+                    len(so.get_meeting_times()), 1,
+                    "Section should have been scheduled for 1 timeslot but "
+                    "was scheduled for {}".format(len(so.get_meeting_times())))
+            self.assertEqual(so.get_meeting_times()[0].id,
+                             r.timeslot.id,
+                             "Section was assigned to wrong timeslot")
+
+        # It looks like we don't have the mock package?? Oh well.
+        rvs = [True, False]
+        db_interface_can_schedule = db_interface.check_can_schedule_sections
+
+        def raise_after_one():
+            if not rvs.pop(0):
+                raise SchedulingError("oops")
+        db_interface.check_can_schedule_sections = lambda x: raise_after_one()
+        try:
+            for s in sections:
+                s.clear_roomslots()
+            for s, r in zip(sections, roomslots):
+                s.assign_roomslots([r])
+            with self.assertRaises(SchedulingError):
+                db_interface.save(self.schedule)
+            # Nothing should have moved.
+            for r, so in zip(reversed(roomslots), section_objs):
+                self.assertEqual(
+                        len(so.get_meeting_times()), 1,
+                        "Section should have been scheduled for 1 timeslot "
+                        "but was scheduled for {}".format(
+                            len(so.get_meeting_times())))
+                self.assertEqual(so.get_meeting_times()[0].id,
+                                 r.timeslot.id,
+                                 "Section was assigned to wrong timeslot")
+            db_interface.check_can_schedule_sections = \
+                db_interface_can_schedule
+        except:
+            db_interface.check_can_schedule_sections = \
+                db_interface_can_schedule
+            raise

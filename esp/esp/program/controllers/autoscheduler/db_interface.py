@@ -164,8 +164,10 @@ def load_sections_and_teachers_and_classrooms(
     return sections_dict, teachers, classrooms
 
 
+@util.timed_func("db_interface_save")
 def save(schedule, check_consistency=True, check_constraints=True):
     """Saves the schedule."""
+    print "Executing save."
     if check_consistency:
         # Run a consistency check first.
         schedule.run_consistency_checks()
@@ -178,54 +180,32 @@ def save(schedule, check_consistency=True, check_constraints=True):
         [section for section in schedule.class_sections.itervalues()
          if section.initial_state
          != section.scheduling_hash()])
-    # These are all the sections we are okay changing.
-    unscheduled_sections = set()  # Sections we unscheduled temporarily
     with transaction.atomic():
         ajax_change_log = get_ajax_change_log(schedule.program)
-        for section in changed_sections:
-            section_obj = ClassSection.objects.get(id=section.id)
-            print("Saving {}".format(section_obj.emailcode()))
-            # Make sure nobody else touched the section
-            if section.id in unscheduled_sections:
-                # Ensure the section is in fact unscheduled.
-                if len(section_obj.get_meeting_times()) > 0 \
-                        or len(section_obj.classrooms()) > 0:
-                    raise SchedulingError("Someone else moved a section.")
-            else:
-                ensure_section_not_moved(section_obj, section)
-            if section.is_scheduled():
-                start_time = section.assigned_roomslots[0].timeslot.start
-                end_time = section.assigned_roomslots[-1].timeslot.end
-                # Make sure the teacher is available
-                for teacher in section.teachers:
-                    teacher_obj = ESPUser.objects.get(id=teacher.id)
-                    other_sections = \
-                        teacher_obj.getTaughtSections(schedule.program)
-                    for other_section in other_sections:
-                        conflict = False
-                        for other_time in \
-                                other_section.get_meeting_times():
-                            if not (other_time.start >= end_time
-                                    or other_time.end <= start_time):
-                                conflict = True
-                                break
-                        if conflict:
-                            err_msg = (
-                                "Teacher {} is already teaching "
-                                "from {} to {}".format(
-                                    teacher.id,
-                                    str(other_time.start),
-                                    str(other_time.end)))
-                            try_unschedule_section(
-                                other_section, unscheduled_sections,
-                                schedule.class_sections, err_msg,
-                                ajax_change_log)
+        section_objs = ClassSection.objects.filter(
+                id__in=[s.id for s in changed_sections]).select_related()
 
-                # Compute our meeting times and classroom
+        # Compute meeting times, classroom, and potentially conflicting classes
+        # for each class.
+        section_infos = []
+        for section_obj in section_objs:
+            section = schedule.class_sections[section_obj.id]
+            possible_conflicts = []
+            for teacher in section.teachers:
+                teacher_obj = ESPUser.objects.get(id=teacher.id)
+                other_sections = \
+                    teacher_obj.getTaughtSections(schedule.program)
+                possible_conflicts.append(
+                        (teacher.id, [other for other in other_sections
+                                      if other.id != section.id]))
+
+            # Compute our meeting times and classroom
+            if section.is_scheduled():
                 meeting_times = Event.objects.filter(
                         id__in=[roomslot.timeslot.id
                                 for roomslot
                                 in section.assigned_roomslots])
+
                 initial_room_num = section.assigned_roomslots[0].room.name
                 assert all([roomslot.room.name == initial_room_num
                             for roomslot in section.assigned_roomslots]), \
@@ -235,46 +215,81 @@ def save(schedule, check_consistency=True, check_constraints=True):
                         name=initial_room_num,
                         res_type__name="Classroom",
                         event__in=meeting_times)
+            else:
+                meeting_times = []
+                room_objs = []
+            section_infos.append(
+                (section, section_obj, possible_conflicts,
+                 meeting_times, room_objs))
 
-                # Make sure the room is available
-                for room_obj in room_objs:
-                    if room_obj.is_taken():
-                        occupiers = room_obj.assignments()
-                        for occupier in occupiers:
-                            other_section = occupier.target
-                            try_unschedule_section(
-                                    other_section, unscheduled_sections,
-                                    schedule.class_sections,
-                                    "Room is occupied", ajax_change_log)
+        # First, we check to make sure nobody moved any sections we want, and
+        # unschedule them to ensure we don't get cross-conflicts.
+        for so in section_objs:
+            section = schedule.class_sections[so.id]
+            ensure_section_not_moved(so, section)
+            if len(section_obj.get_meeting_times()) > 0:
+                unschedule_section(so, ajax_change_log)
 
+        check_can_schedule_sections(section_infos)
+        for section, section_obj, possible_conflicts, meeting_times, \
+                room_objs in section_infos:
+            if section.is_scheduled():
                 schedule_section(
                     section_obj, meeting_times, room_objs[0], ajax_change_log)
-            else:
-                unschedule_section(section_obj, ajax_change_log)
+        check_can_schedule_sections(section_infos)  # Check again.
 
-            # Update the section's initial_state so we don't confuse
-            # ourselves
-            section.recompute_hash()
-        # print "Waiting..."
-        # for i in xrange(int(5e8)):
-        #     pass
-        # print "Done"
-
-
-def try_unschedule_section(section, unscheduled_sections, class_sections,
-                           error_message, ajax_change_log):
-    """Tries to unschedule the given ClassSection. If it's not in the list
-    of known sections (class_sections), throw a SchedulingError with the
-    given error message. Otherwise, make sure the section wasn't moved by
-    external sources, and unschedule it."""
-    if section.id not in class_sections:
-        raise SchedulingError(error_message)
-    else:
-        ensure_section_not_moved(
-                section, class_sections[section.id])
-        unschedule_section(section, ajax_change_log, unscheduled_sections)
+    # Update the sections' initial_state so we don't confuse
+    # ourselves
+    for section in changed_sections:
+        section.recompute_hash()
+    # print "Waiting..."
+    # for i in xrange(int(5e8)):
+    #     pass
+    # print "Done"
 
 
+@util.timed_func("db_interface_check_can_schedule_sections")
+def check_can_schedule_sections(section_infos):
+    """Takes a section_infos, containing:
+        (AS_ClassSection, ClassSection, [(teacher_id, [other_sections])],
+        meeting_times, room_objs)
+    and verifies the following for each section that we want to schedule:
+        - That the teacher is not teaching another class at that time
+        - That the rooms are not currently in use by another class
+    A SchedulingError is thrown if any of thes occur, otherwise nothing
+    happens."""
+    for section, section_obj, possible_conflicts, meeting_times, room_objs \
+            in section_infos:
+        if section.is_scheduled():
+            start_time = section.assigned_roomslots[0].timeslot.start
+            end_time = section.assigned_roomslots[-1].timeslot.end
+            for teacher_id, other_sections in possible_conflicts:
+                # Make sure the teacher isn't teaching
+                for other_section in other_sections:
+                    for other_time in other_section.get_meeting_times():
+                        if not (other_time.start >= end_time
+                                or other_time.end <= start_time):
+                            raise SchedulingError(
+                                "Teacher {} of section {} is already teaching "
+                                "section {}".format(
+                                    teacher_id, section_obj.emailcode(),
+                                    other_section.emailcode()))
+
+            # Make sure the room is available
+            for room_obj in room_objs:
+                if room_obj.is_taken():
+                    occupiers = room_obj.assignments()
+                    for occupier in occupiers:
+                        other_section = occupier.target
+                        if other_section.id != section.id:
+                            raise SchedulingError(
+                                "Destination room {} of section {} was "
+                                "already occupied by section {}".format(
+                                    room_obj.name, section_obj.emailcode(),
+                                    other_section.emailcode()))
+
+
+@util.timed_func("db_interface_ensure_section_not_moved")
 def ensure_section_not_moved(section, as_section):
     """Ensures that a ClassSection hasn't moved, according to the record
     stored in its corresponding AS_Section. Raises a SchedulingError if it
@@ -285,10 +300,11 @@ def ensure_section_not_moved(section, as_section):
                 moved.".format(section.emailcode))
 
 
+@util.timed_func("db_interface_unschedule_section")
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    print "Unscheduling {}".format(section.id)
+    print "Unscheduling {}".format(section.emailcode())
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
@@ -296,9 +312,10 @@ def unschedule_section(
     ajax_change_log.appendScheduling([], "", section.id, None)
 
 
+@util.timed_func("db_interface_schedule_section")
 def schedule_section(section, times, room, ajax_change_log):
     """Schedules the section in the times and rooms."""
-    print "Executing save."
+    print "Scheduling section."
     section.assign_meeting_times(times)
     status, errors = section.assign_room(room)
     if not status:

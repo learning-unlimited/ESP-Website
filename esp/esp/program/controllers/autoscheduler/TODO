@@ -1,12 +1,12 @@
 (Also check TODOs in comments)
 
-Double-check that locked classes are ignored?
 Add tags to the list of all tags
 Don't schedule lunch classes??
 
 Bugs:
 
-save() should check whether sections are locked before saving
+save() should check whether sections are locked before saving, if locked
+    classes are excluded
 Consider modifying checking code on the save functionality itself?
 save() might have an issue if a teacher is teaching a non-recognized class and
 it gets moved?
@@ -45,7 +45,7 @@ be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
 db tests should load resource criteria, constraints, scorers?
-db test for partial save rollback
+db test for save raising if there's a conflict
 model tests for model functions
 tests for resource checker
 
