@@ -74,11 +74,16 @@ function TableRow(section, el, directory){
      */
     this.render = function(){
         var baseURL = directory.sections.getBaseUrlString();
+
+        var autoschedulerLink = " <a target='_blank' href='" + baseURL +
+            "autoscheduler?section=" + this.section.id + "'>Optimize</a>"
+
         this.el[0].innerHTML = "<td>" + this.section.title +
             " <a target='_blank' href='" + baseURL +
             "manageclass/" + this.section.parent_class +
             "'>Manage</a>" + " <a target='_blank' href='" + baseURL +
-            "editclass/" + this.section.parent_class + "'>Edit</a></td>";
+            "editclass/" + this.section.parent_class + "'>Edit</a>" +
+            autoschedulerLink + "</td>";
         this.el.append(this.cell.el);
     };
 

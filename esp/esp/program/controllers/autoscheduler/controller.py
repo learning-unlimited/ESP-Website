@@ -1,5 +1,7 @@
 """A controller for the autoscheduler."""
 
+from django.core.exceptions import ObjectDoesNotExist
+
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
 from esp.resources.models import ResourceType
@@ -81,12 +83,20 @@ class AutoschedulerController(object):
         return resource_options
 
     @staticmethod
-    def search_options(prog):
+    def search_options(prog, section=None):
         """Options for the searcher. Map from key to default value and
         description."""
+        emailcode = "X1234s1"
+        if section is not None and section.isdigit():
+            try:
+                section = ClassSection.objects.get(
+                        id=int(section), parent_class__parent_program=prog)
+                emailcode = section.emailcode()
+            except ObjectDoesNotExist:
+                pass
         return {
             "section_emailcode":
-                ("X1234s1", "Emailcode of the section to optimize."),
+                (emailcode, "Emailcode of the section to optimize."),
             "depth":
                 (1, "Depth to search."),
             "timeout":

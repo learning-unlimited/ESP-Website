@@ -31,7 +31,7 @@ function runAutoscheduler() {
 			{
 				autoscheduler_data = data['autoscheduler_data'];
 				stats_div.html('');
-                if (!autoscheduler_data) {
+                if (data['info'].length == 0) {
                     stats_div.html("Nothing better than status quo.");
                 } else {
                     data['info'].forEach(function (el) {

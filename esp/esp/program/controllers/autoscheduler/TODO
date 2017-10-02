@@ -1,9 +1,21 @@
 (Also check TODOs in comments)
 
 Add tags to the list of all tags
-Don't schedule lunch classes??
+the UI sucks
+Include a class search for unscheduled approved classes, like the AJAX
+    scheduler, or modify AJAX scheduler to link to frontend
+
+Clean up frontend display (e.g. hide stuff or just make it go away, split
+sections, display room and section side-by-side, consider ignoring or
+reformatting unschedule stuff or rewrite as swap/move)
+Frontend should warn that you haven't saved yet
+
+Implement a timeout on search, probably default 10s or something
 
 Bugs:
+
+AJAX scheduler should only link to the Autoscheduler Frontend if said module
+exists.
 
 save() should check whether sections are locked before saving, if locked
     classes are excluded
@@ -18,7 +30,6 @@ search might try to unschedule sections multiple times
 pass section scheduling infos in histories in order to detect external changes (frontend)
 
 New features:
-Implement a timeout on search
 Implement a faster search
 Return multiple results?
 
@@ -28,8 +39,6 @@ Add the license/LU header to all files
 
 Implement ResourceMovementScorer
 
-Clean up frontend display (e.g. hide stuff, split sections)
-Frontend should warn that you haven't saved yet
 
 Reduce loading times?
 
