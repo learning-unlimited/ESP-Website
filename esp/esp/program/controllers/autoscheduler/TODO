@@ -15,6 +15,8 @@ Timestamps should be day of week and hh:mm
 
 Frontend can show how various scorers are affected by the change.
 
+Frontend should indicate what was saved when the save happens.
+
 Implement a timeout on search, probably default 10s or something
 
 Test the frontend to make sure that the display for schedule, unschedule, move,

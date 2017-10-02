@@ -238,7 +238,8 @@ def save(schedule, check_consistency=True, check_constraints=True):
                     section_obj, meeting_times, room_objs[0], ajax_change_log)
 
         # Check again in case something bad happened while we were saving.
-        for section in changed_sections:
+        for so in section_objs:
+            section = schedule.class_sections[so.id]
             section.recompute_hash()
             ensure_section_not_moved(so, section)
         check_can_schedule_sections(section_infos)

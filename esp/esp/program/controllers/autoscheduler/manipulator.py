@@ -27,7 +27,9 @@ class ScheduleManipulator:
         # for actions to be undone. Each record is a dict containing an
         # "action" key mapping to "schedule", "move", "unschedule", or "swap",
         # as well as whatever other information is relevant to either the
-        # action or to undoing it.
+        # action or to undoing it. Note that controller.py manually edits
+        # history, so if you change the history specification, change it there
+        # as well.
         self.history = []
 
     @util.timed_func("ScheduleManipulator_schedule_section")
@@ -120,6 +122,8 @@ class ScheduleManipulator:
         self.history.append({
             "action": "swap",
             "sections": (section1, section2),
+            "original_roomslots": (section1.assigned_roomslots[0],
+                                   section2.assigned_roomslots[0]),
         })
         self.scorer.update_swap_sections(section1, section2)
         roomslots1 = section1.assigned_roomslots
@@ -199,6 +203,11 @@ class ScheduleManipulator:
                 roomslot.room.name]
         if "sections" in action:
             jsonified_dict["sections"] = [s.id for s in action["sections"]]
+            jsonified_dict["original_roomslots"] = [[
+                [util.datetimedump(r.timeslot.start),
+                 util.datetimedump(r.timeslot.end)],
+                r.room.name] for r in action["original_roomslots"]]
+
         return jsonified_dict
 
     def dejsonify_action(self, jsonified_dict):
@@ -221,6 +230,15 @@ class ScheduleManipulator:
             action["sections"] = [
                 self.schedule.class_sections[s_id] for s_id in
                 jsonified_dict["sections"]]
+        if "original_roomslots" in jsonified_dict:
+            roomslots = []
+            for (start, end), room_name in \
+                    jsonified_dict["original_roomslots"]:
+                times = (util.datetimeloads(start), util.datetimeloads(end))
+                room = self.schedule.classrooms[room_name]
+                roomslots.append(room.availability_dict[times])
+            action["original_roomslots"] = tuple(roomslots)
+
         return action
 
     def jsonify_history(self):

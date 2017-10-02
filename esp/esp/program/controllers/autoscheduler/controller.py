@@ -118,7 +118,8 @@ class AutoschedulerController(object):
 
     def get_scheduling_info(self):
         rows = []
-        for action in self.optimizer.manipulator.history:
+        for action in self.simplify_history(
+                self.optimizer.manipulator.history):
             row = []
             if action["action"] == "schedule":
                 row.append(["Scheduled {}:".format(
@@ -137,7 +138,8 @@ class AutoschedulerController(object):
                                     action["prev_start_roomslot"])),
                            self.roomslot_info(action["prev_start_roomslot"])])
                 row.append(["To {}:".format(
-                                action["start_roomslot"].room.name),
+                                self.roomslot_identifier(
+                                    action["start_roomslot"])),
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "unschedule":
                 row.append(["Unscheduled {}:".format(
@@ -149,20 +151,17 @@ class AutoschedulerController(object):
                            self.roomslot_info(action["prev_start_roomslot"])])
             elif action["action"] == "swap":
                 sec1, sec2 = action["sections"]
+                rs2, rs1 = action["original_roomslots"]
                 row.append(["Swapped {}:".format(
                                 self.section_identifier(sec1)),
                            self.section_info(sec1)])
-                row.append(["Now in {}:".format(
-                                self.roomslot_identifier(
-                                    sec1.assigned_roomslots[0])),
-                           self.roomslot_info(sec1.assigned_roomslots[0])])
+                row.append(["Now in {}:".format(self.roomslot_identifier(rs1)),
+                           self.roomslot_info(rs1)])
                 row.append(["and {}:".format(
                                 self.section_identifier(sec2)),
                            self.section_info(sec2)])
-                row.append(["Now in {}:".format(
-                                self.roomslot_identifier(
-                                    sec2.assigned_roomslots[0])),
-                           self.roomslot_info(sec2.assigned_roomslots[0])])
+                row.append(["Now in {}:".format(self.roomslot_identifier(rs2)),
+                           self.roomslot_info(rs2)])
             else:
                 raise SchedulingError("History was broken.")
             rows.append(row)
@@ -215,6 +214,66 @@ class AutoschedulerController(object):
         info.append("<b>Furnishings:</b><ul>{}</ul>".format(
             resources))
         return info
+
+    def simplify_history(self, history):
+        """Given a history object, this simplifies it. It is NOT necessarily an
+        equivalent object, but it should be more understandable, e.g. if you
+        unschedule and reschedule a class, it will count as a move."""
+        # Dict mapping from section to [original_roomslot, final_roomslot]
+        sections = {}
+        for action in history:
+            if action["action"] == "schedule":
+                section = action["section"]
+                if section not in sections:
+                    sections[section] = [None, action["start_roomslot"]]
+                else:
+                    sections[section][1] = action["start_roomslot"]
+            elif action["action"] == "move":
+                section = action["section"]
+                if section not in sections:
+                    sections[section] = [
+                        action["prev_start_roomslot"],
+                        action["start_roomslot"]]
+                else:
+                    sections[section][1] = action["start_roomslot"]
+            elif action["action"] == "unschedule":
+                section = action["section"]
+                if section not in sections:
+                    sections[section] = [action["prev_start_roomslot"], None]
+                else:
+                    sections[section][1] = None
+            elif action["action"] == "swap":
+                for section, old_r, new_r in zip(
+                        action["sections"], action["original_roomslots"],
+                        reversed(action["original_roomslots"])):
+                    if section not in sections:
+                        sections[section] = [old_r, new_r]
+                    else:
+                        sections[section][1] = new_r
+        new_history = []
+        for section, (old_r, new_r) in sections.iteritems():
+            if old_r is None:
+                assert new_r is not None, "Did nothing"
+                new_history.append({
+                    "action": "schedule",
+                    "section": section,
+                    "start_roomslot": new_r,
+                })
+            else:
+                if new_r is None:
+                    new_history.append({
+                        "action": "unschedule",
+                        "section": section,
+                        "prev_start_roomslot": old_r,
+                    })
+                else:
+                    new_history.append({
+                        "action": "move",
+                        "section": section,
+                        "start_roomslot": new_r,
+                        "prev_start_roomslot": old_r,
+                    })
+        return new_history
 
     def export_assignments(self):
         return [
