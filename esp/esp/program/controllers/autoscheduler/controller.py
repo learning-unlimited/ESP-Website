@@ -121,70 +121,99 @@ class AutoschedulerController(object):
         for action in self.optimizer.manipulator.history:
             row = []
             if action["action"] == "schedule":
-                row.append(["Scheduled section:",
+                row.append(["Scheduled {}:".format(
+                                self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append(["In room:",
+                row.append(["In {}:".format(
+                                self.roomslot_identifier(
+                                    action["start_roomslot"])),
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "move":
-                row.append(["Moved section:",
+                row.append(["Moved {}:".format(
+                                self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append(["From room:",
+                row.append(["From {}:".format(
+                                self.roomslot_identifier(
+                                    action["prev_start_roomslot"])),
                            self.roomslot_info(action["prev_start_roomslot"])])
-                row.append(["To room:",
+                row.append(["To {}:".format(
+                                action["start_roomslot"].room.name),
                            self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "unschedule":
-                row.append(["Unscheduled section:",
+                row.append(["Unscheduled {}:".format(
+                                self.section_identifier(action["section"])),
                            self.section_info(action["section"])])
-                row.append(["From room:",
+                row.append(["From {}:".format(
+                                self.roomslot_identifier(
+                                    action["prev_start_roomslot"])),
                            self.roomslot_info(action["prev_start_roomslot"])])
             elif action["action"] == "swap":
                 sec1, sec2 = action["sections"]
-                row.append(["Swapped section:",
+                row.append(["Swapped {}:".format(
+                                self.section_identifier(sec1)),
                            self.section_info(sec1)])
-                row.append(["Now in room:",
+                row.append(["Now in {}:".format(
+                                self.roomslot_identifier(
+                                    sec1.assigned_roomslots[0])),
                            self.roomslot_info(sec1.assigned_roomslots[0])])
-                row.append(["and section:",
+                row.append(["and {}:".format(
+                                self.section_identifier(sec2)),
                            self.section_info(sec2)])
-                row.append(["Now in room:",
+                row.append(["Now in {}:".format(
+                                self.roomslot_identifier(
+                                    sec2.assigned_roomslots[0])),
                            self.roomslot_info(sec2.assigned_roomslots[0])])
             else:
                 raise SchedulingError("History was broken.")
             rows.append(row)
         return rows
 
-    def section_info(self, section):
+    def section_identifier(self, section):
         section_obj = ClassSection.objects.get(id=section.id)
+        return "{}: {} (id: {})".format(
+            section_obj.emailcode(), section_obj.parent_class.title,
+            section.id)
+
+    def section_info(self, section):
         info = []
-        info.append("Emailcode: {}".format(section_obj.emailcode()))
-        info.append("ID: {}".format(section.id))
-        info.append("Title: {}".format(section_obj.parent_class.title))
-        info.append("Teachers:")
-        for teacher in section.teachers:
-            user = ESPUser.objects.get(id=teacher.id)
-            info.append(user.name())
-        info.append("Capacity: {}".format(section.capacity))
-        info.append("Duration: {}".format(section.duration))
-        info.append("Grades: {}-{}".format(
+        teachers_list = [ESPUser.objects.get(id=teacher.id).name()
+                         for teacher in section.teachers]
+        info.append("<b>Teachers:</b> {}".format(
+            ", ".join(teachers_list)))
+        info.append("<b>Capacity: </b>{}".format(section.capacity))
+        info.append("<b>Duration: </b>{}".format(section.duration))
+        info.append("<b>Grades: </b>{}-{}".format(
             section.grade_min, section.grade_max))
-        info.append("Resource requests:")
+        resources = ""
         for restype in section.resource_requests.itervalues():
+            resources += "<li>"
             if restype.value == "":
-                info.append(restype.name)
+                resources += restype.name
             else:
-                info.append("{}: {}".format(restype.name, restype.value))
+                resources += "{}: {}".format(restype.name, restype.value)
+            resources += "</li>"
+        info.append("<b>Resource requests:</b><ul>{}</ul>".format(
+            resources))
         return info
+
+    def roomslot_identifier(self, roomslot):
+        return "{} starting at {}".format(
+                roomslot.room.name,
+                roomslot.timeslot.start.strftime("%A %-I:%M%p"))
 
     def roomslot_info(self, roomslot):
         info = []
-        info.append(roomslot.room.name)
-        info.append("Starting at time {}".format(roomslot.timeslot.start))
-        info.append("Capacity: {}".format(roomslot.room.capacity))
-        info.append("Furnishings:")
+        info.append("<b>Capacity:</b> {}".format(roomslot.room.capacity))
+        resources = ""
         for restype in roomslot.room.furnishings.itervalues():
+            resources += "<li>"
             if restype.value == "":
-                info.append(restype.name)
+                resources += restype.name
             else:
-                info.append("{}: {}".format(restype.name, restype.value))
+                resources += "{}: {}".format(restype.name, restype.value)
+            resources += "</li>"
+        info.append("<b>Furnishings:</b><ul>{}</ul>".format(
+            resources))
         return info
 
     def export_assignments(self):

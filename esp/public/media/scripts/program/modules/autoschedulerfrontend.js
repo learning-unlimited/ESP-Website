@@ -39,10 +39,10 @@ function runAutoscheduler() {
 					data['info'].forEach(function (entry) {
 						var stats_row = $j("<tr>");
 						entry.forEach(function (el) {
-							var stats_cell = $j("<td>");
+							var stats_cell = $j("<td valign='top'>");
 							label = el[0];
 							lines = el[1];
-							stats_cell.append('<h2>' + label + '</h2>');
+							stats_cell.append('<b>' + label + '</b>');
 							var bullets = $j('<ul>');
 							lines.forEach(function(line) {
 								bullets.append('<li>' + line + '</li>');

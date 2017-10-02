@@ -17,6 +17,9 @@ Frontend can show how various scorers are affected by the change.
 
 Implement a timeout on search, probably default 10s or something
 
+Test the frontend to make sure that the display for schedule, unschedule, move,
+and swap are all ok
+
 Bugs:
 
 AJAX scheduler should only link to the Autoscheduler Frontend if said module
