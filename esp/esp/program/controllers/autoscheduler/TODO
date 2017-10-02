@@ -2,16 +2,16 @@
 
 Add tags to the list of all tags
 the UI sucks
-Include a class search for unscheduled approved classes, like the AJAX
-    scheduler, or modify AJAX scheduler to link to frontend
 
 Clean up frontend display (e.g. hide stuff or just make it go away, split
 sections, display room and section side-by-side, consider ignoring or
 reformatting unschedule stuff or rewrite as swap/move)
-Frontend should warn that you haven't saved yet
 
 Add configuration documentation to the bottom of the UI
-Frontend doesn't actually let you do multiple things at once.
+Frontend doesn't actually let you do multiple things at once?
+
+Frontend display should have better bolding and formatting and stuff
+Timestamps should be day of week and hh:mm
 
 Frontend can show how various scorers are affected by the change.
 

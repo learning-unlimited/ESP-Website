@@ -31,22 +31,30 @@ function runAutoscheduler() {
 			{
 				autoscheduler_data = data['autoscheduler_data'];
 				stats_div.html('');
-                if (data['info'].length == 0) {
-                    stats_div.html("Nothing better than status quo.");
-                } else {
-		    stats_div.html("<h2>Warning: these have NOT been saved!</h2>");
-                    data['info'].forEach(function (el) {
-                        label = el[0];
-                        lines = el[1];
-                        stats_div.append('<h2>' + label + '</h2>');
-                        var bullets = $j('<ul>');
-                        lines.forEach(function(line) {
-                            bullets.append('<li>' + line + '</li>');
-                        });
-                        stats_div.append(bullets);
-                    });
-		    stats_div.append("<h2>Hit `Save room assignments' if you are happy with this.</h2>");
-                }
+				if (data['info'].length == 0) {
+					stats_div.html("Nothing better than status quo.");
+				} else {
+					stats_div.html("<h2>Warning: these have NOT been saved!</h2>");
+					var stats_table = $j("<table width='100%' cellpadding='5'>");
+					data['info'].forEach(function (entry) {
+						var stats_row = $j("<tr>");
+						entry.forEach(function (el) {
+							var stats_cell = $j("<td>");
+							label = el[0];
+							lines = el[1];
+							stats_cell.append('<h2>' + label + '</h2>');
+							var bullets = $j('<ul>');
+							lines.forEach(function(line) {
+								bullets.append('<li>' + line + '</li>');
+							});
+							stats_cell.append(bullets);
+							stats_row.append(stats_cell);
+						});
+						stats_table.append(stats_row);
+					});
+					stats_div.append(stats_table);
+					stats_div.append("<h2>Hit `Save room assignments' if you are happy with this.</h2>");
+				}
 			}
 		},
 		error: autoschedulerErrorHandler,
@@ -73,7 +81,7 @@ function saveAutoscheduler() {
 function clearAutoscheduler() {
 	$j('#autoschedulerinfo').html('Clearing...');
 	var post_data = {'csrfmiddlewaretoken': csrf_token()};
-    autoscheduler_data = '';
+	autoscheduler_data = '';
 
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/autoscheduler_clear",
@@ -88,10 +96,10 @@ function clearAutoscheduler() {
 }
 
 function toggleShowOptions(type) {
-    var options = document.getElementById("autoscheduler"+type+"div");
-    if (options.style.display === "none") {
+	var options = document.getElementById("autoscheduler"+type+"div");
+	if (options.style.display === "none") {
 	options.style.display = "block";
-    } else {
+	} else {
 	options.style.display = "none";
-    }
+	}
 }

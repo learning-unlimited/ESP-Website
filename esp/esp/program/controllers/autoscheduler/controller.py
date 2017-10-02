@@ -119,34 +119,34 @@ class AutoschedulerController(object):
     def get_scheduling_info(self):
         rows = []
         for action in self.optimizer.manipulator.history:
-            row = ["", []]
+            row = []
             if action["action"] == "schedule":
-                row[0] = "Scheduled section:"
-                row[1] += self.section_info(action["section"])
-                row[1].append("<b>in room:</b>")
-                row[1] += self.roomslot_info(action["start_roomslot"])
+                row.append(["Scheduled section:",
+                           self.section_info(action["section"])])
+                row.append(["In room:",
+                           self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "move":
-                row[0] = "Moved section:"
-                row[1] += self.section_info(action["section"])
-                row[1].append("<b>From room:</b>")
-                row[1] += self.roomslot_info(action["prev_start_roomslot"])
-                row[1].append("<b>To room:</b>")
-                row[1] += self.roomslot_info(action["start_roomslot"])
+                row.append(["Moved section:",
+                           self.section_info(action["section"])])
+                row.append(["From room:",
+                           self.roomslot_info(action["prev_start_roomslot"])])
+                row.append(["To room:",
+                           self.roomslot_info(action["start_roomslot"])])
             elif action["action"] == "unschedule":
-                row[0] = "Unscheduled section:"
-                row[1] += self.section_info(action["section"])
-                row[1].append("<b>From room:</b>")
-                row[1] += self.roomslot_info(action["prev_start_roomslot"])
+                row.append(["Unscheduled section:",
+                           self.section_info(action["section"])])
+                row.append(["From room:",
+                           self.roomslot_info(action["prev_start_roomslot"])])
             elif action["action"] == "swap":
-                row[0] = "Swapped sections:"
                 sec1, sec2 = action["sections"]
-                row[1] += self.section_info(sec1)
-                row[1].append("<b>Now in room:</b>")
-                row[1] += self.roomslot_info(sec1.assigned_roomslots[0])
-                row[1].append("<b>And section:</b>")
-                row[1] += self.section_info(sec2)
-                row[1].append("<b>Now in room:</b>")
-                row[1] += self.roomslot_info(sec2.assigned_roomslots[0])
+                row.append(["Swapped section:",
+                           self.section_info(sec1)])
+                row.append(["Now in room:",
+                           self.roomslot_info(sec1.assigned_roomslots[0])])
+                row.append(["and section:",
+                           self.section_info(sec2)])
+                row.append(["Now in room:",
+                           self.roomslot_info(sec2.assigned_roomslots[0])])
             else:
                 raise SchedulingError("History was broken.")
             rows.append(row)
@@ -177,6 +177,7 @@ class AutoschedulerController(object):
     def roomslot_info(self, roomslot):
         info = []
         info.append(roomslot.room.name)
+        info.append("Starting at time {}".format(roomslot.timeslot.start))
         info.append("Capacity: {}".format(roomslot.room.capacity))
         info.append("Furnishings:")
         for restype in roomslot.room.furnishings.itervalues():
@@ -184,7 +185,6 @@ class AutoschedulerController(object):
                 info.append(restype.name)
             else:
                 info.append("{}: {}".format(restype.name, restype.value))
-        info.append("Starting at time {}".format(roomslot.timeslot.start))
         return info
 
     def export_assignments(self):
