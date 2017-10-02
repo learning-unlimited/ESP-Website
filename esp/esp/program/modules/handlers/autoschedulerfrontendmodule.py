@@ -68,7 +68,7 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
         try:
             schedulerObj = AutoschedulerController(prog, **options)
             schedulerObj.compute_assignments()
-        except SchedulingError, e:
+        except (SchedulingError, ValueError), e:
             return {'response': [{'error_msg': str(e)}]}
 
         info = schedulerObj.get_scheduling_info()

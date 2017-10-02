@@ -29,7 +29,7 @@ class ResourceCriterion(object):
         self.name = name
 
     @staticmethod
-    def create_from_specification(spec, name="unnamed"):
+    def create_from_specification(spec, name, valid_res_types):
         """Construct a ResourceCriterion based on a specification string.
 
         The syntax is as follows, where all caps denotes a variable and
@@ -48,17 +48,20 @@ class ResourceCriterion(object):
         and where PREMISE and CONCLUSION must not both be section criteria or
         both be classroom criteria.
         """
-        criterion = re.match(r"if (.+) then (.+)", spec)
+        criterion = re.match(r"^if (.+) then (.+)$", spec)
         if not criterion:
             raise ValueError(
                 "ResourceCriteron spec must match 'if PREMISE then CONCLUSION")
         matchers = []
         for group in criterion.group(1, 2):
             resource_request_match = re.match(
-                r"(not)? section requests (.+) (with (.+))?", group)
+                r"^(not )?section requests (.+?)( with (.+))?$", group)
             if resource_request_match:
                 negate, res_type, value_regex = \
                     resource_request_match.group(1, 2, 4)
+                if res_type not in valid_res_types:
+                    raise ValueError(
+                        "Resource type {} doesn't exist".format(res_type))
                 if value_regex:
                     matcher = ResourceRequestMatcher(res_type, value_regex)
                 else:
@@ -68,7 +71,7 @@ class ResourceCriterion(object):
                 matchers.append(matcher)
                 continue
             resource_classroom_match = re.match(
-                r"(not)? classroom has (.+) (with (.+))?", group)
+                r"^(not )?classroom has (.+?)( with (.+))?$", group)
             if resource_classroom_match:
                 negate, res_type, value_regex = \
                     resource_classroom_match.group(1, 2, 4)
@@ -81,7 +84,7 @@ class ResourceCriterion(object):
                 matchers.append(matcher)
                 continue
             classroom_name_match = re.match(
-                r"(not)? classroom matches (.+)", group)
+                r"^(not )?classroom matches (.+)$", group)
             if classroom_name_match:
                 negate, name_regex = classroom_name_match.groups()
                 matcher = ClassroomNameMatcher(name_regex)
@@ -170,17 +173,17 @@ class ResourceRequestMatcher(BaseSectionMatcher):
     def section_matches(self, section):
         """Returns True if the section has this resource request,
         else False."""
-        if self.res_type.name not in section.resource_requests:
+        if self.res_type not in section.resource_requests:
             return False
         return (re.match(
             self.desired_value_regex,
-            section.resource_requests[self.res_type.name].value)
+            section.resource_requests[self.res_type].value)
             is not None)
 
     def __str__(self):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
-        string = "section requests {}".format(self.res_type.name)
+        string = "section requests {}".format(self.res_type)
         if self.desired_value_regex != ".*":
             string += " with {}".format(self.desired_value_regex)
         return string
@@ -216,17 +219,17 @@ class ResourceClassroomMatcher(BaseClassroomMatcher):
 
     def room_matches(self, room):
         """Returns True if the room has this resource request, else False."""
-        if self.res_type.name not in room.furnishings:
+        if self.res_type not in room.furnishings:
             return False
         return (re.match(
             self.attribute_value_regex,
-            room.furnishings[self.res_type.name].value)
+            room.furnishings[self.res_type].value)
             is not None)
 
     def __str__(self):
         """Returns the specification of this criterion; see
         ResourceCriterion.create_from_specification."""
-        string = "classroom has {}".format(self.res_type.name)
+        string = "classroom has {}".format(self.res_type)
         if self.attribute_value_regex != ".*":
             string += " with {}".format(self.attribute_value_regex)
         return string
@@ -247,17 +250,20 @@ class ClassroomNameMatcher(BaseClassroomMatcher):
         return "classroom matches {}".format(self.name_regex)
 
 
-def create_resource_criteria(specification_dicts, use_weights=False):
+def create_resource_criteria(specification_dicts, valid_res_types,
+                             use_weights=False):
     """Returns a list of resource criteria given a list of specification dicts;
     specification dicts later in the list override specification dicts earlier
     in the list. Specification dicts should map from resource criterion names
     to specifications."""
     specifications = util.override(specification_dicts)
     if use_weights:
-        return [(ResourceCriterion.create_from_specification(spec, name),
-                 weight) for name, (spec, weight) in specifications.iteritems()
+        return [(ResourceCriterion.create_from_specification(
+                    spec, name, valid_res_types), weight)
+                for name, (spec, weight) in specifications.iteritems()
                 if spec != "None" and spec is not None]
     else:
-        return [ResourceCriterion.create_from_specification(spec, name)
+        return [ResourceCriterion.create_from_specification(
+                    spec, name, valid_res_types)
                 for name, spec in specifications.iteritems()
                 if spec != "None" and spec is not None]

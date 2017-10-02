@@ -2,6 +2,7 @@
 
 from esp.program.models import ClassSection
 from esp.users.models import ESPUser
+from esp.resources.models import ResourceType
 from esp.program.controllers.autoscheduler import \
     db_interface, constraints, config, manipulator, resource_checker, \
     search
@@ -13,7 +14,7 @@ class AutoschedulerController(object):
         self.options = options
         constraint_options = {
             k.split('_', 1)[1]: v for k, v in options.iteritems()
-            if k.startswith("constraint_")}
+            if k.startswith("constraints_")}
         scoring_options = {
             k.split('_', 1)[1]: v for k, v in options.iteritems()
             if k.startswith("scorers_")}
@@ -26,13 +27,17 @@ class AutoschedulerController(object):
         constraint_names = [k for k, v in constraint_options.iteritems()
                             if v]
         resource_criteria = load_all_resource_criteria(prog)
+        valid_res_types = \
+            ResourceType.objects.filter(program=prog).values_list(
+                    "name", flat=True)
         resource_constraints = resource_checker.create_resource_criteria(
                 [{k: spec for k, (spec, wt) in resource_criteria.iteritems()
-                  if resource_options[k] == -1}])
+                  if resource_options[k] == -1}], valid_res_types)
         resource_scorers = resource_checker.create_resource_criteria(
                 [{k: (spec, resource_options[k])
                   for k, (spec, wt) in resource_criteria.iteritems()
-                  if resource_options[k] != -1}])
+                  if resource_options[k] != -1}], valid_res_types,
+                use_weights=True)
         schedule = db_interface.load_schedule_from_db(
             prog, **search_options)
         m = manipulator.ScheduleManipulator(

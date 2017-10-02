@@ -505,16 +505,23 @@ def load_resource_constraints(
                                   default="{}")
     try:
         tag_overrides = json.loads(tag_value)
-    except:
-        raise SchedulingError("Resource constraints Tag is malformatted: {}"
-                              .format(tag_value))
+        tag_overrides = {
+            k: v for k, v in tag_overrides.iteritems() if "_comment" not in k}
+    except ValueError as e:
+        raise SchedulingError(
+            "Resource constraints Tag is malformatted with error {}: {}"
+            .format(e, tag_value))
     specs = [config.DEFAULT_RESOURCE_CONSTRAINTS,
              tag_overrides,
              specification_overrides]
     if specs_only:
         return util.override(specs)
     else:
-        return resource_checker.create_resource_criteria(specs)
+        valid_res_types = \
+            ResourceType.objects.filter(program=program).values_list(
+                    "name", flat=True)
+        return resource_checker.create_resource_criteria(
+                specs, valid_res_types)
 
 
 def load_resource_scoring(
@@ -527,18 +534,25 @@ def load_resource_scoring(
                                   default="{}")
     try:
         tag_overrides = json.loads(tag_value)
-    except:
-        raise SchedulingError("Resource scoring Tag is malformatted: {}"
-                              .format(tag_value))
+        tag_overrides = {
+            k: v for k, v in tag_overrides.iteritems() if "_comment" not in k}
 
-    specs = [config.DEFAULT_RESOURCE_CONSTRAINTS,
+    except ValueError as e:
+        raise SchedulingError(
+            "Resource scoring Tag is malformatted with error {}: {}"
+            .format(e, tag_value))
+
+    specs = [config.DEFAULT_RESOURCE_SCORING,
              tag_overrides,
              specification_overrides]
     if specs_only:
         return util.override(specs)
     else:
+        valid_res_types = \
+            ResourceType.objects.filter(program=program).values_list(
+                    "name", flat=True)
         return resource_checker.create_resource_criteria(
-                specs, use_weights=True)
+                specs, valid_res_types, use_weights=True)
 
 
 def batch_convert_sections(

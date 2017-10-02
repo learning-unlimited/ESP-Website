@@ -113,10 +113,15 @@ DEFAULT_RESOURCE_CONSTRAINTS = {
             r"^\*.*$")
 }
 
+"""Create a tag containing a JSON dict with this key to the relevant program.
+To leave comments, create an entry with "_comment" in the name, e.g.
+"sample_item_comment" with the comment in the value. The key should be the name
+of the resource criterion, and the value should be a criterion specification.
+See resource_checker.ResourceCriterion for details."""
 RESOURCE_CONSTRAINTS_TAG = "autoscheduler_resource_constraint_overrides"
 
 """Default ResourceCriteria used for scoring. Format is:
-    name: (specification, weight)
+    name: [specification, weight]
 See the comment on DEFAULT_RESOURCE_CONSTRAINTS for more details. Weights are
 all relative, and the total weight will be determined by the total weight of
 the ResourceCriteriaScorer."""
@@ -125,6 +130,7 @@ DEFAULT_RESOURCE_SCORING = {
     # ResourceValueMatchingScorer should cover generic cases.
 }
 
+"""See the instructions for RESOURCE_CONSTRAINTS_TAG."""
 RESOURCE_SCORING_TAG = "autoscheduler_resource_scoring_overrides"
 
 
