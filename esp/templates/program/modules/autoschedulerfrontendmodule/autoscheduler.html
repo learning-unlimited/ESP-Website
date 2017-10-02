@@ -13,18 +13,33 @@ var program_url_base = '{{ program.getUrlBase }}';
 
 <h1>Run the Automatic Scheduling Assistant</h1>
 
-<p>Below appear constraints, scorers, and resource options. Constraints can be
-enabled or disabled. Scorers can have their weight changed; roughly speaking,
-the weight determines the relative importance of that criterion to scheduling
-a section. Resource criteria can have their weights configured; set their
-weight to -1 to make them required. If you want to add more types of resource
-criteria, you can modify the appropriate Tags for your program in the admin
-panel.</p>
-
-<p><b>Warning: Save frequently or you may lose your work because someone else moved a section you wanted.</b></p>
+<p>A list of options is below. You should generally be able to leave them at
+their defaults, but you can also play around with them if you prefer. If you
+think the defaults should be changed, you can create or modify the appropriate
+Tag; see the bottom of the page for more information. When you're ready, run
+the autoscheduler, then save the results if you are satisfied.</p>
 
 <form id="autoschedulerform" action="javascript:runAutoscheduler()" class="form-inline" method="POST">
 <center>
+    <h2>Search Options</h2>
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in search.items %}
+<tr>
+	<th>{{ option_key }}</th>
+	<td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+</table>
+    <h2>Constraint Options
+    	<a href="javascript:toggleShowOptions('constraints')">
+	<button type="button">Show/hide Constraint Options</button></a></h2>
+    <div id="autoschedulerconstraintsdiv" style="display:none">
+<p>Constraints control what the automatic scheduling assistant it allowed to
+do. If a constraint is Required, you can't change it, but at least you know
+it's there. Otherwise, you can turn it on or off as you like by setting it to
+True or False. For information on ResourceCriteriaConstraint in particular,
+see Resource Criterion Options below.</p>
 <table width="100%" cellpadding="5">
 {% for option_key, option_value in constraints.items %}
 <tr>
@@ -33,6 +48,19 @@ panel.</p>
 	<td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
+</table>
+    </div>
+    <h2>Scoring Options
+	<a href="javascript:toggleShowOptions('scorers')">
+	<button type="button">Show/hide Scoring Options</button></a></h2>
+    <div id="autoschedulerscorersdiv" style="display:none">
+<p>Scorers control what the automatic scheduling assistant optimizes for when
+it tries to find the best thing to do. They are aggregated together with
+different weights; you can configure the weights below. The weight roughly
+means how much, relatively speaking, the scorer matters for scheduling a
+single section. For more information on ResourceCriteriaScorer, see Resource
+Criterion Options below.</p>
+<table width="100%" cellpadding="5">
 {% for option_key, option_value in scorers.items %}
 <tr>
 	<th>{{ option_key }}</th>
@@ -40,6 +68,28 @@ panel.</p>
 	<td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
+</table>
+    </div>
+
+    <h2>Resource Criterion Options
+	<a href="javascript:toggleShowOptions('resources')">
+	<button type="button">Show/hide Resource Criterion
+	    Options</button></a></h2>
+    <div id="autoschedulerresourcesdiv" style="display:none">
+
+<p>A Resource Criterion controls how the autoscheduler treats resources and
+classrooms. You can control their weights below. If the weight is set to -1,
+then it is a constraint, i.e. the automatic scheduling assistant is not allowed
+to violate it. For example, if restrict_star_classrooms has weight -1, the
+automatic scheduling assistant is not allowed to schedule any sections into
+classrooms marked with a star; however, it does not necessarily prevent the
+assistant from unscheduling a class already in a star classroom if you ask it
+to. If the weight is nonnegative, it is used as a Scorer, as a part of the
+ResourceCriteriaScorer. The weight is automatically scaled so that the
+highest-weighted scorer criterion has weight 1. To add more resource criteria,
+see the bottom of this page.</p>
+
+<table width="100%" cellpadding="5">
 {% for option_key, option_value in resources.items %}
 <tr>
 	<th>{{ option_key }}</th>
@@ -47,14 +97,10 @@ panel.</p>
 	<td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
-{% for option_key, option_value in search.items %}
-<tr>
-	<th>{{ option_key }}</th>
-	<td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
-	<td>{{ option_value.1 }}</td>
-</tr>
-{% endfor %}
+</table>
+    </div>
 
+<table width="100%" cellpadding="5">
 <tr>
     <td colspan="3"><button type="submit" class="btn btn-primary btn-large" style="background-color:red; background-image: none;">Whee... Run Autoscheduler!</button></td>
 </tr>

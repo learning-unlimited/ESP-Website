@@ -34,6 +34,7 @@ function runAutoscheduler() {
                 if (data['info'].length == 0) {
                     stats_div.html("Nothing better than status quo.");
                 } else {
+		    stats_div.html("<h2>Warning: these have NOT been saved!</h2>");
                     data['info'].forEach(function (el) {
                         label = el[0];
                         lines = el[1];
@@ -44,6 +45,7 @@ function runAutoscheduler() {
                         });
                         stats_div.append(bullets);
                     });
+		    stats_div.append("<h2>Hit `Save room assignments' if you are happy with this.</h2>");
                 }
 			}
 		},
@@ -83,4 +85,13 @@ function clearAutoscheduler() {
 		error: autoschedulerErrorHandler,
 		dataType: 'json'
 	});
+}
+
+function toggleShowOptions(type) {
+    var options = document.getElementById("autoscheduler"+type+"div");
+    if (options.style.display === "none") {
+	options.style.display = "block";
+    } else {
+	options.style.display = "none";
+    }
 }
