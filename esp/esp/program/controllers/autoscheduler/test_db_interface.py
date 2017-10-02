@@ -9,9 +9,10 @@ import esp.program.controllers.autoscheduler.db_interface as db_interface
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 from esp.cal.models import Event
 from esp.program.models.class_ import \
-        ClassSubject, ClassSection
+        ClassSubject, ClassSection, ClassCategories
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules import module_ext
 
 
 class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
@@ -72,7 +73,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         start_time = extra_settings["extra_timeslot_start"]
         end_time = start_time + datetime.timedelta(
                 minutes=settings["timeslot_length"])
-        Event.objects.get_or_create(
+        self.extra_timeslot, created = Event.objects.get_or_create(
                 program=self.program,
                 event_type=self.event_type,
                 start=start_time,
@@ -358,7 +359,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
     def remove_class_simple_model(self, schedule=None):
         """Removes section 0, as well as timeslot 1 of room 1. (This corresponds
         to section 0 being scheduled in this roomslot and us not knowing about
-        section 0."""
+        section 0. Also removes the availabilities of the teachers teaching at
+        that time."""
         if schedule is None:
             schedule = self.schedule
         section = schedule.class_sections[self.initial_section_id]
@@ -377,7 +379,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         schedule.run_consistency_checks()
         schedule.run_constraint_checks()
 
-    def schedule_class_simple_db(self):
+    def schedule_class_simple_db(self, lock=False):
         """Schedules section 0 in timeslot 1 of room 1.
         Returns said section, timeslot, and room.
         This operates on the database."""
@@ -389,6 +391,10 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         assert room.is_available(), "Room wasn't available??"
         section_obj.assign_meeting_times([timeslot])
         section_obj.assign_room(room)
+        if lock:
+            module_ext.AJAXSectionDetail.objects.get_or_create(
+                program=self.program, cls_id=section_obj.id, comment="locked",
+                locked=True)
         return section_obj, timeslot, room
 
     def test_schedule_load(self):
@@ -446,3 +452,68 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         except SchedulingError:
             self.fail("Schedule second save crashed with error: \n{}"
                       .format(traceback.format_exc()))
+
+    def test_load_lunch(self):
+        """Make sure that lunch classes cause lunch timeslots to be loaded,
+        but that we can exclude lunch classes. Note that we are NOT testing
+        that we can successfully load lunch classes if we wanted."""
+        lunch, created = ClassCategories.objects.get_or_create(
+                category="Lunch", symbol="L")
+        subj, created = ClassSubject.objects.get_or_create(
+                title="Lunch!", category=lunch, grade_min=7, grade_max=12,
+                parent_program=self.program, class_size_max=2000,
+                class_info="Get fud!")
+        subj.accept()
+        lunch_timeslots = [self.timeslots[1], self.timeslots[2],
+                           self.extra_timeslot]
+        lunch_times = [(e.start, e.end) for e in lunch_timeslots]
+        for i in xrange(3):
+            subj.add_section(duration=self.settings["timeslot_length"] / 60.0)
+        secs = subj.get_sections()
+        for i, t in enumerate(lunch_timeslots):
+            secs[i].assign_start_time(t)
+        # We don't exclude scheduled because that would cause lunch to also
+        # be incidentally excluded. This way, we can test lunch exclusion.
+        loaded_schedule = db_interface.load_schedule_from_db(
+                self.program, exclude_lunch=True, exclude_scheduled=False)
+        # Since lunch should be excluded and we didn't change anything else,
+        # and we aren't testing for equality on lunch blocks, the loaded
+        # program should still be equivalent to the original one
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
+        loaded_lunch = loaded_schedule.lunch_timeslots
+        self.assertEqual(len(loaded_lunch), 2,
+                         "Should have loaded lunch on 2 days")
+        start = lunch_timeslots[0].start
+        start_day = (start.year, start.month, start.day)
+        self.assertIn(start_day, loaded_lunch,
+                      "Couldn't find first day of lunch")
+        day1 = loaded_lunch[start_day]
+        self.assertEqual(len(day1), 2,
+                         "Should have 2 lunch timeslots on day 1")
+        for i, timeslot in enumerate(day1):
+            self.assertEqual((timeslot.start, timeslot.end), lunch_times[i],
+                             "Loaded lunch time was wrong")
+        start2 = lunch_timeslots[2].start
+        start_day2 = (start2.year, start2.month, start2.day)
+        self.assertIn(start_day2, loaded_lunch,
+                      "Cloudln't find second day of lunch")
+        day2 = loaded_lunch[start_day2]
+        self.assertEqual(len(day2), 1, "Should have 1 lunch timeslot on day 2")
+        self.assertEqual((day2[0].start, day2[0].end), lunch_times[2],
+                         "LOaded lunch time was wrong on day 2")
+
+    def test_load_locked_class(self):
+        """Make sure that we can choose to load a locked class or not."""
+        section_obj, event, room_obj = self.schedule_class_simple_db(lock=True)
+        self.remove_class_simple_model()
+        loaded_schedule = db_interface.load_schedule_from_db(
+            self.program, exclude_scheduled=False, exclude_locked=True)
+        room = loaded_schedule.classrooms[room_obj.name]
+        # Assert that the room isn't available at that time.
+        self.assertNotIn(event.id, [r.timeslot.id for r in room.availability])
+        self.assert_schedule_equality(loaded_schedule, self.schedule)
+        self.schedule = self.setUpSchedule(self.settings, self.extra_settings)
+        self.schedule_class_simple_model(recompute_hash=True)
+        loaded_schedule = db_interface.load_schedule_from_db(
+            self.program, exclude_scheduled=False, exclude_locked=False)
+        self.assert_schedule_equality(loaded_schedule, self.schedule)

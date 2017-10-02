@@ -1,10 +1,13 @@
 (Also check TODOs in comments)
 
 Double-check that locked classes are ignored?
+Add tags to the list of all tags
+Don't schedule lunch classes??
 
 Bugs:
 
 save() should check whether sections are locked before saving
+Consider modifying checking code on the save functionality itself?
 save() might have an issue if a teacher is teaching a non-recognized class and
 it gets moved?
 save() can have an issue if someone moves a class after you saved but before
@@ -28,6 +31,8 @@ Implement ResourceMovementScorer
 Clean up frontend display (e.g. hide stuff, split sections)
 Frontend should warn that you haven't saved yet
 
+Reduce loading times?
+
 Robustness:
 
 save() might want to check to make sure that the lists of teachers teaching each
@@ -39,11 +44,7 @@ saving errors should be more informative
 be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
-db tests should load lunch blocks, resource criteria, constraints, and
-locked sections
-more tests for loading teacher availabilities with classes already scheduled
-db tests should test for when classes are already scheduled (or otherwise
-excluded classes), also saving
+db tests should load resource criteria, constraints, scorers?
 db test for partial save rollback
 model tests for model functions
 tests for resource checker

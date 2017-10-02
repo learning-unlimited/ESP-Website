@@ -29,6 +29,10 @@ def load_schedule_from_db(
         program, require_approved=True, exclude_lunch=True,
         exclude_walkins=True, exclude_scheduled=True, exclude_locked=True,
         **kwargs):
+    """Loads an AS_Schedule based on the database of a program. exclude_locked
+    means that classes locked on the AJAX scheduler are not loaded (and instead
+    are blocked off as unavailable), and has nothing to do with the lock_level
+    for a ResourceAssignment."""
     ESPUser.create_membership_methods()
 
     timeslots = \
@@ -89,7 +93,10 @@ def load_sections_and_teachers_and_classrooms(
 
     print "Filtered"
 
-    # For all excluded sections, remove their availabilities
+    # For all excluded sections, remove their availabilities. What literally
+    # happens here is that teacher availabilities are removed for every
+    # section, and then their availabilities are added back for all sections
+    # that have been loaded in the constructor of the AS_ClassSection.
 
     teacher_ids = sections.values_list("parent_class__teachers", flat=True)
     teaching_times = ClassSection.objects.filter(
