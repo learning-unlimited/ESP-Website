@@ -236,16 +236,12 @@ def save(schedule, check_consistency=True, check_constraints=True):
             if section.is_scheduled():
                 schedule_section(
                     section_obj, meeting_times, room_objs[0], ajax_change_log)
-        check_can_schedule_sections(section_infos)  # Check again.
 
-    # Update the sections' initial_state so we don't confuse
-    # ourselves
-    for section in changed_sections:
-        section.recompute_hash()
-    # print "Waiting..."
-    # for i in xrange(int(5e8)):
-    #     pass
-    # print "Done"
+        # Check again in case something bad happened while we were saving.
+        for section in changed_sections:
+            section.recompute_hash()
+            ensure_section_not_moved(so, section)
+        check_can_schedule_sections(section_infos)
 
 
 @util.timed_func("db_interface_check_can_schedule_sections")
@@ -296,8 +292,8 @@ def ensure_section_not_moved(section, as_section):
     was moved, otherwise does nothing."""
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
-        raise SchedulingError("Section {} was \
-                moved.".format(section.emailcode))
+        raise SchedulingError(
+                "Section {} was moved.".format(section.emailcode))
 
 
 @util.timed_func("db_interface_unschedule_section")

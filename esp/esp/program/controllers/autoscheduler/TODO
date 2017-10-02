@@ -45,9 +45,11 @@ be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
 db tests should load resource criteria, constraints, scorers?
-db test for save raising if there's a conflict
+db test for save raising if there's a conflict or if someone moved the class
+(??)
 model tests for model functions
 tests for resource checker
+test manipulator, constraints, scoring???
 
 need unittests for schedule operations and saving somehow
 unittest for already-scheduled multihour class
