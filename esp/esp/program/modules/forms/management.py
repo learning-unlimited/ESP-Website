@@ -3,6 +3,7 @@ from django import forms
 
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource
+from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
 from esp.program.models.class_ import ClassSubject, ClassSection
 
@@ -145,6 +146,7 @@ class ClassCancellationForm(forms.Form):
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule all sections of this class, in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail all students who applied for this class in a lottery, in addition to those that are actually enrolled.', required=False)
+    text_students = forms.BooleanField(help_text='Check this box to send a text message to students who have opted to receive text messages.', required=False)
     email_teachers = forms.BooleanField(initial=True, help_text='Check this box to notify all teachers of this class that this class has been cancelled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
 
@@ -153,12 +155,15 @@ class ClassCancellationForm(forms.Form):
         initial['target'] = kwargs.pop('subject', None)
         kwargs['initial'] = initial
         super(ClassCancellationForm, self).__init__(*args, **kwargs)
+        if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
+            self.fields['text_students'].widget = forms.HiddenInput()
 
 class SectionCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
     explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     unschedule = forms.BooleanField(help_text='Check this box to unschedule this section in order to free up space for others.  This will delete the original time and location and you won\'t be able to recover them.', required=False)
     email_lottery_students = forms.BooleanField(help_text='Check this box to e-mail students who applied for this section in a lottery, in addition to those that are actually enrolled.', required=False)
+    text_students = forms.BooleanField(help_text='Check this box to send a text message to students who have opted to receive text messages.', required=False)
     email_teachers = forms.BooleanField(initial=True, help_text='Check this box to notify all teachers of this class that this section has been cancelled.', required=False)
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
 
@@ -167,3 +172,5 @@ class SectionCancellationForm(forms.Form):
         initial['target'] = kwargs.pop('section', None)
         kwargs['initial'] = initial
         super(SectionCancellationForm, self).__init__(*args, **kwargs)
+        if not initial['target'].parent_program.hasModule('GroupTextModule') or not GroupTextModule.is_configured():
+            self.fields['text_students'].widget = forms.HiddenInput()

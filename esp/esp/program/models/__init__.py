@@ -314,6 +314,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def niceSubName(self):
         return self.name
 
+    def grades(self):
+        """ Return an iterable list of the grades for a program. """
+        return range(self.grade_min, self.grade_max + 1)
+
     @property
     def program_type(self):
         return self.url.split('/')[0]

@@ -82,7 +82,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False)
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False, widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -94,7 +94,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
-    class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False)
+    class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False, widget=BlankSelectWidget())
     hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
@@ -151,8 +151,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if Tag.getTag('grade_ranges'):
             grade_ranges = json.loads(Tag.getTag('grade_ranges'))
             self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
+            self.fields['grade_range'].required = True
             hide_field( self.fields['grade_min'] )
+            self.fields['grade_min'].required = False
             hide_field( self.fields['grade_max'] )
+            self.fields['grade_max'].required = False
         else:
             hide_field( self.fields['grade_range'] )
         if crmi.use_class_size_max:
@@ -253,6 +256,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Get class_style_choices from tag, otherwise hide the field
         if Tag.getTag('class_style_choices'):
             self.fields['class_style'].choices = json.loads(Tag.getTag('class_style_choices'))
+            self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])
         # plus subprogram section wizard
@@ -322,7 +326,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
 
         fields = [('category', open_class_category.id),
                   ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
-                  ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
+                  ('grade_range', ''), ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
         for field, default in fields:

@@ -355,8 +355,16 @@ def userview(request):
     """ Render a template displaying all the information about the specified user """
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
-    except:
+    except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
+
+    if 'program' in request.GET:
+        try:
+            program = Program.objects.get(id=request.GET['program'])
+        except Program.DoesNotExist:
+            raise ESPError("Sorry, can't find that program.", log=False)
+    else:
+        program = user.get_last_program_with_profile()
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -382,6 +390,8 @@ def userview(request):
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
         'printers': StudentRegCore.printer_names(),
+        'all_programs': Program.objects.all().order_by('-id'),
+        'program': program,
     }
     return render_to_response("users/userview.html", request, context )
 

@@ -181,7 +181,7 @@ class AvailabilityModule(ProgramModuleObj):
             if missing_tsids:
                 raise ESPError('Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids))), log=False)
 
-            blank = (not (bool(len(timeslot_ids))))
+            blank = (not (bool(len(timeslot_ids) + len(avail_and_teaching))))
             if not blank:
                 for timeslot in timeslots:
                     teacher.addAvailableTime(self.program, timeslot)
