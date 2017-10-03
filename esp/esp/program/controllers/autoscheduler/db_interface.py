@@ -25,6 +25,7 @@ from esp.program.controllers.autoscheduler import \
     util, config, resource_checker
 
 
+@util.timed_func("db_interface_load_schedule_from_db")
 def load_schedule_from_db(
         program, require_approved=True, exclude_lunch=True,
         exclude_walkins=True, exclude_scheduled=True, exclude_locked=True,
@@ -58,6 +59,7 @@ def load_schedule_from_db(
     return schedule
 
 
+@util.timed_func("db_interface_load_sections_and_teachers_and_classrooms")
 def load_sections_and_teachers_and_classrooms(
         schedule, require_approved, exclude_lunch,
         exclude_walkins, exclude_scheduled, exclude_locked):
@@ -104,20 +106,21 @@ def load_sections_and_teachers_and_classrooms(
             "parent_class__teachers", "meeting_times")
     teaching_times_by_teacher = {teacher: set() for teacher in teacher_ids}
     availabilities_by_teacher = {teacher: [] for teacher in teacher_ids}
+
     for teacher, time in teaching_times:
         if time is not None and teacher in teaching_times_by_teacher:
             teaching_times_by_teacher[teacher].add(time)
     if schedule.program.hasModule("AvailabilityModule"):
         user_availabilities = UserAvailability.objects.filter(
             event__program=schedule.program).order_by(
-                "event__start").select_related()
-        for availability in user_availabilities:
-            teacher = availability.user.id
+                "event__start").values_list(
+                    "user__id", "event__start", "event__end", "event__id")
+        for teacher, event_start, event_end, event_id \
+                in user_availabilities:
             if teacher in teacher_ids:
-                event = availability.event
                 teaching = teaching_times_by_teacher[teacher]
-                times = (event.start, event.end)
-                if event.id not in teaching \
+                times = (event_start, event_end)
+                if event_id not in teaching \
                         and times in schedule.timeslot_dict:
                     availabilities_by_teacher[teacher].append(
                         schedule.timeslot_dict[times])
@@ -387,6 +390,7 @@ def convert_classection_obj(
     return as_section
 
 
+@util.timed_func("db_interface_load_section_assignments")
 def load_section_assignments(section_ids):
     """Returns a dict mapping from section id to Classroom resources, and
     from section id to lists of meeting times, and from section id to
@@ -428,6 +432,7 @@ def load_section_assignments(section_ids):
         requests_by_section
 
 
+@util.timed_func("db_interface_section_satisfies_constraints")
 def section_satisfies_constraints(
         section_obj, rooms_by_section, meeting_times_by_section):
     """Returns False if the section:
@@ -460,6 +465,7 @@ def section_satisfies_constraints(
     return True
 
 
+@util.timed_func("db_interface_load_constraints")
 def load_constraints(program, constraints_overrides=None):
     """Returns constraint names loading from defaults, the Tag in the
     db, and the given overrides, in increasing order of precedence."""
@@ -481,6 +487,7 @@ def load_constraints(program, constraints_overrides=None):
          tag_overrides, constraints_overrides])
 
 
+@util.timed_func("db_interface_load_scorers")
 def load_scorers(program, scorer_overrides=None):
     """Returns scorer names and weights loading from defaults, the Tag in the
     db, and the given overrides, in increasing order of precedence."""
@@ -501,6 +508,7 @@ def load_scorers(program, scorer_overrides=None):
         [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides])
 
 
+@util.timed_func("db_interface_load_resource_constraints")
 def load_resource_constraints(
         program, specification_overrides=None, specs_only=False,
         ignore_comments=True):
@@ -533,6 +541,7 @@ def load_resource_constraints(
                 specs, valid_res_types)
 
 
+@util.timed_func("db_interface_load_resoure_scoring")
 def load_resource_scoring(
         program, specification_overrides=None, specs_only=True,
         ignore_comments=True):
@@ -566,6 +575,7 @@ def load_resource_scoring(
                 specs, valid_res_types, use_weights=True)
 
 
+@util.timed_func("db_interface_batch_convert_sections")
 def batch_convert_sections(
         sections, program, teachers_by_section, timeslot_dict, rooms,
         rooms_by_section, meeting_times_by_section,
@@ -578,6 +588,7 @@ def batch_convert_sections(
             if s is not None]
 
 
+@util.timed_func("db_interface_scheduling_hash_of")
 def scheduling_hash_of(
         section, rooms_by_section=None, meeting_times_by_section=None):
     """Creates a unique hash based on the timeslots and rooms assigned to a
@@ -594,6 +605,7 @@ def scheduling_hash_of(
     return hashlib.md5(state_str).hexdigest()
 
 
+@util.timed_func("db_interface_convert_classroom_resources")
 def convert_classroom_resources(
         classrooms, program, timeslot_dict, known_sections,
         rooms_by_section, meeting_times_by_section):
@@ -678,10 +690,12 @@ def convert_event(event, program):
     return AS_Timeslot(event.start, event.end, event.id, None)
 
 
+@util.timed_func("db_interface_batch_convert_events")
 def batch_convert_events(events, program):
     return map(lambda e: convert_event(e, program), events)
 
 
+@util.timed_func("db_interface_batch_find_events")
 def batch_find_events(events, timeslot_dict):
     """Finds the timeslots in the dict matching the events. Ignores if it
     doesn't exit."""
@@ -696,6 +710,7 @@ def batch_find_events(events, timeslot_dict):
     return sorted(timeslots)
 
 
+@util.timed_func("db_interface_batch_convert_roomslots")
 def batch_convert_roomslots(events, room, timeslot_dict):
     return map(lambda e: AS_RoomSlot(
         timeslot_dict[(e.start, e.end)], room), events)
@@ -706,12 +721,14 @@ def convert_restypes(restype, value=""):
     return AS_ResourceType(restype.name, restype.id, value)
 
 
+@util.timed_func("db_interface_batch_convert_resource_requests")
 def batch_convert_resource_requests(res):
     """Converts from ResourceRequests to AS_ResourceTypes."""
     return map(
         lambda r: convert_restypes(r.res_type, r.desired_value), res)
 
 
+@util.timed_func("db_interface_batch_convert_resources")
 def batch_convert_resources(res):
     """Converts from Resources to AS_ResourceTypes."""
     return map(

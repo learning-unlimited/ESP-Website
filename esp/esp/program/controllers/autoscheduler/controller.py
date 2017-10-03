@@ -52,6 +52,8 @@ class AutoschedulerController(object):
         self.section = get_section_by_emailcode(
                 search_options["section_emailcode"], schedule)
         self.timeout = search_options["timeout"]
+        if config.USE_TIMER:
+            m.print_recorded_times()
 
     @staticmethod
     def constraint_options(prog):
