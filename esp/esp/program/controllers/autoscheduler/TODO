@@ -1,7 +1,5 @@
 (Also check TODOs in comments)
 
-Add configuration documentation to the bottom of the UI and recommendations for
-dealing with poor results
 Frontend doesn't actually let you do multiple things at once?
 
 Test the frontend to make sure that the display for schedule, unschedule, move,
@@ -9,12 +7,7 @@ and swap are all ok
 
 Double-check that scoring is sane
 
-Scoring printout should be by total contribution, and with less sigfigs
-
-Make sure that turning off resource criteria actually works
-
-If there's nothing better than the status quo, don't send major score changes.
-
+Make sure that turning off resource criteria actually works in the frontend
 
 
 Bugs:

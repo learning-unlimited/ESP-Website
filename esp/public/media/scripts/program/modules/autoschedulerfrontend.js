@@ -55,7 +55,7 @@ function runAutoscheduler() {
 					});
 					stats_div.append(stats_table);
 					stats_table_html = stats_table.html();
-					stats_div.append("<h2>Hit `Save room assignments' if you are happy with this.</h2>");
+					stats_div.append("<b>Hit `Save room assignments' if you are happy with this. If not, you can try playing with the parameters, or locking some sections in the AJAX scheduler (but wait a couple seconds before re-running if you do), or you can just go schedule something yourself with the AJAX scheduler. Note that these assignments will be lost if you run the automatic scheduling assistant again.</b>");
 				}
 			}
 		},
