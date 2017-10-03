@@ -576,7 +576,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         def raise_after_one():
             if not rvs.pop(0):
                 raise SchedulingError("oops")
-        db_interface.check_can_schedule_sections = lambda x: raise_after_one()
+        db_interface.check_can_schedule_sections = \
+                lambda x, y: raise_after_one()
         try:
             for s in sections:
                 s.clear_roomslots()
