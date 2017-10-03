@@ -1,10 +1,17 @@
 (Also check TODOs in comments)
 
-Add configuration documentation to the bottom of the UI
+Add configuration documentation to the bottom of the UI and recommendations for
+dealing with poor results
 Frontend doesn't actually let you do multiple things at once?
 
 Test the frontend to make sure that the display for schedule, unschedule, move,
 and swap are all ok
+
+Double-check that scoring is sane
+
+Scoring printout should be by total contribution, and with less sigfigs
+
+
 
 Bugs:
 

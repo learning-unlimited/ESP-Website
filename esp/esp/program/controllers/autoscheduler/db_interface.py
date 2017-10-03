@@ -478,9 +478,10 @@ def load_constraints(program, constraints_overrides=None):
 
     try:
         tag_overrides = json.loads(tag_value)
-    except:
-        raise SchedulingError("Constraint Tag is malformatted: {}"
-                              .format(tag_value))
+    except ValueError as e:
+        raise SchedulingError(
+                "Constraints Tag is malformatted with error {}: {}" .format(
+                    e, tag_value))
 
     return util.override(
         [config.DEFAULT_CONSTRAINTS_ENABLED,
@@ -500,9 +501,9 @@ def load_scorers(program, scorer_overrides=None):
 
     try:
         tag_overrides = json.loads(tag_value)
-    except:
-        raise SchedulingError("Scoring Tag is malformatted: {}"
-                              .format(tag_value))
+    except ValueError as e:
+        raise SchedulingError("Scoring Tag is malformatted with error {}: {}"
+                              .format(e, tag_value))
 
     return util.override(
         [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides])
