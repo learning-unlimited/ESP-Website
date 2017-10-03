@@ -7,14 +7,11 @@ and swap are all ok
 
 Double-check that scoring is sane
 
-
 Bugs:
 
 AJAX scheduler should only link to the Autoscheduler Frontend if said module
 exists.
 
-save() should check whether sections are locked before saving, if locked
-    classes are excluded
 search might try to unschedule sections multiple times
 
 New features:
@@ -36,7 +33,6 @@ save() might want to check to make sure that the lists of teachers teaching each
 section don't change either
 
 saving is probably really slow
-saving errors should be more informative
 
 be able to deal with schedules with multi-scheduled rooms
 
