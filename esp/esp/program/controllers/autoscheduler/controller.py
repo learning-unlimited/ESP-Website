@@ -203,7 +203,9 @@ class AutoschedulerController(object):
             else:
                 new_row += [format_row(r) for r in diffs]
             new_row += ["Total change: {}".format(total_change)]
-            rows.append([["Major score changes:", new_row]])
+            rows.append([[
+                "Major score changes (weight, change, contribution):",
+                new_row]])
         return rows
 
     def section_identifier(self, section):

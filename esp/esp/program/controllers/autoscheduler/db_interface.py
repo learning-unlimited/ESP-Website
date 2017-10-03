@@ -533,7 +533,10 @@ def load_resource_constraints(
              tag_overrides,
              specification_overrides]
     if specs_only:
-        return util.override(specs)
+        return {
+            name: spec for name, spec
+            in util.override(specs).iteritems()
+            if spec != "None" and spec is not None}
     else:
         valid_res_types = \
             ResourceType.objects.filter(program=program).values_list(
@@ -567,7 +570,10 @@ def load_resource_scoring(
              tag_overrides,
              specification_overrides]
     if specs_only:
-        return util.override(specs)
+        return {
+            name: (spec, weight) for name, (spec, weight)
+            in util.override(specs).iteritems()
+            if spec != "None" and spec is not None}
     else:
         valid_res_types = \
             ResourceType.objects.filter(program=program).values_list(
