@@ -31,7 +31,8 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
             "scorers": AutoschedulerController.scorer_options(prog),
             "resources": AutoschedulerController.resource_options(prog),
             "search": AutoschedulerController.search_options(
-                prog, section=request.GET.get("section", None))
+                prog, section=request.GET.get("section", None)),
+            "program": prog
         }
         return render_to_response(
             self.baseDir()+'autoscheduler.html', request, context)

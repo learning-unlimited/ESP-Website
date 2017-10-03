@@ -11,6 +11,10 @@ Double-check that scoring is sane
 
 Scoring printout should be by total contribution, and with less sigfigs
 
+Make sure that turning off resource criteria actually works
+
+If there's nothing better than the status quo, don't send major score changes.
+
 
 
 Bugs:
