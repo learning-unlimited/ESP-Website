@@ -22,7 +22,8 @@ class AS_Schedule(object):
     def __init__(self, program=None, timeslots=None, class_sections=None,
                  teachers=None, classrooms=None, lunch_timeslots=None,
                  required_resource_criteria=None,
-                 optional_resource_criteria=None, constraints=None):
+                 optional_resource_criteria=None, constraints=None,
+                 exclude_locked=True):
         """Argument types:
          - program is a Program object
          - timeslots is a sorted list of AS_Timeslots
@@ -32,6 +33,8 @@ class AS_Schedule(object):
          - lunch_timeslots is a list of (lunch_start, lunch_end).
          - constraints is a subclass of BaseConstraint (e.g.
            CompositeConstraint)
+         - exclude_locked is a boolean; it doesn't do anything here,
+                and is only for use in db_interface.save().
         """
         self.program = program
         self.timeslots = timeslots if timeslots is not None else []
@@ -53,6 +56,8 @@ class AS_Schedule(object):
         # checks.
         self.constraints = constraints if constraints is not None else \
             CompositeConstraint([])
+
+        self.exclude_locked = exclude_locked
 
         self.run_consistency_checks()
         self.run_constraint_checks()

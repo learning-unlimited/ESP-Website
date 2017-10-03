@@ -371,6 +371,10 @@ def get_section_by_emailcode(emailcode, schedule):
     for section in sections:
         if section.emailcode() == emailcode:
             if section.id not in schedule.class_sections:
-                raise SchedulingError("Section not found.")
+                raise SchedulingError(
+                        "Scheduler can't handle this section. This may "
+                        "be because it's locked, unapproved, scheduled "
+                        "weirdly, or otherwise excluded from sections "
+                        "the assistant is allowed to touch.")
             return schedule.class_sections[section.id]
     raise SchedulingError("Section not found.")

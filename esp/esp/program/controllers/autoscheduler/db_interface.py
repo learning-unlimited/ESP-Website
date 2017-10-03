@@ -46,7 +46,8 @@ def load_schedule_from_db(
     lunch_timeslots = [(e.start, e.end) for e in lunch_events]
 
     schedule = AS_Schedule(program=program, timeslots=timeslots,
-                           lunch_timeslots=lunch_timeslots)
+                           lunch_timeslots=lunch_timeslots,
+                           exclude_locked=exclude_locked)
 
     schedule.class_sections, schedule.teachers, schedule.classrooms = \
         load_sections_and_teachers_and_classrooms(
@@ -236,7 +237,7 @@ def save(schedule, check_consistency=True, check_constraints=True):
             if len(section_obj.get_meeting_times()) > 0:
                 unschedule_section(so, ajax_change_log)
 
-        check_can_schedule_sections(section_infos)
+        check_can_schedule_sections(section_infos, schedule)
         for section, section_obj, possible_conflicts, meeting_times, \
                 room_objs in section_infos:
             if section.is_scheduled():
@@ -248,11 +249,11 @@ def save(schedule, check_consistency=True, check_constraints=True):
             section = schedule.class_sections[so.id]
             section.recompute_hash()
             ensure_section_not_moved(so, section)
-        check_can_schedule_sections(section_infos)
+        check_can_schedule_sections(section_infos, schedule)
 
 
 @util.timed_func("db_interface_check_can_schedule_sections")
-def check_can_schedule_sections(section_infos):
+def check_can_schedule_sections(section_infos, schedule):
     """Takes a section_infos, containing:
         (AS_ClassSection, ClassSection, [(teacher_id, [other_sections])],
         meeting_times, room_objs)
@@ -262,8 +263,15 @@ def check_can_schedule_sections(section_infos):
     A SchedulingError is thrown if any of thes occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
+    locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(
+            program=schedule.program, locked=True).values_list(
+                    "cls_id", flat=True))
+
     for section, section_obj, possible_conflicts, meeting_times, room_objs \
             in section_infos:
+        if section.id in locked_sections:
+            raise SchedulingError("Section {} is locked!".format(
+                section_obj.emailcode()))
         if section.is_scheduled():
             start_time = section.assigned_roomslots[0].timeslot.start
             end_time = section.assigned_roomslots[-1].timeslot.end
