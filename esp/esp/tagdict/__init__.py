@@ -103,4 +103,8 @@ all_program_tags = {
     'student_lottery_run': (False, ""),
     'formstack_id': (False, ""),
     'formstack_viewkey': (False, ""),
+    'autoscheduler_constraint_overrides': (False, ""),
+    'autoscheduler_scorer_weight_overrides': (False, ""),
+    'autoscheduler_resource_constraint_overrides': (False, ""),
+    'autoscheduler_resource_scoring_overrides': (False, ""),
 }
