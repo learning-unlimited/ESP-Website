@@ -139,6 +139,13 @@ class CompositeScorer(BaseScorer):
             total_score += score * weight * scorer.scaling
         return total_score / self.total_weight
 
+    def get_all_score_schedule(self):
+        """Returns the scores from each component scorer in alphabetical order
+        by scorer name."""
+        scores = [(scorer.__class__.__name__, weight, scorer.score_schedule())
+                  for scorer, weight in self.scorers_and_weights]
+        return (sorted(scores, key=lambda x: x[0]), self.score_schedule())
+
     # See note in BaseScorer about these being commented out.
     # NOTE: If you uncomment these, make sure you update the computation to
     # account for scorer scaling, since these were written before that was

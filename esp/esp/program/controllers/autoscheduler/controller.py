@@ -54,6 +54,8 @@ class AutoschedulerController(object):
                 search_options["section_emailcode"], schedule)
         self.timeout = search_options["timeout"]
         self.schedule = self.optimizer.manipulator.schedule
+        self.initial_scores, self.initial_total_score = \
+            self.optimizer.manipulator.scorer.get_all_score_schedule()
         if config.USE_TIMER:
             m.print_recorded_times()
 
@@ -172,6 +174,25 @@ class AutoschedulerController(object):
             else:
                 raise SchedulingError("History was broken.")
             rows.append(row)
+        final_scores, final_total_score = \
+            self.optimizer.manipulator.scorer.get_all_score_schedule()
+        diffs = []
+        for (scorer, weight, old_score), (scorer2, weight, new_score) in \
+                zip(self.initial_scores, final_scores):
+            assert (scorer == scorer2), "Scorers changed"
+            diffs.append((
+                scorer, weight,
+                (new_score - old_score) * len(self.schedule.class_sections)))
+        # Sort descending by score change
+        diffs = sorted(diffs, key=lambda x: -x[2])
+        if len(diffs) > 6:
+            diffs = diffs[:3] + diffs[-3:]
+        total_change = (final_total_score - self.initial_total_score) \
+            * len(self.schedule.class_sections)
+        rows.append([["Major score changes:", [
+            "{} (wt {}): {}".format(scorer, weight, delta)
+            for scorer, weight, delta in diffs]
+            + ["Total change: {}".format(total_change)]]])
         return rows
 
     def section_identifier(self, section):
