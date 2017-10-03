@@ -302,7 +302,7 @@ def ensure_section_not_moved(section, as_section):
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
         raise SchedulingError(
-                "Section {} was moved.".format(section.emailcode))
+                "Section {} was moved.".format(section.emailcode()))
 
 
 @util.timed_func("db_interface_unschedule_section")

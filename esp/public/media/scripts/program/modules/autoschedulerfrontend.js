@@ -1,5 +1,6 @@
 // This will hold the last autoscheduler run, in case we want to finalize and save it
 var autoscheduler_data = '';
+var stats_table_html = '';
 
 function autoschedulerErrorHandler() {
 	$j('#autoschedulerinfo').html('The server returned an error to our request. Contact your local webministry for help.');
@@ -53,6 +54,7 @@ function runAutoscheduler() {
 						stats_table.append(stats_row);
 					});
 					stats_div.append(stats_table);
+					stats_table_html = stats_table.html();
 					stats_div.append("<h2>Hit `Save room assignments' if you are happy with this.</h2>");
 				}
 			}
@@ -70,8 +72,16 @@ function saveAutoscheduler() {
 		url: "/manage/" + program_url_base + "/autoscheduler_save",
 		type: "post",
 		data: post_data,
-		success: function() {
-			$j('#autoschedulerinfo').html("The scheduling assignments have been saved successfully!");
+		success: function(data) {
+			data = data['response'][0];
+			stats_div = $j('#autoschedulerinfo');
+			if (data['error_msg'])
+			{
+				stats_div.html("A misconfiguration or unexpected situation prevented the autoscheduler from running: " + data['error_msg']);
+			} else {
+				stats_div.html("The following scheduling assignments have been saved successfully:");
+				stats_div.append(stats_table_html);
+			}
 		},
 		error: autoschedulerErrorHandler,
 		dataType: 'json'
@@ -82,6 +92,7 @@ function clearAutoscheduler() {
 	$j('#autoschedulerinfo').html('Clearing...');
 	var post_data = {'csrfmiddlewaretoken': csrf_token()};
 	autoscheduler_data = '';
+	stats_table_html = '';
 
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/autoscheduler_clear",

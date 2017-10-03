@@ -53,6 +53,7 @@ class AutoschedulerController(object):
         self.section = get_section_by_emailcode(
                 search_options["section_emailcode"], schedule)
         self.timeout = search_options["timeout"]
+        self.schedule = self.optimizer.manipulator.schedule
         if config.USE_TIMER:
             m.print_recorded_times()
 
@@ -282,14 +283,28 @@ class AutoschedulerController(object):
         return new_history
 
     def export_assignments(self):
+        changed_sections = set()
+        for action in self.optimizer.manipulator.history:
+            changed_sections.add(action["section"])
+        scheduling_hashes = {
+            section.id: section.initial_state for section in changed_sections}
+        print scheduling_hashes
         return [
-            self.optimizer.manipulator.jsonify_history(),
+            [self.optimizer.manipulator.jsonify_history(), scheduling_hashes],
             self.options]
 
     def import_assignments(self, data):
-        print "Saving?"
-        print data
-        if not self.optimizer.manipulator.load_history(data):
+        history, scheduling_hashes = data
+        print scheduling_hashes
+        for section, scheduling_hash in scheduling_hashes.iteritems():
+            print self.schedule.class_sections[int(section)].initial_state
+            if self.schedule.class_sections[int(section)].initial_state != \
+                    scheduling_hash:
+                emailcode = ClassSection.objects.get(
+                        id=int(section)).emailcode()
+                raise SchedulingError(
+                    "Section {} was moved.".format(emailcode))
+        if not self.optimizer.manipulator.load_history(history):
             raise SchedulingError("Unable to replay assignments.")
 
     def save_assignments(self):

@@ -4,9 +4,6 @@ Add configuration documentation to the bottom of the UI
 Frontend doesn't actually let you do multiple things at once?
 
 Frontend can show how various scorers are affected by the change.
-Frontend should indicate what was saved when the save happens.
-
-Implement a timeout on search, probably default 10s or something
 
 Test the frontend to make sure that the display for schedule, unschedule, move,
 and swap are all ok
@@ -18,15 +15,7 @@ exists.
 
 save() should check whether sections are locked before saving, if locked
     classes are excluded
-Consider modifying checking code on the save functionality itself?
-save() might have an issue if a teacher is teaching a non-recognized class and
-it gets moved?
-save() can have an issue if someone moves a class after you saved but before
-you committed
- - The fix assumes that saving is what takes the most time, and checking is
-   cheap. This is probably not a bad assumption but might want to be checked.
 search might try to unschedule sections multiple times
-pass section scheduling infos in histories in order to detect external changes (frontend)
 
 New features:
 Implement a faster search
