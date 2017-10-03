@@ -174,25 +174,36 @@ class AutoschedulerController(object):
             else:
                 raise SchedulingError("History was broken.")
             rows.append(row)
-        final_scores, final_total_score = \
-            self.optimizer.manipulator.scorer.get_all_score_schedule()
-        diffs = []
-        for (scorer, weight, old_score), (scorer2, weight, new_score) in \
-                zip(self.initial_scores, final_scores):
-            assert (scorer == scorer2), "Scorers changed"
-            diffs.append((
-                scorer, weight,
-                (new_score - old_score) * len(self.schedule.class_sections)))
-        # Sort descending by score change
-        diffs = sorted(diffs, key=lambda x: -x[2])
-        if len(diffs) > 6:
-            diffs = diffs[:3] + diffs[-3:]
-        total_change = (final_total_score - self.initial_total_score) \
-            * len(self.schedule.class_sections)
-        rows.append([["Major score changes:", [
-            "{} (wt {}): {}".format(scorer, weight, delta)
-            for scorer, weight, delta in diffs]
-            + ["Total change: {}".format(total_change)]]])
+        if len(rows) > 0:
+            final_scores, final_total_score = \
+                self.optimizer.manipulator.scorer.get_all_score_schedule()
+            diffs = []
+            for (scorer, weight, old_score), (scorer2, weight, new_score) in \
+                    zip(self.initial_scores, final_scores):
+                assert (scorer == scorer2), "Scorers changed"
+                diffs.append((
+                    scorer, weight,
+                    (new_score - old_score) * len(
+                        self.schedule.class_sections)))
+            # Sort descending by score change
+            total_wt = sum([x[1] for x in diffs])
+            diffs = sorted(diffs, key=lambda x: -x[2] * x[1])
+            total_change = (final_total_score - self.initial_total_score) \
+                * len(self.schedule.class_sections)
+
+            def format_row(row):
+                scorer, weight, delta = row
+                return "{} (wt {}): chg {:.3f} -> {:.3f}".format(
+                    scorer, weight, delta, weight * delta / total_wt)
+            new_row = []
+            if len(diffs) > 6:
+                new_row += [format_row(r) for r in diffs[:3]]
+                new_row += ["[{} more truncated]".format(len(diffs) - 6)]
+                new_row += [format_row(r) for r in diffs[-3:]]
+            else:
+                new_row += [format_row(r) for r in diffs]
+            new_row += ["Total change: {}".format(total_change)]
+            rows.append([["Major score changes:", new_row]])
         return rows
 
     def section_identifier(self, section):
