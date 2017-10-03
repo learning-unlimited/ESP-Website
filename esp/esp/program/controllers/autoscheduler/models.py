@@ -196,6 +196,9 @@ class AS_Classroom(object):
         self.furnishings = furnishings if furnishings is not None else {}
         self.availability_dict = {(r.timeslot.start, r.timeslot.end): r
                                   for r in self.availability}
+        if len(self.availability_dict) != len(self.availability):
+            raise SchedulingError(
+                "Room {} has duplicate resources".format(name))
 
     @util.timed_func("AS_Classroom_get_roomslots_by_duration")
     @util.memoize
