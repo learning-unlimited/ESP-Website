@@ -2,6 +2,7 @@
 A class for using depth-limited DFS to try to find improvements to a schedule.
 """
 
+import datetime
 import esp.program.controllers.autoscheduler.util as util
 
 
@@ -20,6 +21,9 @@ class SearchOptimizer:
         done."""
         if depth == 0:
             return []
+        if timeout is not None and datetime.datetime.now() > timeout:
+            return []
+
         best_score = self.manipulator.scorer.score_schedule()
         best_actions = []
         # Explore all possible roomslots to move to.
@@ -62,7 +66,8 @@ class SearchOptimizer:
             # Recurse on each evicted section.
             for other_section in other_sections:
                 proposed_actions += \
-                        self.optimize_section(other_section, depth - 1)
+                        self.optimize_section(other_section, depth - 1,
+                                              timeout)
                 if not other_section.is_scheduled():
                     # Evicted sections must be scheduled
                     self.revert(len(proposed_actions))

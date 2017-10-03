@@ -1,5 +1,6 @@
 """A controller for the autoscheduler."""
 
+import datetime
 from django.core.exceptions import ObjectDoesNotExist
 
 from esp.program.models import ClassSection
@@ -100,9 +101,9 @@ class AutoschedulerController(object):
             "section_emailcode":
                 (emailcode, "Emailcode of the section to optimize."),
             "depth":
-                (1, "Depth to search."),
+                (1, "Depth to search. 1 or 2 is okay, 3 is too slow."),
             "timeout":
-                (3.0, "Timeout in seconds for the search."),
+                (10.0, "Timeout in seconds for the search."),
             "require_approved":
                 (True, "Only schedule approved classes."),
             "exclude_lunch":
@@ -116,7 +117,10 @@ class AutoschedulerController(object):
         }
 
     def compute_assignments(self):
-        self.optimizer.optimize_section(self.section, self.depth, self.timeout)
+        self.optimizer.optimize_section(
+                self.section, self.depth,
+                datetime.datetime.now() +
+                datetime.timedelta(seconds=self.timeout))
 
     def get_scheduling_info(self):
         rows = []
