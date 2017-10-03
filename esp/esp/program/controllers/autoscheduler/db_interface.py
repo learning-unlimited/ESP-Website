@@ -180,6 +180,9 @@ def save(schedule, check_consistency=True, check_constraints=True):
         [section for section in schedule.class_sections.itervalues()
          if section.initial_state
          != section.scheduling_hash()])
+    # Note: we need to be careful not to cache anything after we save
+    # because a rollback will not roll back the cache. Ideally we would flush
+    # the relevant entries of cache but I don't know how to do that.
     with transaction.atomic():
         ajax_change_log = get_ajax_change_log(schedule.program)
         section_objs = ClassSection.objects.filter(
@@ -254,7 +257,8 @@ def check_can_schedule_sections(section_infos):
         - That the teacher is not teaching another class at that time
         - That the rooms are not currently in use by another class
     A SchedulingError is thrown if any of thes occur, otherwise nothing
-    happens."""
+    happens. This function should avoid caching anything because the cached
+    value won't get rolled back by the transaction"""
     for section, section_obj, possible_conflicts, meeting_times, room_objs \
             in section_infos:
         if section.is_scheduled():
@@ -263,7 +267,7 @@ def check_can_schedule_sections(section_infos):
             for teacher_id, other_sections in possible_conflicts:
                 # Make sure the teacher isn't teaching
                 for other_section in other_sections:
-                    for other_time in other_section.get_meeting_times():
+                    for other_time in other_section.meeting_times.all():
                         if not (other_time.start >= end_time
                                 or other_time.end <= start_time):
                             raise SchedulingError(
@@ -290,7 +294,8 @@ def check_can_schedule_sections(section_infos):
 def ensure_section_not_moved(section, as_section):
     """Ensures that a ClassSection hasn't moved, according to the record
     stored in its corresponding AS_Section. Raises a SchedulingError if it
-    was moved, otherwise does nothing."""
+    was moved, otherwise does nothing. This function should avoid caching
+    anything to avoid a stale cache result not being rolled back"""
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
         raise SchedulingError(
@@ -579,7 +584,7 @@ def scheduling_hash_of(
     section."""
     meeting_times = meeting_times_by_section[section.id] \
         if meeting_times_by_section is not None \
-        else section.get_meeting_times()
+        else section.meeting_times.all()
     meeting_times = sorted([(str(e.start), str(e.end))
                             for e in meeting_times])
     rooms = rooms_by_section[section.id] if rooms_by_section is not None \
