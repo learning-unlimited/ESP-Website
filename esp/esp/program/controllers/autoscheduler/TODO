@@ -9,6 +9,8 @@ Double-check that scoring is sane
 
 Bugs:
 
+Page shouldn't just crash if tags are malformatted.
+
 AJAX scheduler should only link to the Autoscheduler Frontend if said module
 exists.
 
