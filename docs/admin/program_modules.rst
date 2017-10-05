@@ -342,6 +342,7 @@ Teacher Profile Editor (RegProfileModule)
 This module will prompt teachers to fill out their profile information before proceeding to create classes.  In addition to their contact information, they will be asked a few questions such as their affiliation (e.g. your university, or something else) and graduation year.  If you would like to ask additional questions, please use the CustomFormModule.
 
 If you would like to remove a question, you can do so using the following tag:
+
 * teacherreg_hide_fields - A comma seperated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
 
 The questions shown on the teacher profile are configurable via the following tags:
