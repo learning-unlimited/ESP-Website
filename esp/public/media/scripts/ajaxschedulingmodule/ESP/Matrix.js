@@ -312,7 +312,8 @@ function Matrix(
         });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
-            var room_header = $j("<td class='room'>" + id + "</td>");
+            var capacity_info = " [" + room['num_students'] + "]";
+            var room_header = $j("<td class='room'>" + id + capacity_info + "</td>");
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
             rows[id] = row;
