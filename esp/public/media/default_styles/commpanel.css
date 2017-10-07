@@ -15,6 +15,35 @@ label .commpanel_list_preferred {
     font-size: 1.0em;
 }
 
+.ui-tabs-nav {
+/*  This prevents the ::after clearfix from also clearing irrelevant
+ *  floats like the tabs in the fruitsalad theme, so the tab container is not
+ *  needlessly tall. */
+    overflow: hidden;
+}
+
+/*  Copies for jquery-ui.css rules with greater specificity so that they
+ *  override annoying #content a { ...} rules we wrote :( I don't think they
+ *  are all necessary for tabs, but eh. */
+#tabs .ui-state-default a {
+    color: #454545;
+    text-decoration: none;
+}
+#tabs .ui-state-hover a, #tabs .ui-state-focus a {
+    color: #2b2b2b;
+    text-decoration: none;
+}
+#tabs .ui-state-active a {
+    color: #ffffff;
+    text-decoration: none;
+}
+#tabs .ui-state-highlight a {
+    color: #777620;
+}
+#tabs .ui-state-highlight a {
+    color: #5f3f3f;
+}
+
 .ui-button {
     padding: 4px;
     margin: 6px;
@@ -26,7 +55,6 @@ a .ui-button {
 
 div #recipient_type_options {
     margin-top: 10px;
-    clear: both;
 }
 
 div #filter_accordion {
