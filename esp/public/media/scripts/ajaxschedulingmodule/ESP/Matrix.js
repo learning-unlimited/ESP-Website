@@ -333,7 +333,7 @@ function Matrix(
         var that = this;
         this.el.tooltip({
             content: function() {
-                var room = that.rooms[$j(this)[0].innerHTML];
+                var room = that.rooms[$j(this)[0].textContent];
                 var resource_lines = [];
                 $j.each(room.resources, function(index, resource) {
                     var desc = resource.resource_type.name;
