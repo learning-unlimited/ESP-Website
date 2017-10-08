@@ -151,10 +151,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 priority_list = sorted(priority_dict.items())
             else:
                 priority_list = []
+            temp_list = []
+            for i in range(0, context['num_priority']):
+                if i < len(priority_list):
+                    temp_list.append(("Priority " + str(i + 1), priority_list[i][1]))
+                else:
+                    temp_list.append(("Priority " + str(i + 1), ""))
+            priority_list = temp_list
             star_count = 0
             if timeslot.id in star_counts:
                 star_count = star_counts[timeslot.id]
-            schedule.append((timeslot, priority_list, blockCount + 1, star_count))
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
 
             prevTimeSlot = timeslot
 
