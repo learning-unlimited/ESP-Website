@@ -88,7 +88,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
     {% else %}
     <tr>
     <tr>
-        <td width="20%" valign="top" align="center">{{ timeslot.short_description }}</td>
+        <td width="20%"align="center">{{ timeslot.short_description }}</td>
 
         <td style="vertical-align: top !important;">
             <div class="progress-custom">
@@ -110,7 +110,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
         </td>
 
         {%comment%}{% if module.deadline_met %}{%endcomment%}
-        <td width='20%' align='center' style="vertical-align: top !important;">
+        <td width='20%' align='center'>
             <a href="/learn/{{program.getUrlBase}}/rank_classes/{{timeslot.id}}">[edit rankings]</a>
         </td>
         {%comment%}{% endif %}{%endcomment%}
