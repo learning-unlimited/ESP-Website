@@ -15,6 +15,25 @@
   padding: 2px 5px;
   text-decoration: none;
 }
+
+.progress-custom {
+    display: table;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.progress-custom .progress{
+    margin-bottom: 0;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.progress-custom .progress-value{
+    display: table-cell;
+    vertical-align: middle;
+    width: 40%; 
+    padding-left: 1em;
+}
 </style>
 {% endblock %}
 
@@ -49,13 +68,13 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 </p>
 {% end_inline_program_qsd_block %}
 <div id="program_form">
-<table cellpadding="3" class="fullwidth">
+<table cellpadding="3" style="width:100%;" class="fullwidth">
 <tr>
     <th colspan="3">
     Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
     </th>
 </tr>
-{% for timeslot, priority_list, blockCount, star_count in timeslots %}
+{% for timeslot, priority_list, blockCount, star_count, perc_star in timeslots %}
     {% ifchanged timeslot.start.day %}
         <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
     {% endifchanged %}
@@ -69,19 +88,29 @@ recommend you have at least {{num_star}} classes starred for every priority slot
     {% else %}
     <tr>
     <tr>
-        <td width="25%" valign="top" align="center">{{ timeslot.short_description }}</td>
+        <td width="20%" valign="top" align="center">{{ timeslot.short_description }}</td>
 
         <td style="vertical-align: top !important;">
-            <progress value="{{star_count}}" max="{{num_star}}"></progress> ({{star_count}}/{{num_star}} starred classes)
+            <div class="progress-custom">
+                <div class="progress">
+                    <div class="bar" role="progressbar" aria-valuenow="{{star_count}}" aria-valuemin="0" aria-valuemax="{{num_star}}" style="width: {{perc_star}}%;"></div>
+                </div>
+                <div class="progress-value">
+                    ({{star_count}}/{{num_star}} starred classes)
+                </div>
+            </div>
             <i>
             {% for verb,title in priority_list %}
-	        <br><span>{{verb}}</span>: {{title}}
+                <span><font color={% if not title %}"red"{% else %}"green"{% endif %}>{{verb}}: {{title}}</font></span>
+                {% if not forloop.last %}
+                    <br>
+                {% endif %}
             {% endfor %}
             </i>
         </td>
 
         {%comment%}{% if module.deadline_met %}{%endcomment%}
-        <td width='25%' align='center' style="vertical-align: top !important;">
+        <td width='20%' align='center' style="vertical-align: top !important;">
             <a href="/learn/{{program.getUrlBase}}/rank_classes/{{timeslot.id}}">[edit rankings]</a>
         </td>
         {%comment%}{% endif %}{%endcomment%}
