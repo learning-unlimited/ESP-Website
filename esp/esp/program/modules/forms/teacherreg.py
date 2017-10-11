@@ -323,7 +323,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
 
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
-        
+
         del self.fields['grade_range']
 
         fields = [('category', open_class_category.id),
