@@ -1,4 +1,4 @@
-{# expects program, class, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
 
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
@@ -11,12 +11,12 @@
   </td>
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
-    {% if cls.num_students or not module.deadline_met %}
-        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
-    {% else %}
+    {% if not cls.num_students and not cls.hasScheduledSections %}
         <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
           <input class="button" type="submit" value="Delete"/>
         </form>
+    {% elif can_req_cancel %}
+        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
     {% endif %}
   </td>
   <td class="clsmiddle bordertop2">
