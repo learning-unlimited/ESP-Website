@@ -1,5 +1,33 @@
 {# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
 
+<style>
+.clsmiddle {
+    vertical-align: middle;
+}
+
+.cancelbutton {
+    color: #000000;
+    font-family: Arial,helvetica,sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    border: #cccccc 1px solid;
+    background-color: #cccccc;
+    cursor: default;
+    padding: 2px 5px 2px 5px;
+    text-decoration: none;
+    margin: 0px;
+    line-height: normal;
+    cursor: pointer;
+    box-shadow: none;
+    transition: border linear 0.2s, box-shadow linear 0.2s;
+    border-radius: 0;
+}
+
+.teachbutton {
+    margin: 0 !important;
+}
+</style>
+
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
@@ -11,22 +39,18 @@
   </td>
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
-    {% if not cls.num_students and not cls.hasScheduledSections %}
-        <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-          <input class="button" type="submit" value="Delete"/>
-        </form>
-    {% elif can_req_cancel %}
-        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+    {% if can_req_cancel %}
+        <button class="cancelbutton" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
     {% endif %}
   </td>
   <td class="clsmiddle bordertop2">
-    <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
+    <form class="teachbutton" method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
       <input type="hidden" name="command" value="edit_class_{{cls.id}}">
       <input class="button" type="submit" value="View/Edit">
     </form>
   </td>
   <td class="clsmiddle bordertop2">
-    <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
+    <form class="teachbutton" method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
       <input class="button" type="submit" value="Detailed Status" />
     </form>
   </td>
