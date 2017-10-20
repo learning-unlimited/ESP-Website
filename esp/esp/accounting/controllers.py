@@ -506,14 +506,22 @@ class IndividualAccountingController(ProgramAccountingController):
     def revoke_financial_aid(self):
         FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).delete()
 
-    def requested_transfers(self, ensure_required=True):
+    def requested_transfers(self, ensure_required=True,
+            for_finaid_only=False):
+
         if ensure_required:
             self.ensure_required_transfers()
-        return Transfer.objects.filter(user=self.user, destination=self.default_program_account())
+        transfers = Transfer.objects.filter(user=self.user, destination=self.default_program_account())
+        if for_finaid_only:
+            transfers = transfers.filter(line_item__for_finaid=True)
+        return transfers
 
-    def amount_requested(self, ensure_required=True):
+    def amount_requested(self, ensure_required=True, for_finaid_only=False):
         #   Compute sum of all transfers into program that are for this user
-        return self.requested_transfers(ensure_required).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        transfers = self.requested_transfers(
+                ensure_required=ensure_required,
+                for_finaid_only=for_finaid_only)
+        return transfers.aggregate(Sum('amount_dec'))['amount_dec__sum'] or 0
 
     def latest_finaid_grant(self):
         if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
@@ -521,9 +529,8 @@ class IndividualAccountingController(ProgramAccountingController):
         else:
             return None
 
-    def amount_finaid(self, amount_requested=None, amount_siblingdiscount=None):
-        if amount_requested is None:
-            amount_requested = self.amount_requested()
+    def amount_finaid(self, amount_siblingdiscount=None):
+        amount_requested = self.amount_requested(for_finaid_only=True)
         if amount_siblingdiscount is None:
             amount_siblingdiscount = self.amount_siblingdiscount()
 
@@ -565,7 +572,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def amount_due(self):
         amt_request = self.amount_requested()
         amt_sibling = self.amount_siblingdiscount()
-        return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
+        return amt_request - self.amount_finaid(amt_sibling) - amt_sibling - self.amount_paid()
 
     @transaction.atomic
     def submit_payment(self, amount, transaction_id='', link_transfers=True):
