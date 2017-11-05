@@ -212,9 +212,17 @@ class AutoschedulerController(object):
 
     def section_identifier(self, section):
         section_obj = ClassSection.objects.get(id=section.id)
-        return u"{}: {} (id: {})".format(
+        manage = "/manage/{}/manageclass/{}".format(
+            section_obj.parent_class.parent_program.getUrlBase(),
+            section.parent_class)
+        manage_link = "<a href='{}'>Manage</a>".format(manage)
+        edit = "/manage/{}/editclass/{}".format(
+            section_obj.parent_class.parent_program.getUrlBase(),
+            section.parent_class)
+        edit_link = "<a href='{}'>Edit</a>".format(edit)
+        return u"{}: {} (id: {}) ({}, {})".format(
             section_obj.emailcode(), section_obj.parent_class.title,
-            section.id)
+            section.id, manage_link, edit_link)
 
     def section_info(self, section):
         info = []

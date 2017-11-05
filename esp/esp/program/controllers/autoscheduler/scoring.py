@@ -927,6 +927,7 @@ class RoomConsecutivityScorer(BaseScorer):
                 and util.contiguous(
                     last_roomslot.timeslot, next_roomslot.timeslot):
             nonfollowed_sections_delta -= 1
+
         self.nonfollowed_sections += nonfollowed_sections_delta
 
     @util.timed_func("RoomConsecutivityScorer")

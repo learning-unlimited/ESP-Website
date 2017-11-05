@@ -1,11 +1,22 @@
 (Also check TODOs in comments)
 
-Frontend doesn't actually let you do multiple things at once?
+Filter for class flags/exclude certain class flags
 
-Test the frontend to make sure that the display for schedule, unschedule, move,
-and swap are all ok
+Message to suggest locking the class if a constraint violation is intentional
 
-Double-check that scoring is sane
+success message on save should be larger
+
+Scorer which tries to avoid wasting resources?
+
+Probably bold special scheduling needs more, and include the text if it exists
+
+Some kind of saving bug, complained about room being occupied
+
+Adjust estimates for the timeout
+
+Instructions on turning off scorer weights
+
+Better per-section docs
 
 Bugs:
 
@@ -14,10 +25,12 @@ Page shouldn't just crash if tags are malformatted.
 AJAX scheduler should only link to the Autoscheduler Frontend if said module
 exists.
 
-search might try to unschedule sections multiple times
+update_move_section and update_swap_section are not always the same as
+unschedule then schedule consecutively because the section will not actually be
+unscheduled at the time that update_schedule is called. This leads to
+idempotence issues.
 
 New features:
-Implement a faster search
 Return multiple results?
 
 AJAX change log entries can include users
@@ -26,17 +39,7 @@ Add the license/LU header to all files
 
 Implement ResourceMovementScorer
 
-
-Reduce loading times?
-
 Robustness:
-
-save() might want to check to make sure that the lists of teachers teaching each
-section don't change either
-
-saving is probably really slow
-
-be able to deal with schedules with multi-scheduled rooms
 
 Tests and checks:
 db tests should load resource criteria, constraints, scorers?

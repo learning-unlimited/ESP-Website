@@ -79,7 +79,7 @@ function saveAutoscheduler() {
 			{
 				stats_div.html("A misconfiguration or unexpected situation prevented the autoscheduler from running: " + data['error_msg']);
 			} else {
-				stats_div.html("The following scheduling assignments have been saved successfully:");
+				stats_div.html("<h2>The following scheduling assignments have been saved successfully:</h2>");
 				stats_div.append(stats_table_html);
 			}
 		},

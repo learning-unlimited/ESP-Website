@@ -54,11 +54,11 @@ DEFAULT_SCORER_WEIGHTS = {
         "NumSectionsScorer": 100.0,
         "NumSubjectsScorer": 60.0,
         "NumTeachersScorer": 50.0,
-        "ResourceCriteriaScorer": 60.0,
-        "ResourceMatchingScorer": 60.0,
-        "ResourceValueMatchingScorer": 60.0,
+        "ResourceCriteriaScorer": 300.0,
+        "ResourceMatchingScorer": 500.0,
+        "ResourceValueMatchingScorer": 450.0,
         "RoomConsecutivityScorer": 10.0,
-        "RoomSizeMismatchScorer": 30.0,
+        "RoomSizeMismatchScorer": 350.0,
         "StudentClassHoursScorer": 50.0,
         "TeachersWhoLikeRunningScorer": 10.0
 }

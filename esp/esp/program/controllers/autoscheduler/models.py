@@ -84,8 +84,10 @@ class AS_Schedule(object):
     def run_constraint_checks(self):
         violation = self.constraints.check_schedule(self)
         if violation is not None:
-            raise SchedulingError(("Schedule violated constraints: {}"
-                                  .format(violation)))
+            raise SchedulingError(
+                ("Schedule violated constraints: {}. If this is intended, "
+                 "consider locking the offending class(es)."
+                 .format(violation)))
 
 
 class AS_ClassSection(object):
