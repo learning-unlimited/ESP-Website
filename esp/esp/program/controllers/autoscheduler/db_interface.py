@@ -382,7 +382,7 @@ def convert_classection_obj(
     roomslots.sort(key=lambda r: r.timeslot)
 
     as_section = AS_ClassSection(
-            teachers, float(section.duration), section.capacity,
+            teachers, float(section.duration), get_section_capacity(section),
             section.category.id, roomslots,
             section_id=section.id, parent_class_id=section.parent_class.id,
             grade_min=section.parent_class.grade_min,
@@ -396,6 +396,13 @@ def convert_classection_obj(
          "for section {}".format(section.emailcode()))
 
     return as_section
+
+
+def get_section_capacity(section):
+    if section.max_class_capacity is not None:
+        return section.max_class_capacity
+    else:
+        return section.parent_class.class_size_max
 
 
 @util.timed_func("db_interface_load_section_assignments")

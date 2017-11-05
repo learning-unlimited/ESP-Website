@@ -49,7 +49,15 @@ class BaseScorer(object):
 
     def update_move_section(self, section, start_roomslot):
         """Update the internal state to reflect the moving of the specified
-        already-scheduled section to start at the specified roomslot."""
+        already-scheduled section to start at the specified roomslot.
+
+        We provide a default implementation here, but note that this is not
+        always an accurate implementation because the call to
+        update_schedule_section will be called without actually having
+        unscheduled the relevant section yet. RoomConsecutivityScorer is an
+        example of such a scorer for which this matters, but generally speaking
+        it only matters if the scorer looks at other classes to update the
+        score."""
         self.update_unschedule_section(section)
         self.update_schedule_section(section, start_roomslot)
 
@@ -60,7 +68,8 @@ class BaseScorer(object):
 
     def update_swap_sections(self, section1, section2):
         """Update the internal state to reflect the swapping of the two
-        specified sections."""
+        specified sections. See the note on update_move_section regarding this
+        default implementation."""
         self.update_move_section(section1, section2.assigned_roomslots[0])
         self.update_move_section(section2, section1.assigned_roomslots[0])
 
@@ -880,79 +889,98 @@ class RoomConsecutivityScorer(BaseScorer):
     heuristic for being able to schedule long classes later, as well as for
     minimizing having to repeatedly clean or lock/unlock rooms."""
 
+    def boundary_complete_before(self, roomslot, ignore_section=None):
+        room = roomslot.room
+        start_idx = roomslot.index()
+        if start_idx > 0:
+            prev_roomslot = room.availability[start_idx - 1]
+            return (prev_roomslot.assigned_section is not None
+                    and prev_roomslot.assigned_section != ignore_section) \
+                or not util.contiguous(
+                    prev_roomslot.timeslot, roomslot.timeslot)
+        else:
+            return True
+
+    def boundary_complete_after(self, roomslot, ignore_section=None,
+                                avoid_doublecount=False):
+        next_roomslot = roomslot.next()
+        return next_roomslot is None \
+            or (not avoid_doublecount
+                and next_roomslot.assigned_section is not None
+                and next_roomslot.assigned_section != ignore_section) \
+            or not util.contiguous(
+                roomslot.timeslot, next_roomslot.timeslot)
+
     @util.timed_func("RoomConsecutivityScorer")
     def score_schedule(self):
         """Returns a score in the range [0, 1] for the schedule reflected in its
         current state."""
-        # Return simply the fraction of all sections which are not followed.
-        return 1.0 - self.nonfollowed_sections / self.num_sections
+        # Return the fraction of complete boundaries, i.e. start or end of a
+        # section with either no timeslot before/after or another room
+        # before/after. Boundaries between two sections are not doublecounted.
+        return self.complete_boundaries / self.num_sections / 2.0
 
     @util.timed_func("RoomConsecutivityScorer")
     def update_schedule(self, schedule):
         """Overwrite internal state to reflect the given schedule."""
         # Scaling is just the default 1 because we're just scoring by section.
         self.num_sections = float(len(schedule.class_sections))
-        # A count of the number of sections which don't immediately have a
-        # following section.
-        self.nonfollowed_sections = 0.0
+
+        # A count of start or end of a section with either no timeslot
+        # before/after or another room before/after. Boundaries between two
+        # sections are not doublecounted.
+        self.complete_boundaries = 0.0
         for section in schedule.class_sections.itervalues():
             if section.is_scheduled():
-                last_roomslot = section.assigned_roomslots[-1]
-                next_roomslot = last_roomslot.next()
-                if next_roomslot is None \
-                        or next_roomslot.assigned_section is None \
-                        or not util.contiguous(
-                            last_roomslot.timeslot, next_roomslot.timeslot):
-                    self.nonfollowed_sections += 1
+                if self.boundary_complete_before(
+                        section.assigned_roomslots[0]):
+                    self.complete_boundaries += 1
+                if self.boundary_complete_after(
+                        section.assigned_roomslots[-1],
+                        avoid_doublecount=True):
+                    self.complete_boundaries += 1
 
     @util.timed_func("RoomConsecutivityScorer")
     def update_schedule_section(self, section, start_roomslot):
         """Update the internal state to reflect the scheduling of the specified
         section to start at the specified roomslot."""
-        room = start_roomslot.room
-        roomslots = room.get_roomslots_by_duration(
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
             start_roomslot, section.duration)
-        nonfollowed_sections_delta = 1
-        start_idx = start_roomslot.index()
-        if start_idx > 0:
-            prev_roomslot = room.availability[start_idx - 1]
-            if prev_roomslot.assigned_section is not None \
-                    and util.contiguous(
-                        prev_roomslot.timeslot, start_roomslot.timeslot):
-                nonfollowed_sections_delta -= 1
-        last_roomslot = roomslots[-1]
-        next_roomslot = last_roomslot.next()
-        if next_roomslot is not None \
-                and next_roomslot.assigned_section is not None \
-                and util.contiguous(
-                    last_roomslot.timeslot, next_roomslot.timeslot):
-            nonfollowed_sections_delta -= 1
-
-        self.nonfollowed_sections += nonfollowed_sections_delta
+        if self.boundary_complete_before(start_roomslot):
+            self.complete_boundaries += 1
+        if self.boundary_complete_after(roomslots[-1]):
+            self.complete_boundaries += 1
 
     @util.timed_func("RoomConsecutivityScorer")
     def update_unschedule_section(self, section):
         """Update the internal state to reflect the uncsheduling of the
         specified section."""
         roomslots = section.assigned_roomslots
-        start_roomslot = roomslots[0]
-        room = start_roomslot.room
-        nonfollowed_sections_delta = -1
-        start_idx = start_roomslot.index()
-        if start_idx > 0:
-            prev_roomslot = room.availability[start_idx - 1]
-            if prev_roomslot.assigned_section is not None \
-                    and util.contiguous(
-                        prev_roomslot.timeslot, start_roomslot.timeslot):
-                nonfollowed_sections_delta += 1
-        last_roomslot = roomslots[-1]
-        next_roomslot = last_roomslot.next()
-        if next_roomslot is not None \
-                and next_roomslot.assigned_section is not None \
-                and util.contiguous(
-                    last_roomslot.timeslot, next_roomslot.timeslot):
-            nonfollowed_sections_delta += 1
-        self.nonfollowed_sections += nonfollowed_sections_delta
+        if self.boundary_complete_before(roomslots[0]):
+            self.complete_boundaries -= 1
+        if self.boundary_complete_after(roomslots[-1]):
+            self.complete_boundaries -= 1
+
+    @util.timed_func("RoomConsecutivityScorer")
+    def update_move_section(self, section, start_roomslot):
+        """The default update_move_section implementation is incorrect here
+        because this function depends on the external schedule state."""
+        roomslots = section.assigned_roomslots
+        if self.boundary_complete_before(roomslots[0]):
+            self.complete_boundaries -= 1
+        if self.boundary_complete_after(roomslots[-1]):
+            self.complete_boundaries -= 1
+        roomslots = start_roomslot.room.get_roomslots_by_duration(
+            start_roomslot, section.duration)
+        if self.boundary_complete_before(start_roomslot,
+                                         ignore_section=section):
+            self.complete_boundaries += 1
+        if self.boundary_complete_after(roomslots[-1], ignore_section=section):
+            self.complete_boundaries += 1
+
+    @util.timed_func("RoomConsecutivityScorer")
+    def update_swap_sections(self, section1, section2):
+        pass
 
 
 class RoomSizeMismatchScorer(BaseScorer):

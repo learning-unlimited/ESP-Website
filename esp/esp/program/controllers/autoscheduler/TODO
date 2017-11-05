@@ -2,15 +2,9 @@
 
 Filter for class flags/exclude certain class flags
 
-Message to suggest locking the class if a constraint violation is intentional
-
-success message on save should be larger
-
 Scorer which tries to avoid wasting resources?
 
 Probably bold special scheduling needs more, and include the text if it exists
-
-Some kind of saving bug, complained about room being occupied
 
 Adjust estimates for the timeout
 
@@ -25,10 +19,10 @@ Page shouldn't just crash if tags are malformatted.
 AJAX scheduler should only link to the Autoscheduler Frontend if said module
 exists.
 
-update_move_section and update_swap_section are not always the same as
-unschedule then schedule consecutively because the section will not actually be
-unscheduled at the time that update_schedule is called. This leads to
-idempotence issues.
+There's an unknown bug which sometimes causes saving (in particular, swaps) to
+fail because "the room is already occupied" (i.e. check_can_schedule_sections
+complains). However this doesn't happen all the time and I was unable to
+intentionally reproduce it.
 
 New features:
 Return multiple results?
