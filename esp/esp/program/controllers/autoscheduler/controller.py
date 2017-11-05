@@ -104,7 +104,7 @@ class AutoschedulerController(object):
             "section_emailcode":
                 (emailcode, "Emailcode of the section to optimize."),
             "depth":
-                (1, "Depth to search. 1 or 2 is okay, 3 is too slow."),
+                (1, "Depth to search. 1, 2, maybe 3 are okay, 4 is too slow."),
             "timeout":
                 (10.0, "Timeout in seconds for the search."),
             "require_approved":

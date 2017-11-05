@@ -72,8 +72,11 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         toolbar.append(commentButton);
 
         var baseURL = this.sections.getBaseUrlString();
-        var autoschedulerLink = " <a target='_blank' href='" + baseURL +
-            "autoscheduler?section=" + section.id + "'>Optimize</a>"
+        var autoschedulerLink = "";
+        if (has_autoscheduler_frontend === "True") {
+            autoschedulerLink = " <a target='_blank' href='" + baseURL +
+            "autoscheduler?section=" + section.id + "'>Optimize</a>";
+        }
         var links =  $j(
             "<br/><a target='_blank' href='" + baseURL + "manageclass/" + section.parent_class +
                 "'>Manage</a>" +

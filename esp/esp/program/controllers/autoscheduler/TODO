@@ -1,23 +1,10 @@
 (Also check TODOs in comments)
 
-Filter for class flags/exclude certain class flags
-
-Scorer which tries to avoid wasting resources?
-
-Probably bold special scheduling needs more, and include the text if it exists
-
-Adjust estimates for the timeout
-
-Instructions on turning off scorer weights
-
 Better per-section docs
 
 Bugs:
 
 Page shouldn't just crash if tags are malformatted.
-
-AJAX scheduler should only link to the Autoscheduler Frontend if said module
-exists.
 
 There's an unknown bug which sometimes causes saving (in particular, swaps) to
 fail because "the room is already occupied" (i.e. check_can_schedule_sections
@@ -27,13 +14,14 @@ intentionally reproduce it.
 New features:
 Return multiple results?
 
-AJAX change log entries can include users
+Probably bold special scheduling needs more, and include the text if it exists
 
-Add the license/LU header to all files
+Filter for class flags/exclude certain class flags
 
 Implement ResourceMovementScorer
 
-Robustness:
+Add a scorer which tries to avoid wasting resources (should be separate from
+existing scorers though)
 
 Tests and checks:
 db tests should load resource criteria, constraints, scorers?

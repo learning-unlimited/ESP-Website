@@ -119,7 +119,9 @@ class CompositeScorer(BaseScorer):
             self.total_weight = 0.0
             available_scorers = globals()
             for scorer, weight in scorer_names_and_weights.iteritems():
-                assert weight > 0, "Scorer weights should be positive"
+                if weight is None or weight == 0:
+                    continue
+                assert weight >= 0, "Scorer weights should be nonnegative"
                 print("Using scorer {}".format(scorer))
                 scorer_obj = available_scorers[scorer](schedule, **kwargs)
                 self.scorers_and_weights.append((scorer_obj, weight))
