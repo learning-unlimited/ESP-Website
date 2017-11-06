@@ -122,6 +122,18 @@ manipulator, schedule, etc. with all of the provided parameters. If you want
 to swap out a module with another one, e.g. change the optimization algorithm,
 this is probably where you should make the change.
 
+db_interface.py
+~~~~~~~~~~~~~~~
+
+This defines the interface between the database models used by the rest of the
+ESP Website and the in-memory representation used by the rest of the
+controller. In other words, it implements loading a schedule from the database
+and saving a schedule back into the database.
+
+With the exception of controller.py, the rest of the controller
+should be oblivious to the database (and also should not call any db_interface
+functions).
+
 exceptions.py
 ~~~~~~~~~~~~~
 
