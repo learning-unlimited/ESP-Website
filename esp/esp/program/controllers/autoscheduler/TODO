@@ -1,19 +1,8 @@
-(Also check TODOs in comments)
-
-Better per-section docs
-include program ID in help text
-
-Make scoring options configurable
-
-Bugs:
-
-There's an unknown bug which sometimes causes saving (in particular, swaps) to
-fail because "the room is already occupied" (i.e. check_can_schedule_sections
-complains). However this doesn't happen all the time and I was unable to
-intentionally reproduce it.
-
 New features:
-Return multiple results?
+
+Return top N search results instead of just one
+
+Make default search options configurable
 
 Probably bold special scheduling needs more, and include the text if it exists
 
@@ -23,6 +12,13 @@ Implement ResourceMovementScorer
 
 Add a scorer which tries to avoid wasting resources (should be separate from
 existing scorers though)
+
+Bugs:
+
+There's an unknown bug which sometimes causes saving (in particular, swaps) to
+fail because "the room is already occupied" (i.e. check_can_schedule_sections
+complains). However this doesn't happen all the time and I was unable to
+intentionally reproduce it.
 
 Tests and checks:
 db tests should load resource criteria, constraints, scorers?
