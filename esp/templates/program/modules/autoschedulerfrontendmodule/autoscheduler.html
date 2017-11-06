@@ -17,7 +17,7 @@ var program_url_base = '{{ program.getUrlBase }}';
 their defaults, but you can also play around with them if you prefer. If you
 think the defaults should be changed, you can create or modify the appropriate
 Tag; see the bottom of the page for more information. When you're ready, run
-the autoscheduler, then save the results if you are satisfied.</p>
+the scheduling assistant, then save the results if you are satisfied.</p>
 
 <form id="autoschedulerform" action="javascript:runAutoscheduler()" class="form-inline" method="POST">
 <center>
@@ -77,7 +77,7 @@ Criterion Options below.</p>
 	    Options</button></a></h2>
     <div id="autoschedulerresourcesdiv" style="display:none">
 
-<p>A Resource Criterion controls how the autoscheduler treats resources and
+<p>A Resource Criterion controls how the scheduling assistant treats resources and
 classrooms. You can control their weights below. If the weight is set to -1,
 then it is a constraint, i.e. the automatic scheduling assistant is not allowed
 to violate it. For example, if restrict_star_classrooms has weight -1, the

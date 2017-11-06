@@ -3,6 +3,8 @@
 Better per-section docs
 include program ID in help text
 
+Make scoring options configurable
+
 Bugs:
 
 There's an unknown bug which sometimes causes saving (in particular, swaps) to
