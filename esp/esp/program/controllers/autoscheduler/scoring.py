@@ -3,26 +3,31 @@ TO ADD NEW SCORERS:
 Extend and implement BaseScorer, and update config.py with a description and
 default weight. Set self.scaling for your scorer as appropriate (see below).
 
-A Scorer can score a schedule, or (for performance reasons) predict the
-change in score a particular schedule hypothetical schedule manipulation would
-cause. Since some of these scorers are fairly global, e.g. depend on a
-distribution, scorers are allowed to maintain an internal state; so a scorer
-can initialize (or re-initialize) to a schedule, score the schedule it is
-currently set to, predict a score for a hypothetical change (without changing
-its state), or perform a change (i.e. updating its state).
+A Scorer stores internal state representing the relevant information of a
+schedule, and can return its current score, update its state with a fresh
+schedule, or update its state due to a schedule/unschedule/move/swap operation.
+
+We use this design because scorers tend to describe global state (e.g. "how
+many sections are scheduled?") and would need to read the entire schedule to
+produce a score for each schedule manipulation, which would be very slow.
+However, individual schedule manipulations often do not require drastic state
+changes. Thus, scorers are expected to be fast at returning its current score
+or updating its state due to an individual operation, but not necessarily fast
+at loading a fresh schedule.
 
 A Scorer is expected to return a score in the range [0, 1], where 1 is good and
 0 is bad. Each Scorer is also expected to keep a 'scaling' attribute, e.g.
 initialized in update_schedule(), so that when its score is multiplied by the
 scaling attribute, any given section will (in general) have an impact of
-approximately at most 1. Note this is maximum impact, not expected impact,
-though in some cases we might not care about the difference. The logic is: if
-I'm scheduling a section, how much does this evaluation decide whether I want
-to schedule it (assuming the evaluation is relevant)?  (For example,
-AdminDistributionScorer will be impacted only by sections with admins teaching,
-so we need to scale down.) This allows scorer weights to be determined by
-relative importance to scheduling a section without accounting for this sort of
-behavior."""
+approximately at most 1 / num_sections. Note this is maximum impact, not
+expected impact, though in some cases we might not care about the difference.
+The logic is: if I'm scheduling a section, how much does this evaluation decide
+whether I want to schedule it (assuming the evaluation is relevant)?  (For
+example, AdminDistributionScorer will be impacted only by sections with admins
+teaching, so we need to scale down.) This allows scorer weights to be
+determined by relative importance to scheduling a section without accounting
+for this sort of behavior."""
+
 import esp.program.controllers.autoscheduler.util as util
 
 
@@ -72,34 +77,6 @@ class BaseScorer(object):
         default implementation."""
         self.update_move_section(section1, section2.assigned_roomslots[0])
         self.update_move_section(section2, section1.assigned_roomslots[0])
-
-    # I've commented out all the predictive scorers because they aren't
-    # strictly necessary; unlike constraints, which need to prune illegal
-    # operations, you can always just make the operation, score it, and then
-    # undo it. It's a little slower but if implemented correctly shouldn't be
-    # much slower.
-    # def score_schedule_section(self, section, start_roomslot):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state schedules the specified section starting
-    #     at the specified roomslot."""
-    #     raise NotImplementedError
-
-    # def score_move_section(self, section, start_roomslot):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state moves the specified already-scheduled
-    #     section to start at the specified roomslot."""
-    #     raise NotImplementedError
-
-    # def score_unschedule_section(self, section):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state unschedules the specified section."""
-    #     raise NotImplementedError
-
-    # def score_swap_sections(self, section1, section2):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state swaps the two specified already-scheduled
-    #     sections."""
-    #     raise NotImplementedError
 
 
 class CompositeScorer(BaseScorer):
@@ -156,51 +133,6 @@ class CompositeScorer(BaseScorer):
         scores = [(scorer.__class__.__name__, weight, scorer.score_schedule())
                   for scorer, weight in self.scorers_and_weights]
         return (sorted(scores, key=lambda x: x[0]), self.score_schedule())
-
-    # See note in BaseScorer about these being commented out.
-    # NOTE: If you uncomment these, make sure you update the computation to
-    # account for scorer scaling, since these were written before that was
-    # introduced!
-    #
-    # def score_schedule_section(self, section, start_roomslot):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state schedules the specified section starting
-    #     at the specified roomslot."""
-    #     total_score = 0.0
-    #     for scorer, weight in self.scorers_and_weights:
-    #         total_score += \
-    #             scorer.score_schedule_section(
-    #                 section, start_roomslot) * weight
-    #     return total_score / self.total_weight
-
-    # def score_move_section(self, section, start_roomslot):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state moves the specified already-scheduled
-    #     section to start at the specified roomslot."""
-    #     total_score = 0.0
-    #     for scorer, weight in self.scorers_and_weights:
-    #         total_score += \
-    #             scorer.score_move_section(section, start_roomslot) * weight
-    #     return total_score / self.total_weight
-
-    # def score_unschedule_section(self, section):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state unschedules the specified section."""
-    #     total_score = 0.0
-    #     for scorer, weight in self.scorers_and_weights:
-    #         total_score += \
-    #             scorer.score_unschedule_section(section) * weight
-    #     return total_score / self.total_weight
-
-    # def score_swap_sections(self, section1, section2):
-    #     """Returns a score in the range [0, 1] if the schedule currently
-    #     reflected in internal state swaps the two specified already-scheduled
-    #     sections."""
-    #     total_score = 0.0
-    #     for scorer, weight in self.scorers_and_weights:
-    #         total_score += \
-    #             scorer.score_swap_sections(section1, section2) * weight
-    #     return total_score / self.total_weight
 
     @util.timed_func("CompositeScorer_update_schedule")
     def update_schedule(self, schedule):
