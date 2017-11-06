@@ -1,10 +1,9 @@
 (Also check TODOs in comments)
 
 Better per-section docs
+include program ID in help text
 
 Bugs:
-
-Page shouldn't just crash if tags are malformatted.
 
 There's an unknown bug which sometimes causes saving (in particular, swaps) to
 fail because "the room is already occupied" (i.e. check_can_schedule_sections

@@ -26,16 +26,25 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
     def autoscheduler(self, request, tl, one, two, module, extra, prog):
 
         #   Render control page with autoscheduler options
-        context = {
-            'constraints': AutoschedulerController.constraint_options(prog),
-            "scorers": AutoschedulerController.scorer_options(prog),
-            "resources": AutoschedulerController.resource_options(prog),
-            "search": AutoschedulerController.search_options(
-                prog, section=request.GET.get("section", None)),
-            "program": prog
-        }
-        return render_to_response(
-            self.baseDir()+'autoscheduler.html', request, context)
+        try:
+            context = {
+                'constraints': AutoschedulerController.constraint_options(
+                    prog),
+                "scorers": AutoschedulerController.scorer_options(prog),
+                "resources": AutoschedulerController.resource_options(prog),
+                "search": AutoschedulerController.search_options(
+                    prog, section=request.GET.get("section", None)),
+                "program": prog
+            }
+            return render_to_response(
+                self.baseDir()+'autoscheduler.html', request, context)
+        except SchedulingError as e:
+            context = {
+                "program": prog,
+                "err_msg": str(e)
+            }
+            return render_to_response(
+                self.baseDir()+'error.html', request, context)
 
     def is_float(self, s):
         try:
