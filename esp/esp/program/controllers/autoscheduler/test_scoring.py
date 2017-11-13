@@ -1,5 +1,5 @@
 import unittest
-from esp.program.controllers.schedulingassistant import \
+from esp.program.controllers.autoscheduler import \
         scoring, testutils
 
 
