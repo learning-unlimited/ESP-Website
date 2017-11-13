@@ -109,8 +109,8 @@ function clearAutoscheduler() {
 function toggleShowOptions(type) {
 	var options = document.getElementById("autoscheduler"+type+"div");
 	if (options.style.display === "none") {
-	options.style.display = "block";
+		options.style.display = "block";
 	} else {
-	options.style.display = "none";
+		options.style.display = "none";
 	}
 }
