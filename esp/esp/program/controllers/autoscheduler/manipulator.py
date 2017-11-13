@@ -1,6 +1,4 @@
-"""
-A schedule manipulator. Stores and makes changes to an AS_schedule.
-"""
+"""A schedule manipulator. Stores and makes changes to an AS_schedule."""
 
 from esp.program.controllers.autoscheduler.scoring import CompositeScorer
 from esp.program.controllers.autoscheduler.constraints import \

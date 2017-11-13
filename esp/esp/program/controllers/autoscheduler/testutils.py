@@ -1,6 +1,4 @@
-"""
-Tools for running tests.
-"""
+"""Tools for running tests."""
 
 from datetime import datetime
 

@@ -103,7 +103,9 @@ returning a boolean for debugging purposes.
 Constraints can be "required" or "optional". A required constraint is one that
 is assumed to hold or would otherwise lead to adverse behavior if violated,
 e.g. trying to double-book a room would probably either lead to a crash or to
-silently unscheduling whatever was already in that room. 
+silently unscheduling whatever was already in that room. An optional constraint
+is something like "don't schedule a class over every block of lunch in any
+given day".
 
 Constraints are checked when a schedule is loaded into memory, before it is
 saved, and before any schedule manipulation (i.e. before scheduling a section,
@@ -191,9 +193,12 @@ Each scorer:
 Scorers are expected to return a score in the range [0, 1] where 0 is bad and 1
 is good. Scorers also maintain a scaling factor, such that when its score is
 multiplied by the scaling factor, each schedule manipulation affecting a single
-section will on average have impact (1 / num_sections), e.g. for the scorer
-that tries to schedule as many distinct teachers as possible, the scaling
-factor is the number of sections divided by the number of teachers.
+section will on average have impact (1 / num_sections), where this average
+ignores manipulations which don't affect the scorer. For example, a scorer like
+"maximize the number of sections scheduled" has scaling factor of 1, and a
+scorer like "schedule as many distinct teachers as possible" has scaling factor
+(num_teachers / num_sections), because each time a new teacher is scheduled
+they impact the score by (1 / num_teachers).
 
 To implement a new Scorer, implement it here as a subclass of BaseScorer,
 making sure to override the scaling factor as needed, and update config.py

@@ -1,4 +1,4 @@
-"""A controller for the autoscheduler."""
+"""A controller for the automatic scheduling assistant."""
 
 import datetime
 from django.core.exceptions import ObjectDoesNotExist

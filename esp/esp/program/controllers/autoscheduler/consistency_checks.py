@@ -1,13 +1,19 @@
-from esp.program.controllers.autoscheduler import util
-from esp.program.controllers.autoscheduler.exceptions import ConsistencyError
+""" Checks for schedule integrity.
 
-""" A consistency check verifies whether an AS_Schedule satisfies various
+A consistency check verifies whether an AS_Schedule satisfies various
 invariants in the models/data structures, and which we assume the code enforces
 implicitly; for example, if a certain fact is stored in two different ways in
 an AS_Schedule, then we expect these two different ways to always agree with
 each other. Conversely, it is expected to be impossible for a schedule to fail
 a consistency check unless there are bugs in the code.
 """
+
+from esp.program.controllers.autoscheduler import util
+
+
+class ConsistencyError(Exception):
+    """An error caught by a consistency check."""
+    pass
 
 
 class ConsistencyChecker:

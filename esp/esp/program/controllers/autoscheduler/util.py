@@ -1,6 +1,4 @@
-"""
-Various utility functions.
-"""
+"""Various utility functions."""
 
 from datetime import timedelta, datetime
 from timeit import default_timer

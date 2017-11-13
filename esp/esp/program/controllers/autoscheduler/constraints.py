@@ -1,4 +1,5 @@
-"""
+"""Checkers to disallow invalid schedules and schedule manipulations.
+
 TO ADD NEW CONSTRAINTS:
 Create a class to extend the BaseConstraint class, and update config.py to list
 a description. If your constraint is required, set the

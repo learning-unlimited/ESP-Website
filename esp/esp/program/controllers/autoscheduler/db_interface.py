@@ -1,6 +1,7 @@
-"""
-Contains helper functions to load and save from the database. This should be
-the only place where any database interaction happens.
+"""Contains helper functions to load and save from the database.
+
+This should be the only place (other than the controller itself) where any
+database interaction happens.
 """
 
 import hashlib

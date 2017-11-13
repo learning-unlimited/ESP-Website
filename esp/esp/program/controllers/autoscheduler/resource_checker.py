@@ -1,6 +1,4 @@
-"""
-Utilities for use in resource constraints and scoring.
-"""
+"""Utilities for use in resource constraints and scoring."""
 
 import re
 

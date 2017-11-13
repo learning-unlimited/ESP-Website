@@ -1,6 +1,4 @@
-"""
-A class for using depth-limited DFS to try to find improvements to a schedule.
-"""
+"""A class for using depth-limited DFS find improvements to a schedule."""
 
 import datetime
 import esp.program.controllers.autoscheduler.util as util

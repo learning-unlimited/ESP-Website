@@ -1,4 +1,5 @@
-"""
+"""Classes for judging how good a schedule is.
+
 TO ADD NEW SCORERS:
 Extend and implement BaseScorer, and update config.py with a description and
 default weight. Set self.scaling for your scorer as appropriate (see below).

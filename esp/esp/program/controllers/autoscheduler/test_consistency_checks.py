@@ -4,7 +4,8 @@ import datetime
 
 from esp.program.controllers.autoscheduler import \
         consistency_checks, testutils, models
-from esp.program.controllers.autoscheduler.exceptions import ConsistencyError
+from esp.program.controllers.autoscheduler.consistency_checks import \
+        ConsistencyError
 
 
 class ConsistencyCheckerTest(unittest.TestCase):
