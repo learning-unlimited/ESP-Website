@@ -19,7 +19,7 @@ from esp.program.modules import module_ext
 from esp.tagdict.models import Tag
 
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-from esp.program.controllers.autoscheduler.models import \
+from esp.program.controllers.autoscheduler.data_model import \
     AS_Schedule, AS_ClassSection, AS_Teacher, AS_Classroom, \
     AS_Timeslot, AS_RoomSlot, AS_ResourceType
 from esp.program.controllers.autoscheduler import \

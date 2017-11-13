@@ -1,9 +1,9 @@
-import unittest
-import traceback
 import datetime
+import traceback
+import unittest
 
 from esp.program.controllers.autoscheduler import \
-        consistency_checks, testutils, models
+        consistency_checks, testutils, data_model
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyError
 
@@ -97,7 +97,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_lunch_consistency(sched)
         sched.lunch_timeslots[day].pop()
 
-        sched.lunch_timeslots[day].append(models.AS_Timeslot(
+        sched.lunch_timeslots[day].append(data_model.AS_Timeslot(
             datetime.datetime(2017, 2, 2, 14, 5),
             datetime.datetime(2017, 2, 2, 14, 55),
             event_id=5))
@@ -166,11 +166,11 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
         sched.timeslots[1].associated_roomslots.remove(roomslot)
 
-        new_timeslot = models.AS_Timeslot(
+        new_timeslot = data_model.AS_Timeslot(
                 datetime.datetime(2017, 2, 2, 16, 5),
                 datetime.datetime(2017, 2, 2, 16, 55),
                 7)
-        new_roomslot = models.AS_RoomSlot(new_timeslot, None)
+        new_roomslot = data_model.AS_RoomSlot(new_timeslot, None)
         # This should be okay, because we made a "rogue" roomslot but it's
         # orphaned.
         try:
@@ -201,7 +201,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
 
         sched.timeslots[2].associated_roomslots.add(new_roomslot)
-        new_classroom = models.AS_Classroom("1-190", 20, [])
+        new_classroom = data_model.AS_Classroom("1-190", 20, [])
         new_roomslot.room = new_classroom
         new_classroom.availability.append(new_roomslot)
         sched.classrooms["10-250"].availability.remove(new_roomslot)
@@ -215,7 +215,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
 
         sched.classrooms["10-250"].availability.append(new_roomslot)
-        new_section = models.AS_ClassSection(
+        new_section = data_model.AS_ClassSection(
                 [sched.teachers[1]], 0.83, 20, 0, [new_roomslot], 3)
         new_roomslot.assigned_section = new_section
         with self.assertRaises(ConsistencyError):
@@ -257,7 +257,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslot_next_and_index_consistency(sched)
         room.availability.append(last_roomslot)
 
-        new_roomslot = models.AS_RoomSlot(last_roomslot.timeslot, room)
+        new_roomslot = data_model.AS_RoomSlot(last_roomslot.timeslot, room)
         room.load_roomslot_caches()
         room.availability.append(new_roomslot)
         with self.assertRaises(ConsistencyError):
@@ -456,7 +456,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
                     "with error: \n{}"
                     .format(traceback.format_exc()))
 
-        sched.timeslots.append(models.AS_Timeslot(
+        sched.timeslots.append(data_model.AS_Timeslot(
             datetime.datetime(2017, 2, 2, 23, 30),
             datetime.datetime(2017, 2, 3, 0, 30),
             event_id=7))

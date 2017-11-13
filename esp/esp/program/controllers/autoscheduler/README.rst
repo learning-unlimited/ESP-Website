@@ -148,8 +148,8 @@ Implements the schedule/unschedule/move/swap operations. Keeps track of a
 history of operations performed and allows actions to be undone. History can
 also be rendered into or replayed from a JSON object.
 
-models.py
-~~~~~~~~~
+data_model.py
+~~~~~~~~~----
 
 Defines the in-memory representation of a schedule.
 

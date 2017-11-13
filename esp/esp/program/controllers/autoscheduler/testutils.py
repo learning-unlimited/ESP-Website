@@ -2,32 +2,33 @@
 
 from datetime import datetime
 
-from esp.program.controllers.autoscheduler import models
+import esp.program.controllers.autoscheduler.data_model as data_model
 
 
 def create_test_schedule_1():
-    timeslots = [models.AS_Timeslot(
+    timeslots = [data_model.AS_Timeslot(
         datetime(2017, 2, 2, 10+i, 5),
         datetime(2017, 2, 2, 10+i, 55),
         event_id=i + 1) for i in xrange(6)]
-    restype = models.AS_ResourceType("Projector", 0, "Yes")
+    restype = data_model.AS_ResourceType("Projector", 0, "Yes")
     classrooms = {
-        "26-100": models.AS_Classroom("26-100", 50, timeslots),
-        "10-250": models.AS_Classroom("10-250", 30, timeslots[3:],
-                                      furnishings={restype.name: restype})
+        "26-100": data_model.AS_Classroom("26-100", 50, timeslots),
+        "10-250": data_model.AS_Classroom("10-250", 30, timeslots[3:],
+                                          furnishings={restype.name: restype})
     }
     teachers = {
-        1: models.AS_Teacher(list(timeslots), 1, True),
-        2: models.AS_Teacher(timeslots[:3], 2),
-        3: models.AS_Teacher(timeslots[1:], 3)
+        1: data_model.AS_Teacher(list(timeslots), 1, True),
+        2: data_model.AS_Teacher(timeslots[:3], 2),
+        3: data_model.AS_Teacher(timeslots[1:], 3)
     }
     sections = {
-        1: models.AS_ClassSection([teachers[1]], 0.83, 20, 0, [], 1,
-                                  resource_requests={restype.name: restype}),
-        2: models.AS_ClassSection(
+        1: data_model.AS_ClassSection(
+            [teachers[1]], 0.83, 20, 0, [], 1,
+            resource_requests={restype.name: restype}),
+        2: data_model.AS_ClassSection(
             [teachers[2], teachers[3]], 1.83, 50, 1, [], 2)}
-    return models.AS_Schedule(timeslots=timeslots, class_sections=sections,
-                              teachers=teachers, classrooms=classrooms)
+    return data_model.AS_Schedule(timeslots=timeslots, class_sections=sections,
+                                  teachers=teachers, classrooms=classrooms)
 
 
 def create_test_schedule_2():
@@ -39,7 +40,7 @@ def create_test_schedule_2():
 
 def create_test_schedule_3():
     sched = create_test_schedule_1()
-    timeslots_extra = [models.AS_Timeslot(
+    timeslots_extra = [data_model.AS_Timeslot(
         datetime(2017, 2, 3, 10+i, 5),
         datetime(2017, 2, 3, 10+i, 55),
         event_id=i + 7) for i in xrange(6)]

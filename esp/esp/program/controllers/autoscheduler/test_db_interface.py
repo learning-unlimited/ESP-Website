@@ -3,16 +3,16 @@ import traceback
 
 from django.db.models import Min
 
-import esp.program.controllers.autoscheduler.models as models
-import esp.program.controllers.autoscheduler.util as util
+from esp.cal.models import Event
+import esp.program.controllers.autoscheduler.data_model as data_model
 import esp.program.controllers.autoscheduler.db_interface as db_interface
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-from esp.cal.models import Event
+import esp.program.controllers.autoscheduler.util as util
 from esp.program.models.class_ import \
         ClassSubject, ClassSection, ClassCategories
-from esp.resources.models import Resource, ResourceType, ResourceRequest
-from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules import module_ext
+from esp.program.tests import ProgramFrameworkTest
+from esp.resources.models import Resource, ResourceType, ResourceRequest
 
 
 class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
@@ -158,30 +158,30 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                          + settings["timeslot_gap"])))
             end_time = start_time + \
                 datetime.timedelta(minutes=settings["timeslot_length"])
-            timeslots.append(models.AS_Timeslot(
+            timeslots.append(data_model.AS_Timeslot(
                 start_time, end_time, timeslot_id, None))
             timeslot_id += 1
         start_time = extra_settings["extra_timeslot_start"]
         end_time = start_time + datetime.timedelta(
                 minutes=settings["timeslot_length"])
-        timeslots.append(models.AS_Timeslot(
+        timeslots.append(data_model.AS_Timeslot(
             start_time, end_time, timeslot_id, None))
 
         # Create classrooms and furnishings
         classrooms = []
         capacity = settings["room_capacity"]
         for i in xrange(settings["num_rooms"]):
-            classrooms.append(models.AS_Classroom(
+            classrooms.append(data_model.AS_Classroom(
                 "Room {}".format(str(i)), capacity, timeslots[:-1]))
         restype_id = ResourceType.objects.get(
             name=extra_settings["extra_resource_type_name"]).id
-        extra_resource_type = models.AS_ResourceType(
+        extra_resource_type = data_model.AS_ResourceType(
             extra_settings["extra_resource_type_name"],
             restype_id,
             extra_settings["extra_resource_value"])
         room_timeslots = [timeslots[i] for i in
                           extra_settings["extra_room_availability"]]
-        classrooms.append(models.AS_Classroom(
+        classrooms.append(data_model.AS_Classroom(
                 "Extra Room", extra_settings["extra_room_capacity"],
                 room_timeslots,
                 {extra_resource_type.name: extra_resource_type}))
@@ -194,7 +194,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             teacher_availability = [
                     ts for j, ts in enumerate(timeslots) if j != i]
             is_admin = (i == extra_settings["teacher_admin_idx"])
-            teachers.append(models.AS_Teacher(
+            teachers.append(data_model.AS_Teacher(
                 teacher_availability, teacher_id, is_admin))
         teachers_dict = {teacher.id: teacher for teacher in teachers}
 
@@ -213,7 +213,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 subject_count += 1
                 duration = settings["timeslot_length"] / 60.0
                 for j in xrange(settings["sections_per_class"]):
-                    sections.append(models.AS_ClassSection(
+                    sections.append(data_model.AS_ClassSection(
                         [t], duration, capacity,
                         category_id, [],
                         section_id=section_id, parent_class_id=subject_id,
@@ -238,7 +238,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.extra_section_ids = []
         for i in xrange(extra_settings["extra_class_sections"]):
             self.extra_section_ids.append(section_id)
-            sections.append(models.AS_ClassSection(
+            sections.append(data_model.AS_ClassSection(
                 section_teachers, duration, capacity,
                 category_id, [],
                 section_id=section_id, parent_class_id=subject_id,
@@ -248,7 +248,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         subject_id += 1
         sections_dict = {section.id: section for section in sections}
 
-        return models.AS_Schedule(
+        return data_model.AS_Schedule(
             program=self.program, timeslots=timeslots,
             class_sections=sections_dict, teachers=teachers_dict,
             classrooms=classrooms_dict)
@@ -577,7 +577,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             if not rvs.pop(0):
                 raise SchedulingError("oops")
         db_interface.check_can_schedule_sections = \
-                lambda x, y: raise_after_one()
+            lambda x, y: raise_after_one()
         try:
             for s in sections:
                 s.clear_roomslots()

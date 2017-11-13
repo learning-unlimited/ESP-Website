@@ -4,17 +4,17 @@ Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
 also be more performant.  """
 
+import bisect
 from functools import total_ordering
 import hashlib
 import json
-import bisect
 
+import esp.program.controllers.autoscheduler.config as config
 from esp.program.controllers.autoscheduler.consistency_checks import \
         ConsistencyChecker
-from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-import esp.program.controllers.autoscheduler.config as config
 from esp.program.controllers.autoscheduler.constraints import \
         CompositeConstraint
+from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 
 
