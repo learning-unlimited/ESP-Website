@@ -341,10 +341,17 @@ Teacher Profile Editor (RegProfileModule)
 
 This module will prompt teachers to fill out their profile information before proceeding to create classes.  In addition to their contact information, they will be asked a few questions such as their affiliation (e.g. your university, or something else) and graduation year.  If you would like to ask additional questions, please use the CustomFormModule.
 
+If you would like to remove a question, you can do so using the following tag:
+
+* teacherreg_hide_fields - A comma seperated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+
 The questions shown on the teacher profile are configurable via the following tags:
 
-* teacherreg_label_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
-* teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+* teacherreg_label_purchase_requests - If tag exists, overwrites the label 'Planned Purchases' in teacher registration.
+* teacherreg_help_text_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
+* teacherreg_label_message_for_directors - If tag exists, overwrites the label 'Message for Directors' in teacher registration.
+* teacherreg_help_text_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
 

@@ -312,7 +312,10 @@ function Matrix(
         });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
-            var room_header = $j("<td class='room'>" + id + "</td>");
+            var room_header = $j("<td>")
+                .addClass('room')
+                .text(id + " [" + room['num_students'] + "]")
+                .attr('data-id', id);
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
             rows[id] = row;
@@ -333,7 +336,7 @@ function Matrix(
         var that = this;
         this.el.tooltip({
             content: function() {
-                var room = that.rooms[$j(this)[0].innerHTML];
+                var room = that.rooms[$j(this).data('id')];
                 var resource_lines = [];
                 $j.each(room.resources, function(index, resource) {
                     var desc = resource.resource_type.name;
