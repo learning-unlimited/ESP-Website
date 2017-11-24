@@ -65,14 +65,14 @@ class BigBoardModule(ProgramModuleObj):
             ("signed up for classes", [(1, time) for time in self.times_classes(prog)]),
         ]
 
-        graph_data, start = self.make_graph_data(timess, 10, 10, 25)
+        left_axis_data, start = self.make_graph_data(timess, 10, 10, 25)
 
         context = {
             "type": "Student",
             "numbers": numbers,
             "popular_classes": self.popular_classes(prog),
             "first_hour": start,
-            "graph_data": graph_data,
+            "graph_data": left_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
         return render_to_response(self.baseDir()+'bigboard.html',

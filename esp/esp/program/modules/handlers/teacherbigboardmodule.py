@@ -62,27 +62,27 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
         timess = [
             ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
-            ("number of approved classes", [(1, time) for time in self.app_classes(prog)]),
+            ("number of approved classes", [(1, time) for time in self.approved_classes(prog)]),
             ("number of teachers teaching", [(1, time) for time in self.teach_times(prog)]),
         ]
 
-        graph_data, start = BigBoardModule.make_graph_data(timess)
+        left_axis_data, start = BigBoardModule.make_graph_data(timess)
 
         class_hours, student_hours = self.get_hours(prog)
 
         hourss = [
-            ("number of registered class-hours", class_hours),
-            ("number of registered class-student-hours", student_hours),
+            ("number of class-hours", class_hours),
+            ("number of class-student-hours", student_hours),
         ]
 
-        hours_data, _ = BigBoardModule.make_graph_data(hourss)
+        right_axis_data, _ = BigBoardModule.make_graph_data(hourss)
 
         context = {
             "type": "Teacher",
             "numbers": numbers,
             "first_hour": start,
-            "graph_data": graph_data,
-            "hours_data": hours_data,
+            "left_axis_data": left_axis_data,
+            "right_axis_data": right_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
         return render_to_response('program/modules/bigboardmodule/bigboard.html',
@@ -125,7 +125,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         return sorted(class_times)
 
     @cache_function_for(105)
-    def app_classes(self, prog):
+    def approved_classes(self, prog):
         #all ClassSubjects that are approved (and have an approved section)
         class_times = ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
         ).values_list('timestamp', flat=True)
@@ -141,17 +141,15 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def get_hours(self, prog):
         hours = ClassSubject.objects.filter(parent_program=prog
         ).exclude(category__category__iexact="Lunch").values_list('timestamp','duration','class_size_max')
-        sorted_hours = sorted(hours, key=operator.itemgetter(2))
+        sorted_hours = sorted(hours, key=operator.itemgetter(0))
         class_hours = [(hour[1],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[1]*hour[2], hour[0]) for hour in sorted_hours]
         return class_hours, student_hours
 
     @cache_function_for(105)
     def static_hours(self, prog):
-        hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('id','duration','class_size_max')
-        hours = [[float(j[1]), float(j[1])*j[2]] for j in hours]
-        return [sum(j) for j in zip(*hours)]
+        hours = self.get_hours(prog)
+        return [sum(zip(*j)[0]) for j in hours]
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):
