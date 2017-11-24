@@ -290,8 +290,9 @@ class ClassManager(Manager):
     catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
-    def random_class(self):
+    def random_class(self, q=None):
         classes = self.filter(self.approved(return_q_obj=True))
+        if q is not None: classes = classes.filter(q)
         count = classes.count()
         return classes[random.randint(0, count - 1)]
 
@@ -1507,6 +1508,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def max_students(self):
         return self.sections.count()*self.class_size_max
+
+    def grades(self):
+        """ Return an iterable list of the grades for a class. """
+        return range(self.grade_min, self.grade_max + 1)
 
     def emailcode(self):
         """ Return the emailcode for this class.
