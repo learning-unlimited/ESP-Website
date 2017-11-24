@@ -61,8 +61,6 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
-        if self.user.getLastProfile().contact_user and not self.user.getLastProfile().contact_user.receive_txt_message:
-            self.fields['receive_txt_message'].initial = 'False'
 
     def clean(self):
         super(UserContactForm, self).clean()
