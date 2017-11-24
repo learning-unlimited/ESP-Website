@@ -1779,7 +1779,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     def updateForm(self, form_data, prepend=''):
         newkey = self.__dict__
         for key, val in newkey.items():
-            if val and key != 'id':
+            if val not in [None, ''] and key != 'id':
                 form_data[prepend+key] = val
         return form_data
 
