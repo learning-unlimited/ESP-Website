@@ -20,6 +20,11 @@ With this new procedure, we should be able to standardize the platform that all 
 Setup procedure
 ---------------
 
+Preparation
+~~~~~~~~~~~
+
+On some computers, particularly Lenovo computers, you will need to enable hardware virtualization in the BIOS in order to run VMs. If you don't, this issue may manifest itself in Vagrant silently failing to boot your VM.
+
 Base components
 ~~~~~~~~~~~~~~~
 
@@ -31,9 +36,9 @@ This setup procedure does have some prerequisites of its own, which you will nee
 * `Python 2.7 <https://www.python.org/downloads/>`_
 * Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
-If you are on a Linux system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
+If you are on a **Linux** system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
 
-If you are on a Windows system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you may need to run ``setx path "%path%;C:\Python27;C:\Python27\Scripts;"`` in order to put ``python``, ``pip`` and ``fab`` on your PATH. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
+If you are on a **Windows** system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you should modify the PATH environment variable from System -> Environment Variables by append ``C:\Python27;C:\Python27\Scripts;"`` in order to put ``python``, ``pip`` and ``fab`` on your PATH. (You can also run ``setx path "%path%;C:\Python27;C:\Python27\Scripts;"``, but this only takes effect for the current session.) You may also want to add the path to git's ``bin`` if you need an SSH client. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
 Installation
 ~~~~~~~~~~~~
@@ -49,19 +54,23 @@ Next, use Vagrant to create your VM: ::
 
     vagrant up
 
+(If you get an error message suggesting that you run ``vagrant init``, you probably forgot to ``cd devsite``.)
+
 Note that you will not be able to see the VM, since it runs in a "headless" mode by default.
 
 The following command connects to the running VM and installs the software dependencies: ::
 
     fab setup
 
-The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The ``loaddb`` task accepts an optional argument to load a database dump in .sql or any other Potgres-supported dump format. ::
+The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The ``loaddb`` task accepts an optional argument to load a database dump in .sql or any other Potgres-supported dump format. (**NOTE:** Run **only one** of the next three commands.) ::
 
     fab loaddb:/path/to/dump
 
 Alternatively, database dumps can be downloaded automatically over HTTP. If you've been provided with a download URL, run: ::
 
     fab loaddb
+
+You will be prompted to provide the URL. On future runs of ``fab loaddb``, the database will be automatically reloaded from this URL. (If you mistype the URL, you can edit it by ``vagrant ssh``-ing into the VM and editing ``/mnt/encrypted/fabric/dbconfig``.)
 
 Finally, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
@@ -121,13 +130,14 @@ For instructions on contributing changes and our ``git`` workflow, see `<contrib
 Problems
 --------
 
-1. The ``vagrant up`` command errors out with a Ruby stack trace.
+1. The ``vagrant up`` command errors out, or times out while waiting for the VM to boot. (You may also want to investigate some of these for errors later in the process.)
 
-    There is a `known issue <https://github.com/mitchellh/vagrant/issues/6748>`_ with Vagrant/VirtualBox on IPv6 static networking.
+    If it errors out with a Ruby stack trace, there is a `known issue <https://github.com/mitchellh/vagrant/issues/6748>`_ with Vagrant/VirtualBox on IPv6 static networking.
 
-    One other quick thing to check is to open the VM directly from VirtualBox.  If it also fails,
-    VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
-    might be out of luck since the VM runs 64-bit Ubuntu.  Similarly, on some computers you will need to enable hardware virtualization in the BIOS in order to run the 64-bit VM.
+    One other thing to try is to run the VM not headlessly. You can run the VM directly from VirtualBox. You can also do this in Vagrant by uncommenting the line ``# vb.gui = true`` in ``Vagrantfile``, then running ``vagrant reload``. VirtualBox may give a more helpful error message, or you may be able to observe the VM getting stuck waiting for a keypress that never comes, say on the bootloader.
+
+    * If you have an older computer running a 32-bit operating system, then you might be out of luck since the VM runs 64-bit Ubuntu.
+    * Check that hardware virtualization is enabled in your BIOS, particularly if you're running a Lenovo computer.
 
 2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
 
