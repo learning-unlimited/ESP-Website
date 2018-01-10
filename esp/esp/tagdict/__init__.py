@@ -107,4 +107,5 @@ all_program_tags = {
     'autoscheduler_scorer_weight_overrides': (False, ""),
     'autoscheduler_resource_constraint_overrides': (False, ""),
     'autoscheduler_resource_scoring_overrides': (False, ""),
+    'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
 }

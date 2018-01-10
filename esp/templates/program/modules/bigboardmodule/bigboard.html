@@ -1,5 +1,5 @@
 {% extends "elements/html" %}
-{% block fulltitle %}Student Registration Summary for {{program.niceName}}{% endblock %}
+{% block fulltitle %}{{type}} Registration Summary for {{program.niceName}}{% endblock %}
 
 {% block meta %}
   {{ block.super }}
@@ -20,7 +20,7 @@
 
 {% block body %}
 
-{% if graph_data %}
+{% if left_axis_data %}
   <div class="bigboard-graph">
     <div id="highcharts-placeholder"></div>
     <script type="text/javascript">
@@ -30,10 +30,12 @@
               enabled: false
           },
           legend: {
-            align: "right",
+            align: "left",
+            x: 40,
             floating: true,
             layout: "vertical",
-            verticalAlign: "middle",
+            verticalAlign: "top",
+            //backgroundColor: '#FFFFFF'
           },
           plotOptions: {
             line: {
@@ -50,16 +52,45 @@
             type: 'datetime',
             minRange: 24 * 60 * 60 * 1000, // one day
           },
-          yAxis: {
+          yAxis: [{
             title: {text: null},
             min: 0,
             maxPadding: 0.01,
             endOnTick: false,
+          }
+          {% if right_axis_data %}
+          ,{
+            title: {text: '{{right_axis_data.0.description}}'},
+            min: 0,
+            maxPadding: 0.01,
+            endOnTick: false,
+            opposite: true,
           },
+          {
+            title: {text: '{{right_axis_data.1.description}}'},
+            min: 0,
+            maxPadding: 0.01,
+            endOnTick: false,
+            opposite: true,
+          }
+          {% endif %}
+          ],
           series: [
-            {% for series in graph_data %}
+            {% for series in left_axis_data %}
               {
                 type: 'line',
+                name: '{{series.description}}',
+                pointInterval: 60 * 60 * 1000, // one hour
+                pointStart: Date.UTC(
+                    {{first_hour.year}}, {{first_hour.month}} - 1,
+                    {{first_hour.day}}, {{first_hour.hour}}),
+                data: {{series.data}},
+              },
+            {% endfor %}
+            {% for series in right_axis_data %}
+              {
+                type: 'line',
+                yAxis: {{ forloop.counter }},
                 name: '{{series.description}}',
                 pointInterval: 60 * 60 * 1000, // one hour
                 pointStart: Date.UTC(
@@ -155,25 +186,26 @@
   {% endfor %}
 </div>
 
-
-<div class="popular-classeses">
-  {% for description, classes in popular_classes %}
-    <div class="popular-classes-block">
-      <div class="popular-classes-heading">
-        {{description}}
-      </div>
-      <table class="popular-classes bigboard-description">
-        {% for class in classes %}
-          <tr>
-            <td class="popular-class-num">{{class.points}}</td>
-            <td class="popular-class-title">
-              {{class.category__symbol}}{{class.id}}: {{class.title}}
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
+{% if popular_classes %}
+    <div class="popular-classeses">
+      {% for description, classes in popular_classes %}
+        <div class="popular-classes-block">
+          <div class="popular-classes-heading">
+            {{description}}
+          </div>
+          <table class="popular-classes bigboard-description">
+            {% for class in classes %}
+              <tr>
+                <td class="popular-class-num">{{class.points}}</td>
+                <td class="popular-class-title">
+                  {{class.category__symbol}}{{class.id}}: {{class.title}}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
-</div>
+{% endif %}
 
 {% endblock %}
