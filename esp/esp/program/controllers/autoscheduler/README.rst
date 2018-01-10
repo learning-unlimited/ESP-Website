@@ -24,8 +24,8 @@ Consequently, if the database models change, you only need to update the DB
 interface to correctly translate from the new model to the in-memory
 representation.
 
-Schedule Operations
-~~~~~~~~~~~~~~~~~~~
+Schedule Manipulations
+~~~~~~~~~~~~~~~~~~~~~~
 
 Allowed manipulations to a given schedule are:
 
@@ -39,11 +39,11 @@ Allowed manipulations to a given schedule are:
 
 Strictly speaking, all possible schedule changes can be achieved by a
 combination of scheduling and unscheduling alone. Adding additional move and
-swap operations, however, can achieve better results when you do something
+swap manipulations, however, can achieve better results when you do something
 like "give me the best possible schedule achievable within 2 manipulations".
 
 Note that while the schedule manipulator theoretically supports the Swap
-operation, the current schedule optimizer (search.py) doesn't use it, so it is
+manipulations, the current schedule optimizer (search.py) doesn't use it, so it is
 largely untested and there are probably bugs somewhere.
 
 Optimization
@@ -93,8 +93,8 @@ once". Each constraint class can:
 
 * Verify that an existing schedule satisfies the constraints
 
-* Check whether each of the four operations would cause the constraint to be
-  violated for a given schedule
+* Determine whether a given schedule manipulation would cause the constraint to
+  be violated for a given schedule
 
 If a constraint is violated, the constraint class returns a
 ConstraintViolation, otherwise it returns None. This is more helpful than
@@ -144,8 +144,8 @@ exceptions.py
 manipulator.py
 ~~~~~~~~~~~~~~
 
-Implements the schedule/unschedule/move/swap operations. Keeps track of a
-history of operations performed and allows actions to be undone. History can
+Implements the schedule/unschedule/move/swap manipulations. Keeps track of a
+history of manipulations performed and allows actions to be undone. History can
 also be rendered into or replayed from a JSON object.
 
 data_model.py
@@ -184,7 +184,8 @@ Scorers are aggregated together in a weighted average into a CompositeScorer.
 
 Each scorer:
 
-* Stores internal state
+* Stores internal state to represent the relevant aspects of the current
+  schedule
 
 * Can return the current score associated with its internal state
 

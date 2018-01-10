@@ -6,7 +6,6 @@ also be more performant.  """
 
 import bisect
 from functools import total_ordering
-import hashlib
 import json
 
 import esp.program.controllers.autoscheduler.config as config
@@ -153,14 +152,14 @@ class AS_ClassSection(object):
         self.initial_state = self.scheduling_hash()
 
     def scheduling_hash(self):
-        """Creates a unique hash based on the timeslots and rooms assigned to
-        this section."""
+        """Creates a unique string based on the timeslots and rooms assigned to
+        this section. It's not actually a hash anymore, but renaming sounds
+        like a pain"""
         meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
                                 for e in self.assigned_roomslots])
         rooms = sorted(list(set([r.room.name for r in
                                 self.assigned_roomslots])))
-        state_str = json.dumps([meeting_times, rooms])
-        return hashlib.md5(state_str).hexdigest()
+        return json.dumps([meeting_times, rooms])
 
 
 class AS_Teacher(object):
@@ -171,10 +170,8 @@ class AS_Teacher(object):
         # Dict from section ID to section
         self.taught_sections = {}
         self.is_admin = is_admin
-        self.availability_dict = {}
-        for timeslot in self.availability:
-            self.availability_dict[(
-                timeslot.start, timeslot.end)] = timeslot
+        self.availability_dict = {
+            (t.start, t.end): t for t in self.availability}
 
     def add_availability(self, timeslot):
         if (timeslot.start, timeslot.end) not in self.availability_dict:

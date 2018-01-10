@@ -6,14 +6,15 @@ default weight. Set self.scaling for your scorer as appropriate (see below).
 
 A Scorer stores internal state representing the relevant information of a
 schedule, and can return its current score, update its state with a fresh
-schedule, or update its state due to a schedule/unschedule/move/swap operation.
+schedule, or update its state due to a schedule/unschedule/move/swap
+manipulation.
 
 We use this design because scorers tend to describe global state (e.g. "how
 many sections are scheduled?") and would need to read the entire schedule to
 produce a score for each schedule manipulation, which would be very slow.
 However, individual schedule manipulations often do not require drastic state
 changes. Thus, scorers are expected to be fast at returning its current score
-or updating its state due to an individual operation, but not necessarily fast
+or updating its state due to an individual manipulation, but not necessarily fast
 at loading a fresh schedule.
 
 A Scorer is expected to return a score in the range [0, 1], where 1 is good and

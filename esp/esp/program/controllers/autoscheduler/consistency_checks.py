@@ -226,7 +226,6 @@ class ConsistencyChecker:
                         .format(teacher.id))
                 if teacher not in section.teachers:
                     raise ConsistencyError(
-
                         ("Teacher {} taught_sections listed a section the "
                          "teacher wasn't teaching").format(teacher.id))
         for section in schedule.class_sections.itervalues():

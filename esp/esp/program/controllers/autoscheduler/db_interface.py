@@ -4,7 +4,6 @@ This should be the only place (other than the controller itself) where any
 database interaction happens.
 """
 
-import hashlib
 import json
 
 from django.db.models import Count
@@ -624,8 +623,7 @@ def scheduling_hash_of(
     rooms = rooms_by_section[section.id] if rooms_by_section is not None \
         else section.classrooms()
     rooms = sorted(list(set([r.name for r in rooms])))
-    state_str = json.dumps([meeting_times, rooms])
-    return hashlib.md5(state_str).hexdigest()
+    return json.dumps([meeting_times, rooms])
 
 
 @util.timed_func("db_interface_convert_classroom_resources")

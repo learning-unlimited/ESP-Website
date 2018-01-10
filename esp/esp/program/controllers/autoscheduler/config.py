@@ -7,7 +7,7 @@ DELTA_TIME = 0.34
 """*******************Constraints*******************"""
 # Default configuration for whether constraints are enabled. Format is:
 #     ConstraintClassName: True/False
-# This will be overridden by a tag, and then by use input. Note that this will
+# This will be overridden by a tag, and then by user input. Note that this will
 # only have an effect on optional constraints; see the docstring at the top of
 # constraints.py for more details.
 DEFAULT_CONSTRAINTS_ENABLED = {

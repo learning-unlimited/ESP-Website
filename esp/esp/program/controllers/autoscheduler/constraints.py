@@ -179,7 +179,6 @@ class ContiguousConstraint(BaseConstraint):
                     prev_timeslot = roomslot.timeslot
         return None
 
-    # These local checks are for performance reasons.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
@@ -238,9 +237,6 @@ class LunchConstraint(BaseConstraint):
                                 .format(section.id))
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
@@ -288,9 +284,6 @@ class PreconditionConstraint(BaseConstraint):
         """Always None"""
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Ensures that the section to be scheduled is not already
         scheduled."""
@@ -405,9 +398,6 @@ class RoomAvailabilityConstraint(BaseConstraint):
 
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
@@ -443,9 +433,6 @@ class RoomConcurrencyConstraint(BaseConstraint):
         None otherwise."""
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
@@ -588,9 +575,6 @@ class TeacherAvailabilityConstraint(BaseConstraint):
 
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
@@ -706,9 +690,6 @@ class TeacherConcurrencyConstraint(BaseConstraint):
                     already_teaching.add((start_time, end_time))
         return None
 
-    # These local checks are for performance reasons. These also check
-    # hypothetical operations, whereas check_schedule checks an existing
-    # schedule.
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a ConstraintViolation
         if scheduling the section starting at the given roomslot would
