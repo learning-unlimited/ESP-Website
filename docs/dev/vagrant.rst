@@ -129,7 +129,7 @@ Problems
     VirtualBox may give a more helpful error message. For example, if you have an older computer running a 32-bit operating system, then you
     might be out of luck since the VM runs 64-bit Ubuntu.  Similarly, on some computers you will need to enable hardware virtualization in the BIOS in order to run the 64-bit VM.
 
-2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress".
+2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress" OR with error "error 47 from memcached_mget: SERVER HAS FAILED AND IS DISABLED UNTIL TIMED RETRY".
 
     You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
 
