@@ -5,6 +5,8 @@
 
 {% block stylesheets %}
 {{ block.super }}
+<!--I prefer the progress bars from this version, rather than those from v. 4 -willgearty-->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <style>
 .button {
@@ -93,7 +95,7 @@ recommend you have at least {{num_star}} classes starred for every priority slot
         <td style="vertical-align: top !important;">
             <div class="progress-custom">
                 <div class="progress">
-                    <div class="bar" role="progressbar" aria-valuenow="{{star_count}}" aria-valuemin="0" aria-valuemax="{{num_star}}" style="width: {{perc_star}}%;"></div>
+                    <div class="progress-bar" role="progressbar" aria-valuenow="{{star_count}}" aria-valuemin="0" aria-valuemax="{{num_star}}" style="width: {{perc_star}}%;"></div>
                 </div>
                 <div class="progress-value">
                     ({{star_count}}/{{num_star}} starred classes)
