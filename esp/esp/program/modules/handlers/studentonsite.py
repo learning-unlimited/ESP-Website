@@ -34,13 +34,15 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.models  import Program
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser
+from esp.users.models    import ESPUser, Permission, Record
 from esp.middleware   import ESPError
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
 from django.template import Template
 from django.template.loader import render_to_string, get_template, select_template
+
+from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
     @classmethod
@@ -55,19 +57,21 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @main_call
     @needs_student
     @meets_grade
-    @meets_deadline('Webapp')
+    @meets_deadline('/Webapp')
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
         """ Display the landing page for the student onsite webapp """
-        self.request = request
+        user = request.user
 
-        context = {}
+        context = StudentClassRegModule.prepare(user, prog)
+
+        context['user'] = user
         context['program'] = prog
         context['one'] = one
         context['two'] = two
         context['scrmi'] = prog.studentclassregmoduleinfo
-        context['isConfirmed'] = self.program.isConfirmed(request.user)
-        #context['have_paid'] = have_paid(request.user)
+        context['isConfirmed'] = self.program.isConfirmed(user)
+        context['class_changes'] = bool(Permission.user_has_perm(user, "Student/ClassChanges",prog))
 
         if extra == "map":
             return render_to_response(self.baseDir()+'map.html', request, context)
@@ -77,6 +81,28 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             return render_to_response(self.baseDir()+'survey.html', request, context)
         else:
             return render_to_response(self.baseDir()+'schedule.html', request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def map(self, request, tl, one, two, module, extra, prog):
+        return render_to_response(self.baseDir()+'map.html', request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def catalog(self, request, tl, one, two, module, extra, prog):
+        if extra:
+            try:
+                timeslot = Event.objects.get(pk=int(extra), program=prog)
+            except (TypeError, ValueError, Event.DoesNotExist) as e:
+                raise Http404
+            context['timeslot'] = extra
+        return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     class Meta:
         proxy = True
