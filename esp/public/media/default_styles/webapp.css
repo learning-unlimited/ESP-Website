@@ -20,7 +20,7 @@
 }
 
 .navbar td {
-  color: #f2f2f2;
+  color: #ddd;
   text-align: center;
   text-decoration: none;
   padding: 0px;
@@ -47,6 +47,7 @@ td {
 .main table {
   background-color: #82a9ff;
   border-collapse: collapse;
+  width: calc(100vh * 9 / 16);
 }
 
 .main tbody,
@@ -71,7 +72,7 @@ td {
 }
 
 .main th {
-  font-size: 5vh;
+  font-size: 4vh;
   height: 25%;
 }
 
@@ -83,20 +84,22 @@ td {
 }
 
 .main tr {
-    border-bottom: 1px solid black;
-    border-collapse: collapse;
+  border-bottom: 1px solid black;
+  border-collapse: collapse;
 }
 
 .time {
-  width: 15%;
+  width: 20%;
+  font-size: 2vh !important;
 }
 
 .cls {
-  width: 50%;
+  width: 55%;
 }
 
 .location {
   width: 20%;
+  font-size: 2vh !important;
 }
 
 .edit {
@@ -106,6 +109,10 @@ td {
 .material-icons.md-5 {
   font-size: 5vh;
   width: 5vh;
+}
+
+.material-icons.greyed {
+  color: grey;
 }
 
 .material-icons.md-10 {
