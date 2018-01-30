@@ -14,10 +14,10 @@
         <br>Schedule</td>
       <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/map" style="display:block;"><i class="material-icons md-5">map</i>
         <br>Map</a></td>
+      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/catalog" style="display:block;"><i class="material-icons md-5">event</i>
+        <br>Catalog</td>
       <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/survey" style="display:block;"><i class="material-icons md-5">question_answer</i>
         <br>Survey</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/contact" style="display:block;"><i class="material-icons md-5">phone</i>
-        <br>Contact Us</td>
     </tr>
   </table>
 </div>
@@ -27,93 +27,39 @@
   <div class="main">
     <table class="studentschedule">
       <tbody>
+        {% for timeslot in timeslots %}
+        {% ifchanged timeslot.0.start.day %}
+            <tr>
+                <th colspan="4"><span class="large bold">{{ timeslot.0.pretty_date }}</span></th>
+            </tr>
+        {% endifchanged %}
         <tr>
-          <th colspan="4"><span class="large bold">Saturday, April 22</span></th>
+            {% with timeslot.1.0 as cls %}
+                <td class="time">{{ timeslot.0.short_time }}</td>
+                <td class="cls">
+                {% if cls %}
+                    <!--link to course details?-->
+                    {{ cls.section.title }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %}
+                {% else %}
+                    No class
+                {% endif %}
+                </td>
+                <td class="location">
+                    <!--link to map focused on location?-->
+                    {{ cls.section.prettyrooms|join:", " }}
+                </td>
+                <td class="edit">
+                    {% if class_changes %}
+                        <!--link to filtered course catalog like the fillslot page-->
+                        <a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/catalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}edit_mode{% else %}add{% endif %}</i></a>
+                    {% else %}
+                        <!--otherwise, grey out icon-->
+                        <i class="material-icons md-5 greyed">{% if cls %}edit_mode{% else %}add{% endif %}</i>
+                    {% endif %}
+                </td>
+            {% endwith %}
         </tr>
-        <tr>
-          <td class="time">10am-11am</td>
-          <td class="cls">
-            B5503s1: What Your Body Looks Like On The Inside
-          </td>
-          <td class="location">
-            Meeting Point G
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">11am-12pm</td>
-          <td class="cls">
-          B5503s1: What Your Body Looks Like On The Inside <b>(continued)</b>
-          </td>
-          <td class="location">
-            Meeting Point G
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">12pm-1pm</td>
-          <td class="cls">
-          B5503s1: What Your Body Looks Like On The Inside <b>(continued)</b>
-          </td>
-          <td class="location">
-            Meeting Point G
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">1pm-2pm</td>
-          <td class="cls">
-          L5914s2: Lunch Period
-          </td>
-          <td class="location">
-            Lomita Mall
-          </td>
-          <td width="25%">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">2pm-3pm</td>
-          <td class="cls">
-          H5544s2: Lab in Critical Thinking: The Language of Fake and Biased News
-          </td>
-          <td class="location">
-            200-002
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">3pm-4pm</td>
-          <td class="cls">
-          H5544s2: Lab in Critical Thinking: The Language of Fake and Biased News <b>(continued)</b>
-          </td>
-          <td class="location">
-            200-002
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
-        <tr>
-          <td class="time">4pm-5pm</td>
-          <td class="cls">
-          H5544s2: Lab in Critical Thinking: The Language of Fake and Biased News <b>(continued)</b>
-          </td>
-          <td class="location">
-            200-002
-          </td>
-          <td class="edit">
-            <a class="no-dec" href="/learn/Splash/2017_Spring/fillslot/595"><i class="material-icons md-5">edit_mode</i></a>
-          </td>
-        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

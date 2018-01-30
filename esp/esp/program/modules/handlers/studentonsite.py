@@ -71,7 +71,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['two'] = two
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['isConfirmed'] = self.program.isConfirmed(user)
-        context['class_changes'] = bool(Permission.user_has_perm(user, "Student/ClassChanges",prog))
+        context['class_changes'] = bool(Permission.user_has_perm(user, "Student/ClassChanges", prog))
 
         if extra == "map":
             return render_to_response(self.baseDir()+'map.html', request, context)
