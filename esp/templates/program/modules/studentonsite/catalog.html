@@ -1,0 +1,65 @@
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" type="text/css" href="/media/styles/webapp.css" />
+</head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<body>
+
+<div class="navbar">
+  <table>
+    <tr>
+      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
+        <br>Schedule</td>
+      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
+        <br>Map</a></td>
+      <td class="selected"><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
+        <br>Catalog</td>
+      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
+        <br>Survey</td>
+    </tr>
+  </table>
+</div>
+
+<center>
+  <div class="main">
+    <table class="studentschedule">
+        <tbody>
+            <tr>
+                <th colspan="4">
+                    <span class="large bold">
+                        {{ program.niceName }} Course Catalog
+                        {% if timeslot %}
+                            <br>Viewing classes for: {{ timeslot.friendly_name }}
+                        {% endif %}
+                    </span>
+                </th>
+            </tr>
+            <tr class="info">
+                <td colspan="2">
+                    <a name="top"></a>Jump to Categories
+                </td>
+            </tr>
+            {% for category in categories %}
+            {% if forloop.counter0|divisibleby:2 %}
+            <tr>{% endif %}
+                <td style="width: 50%; vertical-align: top;" valign="top" align="center">
+                    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+                    {{category.category}}
+                    </a>
+                </td>
+            {% if forloop.counter|divisibleby:2 %}
+            </tr>{% endif %} 
+            {% endfor %}
+            {% if not categories|length|divisibleby:2 %}
+            <td>&nbsp;</td>
+            </tr>
+            {% endif %}
+            <!-- classes (sorted by category?) go here-->
+        </tbody>
+    </table>
+  </div>
+</center>
+
+</body>
