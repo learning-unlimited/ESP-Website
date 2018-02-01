@@ -73,21 +73,19 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['isConfirmed'] = self.program.isConfirmed(user)
         context['class_changes'] = bool(Permission.user_has_perm(user, "Student/ClassChanges", prog))
 
-        if extra == "map":
-            return render_to_response(self.baseDir()+'map.html', request, context)
-        elif extra == "contact":
-            return render_to_response(self.baseDir()+'contact.html', request, context)
-        elif extra == "survey":
-            return render_to_response(self.baseDir()+'survey.html', request, context)
-        else:
-            return render_to_response(self.baseDir()+'schedule.html', request, context)
+        return render_to_response(self.baseDir()+'schedule.html', request, context)
 
     @aux_call
     @needs_student
     @meets_grade
     @meets_deadline('/Webapp')
     @meets_cap
-    def map(self, request, tl, one, two, module, extra, prog):
+    def onsitemap(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        context['user'] = request.user
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
@@ -95,7 +93,12 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_grade
     @meets_deadline('/Webapp')
     @meets_cap
-    def catalog(self, request, tl, one, two, module, extra, prog):
+    def onsitecatalog(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        context['user'] = request.user
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
         if extra:
             try:
                 timeslot = Event.objects.get(pk=int(extra), program=prog)
@@ -103,6 +106,19 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise Http404
             context['timeslot'] = extra
         return render_to_response(self.baseDir()+'catalog.html', request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    @meets_cap
+    def onsitesurvey(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        context['user'] = request.user
+        context['program'] = prog
+        context['one'] = one
+        context['two'] = two
+        return render_to_response(self.baseDir()+'survey.html', request, context)
 
     class Meta:
         proxy = True
