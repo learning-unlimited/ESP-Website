@@ -42,6 +42,7 @@ td {
   margin-top: 8vh;
   width: calc(100vh * 9 / 16);
   height: 92vh;
+  background-color: #82a9ff;
 }
 
 .main table {
