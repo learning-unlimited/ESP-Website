@@ -48,7 +48,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     e_mail = forms.EmailField()
     phone_day = USPhoneNumberField(required=False)
     phone_cell = USPhoneNumberField(required=False)
-    receive_txt_message = forms.BooleanField(required=False)
+    receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'),(False, 'No')), widget=forms.RadioSelect)
     address_street = StrippedCharField(required=False, length=40, max_length=100)
     address_city = StrippedCharField(required=False, length=20, max_length=50)
     address_state = forms.ChoiceField(required=False, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
@@ -59,7 +59,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         super(UserContactForm, self).__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getBooleanTag('text_messages_to_students'):
+        if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
         if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = True):
             self.fields['address_street'].required = True
