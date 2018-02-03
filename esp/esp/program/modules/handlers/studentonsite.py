@@ -119,6 +119,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['classes'] = classes
         context['categories'] = categories.values()
 
+        context['class_changes'] = bool(Permission.user_has_perm(request.user, "Student/ClassChanges", prog))
+
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     @aux_call
