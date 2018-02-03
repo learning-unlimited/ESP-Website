@@ -32,9 +32,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
-from esp.program.models  import Program
+from esp.program.models  import Program, ClassSubject
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record
+from esp.cal.models import Event
 from esp.middleware   import ESPError
 from datetime import datetime
 from django.db import models
@@ -101,10 +102,23 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['two'] = two
         if extra:
             try:
-                timeslot = Event.objects.get(pk=int(extra), program=prog)
-            except (TypeError, ValueError, Event.DoesNotExist) as e:
-                raise Http404
-            context['timeslot'] = extra
+                ts = Event.objects.get(id=int(extra), program=prog)
+            except:
+                raise ESPError('Please use the links on the schedule page.', log=False)
+            context['timeslot'] = ts
+            classes = list(ClassSubject.objects.catalog(prog, ts))
+
+        else:
+            classes = list(ClassSubject.objects.catalog(prog))
+
+        categories = {}
+
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+
+        context['classes'] = classes
+        context['categories'] = categories.values()
+
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
     @aux_call
