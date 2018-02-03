@@ -134,3 +134,21 @@ td {
   color: inherit;
   text-decoration: none;
 }
+
+.linktop {
+  font-size: 2vh !important;
+}
+
+.class_title {
+  font-size: 2vh !important;
+}
+
+.class_teachers, .class_content, .class_meeting_times, .class_grades {
+  font-size: 1.5vh !important;
+}
+
+.header_category {
+  width: 50%;
+  vertical-align: top;
+  font-size: 2vh !important;
+}
