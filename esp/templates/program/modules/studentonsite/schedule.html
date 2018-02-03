@@ -27,10 +27,13 @@
   <div class="main">
     <table class="studentschedule">
       <tbody>
+        <th colspan="4">
+            <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+        </th>
         {% for timeslot in timeslots %}
         {% ifchanged timeslot.0.start.day %}
             <tr>
-                <th colspan="4"><span class="large bold">{{ timeslot.0.pretty_date }}</span></th>
+                <th colspan="4">{{ timeslot.0.pretty_date }}</th>
             </tr>
         {% endifchanged %}
         <tr>
@@ -51,7 +54,7 @@
                 <td class="edit">
                     {% if class_changes %}
                         <!--link to filtered course catalog like the fillslot page-->
-                        <a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/catalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}edit_mode{% else %}add{% endif %}</i></a>
+                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}edit_mode{% else %}add{% endif %}</i></a>
                     {% else %}
                         <!--otherwise, grey out icon-->
                         <i class="material-icons md-5 greyed">{% if cls %}edit_mode{% else %}add{% endif %}</i>
