@@ -28,22 +28,19 @@
         <tbody>
             <tr>
                 <th colspan="4">
-                    <span class="large bold">
-                        {{ program.niceName }} Course Catalog
-                        {% if timeslot %}
-                            <br>Viewing classes for: {{ timeslot.friendly_name }}
-                        {% endif %}
+                    <span>
+                        {{ program.niceName }} Course Catalog{% if timeslot %}<br><i>Viewing classes for: {{ timeslot.short_description }}</i>{% endif %}
                     </span>
                 </th>
             </tr>
-            <tr class="info">
+            <tr style="border-bottom: none">
                 <td colspan="2">
                     <a name="top"></a>Jump to Categories
                 </td>
             </tr>
             {% for category in categories %}
             {% if forloop.counter0|divisibleby:2 %}
-            <tr>{% endif %}
+            <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
                 <td style="width: 50%; vertical-align: top;" valign="top" align="center">
                     <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
                     {{category.category}}
@@ -56,7 +53,24 @@
             <td>&nbsp;</td>
             </tr>
             {% endif %}
-            <!-- classes (sorted by category?) go here-->
+            
+            {% for class in classes %}
+                <tr style="border-bottom: none">
+                <td colspan="2">
+                {% ifchanged class.category_id %}
+                    <a name="cat{{class.category_id}}"></a>
+                    <p class="category">
+                        {{ class.category.category }}
+                    </p>
+                    <p class="linktop">
+                        <a href="#top">[ Return to Category List ]</a>
+                    </p> {% endifchanged %}
+
+                <!--render class here-->
+                    {{ class.title }}
+                </td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
   </div>
