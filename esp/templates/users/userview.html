@@ -14,6 +14,7 @@
 {% block content %}
 {% with user.getLastProfile as profile %}
 <h1>User Information</h1>
+{% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
 
 <div id="user-sidebar">
     {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
