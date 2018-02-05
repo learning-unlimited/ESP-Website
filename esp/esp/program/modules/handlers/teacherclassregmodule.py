@@ -259,7 +259,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             reason = request.POST['reason']
             request_teacher = request.user
 
-            email_title = 'Class Cancellation Request for %s' % self.program.niceName()
+            email_title = '[%s] Class Cancellation Request for %s' % (cls.emailcode(), self.program.niceName())
             email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
             email_context = {'request_teacher': request_teacher,
                              'program': self.program,
