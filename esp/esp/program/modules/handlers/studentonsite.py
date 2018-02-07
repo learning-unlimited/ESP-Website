@@ -71,8 +71,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['scrmi'] = prog.studentclassregmoduleinfo
-        context['isConfirmed'] = self.program.isConfirmed(user)
-        context['class_changes'] = bool(Permission.user_has_perm(user, "Student/ClassChanges", prog))
+        context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
@@ -95,8 +94,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     @meets_cap
     def onsitecatalog(self, request, tl, one, two, module, extra, prog):
+        user = request.user
         context = {}
-        context['user'] = request.user
+        context['user'] = user
         context['program'] = prog
         context['one'] = one
         context['two'] = two
@@ -107,6 +107,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
+            context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
 
         else:
             classes = list(ClassSubject.objects.catalog(prog))
@@ -118,8 +119,6 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
         context['classes'] = classes
         context['categories'] = categories.values()
-
-        context['class_changes'] = bool(Permission.user_has_perm(request.user, "Student/ClassChanges", prog))
 
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
