@@ -268,7 +268,7 @@ class StudentClassRegModule(ProgramModuleObj):
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
         if scrm:
-            context['allow_removal'] = self.deadline_met('/Removal')
+            context['allow_removal'] = scrm.deadline_met('/Removal')
 
         return context
 
