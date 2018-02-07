@@ -100,10 +100,25 @@ function topFunction() {
                     <div class="class_meeting_times">
                         {% if not timeslot %}
                         {% for sec in class.get_sections %}
-                           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}{% if sec.isFull or is_closed %}<b><font color="#990000"> (Full!)</font></b>{% endif %}<br />
+                           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}{% if sec.isFull or sec.isRegClosed %}<b><font color="#990000"> (Full!)</font></b>{% endif %}<br />
                         {% endfor %}
                         {% endif %}
                     </div>
+                    {% if timeslot and checked_in %}
+                        <div id="class_4_regbuttons" class="class_buttons">
+                            <form id="prereg_4" name="prereg_4" method="post" action="/learn/Splash/2017_Spring/addclass" style="margin: 0px;">
+                              <script type="text/javascript">add_csrf_token();</script>
+                              <input type="hidden" name="class_id" value="4">
+                              <input type="hidden" name="section_id" value="4">
+                  
+                              <div id="addbutton_fillslot_sec4">
+                                <button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton4">
+                                  Click here to add this class
+                                </button>
+                              </div>
+                            </form>
+                        </div>
+                    {% endif %}
                 </td>
                 </tr>
             {% endfor %}

@@ -49,10 +49,12 @@
                 </td>
                 <td class="location">
                     <!--link to map focused on location?-->
-                    {{ cls.section.prettyrooms|join:", " }}
+                    {% if checked_in %}
+                        {{ cls.section.prettyrooms|join:", " }}
+                    {% endif %}
                 </td>
                 <td class="edit">
-                    {% if class_changes %}
+                    {% if checked_in %}
                         <!--link to filtered course catalog like the fillslot page-->
                         <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}edit_mode{% else %}add{% endif %}</i></a>
                     {% else %}
