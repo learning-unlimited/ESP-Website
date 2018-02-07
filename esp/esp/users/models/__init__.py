@@ -2288,7 +2288,6 @@ class Permission(ExpirableModel):
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/Finaid", "Access to financial aid application"),
             ("Student/Webapp", "Access to student onsite webapp"),
-            ("Student/ClassChanges", "Access to online class changes")
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
