@@ -327,11 +327,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return HttpResponse(json.dumps(json_data))
 
-    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def addclass_logic(request, tl, one, two, module, extra, prog):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        scrmi = self.program.studentclassregmoduleinfo
+        scrmi = prog.studentclassregmoduleinfo
 
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
@@ -345,10 +346,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max) or section.cannotAdd(request.user, scrmi.enforce_max)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -368,7 +369,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes')
     @meets_cap
-    def addclass(self,request, tl, one, two, module, extra, prog):
+    def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
