@@ -333,12 +333,13 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return HttpResponse(json.dumps(json_data))
 
-    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def addclass_logic(request, tl, one, two, module, extra, prog):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
         reg_perm = 'Student/Classes'
-        scrmi = self.program.studentclassregmoduleinfo
+        scrmi = prog.studentclassregmoduleinfo
 
         if 'prereg_verb' in request.POST:
             proposed_verb = "V/Flags/Registration/%s" % request.POST['prereg_verb']
@@ -392,10 +393,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max) or section.cannotAdd(request.user, scrmi.enforce_max)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -445,7 +446,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes/OneClass')
     @meets_cap
-    def addclass(self,request, tl, one, two, module, extra, prog):
+    def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
