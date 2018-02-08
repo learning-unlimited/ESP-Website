@@ -152,3 +152,12 @@ td {
   vertical-align: top;
   font-size: 2vh !important;
 }
+
+.category_row {
+  border-bottom: none !important;
+  border-top: 1px solid black;
+}
+
+.class_row {
+  border-bottom: none !important;
+}

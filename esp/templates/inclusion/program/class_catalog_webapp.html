@@ -1,0 +1,43 @@
+<div class="class_title">
+    {{ class.emailcode }}: {{ class.title }}
+</div>
+<div class="class_teachers">
+    {% for teacher in class.get_teachers %}
+        {{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
+    {% endfor %}
+</div>
+<div class="class_content">
+    {% autoescape off %}
+        {{ class.class_info|escape|linebreaksbr }}
+    {% endautoescape %}
+    {% if class.class_style %}
+        <br /><b>Class Style:</b> <i>{{ class.class_style }}</i>
+    {% endif %}
+    {% if class.prereqs %}
+        <br /><b>Prerequisites:</b> <i>{{ class.prereqs }}</i>
+    {% endif %}
+</div>
+<div class="class_grades">
+    <b>Grades:</b> {{ class.grade_min }} - {{ class.grade_max }}
+</div>
+<div class="class_meeting_times">
+    {% if not section %}
+        {% for sec in class.get_sections %}
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}{% if sec.isFull or sec.isRegClosed %}<b><font color="#990000"> (Full!)</font></b>{% endif %}<br />
+        {% endfor %}
+    {% endif %}
+</div>
+{% if section and checked_in %}
+    <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+        <script type="text/javascript">add_csrf_token();</script>
+        <input type="hidden" name="class_id" value="{{ class.id }}" />
+        <input type="hidden" name="section_id" value="{{ section.id }}" />
+        {% if not section.isFull and not section.isRegClosed %}
+        <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton{{ class.id }}">
+            Click here to add this class
+        </button></div>
+        {% else %}
+          <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
+        {% endif %}
+    </form>
+{% endif %}
