@@ -1,6 +1,11 @@
 <head>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" type="text/css" href="/media/styles/webapp.css" />
+    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="/media/scripts/common.js"></script>
+    <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 </head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,6 +33,8 @@ function topFunction() {
   </table>
 </div>
 
+{% load class_render %}
+
 <center>
   <div class="main">
     <table class="studentschedule">
@@ -45,82 +52,41 @@ function topFunction() {
                 </td>
             </tr>
             {% for category in categories %}
-            {% if forloop.counter0|divisibleby:2 %}
-            <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
-                <td class="header_category" valign="top" align="center">
-                    <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
-                    {{category.category}}
-                    </a>
-                </td>
-            {% if forloop.counter|divisibleby:2 %}
-            </tr>{% endif %} 
+                {% if forloop.counter0|divisibleby:2 %}
+                <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
+                    <td class="header_category" valign="top" align="center">
+                        <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+                        {{category.category}}
+                        </a>
+                    </td>
+                {% if forloop.counter|divisibleby:2 %}
+                    </tr>
+                {% endif %} 
             {% endfor %}
             {% if not categories|length|divisibleby:2 %}
-            <td>&nbsp;</td>
-            </tr>
+                <td>&nbsp;</td>
+                </tr>
             {% endif %}
-            
+
             {% for class in classes %}
-                <tr style="border-bottom: none; {% ifchanged class.category_id %}border-top: 1px solid black;{% endifchanged %}">
-                <td colspan="2">
                 {% ifchanged class.category_id %}
-                    <a name="cat{{class.category_id}}"></a>
-                    <div class="category">
-                        <b>{{ class.category.category }}</b>
-                    </div>
-                    <div class="linktop">
-                        <button onclick="topFunction()">Return to Category List</button>
-                    </div>
-                    <br />
+                    <tr class="category_row">
+                        <td colspan="2">
+                            <a name="cat{{class.category_id}}"></a>
+                            <div class="category">
+                                <b>{{ class.category.category }}</b>
+                            </div>
+                            <div class="linktop">
+                                <button onclick="topFunction()">Return to Category List</button>
+                            </div>
+                        </td>
+                    </tr>
                 {% endifchanged %}
 
-                <!--render class here-->
-                    <div class="class_title">
-                        {{ class.emailcode }}: {{ class.title }}
-                    </div>
-                    <div class="class_teachers">
-                        {% for teacher in class.get_teachers %}
-                        {{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    </div>
-                    <div class="class_content">
-                        {% autoescape off %}
-                            {{ class.class_info|escape|linebreaksbr }}
-                        {% endautoescape %}
-                        {% if class.class_style %}
-                            <br /><b>Class Style:</b> <i>{{ class.class_style }}</i>
-                        {% endif %}
-                        {% if class.prereqs %}
-                            <br /><b>Prerequisites:</b> <i>{{ class.prereqs }}</i>
-                        {% endif %}
-                    </div>
-                    <div class="class_grades">
-                        <b>Grades:</b> {{ class.grade_min }} - {{ class.grade_max }}
-                    </div>
-                    <div class="class_meeting_times">
-                        {% if not timeslot %}
-                        {% for sec in class.get_sections %}
-                           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}{% if sec.isFull or sec.isRegClosed %}<b><font color="#990000"> (Full!)</font></b>{% endif %}<br />
-                        {% endfor %}
-                        {% endif %}
-                    </div>
-                    {% if timeslot and checked_in %}
-                        <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
-                            {% csrf_token %}
-                            <input type="hidden" name="class_id" value="{{ class.id }}" />
-                            <input type="hidden" name="section_id" value="{{ section.id }}" />
-                            {% if not section.isFull %}
-                            <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton{{ class.id }}">
-                                Click here to add this class
-                            </button></div>
-                              <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
-                            {% else %}
-                              <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
-                              <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
-                            {% endif %}
-                        </form>
-                    {% endif %}
-                </td>
+                <tr class="class_row">
+                    <td colspan="2">
+                        {% render_class_webapp class user request.GET.filter timeslot checked_in %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>

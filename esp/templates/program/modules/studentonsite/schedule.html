@@ -56,10 +56,10 @@
                 <td class="edit">
                     {% if checked_in %}
                         <!--link to filtered course catalog like the fillslot page-->
-                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}edit_mode{% else %}add{% endif %}</i></a>
+                        <a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog/{{timeslot.0.id}}"><i class="material-icons md-5">{% if cls %}mode_edit{% else %}add{% endif %}</i></a>
                     {% else %}
                         <!--otherwise, grey out icon-->
-                        <i class="material-icons md-5 greyed">{% if cls %}edit_mode{% else %}add{% endif %}</i>
+                        <i class="material-icons md-5 greyed">{% if cls %}mode_edit{% else %}add{% endif %}</i>
                     {% endif %}
                 </td>
             {% endwith %}
