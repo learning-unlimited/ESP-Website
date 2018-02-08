@@ -40,6 +40,7 @@ from esp.middleware   import ESPError
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from django.template import Template
 from django.template.loader import render_to_string, get_template, select_template
 
@@ -119,6 +120,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
         context['classes'] = classes
         context['categories'] = categories.values()
+        context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
 
         return render_to_response(self.baseDir()+'catalog.html', request, context)
 
@@ -134,6 +136,14 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         return render_to_response(self.baseDir()+'survey.html', request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
+        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog):
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     class Meta:
         proxy = True

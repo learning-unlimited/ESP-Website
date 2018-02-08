@@ -105,19 +105,20 @@ function topFunction() {
                         {% endif %}
                     </div>
                     {% if timeslot and checked_in %}
-                        <div id="class_4_regbuttons" class="class_buttons">
-                            <form id="prereg_4" name="prereg_4" method="post" action="/learn/Splash/2017_Spring/addclass" style="margin: 0px;">
-                              <script type="text/javascript">add_csrf_token();</script>
-                              <input type="hidden" name="class_id" value="4">
-                              <input type="hidden" name="section_id" value="4">
-                  
-                              <div id="addbutton_fillslot_sec4">
-                                <button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton4">
-                                  Click here to add this class
-                                </button>
-                              </div>
-                            </form>
-                        </div>
+                        <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
+                            {% csrf_token %}
+                            <input type="hidden" name="class_id" value="{{ class.id }}" />
+                            <input type="hidden" name="section_id" value="{{ section.id }}" />
+                            {% if not section.isFull %}
+                            <div id="addbutton_fillslot_sec{{ section.id }}"><button type="submit" class="btn btn-primary btn-large addbutton" name="action" id="submitbutton{{ class.id }}">
+                                Click here to add this class
+                            </button></div>
+                              <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
+                            {% else %}
+                              <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
+                              <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
+                            {% endif %}
+                        </form>
                     {% endif %}
                 </td>
                 </tr>
