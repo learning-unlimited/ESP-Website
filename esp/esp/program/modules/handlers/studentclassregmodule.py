@@ -596,8 +596,8 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
-
-    def clearslot_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
 
         #   Get the sections that the student is registered for in the specified timeslot.
