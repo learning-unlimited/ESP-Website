@@ -145,6 +145,14 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Webapp')
+    def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
+        result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
+        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
     class Meta:
         proxy = True
         app_label = 'modules'
