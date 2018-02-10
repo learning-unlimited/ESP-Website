@@ -46,49 +46,59 @@ function topFunction() {
                     </span>
                 </th>
             </tr>
-            <tr style="border-bottom: none">
-                <td colspan="2">
-                    <b>Jump to Categories</b>
-                </td>
-            </tr>
-            {% for category in categories %}
-                {% if forloop.counter0|divisibleby:2 %}
-                <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
-                    <td class="header_category" valign="top" align="center">
-                        <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
-                        {{category.category}}
-                        </a>
+            {% if categories %}
+                <tr style="border-bottom: none">
+                    <td colspan="2">
+                        <b>Jump to Categories</b>
                     </td>
-                {% if forloop.counter|divisibleby:2 %}
-                    </tr>
-                {% endif %} 
-            {% endfor %}
-            {% if not categories|length|divisibleby:2 %}
-                <td>&nbsp;</td>
                 </tr>
+                {% for category in categories %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                    <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
+                        <td class="header_category" valign="top" align="center">
+                            <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+                            {{category.category}}
+                            </a>
+                        </td>
+                    {% if forloop.counter|divisibleby:2 %}
+                        </tr>
+                    {% endif %} 
+                {% endfor %}
+                {% if not categories|length|divisibleby:2 %}
+                    <td>&nbsp;</td>
+                    </tr>
+                {% endif %}
             {% endif %}
 
-            {% for class in classes %}
-                {% ifchanged class.category_id %}
-                    <tr class="category_row">
-                        <td colspan="2">
-                            <a name="cat{{class.category_id}}"></a>
-                            <div class="category">
-                                <b>{{ class.category.category }}</b>
-                            </div>
-                            <div class="linktop">
-                                <button onclick="topFunction()">Return to Category List</button>
-                            </div>
-                        </td>
-                    </tr>
-                {% endifchanged %}
-
-                <tr class="class_row">
+            {% if classes|length_is:0 %}
+                <tr class="no_classes">
                     <td colspan="2">
-                        {% render_class_webapp class user request.GET.filter timeslot checked_in %}
+                        <i>There are no available classes during this time block for students of your grade level!</i>
                     </td>
                 </tr>
-            {% endfor %}
+            {% else %}
+                {% for class in classes %}
+                    {% ifchanged class.category_id %}
+                        <tr class="category_row">
+                            <td colspan="2">
+                                <a name="cat{{class.category_id}}"></a>
+                                <div class="category">
+                                    <b>{{ class.category.category }}</b>
+                                </div>
+                                <div class="linktop">
+                                    <button onclick="topFunction()">Return to Category List</button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endifchanged %}
+
+                    <tr class="class_row">
+                        <td colspan="2">
+                            {% render_class_webapp class user request.GET.filter timeslot checked_in %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
         </tbody>
     </table>
   </div>

@@ -101,6 +101,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        user_grade = user.getGrade(self.program)
         if extra:
             try:
                 ts = Event.objects.get(id=int(extra), program=prog)
@@ -108,6 +109,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 raise ESPError('Please use the links on the schedule page.', log=False)
             context['timeslot'] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
+            classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
 
         else:
