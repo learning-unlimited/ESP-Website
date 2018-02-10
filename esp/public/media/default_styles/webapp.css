@@ -161,3 +161,7 @@ td {
 .class_row {
   border-bottom: none !important;
 }
+
+.no_classes {
+  border-bottom: none !important;
+}
