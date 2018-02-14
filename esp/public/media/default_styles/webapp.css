@@ -1,4 +1,5 @@
 .navbar {
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
   overflow: hidden;
   background-color: #333;
   width: calc(100vh * 9 / 16);
@@ -32,32 +33,27 @@
   width: 100%;
 }
 
-.main table,
-th,
-td {
+.main table, th, td {
   text-align: center;
 }
 
 .main {
-  margin-top: 8vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  margin-top: 7.9vh;
   width: calc(100vh * 9 / 16);
   height: 92vh;
-  background-color: #82a9ff;
+  background-color: #c8e6dc;
 }
 
 .main table {
-  background-color: #82a9ff;
+  background-color: #c8e6dc;
   border-collapse: collapse;
   width: calc(100vh * 9 / 16);
 }
 
-.main tbody,
-tr,
-th,
-td {
+.main tbody, tr, th, td {
   background: none;
 }
-
 
 /*.main th, td {
   padding-left: 6vw;
@@ -68,8 +64,8 @@ td {
 
 .main td {
   font-size: 2.5vh;
-  /*font-weight: bold;*/
   vertical-align: middle;
+  /*background-color: #efefef;*/
 }
 
 .main th {
@@ -91,16 +87,17 @@ td {
 
 .time {
   width: 20%;
-  font-size: 2vh !important;
+  font-size: 1.75vh !important;
 }
 
 .cls {
+  font-size: 2vh !important;
   width: 55%;
 }
 
 .location {
   width: 20%;
-  font-size: 2vh !important;
+  font-size: 1.75vh !important;
 }
 
 .edit {
@@ -141,21 +138,38 @@ td {
 
 .class_title {
   font-size: 2vh !important;
+  padding-bottom: .25vh;
 }
 
-.class_teachers, .class_content, .class_meeting_times, .class_grades {
+.class_teachers, .class_content, .class_style, .class_prereqs, .class_meeting_times, .class_grades {
   font-size: 1.5vh !important;
+  padding-bottom: .25vh;
+  padding-top: .25vh;
 }
 
 .header_category {
   width: 50%;
   vertical-align: top;
   font-size: 2vh !important;
+  padding: 0 !important;
+}
+
+.categories {
+  border-bottom: none !important;
+}
+
+.last_categories td {
+  padding-bottom: 1.5vh !important;
 }
 
 .category_row {
   border-bottom: none !important;
   border-top: 1px solid black;
+}
+
+.category {
+  padding-bottom: .5vh;
+  text-transform: uppercase;
 }
 
 .class_row {
@@ -164,4 +178,24 @@ td {
 
 .no_classes {
   border-bottom: none !important;
+}
+
+.btn {
+  border-radius: 12px;
+  background-color: #efefef;
+  color: black;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
+.btn:hover {
+    background-color: black; /* Green */
+    color: white;
+}
+
+a.anchor {
+    display: block;
+    position: relative;
+    top: -9.3vh;
+    visibility: hidden;
 }
