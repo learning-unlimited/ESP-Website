@@ -1,5 +1,6 @@
 <head>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="/media/styles/webapp.css" />
     <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
@@ -54,7 +55,7 @@ function topFunction() {
                 </tr>
                 {% for category in categories %}
                     {% if forloop.counter0|divisibleby:2 %}
-                    <tr {% if forloop.revcounter > 2 %}style="border-bottom: none"{% endif %}>{% endif %}
+                    <tr {% if forloop.revcounter > 2 %}class="categories"{% else %}class="last_categories"{% endif %}>{% endif %}
                         <td class="header_category" valign="top" align="center">
                             <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
                             {{category.category}}
@@ -81,12 +82,12 @@ function topFunction() {
                     {% ifchanged class.category_id %}
                         <tr class="category_row">
                             <td colspan="2">
-                                <a name="cat{{class.category_id}}"></a>
+                                <a name="cat{{class.category_id}}" class="anchor"></a>
                                 <div class="category">
                                     <b>{{ class.category.category }}</b>
                                 </div>
                                 <div class="linktop">
-                                    <button onclick="topFunction()">Return to Category List</button>
+                                    <button onclick="topFunction()" class="btn">Return to Category List</button>
                                 </div>
                             </td>
                         </tr>
