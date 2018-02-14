@@ -1,22 +1,26 @@
 <div class="class_title">
-    {{ class.emailcode }}: {{ class.title }}
+    <b>{{ class.emailcode }}: {{ class.title }}</b>
 </div>
 <div class="class_teachers">
-    {% for teacher in class.get_teachers %}
+    <i>{% for teacher in class.get_teachers %}
         {{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
-    {% endfor %}
+    {% endfor %}</i>
 </div>
 <div class="class_content">
     {% autoescape off %}
         {{ class.class_info|escape|linebreaksbr }}
     {% endautoescape %}
-    {% if class.class_style %}
-        <br /><b>Class Style:</b> <i>{{ class.class_style }}</i>
-    {% endif %}
-    {% if class.prereqs %}
-        <br /><b>Prerequisites:</b> <i>{{ class.prereqs }}</i>
-    {% endif %}
 </div>
+{% if class.class_style %}
+    <div class="class_style">
+        <b>Class Style:</b> <i>{{ class.class_style }}</i>
+    </div>
+{% endif %}
+{% if class.prereqs %}
+    <div class="class_prereqs">
+        <b>Prerequisites:</b> <i>{{ class.prereqs }}</i>
+    </div>
+{% endif %}
 <div class="class_grades">
     <b>Grades:</b> {{ class.grade_min }} - {{ class.grade_max }}
 </div>
