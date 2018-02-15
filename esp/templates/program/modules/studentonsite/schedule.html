@@ -32,12 +32,12 @@
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
         </th>
         {% for timeslot in timeslots %}
-        {% ifchanged timeslot.0.start.day %}
+            {% ifchanged timeslot.0.start.day %}
+                <tr>
+                    <th colspan="4">{{ timeslot.0.pretty_date }}</th>
+                </tr>
+            {% endifchanged %}
             <tr>
-                <th colspan="4">{{ timeslot.0.pretty_date }}</th>
-            </tr>
-        {% endifchanged %}
-        <tr>
             {% with timeslot.1.0 as cls %}
                 <td class="time">{{ timeslot.0.short_time }}</td>
                 <td class="cls">
