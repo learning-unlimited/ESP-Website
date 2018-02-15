@@ -78,6 +78,7 @@
   padding-bottom: 1.5vh;
   padding-left: 1vh;
   padding-right: 1vh;
+  line-height: 1.2 !important;
 }
 
 .main tr {
@@ -188,9 +189,20 @@
   font-size: 1.5vh !important;
 }
 
+.btn-disabled {
+  border-radius: 12px;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
 .btn:hover {
     background-color: black; /* Green */
     color: white;
+}
+
+.add_button {
+  padding-bottom: .25vh;
+  padding-top: .25vh;
 }
 
 a.anchor {
