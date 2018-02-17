@@ -37,6 +37,7 @@ from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record
 from esp.cal.models import Event
 from esp.middleware   import ESPError
+from esp.tagdict.models  import Tag
 from datetime import datetime
 from django.db import models
 from django.contrib import admin
@@ -87,6 +88,11 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['center'] = Tag.getTag('program_center', default='')
+        #extra should be a classroom id
+        if extra:
+            #gets lat/long of classroom and adds it to context
+            context['classroom'] = "37.427490, -122.170267"
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
