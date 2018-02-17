@@ -290,7 +290,8 @@ CACHE_PREFIX = "${SITENAME}ESP"
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-        'archive': 'learninguarchive@gmail.com',
+        'archive': 'splashwebsitearchive@learningu.org,
+        # TODO(benkraft): Change this to an @learningu as well
         'bounces': 'learningubounces@gmail.com',
         'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
