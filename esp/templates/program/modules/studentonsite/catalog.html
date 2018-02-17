@@ -40,15 +40,15 @@ function topFunction() {
   <div class="main">
     <table class="studentschedule">
         <tbody>
-            <tr>
-                <th colspan="4">
+            <tr class="catalog">
+                <th colspan="2">
                     <span>
                         <a name="top"></a>{{ program.niceName }} Course Catalog{% if timeslot %}<br><i>Viewing classes for: {{ timeslot.short_description }}</i>{% endif %}
                     </span>
                 </th>
             </tr>
             {% if categories %}
-                <tr style="border-bottom: none">
+                <tr class="jump">
                     <td colspan="2">
                         <b>Jump to Categories</b>
                     </td>
