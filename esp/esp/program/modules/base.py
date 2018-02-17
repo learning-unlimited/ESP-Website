@@ -538,7 +538,10 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
+            return render_to_response(errorpage, request, {
+                    'program': moduleObj.program,
+                    'yog': request.user.getYOG(moduleObj.program),
+                })
 
         return method(moduleObj, request, tl, *args, **kwargs)
 

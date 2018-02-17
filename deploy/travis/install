@@ -3,6 +3,10 @@ set -euf -o pipefail
 
 if [ "$TRAVIS_JOB" = "test" ]; then
     sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres | grep -v ^libpq-dev)
+    # Temporary workaround from https://github.com/travis-ci/travis-ci/issues/9011#issuecomment-355561967
+    # to make sure we get postgres 9.x rather than 10.1 (the default, sorta).
+    # TODO(benkraft): Remove once Travis and/or PostgreSQL sort out their packaging.
+    sudo apt-get install postgresql-server-dev-9.1
     esp/packages_base_manual_install.sh
     pip install -r esp/requirements.txt -q --log pip.log || (tail pip.log && exit 1)
 elif [ "$TRAVIS_JOB" = "lint" ]; then
