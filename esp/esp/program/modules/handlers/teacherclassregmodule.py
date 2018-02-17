@@ -82,6 +82,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create'] = self.any_reg_is_open()
         context['can_create_class'] = self.class_reg_is_open()
         context['can_create_open_class'] = self.open_class_reg_is_open()
+        context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
@@ -258,7 +259,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             reason = request.POST['reason']
             request_teacher = request.user
 
-            email_title = 'Class Cancellation Request for %s' % self.program.niceName()
+            email_title = '[%s] Class Cancellation Request for %s: %s' % (self.program.niceName(), cls.emailcode(), cls.title)
             email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
             email_context = {'request_teacher': request_teacher,
                              'program': self.program,
