@@ -41,7 +41,7 @@
   font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
   margin-top: 7.9vh;
   width: calc(100vh * 9 / 16);
-  height: 92vh;
+  height: 92.1vh;
   background-color: #c8e6dc;
 }
 
@@ -227,4 +227,9 @@ a.anchor {
     position: relative;
     top: -9.3vh;
     visibility: hidden;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
 }
