@@ -961,6 +961,17 @@ div .adminbar_user {
 .done-sign { color: green; }
 .not-done-sign { color: red; }
 
+/* TODO: we really should fix the precedence of our rules */
+#content {
+    .available   { color: green;  font-weight: bold;   font-style: normal; }
+    .teaching    { color: black;  font-weight: normal; font-style: italic; }
+    .observing   { color: blue;   font-weight: normal; font-style: italic; }
+    .unavailable { color: silver; font-weight: normal; font-style: normal; }
+    .teaching-unavailable  { color: red;    font-weight: bold; font-style: italic; }
+    .observing-unavailable { color: orange; font-weight: bold; font-style: italic; }
+    .conflict { color: blueviolet; font-weight: bold; font-style: italic; }
+}
+
 .glyphicon.glyphicon-btn-height:before { line-height: 18px; }
 
 .fqr-class-buttons.btn-toolbar { margin: 0; }

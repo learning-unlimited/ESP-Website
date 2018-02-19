@@ -85,6 +85,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
+        context['observing_section_list'] = get_current_request().user.get_observing_sections_from_program(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
         context['open_class_category'] = self.program.open_class_category.category
         return context

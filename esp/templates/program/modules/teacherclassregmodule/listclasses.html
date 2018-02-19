@@ -100,6 +100,34 @@ If you have any questions regarding the program, <br /> please email the
   {% for cls in clslist %}
     {% render_class_teacher_list_row cls can_req_cancel %}
   {% endfor %}
+  {% for sec in observing_section_list %}
+    <tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
+      <td class="clsleft bordertop2" colspan="7">
+        <em>Observing</em> {{ sec.parent_class }}
+      </td>
+    </tr>
+    <tr>
+      <td class="clsleft"><b>Teachers:</b></td>
+      <td class="clsmiddle" colspan="6">{% for t in sec.parent_class.get_teachers %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    </tr>
+    <tr>
+      <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
+        Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
+        {% else %}
+        <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+        {% endif %}
+      </td>
+      <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}
+          {% if sec.get_observers %}<br />Observers: {% for a in sec.get_observers %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+          {% endif %}
+      </td>
+      <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students</td>
+    </tr>
+  {% endfor %}
 
    {% if can_create %}
    <tr>
