@@ -367,6 +367,15 @@ class BaseESPUser(object):
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
+    # TODO: Cache this
+    def get_observing_sections_from_program(self, program):
+        from esp.program.models import Program # Need the Class object.
+        if not isinstance(program, Program): # if we did not receive a program
+            raise ESPError("get_observing_sections_from_program expects a Program, not a `" +
+                    str(type(program)) + "'.")
+        else:
+            return self.observing_sections.filter(parent_class__parent_program = program)
+
     @cache_function
     def getTaughtClassesAll(self, include_rejected = False):
         return self.classsubject_set.all()
