@@ -81,8 +81,8 @@
 }
 
 .main tr {
-  border-top: 1px solid black;
-  border-bottom: 1px solid black;
+  border-top: 1px solid #999999;
+  border-bottom: 1px solid #999999;
   border-collapse: collapse;
 }
 
@@ -104,13 +104,8 @@
   width: 20%;
 }
 
-/* .time, .cls, .location, .edit { */
-  /* background-color: #efefef; */
-  /* border-bottom: none !important; */
-/* } */
-
 .schedule_row {
-  background-color: #efefef;
+  background-color: #F7F7F7;
   border-bottom: none !important;
   border-top: none !important;
 }
