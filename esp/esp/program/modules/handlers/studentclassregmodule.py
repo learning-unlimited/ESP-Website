@@ -198,8 +198,14 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension) or \
                    super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
+    def prepare(self, context={}):
+        user = get_current_request().user
+        program = self.program
+        scrmi = self.program.studentclassregmoduleinfo
+        return self.prepare_static(user, program, context=context, scrm = self)
+    
     @staticmethod
-    def prepare(user, program, context={}, scrm = ""):
+    def prepare_static(user, program, context={}, scrm = ""):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
         regProf = RegistrationProfile.getLastForProgram(user, program)
@@ -278,7 +284,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import json as json
         from django.template.loader import render_to_string
-        context = self.prepare(request.user, self.program, {}, self)
+        context = self.prepare({})
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two

@@ -66,7 +66,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         """ Display the landing page for the student onsite webapp """
         user = request.user
 
-        context = StudentClassRegModule.prepare(user, prog)
+        context = StudentClassRegModule.prepare_static(user, prog)
 
         context['user'] = user
         context['program'] = prog
