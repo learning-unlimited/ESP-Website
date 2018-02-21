@@ -203,7 +203,7 @@ class StudentClassRegModule(ProgramModuleObj):
         program = self.program
         scrmi = self.program.studentclassregmoduleinfo
         return self.prepare_static(user, program, context=context, scrm = self)
-    
+
     @staticmethod
     def prepare_static(user, program, context={}, scrm = ""):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
