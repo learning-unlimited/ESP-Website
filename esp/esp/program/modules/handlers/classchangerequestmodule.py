@@ -99,23 +99,34 @@ class ClassChangeRequestModule(ProgramModuleObj):
 
         fields = {}
         for i, timeslot in enumerate(sections_by_slot.keys()):
-            choices = [('0', "I'm happy with my current enrollment.")]
+            choices = [('0', "I would like to keep my currently scheduled class.")]
             initial = '0'
             for section in sections_by_slot[timeslot]:
                 choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
                 if section[1]:
                     initial = section[0].emailcode()
-            fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=choices, initial=initial)
+            cur_fields = []
+            for priority in range(1,4):
+                field = forms.ChoiceField(
+                        # label="Timeslot {} ({}), Priority {}".format(i+1, timeslot.pretty_time(), priority),
+                        label="Priority {}".format(priority),
+                        choices=choices,
+                        initial=initial)
+                if priority == 1: field.section_title = "Timeslot {} ({})".format(i+1, timeslot.pretty_time())
+                fields['timeslot_{}_{}'.format(i+1, priority)] = field
 
         form = type('ClassChangeRequestForm', (forms.Form,), fields)
         context['form'] = form()
         if request.method == "POST":
-            old_requests = StudentRegistration.valid_objects().filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request")
+            old_requests = StudentRegistration.valid_objects().filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name__startswith="Request")
             for r in old_requests:
                 r.expire()
             form = form(request.POST)
             if form.is_valid():
-                for value in form.cleaned_data.values():
+                for key, value in form.cleaned_data.items():
+                    # sorry for this:
+                    priority = int(key.split("_")[-1])
+
                     section = None
                     for s in sections:
                         if s.emailcode() == value:
@@ -123,7 +134,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
                             break
                     if not section:
                         continue
-                    r = StudentRegistration.valid_objects().get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
+                    r = StudentRegistration.valid_objects().get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request/" + str(priority), category="student")[0])[0]
                     r.save()
 
                 return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
