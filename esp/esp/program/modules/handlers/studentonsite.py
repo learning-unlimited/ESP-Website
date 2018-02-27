@@ -88,7 +88,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
-        context['center'] = Tag.getTag('program_center', default='')
+        context['center'] = Tag.getTag('program_center', default='{lat: 37.427490, lng: -122.170267}')
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
@@ -160,6 +160,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
         result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
         return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+
+    def isStep(self):
+        return Tag.getBooleanTag('webapp_isstep', default=False)
 
     class Meta:
         proxy = True
