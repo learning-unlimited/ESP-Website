@@ -47,7 +47,23 @@ from esp.utils.query_utils import nest_Q
 from django import forms
 from django.http import HttpResponseRedirect
 
+def extract_request_rank(self, registration):
+    reg_name = registration.relationship_name
+    try:
+        if '/' in reg_name:
+            return int(reg_name.split('/')[1])
+    except ValueError as e:
+        pass
+    return 1
 
+def extract_request_rank(self, user, section):
+    regs = StudentRegistration.valid_objects().filter(
+            user=user, section=section, relationship__name__startswith="Request")
+    if regs:
+        # there should be at most one; should we fail if there are more than one?
+        return extract_request_rank(regs[0])
+    else:
+        return 0
 
 class ClassChangeRequestModule(ProgramModuleObj):
     doc = """Let students enter a lottery to switch classes after the program has started."""
@@ -93,25 +109,42 @@ class ClassChangeRequestModule(ProgramModuleObj):
             context['success'] = False
 
         if request.user.isStudent():
-            sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and ESPUser.getRankInClass(request.user, section.parent_class) in (5,10)]) for timeslot in timeslots])
+            sections_by_slot = dict([(
+                timeslot,
+                [
+                    (section, extract_request_rank(context['user'], section))
+                    for section in sections
+                    if section.get_meeting_times()[0] == timeslot
+                    and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max
+                    and section.parent_class not in enrollments.values()
+                    and ESPUser.getRankInClass(request.user, section.parent_class) in (5,10)
+                ]
+            ) for timeslot in timeslots])
         else:
-            sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
+            sections_by_slot = dict([(
+                timeslot,
+                [
+                    (section, False)
+                    for section in sections
+                    if section.get_meeting_times()[0] == timeslot
+                ]
+            ) for timeslot in timeslots])
 
         fields = {}
         for i, timeslot in enumerate(sections_by_slot.keys()):
             choices = [('0', "I would like to keep my currently scheduled class.")]
-            initial = '0'
+            initial = dict()
             for section in sections_by_slot[timeslot]:
                 choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
                 if section[1]:
-                    initial = section[0].emailcode()
+                    initial[section[1]] = section[0].emailcode()
             cur_fields = []
             for priority in range(1,4):
                 field = forms.ChoiceField(
                         # label="Timeslot {} ({}), Priority {}".format(i+1, timeslot.pretty_time(), priority),
                         label="Priority {}".format(priority),
                         choices=choices,
-                        initial=initial)
+                        initial=initial.get(priority, '0'))
                 if priority == 1: field.section_title = "Timeslot {} ({})".format(i+1, timeslot.pretty_time())
                 fields['timeslot_{}_{}'.format(i+1, priority)] = field
 
