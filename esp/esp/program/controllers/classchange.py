@@ -232,7 +232,7 @@ class ClassChangeController(object):
         print "Student histograms"
         print "(only students with >= 1 request)"
         print "---------------------------------"
-        req_freqs = numpy.bincount(self.request.sum(axis=(1,2)))
+        req_freqs = numpy.bincount(self.request.any(axis=2).sum(axis=1))
         for i in range(req_freqs.size):
             if req_freqs[i]:
                 print "{:5d} students with {:3d} request(s)".format(req_freqs[i], i)
@@ -243,26 +243,27 @@ class ClassChangeController(object):
             if ts_freqs[i]:
                 print "{:5d} students with {:3d} timeslot(s) with requests".format(ts_freqs[i], i)
         print
-        oe_freqs = numpy.bincount(self.enroll_orig.any(axis=1).sum(axis=1))
-        for i in range(ts_freqs.size):
+        oe_freqs = numpy.bincount(self.enroll_orig.any(axis=2).sum(axis=1))
+        for i in range(oe_freqs.size):
             if oe_freqs[i]:
                 print "{:5d} students originally enrolled in {:3d} section(s)".format(oe_freqs[i], i)
 
-        # Sum requests, enrollments, etc. along the student and timeslot axis
-        # to get a count for each section
-        request_freq = numpy.sum(self.request, axis=(0, 2))
+        # Fold requests, enrollments, etc. along the student and timeslot axis
+        # to get a count for each section (we compute "any" across timeslots
+        # since sections can take up multiple timeslots but we just want to
+        # count each section once; then we sum along students.)
+        request_freq = self.request.any(axis=2).sum(axis=0)
 
-        enroll_orig_counts = numpy.sum(self.enroll_orig, axis=(0, 2))
-        enroll_final_counts = numpy.sum(self.enroll_final, axis=(0, 2))
-        dropped_counts = numpy.sum(self.enroll_orig & ~self.enroll_final, axis=(0, 2))
-        added_counts = numpy.sum(~self.enroll_orig & self.enroll_final, axis=(0, 2))
-
+        enroll_orig_counts  = self.enroll_orig .any(axis=2).sum(axis=0)
+        enroll_final_counts = self.enroll_final.any(axis=2).sum(axis=0)
+        dropped_counts = (self.enroll_orig & ~self.enroll_final).any(axis=2).sum(axis=0)
+        added_counts   = (~self.enroll_orig & self.enroll_final).any(axis=2).sum(axis=0)
 
         print
         print "Tentatively changed enrollments"
         print "(not useful if you haven't run compute_assignments)"
         print "---------------------------------------------------"
-        print "{:5d} unchanged".format(numpy.sum(self.enroll_orig & self.enroll_final))
+        print "{:5d} unchanged".format(numpy.sum(numpy.any(self.enroll_orig & self.enroll_final, axis=2)))
         print "{:5d} dropped".format(numpy.sum(dropped_counts))
         print "{:5d} added".format(numpy.sum(added_counts))
         # Crude metric of the priorities of requests students got
@@ -316,7 +317,7 @@ class ClassChangeController(object):
         print "Students by number of changes"
         print "-----------------------------"
         changed_classes_freq = numpy.bincount(
-                (self.enroll_final & ~self.enroll_orig).sum(axis=(1,2)))
+                (self.enroll_final & ~self.enroll_orig).any(axis=2).sum(axis=1))
         for i in range(changed_classes_freq.size):
             if changed_classes_freq[i]:
                 print "{:5d} students with {:3d} added sections".format(changed_classes_freq[i], i)
@@ -326,7 +327,7 @@ class ClassChangeController(object):
         print "-----------------------------------"
         orig_no_class_student_indices = numpy.nonzero(~self.enroll_orig.any(axis=(1, 2)))
         final_classes_freq = numpy.bincount(
-                self.enroll_final.sum(axis=(1,2))[orig_no_class_student_indices])
+                self.enroll_final.any(axis=2).sum(axis=1)[orig_no_class_student_indices])
         for i in range(final_classes_freq.size):
             if final_classes_freq[i]:
                 print "{:5d} students with {:3d} classes".format(final_classes_freq[i], i)
@@ -336,7 +337,7 @@ class ClassChangeController(object):
         print "----------------------------------"
         final_no_class_student_indices, = numpy.nonzero(~self.enroll_final.any(axis=(1, 2)))
         no_class_request_freq = numpy.bincount(
-                self.request.sum(axis=(1,2))[final_no_class_student_indices])
+                self.request.any(axis=2).sum(axis=1)[final_no_class_student_indices])
         for i in range(no_class_request_freq.size):
             if no_class_request_freq[i]:
                 print "{:5d} students made {:3d} requests".format(no_class_request_freq[i], i)
