@@ -67,7 +67,7 @@ class ClassChangeRequestModule(ProgramModuleObj):
 
     def isCompleted(self):
         return StudentRegistration.valid_objects().filter(user=get_current_request().user,
-                                                          relationship__name="Request").exists()
+                                                          relationship__name__startswith="Request").exists()
 
     @main_call
     @needs_student
