@@ -296,22 +296,58 @@ class ProgramModuleObj(models.Model):
             return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
         return None
 
-    def teachers(self, QObject = False):
+    def teacherDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the teachers method.
+        """
+        return {}
+
+    def teachers(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of teachers.
+
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def studentDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the students method.
+        """
         return {}
 
-    def teacherDesc(self):
-        return {}
+    def students(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of students.
 
-    def students(self,QObject=False):
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def volunteerDesc(self):
+        """
+        A dict of string keys to descriptions (strings).
+
+        Keys should be consistent with those of the volunteers method.
+        """
         return {}
 
-    def volunteers(self,QObject=False):
+    def volunteers(self, QObject=False):
+        """
+        A dict of string keys to lists/QuerySets of volunteers.
+
+        String keys should be distinct across modules, unless the modules are
+        mutually exclusive. Used for features like computing stats for the
+        dashboard and selecting users for the comm panel.
+        """
         return {}
 
     def isStep(self):
@@ -502,7 +538,10 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, {'yog': request.user.getYOG(moduleObj.program)})
+            return render_to_response(errorpage, request, {
+                    'program': moduleObj.program,
+                    'yog': request.user.getYOG(moduleObj.program),
+                })
 
         return method(moduleObj, request, tl, *args, **kwargs)
 

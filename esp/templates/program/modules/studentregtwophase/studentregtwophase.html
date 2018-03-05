@@ -15,6 +15,52 @@
   padding: 2px 5px;
   text-decoration: none;
 }
+
+.progress-custom {
+    display: table;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.progress-custom .progress{
+    margin-bottom: 0;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.progress-custom .progress-value{
+    display: table-cell;
+    vertical-align: middle;
+    width: 40%; 
+    padding-left: 1em;
+}
+
+/*from Bootstrap 3.3.7*/
+.progress {
+  overflow: hidden;
+  height: 20px;
+  margin-bottom: 20px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  float: left;
+  width: 0%;
+  height: 100%;
+  font-size: 12px;
+  line-height: 20px;
+  color: #fff;
+  text-align: center;
+  background-color: #337ab7;
+  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  -webkit-transition: width 0.6s ease;
+  -o-transition: width 0.6s ease;
+  transition: width 0.6s ease;
+}
 </style>
 {% endblock %}
 
@@ -26,7 +72,7 @@ Welcome to the registration lottery for {{program.niceName}}. Please complete al
 
 <hr>
 
-<h1>Step 1 &ndash; Mark all classes you are interested in taking</h1>
+<h1>Step 1 &ndash; Star all classes you are interested in taking</h1>
 {% inline_program_qsd_block program "learn:studentregtwophase/step1" %}
 <p>
 Follow the link below to star classes you would consider taking for {{program.niceName}}.
@@ -45,17 +91,17 @@ View the classes >>
 {% inline_program_qsd_block program "learn:studentregtwophase/step2" %}
 <p>
 Rank your preferences for each time block during {{program.niceName}}. We highly
-recommend you mark a class for every priority slot to ensure a full schedule.
+recommend you have at least {{num_star}} classes starred for every priority slot to ensure a full schedule.
 </p>
 {% end_inline_program_qsd_block %}
 <div id="program_form">
-<table cellpadding="3" class="fullwidth">
+<table cellpadding="3" style="width:100%;" class="fullwidth">
 <tr>
     <th colspan="3">
     Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
     </th>
 </tr>
-{% for timeslot, priority_list, blockCount in timeslots %}
+{% for timeslot, priority_list, blockCount, star_count, perc_star in timeslots %}
     {% ifchanged timeslot.start.day %}
         <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
     {% endifchanged %}
@@ -69,22 +115,29 @@ recommend you mark a class for every priority slot to ensure a full schedule.
     {% else %}
     <tr>
     <tr>
-        <td width="25%" valign="top" align="center">{{ timeslot.short_description }}</td>
+        <td width="20%"align="center">{{ timeslot.short_description }}</td>
 
         <td style="vertical-align: top !important;">
+            <div class="progress-custom">
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="{{star_count}}" aria-valuemin="0" aria-valuemax="{{num_star}}" style="width: {{perc_star}}%;"></div>
+                </div>
+                <div class="progress-value">
+                    ({{star_count}}/{{num_star}} starred classes)
+                </div>
+            </div>
             <i>
             {% for verb,title in priority_list %}
-	        <span>{{verb}}</span>: {{title}}
-                {% if not forloop.last %}<br />{% endif %}
+                <span><font color={% if not title %}"red"{% else %}"green"{% endif %}>{{verb}}: {{title}}</font></span>
+                {% if not forloop.last %}
+                    <br>
+                {% endif %}
             {% endfor %}
             </i>
-            {% if priority_list|length_is:0 %}
-                No classes
-            {% endif %}
         </td>
 
         {%comment%}{% if module.deadline_met %}{%endcomment%}
-        <td width='25%' align='center' style="vertical-align: top !important;">
+        <td width='20%' align='center'>
             <a href="/learn/{{program.getUrlBase}}/rank_classes/{{timeslot.id}}">[edit rankings]</a>
         </td>
         {%comment%}{% endif %}{%endcomment%}

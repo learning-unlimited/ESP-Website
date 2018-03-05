@@ -10,7 +10,7 @@ from django.conf import settings
 import json
 from localflavor.us.forms import USPhoneNumberField
 
-_states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
+_states = ['' , 'AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -48,19 +48,24 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     e_mail = forms.EmailField()
     phone_day = USPhoneNumberField(required=False)
     phone_cell = USPhoneNumberField(required=False)
-    receive_txt_message = forms.BooleanField(required=False)
-    address_street = StrippedCharField(length=40, max_length=100)
-    address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'),(False, 'No')), widget=forms.RadioSelect)
+    address_street = StrippedCharField(required=False, length=40, max_length=100)
+    address_city = StrippedCharField(required=False, length=20, max_length=50)
+    address_state = forms.ChoiceField(required=False, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getBooleanTag('text_messages_to_students'):
+        if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
+        if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = True):
+            self.fields['address_street'].required = True
+            self.fields['address_city'].required = True
+            self.fields['address_state'].required = True
+            self.fields['address_zip'].required = True
 
     def clean(self):
         super(UserContactForm, self).clean()

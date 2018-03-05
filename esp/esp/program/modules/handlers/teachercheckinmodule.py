@@ -168,7 +168,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'username' in request.POST and 'section' in request.POST:
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
-                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
+                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.friendly_times(include_date = True)[0] + "!"
                 GroupTextModule.sendMessages(teacher, message, True)
                 return {'message': "Texted teacher"}
             else:
