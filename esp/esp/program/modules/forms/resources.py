@@ -64,6 +64,10 @@ class ResourceTypeForm(forms.Form):
         if choices and filter(None, choices):
             res_type.choices = filter(None, choices)
         else:
+            """ This is already set by default when making a new resource type,
+                but if you remove all of the choices from a pre-existing resource type
+                you need to reset the default. Setting attributes_pickled is equivalent to
+                setting choices. """
             res_type.attributes_pickled = ResourceType._meta.get_field('attributes_pickled').default
 
         res_type.save()

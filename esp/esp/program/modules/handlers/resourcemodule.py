@@ -39,6 +39,7 @@ from django.forms import formset_factory
 from esp.utils.web import render_to_response
 
 from esp.cal.models import Event
+from esp.tagdict.models import Tag
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import ESPUser
@@ -383,7 +384,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        context['resource_types'] = self.program.getResourceTypes()
+        context['resource_types'] = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True
