@@ -37,7 +37,10 @@ encouraged to use the password reset page.
 Diff view for template overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(betaveros): #2075
+You can now view a side-by-side diff of a template override and the original
+template at the URL `https://esp.mit.edu/manage/templateoverride/<id>`, where
+`<id>` is the id of the template override. This is linked to from the admin
+panel page of the template override, via "View on Site".
 
 Simplified student reg permissions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,7 +55,14 @@ TODO(uakfdotb): #1038, #2328
 Admin toolbar improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(betaveros): #2234, #2399, #2400, #2452, #2486
+The barebones theme now includes a user search box.
+
+The fruitsalad theme now includes a class search toolbar, similar to its user
+search toolbar. The class search toolbar allows users to quickly search through
+classes of the program that is closest to "currently running" (using heuristics
+described in `Program.current_program`).  Searching without a query will also
+bring the user to the class search page, and searching for a class ID or class
+code will bring the user directly to the manage page for that class.
 
 Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -65,7 +75,10 @@ This release includes a number of improvements to the "user view" page.
 
 - You can now select a program to use for the quick links.
 
-- The quick links now include a link to the user's accounting page.
+- The quick links now include a link to the user's accounting page, a new page
+  that lists all costs and transactions that the user is involved in. This
+  should make it easier to determine, for example, if a user has paid for a
+  program.
 
 - The page now clearly indicates if a user is deactivated.
 
@@ -94,7 +107,10 @@ TODO(willgearty): #2190
 Improvements to editable text UI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(betaveros): #2247, #2261
+- The editable text interface now shows a small toolbar of three buttons when
+  the user is editing text. Editable text is saved only when the user clicks
+  the Save button, instead of when the user clicks out of the text area or it
+  otherwise loses focus. Users can also Preview their edits or Cancel them.
 
 - It is now possible to edit a page's title without editing its text.
 
@@ -170,7 +186,8 @@ as some performance improvements.  Other improvements and bug fixes include:
 
 - The scheduler now works correctly with classroom names containing commas.
 
-- The class search module now has a "title containing" filter.
+- The class search module now has a "title containing" filter and some
+  additional styling.
 
 - Teacher check-in now has an undo check-in button.
 
@@ -210,3 +227,5 @@ as some performance improvements.  Other improvements and bug fixes include:
 
 - The address field in teacher profile may be made optional by setting the
   ``teacher_address_required`` Tag to ``False``.
+
+- Medical bypasses can be added, removed, or queried with a new interface.
