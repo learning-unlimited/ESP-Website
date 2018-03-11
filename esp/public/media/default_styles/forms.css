@@ -3,6 +3,11 @@
     border-collapse: collapse;
 }
 
+/* Profile editor */
+#id_receive_txt_message {
+    list-style:none
+}
+
 /*  Default formatting */
 #divmaintext form table tbody td, #divmaintext form table tbody th {
     vertical-align: top;

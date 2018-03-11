@@ -41,14 +41,17 @@ from esp.program.controllers.classreg import ClassCreationController, ClassCreat
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
 from esp.utils.web               import render_to_response
+from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
+from django.conf                 import settings
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from django.forms.utils          import ErrorDict
+from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
@@ -79,6 +82,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['can_create'] = self.any_reg_is_open()
         context['can_create_class'] = self.class_reg_is_open()
         context['can_create_open_class'] = self.open_class_reg_is_open()
+        context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
         context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program, False)
@@ -249,6 +253,38 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_teacher
+    def cancelrequest(self, request, tl, one, two, module, extra, prog):
+        if request.method == "POST" and 'reason' in request.POST:
+            cls = ClassSubject.objects.get(id=request.POST['cls'])
+            reason = request.POST['reason']
+            request_teacher = request.user
+
+            email_title = '[%s] Class Cancellation Request for %s: %s' % (self.program.niceName(), cls.emailcode(), cls.title)
+            email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+            email_context = {'request_teacher': request_teacher,
+                             'program': self.program,
+                             'cls': cls,
+                             'reason': reason,
+                             'DEFAULT_HOST': settings.DEFAULT_HOST,
+                             'one': cls.parent_program.program_type,
+                             'two': cls.parent_program.program_instance}
+
+            #Send email to all teachers confirming cancellation request
+            email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
+            for teacher in cls.get_teachers():
+                email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+                send_mail(email_title, email_contents, email_from, email_to, False)
+
+            #Send email to admin with link to manageclass page
+            email_context['admin'] = True
+            email_contents = render_to_string('program/modules/teacherclassregmodule/cancelrequest.txt', email_context)
+            email_to = ['Directors <%s>' % (cls.parent_program.director_email)]
+            send_mail(email_title, email_contents, email_from, email_to, False)
+
+        return self.goToCore(tl)
+
+    @aux_call
+    @needs_teacher
     @meets_deadline("/Classes/View")
     def class_status(self, request, tl, one, two, module, extra, prog):
         clsid = 0
@@ -349,11 +385,14 @@ class TeacherClassRegModule(ProgramModuleObj):
         if 'op' in request.POST:
             op = request.POST['op']
 
-        conflictingusers = []
         error = False
 
-        if op == 'add':
+        old_coteachers_set = set(cls.get_teachers())
+        ccc = ClassCreationController(self.program)
 
+        conflictinguser = ''
+
+        if op == 'add':
 
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
@@ -369,16 +408,18 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                                                      'txtTeachers': txtTeachers,
                                                                                      'coteachers':  coteachers,
                                                                                      'error': error,
-                                                                                     'conflicts': []})
+                                                                                     'conflict': []})
 
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
-                conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+                conflictinguser = (teacher.first_name+' '+teacher.last_name)
             else:
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
+                ccc.associate_teacher_with_class(cls, teacher)
+                ccc.send_class_mail_to_directors(cls)
 
         elif op == 'del':
             ids = request.POST.getlist('delete_coteachers')
@@ -390,39 +431,22 @@ class TeacherClassRegModule(ProgramModuleObj):
             coteachers = newcoteachers
             txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
 
-
-        elif op == 'save':
-            old_coteachers_set = set(cls.get_teachers())
             new_coteachers_set = set(coteachers)
-
-            to_be_added = new_coteachers_set - old_coteachers_set
             to_be_deleted = old_coteachers_set - new_coteachers_set
 
-            # don't delete the current user
             if request.user in to_be_deleted:
                 to_be_deleted.remove(request.user)
 
-            for teacher in to_be_added:
-                if cls.conflicts(teacher):
-                    conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+            for teacher in to_be_deleted:
+                cls.removeTeacher(teacher)
 
-            if len(conflictingusers) == 0:
-                # remove some old coteachers
-                for teacher in to_be_deleted:
-                    cls.removeTeacher(teacher)
-
-                # add bits for all new coteachers
-                ccc = ClassCreationController(self.program)
-                for teacher in to_be_added:
-                    ccc.associate_teacher_with_class(cls, teacher)
-                ccc.send_class_mail_to_directors(cls)
-                return self.goToCore(tl)
+            ccc.send_class_mail_to_directors(cls)
 
         return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
                                                                              'ajax':ajax,
                                                                              'txtTeachers': txtTeachers,
                                                                              'coteachers':  coteachers,
-                                                                             'conflicts':   conflictingusers})
+                                                                             'conflict':    conflictinguser})
 
     @aux_call
     @needs_teacher
@@ -592,6 +616,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.title
                 current_data['url']   = newclass.emailcode()
+                min_grade = newclass.grade_min
+                max_grade = newclass.grade_max
+                if Tag.getTag('grade_ranges'):
+                    current_data['grade_range'] = [min_grade,max_grade]
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:
                         current_data[field_name] = newclass.custom_form_data[field_name]

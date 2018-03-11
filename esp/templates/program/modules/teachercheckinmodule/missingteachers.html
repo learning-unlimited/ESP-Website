@@ -44,7 +44,7 @@
             content: "◀"; font-weight: bold;
         }
 
-        .selected .not-checked-in, .selected .checkin-column, .selected .phone {
+        .selected .not-checked-in, .selected .checkin-column, .selected .phone, .selected .text-teacher {
             background-color: #FFFF00;
         }
 
@@ -116,7 +116,7 @@
 
 <table>
 <tr>
-    <th colspan="5">
+    <th colspan="6">
         {% if start_time %}
             Missing teachers for classes starting at {{ start_time.pretty_start_time }}
         {% else %}
@@ -127,7 +127,7 @@
 </tr>
 {% if sections|length_is:0 %}
 <tr>
-    <td colspan="5">
+    <td colspan="6">
         There are no class sections
         {% if start_time %} starting in this timeslot
         {% else %} scheduled for the program{% if date %} on {{ date|date:"D m/d/Y" }}{% endif %}
@@ -158,17 +158,22 @@
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
-            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}"
+            <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.name }}"
                    class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             Already checked-in
             {% endif %}
         </td>
         <td class="phone"> {{ teacher.phone }} </td>
+        <td class="text-teacher">
+            <span class="message"></span>
+            <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
+                   class="button text" type="button" value="Text Teacher"
+                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
         </tr>
         <tr>
     {% endfor %}
-    <td colspan="5" class="section-detail-td">
+    <td colspan="6" class="section-detail-td">
         <div class="section-detail fqr-class">
             <div class="section-detail-header">
                 {{section.title}}

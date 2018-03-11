@@ -1,6 +1,6 @@
 {% if show_class %}
   {% load class_render %}
-  <div id="class_{{ class.id }}" class="show_class{% if errormsg %} class_error{% endif %}">
+  <div id="class_{{ class.id }}" class="{% for grade in class.grades %}grade_{{ grade }} {% endfor %}show_class{% if errormsg %}class_error{% endif %}">
   {% render_class_core class %}
   {% if prereg_url %}
       <div id="class_{{ class.id }}_regbuttons" class="class_buttons">

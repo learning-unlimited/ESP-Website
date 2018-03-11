@@ -743,6 +743,13 @@ teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
+
+        volunteer_list = []
+        volunteer_dict = prog.volunteers()
+        if 'volunteer_all' in volunteer_dict:
+            volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
+        vitals['volunteernum'] = volunteer_list
+
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
 
@@ -823,6 +830,8 @@ teachers[key].filter(is_active = True).distinct().count()))
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         #   Convert Decimal values to float for serialization
         for i in range(len(annotated_categories)):
+            if annotated_categories[i]['num_class_hours'] is None:
+                annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 

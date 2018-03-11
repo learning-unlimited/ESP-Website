@@ -314,6 +314,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def niceSubName(self):
         return self.name
 
+    def grades(self):
+        """ Return an iterable list of the grades for a program. """
+        return range(self.grade_min, self.grade_max + 1)
+
     @property
     def program_type(self):
         return self.url.split('/')[0]
@@ -591,7 +595,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         if self._student_is_in_program(user):
             return True
-        caps = self._grade_caps()
+        caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
         for grades, cap in caps.iteritems():
             if (grade in grades and
@@ -600,7 +604,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return True
 
     @cache_function
-    def _grade_caps(self):
+    def grade_caps(self):
         """Parses the program_size_by_grade Tag.
 
         See user_can_join for the tag syntax.
@@ -617,7 +621,7 @@ class Program(models.Model, CustomFormsLinkModel):
             else:
                 size_dict[(int(k),)] = v
         return size_dict
-    _grade_caps.depend_on_model('tagdict.Tag')
+    grade_caps.depend_on_model('tagdict.Tag')
 
     def _user_can_join_at_all(self, user):
         """Helper function for user_can_join, when using program_size_max.
@@ -1301,12 +1305,19 @@ class RegistrationProfile(models.Model):
 
     @cache_function
     def getLastProfile(user):
+        """Return the user's most recent profile, or an empty profile.
+
+        Return the user's most recently written profile if one exists. If none
+        exist because the user has no profiles or is an AnonymousUser, create
+        and return (but don't save) an empty profile for the user.
+        """
         regProf = None
 
+        # check if this is an actual User, not an AnonymousUser
         if isinstance(user.id, (int, long)):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
-            except:
+            except RegistrationProfile.DoesNotExist:
                 pass
 
         if regProf != None:
@@ -1318,6 +1329,30 @@ class RegistrationProfile(models.Model):
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
+
+    @cache_function
+    def get_last_program_with_profile(user):
+        """Return the program for which the user most recently wrote a profile.
+
+        Look up the profile most recently written by the user, skipping
+        profiles not associated with a program, and return the associated
+        program. If no such programs exist, return None. Used as an
+        approximation of the most recent program attended by the user, which is
+        also often a currently running program.
+        """
+        try:
+            return (
+                RegistrationProfile.objects
+                .filter(user__exact=user, program__isnull=False)
+                .select_related('program')
+                .latest('last_ts')
+                .program
+            )
+        except RegistrationProfile.DoesNotExist:
+            return None
+    get_last_program_with_profile.depend_on_row('program.RegistrationProfile',
+            lambda profile: {'user': profile.user})
+    get_last_program_with_profile = staticmethod(get_last_program_with_profile)
 
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1910,6 +1945,19 @@ class RegistrationType(models.Model):
             return self.displayName
         else:
             return self.name
+
+class PhaseZeroRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = models.ManyToManyField(ESPUser)
+    program = models.ForeignKey(Program, blank=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+    def display_user(self):
+        # Creates a string for the Users. This is required to display user in Admin.
+        return ', '.join([user.username for user in self.user.all()])
+    display_user.short_description = 'Username(s)'
 
 class StudentRegistration(ExpirableModel):
     """

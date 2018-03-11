@@ -112,6 +112,29 @@ $j(function(){
         $msg.text('Checking in...');
     });
 
+    function textTeacher(user, sec, callback, errorCallback){
+        var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
+        $j.post('ajaxteachertext', data, "json").success(callback)
+        .error(function(){
+            alert("An error occurred while atempting to text " + user + ".");
+            if (errorCallback) {
+                errorCallback();
+            }
+        });
+    }
+
+    $j(".text").click(function(){
+        var username = $j(this).data("username");
+        var section = $j(this).data("section");
+        var $td = $j(this.parentNode);
+        var $msg = $td.children('.message');
+        textTeacher(username, section, function(response) {
+            $msg.text(response.message);
+        });
+        $j(this).attr("disabled",true);
+        $msg.text('Texting teacher...');
+    });
+
     $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
@@ -187,7 +210,7 @@ $j(function(){
             e.preventDefault();
         }
     }).keydown(function(e){
-        if(e.target.nodeName !== "TEXTAREA") {
+        if(e.target.nodeName !== "TEXTAREA" && e.target.nodeName !== "INPUT") {
             input.focus();
             if(e.which==38)
                 selected--;

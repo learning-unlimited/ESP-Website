@@ -54,6 +54,8 @@ all_global_tags = {
     'automatic_registration_redirect': (True, "If student/teacher registration is open for exactly one program, redirect to student registration after student account creation (enabled by default)"),
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
+    'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag"),
+    'teacher_address_required': (True, "Is an address required for a teacher profile? (enabled by default, set to 'False' to disable)")
 }
 
 # Any tag used with Tag.getProgramTag(),
@@ -98,6 +100,8 @@ all_program_tags = {
     'display_registration_names': (False, ""),
     'program_size_by_grade': (False, ""),
     'studentschedule_show_empty_blocks': (True, ""),
+    'student_lottery_run': (False, ""),
     'formstack_id': (False, ""),
     'formstack_viewkey': (False, ""),
+    'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
 }

@@ -17,6 +17,7 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     show_class_titles: false,
+    show_class_rooms: false,
     show_closed_reg: false,
     hide_past_time_blocks: false,
     hide_conflicting: false,
@@ -143,6 +144,7 @@ function setup_settings()
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
     $j("#show_class_titles").unbind("change");
+    $j("#show_class_rooms").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
     $j("#hide_conflicting").unbind("change");
@@ -153,6 +155,7 @@ function setup_settings()
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.show_class_titles = $j("#show_class_titles").prop("checked");
+    settings.show_class_rooms = $j("#show_class_rooms").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
     settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
@@ -161,6 +164,7 @@ function setup_settings()
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#show_class_titles").change(handle_settings_change);
+    $j("#show_class_rooms").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
     $j("#hide_conflicting").change(handle_settings_change);
@@ -843,7 +847,10 @@ function render_table(display_mode, student_id)
                 new_div.addClass("section_hidden");
             
             new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
-            new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            if (settings.show_class_rooms)
+            {
+                new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            }
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
 
