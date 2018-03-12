@@ -134,7 +134,11 @@ Improvements to editable text UI
 Teacher Big Board
 ~~~~~~~~~~~~~~~~~
 
-TODO(willgearty): #2396
+Adds a teacher big board module akin to the student big board. Tracks class/teacher
+registration over time. Records the following information: number of registered classes,
+number of approved classes, numbers of teachers, number of class-hours, and number of
+class-student-hours. Also records the number of checked in teachers for the current day
+and the number of teachers registering a class in the last 10 minutes.
 
 Text message & email notification improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
