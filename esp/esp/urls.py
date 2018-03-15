@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.conf.urls import patterns, include, handler500, handler404
+from django.conf.urls import patterns, include, handler500, handler404, url
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
