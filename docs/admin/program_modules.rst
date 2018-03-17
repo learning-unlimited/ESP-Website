@@ -85,8 +85,8 @@ in later phases of registration.
 The program size is based on the ``program_size_by_grade`` Tag.  Students
 submit non-binding interest (which sends a confirmation email).  The lottery
 allows students to combine into groups of up to 4; each student will only be
-selected in the lottery if all can be.  (This very slightly decreases each
-student's change of being selected.)
+selected in the lottery if all can be.  (This can very slightly decrease each
+student's chance of being selected.)
 
 Also provides various situational templates (e.g. to explain if students didn't
 win the lottery).  To enable these, this module should NOT be disabled upon the
