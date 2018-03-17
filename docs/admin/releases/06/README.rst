@@ -62,11 +62,11 @@ Tags to disable shirt types question in profile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The newly added ``studentinfo_shirt_type_selection`` Tag allows you to disable
-the student profile question that asks about shirt types (plain vs fitted),
-while retaining the question that asks about shirt size. This complements the
-existing ``teacherinfo_shirt_type_selection`` Tag, which controls the same
-behavior for the teacher and volunteer profiles. For either of these Tags, set
-the value to False to disable the question.
+the student profile question that asks about shirt types (straight cut vs
+fitted), while retaining the question that asks about shirt size. This
+complements the existing ``teacherinfo_shirt_type_selection`` Tag, which
+controls the same behavior for the teacher and volunteer profiles. For either
+of these Tags, set the value to False to disable the question.
 
 On the student profile, neither of the shirt questions appear unless the
 ``show_student_tshirt_size_options`` Tag is set to True. On the teacher

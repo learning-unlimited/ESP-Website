@@ -1188,7 +1188,10 @@ def update_email(**kwargs):
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
-shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
+# Until someone writes a new migration, we'll have to go with the sex-based 'M'
+# key for straight cut shirts. Let this comment acknowledge that unfortunately
+# state of affairs until that time.
+shirt_types = (('M', 'Straight cut'), ('F', 'Fitted cut'))
 food_choices = ('Anything', 'Vegetarian', 'Vegan')
 food_choices = zip(food_choices, food_choices)
 
