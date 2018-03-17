@@ -184,7 +184,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         snippet
         """
         context = {}
-        context['class'] = ClassSubject.objects.get(id=request.GET['class'])
+        cls = ClassSubject.objects.get(id=request.GET['class'])
+        context['class'] = cls
+        context['sections'] = cls.get_sections()
         if request.GET['show_flags']:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
@@ -217,7 +219,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         phone_entries = ((user, cell or day or default) for (user, cell, day) in profiles)
         return collections.defaultdict(lambda _: default, phone_entries)
 
-    def getMissingTeachers(self, prog, date=None, starttime=None, when=None,
+    def get_missing_teachers(self, prog, date=None, starttime=None, when=None,
                            show_flags=True):
         """Return a list of class sections with missing teachers as of 'when'.
 
@@ -295,8 +297,12 @@ class TeacherCheckinModule(ProgramModuleObj):
         # - which is from before 'when' (since we are considering the state of
         #   check-in at this time).
         # - which is from the same date as 'when'.
-        teachers = ESPUser.objects.filter(
-            classsubject__sections__in=sections).distinct()
+
+        # NOTE: In naming variables, I'm going to pretend "observers" are a
+        # kind of teacher for now. We should maybe come up with a different
+        # hypernym for both.
+        teachers = (ESPUser.objects.filter(classsubject__sections__in=sections) |
+            ESPUser.objects.filter(observing_sections__in=sections)).distinct()
         arrived_teachers = teachers.filter(
             record__program=prog,
             record__event='teacher_checked_in',
@@ -314,32 +320,37 @@ class TeacherCheckinModule(ProgramModuleObj):
             arrived[teacher.id] = teacher
 
         sections_by_class = {}
+        sections_with_unarrived = []
         for section in sections:
-            if not all(teacher.id in arrived for teacher in section.teachers):
-                # Put the first section of each class into sections_by_class
-                if (section.parent_class.id not in sections_by_class
-                        or sections_by_class[section.parent_class_id].begin_time > section.begin_time):
-                    # Precompute some things and pack them on the section.
-                    section.any_arrived = any(teacher.id in arrived
-                                              for teacher in section.teachers)
-                    section.room = (section.prettyrooms() or [None])[0]
-                    # section.teachers is a property, so we can't add extra
-                    # data to the ESPUser objects and have them stick. We must
-                    # make a new list and then modify that.
-                    section.teachers_list = list(section.teachers)
-                    for teacher in section.teachers_list:
-                        teacher.phone = teacher_phones[teacher.id]
-                    sections_by_class[section.parent_class_id] = section
+            if not (all(teacher.id in arrived for teacher in section.teachers) and
+                    all(observer.id in arrived for observer in section.observers.all())):
+                # Precompute some things and pack them on the section.
+                section.all_arrived = all(teacher.id in arrived
+                                          for teacher in section.teachers)
+                section.room = (section.prettyrooms() or [None])[0]
+                # section.teachers is a property, so we can't add extra
+                # data to the ESPUser objects and have them stick. We must
+                # make a new list and then modify that.
+                teachers_list = list(section.teachers)
+                observers_list = list(section.observers.all())
+                for teacher in teachers_list:
+                    teacher.phone = teacher_phones[teacher.id]
+                    teacher.is_observer = False
+                for observer in observers_list:
+                    observer.phone = teacher_phones[observer.id]
+                    observer.is_observer = True
+                section.teachers_list = teachers_list + observers_list
+                sections_with_unarrived.append(section)
 
-        sections = [
-            section for section in sections_by_class.values()
-            if not section.any_arrived
+        sorted_sections = [
+            section for section in sections_with_unarrived
+            if not section.all_arrived
         ] + [
-            section for section in sections_by_class.values()
-            if section.any_arrived
+            section for section in sections_with_unarrived
+            if section.all_arrived
         ]
 
-        return sections, arrived
+        return sorted_sections, arrived
 
     @aux_call
     @needs_onsite
@@ -348,13 +359,13 @@ class TeacherCheckinModule(ProgramModuleObj):
         View that displays the teacher check-in page for missing teachers.
 
         GET data:
-          'date' (optional):  See documentation for getMissingTeachers().
+          'date' (optional):  See documentation for get_missing_teachers().
                               Should be given in the format "%m/%d/%Y".
           'start' (optional): See the documentation for the 'starttime'
-                              parameter for getMissingTeachers().
+                              parameter for get_missing_teachers().
                               Should be given as the id number of the Event.
-          'when' (optional):  See documentation for getMissingTeachers().
-                              getMissingTeachers(). Should be given in the
+          'when' (optional):  See documentation for get_missing_teachers().
+                              get_missing_teachers(). Should be given in the
                               format "%m/%d/%Y %H:%M".
         """
         starttime = date = None
@@ -375,7 +386,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = None
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
-        context['sections'], context['arrived'] = self.getMissingTeachers(
+        context['sections'], context['arrived'] = self.get_missing_teachers(
             prog, date, starttime, when, show_flags)
         if show_flags:
             context['show_flags'] = True

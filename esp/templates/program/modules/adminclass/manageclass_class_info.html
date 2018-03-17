@@ -10,7 +10,11 @@
     <th class="smaller">Observers:</th>
     <td>{% for sec in sections %}
             Section {{ sec.index }}:
-            {% for observer in sec.get_observers %}<a href="/manage/userview?username={{ observer.username|urlencode }}">{{ observer.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% with sec.get_observers as observers %}
+            {% if observers %}
+            {% for observer in observers %}<a href="/manage/userview?username={{ observer.username|urlencode }}">{{ observer.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% else %}(none){% endif %}
+            {% endwith %}
         {% endfor %}
     </td>
 </tr>
