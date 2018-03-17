@@ -35,8 +35,8 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (17)
-====================
+Student modules
+===============
 
 Extra Registration Info (CustomFormModule)
 ------------------------------------------
@@ -73,6 +73,24 @@ Lottery Student Registration (LotteryStudentRegModule)
 There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose.  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
 
 If you are using this module, make sure the StudentClassRegModule is not enabled at the same time.  Add only LotteryStudentRegModule to your program for the lottery phase, then remove it when that phase ends.  After running the lottery assignment script, you can add the StudentClassRegModule and set a deadline for first-come first-served registration.
+
+Student Registration Phase Zero
+-------------------------------
+
+For programs in which there is more demand than supply, this student lottery
+system allows a program to run a lottery to limit the number of students who
+can join the program.  This helps ensure that each student gets enough classes
+in later phases of registration.
+
+The program size is based on the ``program_size_by_grade`` Tag.  Students
+submit non-binding interest (which sends a confirmation email).  The lottery
+allows students to combine into groups of up to 4; each student will only be
+selected in the lottery if all can be.  (This very slightly decreases each
+student's change of being selected.)
+
+Also provides various situational templates (e.g. to explain if students didn't
+win the lottery).  To enable these, this module should NOT be disabled upon the
+conclusion of the student lottery.
 
 Student Profile Editor (RegProfileModule) 
 -----------------------------------------
@@ -321,8 +339,8 @@ student applications.  For more information, see
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
 
-Teacher modules (13)
-====================
+Teacher modules
+===============
 
 Teacher Availability (AvailabilityModule)
 -----------------------------------------
@@ -421,8 +439,8 @@ Teacher Admissions Dashboard
 Provides an interface for teachers to review applications for their class.
 For more information, see `</docs/admin/student_apps.rst>`_.
 
-Management modules (26)
-=======================
+Management modules
+==================
 
 Class Management For Admin (AdminClass)
 ---------------------------------------
@@ -694,6 +712,15 @@ class-student-hours. Also records the number of checked in teachers for the
 current day and the number of teachers registering a class in the last 10
 minutes.
 
+"Phase Zero" Management
+-----------------------
+
+This module is used to manage the Student Registration Phase Zero module.  It
+provides an admin interface to track student lottery registration and run the
+lottery. When the lottery is run, the winners will be given open-ended
+``OverridePhaseZero`` and ``Student/All`` permissions, which will enable them
+to reach the other student registration phases.
+
 Lottery Frontend
 --------------------------------------
 
@@ -704,8 +731,8 @@ modules.  Click the "Generate Student Schedules" button to run the lottery,
 examine the statistics, and then click "Save Schedules to Website".  This
 clobbers any existing student registrations, so use with care.
 
-Onsite modules (8)
-==================
+Onsite modules
+==============
 
 On-Site User Check-In (OnSiteCheckinModule)
 -------------------------------------------
@@ -759,8 +786,8 @@ Unenroll Students (UnenrollModule)
 
 This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
 
-Volunteer modules (1)
-=====================
+Volunteer modules
+=================
 
 Volunteer Sign-up Module (VolunteerSignup)
 ------------------------------------------

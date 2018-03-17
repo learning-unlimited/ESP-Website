@@ -119,12 +119,12 @@ and the number of teachers registering a class in the last 10 minutes.
 Text message & email notification improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Can now text students when cancelling a class on the manageclass page (a la emailing
-  lottery students). This functionality is hidden if GroupTextModule is not enabled
+- Can now text students in addition to emailing them when cancelling a class on
+  the manageclass page. This functionality is hidden if GroupTextModule is not
+  enabled
   or if Twilio is not configured*.
 - Adds option to send a confirmation email to each of the teachers of a section/class
-  when the section/class is cancelled on the manageclass page (a la emailing lottery
-  students).
+  when the section/class is cancelled on the manageclass page.
 - Adds a button for each teacher on the check-in page that allows you to text them a
   reminder (provided Twilio is configured*) to check-in before their class. The text
   follows this format, but customized for the particular class: ``"Don't forget to
@@ -134,36 +134,27 @@ Text message & email notification improvements
   to false. The field is only shown for students and if the ``text_messages_to_students``
   Tag is set to ``True``.
 
-\*Text message functionality requires setting Twilio configuration in local settings
+\*Contact websupport to enable Twilio on your site.
 
 Lottery frontend program module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For programs that use the class registration lottery, there is now a lottery
-assignment admin module to allow running the lottery without web-team
+assignment admin module to allow running the lottery without websupport
 assistance.  See the
 `program modules documentation <../../program_modules.rst>`_
 for more details and instructions.
 
-"Phase Zero" student lottery system
+"Phase Zero" program lottery system
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For programs in which there is more demand than supply, this student lottery system
-allows a program to non-arbitrarily reduce the demand (based on the ``program_size_by_grade``
-Tag) and ensure students in the program get enough classes in later phases of registration.
-Provides a very simple student interface where students submit non-binding interest (which 
-sends a confirmation email). This interface also allows students to combine into groups
-of up to 4 students. If one student from the group is selected, all students will be
-selected (provided there is room); however, if there isn't room for all students in the
-group (due to grade caps), none of the students in the group will be selected (based on
-simulations, this does not improve the chances of a student getting selected and may
-actually decrease the chances of a student getting selected if they are in a group with
-a student in a high-demand grade). The module also provides an admin interface to track
-student lottery registration and run the lottery. When the lottery is run, the winners
-will be given open-ended ``OverridePhaseZero`` and ``Student/All`` permissions, which 
-will enable them to reach the other student registration phases. Also provides various
-situational templates (e.g. to explain if students didn't win the lottery). Note: this
-module should NOT be disabled upon the conclusion of the student lottery.
+For programs in which there is more demand than supply, this student lottery
+system allows a program to run a lottery to limit the number of students who
+can join the program.  This helps ensure that each student gets enough classes
+in later phases of registration.  See the
+`program modules documentation <../../program_modules.rst>`_
+for more details and instructions.
+
 
 Improvements to editable text UI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
