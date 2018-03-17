@@ -107,7 +107,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         return result
 
     def volunteerDesc(self):
-        base_dict = {'volunteer_all': 'All on-site volunteers for %s' % self.program.niceName()}
+        base_dict = {'volunteer_all': 'All onsite volunteers for %s' % self.program.niceName()}
         requests = self.program.volunteerrequest_set.all()
         for req in requests:
             key = 'volunteer_%d' % req.id

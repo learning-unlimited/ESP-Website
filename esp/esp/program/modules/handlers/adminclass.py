@@ -216,7 +216,7 @@ class AdminClass(ProgramModuleObj):
                 cls_cancel_form.data = request.POST
                 cls_cancel_form.is_bound = True
                 if cls_cancel_form.is_valid():
-                    #   Call the Class{Subject,Section}.cancel() method to e-mail and remove students, etc.
+                    #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
                     cls_cancel_form = None
             else:

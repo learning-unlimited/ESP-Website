@@ -134,9 +134,9 @@ DEFAULT_EMAIL_ADDRESSES = {
 }
 # The name of your host institution.
 INSTITUTION_NAME = 'MIT'
-# A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
+# A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
-# The host for ESP site-supported e-mail lists.
+# The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
 #################################

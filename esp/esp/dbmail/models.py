@@ -71,7 +71,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from django.core.mail import EmailMessage #send_mail as django_send_mail
     logger.info("Sent mail to %s", new_list)
 
-    #   Get whatever type of e-mail connection Django provides.
+    #   Get whatever type of email connection Django provides.
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
     msg = EmailMessage(subject, message, from_email, new_list, bcc=bcc, connection=connection, headers=extra_headers)
@@ -126,7 +126,7 @@ _MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEX
 
 
 class MessageRequest(models.Model):
-    """ An initial request to broadcast an e-mail message """
+    """ An initial request to broadcast an email message """
 
     # Each MessageRequest can specify a sendto function, which specifies, for
     # each recipient in the recipients query, which set of associated email
@@ -166,7 +166,7 @@ class MessageRequest(models.Model):
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
-    sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string
+    sender = models.TextField(blank=True, null=True) # Email sender; should be a valid SMTP sender string
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
 
     # Use `default` instead of `auto_now_add`, so that the migration creating
@@ -359,14 +359,14 @@ class MessageRequest(models.Model):
         self.processed = True
         self.save()
 
-        logger.info('Prepared e-mails to send for message request %d: %s', self.id, self.subject)
+        logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
 
 
 class TextOfEmail(models.Model):
     """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
     send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
     send_from = models.CharField(max_length=1024) # Valid email address
-    subject = models.TextField() # E-mail subject; plain text
+    subject = models.TextField() # Email subject; plain text
     msgtext = models.TextField() # Message body; plain text
 
     # Don't use `default` or `auto_now_add`. When a
@@ -526,7 +526,7 @@ class MessageVars(models.Model):
 
 
 class EmailRequest(models.Model):
-    """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
+    """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
     target = AjaxForeignKey(ESPUser)
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)

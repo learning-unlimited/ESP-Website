@@ -9,7 +9,7 @@
         <li><a id="tab_select_basic" href="#tab_basic">Basic list</a></li>
         <li><a id="tab_select_combo" href="#tab_combo">Combination list</a></li>
         {% if include_prev_list %}
-        <li><a id="tab_select_previous" href="#tab_previous">Previous e-mails</a></li>
+        <li><a id="tab_select_previous" href="#tab_previous">Previous emails</a></li>
         {% endif %}
     </ul>
     <div id="tab_basic">
@@ -82,8 +82,8 @@
                 <h4><a href="#">First name</a></h4>
                 <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
 
-                <h4><a href="#">E-mail address</a></h4>
-                <div>Enter a portion of the e-mail address: <input type="text" size="30" name="email" id="email" /></div>
+                <h4><a href="#">Email address</a></h4>
+                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /></div>
 
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
@@ -208,8 +208,8 @@
                 <h4><a href="#">First name</a></h4>
                 <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
 
-                <h4><a href="#">E-mail address</a></h4>
-                <div>Enter a portion of the e-mail address: <input type="text" size="30" name="email" id="email" /></div>
+                <h4><a href="#">Email address</a></h4>
+                <div>Enter a portion of the email address: <input type="text" size="30" name="email" id="email" /></div>
 
                 <h4><a href="#">Zip Code</a></h4>
                 <div>
@@ -265,16 +265,16 @@
         <form id="form_previous" method="POST" action="{{ action_path }}">
         <div id="previous_step_container">
 
-        <div id="msgreq_selector_area" class="ui-widget">Begin typing an e-mail title to find a previous message:
+        <div id="msgreq_selector_area" class="ui-widget">Begin typing an email title to find a previous message:
         <input type="text" size="60" name="msgreq_id" id="msgreq_selector"/>
-        <div class="step_instructions">Once you have selected a message, you can view information about it below.  If you would like to use the same list of recipients and edit the message text and settings before sending, click "Continue to compose e-mail" below.</div>
+        <div class="step_instructions">Once you have selected a message, you can view information about it below.  If you would like to use the same list of recipients and edit the message text and settings before sending, click "Continue to compose email" below.</div>
         </div>
 
         <div id="msgreq_info_area">
 
         </div>
 
-        <button type="button" class="btn btn-primary recipient_step_button" id="prev_select_done">Continue to edit e-mail</button>
+        <button type="button" class="btn btn-primary recipient_step_button" id="prev_select_done">Continue to edit email</button>
 
         </div>
         </form>

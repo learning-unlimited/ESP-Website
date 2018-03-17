@@ -61,7 +61,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Teacher Check-In",
-            "link_title": "Check-in teachers",
+            "link_title": "Check in teachers",
             "module_type": "onsite",
             "seq": 10
             }
@@ -158,7 +158,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajaxteachertext(self, request, tl, one, two, module, extra, prog):
         """
-        POST to this view to text a teacher a reminder to check-in.
+        POST to this view to text a teacher a reminder to check in.
 
         POST data:
           'username':       The teacher's username.
@@ -168,7 +168,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'username' in request.POST and 'section' in request.POST:
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
-                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
+                message = "Don't forget to check in for your " + one + " class that is scheduled for " + sec.start_time().pretty_time(True) + "!"
                 GroupTextModule.sendMessages(teacher, message, True)
                 return {'message': "Texted teacher"}
             else:

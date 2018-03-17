@@ -192,7 +192,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def send_error_email(self, request, context):
-        """ Send an e-mail to admins explaining the credit card error.
+        """ Send an email to admins explaining the credit card error.
             (Broken out from charge_payment view for readability.) """
 
         context['request'] = request
@@ -291,7 +291,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 context['error_type'] = 'generic'
 
         if 'error_type' in context:
-            #   If we got any sort of error, send an e-mail to the admins and render an error page.
+            #   If we got any sort of error, send an email to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
