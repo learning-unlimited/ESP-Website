@@ -186,7 +186,7 @@ class AvailabilityModule(ProgramModuleObj):
                 for timeslot in timeslots:
                     teacher.addAvailableTime(self.program, timeslot)
 
-                #   Send an e-mail showing availability to the teacher (and the archive)
+                #   Send an email showing availability to the teacher (and the archive)
                 ccc = ClassCreationController(self.program)
                 ccc.send_availability_email(teacher)
 

@@ -89,7 +89,7 @@ DEFAULT_USER_TYPES = [
     ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
     ['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],
     ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
-    ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
+    ['Volunteer', {'label': 'Onsite Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
 def admin_required(func):
@@ -1314,7 +1314,7 @@ class StudentInfo(models.Model):
         studentInfo.transportation = new_data.get('transportation', '')
         studentInfo.save()
         if new_data.get('studentrep', False):
-            #   E-mail membership notifying them of the student rep request.
+            #   Email membership notifying them of the student rep request.
             subj = '[%s Membership] Student Rep Request: %s %s' % (settings.ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
             to_email = [settings.DEFAULT_EMAIL_ADDRESSES['membership']]
             from_email = 'ESP Profile Editor <regprofile@%s>' % settings.DEFAULT_HOST
@@ -1685,7 +1685,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     form_link_name = 'ContactInfo'
     link_fields_list = [
         ('phone_day','Phone number'),
-        ('e_mail','E-mail address'),
+        ('e_mail','Email address'),
         ('address', 'Address'),
         ('name', 'Name'),
         ('receive_txt_message', 'Text message request'),
@@ -1715,7 +1715,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
-    e_mail = models.EmailField('E-mail address', blank=True, null=True, max_length=75)
+    e_mail = models.EmailField('Email address', blank=True, null=True, max_length=75)
     phone_day = PhoneNumberField('Home phone',blank=True, null=True)
     phone_cell = PhoneNumberField('Cell phone',blank=True, null=True)
     receive_txt_message = models.BooleanField(default=False)
@@ -2143,8 +2143,8 @@ class Record(models.Model):
         ("med","Submitted medical form"),
         ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
-        ("onsite","Registered for program on-site"),
-        ("schedule_printed","Printed student schedule on-site"),
+        ("onsite","Registered for program onsite"),
+        ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),

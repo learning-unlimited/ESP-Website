@@ -1546,7 +1546,7 @@ class BooleanToken(models.Model):
         other models, such as:
         - Whether a user is violating a schedule constraint
         - Whether a user is in a particular age range
-        - Whether a user has been e-mailed in the last month
+        - Whether a user has been emailed in the last month
 
         Also meant to be combined into logical expressions for queries/tests
         (see BooleanExpression below).

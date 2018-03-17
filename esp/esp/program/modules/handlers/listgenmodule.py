@@ -51,7 +51,7 @@ class UserAttributeGetter(object):
                     '04_lastname': 'Last Name',
                     '05_firstname': 'First Name',
                     '06_username': 'Username',
-                    '07_email': 'E-mail',
+                    '07_email': 'Email',
                     '08_accountdate': 'Created Date',
                     '09_first_regdate': 'Initial Registration Date',
                     '10_last_regdate': 'Most Recent Registration Date',

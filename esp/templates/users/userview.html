@@ -94,12 +94,12 @@
 <tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
 <tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
 {% if profile.contact_user %}
-<tr><td class="key">E-mail</td><td>{{ profile.contact_user.e_mail }}</td></tr>
+<tr><td class="key">Email</td><td>{{ profile.contact_user.e_mail }}</td></tr>
 <tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
 <tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.phone_cell }}</td></tr>
 <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
 {% else %}
-<tr><td class="key">E-mail</td><td>{{ user.email }}</td></tr>
+<tr><td class="key">Email</td><td>{{ user.email }}</td></tr>
 <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
 {% endif %}
 </table>
@@ -158,7 +158,7 @@
 {% if profile.contact_emergency %}{# We want to explicitly say "no contact info here!" if we don't have any, so that, in an emergency, folks don't start burning admin power digging through the database for contact info that we don't have #}
 <table class="dottedtable long">
 <tr><td class="key">Name</td><td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td></tr>
-<tr><td class="key">E-mail</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
+<tr><td class="key">Email</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
 <tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
 <tr><td class="key">Cell Phone</td><td>{{ profile.contact_emergency.phone_cell }}</td></tr>
 <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
@@ -172,7 +172,7 @@
 <h2>Parent/Guardian Contact Info</h2>
 <table class="dottedtable long">
 <tr><td class="key">Name</td><td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td></tr>
-<tr><td class="key">E-mail</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
+<tr><td class="key">Email</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
 <tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
 <tr><td class="key">Cell Phone</td><td>{{ profile.contact_guardian.phone_cell }}</td></tr>
 <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>

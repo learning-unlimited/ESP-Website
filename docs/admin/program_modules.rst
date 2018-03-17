@@ -51,7 +51,7 @@ This module can be used in teacher and/or student registration to add a custom f
 Financial Aid Application (FinancialAidAppModule) 
 -------------------------------------------------
 
-We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be e-mailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
+We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be emailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
 
 To review financial aid applications, go to /admin/ and click "Financial aid requests" under
 "Program"; if you would like to grant financial aid, fill out the form at the
@@ -84,7 +84,7 @@ It is required by default when enabled. However, if a student has filled out a p
 Relevant settings include: 
 
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
-* Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
+* Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's email address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have email" to make the email field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
 * Tag 'allow_change_grade_level': By default, a student's graduation year is fixed after the first time they fill out their profile; this is intended to prevent students from lying about their age in order to get into certain classes. If this Tag is set, students may change their grade level at any time.
 * Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive). 
@@ -232,7 +232,7 @@ If you are using lunch constraints, some students may be confused by the require
 Add "Confirm Registration" link (StudentRegConfirm)
 ---------------------------------------------------
 
-If you pay attention to whether students have a confirmed registration (e.g. for sending e-mails), consider adding this module.  This module doesn't do anything; all it does is add "Confirm Registration" as a step (shown at the top of the main student registration page) which does not show a check mark until the "Confirm" button has been clicked.  It may help to get more students to click "Confirm" after adding their classes.
+If you pay attention to whether students have a confirmed registration (e.g. for sending emails), consider adding this module.  This module doesn't do anything; all it does is add "Confirm Registration" as a step (shown at the top of the main student registration page) which does not show a check mark until the "Confirm" button has been clicked.  It may help to get more students to click "Confirm" after adding their classes.
 
 Core Student Reg (StudentRegCore)
 ---------------------------------
@@ -243,7 +243,7 @@ This module should be enabled if students will be registering using the Web site
 * Student module control field 'Force show required modules': Check the box to show the student all required modules (e.g. profile editor, lunch/sibling information, etc.) before allowing them to proceed to the main registration page. If unchecked, the student can complete registration steps in any order but must finish all required steps before confirming their registration. 
 * Student module control fields 'Confirm button text,' 'Cancel button text,' and 'View button text': You may enter text here to customize the labels shown on these buttons at the bottom of the main registration page. 
 * Student module control field 'Cancel button dereg': If you check this box, students will be removed from all classes they registered for when they click the 'Cancel registration' button. 
-* Student module control field 'Send confirmation': If checked, students will receive e-mail when they click the 'Confirm registration' button. You need to create an e-mail receipt as described here: [[Add a registration receipt]] 
+* Student module control field 'Send confirmation': If checked, students will receive email when they click the 'Confirm registration' button. You need to create an email receipt as described here: [[Add a registration receipt]] 
 * Tag 'allowed_student_types': Controls which types of user accounts may access student registration. By default, student and administrator accounts have access.
 
 Two-phase Student Registration (StudentRegTwoPhase)
@@ -331,7 +331,7 @@ Use this module if you are having classes scheduled into specific timeslots.  Te
 
 It is important that all teachers and co-teachers have indicated availability for the time slots in which they are teaching.  The scheduling module will not allow you to violate this constraint, and teachers will not be allowed to change their availability once their classes are scheduled.  You can use the "Force Availability" feature of the scheduling module to override the availability if you are sure this will not cause any problems.  Or, use the "Manage Class" page to schedule the class.
 
-E-mail verification (EmailVerifyModule)
+Email verification (EmailVerifyModule)
 ---------------------------------------
 
 This module is deprecated and will be removed in a future version of the site.
@@ -395,7 +395,7 @@ If you include this module, teachers will see a summary of the classes that othe
 Teacher Logistics Quiz (TeacherQuizModule)
 ------------------------------------------
 
-You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via e-mail or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
+You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via email or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
 
 The teacher quiz is based on a custom form.  To set it up:
 1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
@@ -429,8 +429,8 @@ Class Management For Admin (AdminClass)
 
 It is recommended to include this module in all programs, since it includes frequently used functions such as deleting and approving classes that are used by other program modules.  Functions include:
 
-* "Manage class" page, which is accessible from the list of classes on the program dashboard.  This page provides fine control over scheduling and co-teachers and allows you to open/close individual sections.  It also lets you cancel a class and e-mail the students.
-* Reviewing (e.g. approving) classes, which can be done via a link in the class creation/editing e-mails.
+* "Manage class" page, which is accessible from the list of classes on the program dashboard.  This page provides fine control over scheduling and co-teachers and allows you to open/close individual sections.  It also lets you cancel a class and email the students.
+* Reviewing (e.g. approving) classes, which can be done via a link in the class creation/editing emails.
 * Bulk approval of classes by typing in their IDs.
 
 AdminCore (AdminCore)
@@ -525,9 +525,9 @@ page.
 Communications Panel for Admin (CommModule)
 -------------------------------------------
 
-This module allows you to use the Web site to send e-mail to participants in your programs.  You first select the list of recipients and then enter the message title and text.  There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic).  Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release).  Please check that the number of recipients look reasonable before sending an e-mail.  You can use the "recipient checklist" feature to see specific users.
+This module allows you to use the Web site to send email to participants in your programs.  You first select the list of recipients and then enter the message title and text.  There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic).  Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release).  Please check that the number of recipients look reasonable before sending an email.  You can use the "recipient checklist" feature to see specific users.
 
-To send an HTML e-mail (e.g. with images and formatting), begin your e-mail text with <html> and end it with </html>.  Besides using proper HTML code in the message text, please test send the message to yourself (before sending to a larger list) so you can verify that the message displays properly.
+To send an HTML email (e.g. with images and formatting), begin your email text with <html> and end it with </html>.  Besides using proper HTML code in the message text, please test send the message to yourself (before sending to a larger list) so you can verify that the message displays properly.
 
 Cybersource Credit Card Module
 ------------------------------
@@ -594,7 +594,7 @@ This module provides a wide variety of information as requested by other program
 User List Generator (ListGenModule)
 -----------------------------------
 
-This module presents an interface similar to the communications panel, allowing you to specify filtering criteria to get a list of users.  However, instead of sending an e-mail, you are asked which information you would like to retrieve about each user.  This information might include their school, grade level, or emergency contact information.  Lists can be generated in HTML format (for printing) or CSV format (for spreadsheets).
+This module presents an interface similar to the communications panel, allowing you to specify filtering criteria to get a list of users.  However, instead of sending an email, you are asked which information you would like to retrieve about each user.  This information might include their school, grade level, or emergency contact information.  Lists can be generated in HTML format (for printing) or CSV format (for spreadsheets).
 
 Mailing Label Generation (MailingLabels)
 ----------------------------------------
@@ -711,7 +711,7 @@ This module will allow you to morph into a student and access the regular studen
 Onsite Reg Core Module (OnsiteCore)
 -----------------------------------
 
-This module should be included in all programs.  It will show the main on-site page which links to all of the other modules.  This page will be accessible to administrators as well as the special "onsite" user.  (The password for the "onsite" user should be set using the admin interface at /admin/users/espuser/.)
+This module should be included in all programs.  It will show the main onsite page which links to all of the other modules.  This page will be accessible to administrators as well as the special "onsite" user.  (The password for the "onsite" user should be set using the admin interface at /admin/users/espuser/.)
 
 Onsite View Purchased Items (OnsitePaidItemsModule)
 ---------------------------------------------------
