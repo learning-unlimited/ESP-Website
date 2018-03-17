@@ -42,31 +42,6 @@ template at the URL `https://esp.mit.edu/manage/templateoverride/<id>`, where
 `<id>` is the id of the template override. This is linked to from the admin
 panel page of the template override, via "View on Site".
 
-Simplified student reg permissions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Some simplifications have been made to the student registration permissions:
-
-- The "signup verb" option in StudentClassRegModuleInfo has been removed, in
-  favor of the "Student/Classes/Lottery" deadline.
-
-- The "Student/Classes/OneClass" deadline has been removed, in favor of
-  "Student/Classes".
-
-- All sites now have the "Student/Removal" deadline, to allow students to
-  remove classes even if registration is otherwise closed.
-
-This fixes several bugs in registration permissions.
-
-Lottery frontend program module
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For programs that use the class registration lottery, there is now a lottery
-assignment admin module to allow running the lottery without web-team
-assistance.  See the
-`program modules documentation <../../program_modules.rst>`_
-for more details and instructions.
-
 Admin toolbar improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -79,8 +54,8 @@ described in `Program.current_program`).  Searching without a query will also
 bring the user to the class search page, and searching for a class ID or class
 code will bring the user directly to the manage page for that class.
 
-Userview improvements
-~~~~~~~~~~~~~~~~~~~~~
+User view page improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This release includes a number of improvements to the "user view" page.
 
@@ -116,35 +91,21 @@ functionality.
 
 - Volunteer registration statistics are now included in the program dashboard.
 
-"Phase Zero" student lottery system
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Simplified student reg permissions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For programs in which there is more demand than supply, this student lottery system
-allows a program to non-arbitrarily reduce the demand (based on the ``program_size_by_grade``
-Tag) and ensure students in the program get enough classes in later phases of registration.
-Provides a very simple student interface where students submit non-binding interest (which 
-sends a confirmation email). This interface also allows students to combine into groups
-of up to 4 students. If one student from the group is selected, all students will be
-selected (provided there is room); however, if there isn't room for all students in the
-group (due to grade caps), none of the students in the group will be selected (based on
-simulations, this does not improve the chances of a student getting selected and may
-actually decrease the chances of a student getting selected if they are in a group with
-a student in a high-demand grade). The module also provides an admin interface to track
-student lottery registration and run the lottery. When the lottery is run, the winners
-will be given open-ended ``OverridePhaseZero`` and ``Student/All`` permissions, which 
-will enable them to reach the other student registration phases. Also provides various
-situational templates (e.g. to explain if students didn't win the lottery). Note: this
-module should NOT be disabled upon the conclusion of the student lottery.
+Some simplifications have been made to the student registration permissions:
 
-Improvements to editable text UI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- The "signup verb" option in StudentClassRegModuleInfo has been removed, in
+  favor of the "Student/Classes/Lottery" deadline.
 
-- The editable text interface now shows a small toolbar of three buttons when
-  the user is editing text. Editable text is saved only when the user clicks
-  the Save button, instead of when the user clicks out of the text area or it
-  otherwise loses focus. Users can also Preview their edits or Cancel them.
+- The "Student/Classes/OneClass" deadline has been removed, in favor of
+  "Student/Classes".
 
-- It is now possible to edit a page's title without editing its text.
+- All sites now have the "Student/Removal" deadline, to allow students to
+  remove classes even if registration is otherwise closed.
+
+This fixes several bugs in registration permissions.
 
 Teacher Big Board
 ~~~~~~~~~~~~~~~~~
@@ -174,6 +135,45 @@ Text message & email notification improvements
   Tag is set to ``True``.
 
 \*Text message functionality requires setting Twilio configuration in local settings
+
+Lottery frontend program module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For programs that use the class registration lottery, there is now a lottery
+assignment admin module to allow running the lottery without web-team
+assistance.  See the
+`program modules documentation <../../program_modules.rst>`_
+for more details and instructions.
+
+"Phase Zero" student lottery system
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For programs in which there is more demand than supply, this student lottery system
+allows a program to non-arbitrarily reduce the demand (based on the ``program_size_by_grade``
+Tag) and ensure students in the program get enough classes in later phases of registration.
+Provides a very simple student interface where students submit non-binding interest (which 
+sends a confirmation email). This interface also allows students to combine into groups
+of up to 4 students. If one student from the group is selected, all students will be
+selected (provided there is room); however, if there isn't room for all students in the
+group (due to grade caps), none of the students in the group will be selected (based on
+simulations, this does not improve the chances of a student getting selected and may
+actually decrease the chances of a student getting selected if they are in a group with
+a student in a high-demand grade). The module also provides an admin interface to track
+student lottery registration and run the lottery. When the lottery is run, the winners
+will be given open-ended ``OverridePhaseZero`` and ``Student/All`` permissions, which 
+will enable them to reach the other student registration phases. Also provides various
+situational templates (e.g. to explain if students didn't win the lottery). Note: this
+module should NOT be disabled upon the conclusion of the student lottery.
+
+Improvements to editable text UI
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- The editable text interface now shows a small toolbar of three buttons when
+  the user is editing text. Editable text is saved only when the user clicks
+  the Save button, instead of when the user clicks out of the text area or it
+  otherwise loses focus. Users can also Preview their edits or Cancel them.
+
+- It is now possible to edit a page's title without editing its text.
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
