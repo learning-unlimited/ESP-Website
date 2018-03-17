@@ -684,6 +684,25 @@ some of the same statistics as the dashboard, but is a lot faster to load, and
 has some fun extra numbers too.  Most of the statistics are most useful during
 lottery registration, but it is not restricted to the lottery.
 
+Teacher Registration Big Board
+--------------------------------------
+
+Like the Student Registration Big Board, but for teacher registrations.
+Records the following information: number of registered classes, number of
+approved classes, numbers of teachers, number of class-hours, and number of
+class-student-hours. Also records the number of checked in teachers for the
+current day and the number of teachers registering a class in the last 10
+minutes.
+
+Lottery Frontend
+--------------------------------------
+
+For programs that use the class registration lottery, this module allows admins
+to run the lottery without assistance from web-team.  To run the lottery,
+enable this module, go to "Run the Lottery Assignment Thing" in the list of
+modules.  Click the "Generate Student Schedules" button to run the lottery,
+examine the statistics, and then click "Save Schedules to Website".  This
+clobbers any existing student registrations, so use with care.
 
 Onsite modules (8)
 ==================

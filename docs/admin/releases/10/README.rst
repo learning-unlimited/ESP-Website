@@ -45,12 +45,27 @@ panel page of the template override, via "View on Site".
 Simplified student reg permissions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(mgersh): #2133
+Some simplifications have been made to the student registration permissions:
+
+- The "signup verb" option in StudentClassRegModuleInfo has been removed, in
+  favor of the "Student/Classes/Lottery" deadline.
+
+- The "Student/Classes/OneClass" deadline has been removed, in favor of
+  "Student/Classes".
+
+- All sites now have the "Student/Removal" deadline, to allow students to
+  remove classes even if registration is otherwise closed.
+
+This fixes several bugs in registration permissions.
 
 Lottery frontend program module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO(uakfdotb): #1038, #2328
+For programs that use the class registration lottery, there is now a lottery
+assignment admin module to allow running the lottery without web-team
+assistance.  See the
+`program modules documentation <../../program_modules.rst>`_
+for more details and instructions.
 
 Admin toolbar improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,7 +173,7 @@ Text message & email notification improvements
   to false. The field is only shown for students and if the ``text_messages_to_students``
   Tag is set to ``True``.
 
-*Text message functionality requires setting Twilio configuration in local settings
+\*Text message functionality requires setting Twilio configuration in local settings
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
