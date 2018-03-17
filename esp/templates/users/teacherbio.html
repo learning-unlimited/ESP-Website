@@ -21,7 +21,7 @@ img.biophoto { border: 1px solid black; }
 {% endblock %}
 
 {% block content %}
-<h1 style="font-size: 120%;">ESP Biography</h1>
+<h1 style="font-size: 120%;">{{ settings.ORGANIZATION_SHORT_NAME }} Biography</h1>
 {% if biouser.id == request.user.id or request.user.isAdministrator %}
 <a href="{{ bio.edit_url }}" title="Edit this bio!">
   Edit this biography!
@@ -56,7 +56,7 @@ img.biophoto { border: 1px solid black; }
   <br />
   <br />
   <h2>Past Classes</h2> &nbsp; 
-  <small>(Look at the <a href="/archives/classes/" title="Past ESP Classes">class archive</a> for more.)</small>
+  <small>(Look at the <a href="/archives/classes/" title="Past {{ settings.ORGANIZATION_SHORT_NAME }} Classes">class archive</a> for more.)</small>
   
   <br />
   <br />

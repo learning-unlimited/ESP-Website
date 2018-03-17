@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}ESP{% endblock %}
+{% block title %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endblock %}
 
 {% block content %}
 
@@ -8,7 +8,7 @@
 <div class="row-fluid">
   <div class="span12">
     <div class="hero-unit">
-      <h1>Welcome to ESP</h1>
+      <h1>Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}</h1>
     </div>
   </div>
 </div>

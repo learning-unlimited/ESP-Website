@@ -37,12 +37,16 @@
 {% load render_qsd %}
 {% inline_qsd_block "myesp/create_new_account_headertext" %}
 <p>
-  Welcome to ESP! To do almost anything with ESP, you first need to register
+  Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}!
+  To do almost anything with us, you first need to register
   an account with us. After you register account, you will be allowed to register
   for programs, sign up for classes, among other things.
 </p>
 <p>
-  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists. (The latter gets emails about longer term ESP programs, targeted at people in the Boston area, while the former gets emails about programs that might be worth travelling for.) If you create an account, you will be automatically subscribed to our main Announcements list.
+  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
+  (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the local area,
+  while the former gets emails about programs that might be worth travelling for.)
+  If you create an account, you will be automatically subscribed to our main announcements.
 </p>
 {% end_inline_qsd_block %}
 </div>

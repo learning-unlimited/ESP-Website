@@ -105,11 +105,11 @@ If you have any questions regarding the program, <br /> please email the
    <tr>
    <td colspan="7" class="clsleft bordertop2"><b>Registration form:</b>
      {% if can_create_class %}
-     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
+     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
        Add a new class for {{ program.niceName }}!
      </a>
      <br />
-     <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
+     <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
        Teach a class from a previous program for {{ program.niceName }}!
      </a>
      {% endif %}

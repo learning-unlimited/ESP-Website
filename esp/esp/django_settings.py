@@ -290,7 +290,7 @@ AUTHENTICATION_BACKENDS = (
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
-    ('general','General ESP'),
+    ('general','General Program'),
     ('esp-web','Web Site Problems'),
     ('relations',  'K-12 School Relations'),
     )
