@@ -38,8 +38,8 @@ Diff view for template overrides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can now view a side-by-side diff of a template override and the original
-template at the URL `https://esp.mit.edu/manage/templateoverride/<id>`, where
-`<id>` is the id of the template override. This is linked to from the admin
+template at the URL ``https://esp.mit.edu/manage/templateoverride/<id>``, where
+``<id>`` is the id of the template override. This is linked to from the admin
 panel page of the template override, via "View on Site".
 
 Admin toolbar improvements
@@ -49,10 +49,10 @@ The barebones theme now includes a user search box.
 
 The fruitsalad theme now includes a class search toolbar, similar to its user
 search toolbar. The class search toolbar allows users to quickly search through
-classes of the program that is closest to "currently running" (using heuristics
-described in `Program.current_program`).  Searching without a query will also
-bring the user to the class search page, and searching for a class ID or class
-code will bring the user directly to the manage page for that class.
+classes of the program that is closest to currently running.  Searching without
+a query will also bring the user to the class search page, and searching for a
+class ID or class code will bring the user directly to the manage page for that
+class.
 
 User view page improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,14 +121,13 @@ Text message & email notification improvements
 
 - Can now text students in addition to emailing them when cancelling a class on
   the manageclass page. This functionality is hidden if GroupTextModule is not
-  enabled
-  or if Twilio is not configured*.
-- Adds option to send a confirmation email to each of the teachers of a section/class
-  when the section/class is cancelled on the manageclass page.
+  enabled or if Twilio is not configured*.
+- Adds option to send a confirmation email to each of the teachers of a
+  section/class when the section/class is cancelled on the manageclass page.
 - Adds a button for each teacher on the check-in page that allows you to text them a
   reminder (provided Twilio is configured*) to check-in before their class. The text
-  follows this format, but customized for the particular class: ``"Don't forget to
-  check-in for your Splash class that is scheduled for 10-11:45 AM on April 9!"``
+  follows this format, but customized for the particular class: _"Don't forget to
+  check-in for your Splash class that is scheduled for 10-11:45 AM on April 9!"_
 - Changes the text message profile form field to radio select buttons (rather than
   boolean). This forces new users to select one of the options, rather than defaulting
   to false. The field is only shown for students and if the ``text_messages_to_students``
