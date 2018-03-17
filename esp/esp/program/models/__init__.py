@@ -1633,7 +1633,13 @@ class BooleanExpression(models.Model):
     @cache_function
     def get_stack(self):
         return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     get_stack.depend_on_row('program.BooleanToken', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestTimeblock', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestOccupied', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestCategory', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestSectionList', lambda token: {'self': token.exp})
 
     def reset(self):
         self.booleantoken_set.all().delete()
