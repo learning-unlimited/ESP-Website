@@ -16,15 +16,13 @@
 
 <script type="text/javascript">
     function checkAll(checkId){
-        var inputs = document.getElementsByTagName("input");
-        for (var i = 0; i < inputs.length; i++) { 
-            if (inputs[i].type == "checkbox" && inputs[i].class == checkId) { 
-                if (inputs[i].checked) {
-                    inputs[i].checked = false;
-                } else {
-                    inputs[i].checked = true;
-                }
-            }  
+        var inputs = document.querySelectorAll("checkId");
+        for (var i = 0; i < inputs.length; i++) {  
+            if (inputs[i].checked) {
+                inputs[i].checked = false;
+            } else {
+                inputs[i].checked = true;
+            } 
         }  
     }
 </script>
