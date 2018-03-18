@@ -18,11 +18,11 @@
     function checkAll(checkId){
         var inputs = document.getElementsByTagName("input");
         for (var i = 0; i < inputs.length; i++) { 
-            if (inputs[i].type == "checkbox" && inputs[i].id == checkId) { 
-                if(inputs[i].checked == true) {
-                    inputs[i].checked = false ;
-                } else if (inputs[i].checked == false ) {
-                    inputs[i].checked = true ;
+            if (inputs[i].type == "checkbox" && inputs[i].class == checkId) { 
+                if (inputs[i].checked) {
+                    inputs[i].checked = false;
+                } else {
+                    inputs[i].checked = true;
                 }
             }  
         }  
@@ -47,7 +47,7 @@ Select all users
 {% for user in users %}
 <tr>
 <td>
-<input type="checkbox" id="chk" name="userno{{user.id}}" value="{{user.id}}" />
+<input type="checkbox" class="chk" name="userno{{user.id}}" value="{{user.id}}" />
 {{user.first_name}} {{user.last_name}} ({{user.username}}) ({{user.id}})
 </td>
 </tr>

@@ -24,7 +24,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         classLengthMax: {active: false, el: $j("input#section-filter-length-max"), type: "number"},
         classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min"), type: "number"},
         classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max"), type: "number"},
-	    gradeMin: {active: false, el: $j("input#section-filter-grade-min"), type: "number"},
+        gradeMin: {active: false, el: $j("input#section-filter-grade-min"), type: "number"},
         gradeMax: {active: false, el: $j("input#section-filter-grade-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
         classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
