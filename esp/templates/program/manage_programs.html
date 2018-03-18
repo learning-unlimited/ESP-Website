@@ -18,7 +18,31 @@
 <tbody>
   <tr>
     <td>
-        {% render_inline_qsd "manage/programs" %}
+        {% load render_qsd %}
+        {% inline_qsd_block "manage/programs" %}
+        ##Hello Fellow Admins!##
+        Here are some useful management pages:
+
+          - [View and manage static pages](/manage/pages/)
+
+          - [Flush cache](/manage/flushcache/)
+
+          - [Make someone an admin](/myesp/makeadmin/)
+
+          - [Create and edit custom survey forms](/customforms/)
+
+        Here are some tips:
+
+          - If you want to create a new page, just go to the URL you want (such as https://yoursite.learningu.org/newpage.html). If you are logged in as an admin, you should see an option that says "change that." Click, and edit the new page.
+
+          - [LU website tips](https://wiki.learningu.org/How_to_use_the_website)
+                    
+          - [Limited LU documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs/admin)
+
+          - [LU website guide (in progress)](https://docs.google.com/document/d/10WZVUf3y_ajc3f7Ur-QSd0B9i_7derNczcTh24Oa3LM/view)
+
+          - If you're not sure how to do something contact your mentor(s). If you are an associate or full Chapter, contact websupport (or Chapter Services, as appropriate) with questions, problems, or requests.
+        {% end_inline_qsd_block %}
     </td>
   </tr>
   <tr>
