@@ -1073,8 +1073,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
                 for row in query:
                     shirt_size, count = row
-                    shirt_count['M'][shirt_size] = count                
-            
+                    shirt_count['M'][shirt_size] = count
+
             else:
                 query = query.values_list('registrationprofile__teacher_info__shirt_type',
                                       'registrationprofile__teacher_info__shirt_size')
