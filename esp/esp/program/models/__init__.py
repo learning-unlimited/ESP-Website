@@ -1067,7 +1067,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
-            if Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
+            if Tag.getBooleanTag('teacherinfo_shirt_type_selection') == False:
                 query = query.values_list('registrationprofile__teacher_info__shirt_size')
                 query = query.annotate(people=Count('id', distinct=True))
 
@@ -1077,7 +1077,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
             else:
                 query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                      'registrationprofile__teacher_info__shirt_size')
+                                          'registrationprofile__teacher_info__shirt_size')
                 query = query.annotate(people=Count('id', distinct=True))
 
                 for row in query:
