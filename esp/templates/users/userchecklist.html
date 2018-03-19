@@ -16,7 +16,7 @@
 
 <script type="text/javascript">
     function checkAll(checkId){
-        var inputs = document.querySelectorAll(.checkId);
+        var inputs = document.querySelectorAll(checkId);
         for (var i = 0; i < inputs.length; i++) {  
             if (inputs[i].checked) {
                 inputs[i].checked = false;
@@ -38,7 +38,7 @@ Please check off the users you'd like to be included in your list:
 <table>
 <tr>
 <td>
-<input type="checkbox" id="chk_new" onclick="checkAll('chk');">
+<input type="checkbox" id="chk_new" onclick="checkAll('.chk');">
 Select all users
 </tr>
 </td>
