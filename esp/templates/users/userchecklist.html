@@ -17,10 +17,12 @@
 <script type="text/javascript">
     function checkAll(checkId){
         var inputs = document.querySelectorAll(checkId);
-        for (var i = 0; i < inputs.length; i++) {  
-            if (chk_new.checked) {
+        if (chk_new.checked) {
+            for (var i = 0; i < inputs.length; i++) {  
                 inputs[i].checked = true;
-            } else {
+            }
+        } else {
+            for (i = 0; i < inputs.length; i++) { 
                 inputs[i].checked = false;
             } 
         }  
