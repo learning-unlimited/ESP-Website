@@ -17,15 +17,9 @@
 <script type="text/javascript">
     function checkAll(checkId){
         var inputs = document.querySelectorAll(checkId);
-        if (chk_new.checked) {
-            for (var i = 0; i < inputs.length; i++) {  
-                inputs[i].checked = true;
-            }
-        } else {
-            for (i = 0; i < inputs.length; i++) { 
-                inputs[i].checked = false;
-            } 
-        }  
+        for (var i = 0; i < inputs.length; i++) {  
+            inputs[i].checked = chk_new.checked;
+        }
     }
 </script>
 
