@@ -788,43 +788,87 @@ class ProgramPrintables(ProgramModuleObj):
 
         schedule = u''
         if schedule_type in [u'Student', u'Teacher']:
-            if room_numbers:
-                schedule = u"""
-    %s schedule for %s:
-
-     Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
-            else:
-                schedule = u"""
-    %s schedule for %s:
-
-     Time                   | Class                                  \n""" % (schedule_type, user.name())
-            schedule += u'------------------------+---------------------------------------------------\n'
+ 
             if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
             elif schedule_type == u'Teacher':
-                classes = ProgramPrintables.get_teacher_classlist(program, user)
+                classes = ProgramPrintables.get_teacher_classlist(program, user)       
+                
+            schedule = """
+                        <p> %s schedule for %s: </p> 
+                        """ % (schedule_type, user.name())  
+            schedule += """
+                        <table cellspacing="0" cellpadding="10" border="1">
+                            <tr>
+                            <th width="100">Time</th>
+                            <th width="300">Class</th>
+                            """
+            if room_numbers:
+                schedule += """
+                            <th width="100">Room</th>
+                            """
+            schedule += """
+                        </tr>
+                        <indent>
+                        """ 
             for cls in classes:
-                rooms = cls.prettyrooms()
-                if len(rooms) == 0:
-                    rooms = u' N/A'
+                times = cls.friendly_times()
+                if len(times) == 0:
+                    # don't show classes with no times
+                    continue
                 else:
-                    rooms = u' ' + u", ".join(rooms)
+                    times = ' ' + ', '.join(times)
+                schedule += """
+                            <tr>
+                            <td> %s </td>
+                            <td> %s </td>
+                            """ % (str(times), cls.title())
                 if room_numbers:
-                    schedule += u'%s|%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40), rooms)
-                else:
-                    schedule += u'%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40))
-
+                    rooms = cls.prettyrooms()
+                    if len(rooms) == 0:
+                        rooms = 'N/A'
+                    else:
+                        rooms = ' ' + ', '.join(rooms)
+                    schedule += """
+                                <td> %s </td>
+                                """ % (str(rooms))
+                schedule += """
+                            </tr>
+                            """ 
+            schedule += """
+                        </indent>
+                        </table>
+                        """
+        
         elif schedule_type == u'Volunteer':
-            schedule = u"""
-Volunteer schedule for %s:
-
- Time                   | Shift                                  \n""" % (user.name())
-            schedule += u'------------------------+----------------------------------------\n'
+            schedule = """
+                       <p> %s schedule for %s: </p> 
+                       """ % (schedule_type, user.name())  
+            schedule += """
+                        <table cellspacing="0" cellpadding="10" border="1">
+                            <tr>
+                            <th width="100">Time</th>
+                            <th width="300">Shift</th>
+                            """
+            schedule += """
+                        </tr>
+                        <indent>
+                        """ 
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += u' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
-
-        return schedule
+                schedule += """
+                            <tr>
+                            <td> %s </td>
+                            <td> %s </td>
+                            </tr>
+                            """ % (str(shift.request.timeslot.pretty_time()), str(shift.request.timeslot.description))
+            schedule += """
+                        </indent>
+                    </table>
+                    """
+        
+        return schedule   
+        
 
     @aux_call
     @needs_admin
