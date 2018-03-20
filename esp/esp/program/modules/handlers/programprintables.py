@@ -50,6 +50,7 @@ from esp.program.models import VolunteerOffer
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
+from django.utils.html import mark_safe
 
 from decimal import Decimal
 import json
@@ -867,7 +868,7 @@ class ProgramPrintables(ProgramModuleObj):
                     </table>
                     """
         
-        return schedule   
+        return mark_safe(schedule)  
         
 
     @aux_call
