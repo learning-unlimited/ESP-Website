@@ -31,7 +31,7 @@ pytz==2015.4 # Required for timezone support
 raven # Required for Sentry error reporting
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
-stripe==1.12.2 # Required for credit card processing
+stripe==1.19.1 # Required for credit card processing
 twilio==3.6.5 # Required for text messaging support
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.0.0 # Does form and survey exporting
