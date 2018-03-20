@@ -792,21 +792,23 @@ class ProgramPrintables(ProgramModuleObj):
 
             if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
+                classes.sort()
             elif schedule_type == u'Teacher':
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
+                classes.sort()
 
             schedule = """
-                        <p> %s schedule for %s: </p>
-                        """ % (schedule_type, user.name())
+                        <p> %s schedule for %s for %s: </p>
+                        """ % (schedule_type, user.name(), program.niceName())
             schedule += """
-                        <table cellspacing="0" cellpadding="10" border="1">
+                        <table cellspacing="0" cellpadding="10" border="1" width="100%">
                             <tr>
-                            <th width="100">Time</th>
-                            <th width="300">Class</th>
+                            <th width="20%">Time</th>
+                            <th width="60%">Class</th>
                             """
             if room_numbers:
                 schedule += """
-                            <th width="100">Room</th>
+                            <th width="20%">Room</th>
                             """
             schedule += """
                         </tr>
@@ -843,13 +845,13 @@ class ProgramPrintables(ProgramModuleObj):
 
         elif schedule_type == u'Volunteer':
             schedule = """
-                       <p> %s schedule for %s: </p>
-                       """ % (schedule_type, user.name())
+                       <p> %s schedule for %s for %s: </p>
+                       """ % (schedule_type, user.name(), program.niceName())
             schedule += """
-                        <table cellspacing="0" cellpadding="10" border="1">
+                        <table cellspacing="0" cellpadding="10" border="1" width="100%">
                             <tr>
-                            <th width="100">Time</th>
-                            <th width="300">Shift</th>
+                            <th width="35%">Time</th>
+                            <th width="65%">Shift</th>
                             """
             schedule += """
                         </tr>
