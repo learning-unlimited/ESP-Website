@@ -789,15 +789,15 @@ class ProgramPrintables(ProgramModuleObj):
 
         schedule = u''
         if schedule_type in [u'Student', u'Teacher']:
- 
+
             if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
             elif schedule_type == u'Teacher':
-                classes = ProgramPrintables.get_teacher_classlist(program, user)       
-                
+                classes = ProgramPrintables.get_teacher_classlist(program, user)
+
             schedule = """
-                        <p> %s schedule for %s: </p> 
-                        """ % (schedule_type, user.name())  
+                        <p> %s schedule for %s: </p>
+                        """ % (schedule_type, user.name())
             schedule += """
                         <table cellspacing="0" cellpadding="10" border="1">
                             <tr>
@@ -811,7 +811,7 @@ class ProgramPrintables(ProgramModuleObj):
             schedule += """
                         </tr>
                         <indent>
-                        """ 
+                        """
             for cls in classes:
                 times = cls.friendly_times()
                 if len(times) == 0:
@@ -835,16 +835,16 @@ class ProgramPrintables(ProgramModuleObj):
                                 """ % (str(rooms))
                 schedule += """
                             </tr>
-                            """ 
+                            """
             schedule += """
                         </indent>
                         </table>
                         """
-        
+
         elif schedule_type == u'Volunteer':
             schedule = """
-                       <p> %s schedule for %s: </p> 
-                       """ % (schedule_type, user.name())  
+                       <p> %s schedule for %s: </p>
+                       """ % (schedule_type, user.name())
             schedule += """
                         <table cellspacing="0" cellpadding="10" border="1">
                             <tr>
@@ -854,7 +854,7 @@ class ProgramPrintables(ProgramModuleObj):
             schedule += """
                         </tr>
                         <indent>
-                        """ 
+                        """
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
                 schedule += """
@@ -867,9 +867,9 @@ class ProgramPrintables(ProgramModuleObj):
                         </indent>
                     </table>
                     """
-        
-        return mark_safe(schedule)  
-        
+
+        return mark_safe(schedule)
+
 
     @aux_call
     @needs_admin
