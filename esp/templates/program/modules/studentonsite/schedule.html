@@ -30,6 +30,9 @@
       <tbody>
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
+            {% if not checked_in %}
+                <p class="checkinnote">Note: You will not be able to change any classes until after your check-in has been processed by the admin team.</p>
+            {% endif %}
         </th>
         {% for timeslot in timeslots %}
             {% ifchanged timeslot.0.start.day %}
