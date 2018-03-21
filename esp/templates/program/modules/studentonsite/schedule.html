@@ -8,6 +8,13 @@
 
 <body>
 
+<script>
+function togglePopup() {
+    var popup = document.getElementById("myPopup");
+    popup.classList.toggle("show");
+}
+</script>
+
 <div class="navbar">
   <table>
     <tr>
@@ -65,10 +72,12 @@
                         {% endif %}
                     {% else %}
                         <!--otherwise, grey out icon-->
-                        <i class="material-icons md-4 greyed">{% if cls %}create{% else %}add{% endif %}</i>
-                        {% if cls %}
-                            <i class="material-icons md-4 greyed">clear</i>
-                        {% endif %}
+                        <div class="popup" onclick="togglePopup()">
+                            <i class="material-icons md-4 greyed">{% if cls %}create{% else %}add{% endif %}</i>
+                            {% if cls %}
+                                <i class="material-icons md-4 greyed">clear</i>
+                            {% endif %}
+                        </div>
                     {% endif %}
                 </td>
             {% endwith %}
@@ -77,7 +86,11 @@
       </tbody>
     </table>
   </div>
-  
+
+  <div class="popup" onclick="togglePopup()">
+      <span class="popuptext" id="myPopup">Not checked in yet!</span>
+  </div>
+
 </center>
 
 </body>

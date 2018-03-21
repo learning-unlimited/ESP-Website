@@ -128,6 +128,26 @@
   color: grey;
 }
 
+.popuptext {
+  visibility: hidden;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 1.5vh;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  box-shadow: 0.5vh 0.5vh #888888;
+}
+
+.popup .show {
+  visibility: visible;
+}
+
 .min-font {
   font-size: 60px !important;
 }
