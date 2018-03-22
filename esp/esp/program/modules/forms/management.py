@@ -53,12 +53,15 @@ class ClassManageForm(ManagementForm):
         if isinstance(cls.class_size_max, int):
             csm = cls.class_size_max
         else:  csm = 0
+        if cls.duration:
+            dur = Decimal(float(str(cls.duration)))
+        else:  dur = Decimal(0)
         self.initial = {
             prefix+'status': cls.status,
             prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
-            prefix+'duration': Decimal(float(str(cls.duration))),
+            prefix+'duration': dur,
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': csm ,
             prefix+'clsid': cls.id}
