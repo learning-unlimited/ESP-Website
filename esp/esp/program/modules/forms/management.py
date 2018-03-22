@@ -6,6 +6,7 @@ from esp.resources.models import ResourceType, Resource
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
 from esp.program.models.class_ import ClassSubject, ClassSection
+from decimal import Decimal
 
 """ Forms for the new class management module.  Can be used elsewhere. """
 
@@ -57,7 +58,7 @@ class ClassManageForm(ManagementForm):
             prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
-            prefix+'duration': cls.prettyDuration(),
+            prefix+'duration': Decimal(float(cls.duration)),
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': csm ,
             prefix+'clsid': cls.id}
@@ -82,7 +83,6 @@ class ClassManageForm(ManagementForm):
         cls.directors_notes = self.cleaned_data['notes']
 
         if cls.duration:
-            from decimal import Decimal
             cls.duration = Decimal(str(cls.duration))
         cls.save()
 
