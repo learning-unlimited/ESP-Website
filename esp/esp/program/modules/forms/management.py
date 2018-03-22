@@ -58,7 +58,7 @@ class ClassManageForm(ManagementForm):
             prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
-            prefix+'duration': Decimal(float(cls.duration)),
+            prefix+'duration': Decimal(float(str(cls.duration))),
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': csm ,
             prefix+'clsid': cls.id}
