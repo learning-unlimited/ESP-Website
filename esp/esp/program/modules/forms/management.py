@@ -32,6 +32,7 @@ class ClassManageForm(ManagementForm):
     reg_status = forms.ChoiceField(required=False, choices=())
     min_grade = forms.ChoiceField(choices=())
     max_grade = forms.ChoiceField(choices=())
+    duration = forms.ChoiceField(choices=())
     class_size = forms.IntegerField(label='Max. number of students')
     notes = forms.CharField(required=False, widget=forms.Textarea(attrs={'cols': 60, 'rows': 8}))
 
@@ -56,6 +57,7 @@ class ClassManageForm(ManagementForm):
             prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
+            prefix+'duration': cls.duration,
             prefix+'notes': cls.directors_notes,
             prefix+'class_size': csm ,
             prefix+'clsid': cls.id}
@@ -75,6 +77,7 @@ class ClassManageForm(ManagementForm):
             sec.save()
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
+        cls.duration = self.cleaned_data['duration']
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
 

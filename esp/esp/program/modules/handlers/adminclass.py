@@ -63,7 +63,7 @@ class AdminClass(ProgramModuleObj):
             "seq": 1,
             }
 
-    form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade']
+    form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade', 'duration']
     def getFormChoices(self, field_str):
         """ A more compact function for zipping up the options available on class
         management forms. """
@@ -87,6 +87,8 @@ class AdminClass(ProgramModuleObj):
             if self.program.grade_max:
                 max_grade = self.program.grade_max
             return ((i, str(i)) for i in range(min_grade, max_grade + 1))
+        if field_str == 'duration':
+            return self.program.getDurations()
 
     def timeslot_counts(self):
         timeslots = self.program.getTimeSlots()
