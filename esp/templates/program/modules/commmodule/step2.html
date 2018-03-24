@@ -30,7 +30,7 @@
 
 <br />
 <p>
-There are <strong>{{listcount}}</strong> distinct users in your query. If you feel this to be off, please
+There are <strong>{{listcount}}</strong> distinct users in your query{% if selected %} of <strong>{{ selected }}</strong></font>{% endif %}. If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
 Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
@@ -173,6 +173,7 @@ into the text of the message&mdash;the parameters are listed below.
 
 <input type="submit" value="Go To Preview" name="submitform" class="btn btn-primary" />
 <input type="hidden" name="listcount" value="{{listcount}}" />
+<input type="hidden" name="selected" value="{{selected}}" />
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 </form>
