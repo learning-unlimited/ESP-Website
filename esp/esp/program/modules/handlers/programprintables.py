@@ -842,7 +842,7 @@ class ProgramPrintables(ProgramModuleObj):
                                    " schedule for ",
                                    user.name(),
                                    " for ",
-                                   program.niceName(), 
+                                   program.niceName(),
                                    ":")
             schedule += format_html(" {} {} {} {} </th>",
                                     mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
