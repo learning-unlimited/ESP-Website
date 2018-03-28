@@ -51,6 +51,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
+from django.utils.html import format_html
 
 from decimal import Decimal
 import json
@@ -797,23 +798,23 @@ class ProgramPrintables(ProgramModuleObj):
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
                 classes.sort()
 
-            schedule = """
-                        <p> %s schedule for %s for %s: </p>
-                        """ % (schedule_type, user.name(), program.niceName())
-            schedule += """
-                        <table cellspacing="0" cellpadding="10" border="1" width="100%">
-                            <tr>
-                            <th width="20%">Time</th>
-                            <th width="60%">Class</th>
-                            """
+            schedule = format_html("<p> {} {} {} {} {} {} </p>",
+                                    schedule_type,
+                                    " schedule for ",
+                                    user.name(),
+                                    " for ",
+                                    program.niceName(),
+                                    ":")
+            schedule += format_html(" {} {} {} {} </th>",
+                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=20%>"),
+                                    "Time",
+                                    mark_safe("</th><th width=60%>"),
+                                    "Class")
             if room_numbers:
-                schedule += """
-                            <th width="20%">Room</th>
-                            """
-            schedule += """
-                        </tr>
-                        <indent>
-                        """
+                schedule += format_html("{} {} </th>",
+                                        mark_safe("<th width=20%>"),
+                                        "Room")
+            schedule += format_html("</tr><indent>")
             for cls in classes:
                 times = cls.friendly_times()
                 if len(times) == 0:
@@ -821,54 +822,40 @@ class ProgramPrintables(ProgramModuleObj):
                     continue
                 else:
                     times = ' ' + ', '.join(times)
-                schedule += """
-                            <tr>
-                            <td> %s </td>
-                            <td> %s </td>
-                            """ % (str(times), cls.title())
+                schedule += format_html("<tr><td> {} </td><td> {} </td>",
+                                        str(times),
+                                        cls.title())
                 if room_numbers:
                     rooms = cls.prettyrooms()
                     if len(rooms) == 0:
                         rooms = 'N/A'
                     else:
                         rooms = ' ' + ', '.join(rooms)
-                    schedule += """
-                                <td> %s </td>
-                                """ % (str(rooms))
-                schedule += """
-                            </tr>
-                            """
-            schedule += """
-                        </indent>
-                        </table>
-                        """
+                    schedule += format_html("<td> {} </td>",
+                                            str(rooms))
+                schedule += format_html("</tr>")
+            schedule += format_html("</indent></table>")
 
         elif schedule_type == u'Volunteer':
-            schedule = """
-                       <p> %s schedule for %s for %s: </p>
-                       """ % (schedule_type, user.name(), program.niceName())
-            schedule += """
-                        <table cellspacing="0" cellpadding="10" border="1" width="100%">
-                            <tr>
-                            <th width="35%">Time</th>
-                            <th width="65%">Shift</th>
-                            """
-            schedule += """
-                        </tr>
-                        <indent>
-                        """
+            schedule = format_html("<p> {} {} {} {} {} {} </p>",
+                                   schedule_type,
+                                   " schedule for ",
+                                   user.name(),
+                                   " for ",
+                                   program.niceName(), 
+                                   ":")
+            schedule += format_html(" {} {} {} {} </th>",
+                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
+                                    "Time",
+                                    mark_safe("</th><th width=65%>"),
+                                    "Shift")
+            schedule += format_html("</tr><indent>")
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += """
-                            <tr>
-                            <td> %s </td>
-                            <td> %s </td>
-                            </tr>
-                            """ % (str(shift.request.timeslot.pretty_time()), str(shift.request.timeslot.description))
-            schedule += """
-                        </indent>
-                    </table>
-                    """
+                schedule += format_html("<tr><td> {} </td><td> {} </td></tr>",
+                                        str(shift.request.timeslot.pretty_time()),
+                                        str(shift.request.timeslot.description))
+            schedule += format_html("</indent></table>")
 
         return mark_safe(schedule)
 
