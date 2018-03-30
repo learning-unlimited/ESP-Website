@@ -71,6 +71,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['subject'],
                                               request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        selected = request.POST.get('selected')
 
         # Set From address
         if request.POST.get('from', '').strip():
@@ -114,6 +115,7 @@ class CommModule(ProgramModuleObj):
                                               {'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
                                                'listcount': listcount,
+                                               'selected': selected,
                                                'subject': subject,
                                                'from': fromemail,
                                                'replyto': replytoemail,
@@ -242,7 +244,7 @@ class CommModule(ProgramModuleObj):
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
-
+                selected = usc.selected_list_from_postdata(data)
                 filterObj = usc.filter_from_postdata(prog, data)
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
@@ -254,6 +256,7 @@ class CommModule(ProgramModuleObj):
                 context['filterid'] = filterObj.id
                 context['sendto_fn_name'] = sendto_fn_name
                 context['listcount'] = self.approx_num_of_recipients(filterObj, sendto_fn)
+                context['selected'] = selected
                 return render_to_response(self.baseDir()+'step2.html', request, context)
 
             ##  Prepare a message starting from an earlier request
@@ -289,9 +292,11 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['subject'],
                                                          request.POST['body']    ]
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
+        selected = request.POST.get('selected')
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                               {'listcount': listcount,
+                                               'selected': selected,
                                                'filterid': filterid,
                                                'sendto_fn_name': sendto_fn_name,
                                                'from': fromemail,
