@@ -152,7 +152,7 @@ class UserSearchController(object):
                     self.updated = True
 
             #   Filter by graduation years if specifically looking for teachers.
-            possible_gradyears = range(1920, 2020)
+            possible_gradyears = range(1920, 2120)
             if criteria.get('gradyear_min', '').strip():
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
@@ -391,3 +391,12 @@ class UserSearchController(object):
             target_path = request.path
 
         return (render_to_response(template, request, self.prepare_context(program, target_path)), False)
+
+    def selected_list_from_postdata(self, data):
+        selected = []
+        selected.append(str(data.get('base_list', '')) or str(data.get('combo_base_list', ':').split(':')[1]))
+        for k,v in data.items():
+            if k.startswith('checkbox_'):
+                selected.append(str(k.split('checkbox_')[1]))
+
+        return str(', '.join(selected))
