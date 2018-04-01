@@ -341,3 +341,11 @@ div.raw_id_admin {
 div.calendar {
     z-index: 10; /* 2 actually suffices, but I'm leaving a safety margin. -ageng 2009-02-02 */
 }
+
+.form_error {
+    list-style-type: none;
+    padding: 0; margin: 0;
+    font-style: italic;
+    color: red;
+    font-weight: bold;
+}

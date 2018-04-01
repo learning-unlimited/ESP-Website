@@ -164,6 +164,9 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                  error_messages=None, show_hidden_initial=False, shadow_field_name=None,
                  *args, **kwargs):
 
+        error_css_class = 'error'
+        #required_css_class = 'required' # in case someone wants to make changes later
+
         # This is necessary to work around a bug in Django 1.8:
         # AjaxForeignKey sets this as form_class, and since it's
         # a ForeignKey subclass, some Django code
