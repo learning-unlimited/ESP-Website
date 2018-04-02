@@ -18,7 +18,7 @@
         <div id="basic_step_container">
 
         <div id="recipient_type_select">
-            <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text"> Who would you like to contact?</span></div>
+            <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text"> Who would you like to select?</span></div>
             <div id="recipient_type_options">
                 <select id="recipient_type" name="recipient_type">
                     {% for user_type in user_types %}
@@ -26,6 +26,7 @@
                     {% endfor %}
                     <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>
+                {% if include_prev_list %}
                 <div class="sendto_fn_select Student">
                     <div>
                         <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
@@ -40,13 +41,14 @@
                         <label for="student_sendto_emergency">Email the students' emergency contacts</label>
                     </div>
                 </div>
+                {% endif %}
                 <p>&nbsp;</p>
-                <button type="button" class="btn btn-primary recipient_step_button" id="recipient_type_next">Continue to select set of contacts</button>
+                <button type="button" class="btn btn-primary recipient_step_button" id="recipient_type_next">Continue to select set of users</button>
             </div>
         </div>
 
         <div id="recipient_list_select" class="commpanel_hidden">
-            <div class="step_header"><span class="step_label">Step 2:</span> <span id="recipient_type_name" class="step_text">Which set of would you like to contact?</span></div>
+            <div class="step_header"><span class="step_label">Step 2:</span> <span id="recipient_type_name" class="step_text">Which set of would you like to select?</span></div>
             {% for kv in lists.items %}
             <div id="recipient_list_options_{{ kv.0 }}" class="recipient_list_options commpanel_hidden">
                 <ul>
