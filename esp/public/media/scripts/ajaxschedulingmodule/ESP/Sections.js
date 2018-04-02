@@ -24,6 +24,8 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         classLengthMax: {active: false, el: $j("input#section-filter-length-max"), type: "number"},
         classCapacityMin: {active: false, el: $j("input#section-filter-capacity-min"), type: "number"},
         classCapacityMax: {active: false, el: $j("input#section-filter-capacity-max"), type: "number"},
+        gradeMin: {active: false, el: $j("input#section-filter-grade-min"), type: "number"},
+        gradeMax: {active: false, el: $j("input#section-filter-grade-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
         classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
     };
@@ -38,6 +40,12 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
     }.bind(this);
     this.filter.classCapacityMax.valid = function(a) {
         return a.class_size_max <= this.filter.classCapacityMax.val;
+    }.bind(this);
+    this.filter.gradeMin.valid = function(a) {
+        return a.grade_min == this.filter.gradeMin.val;
+    }.bind(this);
+    this.filter.gradeMax.valid = function(a) {
+        return a.grade_max == this.filter.gradeMax.val;
     }.bind(this);
     this.filter.classTeacher.valid = function(a) {
         var result = false;

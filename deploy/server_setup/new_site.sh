@@ -290,7 +290,8 @@ CACHE_PREFIX = "${SITENAME}ESP"
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-        'archive': 'learninguarchive@gmail.com',
+        'archive': 'splashwebsitearchive@learningu.org',
+        # TODO(benkraft): Change this to an @learningu as well
         'bounces': 'learningubounces@gmail.com',
         'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
@@ -338,7 +339,7 @@ EOF
     # to get the right perms on creation.
     for ext in .shell.log .log ; do
         touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
-        chown -R $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME"*
+        chown $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME-django$ext"
     done
 
     echo "Generated Django settings overrides, saved to:"

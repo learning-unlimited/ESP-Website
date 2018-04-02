@@ -192,8 +192,8 @@ div.nav-collapse.collapse {
 
 
 .logo {
-    width: 300px;
-    max-width: 100%;
+    max-width: 300px;
+    max-height: 300px;
     margin: 0 80px 0 0;
 }
 .jumbotron {
@@ -255,4 +255,12 @@ div.nav-collapse.collapse {
 .form_error {
   color: red;
   display: inline-block;
+}
+
+/* copied from fruitsalad, but with #main instead of #content.
+   TODO(benkraft): something less theme-specific for things like this. */
+#main form {
+  display: inline;
+  margin: 0;
+  padding: 0;
 }
