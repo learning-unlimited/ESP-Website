@@ -674,7 +674,13 @@ class Program(models.Model, CustomFormsLinkModel):
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
     getScheduleConstraints.depend_on_model('program.ScheduleConstraint')
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     getScheduleConstraints.depend_on_model('program.BooleanToken')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestTimeblock')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestOccupied')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestCategory')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestSectionList')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -1569,7 +1575,13 @@ class BooleanToken(models.Model):
     @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     subclass_instance.depend_on_row('program.BooleanToken', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestTimeblock', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestOccupied', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestCategory', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestSectionList', lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
