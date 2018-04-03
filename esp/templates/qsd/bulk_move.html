@@ -11,15 +11,8 @@
 
 <h1>Move a block of static pages</h1>
 
-<p>The URL of a static page comes from two parts: the 'path' and the 'name.'
-The path is the location in the {{ settings.ORGANIZATION_SHORT_NAME }} data tree where the page is anchored.
-The name is the 'filename' of the page.  For example, the following parameters...</p>
-<ul>
-<li><b>Path:</b> Q/Web/about
-<li><b>Name:</b> oobleck
-</ul>
-<p>
-will translate to the URL /about/oobleck.html.
+<p>The URL of a static page is a string without the domain name, so, for example, you would
+    write <tt>/about/oobleck.html</tt> for the page <tt>https://yoursite.learningu.org/about/oobleck.html</tt>.
 </p>
 
 <p>
