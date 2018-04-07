@@ -5,16 +5,66 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 {% endblock %}
 
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
-</style>
-<br />
-<br />
 
-<br /><br />
+/* Controls */
+
+.overlay__close {
+    position: absolute;
+    right: 0;
+    padding: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    text-align: center;
+    background-color: white;
+    cursor: pointer;
+    border: 3px solid black;
+    font-size: 1.5rem;
+    margin: -1rem;
+    border-radius: 2rem;
+    z-index: 100;
+    box-sizing: content-box;
+}
+
+/* Scan! Button */
+
+.scan {
+    font-size: large;
+    padding: 0.5rem;
+    text-align: center;
+    display: inline;
+}
+
+/* Reader Dropdown */
+
+.controls select {
+    font-size: large !important;
+    margin: auto;
+    height: auto !important;
+}
+
+.controls.hide {
+    display: none;
+}
+
+.overlay--inline {
+    position: absolute;
+    display: none;
+}
+
+.overlay--inline.show {
+    display: block;
+}
+</style>
+
+<script src="https://cdn.rawgit.com/serratus/quaggaJS/1.0/dist/quagga.min.js"></script>
+
 <h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
@@ -57,17 +107,137 @@ IDs already checked in:
 
 <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
                     {{ form.as_p }}
-                    <p>
+                    <p class="ids">
                 <input type="submit" value="Submit" />
                 </p>
 </form>
 
-<br />
+<br><br>
+
+<div class="controls">
+    <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+    &emsp;
+    <select>
+        <option selected value="code_39_reader">Code 39</option>
+        <option value="codabar_reader">Codabar</option>
+        <option value="code_128_reader">Code 128</option>
+        <option value="i2of5_reader">Interleaved 2 of 5</option>
+    </select>
+</div>
+<div class="overlay overlay--inline">
+    <div class="overlay__content">
+        <div class="overlay__close">X</div>
+    </div>
+</div>
+
+<!--<br />
 {% load render_qsd %}
-{% render_inline_program_qsd program "onsite:status" %}
+{% render_inline_program_qsd program "onsite:status" %}-->
 
 
 </div>
+
+<script type="text/javascript">
+var Quagga = window.Quagga;
+var App = {
+    _lastResult: null,
+    init: function() {
+        this.attachListeners();
+    },
+    activateScanner: function() {
+        var scanner = this.configureScanner('.overlay__content'),
+            onDetected = function (result) {
+                this.addToResults(result);
+            }.bind(this),
+            stop = function() {
+                scanner.stop();  // should also clear all event-listeners?
+                scanner.removeEventListener('detected', onDetected);
+                this.hideOverlay();
+                this.attachListeners();
+            }.bind(this);
+
+        this.showOverlay(stop);
+        console.log("activateScanner");
+        scanner.addEventListener('detected', onDetected).start();
+        var video = document.querySelector('.overlay__content > video');
+        // this supposedly makes this work for iOS 11
+        video.setAttribute("autoplay", true);
+        video.setAttribute('muted', true);
+        video.setAttribute('playsinline', true);
+    },
+    addToResults: function(result) {
+        if (this._lastResult === result.codeResult.code) {
+            return;
+        }
+        this._lastResult = result.codeResult.code;
+        var results = document.querySelector('#checkinform > p > textarea')
+        
+        results.value += "\n" + result.codeResult.code
+        
+        // var results = document.querySelector('ul.results'),
+        //    li = document.createElement('li'),
+        //    format = document.createElement('span'),
+        //    code = document.createElement('span');
+
+        // li.className = "result";
+        // format.className = "format";
+        // code.className = "code";
+
+        // li.appendChild(format);
+        // li.appendChild(code);
+
+        // format.appendChild(document.createTextNode(result.codeResult.format));
+        // code.appendChild(document.createTextNode(result.codeResult.code));
+
+        // results.insertBefore(li, results.firstChild);
+    },
+    attachListeners: function() {
+        var button = document.querySelector('button.scan'),
+            self = this;
+
+        button.addEventListener("click", function clickListener (e) {
+            e.preventDefault();
+            button.removeEventListener("click", clickListener);
+            self.activateScanner();
+        });
+    },
+    showOverlay: function(cancelCb) {
+        document.querySelector('.controls')
+            .classList.add('hide');
+        document.querySelector('.overlay--inline')
+            .classList.add('show');
+        var closeButton = document.querySelector('.overlay__close');
+        closeButton.addEventListener('click', function closeHandler() {
+            closeButton.removeEventListener("click", closeHandler);
+            cancelCb();
+        });
+    },
+    hideOverlay: function() {
+        document.querySelector('.controls')
+            .classList.remove('hide');
+        document.querySelector('.overlay--inline')
+            .classList.remove('show');
+    },
+    querySelectedReaders: function() {
+        return Array(document.querySelector('.controls select').value);
+    },
+    configureScanner: function(selector) {
+        var scanner = Quagga
+            .decoder({readers: this.querySelectedReaders()})
+            .locator({patchSize: 'medium'})
+            .fromSource({
+                target: selector,
+                constraints: {
+                    width: 600,
+                    height: 600,
+                    facingMode: "environment"
+                }
+            });
+        return scanner;
+    }
+};
+App.init();
+</script>
 
 
 {% endblock %}
