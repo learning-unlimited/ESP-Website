@@ -10,3 +10,4 @@ Changelog
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Can now modify resource choices from the resources management module
