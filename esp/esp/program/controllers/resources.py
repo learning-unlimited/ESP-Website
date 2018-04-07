@@ -75,13 +75,13 @@ class ResourceController(object):
                            "all ResourceRequests for this resource type.",
                            log=False)
 
-    def add_or_edit_restype(self, form):
+    def add_or_edit_restype(self, form, choices = None):
         if form.cleaned_data['id'] is not None:
             new_restype = ResourceType.objects.get(id=form.cleaned_data['id'])
         else:
             new_restype = ResourceType()
 
-        form.save_restype(self.program, new_restype)
+        form.save_restype(self.program, new_restype, choices)
         return new_restype
 
     def delete_classroom(self, id):
