@@ -173,23 +173,6 @@ var App = {
         var results = document.querySelector('#checkinform > p > textarea')
         
         results.value += "\n" + result.codeResult.code
-        
-        // var results = document.querySelector('ul.results'),
-        //    li = document.createElement('li'),
-        //    format = document.createElement('span'),
-        //    code = document.createElement('span');
-
-        // li.className = "result";
-        // format.className = "format";
-        // code.className = "code";
-
-        // li.appendChild(format);
-        // li.appendChild(code);
-
-        // format.appendChild(document.createTextNode(result.codeResult.format));
-        // code.appendChild(document.createTextNode(result.codeResult.code));
-
-        // results.insertBefore(li, results.firstChild);
     },
     attachListeners: function() {
         var button = document.querySelector('button.scan'),
