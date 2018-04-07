@@ -59,7 +59,7 @@ function togglePopup() {
                 {% endif %}
                 {% if checked_in %}
                     <div class="location">
-                        <i>{{ cls.section.prettyrooms|join:", " }}</i>
+                        <a href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}"><i>{{ cls.section.prettyrooms|join:", " }}</i></a>
                     </div>
                 {% endif %}
                 </td>

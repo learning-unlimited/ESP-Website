@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.models  import Program, ClassSubject
+from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record
 from esp.cal.models import Event
@@ -92,7 +93,13 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
-            context['classroom'] = "37.427490, -122.170267"
+            classroom = Resource.objects.get(id=extra)
+            try:
+                res = classroom.associated_resources().get(res_type__name='Lat/Long')
+            except:
+                res = None
+            if res and res.attribute_value:
+                context['classroom'] = res.attribute_value
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
