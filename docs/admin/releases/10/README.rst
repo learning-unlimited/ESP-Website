@@ -227,6 +227,8 @@ as some performance improvements.  Other improvements and bug fixes include:
 
 - The scheduler now works correctly with classroom names containing commas.
 
+- The scheduler now allows filtering classes by grade range.
+
 - The class search module now has a "title containing" filter and some
   additional styling.
 
@@ -270,3 +272,14 @@ as some performance improvements.  Other improvements and bug fixes include:
   ``teacher_address_required`` Tag to ``False``.
 
 - Medical bypasses can be added, removed, or queried with a new interface.
+
+- Fixed a few bugs involving ordering on newer versions of PostgreSQL.
+
+- The recipient checklist in the comm panel now has a "select all" option.
+
+- Teacher t-shirt statistics now work correctly if "shirt type" is disabled.
+
+- The schedules available for inclusion in comm panel emails are now HTML.
+
+- The comm panel now shows some information about which filters you have
+  selected.
