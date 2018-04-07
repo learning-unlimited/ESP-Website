@@ -59,7 +59,7 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
-                                                help_text='The amount of the sibling discount. Leave blank if you don\'t use sibling discounts.')
+                                                help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_modules   = forms.MultipleChoiceField(
                           choices=[],
