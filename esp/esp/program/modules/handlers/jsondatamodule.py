@@ -285,6 +285,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'num_students': s.enrolled_students,
                 'resource_requests': rrequest_dict,
                 'comments': cls.message_for_directors,
+                'requested_room': cls.requested_room,
                 'special_requests': cls.requested_special_resources,
                 'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
             }
