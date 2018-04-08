@@ -232,6 +232,17 @@ class ClassroomForm(forms.Form):
             for f in Resource.objects.filter(res_group=room.res_group).exclude(id=room.id).exclude(res_type__in=furnishings):
                 f.delete()
 
+# This would be easier in Django 1.9
+# https://docs.djangoproject.com/en/1.9/topics/forms/formsets/#passing-custom-parameters-to-formset-forms
+def FurnishingFormForProgram(prog):
+    class FurnishingForm(forms.Form):
+        furnishing = forms.ChoiceField()
+        choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput)
+        def __init__(self, *args, **kwargs):
+            self.base_fields['furnishing'].choices = setup_furnishings(prog.getResourceTypes())
+            super(FurnishingForm, self).__init__(*args, **kwargs)
+    return FurnishingForm
+
 class ClassroomImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
