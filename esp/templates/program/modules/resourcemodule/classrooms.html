@@ -30,6 +30,15 @@
 <table align="center" cellpadding="0" cellspacing="0" width="550">
     <tr><th colspan="2" class="small">Add a new classroom</th></tr>
     {{ classroom_form }}
+    <tr><th><label>Furnishings:<br>(optional)</label></th>
+    <td>
+    {{ furnishing_formset.management_form }}
+    {% for furnishing_form in furnishing_formset %}
+        <div class="furnishing-formset">
+            {{ furnishing_form.furnishing }} {{ furnishing_form.choice }}
+        </div>
+    {% endfor %}
+    </td>
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Classroom" /></td></tr>
 </table>
 </form>
@@ -68,3 +77,14 @@
 {% endifequal %}
 
 <br />
+
+<!--This branch has a fix for when the form is originally hidden-->
+<script src="http://rawgit.com/elo80ka/django-dynamic-formset/f5f68c818953ddf43ffa7cb2e9aa391c3d4dfb47/src/jquery.formset.js"></script>
+<script>
+    $j('.furnishing-formset').formset({
+        addText: 'add choice',
+        deleteText: 'remove',
+        addCssClass: 'formset-add',
+        deleteCssClass: 'formset-delete',
+    });
+</script>
