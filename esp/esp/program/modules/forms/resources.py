@@ -231,7 +231,7 @@ class ClassroomForm(forms.Form):
 def FurnishingFormForProgram(prog):
     class FurnishingForm(forms.Form):
         furnishing = forms.ChoiceField()
-        choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput)
+        choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={'placeholder': '(option)'}))
         def __init__(self, *args, **kwargs):
             self.base_fields['furnishing'].choices = setup_furnishings(prog.getResourceTypes())
             super(FurnishingForm, self).__init__(*args, **kwargs)
