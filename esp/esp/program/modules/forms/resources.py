@@ -123,14 +123,12 @@ class ClassroomForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     orig_room_number = forms.CharField(required=False, widget=forms.HiddenInput)
     room_number = forms.CharField(widget=forms.TextInput(attrs={'size':'15'}))
-    furnishings = forms.MultipleChoiceField(required=False)
     times_available = forms.MultipleChoiceField()
     num_students = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
 
     def __init__(self, *args, **kwargs):
 
         if isinstance(args[0], Program):
-            self.base_fields['furnishings'].choices = setup_furnishings(args[0].getResourceTypes())
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super(ClassroomForm, self).__init__(*args[1:], **kwargs)
         else:
@@ -148,9 +146,8 @@ class ClassroomForm(forms.Form):
         self.fields['room_number'].initial = room.name
         self.fields['num_students'].initial = room.num_students
         self.fields['times_available'].initial = [mt.id for mt in room.matching_times()]
-        self.fields['furnishings'].initial = [f.res_type.id for f in room.associated_resources()]
 
-    def save_classroom(self, program):
+    def save_classroom(self, program, furnishings):
         """ Steps for saving a classroom:
         -   Find the previous list of resources
         -   Create a new list of resources
@@ -168,7 +165,7 @@ class ClassroomForm(forms.Form):
             initial_furnishings[r] = list(r.associated_resources())
 
         timeslots = Event.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['times_available']])
-        furnishings = ResourceType.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['furnishings']])
+        furnishings_obj = ResourceType.objects.filter(id__in=[int(id_str) for id_str in furnishings.keys()])
 
         rooms_to_keep = list(initial_rooms.filter(event__in=timeslots))
         rooms_to_delete = list(initial_rooms.exclude(event__in=timeslots))
@@ -186,13 +183,14 @@ class ClassroomForm(forms.Form):
             new_room.save()
             t.new_room = new_room
 
-            for f in furnishings:
+            for f in furnishings_obj:
                 #   Create associated resource
                 new_resource = Resource()
                 new_resource.event = t
                 new_resource.res_type = f
                 new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
                 new_resource.res_group = new_room.res_group
+                new_resource.attribute_value = furnishings[str(f.id)]
                 new_resource.save()
                 f.new_resource = new_resource
 
@@ -218,19 +216,26 @@ class ClassroomForm(forms.Form):
             room.save()
 
             # Add furnishings that we didn't have before
-            for f in furnishings.exclude(resource__res_group=room.res_group):
+            for f in furnishings_obj.exclude(resource__res_group=room.res_group):
                 #   Create associated resource
                 new_resource = Resource()
                 new_resource.event = room.event
                 new_resource.res_type = f
                 new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
                 new_resource.res_group = room.res_group
+                new_resource.attribute_value = furnishings[str(f.id)]
                 new_resource.save()
                 f.new_resource = new_resource
 
             # Delete furnishings that we don't have any more
             for f in Resource.objects.filter(res_group=room.res_group).exclude(id=room.id).exclude(res_type__in=furnishings):
                 f.delete()
+
+            # Update attribute value of any old furnishings
+            for f in furnishings_obj.filter(resource__res_group=room.res_group).exclude(id=room.id):
+                for res in Resource.objects.filter(res_type=f, res_group=room.res_group):
+                    res.attribute_value = furnishings[str(f.id)]
+                    res.save()
 
 # This would be easier in Django 1.9
 # https://docs.djangoproject.com/en/1.9/topics/forms/formsets/#passing-custom-parameters-to-formset-forms

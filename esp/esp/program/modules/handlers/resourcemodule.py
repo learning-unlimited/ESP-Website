@@ -187,16 +187,16 @@ class ResourceModule(ProgramModuleObj):
                 form = ClassroomForm(self.program, data)
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
                 FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0 if num_forms else 1)
-                ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_forms else 1)
-                furnishings, furnishings_list = [],[]
+                furnishings = []
+                furnishings_dict = {}
                 for i in range(0,num_forms):
                     furnishing = data['furnishings-'+str(i)+'-furnishing']
                     choice = data['furnishings-'+str(i)+'-choice']
                     furnishings.append({'furnishing': furnishing, 'choice': choice})
-                    furnishings_list.append([furnishing, choice])
+                    furnishings_dict[furnishing] = choice
                 context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
                 if form.is_valid():
-                    controller.add_or_edit_classroom(form)
+                    controller.add_or_edit_classroom(form, furnishings_dict)
                 else:
                     context['classroom_form'] = form
 
