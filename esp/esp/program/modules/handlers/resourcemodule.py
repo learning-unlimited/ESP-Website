@@ -163,7 +163,7 @@ class ResourceModule(ProgramModuleObj):
             context['classroom_form'] = ClassroomForm(self.program)
             context['classroom_form'].load_classroom(self.program, current_room)
             furnishings = [{'furnishing': furnishing.res_type.id, 'choice': furnishing.attribute_value} for furnishing in current_room.associated_resources()]
-            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0 if len(furnishings) else 1)
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
             context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         if request.GET.get('op') == 'delete':
@@ -186,7 +186,7 @@ class ResourceModule(ProgramModuleObj):
             elif data['command'] == 'addedit':
                 form = ClassroomForm(self.program, data)
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
-                FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0 if num_forms else 1)
+                FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
                 furnishings = []
                 furnishings_dict = {}
                 for i in range(0,num_forms):
@@ -413,7 +413,7 @@ class ResourceModule(ProgramModuleObj):
             context['restype_form'] = ResourceTypeForm()
 
         if 'classroom_form' not in context:
-            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000)
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
             context['furnishing_formset'] = FurnishingFormSet(prefix='furnishings')
             context['classroom_form'] = ClassroomForm(self.program)
 
