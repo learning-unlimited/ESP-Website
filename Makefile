@@ -12,6 +12,10 @@ sr-8: NEWBRANCH=stable-release-8
 sr-8: OLDBRANCH=stable-release-7
 sr-8: pre src finish
 
+if getopt d: opt
+	d) SITE="${optarg}"
+fi
+
 pre:
 	@echo "Backing things up and fixing permissions."
 	@# get credentials, if we lack them, before we try to do anything fancy with pipes
