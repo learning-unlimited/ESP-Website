@@ -1,0 +1,5 @@
+<html>
+{% autoescape off %}
+{{ msgbdy }}
+{% endautoescape %}
+</html>
