@@ -1,5 +1,37 @@
 {% extends "elements/html" %}
 
+{# Yale Customizations #}
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-88852106-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+<head>
+<style>
+body {
+    font-size:10pt !important;
+}
+#content a, #content a:link {
+   font-size: 13px !important;
+}
+.table th, .table td {
+   font-size: 12px !important;
+}
+#content p {
+  line-height: 200% !important;
+}
+table {
+  font-size: 13px !important;
+}
+</style>
+</head>
+{# End Yale Customizations #}
+
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% load main %} {# helpful functions #}
