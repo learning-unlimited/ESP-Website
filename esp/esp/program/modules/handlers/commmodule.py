@@ -43,6 +43,7 @@ from esp.dbmail.models import ActionHandler
 from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware import ESPError
+from django.template import loader
 
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
@@ -108,6 +109,10 @@ class CommModule(ProgramModuleObj):
         # If they used the rich-text editor, we'll need to add <html> tags
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
+
+        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
+                     'user': ActionHandler(firstuser, firstuser),
+                     'program': ActionHandler(self.program, firstuser)})))
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
@@ -185,8 +190,11 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = body,
                                                       public = public_view,
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                                   {'msgbdy': body,
+                                                                    'user': request.user,
+                                                                    'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
