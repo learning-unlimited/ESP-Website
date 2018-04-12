@@ -192,10 +192,10 @@ class CommModule(ProgramModuleObj):
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       public = public_view,
-                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
                                                                    {'msgbdy': body,
                                                                     'user': request.user,
-                                                                    'program': self.program })),
+                                                                    'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
