@@ -36,7 +36,8 @@ There are <strong>{{listcount}}</strong> distinct users in your query{% if selec
 Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
 into the text of the message&mdash;the parameters are listed below.
 
-<p><b>Tip:</b> If you would like to send your message in HTML format, wrap your entire message body in &lt;html&gt; and &lt;/html&gt; tags.</p>
+<p><b>Tip:</b> The default {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can modify <a href="/admin/utils/templateoverride/">here</a>) is automatically wrapped around your message below.
+Don't forget to write the body in HTML, but no need for &lt;html&gt; and &lt;/html&gt; tags.</p>
 
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
 <table border="0" cellspacing="0" width="100%">
