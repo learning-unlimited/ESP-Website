@@ -112,9 +112,15 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
+<<<<<<< HEAD
         htmlbody = unicode(loader.get_template('email/default_email_html.txt').render({'msgbdy': body,
                      'user': ActionHandler(firstuser, firstuser),
                      'program': ActionHandler(self.program, firstuser)}))
+=======
+        htmlbody = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext({'msgbdy': body,
+                     'user': ActionHandler(firstuser, firstuser),
+                     'program': ActionHandler(self.program, firstuser)})))
+>>>>>>> f77c6f2ef... resolve Yale customization merge conflicts
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
@@ -193,10 +199,10 @@ class CommModule(ProgramModuleObj):
                                                       sender     = fromemail,
                                                       creator    = request.user,
                                                       public = public_view,
-                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
                                                                    {'msgbdy': body,
                                                                     'user': request.user,
-                                                                    'program': self.program })),
+                                                                    'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
