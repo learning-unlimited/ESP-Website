@@ -36,7 +36,7 @@ from django import forms
 from django.utils.safestring import mark_safe
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
-from esp.utils.widgets import DateTimeWidget
+from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.utils.forms import UKPhoneNumberField
 from esp.users.models import ESPUser, shirt_sizes, shirt_types
 from esp.tagdict.models import Tag
