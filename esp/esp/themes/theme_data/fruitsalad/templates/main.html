@@ -216,7 +216,7 @@ var currentProgram = undefined;
               {% if request.roles_with_perm %}
                   Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
               {% else %}
-                  <strong>No roles have permission to view this page!</strong>
+                  <strong>No (non-admin) roles have permission to view this page!</strong>
               {% endif %}
           </div>
           {% endif %}
