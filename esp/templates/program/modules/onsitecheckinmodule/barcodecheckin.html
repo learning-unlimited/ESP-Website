@@ -73,73 +73,66 @@
 <h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
+    <p>
+    Welcome to barcode check-in for {{ program.niceName }}.  Please enter a list of user IDs.
+    </p>
 
-<p>
-Welcome to barcode check-in for {{ program.niceName }}.  Please enter a list of user IDs.
-</p>
+    {% if results %}
+    <p>
+    Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
+    </p>
+    {% if results.not_found %}
+    <p>
+    Students not found:
+    {% for id in results.not_found %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% if results.not_student %}
+    <p>
+    IDs not corresponding to students:
+    {% for id in results.not_student %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% comment %}
+    {% if results.existing %}
+    <p>
+    IDs already checked in:
+    {% for id in results.existing %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% endcomment %}
+    {% endif %}
 
-{% if results %}
-<p>
-Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
-</p>
-{% if results.not_found %}
-<p>
-Students not found:
-{% for id in results.not_found %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% if results.not_student %}
-<p>
-IDs not corresponding to students:
-{% for id in results.not_student %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% comment %}
-{% if results.existing %}
-<p>
-IDs already checked in:
-{% for id in results.existing %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% endcomment %}
-{% endif %}
+    <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+                        {{ form.as_p }}
+                        <p class="ids">
+                    <input type="submit" value="Submit" />
+                    </p>
+    </form>
 
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-                    {{ form.as_p }}
-                    <p class="ids">
-                <input type="submit" value="Submit" />
-                </p>
-</form>
+    <br><br>
 
-<br><br>
-
-<div class="controls">
-    <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
-    &emsp;
-    <select>
-        <option selected value="code_39_reader">Code 39</option>
-        <option value="codabar_reader">Codabar</option>
-        <option value="code_128_reader">Code 128</option>
-        <option value="i2of5_reader">Interleaved 2 of 5</option>
-    </select>
-</div>
-<div class="overlay overlay--inline">
-    <div class="overlay__content viewport" id="interactive">
-        <div class="overlay__close">X</div>
+    <div class="controls">
+        <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+        &emsp;
+        <select>
+            <option selected value="code_39_reader">Code 39</option>
+            <option value="codabar_reader">Codabar</option>
+            <option value="code_128_reader">Code 128</option>
+            <option value="i2of5_reader">Interleaved 2 of 5</option>
+        </select>
     </div>
-</div>
-
-<!--<br />
-{% load render_qsd %}
-{% render_inline_program_qsd program "onsite:status" %}-->
-
-
+    <div class="overlay overlay--inline">
+        <div class="overlay__content viewport" id="interactive">
+            <div class="overlay__close">X</div>
+        </div>
+    </div>
 </div>
 
 <script type="text/javascript">
@@ -165,13 +158,11 @@ $j(function() {
                 }.bind(this),
                 stop = function() {
                     Quagga.stop();
-                    console.log("Scanner stopped")
                     this.hideOverlay();
                     this.attachListeners();
                 }.bind(this);
 
             this.showOverlay(stop);
-            console.log("Activating Scanner");
             var video = document.querySelector('.overlay__content > video');
             video.setAttribute("autoplay", true);
             video.setAttribute('muted', true);
@@ -197,7 +188,6 @@ $j(function() {
                       return
                   }
                   Quagga.start();
-                  console.log("Initialization finished. Ready to start");
               });
             return scanner;
         },
