@@ -42,23 +42,25 @@
   an account with us. After you register account, you will be allowed to register
   for programs, sign up for classes, among other things.
 </p>
+{% if settings.USE_MAILMAN %}
 <p>
   If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
   (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the local area,
   while the former gets emails about programs that might be worth travelling for.)
   If you create an account, you will be automatically subscribed to our main announcements.
 </p>
+{% endif %}
 {% end_inline_qsd_block %}
 </div>
 <div>
 <form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
   <fieldset>
     <h3>User Account Creation Form</h3>
-    
+
     {% if form.errors %}
 
     <div class="errors">
-      <p>There 
+      <p>There
       {% if form.errors|length_is:1 %}is an error{% else %}
       are errors{% endif %} in the below form. Please fix and resubmit.<p>
     </div>

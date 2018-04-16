@@ -21,14 +21,14 @@
 <p>Your credit card transaction was not successful.
 </p>
 {% if error_type == "inconsistent_po" %}
-<b>Inconsistent payment information.</b> Please <a href="mailto:tech@learningu.org">contact the administrators</a> with the following information.
+<b>Inconsistent payment information.</b> Please <a href="{{ settings.DEFAULT_EMAIL_ADDRESSES.support }}">contact the administrators</a> with the following information.
 <ul>
     <li>Payment PO number: {{ error_info.request_po }}</li>
     <li>User PO number: {{ error_info.user_po }}</li>
 </ul>
 {% endif %}
 
-{% if error_type == "inconsistent_po" %}
+{% if error_type == "inconsistent_amount" %}
 <b>Inconsistent payment amount.</b> Please contact the administrators with the following information.
 <ul>
     <li>Charge amount (provided by Stripe): {{ error_info.amount_cents_post }}</li>
@@ -42,7 +42,7 @@
 {% endif %}
 
 {% if error_type == "invalid" %}
-<b>Invalid request.</b>  This is usually caused by a duplicate request (such as "refreshing" your web browser after paying).  It is possible that your payment went through successfully; <b>please return to the payment page to check</b>.
+<b>Invalid request.</b>  This is usually caused by a duplicate request (such as refreshing your web browser after paying).  It is possible that your payment went through successfully; <b>please return to the payment page to check</b>.
 {% endif %}
 
 {% if error_type == "auth" %}
