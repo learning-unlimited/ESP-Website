@@ -814,7 +814,7 @@ class ProgramPrintables(ProgramModuleObj):
                 schedule += format_html(u"{} {} </th>",
                                         mark_safe("<th width=20%>"),
                                         "Room")
-            schedule += format_html(u"</tr><indent>")
+            schedule += format_html(u"</tr>")
             for cls in classes:
                 times = cls.friendly_times()
                 if len(times) == 0:
@@ -834,7 +834,7 @@ class ProgramPrintables(ProgramModuleObj):
                     schedule += format_html(u"<td> {} </td>",
                                             str(rooms))
                 schedule += format_html(u"</tr>")
-            schedule += format_html(u"</indent></table>")
+            schedule += format_html(u"</table>")
 
         elif schedule_type == u'Volunteer':
             schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
