@@ -24,7 +24,7 @@ src:
 	@echo "Attempting to do the git stuff automatically; if this fails for any reason, fix it up and run 'make finish'."
 	[ "$$(git rev-parse --abbrev-ref HEAD)" = "$(OLDBRANCH)" ]  # Assert we're on OLDBRANCH
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash ; fi
-	sudo -u www-data git pull origin
+	sudo -u www-data git fetch origin
 	sudo -u www-data git remote prune origin
 	sudo -u www-data git checkout origin/$(NEWBRANCH)
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash pop ; fi
