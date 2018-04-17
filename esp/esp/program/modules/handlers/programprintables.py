@@ -849,13 +849,13 @@ class ProgramPrintables(ProgramModuleObj):
                                     "Time",
                                     mark_safe("</th><th width=65%>"),
                                     "Shift")
-            schedule += format_html(u"</tr><indent>")
+            schedule += format_html(u"</tr>")
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
                 schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
                                         str(shift.request.timeslot.pretty_time()),
                                         str(shift.request.timeslot.description))
-            schedule += format_html(u"</indent></table>")
+            schedule += format_html(u"</table>")
 
         return mark_safe(schedule)
 
