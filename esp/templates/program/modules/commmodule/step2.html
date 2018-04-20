@@ -6,16 +6,55 @@
 
 {% block xtrajs %}
 {{block.super}}
-<script type="text/javascript">
-<!--
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script>
+  $( function() {
+    $( "#dialog-confirm" ).dialog({
+      resizable: false,
+      height: "auto",
+      width: 500,
+      modal: true,
+      buttons: {
+        "Yes, do it anyway!": function() {
+          $( this ).dialog( "close" );
 
-//-->
-</script>
+        },
+        "Oops, let me check": function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+  } );
+  </script>
+  <script>
+    //require('es6-shim');
+    function validate(form) {
+
+      var msgType = $("#msglang");
+      var containsTag = /<\/?p?(br?)?>/.test($("#emailbody"))
+
+      if(msgType=="HTML" && !containsTag) {
+          alert('You selected "HTML" but included no HTML tags.');
+          return false;
+      } else if(msgType="Plain Text" && containsTag) {
+          alert('You selected "Plain Text" but have tags (such as <p>) in' +
+                'your message.');
+          return false;
+      }
+      else {
+          return true;
+      }
+    }
+  </script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
 <style type="text/css">
-.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+.listtable, .listtable th, .listtable td{ border: 1px solid #999;
+  border-collapse: collapse;}
 #divmaintext .unchosen { background-color: #CCC; }
 #divmaintext .chosen { background-color: #FFF; }
 #divmaintext td.notchooser { cursor: pointer }
@@ -32,13 +71,14 @@
 
 <br />
 <p>
-There are <strong>{{listcount}}</strong> distinct users in your query. If you feel this to be off, please
+There are <strong>{{listcount}}</strong> distinct users in your query.
+If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
-Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
-into the text of the message&mdash;the parameters are listed below.
-The default {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can
-modify
+Please write your email/message now. Note that you can use
+<tt>{{ parameter }}</tt> to enter a parameter into the text of the
+message&mdash;the parameters are listed below. The default
+{{ settings.ORGANIZATION_SHORT_NAME }} template (which you can modify
 <a href="/admin/utils/templateoverride/?name=default_email_html.txt">here</a>)
 is automatically wrapped around your message below.
 You can choose to write the body in either plain text or HTML.
@@ -47,17 +87,27 @@ tags because they're are included in the wrapper template.
 If you choose plain text, do <b>not</b> try to use any HTML tags for
 whitespace.</p>
 
-<form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
+<div id="dialog-confirm" title="Empty the recycle bin?">
+  <p><span class="ui-icon ui-icon-alert"
+    style="float:left; margin:12px 12px 20px 0;">
+  </span>Your HTML-like tags will be displayed as you see it now.
+  Are you sure you don't mean for them to be HTML formatting?</p>
+</div>
+
+<form action="/manage/{{program.getUrlBase}}/commprev" method="post"
+  onsubmit="return validate(this);" name="comm2">
 
 <table border="0" cellspacing="0" width="100%">
 <tr>
-  <input type="radio" name="msglang" id="msglang" value="plaintext"> Plain Text<br>
-  <input type="radio" name="msglang" id="msglang" value="html"> HTML
+  <input type="radio" name="msglang" id="msglang" value="plaintext">Plain Text
+  <br />
+  <input type="radio" name="msglang" id="msglang" value="html" required> HTML
 <tr>
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: your email)</small>
+  <small>(If blank: your email,
+    <span id="user_userid"></span>@{{ settings.SITE_INFO.1 }})</small>
   </label><br />
   <input type="text" size="30" name="from" id="from" value="{{from}}" />
   <br />
@@ -161,7 +211,8 @@ whitespace.</p>
      {% templatetag openvariable %}program.full_classes{% templatetag closevariable %}
           </span>
       </th>
-      <td>Newline-separated list of user's classes that have full or nearly-full sections</td>
+      <td>Newline-separated list of user's classes that have full or
+        nearly-full sections</td>
     </tr>
     <tr>
       <th><span style="white-space: nowrap;">
