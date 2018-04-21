@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Volunteers{% endblock %}
+{% block title %}Manage Volunteers for {{ program.niceName }}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -8,6 +8,7 @@
 {% endblock %}
 
 {% block content %}
+<h1>Manage Volunteers for {{ program.niceName }}</h1>
 
 {% load render_qsd %}
 {% inline_program_qsd_block program "volunteer_requests" %}
@@ -22,8 +23,13 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <tr>
 <th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
 </tr>
+<tr>
+<td colspan="3" align="center">
+<b>There are currently {{ num_vol }} distinct volunteers registered for this program.</b>
+</td>
+</tr>
 {% if requests|length_is:0 %}
-    <tr><td colspan="3">No requests at this time.  Please add some using the form below.</td></tr>
+    <tr><td colspan="3">No requests at this time.  Please add some using one of the forms below.</td></tr>
 {% else %}
     {% for vr in requests %}
     <tr>
@@ -47,16 +53,26 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 </center>
 
 <br />
-
-<form method="POST" action="{{ request.path }}">
 <center>
-<table width="400">
+<form method="post" action="#">
+<table align="center" cellpadding="0" cellspacing="0" width="450">
+    <tr><th colspan="2" class="small">Import volunteer shifts from a previous program</th></tr>
+    {{ import_request_form }}
+    <input type="hidden" name="import" value="import" />
+    {% if import_error %}
+    <tr><td colspan="2" align="center"><font color="red">{{ import_error }}</font></td></tr>
+    {% endif %}
+    <tr><td colspan="2" align="center"><button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-import" aria-hidden="true"></span> Import</button></td></tr>
+</table>
+</form>
+<form method="POST" action="{{ request.path }}">
+<table width="450">
 <tr>
-    <th colspan="2">Create Volunteer Shift</th>
+    <th colspan="2">Create New Volunteer Shift</th>
 </tr>
-    {{ form }}
-<tr>   
-    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+    {{ shift_form }}
+<tr>
+    <td colspan="2" align="center"><button type="submit" class="btn btn-primary"><span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Submit</button></td>
 </tr>
 </table>
 </center>

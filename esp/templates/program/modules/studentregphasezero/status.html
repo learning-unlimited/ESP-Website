@@ -1,0 +1,137 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+.button1 {
+    text-align: center !important;
+    float: none !important;
+    height: 40px !important;
+    width: 250px !important;
+    font-size: 13px !important;
+}
+
+#applicants
+{
+    list-style-type: none;
+    counter-reset: section;
+
+    -moz-column-count: 3;
+    -moz-column-gap: 20px;
+    -webkit-column-count: 3;
+    -webkit-column-gap: 20px;
+    column-count: 3;
+    column-gap: 20px;
+}
+
+#record
+{
+    padding-left: 30px;
+    position: relative;
+}
+
+#lotteryentries{
+  display:none;
+}
+#lotteryentries.show{
+  display:block;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+td {
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Manage Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+
+<center>
+<h2>
+Number of students that have entered the student lottery:
+</h2>
+<h2 style="font-family:sans-serif">
+<u>{{ nentrants }}</u>
+</h2>
+
+</br>
+<center><input type="button" class="button1" value="Show/Hide Lottery Entrants" id="toggle" /></center>
+
+<div id="lotteryentries">
+</br>
+<ul id="applicants">
+{% for entrant in entrants %}
+<li>{{entrant}} - {{entrant.getGrade}}</li>
+{% endfor %}
+</ul>
+</div>
+
+<hr>
+<center>
+<h2>
+<u>To Run Student Lottery:</u>
+</h2>
+(Do not do this unless you know what you are doing)
+
+</br></br>
+{% if error %}<p><font color="red">{{ error }}</font></p>{% endif %}
+{% if success %}<p><font color="blue">{{ success }}</font></p>{% endif %}
+<form action="#" method="POST">
+<!--<b>Specify Role Name for Winners: </b>--><input type="hidden" name="rolename" value="{{role}}"></br></br>
+<input type="checkbox" name="confirm">  I confirm that I would like to run the student lottery.</br></br>
+<input type="submit" value="Run Student Lottery" />
+</form>
+</center>
+
+{% if stats %}
+<hr>
+<center><h2><u>Lottery Statistics</u></h2></center>
+<table align="center" width="500">
+    <tr>
+	    <th>Grade</th>
+	    <th># in Lottery</th>
+        <th># Accepted</th>
+        <th>% Accepted</th>
+	</tr>
+	{% for grade, stat in stats.items %}
+        <tr>
+            <td>
+                {{ grade }}
+            </td>
+            <td>
+                {{ stat.in_lottery }}
+            </td>
+            <td>
+                {{ stat.num_accepted }}
+            </td>
+            <td>
+                {{ stat.per_accepted }}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+
+<script>
+var toggle  = document.getElementById("toggle");
+var content = document.getElementById("lotteryentries");
+
+toggle.addEventListener("click", function(){
+  content.classList.toggle("show");
+}, false);
+</script>
+{% endblock %}

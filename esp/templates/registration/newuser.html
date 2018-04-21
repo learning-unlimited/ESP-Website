@@ -2,11 +2,6 @@
 
 {% block title %}Create a new user account{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Create an account"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -24,12 +19,12 @@
       <input type="hidden" name="username" value="{{ u.username }}" />
       <input type="hidden" name="password" value="" />
       <input type="hidden" name="next" value="/myesp/profile/" />
-      <input type="submit" value="Try logging in" />
+      <input type="submit" value="Try logging in" class="btn btn-primary" />
     </form>
     <form action="/myesp/passwdrecover/" method="post">
       <input type="hidden" name="email" value="{{ u.email }}" />
       <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" />
+      <input type="submit" value="I forgot my password!" class="btn btn-default" />
     </form>
     )
     </li>
@@ -71,7 +66,7 @@
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account{% endif %}" name="submit" />
+    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account{% endif %}" name="submit" class="btn btn-primary" />
     </div>
   </fieldset>
 </form>

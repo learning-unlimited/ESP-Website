@@ -47,17 +47,17 @@ class ResizeImageField(forms.ImageField):
         """ Give this a tuple size, like (128,128), and the image
             will be resized so that it is no larger than that box, but
             its aspect ratio is preserved. """
-        
+
         forms.ImageField.__init__(self, **kwargs)
         self.size = size
-        
+
     def clean(self, file, initial=None):
         """ gets the image and resizes it """
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
             from PIL import Image
             from cStringIO import StringIO
-            
+
             filename = file.name
 
             picturefile = StringIO()
@@ -68,7 +68,7 @@ class ResizeImageField(forms.ImageField):
                 file = StringIO(file.read())
             else:
                 raise forms.ValidationError('Image unreadable.')
-            
+
             try:
                 im = Image.open(file)
                 im.thumbnail(self.size, Image.ANTIALIAS)

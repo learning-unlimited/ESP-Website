@@ -31,7 +31,7 @@ class OnsiteBarcodeCheckinForm(forms.Form):
 
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
-    
+
     def __init__(self, *args, **kwargs):
         now = datetime.datetime.now()
         self.base_fields['when'].initial=datetime.datetime(now.year, now.month, now.day) + datetime.timedelta(days=1, minutes=-1)

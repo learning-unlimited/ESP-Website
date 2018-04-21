@@ -5,20 +5,11 @@
 <h3>Teacher Information</h3>
 
 <div class="control-group">
-<label for="id_from_here" class="control-label">{{ form.from_here.label }}</label>
+<label for="id_affiliation" class="control-label">{{ form.affiliation.label }}</label>
 <div class="controls">
-{{ form.from_here }} {% if form.from_here.errors %}
-  <br /><span class="form_error">{{ form.from_here.errors|join:", " }}</span>
+    {{ form.affiliation }} {% if form.affiliation.errors %}
+  <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
   {% endif %}
-</div>
-</div>
-
-<div class="control-group">
- <label for="id_school" class="control-label">If no, what is your school/employer?</label>
- <div class="controls">
- {{ form.school }} {% if form.school.errors %}
-   <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
-   {% endif %}
 </div>
 </div>
 
@@ -32,15 +23,6 @@
    {% endif %}
 </div>
 </div>
-
-<div class="control-group">
- <label for="id_school" class="control-label">Are you a graduate student or graduate alum?</label><br />
- <div class="controls">
- {{ form.is_graduate_student }} {% if form.is_graduate_student.errors %}
-   <br /><span class="form_error">{{ form.is_graduate_student.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div> 
 
 <div class="control-group">
  <label for="id_major" class="control-label">Major/Department:</label>
@@ -79,53 +61,5 @@
 </div> 
 
 {% endif %}
-
-{% if form.full_legal_name %}
-
-<div class="alert">
- <b>If you plan to request reimbursements</b> for class supplies, we also need to know the following. If you are not comfortable sending this information through a web form, please contact us by e-mail or phone.
-</div>
-
-<div class="control-group">
- <label for="id_full_legal_name" class="control-label">Full legal name:</label>
- <div class="controls">
- {{ form.full_legal_name }} {% if form.full_legal_name.errors %}
-   <br /><span class="form_error">{{ form.full_legal_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-
-<div class="control-group">
- <label for="id_university_email" class="control-label">University e-mail address:</label>
- <div class="controls">
- {{ form.university_email }} {% if form.university_email.errors %}
-   <br /><span class="form_error">{{ form.university_email.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-
-<div class="control-group">
- <label for="id_student_id" class="control-label">Student ID number:</label>
- <div class="controls">
- {{ form.student_id }} {% if form.student_id.errors %}
-   <br /><span class="form_error">{{ form.student_id.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-
-{% if form.mail_reimbursement %}
-<div class="control-group">
- <label for="id_mail_reimbursement" class="control-label">For reimbursement checks:</label>
- <div class="controls">
- {{ form.mail_reimbursement }} {% if form.mail_reimbursement.errors %}
-   <br /><span class="form_error">{{ form.mail_reimbursement.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-
-{% endif %}
-
-{% endif %}
-
 
 <!-- End Teacher Info Portion -->

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.db import models
-import reversion
+from reversion import revisions as reversion
 
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
@@ -44,30 +44,34 @@ class TemplateOverride(models.Model):
     name = models.CharField(max_length=255, help_text='The filename (relative path) of the template to override.')
     content = models.TextField()
     version = models.IntegerField()
-    
+
     class Meta:
         unique_together = (('name', 'version'), )
-    
+
     def __unicode__(self):
         return 'Ver. %d of %s' % (self.version, self.name)
-    
+
     def next_version(self):
         qs = TemplateOverride.objects.filter(name=self.name)
         if qs.exists():
             return qs.order_by('-version').values_list('version', flat=True)[0] + 1
         else:
             return 1
-    
+
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
         super(TemplateOverride, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return "/manage/templateoverride/" + str(self.id)
+
+
 class Printer(models.Model):
     name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
     printer_type = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
-    
+
     def __unicode__(self):
         return self.name
 

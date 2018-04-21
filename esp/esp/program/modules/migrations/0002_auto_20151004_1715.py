@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='studentclassregmoduleinfo',
             name='signup_verb',
-            field=models.ForeignKey(default=esp.program.modules.module_ext.get_regtype_enrolled, to='program.RegistrationType', help_text=b'Which verb to grant a student when they sign up for a class.', null=True),
+            field=models.ForeignKey(to='program.RegistrationType', help_text=b'Which verb to grant a student when they sign up for a class.', null=True),
         ),
         migrations.AddField(
             model_name='programmoduleobj',

@@ -59,7 +59,7 @@ def _send_to_combination(sendto_fns):
             try:
                 for address_pair in fn(user):
                     if address_pair[0] not in emails:
-                    # Duplicate emails are ignored.
+                        # Duplicate emails are ignored.
                         emails.append(address_pair[0])
                         address_pairs.append(address_pair)
             except:

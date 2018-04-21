@@ -2,12 +2,15 @@
 
 {% block title %}Profile Editor{% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
-{% endblock %}
-
 {% block content %}
+
+<style>
+div.required label:after {
+  content:"*";
+  color:red;
+}
+</style>
+
 <div class="row-fluid">
   <div class="span10 offset1">
     <h1>Your Profile Information</h1>
@@ -79,5 +82,13 @@
     </form>
   </div>
 </div>
+
+<script>
+$j(document).ready(function() {
+  $j(".required").each(function() {
+    $j(this).closest(".control-group").addClass("required");
+  });
+});
+</script>
 
 {% endblock %}

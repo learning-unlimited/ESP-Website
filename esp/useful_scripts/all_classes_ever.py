@@ -13,7 +13,7 @@ def to_ascii(s):
        return ""
 
 for program in programs:
- 
+
     subjects = all_subjects.filter(parent_program=program)
     titles = subjects.values_list('title',flat=True).distinct()
     if titles:
@@ -21,5 +21,5 @@ for program in programs:
         titles = map(to_ascii,titles)
         titles = class_title_delimeter.join(titles)
         f.write('%s\n\n\t%s\n\n\n\n' % (program, titles))
- 
+
 f.close()

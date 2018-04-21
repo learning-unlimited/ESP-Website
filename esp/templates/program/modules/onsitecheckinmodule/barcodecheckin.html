@@ -2,74 +2,233 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Barcode check-in for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 {% endblock %}
 
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
-</style>
-<br />
-<br />
 
-<br /><br />
+/* Controls */
+
+.overlay__close {
+    position: absolute;
+    right: 0;
+    padding: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    text-align: center;
+    background-color: white;
+    cursor: pointer;
+    border: 3px solid black;
+    font-size: 1.5rem;
+    margin: -1rem;
+    border-radius: 2rem;
+    z-index: 100;
+    box-sizing: content-box;
+}
+
+/* Scan! Button */
+
+.scan {
+    font-size: large;
+    padding: 0.5rem;
+    text-align: center;
+    display: inline;
+}
+
+/* Reader Dropdown */
+
+.controls select {
+    font-size: large !important;
+    margin: auto;
+    height: auto !important;
+}
+
+.controls.hide {
+    display: none;
+}
+
+.overlay--inline {
+    position: absolute;
+    display: none;
+}
+
+.overlay--inline.show {
+    display: block;
+}
+
+#interactive.viewport canvas.drawingBuffer, video.drawingBuffer {
+  margin-left: -640px;
+}
+</style>
+
+<script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
+<script src="https://cdn.rawgit.com/serratus/quaggaJS/master/dist/quagga.min.js"></script>
+
 <h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
+    <p>
+    Welcome to barcode check-in for {{ program.niceName }}.  Please enter a list of user IDs.
+    </p>
 
-<p>
-Welcome to barcode check-in for {{ program.niceName }}.  Please enter a list of user IDs.
-</p>
+    {% if results %}
+    <p>
+    Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
+    </p>
+    {% if results.not_found %}
+    <p>
+    Students not found:
+    {% for id in results.not_found %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% if results.not_student %}
+    <p>
+    IDs not corresponding to students:
+    {% for id in results.not_student %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% comment %}
+    {% if results.existing %}
+    <p>
+    IDs already checked in:
+    {% for id in results.existing %}
+    {{ id }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    </p>
+    {% endif %}
+    {% endcomment %}
+    {% endif %}
 
-{% if results %}
-<p>
-Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
-</p>
-{% if results.not_found %}
-<p>
-Students not found:
-{% for id in results.not_found %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% if results.not_student %}
-<p>
-IDs not corresponding to students:
-{% for id in results.not_student %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% comment %}
-{% if results.existing %}
-<p>
-IDs already checked in:
-{% for id in results.existing %}
-{{ id }}{% if not forloop.last %},{% endif %}
-{% endfor %}
-</p>
-{% endif %}
-{% endcomment %}
-{% endif %}
+    <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+                        {{ form.as_p }}
+                        <p class="ids">
+                    <input type="submit" value="Submit" />
+                    </p>
+    </form>
 
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-                    {{ form.as_p }}
-                    <p>
-                <input type="submit" value="Submit" />
-                </p>
-</form>
+    <br><br>
 
-<br />
-{% load render_qsd %}
-{% render_inline_program_qsd program "onsite:status" %}
-
-
+    <div class="controls">
+        <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
+        &emsp;
+        <select>
+            <option selected value="code_39_reader">Code 39</option>
+            <option value="codabar_reader">Codabar</option>
+            <option value="code_128_reader">Code 128</option>
+            <option value="i2of5_reader">Interleaved 2 of 5</option>
+        </select>
+    </div>
+    <div class="overlay overlay--inline">
+        <div class="overlay__content viewport" id="interactive">
+            <div class="overlay__close">X</div>
+        </div>
+    </div>
 </div>
+
+<script type="text/javascript">
+$j(function() {
+    var App = {
+        init: function() {
+            this.attachListeners();
+        },
+        attachListeners: function() {
+            var button = document.querySelector('button.scan'),
+                self = this;
+
+            button.addEventListener("click", function clickListener (e) {
+                e.preventDefault();
+                button.removeEventListener("click", clickListener);
+                self.activateScanner();
+            });
+        },
+        activateScanner: function() {
+            var scanner = this.configureScanner('.overlay__content'),
+                onDetected = function (result) {
+                    this.addToResults(result);
+                }.bind(this),
+                stop = function() {
+                    Quagga.stop();
+                    this.hideOverlay();
+                    this.attachListeners();
+                }.bind(this);
+
+            this.showOverlay(stop);
+            var video = document.querySelector('.overlay__content > video');
+            video.setAttribute("autoplay", true);
+            video.setAttribute('muted', true);
+            video.setAttribute('playsinline', true);
+        },
+        configureScanner: function(selector) {
+            var scanner = Quagga.init({
+                decoder: {
+                    readers: this.querySelectedReaders()
+                },
+                inputStream: {
+                    type : "LiveStream",
+                    constraints: {
+                        width: {min: 640},
+                        height: {min: 480},
+                        facingMode: "environment",
+                        aspectRatio: {min: 1, max: 2}
+                    }
+                },
+            }, function(err) {
+                  if (err) {
+                      console.log(err);
+                      return
+                  }
+                  Quagga.start();
+              });
+            return scanner;
+        },
+        querySelectedReaders: function() {
+            return Array(document.querySelector('.controls select').value);
+        },
+        showOverlay: function(cancelCb) {
+            document.querySelector('.controls')
+                .classList.add('hide');
+            document.querySelector('.overlay--inline')
+                .classList.add('show');
+            var closeButton = document.querySelector('.overlay__close');
+            closeButton.addEventListener('click', function closeHandler() {
+                closeButton.removeEventListener("click", closeHandler);
+                cancelCb();
+            });
+        },
+        hideOverlay: function() {
+            document.querySelector('.controls')
+                .classList.remove('hide');
+            document.querySelector('.overlay--inline')
+                .classList.remove('show');
+        },
+        lastResult : null
+    };
+
+    App.init();
+
+    Quagga.onDetected(function(result) {
+        var code = result.codeResult.code;
+
+        if (App.lastResult !== code) {
+            App.lastResult = code;
+
+            var results = document.querySelector('#checkinform > p > textarea')
+            results.value += "\n" + code
+        }
+    });
+
+});
+</script>
 
 
 {% endblock %}

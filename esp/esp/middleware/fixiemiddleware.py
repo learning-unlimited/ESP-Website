@@ -25,7 +25,7 @@ class FixIEMiddleware(object):
 
 
         # IE will break
-        if response.mimetype.lower() not in safe_mime_types: 
+        if response.mimetype.lower() not in safe_mime_types:
             try:
                 del response['Vary']
                 response['Pragma'] = 'no-cache'
@@ -34,4 +34,4 @@ class FixIEMiddleware(object):
                 return response
 
         return response
-        
+

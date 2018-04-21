@@ -11,6 +11,7 @@ var ClassSubject = function (data) {
     self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
+    self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
@@ -292,8 +293,8 @@ var CatalogViewModel = function () {
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.status <= 0) {
-                // remove unapproved classes
+            if (cls.status <= 5) {
+                // remove unapproved or hidden classes
                 delete data.classes[key];
             }
             else if (cls.category_id == open_class_category_id ||

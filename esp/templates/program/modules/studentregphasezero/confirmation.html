@@ -1,0 +1,128 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
+<script type="text/javascript" src="/media/scripts/program/modules/studentregphasezero.js"></script>
+<script type="text/javascript">
+  // Set up the student input autocomplete
+  $j(document).ready(function() {
+    setup_autocomplete();
+  });
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+
+<style>
+.button1 {
+    text-align: center !important;
+    float: none !important;
+    font-size: 13px !important;
+    padding: 8px 8px;
+}
+
+.button2 {
+    text-align: center !important;
+    float: none !important;
+    font-size: 13px !important;
+    padding: 8px 8px;
+}
+
+#program_form{
+  display:none;
+}
+#program_form.show{
+  display:block;
+}
+
+#students {
+    list-style-type: none;
+    counter-reset: section;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
+{% inline_program_qsd_block program "learn:studentregphasezero/top" %}
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the student lottery may proceed to register for classes.
+{% end_inline_program_qsd_block %}
+
+{% if join_error %}
+<p><font color="red">{{ join_error }}</font></p>
+{% endif %}
+
+<hr>
+
+<center>
+<h1>
+This is confirmation that you are entered into our student lottery.
+</h1>
+<br><br>
+<h2>
+{% if lottery_size == 1 %}
+You are the only student in your lottery group.
+<br>
+{% else %}
+The following students are in your lottery group:
+</h2>
+<br>
+<div id="lottery_group">
+<ul id="students">
+{% for student in lottery_group.user.all %}
+<li>{{student}} (grade {{student.getGrade}})</li>
+{% endfor %}
+</ul>
+</div>
+{% if lottery_size == 4 %}
+Note: Your lottery group is at the maximum size (4)
+{% endif %}
+{% endif %}
+<br>
+<h3>
+<i>No further action is required at this time.</i>
+</h3>
+</center>
+
+<hr>
+
+{% inline_program_qsd_block program "learn:studentregphasezero/confirmation" %}
+<p>
+If you would like to join a different lottery group, please click the button below for further instructions:
+</p>
+{% end_inline_program_qsd_block %}
+
+<center>
+
+<input type="button" class="button1" value="I Would Like To Join A Different Lottery Group" id="toggle" />
+
+<div id="program_form">
+{% inline_program_qsd_block program "learn:studentregphasezero/lottery_id_form" %}
+<p>
+1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button.<br><br>Note: the student must already have a lottery ticket.
+</p>
+{% end_inline_program_qsd_block %}
+<form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
+
+<input type="text" name="student_username" id="student_username" />
+<input type="hidden" name="student_selected" id="student_id" />
+<br><br>
+<input type="submit" class="button2" value="Submit">
+</center>
+</form>
+</div>
+
+<script>
+var toggle  = document.getElementById("toggle");
+var content = document.getElementById("program_form");
+
+toggle.addEventListener("click", function(){
+  content.classList.toggle("show");
+}, false);
+</script>
+{% endblock %}

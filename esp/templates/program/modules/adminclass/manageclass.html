@@ -2,7 +2,6 @@
 
 {% block title %}Manage Class: {{ class.title }}{% endblock %}
 
-{% block subsection_name %}Class Status{% endblock %}
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -31,25 +30,30 @@
         <th class="smaller">Number of Students: </th>
         <td>
             {% for sec in sections %}
-                Section {{ sec.index }}: {{ sec.num_students }} (<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">View section list</a>) <br />
-            {% endfor %} 
+                Section {{ sec.index }}:
+                {{ sec.num_students }} enrolled / {{ sec.capacity }} capacity
+                (<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">View section list</a>)
+                <br />
+            {% endfor %}
             <b>Total: </b> {{ class.num_students }} (<a href="/teach/{{ program.getUrlBase }}/class_students/{{ class.id }}">View class list</a>)
         </td>
     </tr>
     <tr>
         <th class="smaller">E-mail addresses: </th>
         <td>
-            Whole Class: <a href="mailto:{{ class.emailcode }}-class@{{ EMAIL_HOST }}">{{ class.emailcode }}-class@{{ EMAIL_HOST }}</a><br />
-            Teachers: <a href="mailto:{{ class.emailcode }}-teachers@{{ EMAIL_HOST }}">{{ class.emailcode }}-teachers@{{ EMAIL_HOST }}</a><br />
-            Students: <a href="mailto:{{ class.emailcode }}-students@{{ EMAIL_HOST }}">{{ class.emailcode }}-students@{{ EMAIL_HOST }}</a>
+            Whole Class: <a href="mailto:{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</a><br />
+            Teachers: <a href="mailto:{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}</a><br />
+            Students: <a href="mailto:{{ class.emailcode }}-students@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</a>
         </td>
     </tr>
     <tr>
-        <th class="smaller">Enrollment control: </th>
+        <th class="smaller">Enrollment: </th>
         <td>
             {% for sec in sections %}
-                Section {{ sec.index }}: {{ sec.num_students }} / {{ sec.num_students_prereg }} enrolled.  <a href="/teach/{{ program.getUrlBase }}/select_students/{{ sec.id }}">Enroll and reject students here.</a> <br />
-            {% endfor %} 
+                Section {{ sec.index }}:
+                {{ sec.num_students }} enrolled / {{ sec.num_students_prereg }} preregistered
+                <br />
+            {% endfor %}
         <td>
     </tr>
     <tr>
@@ -62,22 +66,6 @@
                 {% endif %}
             {% endfor %}
             </ul>
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Consistency checks: </th>
-        <td>{% if errors|length_is:0 %}
-            <div style="color: #009900;">All checks passed.</div>
-            {% else %}
-            <div style="color: #990000;">Some checks failed:</div>
-            <ul>
-            {% autoescape off %}
-            {% for item in errors %}
-                <li style="color: black;">{{ item }}</li>
-            {% endfor %}
-            {% endautoescape %}
-            </ul>
-            {% endif %}
         </td>
     </tr>
 </table>

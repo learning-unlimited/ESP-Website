@@ -33,11 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.qsd.models import QuasiStaticData
-from django.contrib.auth.models import User
 from esp.users.models import ContactInfo, Permission
-from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from os.path import basename, dirname
@@ -49,11 +47,11 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
-from esp.varnish import purge_page
+from esp.varnish.varnish import purge_page
 
 from django.conf import settings
 
-import reversion
+from reversion import revisions as reversion
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -78,10 +76,10 @@ def qsd(request, url):
         action = 'read'
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
-    
+
     # Detect edit authorizations
     have_read = True
-    
+
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
 
@@ -123,14 +121,14 @@ def qsd(request, url):
         action = 'edit'
 
     # Detect the standard read verb
-    if action == 'read':        
+    if action == 'read':
         if not have_read:
             raise Http403, 'You do not have permission to read this page.'
 
         # Render response
         response = render_to_response('qsd/qsd.html', request, {
             'title': qsd_rec.title,
-            'nav_category': qsd_rec.nav_category, 
+            'nav_category': qsd_rec.nav_category,
             'content': qsd_rec.html(),
             'settings': settings,
             'qsdrec': qsd_rec,
@@ -146,26 +144,33 @@ def qsd(request, url):
 
         return response
 
-            
+
     # Detect POST
-    if request.POST.has_key('post_edit'):
+    if 'post_edit' in request.POST:
         have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
-        
+
         nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
-        if qsd_rec.url != base_url or qsd_rec.nav_category != nav_category_target or qsd_rec.content != request.POST['content'] or qsd_rec.description != request.POST['description'] or qsd_rec.keywords != request.POST['keywords']:
-            qsd_rec.url = base_url
-            qsd_rec.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
-            qsd_rec.content = request.POST['content']
-            qsd_rec.title = request.POST['title']
-            qsd_rec.description = request.POST['description']
-            qsd_rec.keywords    = request.POST['keywords']
+        copy_map = {
+            'url': base_url,
+            'nav_category': nav_category_target,
+            'content': request.POST['content'],
+            'title': request.POST['title'],
+            'description': request.POST['description'],
+            'keywords': request.POST['keywords'],
+        }
+        diff_found = False
+        for field, new_value in copy_map.items():
+            if getattr(qsd_rec, field) != new_value:
+                setattr(qsd_rec, field, new_value)
+                diff_found = True
 
+        if diff_found:
             qsd_rec.load_cur_user_time(request)
             qsd_rec.save()
 
@@ -187,14 +192,14 @@ def qsd(request, url):
             'content'      : qsd_rec.content,
             'keywords'     : qsd_rec.keywords,
             'description'  : qsd_rec.description,
-            'nav_category' : qsd_rec.nav_category, 
+            'nav_category' : qsd_rec.nav_category,
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
-            use_request_context=False)  
-    
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
+            use_request_context=False)
+
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
 
@@ -228,5 +233,16 @@ def ajax_qsd(request):
         result['status'] = 1
         result['content'] = markdown(qsd.content)
         result['url'] = qsd.url
+
+    return HttpResponse(json.dumps(result))
+
+def ajax_qsd_preview(request):
+    """ Ajax function for previewing the result of QSD editing. """
+    import json
+    from markdown import markdown
+
+    # We don't necessarily need to wrap it in JSON, but this seems more
+    # future-proof.
+    result = {'content': markdown(request.POST['data'])}
 
     return HttpResponse(json.dumps(result))

@@ -27,9 +27,9 @@ None
 <form action="classchangerequest" method="post">
 {{ form.as_p }}
 {% if user.isStudent %}
-<input type="submit" value="Submit" />
+<input type="submit" value="Submit" class="btn btn-primary" />
 {% else %}
-<input type="button" value="This would be a 'Submit' button, if you were a student" />
+<input type="button" value="This would be a 'Submit' button, if you were a student" class="btn btn-primary" disabled="disabled" />
 {% endif %}
 </form>
 {% endif %}

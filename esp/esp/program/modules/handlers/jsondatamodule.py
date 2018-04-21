@@ -46,13 +46,13 @@ from django.http import Http404, HttpResponse
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType, ClassFlag
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, no_auth, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
-from esp.users.models import UserAvailability
+from esp.users.models import ESPUser, UserAvailability
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -75,7 +75,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
     """
-    
+
     @aux_call
     @json_response()
     @needs_admin
@@ -84,7 +84,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'sections': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values('id', 'enrolled_students'))}
     counts.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     counts.method.cached_function.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
-    
+
     @aux_call
     @json_response()
     @needs_admin
@@ -92,17 +92,21 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def rooms(prog):
         classrooms = prog.getResources().filter(res_type__name="Classroom")
         classrooms_grouped = defaultdict(list)
-
         for room in classrooms:
             classrooms_grouped[room.name].append(room)
-
         classrooms_dicts = [
             {
                 'id': room_id,
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [
+                    {
+                        'res_type_id': ar.res_type_id,
+                        'value': ar.attribute_value,
+                    }
+                    for ar in classrooms_grouped[room_id][0].associated_resources()
+                ],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
@@ -111,6 +115,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def resource_types(prog):
         res_types = ResourceType.objects.filter(program = prog)
@@ -131,22 +136,20 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'resource_types': res_types_dicts}
     resource_types.cached_function.depend_on_model(ResourceType)
-    
+
     @aux_call
     @json_response({'resourceassignment__resource__name': 'room_name'})
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT array_agg(resources_resource.event_id) FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
-        for i in range(len(data)):
-            if not data[i]['timeslots']:
-                data[i]['timeslots'] = []
+        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'ARRAY(SELECT resources_resource.event_id FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id)'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         return {'schedule_assignments': list(data)}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     schedule_assignments.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
-    
+
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def timeslots(prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
@@ -164,6 +167,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def lunch_timeslots(prog):
         lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
@@ -173,6 +177,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def sections(extra, prog):
         if extra == 'catalog':
@@ -214,7 +219,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_teachers = s.parent_class.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'].append(s.id)
                     continue
                 teacher = {
@@ -246,10 +251,82 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     sections.cached_function.depend_on_cache(ClassSection._get_capacity, lambda self=wildcard, **kwargs: {'prog': self.parent_class.parent_program, 'extra': 'catalog'})
 
     @aux_call
+    @json_response()
+    @needs_admin
+    @cached_module_view
+    def sections_admin(extra, prog):
+        teacher_dict = {}
+        teachers = []
+        sections = []
+        qs = prog.sections().prefetch_related(
+            'parent_class__category',
+            'parent_class__sections',
+            'parent_class__teachers',
+            'parent_class__parent_program',
+            'meeting_times')
+
+        for s in qs:
+            rrequests = ResourceRequest.objects.filter(target = s)
+            rrequest_dict = defaultdict(list)
+            for r in rrequests:
+                rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
+
+            cls = s.parent_class
+            section = {
+                'id': s.id,
+                'status': s.status,
+                'parent_class': s.parent_class.id,
+                'category': s.parent_class.category.symbol,
+                'category_id': s.parent_class.category.id,
+                'grade_max': s.parent_class.grade_max,
+                'grade_min': s.parent_class.grade_min,
+                'title': s.parent_class.title,
+                'class_size_max': s.parent_class.class_size_max,
+                'num_students': s.enrolled_students,
+                'resource_requests': rrequest_dict,
+                'comments': cls.message_for_directors,
+                'special_requests': cls.requested_special_resources,
+                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            }
+            sections.append(section)
+            section['index'] = s.index()
+            section['emailcode'] = s.emailcode()
+            section['length'] = float(s.duration)
+            class_teachers = s.parent_class.get_teachers()
+            section['teachers'] = [t.id for t in class_teachers]
+            for t in class_teachers:
+                if t.id in teacher_dict:
+                    teacher_dict[t.id]['sections'].append(s.id)
+                    continue
+                teacher = {
+                    'id': t.id,
+                    'username': t.username,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'sections': [s.id]
+                }
+                teachers.append(teacher)
+                teacher_dict[t.id] = teacher
+
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for user_id, event_id in availabilities:
+            avail_for_user[user_id].append(event_id)
+        for teacher in teachers:
+            teacher['availability'] = avail_for_user[teacher['id']]
+
+        return {'sections': sections, 'teachers': teachers}
+    sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
+    sections_admin.method.cached_function.depend_on_model(ResourceRequest)
+    sections_admin.method.cached_function.depend_on_model(ClassFlag)
+
+    @aux_call
     @json_response({
             'subject': 'id',
             'subject__sections': 'id',
             })
+    @no_auth
     @cached_module_view
     def classes_timeslot(extra, prog):
         # TODO: make the /timeslots view do what we want and kill this one
@@ -284,6 +361,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response()
+    @no_auth
     @cached_module_view
     def class_subjects(extra, prog):
         if extra == 'catalog':
@@ -312,6 +390,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             classes.append(cls)
             if catalog:
                 cls['class_info'] = c.class_info
+                cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
@@ -320,7 +399,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
-                if teacher_dict.has_key(t.id):
+                if t.id in teacher_dict:
                     teacher_dict[t.id]['sections'] += cls['sections']
                     continue
                 teacher = {
@@ -393,7 +472,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 item['lottery_priority'] = False
         return {'sections': sections}
 
-    def lottery_preferences_usepriority(self, request, prog): 
+    def lottery_preferences_usepriority(self, request, prog):
         sections = list(prog.sections().values('id'))
         for i in range(1, prog.priorityLimit()+1, 1):
             priority_name = 'Priority/' + str(i)
@@ -404,11 +483,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 #else:
                 #   item['lottery_priority'] = False
         return {'sections': sections}
-        
-        
+
+
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @no_auth
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -452,10 +532,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'status': cls.status,
             'emailcode': cls.emailcode(),
             'title': cls.title,
-            'class_info': cls.class_info, 
-            'category': cls.category.category, 
+            'class_info': cls.class_info,
+            'category': cls.category.category,
             'difficulty': cls.hardness_rating,
-            'prereqs': cls.prereqs, 
+            'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -470,6 +550,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @no_auth
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -499,21 +580,21 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
-        
+
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'class_size_min': cls.class_size_min,
             'class_size_max': cls.class_size_max,
             'optimal_class_size': cls.class_size_optimal,
             'optimal_class_size_ranges': cls.optimal_class_size_range.range_str() if cls.optimal_class_size_range else None,
-            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]            
+            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]
         }
 
         if return_key == 'sections':
             return_dict['max_class_capacity'] = section.max_class_capacity
-        
+
         return {return_key: [return_dict]}
-            
+
     # This is separate from class_info because students shouldn't see it
     @aux_call
     @cache_control(public=True, max_age=300)
@@ -556,9 +637,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
-        fts = ClassFlagType.get_flag_types(prog)
-        ft_dicts = [{'id': ft.id, 'name': ft.name, 'show_in_scheduler': ft.show_in_scheduler, 'show_in_dashboard': ft.show_in_dashboard} for ft in fts]
-
         section_info = []
         for sec in cls.get_sections():
             section_info.append({
@@ -574,10 +652,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'status': cls.status,
             'emailcode': cls.emailcode(),
             'title': cls.title,
-            'class_info': cls.class_info, 
-            'category': cls.category.category, 
+            'class_info': cls.class_info,
+            'category': cls.category.category,
+            'class_style': cls.class_style,
             'difficulty': cls.hardness_rating,
-            'prereqs': cls.prereqs, 
+            'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -593,22 +672,26 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {return_key: [return_dict]}
 
-        
-    @aux_call
-    @json_response()
-    @cached_module_view
-    def message_requests():
-        earlier_requests = MessageRequest.objects.exclude(subject__icontains='password recovery')
-        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()
-        for item in data:
-            if isinstance(item['processed_by'], datetime):
-                item['processed_by'] = item['processed_by'].timetuple()[:6]
-        
-        return {'message_requests': data}
-    message_requests.cached_function.depend_on_model('dbmail.MessageRequest')
 
     @aux_call
     @json_response()
+    @needs_admin
+    @cached_module_view
+    def message_requests():
+        earlier_requests = MessageRequest.objects.all()
+        # Limit to 100 so the data doesn't get too big for memcached
+        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()[:100]
+        for item in data:
+            if isinstance(item['processed_by'], datetime):
+                item['processed_by'] = item['processed_by'].timetuple()[:6]
+
+        return {'message_requests': list(data)}
+
+    message_requests.method.cached_function.depend_on_model('dbmail.MessageRequest')
+
+    @aux_call
+    @json_response()
+    @needs_admin
     @cached_module_view
     def stats(prog):
         # Create a dictionary to assemble the output
@@ -641,14 +724,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teachers = prog.teachers()
         for key in teachers.keys():
             if key in teacher_labels_dict:
-                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
+                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately,
 teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['teachernum'].append((key, teachers[key].filter(is_active = True).distinct().count()))
-                
+
         student_labels_dict = {}
         for module in prog.getModules():
-            student_labels_dict.update(module.studentDesc())      
+            student_labels_dict.update(module.studentDesc())
         vitals['studentnum'] = []
 
         ## Ew, another set of queries in a for loop...
@@ -660,9 +743,16 @@ teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
+
+        volunteer_list = []
+        volunteer_dict = prog.volunteers()
+        if 'volunteer_all' in volunteer_dict:
+            volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
+        vitals['volunteernum'] = volunteer_list
+
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
-        
+
 
         shours = 0.0
         chours = 0.0
@@ -704,7 +794,7 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         for timeslot in timeslots:
             curTimeslot = {'slotname': timeslot.short_description}
-            
+
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             def student_count(clslist):
@@ -719,7 +809,7 @@ teachers[key].filter(is_active = True).distinct().count()))
                 'count': student_count(timeslot_dict[timeslot]),
                 'max_count': student_max_count(timeslot_dict[timeslot])
                 }
-            
+
             vitals['timeslots'].append(curTimeslot)
 
         dictOut["stats"].append(vitals)
@@ -732,7 +822,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         dictOut["stats"].append(shirt_data);
 
         Q_categories = Q(program=prog)
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        crmi = prog.classregmoduleinfo
         if crmi.open_class_registration:
             Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
@@ -740,21 +830,27 @@ teachers[key].filter(is_active = True).distinct().count()))
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         #   Convert Decimal values to float for serialization
         for i in range(len(annotated_categories)):
+            if annotated_categories[i]['num_class_hours'] is None:
+                annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
         ## Calculate the grade data:
         grades = [i for i in range(prog.grade_min, prog.grade_max+1)]
-        grades_annotated = []
-        # I should keep trying to make this nicer, but leaving it for now
+        # We can't perfectly trust most_recent_profile, but it's good enough for stats
+        students_grades = students['enrolled'].filter(registrationprofile__most_recent_profile=True)
+        students_grades = students_grades.values_list('registrationprofile__student_info__graduation_year')
+        students_grades = students_grades.annotate(Count('id', distinct=True))
+        grades_dict = {result[0]: result[1] for result in students_grades}
+        grades_results = []
         for g in grades:
+            year = ESPUser.YOGFromGrade(g, ESPUser.program_schoolyear(prog))
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
             grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
-            grade_students = filter(
-                lambda x: x.getGrade(prog, assume_student=True)==g,
-                students['enrolled'])
-            grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
-        dictOut["stats"].append({"id": "grades", "data": grades_annotated})
+            grades_results.append({'grade': g, 'num_subjects': grade_classes.count(),
+                                   'num_sections': grade_sections.count(),
+                                   'num_students': grades_dict[year] if year in grades_dict else 0})
+        dictOut["stats"].append({"id": "grades", "data": grades_results})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
@@ -778,7 +874,7 @@ teachers[key].filter(is_active = True).distinct().count()))
                 'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
             }
             dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
-        
+
         #   Add accounting stats
         pac = ProgramAccountingController(prog)
         (num_payments, total_payment) = pac.payments_summary()
@@ -792,11 +888,11 @@ teachers[key].filter(is_active = True).distinct().count()))
             'total_payments': float(total_payment or 0),
         }
         dictOut["stats"].append({"id": "accounting", "data": accounting_data})
-    
+
         return dictOut
-    stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-    stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
-    stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    stats.method.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+    stats.method.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
+    stats.method.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
 
     @aux_call
     @needs_student
@@ -814,6 +910,33 @@ teachers[key].filter(is_active = True).distinct().count()))
 
         data = {'amount_donation': amount_donation, 'amount_due': iac.amount_due()}
         return HttpResponse(json.dumps(data), content_type='application/json')
+
+    @aux_call
+    @json_response()
+    @needs_admin
+    def teachers_for_autoscheduler(self, request, tl, one, two, module, extra, prog):
+        """Dump teachers in a JSON format to be fed into the autoscheduler.
+
+        Unfortunately, the view name "teachers" conflicts with magic in the
+        Program class, so we have to name it something else.
+
+        Note that this code isn't normally accessed from the website interface.
+        """
+
+        teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
+        resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
+        resources_for_user = defaultdict(list)
+
+        for resource in resources:
+            resources_for_user[resource['user_id']].append(resource['event_id'])
+
+        teacher_dicts = [
+            {   'uid': t.id,
+                'text': t.name(),
+                'availability': resources_for_user[t.id]
+            } for t in teachers ]
+
+        return {'teachers': teacher_dicts}
 
     class Meta:
         proxy = True

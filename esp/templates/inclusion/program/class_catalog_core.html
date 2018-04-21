@@ -2,7 +2,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.hasScheduledSections and class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 </div>
      <div class="class_subtitle_row">
@@ -32,6 +32,13 @@
         {% autoescape off %}
          {{ class.class_info|escape|linebreaksbr }}<br />
         {% endautoescape %}
+       {% if class.class_style %}
+       <br /><br />
+       <b>Class Style</b><br />
+       <span style="font-style:italic;">
+         {{ class.class_style }}
+       </span>
+       {% endif %}
        {% if class.prereqs %}
        <br /><br />
        <b>Prerequisites</b><br />

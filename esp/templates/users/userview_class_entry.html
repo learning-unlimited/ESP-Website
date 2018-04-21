@@ -3,6 +3,7 @@
 {% if class.isRejected %}(Rejected){% endif %}
 {% if class.isCancelled %}(Cancelled){% endif %}
 {{ class.emailcode }}: {{ class.title }}
+(<a href="{{ class.get_absolute_url|urlencode }}">manage</a> | <a href="{{ class.get_edit_absolute_url|urlencode }}">edit</a>)
 {% if show_class_details %}
 {% if class.get_sections %}
 {# This is a ClassSubject #}

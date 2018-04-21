@@ -8,7 +8,7 @@
 <head>
 
 <!-- meta -->
-<meta http-equiv="Content-Script-Type" content="text/javascript">
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
 
 <title>ESP Scheduling Application</title>
 
@@ -16,125 +16,130 @@
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link id='sch_matrix_css' href='/media/default_styles/scheduling-matrix.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
+<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css" />
+<link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
-<!--<script type='text/javascript' src='/media/scripts/class.min.js'></script>-->
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
+
+<!--Scheduler-->
 <script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
 <script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
-<script type="text/javascript">    
-  var debug_on = false;  
-  var debug_log = function(message){
-      if (debug_on){
-          console.log(message);
-      }
-  };
-</script>
-<script type='text/javascript' src='/media/scripts/json_fetch.js'></script>
-<!-- app -->
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/ESP.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Util.js'></script>
 
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Scheduling.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Resources.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/DragDrop.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Widgets.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Directory.js'></script>
-<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
-<!-- ENDLIBS -->
-
-
-
-<!-- ENDSTYLE -->
-
-<!-- APP -->
-<!-- ENDAPP -->
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Timeslots.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ApiClient.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Helpers.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Cell.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Sections.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/MessagePanel.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionCommentDialog.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/SectionInfoPanel.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ChangelogFetcher.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Main.js"></script>
 
 </head>
 
 <body>
-<div id='statusbar-wrapper'>
-  <div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>
-  <span id='statusbar'>Loading...</span>
-</div>
-
-<div id='body'>
-<table>
+<table class="no-border">
   <tr>
-    <!-- MATRIX TARGET-->
-    <td width=200 id='matrix-target'>
-      <div class="matrix">
-	<div class="matrix-header">
-	  <table class="matrix-column-header-box">
-	    <tr class="matrix-row-body">
-	      <td class="matrix-corner-box">
-		<div class="matrix-corner-box">
-		  <div id="garbage-div" class="garbage ui-droppable">Drag here to unschedule</div>	
-		</div>
-	      </td>
-	      <!--times added by javascript here-->
-	    </tr>
-	  </table>
-	</div>
-	<div class="matrix-body">
-	  <table id="matrix-table">
-	    <!--grid added here-->
-	  </table>
-	</div>
-      </div>
+    <td class="no-border">
+      <div id="matrix-div" class="component-div"></div>
     </td>
-    <!-- DIRECTORY AND CLASS FILTER TARGET-->
-    <td width=200 id='directory-target'>
-      <div id="directory-accordion">
-	<h3><a href="#" id="directory_header">Class Directory</a></h3>
-	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
-	  <table class="directory">
-	    <thead><tr id="directory_table_header" class="header">
-	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
-	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
-	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
-	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
-	    </tr></thead>
-	    <tbody id="directory-table-body"></tbody>
-	    <!--classes get added here-->
-	  </table>
-	</div>
-	<h3><a href="#" id="filtering_header">Advanced Filter</a></h3>
-	<div id="searchbox" class="searchbox">
-	  <table>
-	    <tr><td>Title</td><td colspan="3"><input id="filter_Title"/></td></tr>
-	    <tr><td>ID</td><td colspan="3"><input id="filter_ID"/></td></tr>
-	    <tr><td>Teacher</td><td colspan="3"><input id="filter_Teacher"/></td></tr>
-	    <tr><td>Timeslot</td><td colspan="3"><input id="filter_Timeslot"/></td></tr>
-	    <tr>
-	      <td>Length</td>
-	      <td colspan="1"><input id="filter_Min-length"></td>
-	      <td align="center">to</td>
-	      <td colspan="1"><input id="filter_Max-length"></td>
-	    </tr>
-	    <tr>
-	      <td>Class size</td><td><input id="filter_Min-size"></td>
-	      <td align="center">to</td><td><input id="filter_Max-size"></td>
-	    </tr>
-            <tr>
-	      <td>Show unapproved classes</td>
-	      <td><input type="checkbox" id="filter_Status"></td>
-	      <td>Show already scheduled classes</td>
-	      <td><input type="checkbox" id="filter_Scheduled"></td>
-	    </tr>
-	  </table>
-	</div>
+    <td class="no-border">
+      <div id="side-panel-wrapper" class="ui-widget">
+        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+        <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+
+        <div id="side-panel" class="component-div ui-widget">
+          <ul>
+            <li><a href="#classes">Classes</a></li>
+            <li><a href="#filters">Filters</a></li>
+          </ul>
+          <div id="side-panel-inner">
+                <div id="classes">
+                    <div id="class-search">
+                        <form>
+                            <label for="class-search-text">Search:</label>
+                            <input id="class-search-text"
+                                   style="width: 8em;"></input>
+
+                            <label for="class-search-title"
+                                   class="ui-helper-hidden"
+                                  >Search Type</label>
+                            <input type="radio" name="class-search-type" value="title"
+                                   checked="checked">title</input>
+                            <input type="radio" name="class-search-type" value="emailcode">code</input>
+                        </form>
+                    </div>
+                    <div id="directory"></div>
+                </div>
+                <div id="filters">
+                  <form>
+                    <label for="section-filter-length"><b>Class Length</b></label><br />
+                    <div id="section-filter-length">
+                        <label for="section-filter-length-min">Min:</label>
+                        <input id="section-filter-length-min" class="numeric"></input> Hours
+                        <br />
+                        <label for="section-filter-length-max">Max:</label>
+                        <input id="section-filter-length-max" class="numeric"></input> Hours
+                    </div>
+                    <br />
+                    <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
+                    <div id="section-filter-length">
+                        <label for="section-filter-capacity-min">Min:</label>
+                        <input id="section-filter-capacity-min" class="numeric"></input> Students
+                        <br />
+                        <label for="section-filter-capacity-max">Max:</label>
+                        <input id="section-filter-capacity-max" class="numeric"></input> Students
+                    </div>
+                    <br />
+                    <label for="section-filter-grade"><b>Class Grades</b></label><br />
+                    <div id="section-filter-length">
+                        <label for="section-filter-grade-min">Min:</label>
+                        <input id="section-filter-grade-min" class="numeric"></input>
+                        <br />
+                        <label for="section-filter-grade-max">Max:</label>
+                        <input id="section-filter-grade-max" class="numeric"></input>
+                    </div>
+                    <br />
+                    <div id="section-filter-teacher">
+                        <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
+                        <input id="section-filter-teacher-text"></input>
+                    </div>
+                    <div id="section-filter-unapproved">
+                        <input id="section-filter-unapproved" type="checkbox"></input>
+                        <label for="section-filter-unapproved">Hide unapproved classes</label>
+                    </div>
+                  </form>
+                </div>
+          </div>
+        </div>
       </div>
     </td>
   </tr>
 </table>
+
+<div id="commentDialog">
+  <form>
+    <fieldset>
+      <label for="commentDialog-comment">Comment</label>
+      <input type="text" id="commentDialog-comment" class="ui-widget-content ui-corner-all" />
+      <input type="checkbox" id="commentDialog-lock" class="ui-widget-content ui-corner-all" />
+      <label for="commentDialog-lock">Lock</label>
+    </fieldset>
+  </form>
 </div>
+
 </body>
 </html>

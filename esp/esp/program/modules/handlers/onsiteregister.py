@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
@@ -53,45 +53,20 @@ class OnSiteRegister(ProgramModuleObj):
             "seq": 30
             }
 
-    def updatePaid(self, paid=True):
-        """ Create an invoice for the student and, if paid is True, create a receipt showing
-        that they have paid all of the money they owe for the program. """
-        iac = IndividualAccountingController(self.program, self.student)
-        if not iac.has_paid():
-            iac.add_required_transfers()
-            if paid:
-                iac.submit_payment(iac.amount_due())
-
-    def createBit(self, extension):
-        if extension == 'Paid':
-            self.updatePaid(True)
-            
-        if Record.user_completed(self.student, extension.lower(), self.program):
-            return False
-        else:
-            Record.objects.create(
-                user = self.student,
-                event = extension.lower(),
-                program = self.program
-            )
-            return True
 
     @main_call
     @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             form = OnSiteRegForm(request.POST)
-            
+
             if form.is_valid():
                 new_data = form.cleaned_data
                 username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
-                new_user = ESPUser(username = username,
+                new_user = ESPUser.objects.create_user(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
-                                email      = new_data['email'],
-                                is_staff   = False,
-                                is_superuser = False)
-                new_user.save()
+                                email      = new_data['email'])
 
                 self.student = new_user
 
@@ -122,37 +97,37 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-                
-                if new_data['paid']:
-                    self.createBit('paid')
-                    self.updatePaid(True)
-                else:
-                    self.updatePaid(False)
 
-                self.createBit('Attended')
+                if new_data['paid']:
+                    Record.createBit('paid', self.program, self.user)
+                    IndividualAccountingController.updatePaid(True, self.program, self.user)
+                else:
+                    IndividualAccountingController.updatePaid(False, self.program, self.user)
+
+                Record.createBit('Attended', self.program, self.user)
 
                 if new_data['medical']:
-                    self.createBit('Med')
+                    Record.createBit('Med', self.program, self.user)
 
                 if new_data['liability']:
-                    self.createBit('Liab')
+                    Record.createBit('Liab', self.program, self.user)
 
-                self.createBit('OnSite')
+                Record.createBit('OnSite', self.program, self.user)
 
-                
+
                 new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
-                
+
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
-                    'student': new_user, 
+                    'student': new_user,
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
 
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
+        return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
 
     class Meta:
         proxy = True

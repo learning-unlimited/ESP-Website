@@ -41,8 +41,14 @@ def makeNavBar(section=None, category=None, path=None):
 
     navbars = list(category.get_navbars().order_by('sort_rank'))
     navbar_context = [{'entry': x} for x in navbars]
+    if navbars:
+        next_sort_rank = navbars[-1].sort_rank + 10
+    else:
+        next_sort_rank = 0
     context = { 'entries': navbar_context,
-                'section': section }
+                'section': section,
+                'category': category,
+                'next_sort_rank': next_sort_rank }
     return context
 
 

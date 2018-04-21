@@ -2,16 +2,12 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
 <br />
-
-{{ program.mainteacherreg }}
 
 {% include "program/modules/admincore/returnlink.html" %}
 
@@ -51,36 +47,51 @@ To have good quality IDs:<br />
 <strong>ID Type</strong>
 <ul>
   <li><input type="radio" name="type" value="students" id="students"
-       onclick="document.getElementById('volunteers').disabled = true;" checked="checked" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" checked="checked" />
       <label for="students">Students</label>
   </li>
   <li><input type="radio" name="type" value="teacher" id="teachers"
-       onclick="document.getElementById('volunteers').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="teachers">Teachers</label>
   </li>
+  <li><input type="radio" name="type" value="other" id="other"
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = false;" />
+      <label for="teachers">Other Group</label>&nbsp;&nbsp;&nbsp;
+      <select name="group" id="group" disabled>
+        {% for group in groups %}
+        <option value="{{ group.id }}">{{ group.name }}</option>
+        {% endfor %}
+        <option value="" selected hidden></option>
+      </select>
+  </li>
+
   <li><input type="radio" name="type" value="volunteers" id="volunt"
-       onclick="document.getElementById('volunteers').disabled = false;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="volunt">Volunteers</label>
   </li>
+  <li><input type="radio" name="type" value="misc" id="misc"
+       onclick="document.getElementById('misc_info').disabled = false; document.getElementById('group').disabled = true;" />
+      <label for="volunt">Miscellaneous (enter info below)</label>
+  </li>
   <li><input type="radio" name="type" value="blank" id="blank"
-       onclick="document.getElementById('volunteers').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
       <label for="blank">Blank</label>
   </li>
 </ul>
 
 <br />
 <br />
-<label for="volunteers"><strong>Volunteers:</strong></label>
+<label for="misc_info"><strong>Miscellaneous:</strong></label>
 <br />
 (&quot;Name, Title&quot; on each line, without quotes.)<br />
-<textarea name="volunteers" id="volunteers" rows="25" cols="40" disabled></textarea>
+<textarea name="misc_info" id="misc_info" rows="25" cols="40" disabled></textarea>
 <br />
 <br />
 <label for="number"><strong>Number (if blank chosen) of IDs:</strong></label>
 <br />
 <input type="text" id="number" name="number" value="20" size="5" />
 <br />
-<label for="blanktitle"><strong>Title (if blank chosen) of IDs:</strong></label>
+<label for="blanktitle"><strong>Title (if "Blank" or "Other Group" chosen) of IDs:</strong></label>
 <br />
 <input type="text" id="blanktitle" name="blanktitle" value="Student" size="15" />
 <br />
@@ -88,8 +99,6 @@ To have good quality IDs:<br />
 <label for="programname"><strong>Program Name for IDs:</strong></label>
 <br />
 <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
-<br />
-(You can put HTML in here if you want...)
 <br />
 <br />
 <input type="submit" value="Generate IDs!" />

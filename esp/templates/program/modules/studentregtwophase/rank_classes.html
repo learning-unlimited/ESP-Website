@@ -73,5 +73,9 @@ for every priority slot to ensure a full schedule.
     <i class="star-fill icon-2x icon-star" data-bind="visible: interested"></i>
   </a>
   <label>Click the star to mark this class as interested.</label>
+  <br />
+  {% for pri, pri_display in priorities %}
+  <button data-bind="click: function(data) { $parent.prioritySelection[{{pri}}-1](data.id); $j('#pri-{{pri}}').trigger('change.select2'); }">Set as {{pri_display}}</button>
+  {% endfor %}
 </div>
 {% endblock %}

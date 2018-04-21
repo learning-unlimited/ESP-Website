@@ -1,6 +1,8 @@
 Workflow
 ========
 
+To set up your dev server, see `<vagrant.rst>`_.  The remainder of this document assumes you've set up a dev server, and are ready to contribute a change.
+
 Recommended one-time setup
 --------------------------
 
@@ -30,7 +32,7 @@ From the directory ``/esp``: ::
   git checkout main
   git pull
   ./update_deps.sh # on vagrant: see vagrant docs; no need to bother if deps haven’t changed
-  ./manage.py update # on vagrant: fab manage:cmd=update
+  ./manage.py update # on vagrant: fab refresh
   git checkout -b new-branch-name
 
 Write some code!

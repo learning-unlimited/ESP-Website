@@ -62,11 +62,11 @@ class FormWithRequiredCss(forms.Form):
                     field.widget.attrs['class'] += ' required'
                 else:
                     field.widget.attrs['class'] = 'required'
-                    
+
 class FormWithTagInitialValues(forms.Form):
     def __init__(self, *args, **kwargs):
-    
-        #   Get tag data in the form of a dictionary: 
+
+        #   Get tag data in the form of a dictionary:
         #     field name -> tag to look up for initial value
         if 'tag_map' in kwargs:
             tag_map = kwargs['tag_map']
@@ -85,7 +85,7 @@ class FormWithTagInitialValues(forms.Form):
                     kwargs['initial'][key] = tag_defaults[key]
             #   Remove the tag_map so as not to confuse other functions
             del kwargs['tag_map']
-    
+
         super(FormWithTagInitialValues, self).__init__(*args, **kwargs)
 
 class FormUnrestrictedOtherUser(FormWithRequiredCss):

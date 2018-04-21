@@ -1,0 +1,19 @@
+{% if show_flags %}
+    <span>
+        <button class="add-flag btn">add flag</button>
+        <div class="flag-name-list">
+            {% for flag in class.flags.all %}
+                {% include "program/modules/classflagmodule/flag_name.html" %}
+            {% endfor %}
+        </div>
+    </span>
+{% endif %}
+<div class="section-detail-include">
+    {% include "program/modules/classsearchmodule/class_detail.html" %}
+</div>
+{% if show_flags %}
+    {% for flag in class.flags.all %}
+        {% include "program/modules/classflagmodule/flag_detail.html" %}
+    {% endfor %}
+    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+{% endif %}

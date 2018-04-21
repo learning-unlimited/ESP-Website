@@ -62,18 +62,18 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # the ProgramModuleObj's user if we ever cache isCompleted().
         for student in self.students:
             get_current_request().user = student
-            self.failUnless( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
+            self.assertTrue( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
 
         # First student: Test copying of sufficiently recent profiles
         get_current_request().user = self.students[0]
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
-        self.failUnless( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
-        self.failUnless( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.failUnless( self.moduleobj.isCompleted(), "Profile failed to copy." )
-        self.failUnless( self.students[0].registrationprofile_set.count() >= 2, "Copy failed to save." )
-        self.failUnless( self.students[0].registrationprofile_set.count() <= 2, "Too many profiles." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
+        self.assertTrue( self.moduleobj.isCompleted(), "Profile failed to copy." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() >= 2, "Copy failed to save." )
+        self.assertTrue( self.students[0].registrationprofile_set.count() <= 2, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
         get_current_request().user = self.students[1]
@@ -85,10 +85,10 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         prof.last_ts = datetime.now() - timedelta(10)
         super(RegistrationProfile, prof).save()
         # Continue testing
-        self.failUnless( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )
-        self.failUnless( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.failUnless( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
-        self.failUnless( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
+        self.assertTrue( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )
+        self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
+        self.assertTrue( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
+        self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         get_current_request().user = self.students[2]
         for r in RegistrationProfile.objects.filter(user=self.students[2]):
@@ -114,7 +114,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.assertTrue('<span class="form_error">This field is required.</span>' in lines[i+j+1])
 
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
-        found_default = False        
+        found_default = False
         for line in lines[i:i+j]:
             found_default = found_default or ('<option value="" selected="selected"></option>' in line)
         self.assertTrue(found_default)

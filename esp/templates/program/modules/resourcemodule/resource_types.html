@@ -21,24 +21,42 @@
 <table align="center" cellpadding="0" cellspacing="0" width="550">
     <tr><th colspan="2" class="small">Add/modify a resource type</th></tr>
     {{ restype_form }}
+    
+    <tr><th><label>Choices:<br>(optional)</label></th>
+    <td>
+    {{ reschoice_formset.management_form }}
+    {% for choice_form in reschoice_formset %}
+        <div class="choice-formset">
+            {{ choice_form.choice }}
+        </div>
+    {% endfor %}
+    </td></tr>
+    
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Resource" /></td></tr>
     
     <tr><th colspan="2">Resource Types for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="2"><table cellpadding="0" cellspacing="0">
+    <tr><td colspan="2"><table width="100%" cellpadding="0" cellspacing="0">
     <tr>
-        <td><b>Type</b></td>
-        <td width="50%"><b>Description</b></td>
-        <td><b>Priority</b></td>
+        <td width="20%"><b>Type</b></td>
+        <td width="30%"><b>Description</b></td>
+        <td width="10%"><b>Priority</b></td>
+        <td width="30%"><b>Choices</b></td>
+        <td width="10%"></td>
     </tr>
     {% for h in resource_types %}
         <tr>
-            <td><div id="restype-{{ h.id }}">{{ h.name }}</div> {% if h.is_global %}(global){% endif %}
-            <br />
-                <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
-                <a href="/manage/{{ prog.url }}/resources/restype?op=delete&id={{ h.id }}">[Delete]</a>
-            </td>
+            <td><div id="restype-{{ h.id }}">{{ h.name }}</div> {% if h.is_global %}(global){% endif %}</td>
             <td>{{ h.description }}</td>
             <td>{{ h.priority_default }}</td>
+            <td>
+            {% for choice in h.choices %}
+            {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
+            {% endfor %}
+            </td>
+            <td>
+            <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
+            <a href="/manage/{{ prog.url }}/resources/restype?op=delete&id={{ h.id }}">[Delete]</a>
+            </td>
         </tr>
     {% endfor %}
     </table></td></tr>
@@ -54,3 +72,14 @@
 {% endifequal %}
 
 <br />
+
+<!--This branch has a fix for when the form is originally hidden-->
+<script src="http://rawgit.com/elo80ka/django-dynamic-formset/f5f68c818953ddf43ffa7cb2e9aa391c3d4dfb47/src/jquery.formset.js"></script>
+<script>
+    $j('.choice-formset').formset({
+        addText: 'add choice',
+        deleteText: 'remove',
+        addCssClass: 'formset-add',
+        deleteCssClass: 'formset-delete',
+    });
+</script>

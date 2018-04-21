@@ -17,6 +17,7 @@ var settings = {
     override_full: false,
     disable_grade_filter: false,
     show_class_titles: false,
+    show_class_rooms: false,
     show_closed_reg: false,
     hide_past_time_blocks: false,
     hide_conflicting: false,
@@ -135,7 +136,6 @@ function handle_settings_change(event)
 {
     setup_settings();
     render_table(state.display_mode, state.student_id);
-    update_checkboxes();
 }
 
 function setup_settings()
@@ -144,6 +144,7 @@ function setup_settings()
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
     $j("#show_class_titles").unbind("change");
+    $j("#show_class_rooms").unbind("change");
     $j("#show_closed_reg").unbind("change");
     $j("#hide_past_time_blocks").unbind("change");
     $j("#hide_conflicting").unbind("change");
@@ -154,6 +155,7 @@ function setup_settings()
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.show_class_titles = $j("#show_class_titles").prop("checked");
+    settings.show_class_rooms = $j("#show_class_rooms").prop("checked");
     settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
     settings.hide_past_time_blocks = $j("#hide_past_time_blocks").prop("checked");
     settings.hide_conflicting = $j("#hide_conflicting").prop("checked");
@@ -162,6 +164,7 @@ function setup_settings()
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#show_class_titles").change(handle_settings_change);
+    $j("#show_class_rooms").change(handle_settings_change);
     $j("#show_closed_reg").change(handle_settings_change);
     $j("#hide_past_time_blocks").change(handle_settings_change);
     $j("#hide_conflicting").change(handle_settings_change);
@@ -376,6 +379,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
 //  Set the currently active student
 function set_current_student(student_id)
 {
+
     if (student_id)
     {
         state.student_id = student_id;
@@ -386,6 +390,7 @@ function set_current_student(student_id)
             dataType: 'json',
             success: handle_schedule_response
         });
+
         render_classchange_table(student_id);
         $j("#status_switch").removeAttr("disabled");
         $j("#schedule_print").removeAttr("disabled");
@@ -544,6 +549,46 @@ function remove_student(student_id, section_id)
     });
 }
 
+function register_student(student_id, dialog) 
+{
+    // Add a dummy entry to data.students for now, in case anything
+    // tries to access it.
+    // The real data will be populated by the call to fetch_all() below.
+    var new_student = {};
+    new_student.id = student_id;
+    new_student.first_name = "Unknown";
+    new_student.last_name = "Student";
+    new_student.grade = 0;
+    new_student.sections = [];
+    new_student.checked_in = null;
+    data.students[student_id] = new_student;
+   
+    $j.ajax({
+            url: program_base_url + "register_student",
+            type:'POST',
+            data: {
+                csrfmiddlewaretoken: csrf_token(),
+                student_id: student_id
+            },
+
+            success: function(data) {
+                if(data.status) {
+                    fetch_all();
+                    set_current_student(parseInt(student_id));
+                    dialog.dialog("close");
+                } else {
+                    $j('#not-registered-msg').hide();
+                    $j('#noinfo-msg').show();
+                    $j("#dialog-confirm-button-register").button("disable");
+                }
+            },
+
+            error: function (result) {
+                console.log(result);
+            }
+    });
+}
+
 //  Figure out what to do when one of the checkboxes is hit.
 //  It could be either "on" or "off".
 function handle_checkbox(event)
@@ -613,14 +658,32 @@ function handle_checkbox(event)
 function autocomplete_select_item(event, ui)
 {
     event.preventDefault();
-    var student_id = ui.item.value;
     
+    last_select_event = [event, ui];
+    var student_id = ui.item.value;
     //  Refresh the table of checkboxes for the newly selected student.
-    if ((student_id > 0) && (student_id < 99999999))
-        set_current_student(parseInt(student_id));
+
+    if ((student_id > 0) && (student_id < 99999999)) 
+    {
+        if(ui.item.noProfile)
+        {
+            var dialog = $j("#dialog-confirm");
+            $j("#not-registered-msg").show();
+            $j("#noinfo-msg").hide();
+            $j("#dialog-confirm-button-register").button("enable");
+            dialog.data('student_id', student_id);
+            dialog.dialog('open');
+        }
+        else 
+        {
+            fetch_all();
+            set_current_student(parseInt(student_id));
+        }
+        
+    }    
     else
     {
-        //  console.log("Invalid student selected: " + s);
+        console.log("Invalid student selected: " + student_id);
     }
 }
 
@@ -632,18 +695,79 @@ function setup_autocomplete()
         var studentItem = {};
         studentItem.value = i;
         studentItem.label = student.first_name + " " + student.last_name + " (" + i + ")";
-        
+        studentItem.noProfile = false;
+
         student_strings.push(studentItem);
     }
+    student_strings.sort(function (a, b) {
+        if (a.label > b.label) {
+            return 1;
+        }
+        if (a.label < b.label) {
+            return -1;
+        }
+        return 0;
+    });
 
     $j("#student_selector").autocomplete({
-        source: student_strings,
+        width: 400,
+        max: 20,
+        source: function( request, response ) {
+            var results = $j.ui.autocomplete.filter(student_strings, request.term);
+            if (results.length >= 1) {
+                response(results);
+            }
+            else {
+                // expand search to entire student base
+                $j.ajax({
+                    url: program_base_url + "students_status",
+                    data: {
+                        q: request.term
+                    },
+                    success: function (new_data) {
+                        var results = [];
+                        for (var i in new_data) {
+                            var student = new_data[i];
+                            var id = student[0];
+                            var last_name = student[1];
+                            var first_name = student[2];
+                            var has_profile = student[3];
+                            var studentItem = {};
+                            studentItem.value = id;
+                            studentItem.label = first_name + " " + last_name + " (" + id + ")";
+                            studentItem.noProfile = !has_profile;
+
+                            results.push(studentItem);
+                        }
+                        response(results);
+
+                    },
+                    error: function (result) {
+                        alert(result);
+                        response(results);
+                    }
+                });
+            }
+        },
         select: autocomplete_select_item,
         focus: function( event, ui ) {
             $j( "#student_selector" ).val( ui.item.label );
             return false;
         },
-    });
+    }).data("autocomplete")._renderItem = function (ul, item) {
+        var listItem = $j("<li>")
+                        .attr( "data-value", item.value )
+                        .append("<a href='#'>" + item.label + "</a>")
+                        .data("item.autocomplete", item);
+
+        if(item.noProfile) {
+            listItem.addClass('no-profile');
+        }
+
+        listItem.appendTo(ul);
+        ul.css('z-index','30');
+        return listItem
+    }
 }
 
 function clear_table()
@@ -723,10 +847,28 @@ function render_table(display_mode, student_id)
                 new_div.addClass("section_hidden");
             
             new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
-            new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            if (settings.show_class_rooms)
+            {
+                new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            }
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-            
+
+            //  Hide the class if it started in the past (and we're not showing past timeblocks)
+            if (settings.hide_past_time_blocks && section.timeslots.length > 1)
+            {
+                for (var j in section.timeslots)
+                {
+                    var sec_ts_id = section.timeslots[j];
+                    var startTimeMillis = data.timeslots[sec_ts_id].startTimeMillis;
+                    //excludes timeslots that have a start time 20 minutes prior to the current time
+                    var differenceInMinutes = Math.floor((Date.now() - startTimeMillis)/60000);
+
+                    if (differenceInMinutes > minMinutesToHideTimeSlot)
+                        new_div.addClass("section_hidden");
+                }
+            }
+
             // Show the class title if we're not in compact mode
             if (settings.show_class_titles)
             {
@@ -780,6 +922,9 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    if (display_mode == "classchange") {
+        update_checkboxes();
+    }
     update_search_filter();
     update_category_filters(); // show/hide classes by category
 }
@@ -794,7 +939,6 @@ function render_status_table()
 function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
-    update_checkboxes();
     var studentLabel = data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")";
     add_message("Displaying class changes matrix for " + studentLabel + ", grade " + data.students[student_id].grade, "message_header");
 
@@ -809,7 +953,7 @@ function update_category_filters()
 
         if (!settings.categories_to_display[id])
         {
-            console.log("Hiding category .section_category_" + id);
+            //  console.log("Hiding category .section_category_" + id);
             $j(".section_category_" + id).not(".student_enrolled").addClass("section_category_hidden");
         }
     }
@@ -943,7 +1087,7 @@ function populate_classes()
             new_sec.capacity = parent_class.class_size_max_optimal;
         if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
             new_sec.capacity = new_sec.max_class_capacity;
-        new_sec.timeslots = new_sec.event_ids.split(",");
+        new_sec.timeslots = new_sec.event_ids;
         for (var j in new_sec.timeslots)
         {
             if (data.timeslots[parseInt(new_sec.timeslots[j])])
@@ -1173,6 +1317,29 @@ $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
     //  class changes grid will be displayed.
+
+    var dialog = $j("#dialog-confirm").dialog({
+        resizable: true,
+        width: 450,
+        height:250,
+        modal: true,
+        buttons: [{
+            id: "dialog-confirm-button-register",
+            text: "Register Account",
+            click: function() {
+                register_student($j(this).data('student_id'),$j(this));
+            }
+        },
+        {
+            id: "dialog-confirm-button-cancel",
+            text: "Cancel",
+            click: function() {
+                $j(this).dialog( "close" );
+            }
+        }]
+    });
+
+    dialog.dialog("close");
 
     $j("#messages").html("Loading class and student data...");
     

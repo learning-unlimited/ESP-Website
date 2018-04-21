@@ -2,13 +2,104 @@
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
-{% block subsection_name %}Documents for Class{% endblock %}
-
 {% block content %}
 
 {% load render_qsd %}
 
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
+<style>
+.wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.side {
+  width: 280px;
+}
+
+.summary {
+  display: block;
+  padding: 5px 5px;
+  font-size: 16px;
+  width: 100px;
+  margin: 5px 5px 5px 5px;
+  font-family: sans-serif;
+}
+
+.noselect {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input,
+select {
+  padding: 2px;
+}
+
+td.group, table.group {
+  vertical-align: top !important;
+  border-spacing: 0px 2px !important;
+  padding: 0 !important;
+}
+
+#program_form table {
+  border-width: 0px;
+  border-collapse: separate;
+  border-spacing: 5px 1px;
+}
+
+#program_form th {
+  text-align: center;
+  font-weight: bold;
+  background: #EFEFEF;
+  padding: 3px;
+  height: 80px;
+  width: 75px;
+}
+
+.label {
+  text-align: right;
+  /* font-weight:bold; */
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.proposed, .canDo, .teaching {
+  font-size: 16px !important;
+  text-align: center;
+}
+
+.proposed {
+  background: #EFEFEF;
+}
+
+.canDo {
+  background: #00FF00;
+}
+
+.teaching {
+  background: #42b3f4;
+}
+
+.headerText {
+  font-size: 18px;
+}
+
+form {
+  margin: 0px;
+  padding: 0px;
+}
+
+tbody {
+  display: table-row-group;
+  vertical-align: middle;
+  border-color: inherit;
+}
+</style>
 
 <h1>Your Availability for {{ prog.niceName }}</h1>
 
@@ -20,11 +111,11 @@ Before you can register classes in {{ prog.niceName }}, please let us know which
 </p>
 
 <p>
-You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.  If classes have already been scheduled, the times taken by the classes are grayed out below.
+You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.  If classes have already been scheduled, the times taken by the classes are indicated below.
 </p>
 
 <p>
-<b>Checked checkboxes mean that you are available at the indicated time.</b>
+You can click on individual timeblocks, highlight multiple timeblocks, and even click a block header to change your availability for the entire block.
 </p>
 {% end_inline_program_qsd_block %}
 
@@ -56,31 +147,130 @@ You submitted a schedule with no available times.  You can't register a class wi
 
 <form method="post" action="{{ request.path }}">
 <input type="hidden" name="user" value="{{ teacher_user.username }}" />
-<table cellpadding="4" cellspacing="0" align="center" width="300">
-    <tr>
-        <th colspan="2" align="center">Time Slots for {{ prog.niceName }}</th>
-    </tr>
-    {% for h in groups %}
-    {% if num_groups != 1 %}
-    <tr>
-        <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }} {% ifchanged h.selections.0.slot.start.day %}({{ h.selections.0.slot.start|date:"D M d, Y" }}){% endifchanged %}</b></th>
-    </tr>
-    {% endif %}
-        {% for t in h.selections %}
-        <tr>
-            <td align="center"><input type="checkbox" name="timeslots" value="{{ t.slot.id }}" {% if t.checked %}checked{% endif %} {% if t.taken %}disabled{% endif %} /></td>
-            <td><span style="color: {% if t.taken %}gray{% else %}black{% endif %};">{{ t.slot.short_description }}</span></td>
-        </tr>
-        {% endfor %}
-    {% endfor %}
-    <tr>
-        <td align="center" colspan="2"><input type="submit" class="fancybutton" value="Submit" /></td>
-    </tr>
-</table>
+
+<center>
+  <div class="wrap">
+    <div class="side"></div>
+    <div class="container1">
+      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
+        <tbody>
+          <tr>
+          {% for group in groups %}
+            <td class="group">
+              <table class="group" id="block_{{ forloop.counter }}">
+                <tbody>
+                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
+                    <div class="headerText">
+                      {{ group.selections.0.slot.start|date:"D" }}<br>
+                      {{ group.selections.0.slot.start|date:"d" }}<br>
+                      {{ group.selections.0.slot.start|date:"M" }}
+                    </div>
+                  </th></tr>
+                  {% for selection in group.selections %}
+                  <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ selection.slot.id }}">
+                      <input type="checkbox" class="hidden" name="timeslots" value="{{ selection.slot.id }}" {% if selection.checked %}checked{% endif %} {% if selection.taken %}disabled{% endif %}>
+                      {{ selection.slot.start|date:"g:i A"}}
+                  </td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
+          {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+    <div class="side">
+      <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+      <span class="summary" style="background-color: #00FF00;">Available</span>
+      <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+    </div>
+
+  </div>
+  <br>
+
+  <input type="submit" class="btn btn-primary" value="Submit" />
+</center>
+
 </form>
 
-<br />
-
 </div>
+
+<script>
+var setting = false;
+var down = false;
+
+//Records mousedown
+function md(td) {
+  down = true;
+  setting = !isSet(td);
+  mo(td);
+}
+
+//Enables highlighting multiple cells
+function mo(td) {
+  if (!down) return;
+  if (setting) {
+    on(td);
+  } else {
+    off(td);
+  }
+}
+
+function isSet(td) {
+  return td.className == "canDo" || td.className == "teaching";
+}
+
+//Activate checkbox
+function on(td) {
+  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+  if (td.className != "teaching") {
+  	td.className = "canDo";
+  	checkbox.checked = true;
+  }
+}
+
+//Deactivate checkbox
+function off(td) {
+  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+  if (td.className == "canDo") {
+    td.className = "proposed";
+    checkbox.checked = false;
+  }
+}
+
+//Clicking the header turns the entire block on/off
+function header(e, col) {
+  var somethingToSet = false;
+  var block = document.getElementById("block_" + col);
+  for (var i = 1; i < block.rows.length; i++) {
+    var td = block.rows[i].cells[0];
+    if (!isSet(td)) somethingToSet = true;
+  }
+  for (var i = 1; i < block.rows.length; i++) {
+    var td = block.rows[i].cells[0];
+    if (somethingToSet) {
+      on(td);
+    } else {
+      off(td);
+    }
+  }
+}
+
+//Sets classes of cells based on status of checkboxes upon loading page
+$j(document).ready(function() {
+  $j('#grid input:checked').each(function(i, e) {
+    if (this.disabled == true) {
+      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
+      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
+    } else {
+      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
+    }
+  });
+});
+
+</script>
 
 {% endblock %}

@@ -11,14 +11,13 @@
 </script>
 {% endblock %}
 
-{% block subsection_name %}Course Catalogue{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 <style type="text/css">
 input.addbutton {
   visibility: visible;
+  display: inline;
 }
 </style>
 {% endblock %}
@@ -112,7 +111,7 @@ There are no available classes during this time block for students of your grade
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
 
-{% render_class class request.user prereg_url request.GET.filter timeslot %}
+{% render_class class request.user request.GET.filter timeslot %}
 
 <br />
 {% endfor %}

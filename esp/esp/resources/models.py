@@ -34,6 +34,9 @@ Learning Unlimited, Inc.
 
 """ Models for Resources application """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
@@ -57,13 +60,11 @@ Models (see more below):
     -   Resources are the individual "things"; the group id determines which are bunched together (such as a classroom and its big chalkboards).
     -   Resource requests ask for a particular filter on resources (including, by default, just their types).
     -   Resource assignments bind resources to events.
-        
+
 Procedures:
     -   Teacher availability module creates resources for each time slot a teacher is available for.
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
-
-DISTANCE_FUNC_REGISTRY = {}
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
@@ -74,22 +75,17 @@ class ResourceType(models.Model):
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(default=-1)  #   How important is this compared to other types?
     only_one = models.BooleanField(default=False, help_text="If set, in some cases, only allow adding one instance of this resource.")
-    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")       
+    attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
     choices = ListField('attributes_pickled')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
-    distancefunc = models.TextField(
-        blank=True,
-        null=True,
-        help_text="Enter python code that assumes <tt>r1</tt> and <tt>r2</tt> are resources with this type.",
-        )               #   Defines a way to compare this resource type with others.
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):
             return self._attributes_cached
-        
+
         if self.attributes_pickled:
             try:
                 self._attributes_cached = pickle.loads(self.attributes_pickled)
@@ -140,23 +136,17 @@ class ResourceType(models.Model):
 
     def __unicode__(self):
         return 'Resource Type "%s", priority=%d' % (self.name, self.priority_default)
-    
-    class Admin:
-        pass
 
 class ResourceRequest(models.Model):
     """ A request for a particular type of resource associated with a particular clas section. """
-    
+
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     desired_value = models.TextField()
-    
+
     def __unicode__(self):
         return 'Resource request of %s for %s: %s' % (unicode(self.res_type), self.target.emailcode(), self.desired_value)
-
-    class Admin:
-        pass
 
 class ResourceGroup(models.Model):
     """ A hack to make the database handle resource group ID creation """
@@ -164,13 +154,10 @@ class ResourceGroup(models.Model):
     def __unicode__(self):
         return 'Resource group %d' % (self.id,)
 
-    class Admin:
-        pass
-    
 class Resource(models.Model):
     """ An individual resource, such as a class room or piece of equipment.  Categorize by
     res_type, attach to a user if necessary. """
-    
+
     name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
     num_students = models.IntegerField(blank=True, default=-1)
@@ -182,7 +169,10 @@ class Resource(models.Model):
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
-    
+    # If the resource has a value, which one might request in the desired_value
+    # field of ResourceRequest.
+    attribute_value = models.TextField(default="", blank=True)
+
     def __unicode__(self):
         if self.user is not None:
             return 'For %s: %s (%s)' % (unicode(self.user), self.name, unicode(self.res_type))
@@ -191,7 +181,7 @@ class Resource(models.Model):
                 return 'For %d students: %s (%s)' % (self.num_students, self.name, unicode(self.res_type))
             else:
                 return '%s (%s)' % (self.name, unicode(self.res_type))
-    
+
     def save(self, *args, **kwargs):
         if self.res_group is None:
             #   Make a new group for this
@@ -203,30 +193,14 @@ class Resource(models.Model):
 
         super(Resource, self).save(*args, **kwargs)
 
+    # I'd love to kill this, but since it's set as the __sub__, it's hard to
+    # grep to be sure it's not used.
     def distance(self, other):
         """
-        Using the custom distance function defined in the ResourceType,
-        compute the distance between this resource and another.
-        Bear in mind that this is cached using a python global registry.
+        Deprecated.
         """
-        if self.res_type_id != other.res_type_id:
-            raise ValueError("Both resources must be of the same type to compare!")
-
-        if self.res_type_id in DISTANCE_FUNC_REGISTRY:
-            return DISTANCE_FUNC_REGISTRY[self.res_type_id](self, other)
-
-        distancefunc = self.res_type.distancefunc
-
-        if distancefunc and distancefunc.strip():
-            funcstr = distancefunc.strip().replace('\r\n', '\n')
-        else:
-            funcstr = "return 0"
-        funcstr = """def _cmpfunc(r1, r2):\n%s""" % (
-            '\n'.join('    %s' % l for l in funcstr.split('\n'))
-            )
-        exec funcstr
-        DISTANCE_FUNC_REGISTRY[self.res_type_id] = _cmpfunc
-        return _cmpfunc(self, other)
+        logger.warning("Resource.distance() is deprecated.")
+        return 0
 
     __sub__ = distance
 
@@ -234,7 +208,7 @@ class Resource(models.Model):
     def identical_resources(self):
         res_list = Resource.objects.filter(name=self.name)
         return res_list
-    
+
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
         #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
@@ -248,22 +222,22 @@ class Resource(models.Model):
             if furnishings.filter(res_type=req.res_type).count() < 1:
                 result[0] = False
                 id_list.append(req.id)
-        
+
         result[1] = ResourceRequest.objects.filter(id__in=id_list)
 
         if self.num_students < req_class.num_students():
             result[0] = False
-        
+
         return result
-    
+
     def grouped_resources(self):
         if self.res_group_id is None:
             return Resource.objects.filter(id=self.id)
         return Resource.objects.filter(res_group=self.res_group_id)
-    
+
     def associated_resources(self):
         return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
-    
+
     def assign_to_section(self, section, check_constraint=True, override=False):
         if override:
             self.clear_assignments()
@@ -274,15 +248,15 @@ class Resource(models.Model):
             new_ra.save()
         else:
             raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
-        
+
     assign_to_class = assign_to_section
-        
+
     def clear_assignments(self, program=None):
         self.assignments().delete()
 
     def assignments(self):
         return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
-    
+
     def schedule_sequence(self, program):
         """ Returns a list of strings, which are the status of the room (and its identical
         companions) at each time block belonging to the program. """
@@ -295,7 +269,7 @@ class Resource(models.Model):
             if single_room.count() == 1:
                 room = single_room[0]
                 asl = list(room.assignments())
-            
+
                 if len(asl) == 0:
                     sequence.append('Empty')
                 elif len(asl) == 1:
@@ -307,19 +281,19 @@ class Resource(models.Model):
                     sequence.append(init_str)
             else:
                 sequence.append('N/A')
-                
+
         return sequence
-    
+
     def available_any_time(self, program=None):
         return (len(self.available_times(program)) > 0)
-    
+
     def available_times_html(self, program=None):
         return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
 
     def available_times(self, program=None):
         event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times(program)))
         return event_list
-    
+
     def matching_times(self, program=None):
         #   Find all times for which a resource of the same name is available.
         event_list = self.identical_resources().values_list('event', flat=True)
@@ -327,37 +301,34 @@ class Resource(models.Model):
             return Event.objects.filter(id__in=event_list, program=program).order_by('start')
         else:
             return Event.objects.filter(id__in=event_list).order_by('start')
-    
+
     @cache_function
     def is_available(self, QObjects=False, timeslot=None):
         if timeslot is None:
             test_resource = self
         else:
             test_resource = self.identical_resources().filter(event=timeslot)[0]
-        
+
         if QObjects:
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
     is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
     is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
-    
+
     def is_taken(self, QObjects=False):
         if QObjects:
             return Q(resource=self)
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
             return (collision.count() > 0)
-    
-    class Admin:
-        pass
-    
+
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
-    
+
     resource = models.ForeignKey(Resource)     #   Note: this really points to a bunch of Resources.
                                                #   See resources() below.
-                                               
+
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
     lock_level = models.IntegerField(default=0)
@@ -367,23 +338,20 @@ class ResourceAssignment(models.Model):
         if self.lock_level > 0:
             result += u' (locked)'
         return result
-    
+
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
         if self.target is not None:
             return self.target
         return self.target_subj
-    
+
     def resources(self):
         return Resource.objects.filter(res_group=self.resource.res_group)
-    
-    class Admin:
-        pass
-    
-    
+
+
 def install():
     #   Create default resource types.
-    print "Installing esp.resources initial data..."
+    logger.info("Installing esp.resources initial data...")
     if not ResourceType.objects.filter(name='Classroom').exists():
         ResourceType.objects.create(
             name='Classroom',

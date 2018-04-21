@@ -1,0 +1,30 @@
+
+{% extends "main.html" %}
+{% load i18n %}
+
+{% block title %}{{program.niceName}} - {% trans "Clear Schedule" %}{% endblock %}
+
+{% block content %}
+
+{% if num_affected_sections %}
+<form action="" method="post">
+{% csrf_token %}
+<h1>{% trans "Clear Schedule<" %}/h1>
+<div class="alert alert-error">
+  <p><h2>{% trans "Warning" %}!</h2> 
+  {% blocktrans %}
+  You are about to unschedule {{num_affected_sections}} section{{ num_affected_sections|pluralize }}.
+  Are you sure that you would like to proceed?</p>
+  {% endblocktrans %}
+</div>
+<div>
+	<button type="submit" class="btn btn-large btn-primary">{% trans "Yes, Unschedule Sections" %}</button>
+	<button type="button" class="btn btn-large">{% trans "Cancel" %}</button>
+</div>
+</form>
+{% else %}
+<div class="alert alert-info">
+ <p>{% trans "There are no sections assigned to this schedule." %}</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -27,7 +27,6 @@
     {% block javascript %}
     {% block js0 %}
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
-    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
     {% endblock js0 %}
 
     {% block jquery %}
@@ -58,7 +57,7 @@
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
-    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/x-mathjax-config">
       MathJax.Hub.Config({
       messageStyle: "none",
@@ -79,17 +78,6 @@
     <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
     <script type="text/javascript"> window.jsprettify.run(); </script>
     {% endblock js1 %}
-
-
-    {% block user_classes %}
-    <script type="text/javascript">
-      /* <![CDATA[ */
-      $j(document).ready(function() {
-      update_user_classes();
-      });
-      /* ]]> */
-    </script>
-    {% endblock user_classes %}
 
     {% block xtrajs %}{% endblock xtrajs %}
 

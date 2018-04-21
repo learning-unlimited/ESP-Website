@@ -1,0 +1,26 @@
+{% extends "main.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+
+{% inline_qsd_block "homepage_qsdpart" %}
+<div class="row-fluid">
+  <div class="span4">
+    <a href="/learn/"><h2>Learn</h2></a>
+    <p>Edit this page to serve as a starting point for your students.</p>
+  </div>
+  <div class="span4">
+    <a href="/teach/"><h2>Teach</h2></a>
+    <p>Edit this page to serve as a starting point for your teachers.</p>
+  </div>
+  <div class="span4">
+    <a href="/volunteer/"><h2>Volunteer</h2></a>
+    <p>Edit this page to serve as a starting point for your volunteers.</p>
+  </div>
+</div>
+{% end_inline_qsd_block %}
+
+{% endblock content %}
