@@ -1320,7 +1320,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def get_sections(self):
         if not hasattr(self, "_sections") or self._sections is None:
-            self._sections = self.sections.all()
+            # We explicitly order by ID to make sure we get reproducible
+            # ordering for e.g. index().
+            self._sections = self.sections.order_by('id')
 
         return self._sections
 

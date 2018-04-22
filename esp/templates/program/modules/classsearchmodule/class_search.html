@@ -19,6 +19,10 @@
 
 <h1>Search Classes for {{ program.niceName }}</h1>
 
+{% if failed_id_search %}
+<p><strong>No class with ID {{ id_query }} found. Attempting as title search:</strong></p>
+{% endif %}
+
 {% load query_builder %}
 {% render_query_builder query_builder query %}
 
