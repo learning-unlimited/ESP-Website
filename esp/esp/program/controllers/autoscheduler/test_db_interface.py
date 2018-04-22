@@ -216,7 +216,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                     sections.append(data_model.AS_ClassSection(
                         [t], duration, capacity,
                         category_id, [],
-                        section_id=section_id, parent_class_id=subject_id,
+                        section_id, subject_id,
                         grade_min=grade_min, grade_max=grade_max))
                     section_id += 1
                 subject_id += 1
@@ -241,7 +241,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             sections.append(data_model.AS_ClassSection(
                 section_teachers, duration, capacity,
                 category_id, [],
-                section_id=section_id, parent_class_id=subject_id,
+                section_id, subject_id,
                 grade_min=grade_min, grade_max=grade_max,
                 resource_requests=resource_requests))
             section_id += 1
@@ -275,8 +275,8 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.assertEqual(section1.parent_class, section2.parent_class)
         self.assertAlmostEqual(section1.duration, section2.duration, places=2)
         self.assertEqual(
-            set([t.id for t in section1.teachers]),
-            set([t.id for t in section2.teachers]))
+            set(t.id for t in section1.teachers),
+            set(t.id for t in section2.teachers))
         self.assertEqual(section1.grade_min, section2.grade_min)
         self.assertEqual(section1.grade_max, section2.grade_max)
         self.assertEqual(section1.category, section2.category)

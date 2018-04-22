@@ -216,7 +216,7 @@ class ConsistencyCheckerTest(unittest.TestCase):
 
         sched.classrooms["10-250"].availability.append(new_roomslot)
         new_section = data_model.AS_ClassSection(
-                [sched.teachers[1]], 0.83, 20, 0, [new_roomslot], 3)
+                [sched.teachers[1]], 0.83, 20, 0, [new_roomslot], 3, 0)
         new_roomslot.assigned_section = new_section
         with self.assertRaises(ConsistencyError):
             # Section isn't registered

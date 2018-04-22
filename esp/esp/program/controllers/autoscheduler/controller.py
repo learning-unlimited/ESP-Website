@@ -1,6 +1,7 @@
 """A controller for the automatic scheduling assistant."""
 
 import datetime
+import logging
 from django.core.exceptions import ObjectDoesNotExist
 
 from esp.program.models import ClassSection
@@ -62,7 +63,7 @@ class AutoschedulerController(object):
     @staticmethod
     def constraint_options(prog):
         """Map from constraint names to (True/False, description)."""
-        required_constraints = constraints.get_required_constraints()
+        required_constraints = constraints.get_required_constraint_names()
         overrides = {c: "Required" for c in required_constraints}
         loaded_constraints = db_interface.load_constraints(prog, overrides)
         constraint_options = {
@@ -180,9 +181,10 @@ class AutoschedulerController(object):
             final_scores, final_total_score = \
                 self.optimizer.manipulator.scorer.get_all_score_schedule()
             diffs = []
-            for (scorer, weight, old_score), (scorer2, weight, new_score) in \
+            for (scorer, weight, old_score), (scorer2, weight2, new_score) in \
                     zip(self.initial_scores, final_scores):
                 assert (scorer == scorer2), "Scorers changed"
+                assert (weight == weight2), "Weights changed"
                 diffs.append((
                     scorer, weight,
                     (new_score - old_score) * len(
@@ -273,7 +275,13 @@ class AutoschedulerController(object):
     def simplify_history(self, history):
         """Given a history object, this simplifies it. It is NOT necessarily an
         equivalent object, but it should be more understandable, e.g. if you
-        unschedule and reschedule a class, it will count as a move."""
+        unschedule and reschedule a class, it will count as a move. In
+        particular, although in a sense the simplified history is semantically
+        equivalent, the simplified history may not be executable. For example,
+        when executing a 3-way cycle of classes, the original history may
+        unschedule all 3 first and then reschedule all 3 in their new slots,
+        but the simplified history will have 3 moves, all of which will fail
+        because the destination is occupied."""
         # Dict mapping from section to [original_roomslot, final_roomslot]
         sections = {}
         for action in history:
@@ -298,6 +306,7 @@ class AutoschedulerController(object):
                 else:
                     sections[section][1] = None
             elif action["action"] == "swap":
+                # This loop iterates over exactly two sections.
                 for section, old_r, new_r in zip(
                         action["sections"], action["original_roomslots"],
                         reversed(action["original_roomslots"])):
@@ -336,18 +345,19 @@ class AutoschedulerController(object):
             changed_sections.add(action["section"])
         scheduling_hashes = {
             section.id: section.initial_state for section in changed_sections}
-        print scheduling_hashes
+        logging.info(scheduling_hashes)
         return [
             [self.optimizer.manipulator.jsonify_history(), scheduling_hashes],
             self.options]
 
     def import_assignments(self, data):
         history, scheduling_hashes = data
-        print scheduling_hashes
+        logging.info(scheduling_hashes)
         for section, scheduling_hash in scheduling_hashes.iteritems():
-            print self.schedule.class_sections[int(section)].initial_state
-            if self.schedule.class_sections[int(section)].initial_state != \
-                    scheduling_hash:
+            initial_state = self.schedule.class_sections[
+                int(section)].initial_state
+            logging.info(initial_state)
+            if initial_state != scheduling_hash:
                 emailcode = ClassSection.objects.get(
                         id=int(section)).emailcode()
                 raise SchedulingError(

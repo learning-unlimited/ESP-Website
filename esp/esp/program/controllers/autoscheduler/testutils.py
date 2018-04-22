@@ -9,7 +9,7 @@ def create_test_schedule_1():
     timeslots = [data_model.AS_Timeslot(
         datetime(2017, 2, 2, 10+i, 5),
         datetime(2017, 2, 2, 10+i, 55),
-        event_id=i + 1) for i in xrange(6)]
+        i + 1) for i in xrange(6)]
     restype = data_model.AS_ResourceType("Projector", 0, "Yes")
     classrooms = {
         "26-100": data_model.AS_Classroom("26-100", 50, timeslots),
@@ -23,10 +23,10 @@ def create_test_schedule_1():
     }
     sections = {
         1: data_model.AS_ClassSection(
-            [teachers[1]], 0.83, 20, 0, [], 1,
+            [teachers[1]], 0.83, 20, 0, [], 1, 0,
             resource_requests={restype.name: restype}),
         2: data_model.AS_ClassSection(
-            [teachers[2], teachers[3]], 1.83, 50, 1, [], 2)}
+            [teachers[2], teachers[3]], 1.83, 50, 1, [], 2, 0)}
     return data_model.AS_Schedule(timeslots=timeslots, class_sections=sections,
                                   teachers=teachers, classrooms=classrooms)
 
@@ -43,7 +43,7 @@ def create_test_schedule_3():
     timeslots_extra = [data_model.AS_Timeslot(
         datetime(2017, 2, 3, 10+i, 5),
         datetime(2017, 2, 3, 10+i, 55),
-        event_id=i + 7) for i in xrange(6)]
+        i + 7) for i in xrange(6)]
     sched.timeslots += timeslots_extra
     sched.timeslot_dict = sched.build_timeslot_dict()
     lunch_timeslots = {

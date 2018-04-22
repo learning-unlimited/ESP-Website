@@ -31,6 +31,7 @@ seems too fragile.)
 """
 
 import inspect
+import logging
 
 import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.config as config
@@ -66,9 +67,8 @@ class BaseConstraint(object):
 
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Assuming that we start with a valid schedule, returns a
-        ConstraintViolation
-        if scheduling the section starting at the given roomslot would
-        violate the constraint, None otherwise."""
+        ConstraintViolation if scheduling the section starting at the given
+        roomslot would violate the constraint, None otherwise."""
         raise NotImplementedError
 
     def check_move_section(self, section, start_roomslot, schedule):
@@ -97,14 +97,14 @@ class CompositeConstraint(BaseConstraint):
         constraints, as well as all the required constraints. You can also use
         'all' for the list of constraint names."""
         self.constraints = []
-        available_constraints = get_all_constraints_dict()
-        required_constraints = get_required_constraints()
+        available_constraints = get_all_constraint_classes_dict()
+        required_constraints = get_required_constraint_names()
         if constraint_names == "all":
             constraints_to_use = available_constraints
         else:
             constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
-            print("Using constraint {}".format(constraint))
+            logging.info("Using constraint {}".format(constraint))
             self.constraints.append(
                 available_constraints[constraint](**kwargs))
 
@@ -287,7 +287,7 @@ class PreconditionConstraint(BaseConstraint):
     def check_schedule_section(self, section, start_roomslot, schedule):
         """Ensures that the section to be scheduled is not already
         scheduled."""
-        if not (len(section.assigned_roomslots) == 0):
+        if section.assigned_roomslots:
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Section is already scheduled.")
@@ -295,7 +295,7 @@ class PreconditionConstraint(BaseConstraint):
 
     def check_move_section(self, section, start_roomslot, schedule):
         """Ensures that the section to be section is already scheduled."""
-        if not (len(section.assigned_roomslots) != 0):
+        if not section.assigned_roomslots:
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Section isn't scheduled")
@@ -303,7 +303,7 @@ class PreconditionConstraint(BaseConstraint):
 
     def check_unschedule_section(self, section, schedule):
         """Ensures that the section is already scheduled."""
-        if not (len(section.assigned_roomslots) != 0):
+        if not section.assigned_roomslots:
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Section isn't scheduled")
@@ -312,12 +312,12 @@ class PreconditionConstraint(BaseConstraint):
     def check_swap_sections(self, section1, section2, schedule):
         """Ensures that both sections are already scheduled and
         they are the same duration"""
-        if not (len(section1.assigned_roomslots) ==
-                section2.assigned_roomslots):
+        if (len(section1.assigned_roomslots) !=
+                len(section2.assigned_roomslots)):
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Sections aren't assigned to the same number of roomslots")
-        if not len(section1.assigned_roomslots) != 0:
+        if not section1.assigned_roomslots:
             return ConstraintViolation(
                 self.__class__.__name__,
                 "Sections aren't scheduled")
@@ -760,7 +760,7 @@ class TeacherConcurrencyConstraint(BaseConstraint):
         return None
 
 
-def get_all_constraints_dict():
+def get_all_constraint_classes_dict():
     return {
         name: item for name, item in globals().iteritems()
         if inspect.isclass(item)
@@ -768,13 +768,14 @@ def get_all_constraints_dict():
         and item not in [BaseConstraint, CompositeConstraint]}
 
 
-def get_required_constraints():
+def get_required_constraint_names():
     return [
-        name for name, constraint in get_all_constraints_dict().iteritems()
-        if constraint.required]
+        name for name, constraint in
+        get_all_constraint_classes_dict().iteritems() if constraint.required]
 
 
-def get_optional_constraints():
+def get_optional_constraint_names():
     return [
-        name for name, constraint in get_all_constraints_dict().iteritems()
-        if not constraint.required]
+        name for name, constraint in
+        get_all_constraint_classes_dict().iteritems() if not
+        constraint.required]

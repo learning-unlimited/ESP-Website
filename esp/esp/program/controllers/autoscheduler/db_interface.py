@@ -5,6 +5,7 @@ database interaction happens.
 """
 
 import json
+import logging
 
 from django.db.models import Count
 from django.db import transaction
@@ -12,6 +13,7 @@ from django.db import transaction
 from esp.resources.models import \
     ResourceType, Resource, ResourceAssignment, ResourceRequest
 from esp.program.models import ClassSection
+from esp.program.models.class_ import ACCEPTED
 from esp.users.models import ESPUser, UserAvailability
 from esp.cal.models import Event
 from esp.program.modules import module_ext
@@ -36,8 +38,8 @@ def load_schedule_from_db(
     for a ResourceAssignment."""
     ESPUser.create_membership_methods()
 
-    timeslots = \
-        sorted(batch_convert_events(program.getTimeSlots(), program))
+    timeslots = sorted(
+        batch_convert_events(program.getTimeSlots(), program))
 
     lunch_events = Event.objects.filter(
             meeting_times__parent_class__category__category="Lunch",
@@ -49,10 +51,10 @@ def load_schedule_from_db(
                            lunch_timeslots=lunch_timeslots,
                            exclude_locked=exclude_locked)
 
-    schedule.class_sections, schedule.teachers, schedule.classrooms = \
+    schedule.class_sections, schedule.teachers, schedule.classrooms = (
         load_sections_and_teachers_and_classrooms(
             schedule, require_approved, exclude_lunch,
-            exclude_walkins, exclude_scheduled, exclude_locked)
+            exclude_walkins, exclude_scheduled, exclude_locked))
 
     schedule.run_consistency_checks()
     schedule.run_constraint_checks()
@@ -67,7 +69,7 @@ def load_sections_and_teachers_and_classrooms(
     """Loads sections, teachers, and classrooms into the schedule from the
     database. Helper function for load_schedule_from_db, to make use of the
     schedule's construction of the timeslot dict."""
-    print "Loading"
+    logging.info("Loading")
 
     # Get all the approved class sections for the program
     sections = ClassSection.objects.filter(
@@ -75,7 +77,7 @@ def load_sections_and_teachers_and_classrooms(
             ).select_related()
 
     if require_approved:
-        sections = sections.filter(status=10)
+        sections = sections.filter(status=ACCEPTED)
     if exclude_scheduled:
         # Exclude all already-scheduled classes
         sections = sections.annotate(
@@ -94,7 +96,7 @@ def load_sections_and_teachers_and_classrooms(
                     "cls_id", flat=True)
         sections = sections.exclude(id__in=locked_sections)
 
-    print "Filtered"
+    logging.info("Filtered")
 
     # For all excluded sections, remove their availabilities. What literally
     # happens here is that teacher availabilities are removed for every
@@ -121,8 +123,8 @@ def load_sections_and_teachers_and_classrooms(
             if teacher in teacher_ids:
                 teaching = teaching_times_by_teacher[teacher]
                 times = (event_start, event_end)
-                if event_id not in teaching \
-                        and times in schedule.timeslot_dict:
+                if (event_id not in teaching
+                        and times in schedule.timeslot_dict):
                     availabilities_by_teacher[teacher].append(
                         schedule.timeslot_dict[times])
     else:
@@ -137,18 +139,18 @@ def load_sections_and_teachers_and_classrooms(
         teacher: AS_Teacher(
             availabilities_by_teacher[teacher], teacher, teacher in admins)
         for teacher in teacher_ids}
-    print "Teachers loaded"
+    logging.info("Teachers loaded")
 
     known_sections = {section.id: section for section in sections}
-    rooms_by_section, meeting_times_by_section, requests_by_section = \
-        load_section_assignments(known_sections)
-    print "Assignments loaded"
+    rooms_by_section, meeting_times_by_section, requests_by_section = (
+        load_section_assignments(known_sections))
+    logging.info("Assignments loaded")
     # Load classrooms from groupedClassrooms
     classrooms = convert_classroom_resources(
             schedule.program.getClassrooms(), schedule.program,
             schedule.timeslot_dict, known_sections,
             rooms_by_section, meeting_times_by_section)
-    print "Classrooms loaded"
+    logging.info("Classrooms loaded")
 
     section_teachers = sections.values_list("id", "parent_class__teachers")
     teachers_by_section = {section: [] for section in known_sections}
@@ -159,10 +161,10 @@ def load_sections_and_teachers_and_classrooms(
         sections, schedule.program, teachers_by_section,
         schedule.timeslot_dict, classrooms,
         rooms_by_section, meeting_times_by_section, requests_by_section)
-    print "Sections converted"
+    logging.info("Sections converted")
 
     sections_dict = {sec.id: sec for sec in converted_sections}
-    print "Sections dict loaded"
+    logging.info("Sections dict loaded")
 
     # Return!
     return sections_dict, teachers, classrooms
@@ -171,7 +173,7 @@ def load_sections_and_teachers_and_classrooms(
 @util.timed_func("db_interface_save")
 def save(schedule, check_consistency=True, check_constraints=True):
     """Saves the schedule."""
-    print "Executing save."
+    logging.info("Executing save.")
     if check_consistency:
         # Run a consistency check first.
         schedule.run_consistency_checks()
@@ -181,12 +183,13 @@ def save(schedule, check_consistency=True, check_constraints=True):
 
     # Find all sections which we've actually moved.
     changed_sections = set(
-        [section for section in schedule.class_sections.itervalues()
-         if section.initial_state
-         != section.scheduling_hash()])
+        section for section in schedule.class_sections.itervalues()
+        if section.initial_state
+        != section.scheduling_hash())
     # Note: we need to be careful not to cache anything after we save
     # because a rollback will not roll back the cache. Ideally we would flush
-    # the relevant entries of cache but I don't know how to do that.
+    # the relevant entries of cache but I don't know how to do that. (TODO)
+    # Right now we simply try to avoid calling cached functions.
     with transaction.atomic():
         ajax_change_log = get_ajax_change_log(schedule.program)
         section_objs = ClassSection.objects.filter(
@@ -200,8 +203,8 @@ def save(schedule, check_consistency=True, check_constraints=True):
             possible_conflicts = []
             for teacher in section.teachers:
                 teacher_obj = ESPUser.objects.get(id=teacher.id)
-                other_sections = \
-                    teacher_obj.getTaughtSections(schedule.program)
+                other_sections = teacher_obj.getTaughtSections(
+                    schedule.program)
                 possible_conflicts.append(
                         (teacher.id, [other for other in other_sections
                                       if other.id != section.id]))
@@ -238,8 +241,8 @@ def save(schedule, check_consistency=True, check_constraints=True):
                 unschedule_section(so, ajax_change_log)
 
         check_can_schedule_sections(section_infos, schedule)
-        for section, section_obj, possible_conflicts, meeting_times, \
-                room_objs in section_infos:
+        for (section, section_obj, possible_conflicts, meeting_times,
+                room_objs) in section_infos:
             if section.is_scheduled():
                 schedule_section(
                     section_obj, meeting_times, room_objs[0], ajax_change_log)
@@ -317,7 +320,7 @@ def ensure_section_not_moved(section, as_section):
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    print "Unscheduling {}".format(section.emailcode())
+    logging.info("Unscheduling {}".format(section.emailcode()))
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
@@ -328,7 +331,7 @@ def unschedule_section(
 @util.timed_func("db_interface_schedule_section")
 def schedule_section(section, times, room, ajax_change_log):
     """Schedules the section in the times and rooms."""
-    print "Scheduling section."
+    logging.info("Scheduling section.")
     section.assign_meeting_times(times)
     status, errors = section.assign_room(room)
     if not status:
@@ -364,8 +367,8 @@ def convert_classection_obj(
     of timeslots for availabilities. """
     if not section_satisfies_constraints(
             section, rooms_by_section, meeting_times_by_section):
-        print ("Warning: Autoscheduler can't handle section {}"
-               .format(section.emailcode()))
+        logging.info("Warning: Autoscheduler can't handle section {}"
+                     .format(section.emailcode()))
         return None
 
     teachers = teachers_by_section[section.id]
@@ -389,11 +392,11 @@ def convert_classection_obj(
             grade_max=section.parent_class.grade_max,
             resource_requests=resource_requests_dict)
 
-    assert scheduling_hash_of(
-            section, rooms_by_section, meeting_times_by_section) == \
-        as_section.initial_state, \
-        ("AS_ClassSection state doesn't match ClassSection state "
-         "for section {}".format(section.emailcode()))
+    assert (scheduling_hash_of(
+            section, rooms_by_section, meeting_times_by_section) ==
+            as_section.initial_state), (
+        "AS_ClassSection state doesn't match ClassSection state "
+        "for section {}".format(section.emailcode()))
 
     return as_section
 
@@ -426,8 +429,8 @@ def load_section_assignments(section_ids):
     meeting_times = ClassSection.objects.filter(
         id__in=section_ids
     ).values_list("id", "meeting_times")
-    all_meeting_times = set([time for sec, time in meeting_times if time is
-                            not None])
+    all_meeting_times = set(time for sec, time in meeting_times if time is
+                            not None)
     meeting_time_objs = Event.objects.filter(
         id__in=all_meeting_times
     ).select_related()
@@ -443,8 +446,8 @@ def load_section_assignments(section_ids):
     requests_by_section = {section: [] for section in section_ids}
     for request in requests:
         requests_by_section[request.target.id].append(request)
-    return rooms_by_section, meeting_times_by_section, \
-        requests_by_section
+    return (rooms_by_section, meeting_times_by_section,
+            requests_by_section)
 
 
 @util.timed_func("db_interface_section_satisfies_constraints")
@@ -474,8 +477,8 @@ def section_satisfies_constraints(
         start_time = meeting_times[0].start
         end_time = meeting_times[-1].end
         scheduled_duration = util.hours_difference(start_time, end_time)
-        if abs(scheduled_duration - float(section_obj.duration)) \
-                > config.DELTA_TIME:
+        if (abs(scheduled_duration - float(section_obj.duration))
+                > config.DELTA_TIME):
             return False
     return True
 
@@ -553,9 +556,8 @@ def load_resource_constraints(
             in util.override(specs).iteritems()
             if spec != "None" and spec is not None}
     else:
-        valid_res_types = \
-            ResourceType.objects.filter(program=program).values_list(
-                    "name", flat=True)
+        valid_res_types = ResourceType.objects.filter(
+            program=program).values_list("name", flat=True)
         return resource_checker.create_resource_criteria(
                 specs, valid_res_types)
 
@@ -590,9 +592,8 @@ def load_resource_scoring(
             in util.override(specs).iteritems()
             if spec != "None" and spec is not None}
     else:
-        valid_res_types = \
-            ResourceType.objects.filter(program=program).values_list(
-                    "name", flat=True)
+        valid_res_types = ResourceType.objects.filter(
+            program=program).values_list("name", flat=True)
         return resource_checker.create_resource_criteria(
                 specs, valid_res_types, use_weights=True)
 
@@ -602,12 +603,15 @@ def batch_convert_sections(
         sections, program, teachers_by_section, timeslot_dict, rooms,
         rooms_by_section, meeting_times_by_section,
         requests_by_section):
-    return [s for s in
-            map(lambda s: convert_classection_obj(
-                s, program, teachers_by_section, timeslot_dict, rooms,
-                rooms_by_section, meeting_times_by_section,
-                requests_by_section), sections)
-            if s is not None]
+    converted_sections = []
+    for s_obj in sections:
+        s = convert_classection_obj(
+            s_obj, program, teachers_by_section,
+            timeslot_dict, rooms, rooms_by_section,
+            meeting_times_by_section, requests_by_section)
+        if s is not None:
+            converted_sections.append(s)
+    return converted_sections
 
 
 @util.timed_func("db_interface_scheduling_hash_of")
@@ -615,14 +619,15 @@ def scheduling_hash_of(
         section, rooms_by_section=None, meeting_times_by_section=None):
     """Creates a unique hash based on the timeslots and rooms assigned to a
     section."""
-    meeting_times = meeting_times_by_section[section.id] \
-        if meeting_times_by_section is not None \
-        else section.meeting_times.all()
+    if meeting_times_by_section is not None:
+        meeting_times = meeting_times_by_section[section.id]
+    else:
+        meeting_times = section.meeting_times.all()
     meeting_times = sorted([(str(e.start), str(e.end))
                             for e in meeting_times])
-    rooms = rooms_by_section[section.id] if rooms_by_section is not None \
-        else section.classrooms()
-    rooms = sorted(list(set([r.name for r in rooms])))
+    rooms = (rooms_by_section[section.id] if rooms_by_section is not None
+             else section.classrooms())
+    rooms = sorted(list(set(r.name for r in rooms)))
     return json.dumps([meeting_times, rooms])
 
 
@@ -659,9 +664,10 @@ def convert_classroom_resources(
             assignments_dict[(resource, event)] = []
         assignments_dict[
             (resource, event)].append(target)
+
+    classroom_restype = ResourceType.get_or_create("Classroom")
     for classroom in classrooms:
-        assert classroom.res_type == \
-            ResourceType.get_or_create("Classroom")
+        assert classroom.res_type == classroom_restype
         assignments = assignments_dict.get(
             (classroom.name, classroom.event.id), [])
         unavailable = False
@@ -684,14 +690,14 @@ def convert_classroom_resources(
                 unavailable = True
         if not unavailable:
             if classroom.name not in classroom_info_dict:
-                furnishing_objs = \
-                    furnishings_by_group[classroom.res_group_id] \
-                    if classroom.res_group_id is not None else []
+                furnishing_objs = (
+                    furnishings_by_group[classroom.res_group_id]
+                    if classroom.res_group_id is not None else [])
                 furnishings = batch_convert_resources(
                     furnishing_objs)
                 furnishings_dict = {r.name: r for r in furnishings}
-                classroom_info_dict[classroom.name] = \
-                    ([], classroom.num_students, furnishings_dict)
+                classroom_info_dict[classroom.name] = (
+                    ([], classroom.num_students, furnishings_dict))
             event = classroom.event
             timeslot = timeslot_dict[(event.start, event.end)]
             classroom_info_dict[classroom.name][0].append(timeslot)
@@ -713,7 +719,7 @@ def convert_event(event, program):
 
 @util.timed_func("db_interface_batch_convert_events")
 def batch_convert_events(events, program):
-    return map(lambda e: convert_event(e, program), events)
+    return [convert_event(e, program) for e in events]
 
 
 @util.timed_func("db_interface_batch_find_events")
@@ -733,8 +739,7 @@ def batch_find_events(events, timeslot_dict):
 
 @util.timed_func("db_interface_batch_convert_roomslots")
 def batch_convert_roomslots(events, room, timeslot_dict):
-    return map(lambda e: AS_RoomSlot(
-        timeslot_dict[(e.start, e.end)], room), events)
+    return [AS_RoomSlot(timeslot_dict[(e.start, e.end)], room) for e in events]
 
 
 def convert_restypes(restype, value=""):
@@ -745,12 +750,10 @@ def convert_restypes(restype, value=""):
 @util.timed_func("db_interface_batch_convert_resource_requests")
 def batch_convert_resource_requests(res):
     """Converts from ResourceRequests to AS_ResourceTypes."""
-    return map(
-        lambda r: convert_restypes(r.res_type, r.desired_value), res)
+    return [convert_restypes(r.res_type, r.desired_value) for r in res]
 
 
 @util.timed_func("db_interface_batch_convert_resources")
 def batch_convert_resources(res):
     """Converts from Resources to AS_ResourceTypes."""
-    return map(
-        lambda r: convert_restypes(r.res_type, r.attribute_value), res)
+    return [convert_restypes(r.res_type, r.attribute_value) for r in res]

@@ -149,7 +149,7 @@ history of manipulations performed and allows actions to be undone. History can
 also be rendered into or replayed from a JSON object.
 
 data_model.py
-~~~~~~~~~----
+~~~~~~~~~~~~~
 
 Defines the in-memory representation of a schedule.
 

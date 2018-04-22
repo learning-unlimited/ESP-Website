@@ -52,49 +52,8 @@ class ResourceCriterion(object):
                 "ResourceCriteron spec must match 'if PREMISE then CONCLUSION")
         matchers = []
         for group in criterion.group(1, 2):
-            resource_request_match = re.match(
-                r"^(not )?section requests (.+?)( with (.+))?$", group)
-            if resource_request_match:
-                negate, res_type, value_regex = \
-                    resource_request_match.group(1, 2, 4)
-                if res_type not in valid_res_types:
-                    raise ValueError(
-                        "Resource type {} doesn't exist".format(res_type))
-                if value_regex:
-                    matcher = ResourceRequestMatcher(res_type, value_regex)
-                else:
-                    matcher = ResourceRequestMatcher(res_type)
-                if negate:
-                    matcher = NegatingSectionMatcher(matcher)
-                matchers.append(matcher)
-                continue
-            resource_classroom_match = re.match(
-                r"^(not )?classroom has (.+?)( with (.+))?$", group)
-            if resource_classroom_match:
-                negate, res_type, value_regex = \
-                    resource_classroom_match.group(1, 2, 4)
-                if value_regex:
-                    matcher = ResourceClassroomMatcher(res_type, value_regex)
-                else:
-                    matcher = ResourceClassroomMatcher(res_type)
-                if negate:
-                    matcher = NegatingClassroomMatcher(matcher)
-                matchers.append(matcher)
-                continue
-            classroom_name_match = re.match(
-                r"^(not )?classroom matches (.+)$", group)
-            if classroom_name_match:
-                negate, name_regex = classroom_name_match.groups()
-                matcher = ClassroomNameMatcher(name_regex)
-                if negate:
-                    matcher = NegatingClassroomMatcher(matcher)
-                matchers.append(matcher)
-                continue
-            if group == "any section":
-                matchers.append(TrivialSectionMatcher())
-                continue
-            raise ValueError(
-                "Clause '{}' doesn't match a valid pattern.".format(group))
+            matchers.append(ResourceCriterion.create_match_from_clause(
+                group, valid_res_types))
         if isinstance(matchers[0], BaseSectionMatcher):
             condition_on_section = True
             section_matcher, classroom_matcher = matchers
@@ -107,6 +66,48 @@ class ResourceCriterion(object):
                 raise ValueError("Cannot specify two classroom matchers")
         return ResourceCriterion(section_matcher, classroom_matcher,
                                  condition_on_section, name)
+
+    @staticmethod
+    def create_match_from_clause(group, valid_res_types):
+        resource_request_match = re.match(
+            r"^(not )?section requests (.+?)( with (.+))?$", group)
+        if resource_request_match:
+            negate, res_type, value_regex = \
+                resource_request_match.group(1, 2, 4)
+            if res_type not in valid_res_types:
+                raise ValueError(
+                    "Resource type {} doesn't exist".format(res_type))
+            if value_regex:
+                matcher = ResourceRequestMatcher(res_type, value_regex)
+            else:
+                matcher = ResourceRequestMatcher(res_type)
+            if negate:
+                matcher = NegatingSectionMatcher(matcher)
+            return matcher
+        resource_classroom_match = re.match(
+            r"^(not )?classroom has (.+?)( with (.+))?$", group)
+        if resource_classroom_match:
+            negate, res_type, value_regex = \
+                resource_classroom_match.group(1, 2, 4)
+            if value_regex:
+                matcher = ResourceClassroomMatcher(res_type, value_regex)
+            else:
+                matcher = ResourceClassroomMatcher(res_type)
+            if negate:
+                matcher = NegatingClassroomMatcher(matcher)
+            return matcher
+        classroom_name_match = re.match(
+            r"^(not )?classroom matches (.+)$", group)
+        if classroom_name_match:
+            negate, name_regex = classroom_name_match.groups()
+            matcher = ClassroomNameMatcher(name_regex)
+            if negate:
+                matcher = NegatingClassroomMatcher(matcher)
+            return matcher
+        if group == "any section":
+            return TrivialSectionMatcher()
+        raise ValueError(
+            "Clause '{}' doesn't match a valid pattern.".format(group))
 
     def check_match(self, section, room):
         """Returns False if the premise holds but the conclusion fails, i.e.

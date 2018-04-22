@@ -92,7 +92,7 @@ class AS_Schedule(object):
 class AS_ClassSection(object):
     def __init__(self, teachers, duration, capacity,
                  category, assigned_roomslots,
-                 section_id=0, parent_class_id=0,
+                 section_id, parent_class_id,
                  grade_min=7, grade_max=12,
                  resource_requests=None):
         self.id = section_id
@@ -157,13 +157,13 @@ class AS_ClassSection(object):
         like a pain"""
         meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
                                 for e in self.assigned_roomslots])
-        rooms = sorted(list(set([r.room.name for r in
-                                self.assigned_roomslots])))
+        rooms = sorted(list(set(r.room.name for r in
+                                self.assigned_roomslots)))
         return json.dumps([meeting_times, rooms])
 
 
 class AS_Teacher(object):
-    def __init__(self, availability, teacher_id=0, is_admin=False):
+    def __init__(self, availability, teacher_id, is_admin=False):
         self.id = teacher_id
         self.availability = availability if availability is not None \
             else []
@@ -240,7 +240,7 @@ class AS_Classroom(object):
 @total_ordering
 class AS_Timeslot(object):
     """A timeslot, not specific to any teacher or class or room."""
-    def __init__(self, start, end, event_id=4, associated_roomslots=None):
+    def __init__(self, start, end, event_id, associated_roomslots=None):
         self.id = event_id
         self.start = start
         self.end = end
@@ -309,7 +309,7 @@ class AS_RoomSlot(object):
 
 
 class AS_ResourceType(object):
-    def __init__(self, name, restype_id=5, value=""):
+    def __init__(self, name, restype_id, value=""):
         self.id = restype_id
         self.name = name
         self.value = value  # Not in use yet

@@ -7,6 +7,7 @@ an AS_Schedule, then we expect these two different ways to always agree with
 each other. Conversely, it is expected to be impossible for a schedule to fail
 a consistency check unless there are bugs in the code.
 """
+import logging
 
 from esp.program.controllers.autoscheduler import util
 
@@ -27,7 +28,7 @@ class ConsistencyChecker:
         which are named check_[something]_consistency."""
         for attr in dir(self):
             if attr.startswith("check_") and attr.endswith("_consistency"):
-                print("Running: {}".format(attr))
+                logging.info("Running: {}".format(attr))
                 getattr(self, attr)(schedule)
 
     def check_availability_dict_consistency(self, schedule):
@@ -50,8 +51,8 @@ class ConsistencyChecker:
                     raise ConsistencyError(
                         ("Teacher availability dict key/value mismatch for "
                          "teacher {}").format(teacher.id))
-            if set([t.id for t in teacher.availability]) != set(
-                    [t.id for t in teacher.availability_dict.itervalues()]):
+            if set(t.id for t in teacher.availability) != set(
+                    t.id for t in teacher.availability_dict.itervalues()):
                 raise ConsistencyError(
                     "Teacher {} availability list and dict don't match"
                     .format(teacher.id))
@@ -64,11 +65,12 @@ class ConsistencyChecker:
                     schedule.lunch_timeslots[day],
                     schedule.lunch_timeslots[day][1:]):
                 if timeslot1 == timeslot2:
-                    raise ConsistencyError("Duplicate timeslots detected.")
+                    raise ConsistencyError(
+                        "Duplicate lunch timeslots detected.")
                 if timeslot1 > timeslot2:
-                    raise ConsistencyError("Timeslots weren't sorted.")
+                    raise ConsistencyError("Lunch timeslots weren't sorted.")
                 if timeslot1.end > timeslot2.start:
-                    raise ConsistencyError("Timeslots are overlapping.")
+                    raise ConsistencyError("Lunch timeslots are overlapping.")
             for timeslot in schedule.lunch_timeslots[day]:
                 if (timeslot.start.year, timeslot.start.month,
                         timeslot.start.day) != day:
