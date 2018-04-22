@@ -26,6 +26,8 @@ from esp.program.controllers.autoscheduler.data_model import \
 from esp.program.controllers.autoscheduler import \
     util, config, resource_checker
 
+logger = logging.getLogger(__name__)
+
 
 @util.timed_func("db_interface_load_schedule_from_db")
 def load_schedule_from_db(
@@ -69,7 +71,7 @@ def load_sections_and_teachers_and_classrooms(
     """Loads sections, teachers, and classrooms into the schedule from the
     database. Helper function for load_schedule_from_db, to make use of the
     schedule's construction of the timeslot dict."""
-    logging.info("Loading")
+    logger.info("Loading")
 
     # Get all the approved class sections for the program
     sections = ClassSection.objects.filter(
@@ -96,7 +98,7 @@ def load_sections_and_teachers_and_classrooms(
                     "cls_id", flat=True)
         sections = sections.exclude(id__in=locked_sections)
 
-    logging.info("Filtered")
+    logger.info("Filtered")
 
     # For all excluded sections, remove their availabilities. What literally
     # happens here is that teacher availabilities are removed for every
@@ -139,18 +141,18 @@ def load_sections_and_teachers_and_classrooms(
         teacher: AS_Teacher(
             availabilities_by_teacher[teacher], teacher, teacher in admins)
         for teacher in teacher_ids}
-    logging.info("Teachers loaded")
+    logger.info("Teachers loaded")
 
     known_sections = {section.id: section for section in sections}
     rooms_by_section, meeting_times_by_section, requests_by_section = (
         load_section_assignments(known_sections))
-    logging.info("Assignments loaded")
+    logger.info("Assignments loaded")
     # Load classrooms from groupedClassrooms
     classrooms = convert_classroom_resources(
             schedule.program.getClassrooms(), schedule.program,
             schedule.timeslot_dict, known_sections,
             rooms_by_section, meeting_times_by_section)
-    logging.info("Classrooms loaded")
+    logger.info("Classrooms loaded")
 
     section_teachers = sections.values_list("id", "parent_class__teachers")
     teachers_by_section = {section: [] for section in known_sections}
@@ -161,10 +163,10 @@ def load_sections_and_teachers_and_classrooms(
         sections, schedule.program, teachers_by_section,
         schedule.timeslot_dict, classrooms,
         rooms_by_section, meeting_times_by_section, requests_by_section)
-    logging.info("Sections converted")
+    logger.info("Sections converted")
 
     sections_dict = {sec.id: sec for sec in converted_sections}
-    logging.info("Sections dict loaded")
+    logger.info("Sections dict loaded")
 
     # Return!
     return sections_dict, teachers, classrooms
@@ -173,7 +175,7 @@ def load_sections_and_teachers_and_classrooms(
 @util.timed_func("db_interface_save")
 def save(schedule, check_consistency=True, check_constraints=True):
     """Saves the schedule."""
-    logging.info("Executing save.")
+    logger.info("Executing save.")
     if check_consistency:
         # Run a consistency check first.
         schedule.run_consistency_checks()
@@ -320,7 +322,7 @@ def ensure_section_not_moved(section, as_section):
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    logging.info("Unscheduling {}".format(section.emailcode()))
+    logger.info("Unscheduling {}".format(section.emailcode()))
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
@@ -331,7 +333,7 @@ def unschedule_section(
 @util.timed_func("db_interface_schedule_section")
 def schedule_section(section, times, room, ajax_change_log):
     """Schedules the section in the times and rooms."""
-    logging.info("Scheduling section.")
+    logger.info("Scheduling section.")
     section.assign_meeting_times(times)
     status, errors = section.assign_room(room)
     if not status:
@@ -367,8 +369,8 @@ def convert_classection_obj(
     of timeslots for availabilities. """
     if not section_satisfies_constraints(
             section, rooms_by_section, meeting_times_by_section):
-        logging.info("Warning: Autoscheduler can't handle section {}"
-                     .format(section.emailcode()))
+        logger.info("Warning: Autoscheduler can't handle section {}"
+                    .format(section.emailcode()))
         return None
 
     teachers = teachers_by_section[section.id]

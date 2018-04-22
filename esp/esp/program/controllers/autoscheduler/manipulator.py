@@ -7,6 +7,8 @@ from esp.program.controllers.autoscheduler.constraints import \
     CompositeConstraint
 from esp.program.controllers.autoscheduler import util
 
+logger = logging.getLogger(__name__)
+
 
 class ScheduleManipulator:
     """Class which stores a schedule and contains functions for modifying it
@@ -261,4 +263,4 @@ class ScheduleManipulator:
         times = self.get_recorded_times()
         items = sorted(times.items(), key=lambda x: -x[1][0])
         for i in items:
-            logging.info(i)
+            logger.info(i)

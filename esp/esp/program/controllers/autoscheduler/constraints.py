@@ -36,6 +36,8 @@ import logging
 import esp.program.controllers.autoscheduler.util as util
 import esp.program.controllers.autoscheduler.config as config
 
+logger = logging.getLogger(__name__)
+
 
 class ConstraintViolation(object):
     """A constraint violation. Contains help text."""
@@ -104,7 +106,7 @@ class CompositeConstraint(BaseConstraint):
         else:
             constraints_to_use = set(constraint_names + required_constraints)
         for constraint in constraints_to_use:
-            logging.info("Using constraint {}".format(constraint))
+            logger.info("Using constraint {}".format(constraint))
             self.constraints.append(
                 available_constraints[constraint](**kwargs))
 

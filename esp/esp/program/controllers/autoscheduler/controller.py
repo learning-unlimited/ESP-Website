@@ -12,6 +12,8 @@ from esp.program.controllers.autoscheduler import \
     search
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 
+logger = logging.getLogger(__name__)
+
 
 class AutoschedulerController(object):
     def __init__(self, prog, **options):
@@ -345,18 +347,18 @@ class AutoschedulerController(object):
             changed_sections.add(action["section"])
         scheduling_hashes = {
             section.id: section.initial_state for section in changed_sections}
-        logging.info(scheduling_hashes)
+        logger.info(scheduling_hashes)
         return [
             [self.optimizer.manipulator.jsonify_history(), scheduling_hashes],
             self.options]
 
     def import_assignments(self, data):
         history, scheduling_hashes = data
-        logging.info(scheduling_hashes)
+        logger.info(scheduling_hashes)
         for section, scheduling_hash in scheduling_hashes.iteritems():
             initial_state = self.schedule.class_sections[
                 int(section)].initial_state
-            logging.info(initial_state)
+            logger.info(initial_state)
             if initial_state != scheduling_hash:
                 emailcode = ClassSection.objects.get(
                         id=int(section)).emailcode()

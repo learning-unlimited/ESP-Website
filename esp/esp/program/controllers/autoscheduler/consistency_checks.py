@@ -11,6 +11,8 @@ import logging
 
 from esp.program.controllers.autoscheduler import util
 
+logger = logging.getLogger(__name__)
+
 
 class ConsistencyError(Exception):
     """An error caught by a consistency check."""
@@ -28,7 +30,7 @@ class ConsistencyChecker:
         which are named check_[something]_consistency."""
         for attr in dir(self):
             if attr.startswith("check_") and attr.endswith("_consistency"):
-                logging.info("Running: {}".format(attr))
+                logger.info("Running: {}".format(attr))
                 getattr(self, attr)(schedule)
 
     def check_availability_dict_consistency(self, schedule):
