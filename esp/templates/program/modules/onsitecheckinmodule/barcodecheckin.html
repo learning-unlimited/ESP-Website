@@ -10,8 +10,6 @@
 
 {% block content %}
 <style type="text/css">
-.nocheckmark { border: 1px solid black; }
-
 /* Controls */
 
 .overlay__close {
@@ -30,9 +28,30 @@
     border-radius: 2rem;
     z-index: 100;
     box-sizing: content-box;
+    font-family: sans-serif !important;
 }
 
-/* Scan! Button */
+.scan_popup {
+    font-size: large;
+    line-height: 1.5;
+    position: absolute;
+    z-index: 100;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 8px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    display: none;
+    font-family: sans-serif !important;
+}
+
+/* Scan Button */
 
 .scan {
     font-size: large;
@@ -43,10 +62,11 @@
 
 /* Reader Dropdown */
 
-.controls select {
+.controls, .controls select {
     font-size: large !important;
     margin: auto;
     height: auto !important;
+    font-family: sans-serif !important;
 }
 
 .controls.hide {
@@ -120,16 +140,19 @@
 
     <div class="controls">
         <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
-        &emsp;
+        <br><br>
         <select>
             <option selected value="code_39_reader">Code 39</option>
             <option value="codabar_reader">Codabar</option>
             <option value="code_128_reader">Code 128</option>
             <option value="i2of5_reader">Interleaved 2 of 5</option>
         </select>
+        <br><br>
+        <input type="checkbox" id="autocheckinbox" value="autocheckin" checked> Auto-checkin scanned barcodes<br>
     </div>
     <div class="overlay overlay--inline">
         <div class="overlay__content viewport" id="interactive">
+            <div id="scaninfo" class="scan_popup"></div>
             <div class="overlay__close">X</div>
         </div>
     </div>
@@ -218,12 +241,24 @@ $j(function() {
 
     Quagga.onDetected(function(result) {
         var code = result.codeResult.code;
+        var autocheckin = document.getElementById("autocheckinbox");
 
         if (App.lastResult !== code) {
             App.lastResult = code;
-
-            var results = document.querySelector('#checkinform > p > textarea')
-            results.value += "\n" + code
+            if (autocheckin.checked){
+                var data = {code: code, csrfmiddlewaretoken: csrf_token()};
+                $j.post('ajaxbarcodecheckin', data, function(result) {
+                    if (result.hasOwnProperty('message')) {
+                        var message = result.message;
+                        $j('#scaninfo').show();
+                        $j('#scaninfo').html(message);
+                        setTimeout("$j('#scaninfo').fadeOut(); ", 2000);
+                    }
+                }, "json");
+            } else {
+                var results = document.querySelector('#checkinform > p > textarea')
+                results.value += "\n" + code
+            }
         }
     });
 
