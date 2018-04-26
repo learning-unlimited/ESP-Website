@@ -219,6 +219,11 @@ class ResourceModule(ProgramModuleObj):
             past_program = import_form.cleaned_data['program']
             start_date = import_form.cleaned_data['start_date']
 
+            if past_program == prog:
+                raise ESPError("You're trying to import timeslots from a program"
+                               " to itself! Try a different program instead.",
+                               log=False)
+
             #   Figure out timeslot dates
             new_timeslots = []
             prev_timeslots = past_program.getTimeSlots().order_by('start')
@@ -244,7 +249,7 @@ class ResourceModule(ProgramModuleObj):
             context['new_timeslots'] = new_timeslots
             if import_mode == 'preview':
                 context['prog'] = self.program
-                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context, prog)
+                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context)
             else:
                 extra = 'timeslot'
 
