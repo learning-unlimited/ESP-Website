@@ -3,6 +3,18 @@
     <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
     <script>
+      function addMap() {
+        var position;
+        navigator.geolocation.getCurrentPosition(onSuccess, onError);
+        function onSuccess(pos) {
+          position = pos.coords.latitude + "," + pos.coords.longitude;
+          document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
+        }
+        function onError(error) {
+          alert('code: '    + error.code    + '\n' +
+              'message: ' + error.message + '\n');
+        }
+      }
       // Note: This example requires that you consent to location sharing when
       // prompted by your browser. If you see the error "The Geolocation service
       // failed.", it means you probably did not give permission for the browser to
@@ -13,6 +25,7 @@
           center: {{ center }},
           zoom: 17
         });
+        infoWindow = new google.maps.InfoWindow;
 
         // Try HTML5 geolocation.
         if (navigator.geolocation) {
@@ -70,8 +83,7 @@
     <div class="main">
         <div id="map">
             {% if classroom %}
-                <iframe width="100%" height="100%" frameborder="0" style="border:0" src="https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E
-+&zoom=16&mode=walking&origin=current+location&destination={{ classroom }}">
+                <script>addMap()</script>
             {% else %}
                 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initMap"></script>
             {% endif %}
