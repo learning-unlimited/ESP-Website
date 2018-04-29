@@ -27,6 +27,12 @@ class SearchOptimizer:
         # Explore all possible roomslots to move to.
         for roomslot in self.roomslots:
             # First, figure out what slots we need.
+            # TODO: If there aren't enough roomslots available, then we can
+            # tell immediately that scheduling will fail, but right now we
+            # waste time recursively trying to schedule stuff first. There may
+            # also be other constraints which can be resolved immediately.
+            # Pruning the search for them now might lead to a small but
+            # nontrivial speedup?
             needed_slots = roomslot.room.get_roomslots_by_duration(
                     roomslot, section.duration)
             other_sections = []

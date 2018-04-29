@@ -25,15 +25,16 @@ the scheduling assistant, then save the results if you are satisfied.</p>
 <table width="100%" cellpadding="5">
 {% for option_key, option_value in search.items %}
 <tr>
-	<th>{{ option_key }}</th>
-	<td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
-	<td>{{ option_value.1 }}</td>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
 </table>
     <h2>Constraint Options
-    	<a href="javascript:toggleShowOptions('constraints')">
-	<button type="button">Show/hide Constraint Options</button></a></h2>
+    <button type="button"
+        onclick="$j('#autoschedulerconstraintsdiv').toggle()">
+        Show/hide Constraint Options</button></h2>
     <div id="autoschedulerconstraintsdiv" style="display:none">
 <p>Constraints control what the automatic scheduling assistant it allowed to
 do. If a constraint is Required, you can't change it, but at least you know
@@ -43,16 +44,17 @@ see Resource Criterion Options below.</p>
 <table width="100%" cellpadding="5">
 {% for option_key, option_value in constraints.items %}
 <tr>
-	<th>{{ option_key }}</th>
-	<td><input type="text" class="input-small" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
-	<td>{{ option_value.1 }}</td>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
 </table>
     </div>
     <h2>Scoring Options
-	<a href="javascript:toggleShowOptions('scorers')">
-	<button type="button">Show/hide Scoring Options</button></a></h2>
+    <button type="button"
+        onclick="$j('#autoschedulerscorersdiv').toggle()">
+        Show/hide Scoring Options</button></h2>
     <div id="autoschedulerscorersdiv" style="display:none">
 <p>Scorers control what the automatic scheduling assistant optimizes for when
 it tries to find the best thing to do. They are aggregated together with
@@ -63,18 +65,18 @@ Criterion Options below.</p>
 <table width="100%" cellpadding="5">
 {% for option_key, option_value in scorers.items %}
 <tr>
-	<th>{{ option_key }}</th>
-	<td><input type="text" class="input-small" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
-	<td>{{ option_value.1 }}</td>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
 </table>
     </div>
 
     <h2>Resource Criterion Options
-	<a href="javascript:toggleShowOptions('resources')">
-	<button type="button">Show/hide Resource Criterion
-	    Options</button></a></h2>
+    <button type="button"
+         onclick="$j('#autoschedulerresourcesdiv').toggle()">
+         Show/hide Resource Criterion Options</button></h2>
     <div id="autoschedulerresourcesdiv" style="display:none">
 
 <p>A Resource Criterion controls how the scheduling assistant treats resources and
@@ -92,9 +94,9 @@ see the bottom of this page.</p>
 <table width="100%" cellpadding="5">
 {% for option_key, option_value in resources.items %}
 <tr>
-	<th>{{ option_key }}</th>
-	<td><input type="text" class="input-small" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
-	<td>{{ option_value.1 }}</td>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -103,7 +105,7 @@ see the bottom of this page.</p>
 <table width="100%" cellpadding="5">
 <tr>
     <td colspan="3"><button type="submit" class="btn btn-primary btn-large"
-	    style="background-color:blue; background-image: none;">Whee... Run the Automatic Scheduling Assistant!</button></td>
+        style="background-color:blue; background-image: none;">Whee... Run the Automatic Scheduling Assistant!</button></td>
 </tr>
 <tr>
     <td colspan="3">
@@ -121,8 +123,9 @@ see the bottom of this page.</p>
 
 <h1>Configuration Help</h1>
 
-<a href="javascript:toggleShowOptions('confighelp')">
-<button type="button">Show/hide Configuration Help</button></a></h2>
+<button type="button"
+    onclick="$j('#autoschedulerconfighelpdiv').toggle()">
+    Show/hide Configuration Help</button></h2>
 <div id="autoschedulerconfighelpdiv" style="display:none">
     <br />
 
