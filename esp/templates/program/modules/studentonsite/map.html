@@ -13,6 +13,9 @@
         function onError(error) {
           alert('code: '    + error.code    + '\n' +
               'message: ' + error.message + '\n');
+          var center = {{ center }};
+          position = center.lat + "," + center.lng;
+          document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
         }
       }
       // Note: This example requires that you consent to location sharing when
