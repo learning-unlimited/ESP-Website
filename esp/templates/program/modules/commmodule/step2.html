@@ -11,38 +11,28 @@
   <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <script>
-  $( function() {
-    $( "#dialog-confirm" ).dialog({
-      resizable: false,
-      height: "auto",
-      width: 500,
-      modal: true,
-      buttons: {
-        "Yes, do it anyway!": function() {
-          $( this ).dialog( "close" );
+    function validateMsgLang() {
+      var msgTypes = document.getElementsByName("msglang");
+      var containsTag = /<(\/?((.)|(br ?\/?)))>|(<img)/i.test(
+        document.getElementById("emailbody").value)
+      var containsHTag = /<\/?html>/i.test(
+        document.getElementById("emailbody").value)
 
-        },
-        "Oops, let me check": function() {
-          $( this ).dialog( "close" );
-        }
-      }
-    });
-  } );
-  </script>
-  <script>
-    //require('es6-shim');
-    function validate(form) {
-
-      var msgType = $("#msglang");
-      var containsTag = /<\/?p?(br?)?>/.test($("#emailbody"))
-
-      if(msgType=="HTML" && !containsTag) {
-          alert('You selected "HTML" but included no HTML tags.');
-          return false;
-      } else if(msgType="Plain Text" && containsTag) {
-          alert('You selected "Plain Text" but have tags (such as <p>) in' +
-                'your message.');
-          return false;
+      if(containsHTag) {
+          return confirm("Didn't we say not to include <html> tags?!? "
+                    + "If you're sure you know what you're doing, "
+                    + "click 'OK' to continue.");
+      } else if(msgTypes[1].checked && !containsTag) {
+          return confirm('You selected "HTML" but included no HTML tags. '
+                    + 'Continuing might squash your formatting. '
+                    + 'Would you still like to proceed?');
+      } else if(msgTypes[0].checked && containsTag) {
+          return confirm('You selected "Plain Text" but have HTML tags '
+                    + '(such as <p>) in your message. '
+                    + 'Continuing will leave your tags in your message '
+                    + '(so you might see "<b>hello</b>" instead of '
+                    + 'a bold "hello"). '
+                    + 'Would you still like to proceed?');
       }
       else {
           return true;
@@ -75,8 +65,9 @@ There are <strong>{{listcount}}</strong> distinct users in your query.
 If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
-Please write your email/message now. Note that you can use
-<tt>{{ parameter }}</tt> to enter a parameter into the text of the
+
+Please write your email message now. Note that you can use
+<tt>&#123;&#123;parameter&#125;&#125;</tt> to enter a parameter into the text of the
 message&mdash;the parameters are listed below. The default
 {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can modify
 <a href="/admin/utils/templateoverride/?name=default_email_html.txt">here</a>)
@@ -84,18 +75,11 @@ is automatically wrapped around your message below.
 You can choose to write the body in either plain text or HTML.
 If you choose to use HTML, there is no need for &lt;html&gt; and &lt;/html&gt;
 tags because they're are included in the wrapper template.
-If you choose plain text, do <b>not</b> try to use any HTML tags for
+If you choose plain text, do <b>not</b> use any HTML tags for
 whitespace.</p>
 
-<div id="dialog-confirm" title="Empty the recycle bin?">
-  <p><span class="ui-icon ui-icon-alert"
-    style="float:left; margin:12px 12px 20px 0;">
-  </span>Your HTML-like tags will be displayed as you see it now.
-  Are you sure you don't mean for them to be HTML formatting?</p>
-</div>
-
-<form action="/manage/{{program.getUrlBase}}/commprev" method="post"
-  onsubmit="return validate(this);" name="comm2">
+<form action="/manage/{{program.getUrlBase}}/commprev"
+  onsubmit="return validateMsgLang()" name="comm2" method="post">
 
 <table border="0" cellspacing="0" width="100%">
 <tr>
@@ -107,7 +91,7 @@ whitespace.</p>
   <label for="from">
   <strong>From:</strong>
   <small>(If blank: your email,
-    <span id="user_userid"></span>@{{ settings.SITE_INFO.1 }})</small>
+    <script type="text/javascript">document.write(esp_user.cur_username);</script>@{{ settings.SITE_INFO.1 }})</small>
   </label><br />
   <input type="text" size="30" name="from" id="from" value="{{from}}" />
   <br />
@@ -120,12 +104,12 @@ whitespace.</p>
   <label for="subject">
   <strong>Subject:</strong>
   </label><br />
-  <input type="text" size="30" name="subject" id="subject" value="{{subject}}" />
+  <input type="text" size="30" name="subject" id="subject" value="{{subject}}" required />
   <br /><br />
   <label for="emailbody">
   <strong>Body:</strong>
   </label> <br />
-  <textarea cols="80" rows="20" name="body" id="emailbody">{{body}}</textarea>
+  <textarea cols="80" rows="20" name="body" id="emailbody" required />{{body}}</textarea>
   <br />
 
   </td>
