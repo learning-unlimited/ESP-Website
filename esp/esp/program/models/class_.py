@@ -966,6 +966,17 @@ class ClassSection(models.Model):
         # To avoid circular imports
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
+        # remove all students from the class
+        self.clearStudents()
+
+        #   If specified, remove the class's time and room assignment.
+        if unschedule:
+            self.clearRooms()
+            self.meeting_times.clear()
+
+        self.status = CANCELLED
+        self.save()
+
         if include_lottery_students:
             student_verbs = ['Enrolled', 'Interested', 'Priority/1']
         else:
@@ -1033,16 +1044,6 @@ class ClassSection(models.Model):
             for t in teachers:
                 to_email = ['%s <%s>' % (t.name(), t.email)]
                 send_mail(email_title, email_content, from_email, to_email)
-
-        self.clearStudents()
-
-        #   If specified, remove the class's time and room assignment.
-        if unschedule:
-            self.clearRooms()
-            self.meeting_times.clear()
-
-        self.status = CANCELLED
-        self.save()
 
     def clearStudents(self):
         now = datetime.datetime.now()
