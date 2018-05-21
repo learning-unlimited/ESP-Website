@@ -102,7 +102,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priority_regs = priority_regs.select_related(
             'relationship', 'section', 'section__parent_class')
         for student_reg in priority_regs:
-            rel = student_reg.relationship
+            rel = student_reg.relationship.name
             title = student_reg.section.parent_class.title
             sec = student_reg.section
             times = sec.meeting_times.all().order_by('start')
@@ -148,16 +148,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
-                # (relationship, class_title) -> relationship.name
-                priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
-                priority_list = []
+                priority_dict = {}
             temp_list = []
-            for i in range(0, context['num_priority']):
-                if i < len(priority_list):
-                    temp_list.append(("Priority " + str(i + 1), priority_list[i][1]))
+            for i in range(1, context['num_priority'] + 1):
+                priority_name = 'Priority/%s' % i
+                reg_type = RegistrationType.objects.get(name = priority_name, category = "student")
+                if priority_name in priority_dict:
+                    temp_list.append((reg_type, priority_dict[priority_name]))
                 else:
-                    temp_list.append(("Priority " + str(i + 1), ""))
+                    temp_list.append((reg_type, ""))
             priority_list = temp_list
             star_count = 0
             if timeslot.id in star_counts:
