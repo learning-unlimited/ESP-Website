@@ -79,4 +79,11 @@ Test your code! Be careful, since you’re putting this on our live server witho
 
 Pull code as described in `<https://esp.mit.edu/wiki/index.php/The_Server#Pulling_New_Code>`_.
 
-Make a pull request for ``urgent-branch-name`` as described above
+Make a pull request for ``urgent-branch-name`` as described above.
+
+A note on rebasing
+------------------
+
+In our workflow, there is generally no need to rebase or squash.  If you are working on a pull request, it's fine to rebase or squash your changes to keep the history easy to review, if you know exactly what that means, why you might want to do it, and when it is safe to do so.  (Answering those questions is beyond the scope of this document.)  If you're not sure whether now is a safe time, just skip the rebase/squash: it's very easy to make a mess and GitHub has gotten good enough that it doesn't make things much cleaner for reviewers, either.  A good old ``git merge`` will do just fine.
+
+One exception: when merging a pull request to ``main`` via the GitHub UI button, we generally prefer the "squash" option, unless the individual changes in the pull request are fairly distinct or there is a lot of history to preserve, in which case "merge" is better.  (If GitHub doesn't offer "squash", then "merge" is also best.)  If the pull request is *from* ``main`` or will be merged into multiple branches, definitely use "merge".  If you're not sure, ask a more experienced contributor which to use!
