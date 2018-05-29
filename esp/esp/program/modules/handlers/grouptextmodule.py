@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
@@ -62,7 +62,8 @@ class GroupTextModule(ProgramModuleObj):
             "seq": 10
         }
 
-    def is_configured(self):
+    @staticmethod
+    def is_configured():
         """ Check if Twilio configuration settings are set.
             The text message module will not work without them. """
 
@@ -116,7 +117,8 @@ class GroupTextModule(ProgramModuleObj):
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
-    def sendMessages(self, filterobj, body):
+    @staticmethod
+    def sendMessages(filterobj, body, override = False):
         """ Attempts to send a text message with body to users matching filterobj
             Returns a log of actions which can be displayed to user. """
 
@@ -143,7 +145,6 @@ class GroupTextModule(ProgramModuleObj):
         send_log.append('Sending message to ' + str(users.count()) + ' users')
 
         for user in users:
-            user = ESPUser(user)
 
             contactInfo = None
             try:
@@ -157,7 +158,8 @@ class GroupTextModule(ProgramModuleObj):
             send_log.append("Found contact info for "+str(user))
 
             # the user has elected to not receive text messages
-            if not contactInfo.receive_txt_message:
+            # unless override is true
+            if not contactInfo.receive_txt_message and not override:
                 send_log.append(str(user)+" does not want text messages, fine")
                 continue
             client = TwilioRestClient(account_sid, auth_token)

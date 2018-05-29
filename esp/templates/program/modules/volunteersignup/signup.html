@@ -46,26 +46,30 @@ $j(document).ready(function () {
 
 {% block content %}
 
-{% load render_qsd %}
-{% render_inline_program_qsd program "volunteer_signup" %}
-
 {% if complete %}
+<div class="alert alert-success">
 <h3>Thanks!</h3>
 <p>
-Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears. (And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you ugrently.)
+Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears. (And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you urgently.)
 </p>
 <p>If you would like to change your volunteer commitments, please fill out the form below again.</p>
+</div>
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_complete" %}
 {% endif %}
 {% if cancelled %}
+<div class="alert alert-info">
 <h3>Volunteer Shifts Cancelled</h3>
 <p>
 The directors have been notified that you are no longer able to volunteer at {{ program.name }}.
 </p>
+</div>
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_cancelled" %}
 {% endif %}
+
+{% load render_qsd %}
+{% render_inline_program_qsd program "volunteer_signup" %}
 
 <div id="program_form">
 <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
@@ -83,8 +87,8 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 </tr>
 {% endif %}
     {{ form }}
-<tr>   
-    <td colspan="2" align="center"><input id="volunteer_form_submit" type="submit" value="Submit" /></td>
+<tr>
+    <td colspan="2" align="center"><input id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" /></td>
 </tr>
 </table>
 </center>

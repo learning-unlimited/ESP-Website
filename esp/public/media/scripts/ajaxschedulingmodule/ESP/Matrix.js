@@ -1,493 +1,365 @@
-/*
- * the matrix class
+/**
+ * The grid of cells that displays the schedule.
+ *
+ * @param timeslots: A Timeslots object corresponding to times available for classes
+ * @param rooms: The rooms that are available for scheduling. Keys are ids values are room data.
+ * @param sections: A list of all sections for the program
+ * @param el: The element to morph into the matrix
+ * @param messsagePanel: The panel that can display messages and errors
+ * @param secionInfoPanel: The panel that displays section info
  */
-ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
-    initialize: function(times, rooms, blocks){
-        this.matrix = $j('.matrix');
-        this.el = this.matrix;
-	console.log(this.el)
+function Matrix(
+        timeslots,
+        rooms,
+        sections,
+        el,
+        messagePanel,
+        sectionInfoPanel
+        ){
+    this.el = el;
+    this.el.id = "matrix-table";
 
-        var Matrix = ESP.Scheduling.Widgets.Matrix;
-        
-        this.times = times;
-        this.rooms = rooms;
-        var time_cells = this.time_cells = {};
-        var room_rows = this.room_rows = {};
-        var block_cells = this.block_cells = {};
-        
-	var hr = $j('.matrix-row-body');
-	console.log(hr)
+    this.timeslots = timeslots;
+    this.rooms = rooms;
 
-	//add class times
-	if(!ESP.Scheduling.hasOwnProperty('class_times_added')) {
-        for (var i = 0; i < times.length; i++) {
-            var c = new Matrix.TimeCell(times[i]);
-            time_cells[times[i].uid] = c;
-            if (!times[i].seq) c.td.addClass('non-sequential');
-            hr.append(c.td);
-        }
-        
-        ESP.Scheduling['class_times_added'] = true;
-    }
+    this.sections = sections;
+    this.sections.bindMatrix(this);
 
-	//matrix body
-	body_table = $j("#matrix-table");
-	body_table.empty();
+    this.messagePanel = messagePanel;
+    this.sectionInfoPanel = sectionInfoPanel;
+    this.timeslotHeaders = {};
 
-        // create rows
-        for (var i = 0; i < rooms.length; i++) {
-            var tr = $j('<tr/>');
-	    body_table.append(tr);
-
-            var room = rooms[i];
-            var rc = new Matrix.RoomCell(room);
-
-	    tr.append(rc.td);
-
-            room_rows[room.uid] = tr;            
-            block_cells[room.uid] = {};
-        }
-        
-        // create individual blocks
-        for (var i = 0; i < blocks.length; i++){
-            var block = blocks[i];
-            block_cells[block.room.uid][block.time.uid] = new Matrix.BlockCell(block);
-        }
-        
-        // add blocks in correct order
-        for (var i = 0; i < rooms.length; i++) {
-            var row = block_cells[rooms[i].uid];
-            var tr = room_rows[rooms[i].uid];
-            var lt = false, t = false, td = null;
-            for (var j = 0; j < times.length; j++) {
-                t = times[j];
-                td = (row[t.uid] || new Matrix.InvalidCell()).td;
-                tr.append(td);
-                //if (lt && !ESP.Scheduling.Resources.Time.sequential(lt,t)) td.addClass('non-sequential');
-                if (!t.seq) td.addClass('non-sequential');
-                lt = t;
-            }
-        }
-        
-        var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
-        // listen for assignments
-        ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
-	    debug_log('block_section_assignment');
-            if (!(data.nowriteback)) {
-                if (data.blocks.length > 0) {
-                    //Refresh the csrf token
-                    refresh_csrf_cookie();
-                    var req = { action: 'assignreg',
-                            csrfmiddlewaretoken: csrf_token(),
-                            cls: data.section.uid,
-                            block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
-
-                    $j.post('ajax_schedule_class', req, "json")
-                    .success(function(ajax_data, status) {
-                        if (ajax_data.ret == true) {
-                            ESP.version_uuid = data.val;
-                            ESP.Utilities.evm.fire('block_section_assignment_local', data);
-                        } else {
-			    ESP.Scheduling.directory.filter();
-                            ESP.Scheduling.status('error', "Failed to assign " + data.section.code + ": " + ajax_data.msg);
-                        }
-                    })
-                    .error(function(ajax_data, status) {
-                        alert("Assignment failure!");
-                    });
-                } else {
-                    ESP.Utilities.evm.fire('block_section_assignment_local', data);
-                }
-            }
-            else {
-                ESP.Utilities.evm.fire('block_section_assignment_local', data);
-            }
-        }.bind(this));
-        ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
-	    debug_log('block_section_assignment_local')
-            //Some checking
-            var block_status;
-            for (var i = 0; i < data.blocks.length; i++) {
-                if (!((block_status = ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section, true)) == "OK")) {
-                    console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code + ": [" + block_status + "]");
-                }
-            }
-            //Actually set the data
-            data.section.blocks = data.blocks;
-            for (var i = 0; i < data.blocks.length; i++) {
-                data.blocks[i].section = data.section;
-            }
-            //Set the CSS
-            var blocks = data.blocks;
-            for (var i = 0; i < blocks.length; i++) {
-                var block = blocks[i];
-                var cell = this.block_cells[block.room.uid][block.time.uid];
-                cell.td.html(ESP.Scheduling.Resources.get('Section', data.section.id).block_contents.clone(true));
-		if(data.section.status == 10) {
-                    cell.status(BlockStatus.RESERVED);
-		}
-		else {
-		    cell.status(BlockStatus.UNREVIEWED);
-		}
-                var section = data.section;
-                cell.td.addClass('CLS_category_' + section.category);
-                cell.td.addClass('CLS_id_' + section.id);
-                cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
-                cell.td.addClass('CLS_status_' + section.status);
-                cell.td.addClass('CLS_grade_min_' + section.grade_min);
-                cell.td.addClass('CLS_grade_max_' + section.grade_max);
-
-                for (var j = 0; j < block.processed_room.resources.length; j++) {
-                    if (block.processed_room.resources[j]) {
-                        cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
-                    }
-                }
-            }
-
-            ESP.Utilities.evm.fire('block_section_assignment_success', data);
-        }.bind(this));
-
-        ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
-	    debug_log('block_section_unassignment');
-            if (!(data.nowriteback)) {
-                //Refresh the csrf token
-                refresh_csrf_cookie();
-                var req = { action: 'deletereg',
-                    csrfmiddlewaretoken: csrf_token(),
-                    cls: data.section.uid };
-
-                $j.post('ajax_schedule_class', req)
-                .success(function(ajax_data, status) {
-                    ESP.version_uuid = data.val;
-                    ESP.Utilities.evm.fire('block_section_unassignment_local', data);
-
-                    //recurse on any assignments
-                    //this is used when we want to assign immediately after unassigning
-                    if(data.hasOwnProperty('recurse')) {
-                    	ESP.Utilities.evm.fire('block_section_assignment', data['recurse']);
-                    }
-                })
-                .error(function(ajax_data, status) {
-                    alert("Unassignment failure!");
-                });
-            }
-            else {
-                ESP.Utilities.evm.fire('block_section_unassignment_local', data);
-            }
-        }.bind(this));
-        ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
-            debug_log('block_section_unassignment_local');
-	    
-	    /*
-	      This function is called in two situations:  when a class was just unassigned
-	      locally and when we get a class back from the changelog.  In the first case,
-	      we've already changed the data locally, and passed the unassigned blocks to 
-	      this function.  In the other, the blocks need to be unassigned locally and 
-	      are still in the data.section datastructure.
-	      
-	      TODO:  probably the right answer here is to have the data not unassigned
-	      until this function everywhere.  On the other hand, I can't figure out
-	     */
-
-	    var old_blocks;
-	    if(data.blocks.length == 0){
-		old_blocks = data.section.blocks;// the blocks we're removing the class from
-	    }
-	    else{
-		old_blocks = data.blocks
-	    }
-
-
-            for (var i = 0; i < old_blocks.length; i++) {
-                blocks[i].section = null;
-            }
-
-            //Update the CSS
-	    //TODO:  can we find old blocks in our existing data structures somewhere?
-            for (var i = 0; i < old_blocks.length; i++) {
-                var block = old_blocks[i];
-                var cell = this.block_cells[block.room.uid][block.time.uid];
-                cell.td.text('');
-                cell.status(BlockStatus.AVAILABLE);
-                var css_cls = cell.td.attr('class').split(/\s+/);
-                for (var j = 0; j < css_cls.length; j++) {
-                    if (css_cls[j].indexOf("CLS_") == 0) {
-                        cell.td.removeClass(css_cls[j]);
-                    }
-                }
-            }
-            data.section.blocks = [];
-        }.bind(this));
-    },
-    
-    hideRoom:function(uid){
-        var rc=this.room_rows[uid];
-        rc.tr.hide();
-        rc.td.parent().hide();
-    },
-    
-    showRoom:function(uid){
-        var rc=this.room_rows[uid];
-        rc.tr.show();
-        rc.td.parent().show();
-    },
-    
-    showAll:function(){
-        this.filter(function(){return true;});
-    },
-    
-    filter:function(filter){
-        for(var i=0; i<this.rooms.length; i++){
-            if(filter(this.rooms[i]))
-                this.showRoom(this.rooms[i].uid);
-            else
-                this.hideRoom(this.rooms[i].uid);
-        }
-    },
-    
-    sortBy:function(val){
-        var sorted=this.rooms.sortBy(val);
-        
-        function moveToEnd(node){
-            var parent=node.parentNode;
-            parent.removeChild(node);
-            parent.appendChild(node);
-        }
-        
-        for(var i=0; i<sorted.length; i++){
-            var rc=this.room_rows[sorted[i].uid];
-            moveToEnd(rc.tr[0]);
-            moveToEnd(rc.td.parent()[0]);
-        }
-    }
-    
-}));
-
-ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
-    initialize: function(matrix) {
-        this.matrix = matrix;
-        this.el=$j("<div/>").addClass('room-filter');
-        this.el.append(
-            $j("<input/>").attr({type: "button", value: "Filter/sort\nrooms"}).click((function(e){
-                if(!this.dialog){
-                    
-                    this.dialog=$j("<div/>").css({
-                        "background-color": "white",
-                        "position": "relative",
-                        "left": "10px",
-                        "top": "10px",
-                          "border": "solid black 1px",
-                          "padding": "5px",
-                          "width": "150px"
-                    });
-                    
-                    this.resources={};
-                    for(var i=0; i<this.matrix.rooms.length; i++)
-                        for(var j=0; j<this.matrix.rooms[i].resources.length; j++)
-                            this.resources[this.matrix.rooms[i].resources[j]]={};
-                    
-                    this.dialog.append("<b>Resources:</b><br/>");
-                    for(var res in this.resources){
-                        this.resources[res].name=res;
-                        this.resources[res].checkbox=$j("<input type='checkbox'/>");
-                        this.dialog.append(this.resources[res].checkbox, res, "<br/>");
-                    }
-                    this.dialog.append("<hr/>");
-                    
-                    this.dialog.append("<b>Min size:</b> ", this.minsize=$j("<input type='text' value='0' size='2'/>"), "<br/>",
-                                 "<b>Max size:</b> ", this.maxsize=$j("<input type='text' value='1000' size='2'/>"), "<br/>");
-                    $j([this.minsize[0], this.maxsize[0]]).focus(function(e){e.target.select()});
-                    this.dialog.append("<hr/>");
-                    
-                    this.dialog.append("<b>Sort by:</b><br/>");
-                    this.dialog.append(
-                        $j("<input type='button' value='Room number'>").click((function(){
-                            this.sort(function(r){return r.uid});
-                            this.dialog.hide();
-                        }).bind(this)),
-                        $j("<input type='button' value='Size ascending'>").click((function(){
-                            this.sort(function(r){return r.size});
-                            this.dialog.hide();
-                        }).bind(this)),
-                        $j("<input type='button' value='Size descending'>").click((function(){
-                            this.sort(function(r){return -r.size});
-                            this.dialog.hide();
-                        }).bind(this)));
-                    
-                    this.dialog.click(function(e){
-                        e.stopPropagation();
-                    }).change((function(){
-                        this.filter();
-                    }).bind(this));
-                    
-                    $j("body").click((function(){
-                        this.filter();
-                        this.dialog.hide();
-                    }).bind(this));
-                    
-                    this.el.append(this.dialog);
-                    this.dialog.hide();
-                    
-                }
-                this.dialog.toggle(100);
-                e.stopPropagation();
-            }).bind(this))
-        );
-        //$j('.matrix-corner-box').append(this.el);
-    },
-        
-    filter: function(){
-        this.matrix.filter((function(room){
-            for(var res in this.resources)
-                if(this.resources[res].checkbox[0].checked && 
-                            !room.resources.contains(res))
-                    return false;
-            if (this.minsize && this.maxsize)
-                if(room.size<this.minsize.val() || 
-                room.size>this.maxsize.val())
-                    return false;
-            return true;
-        }).bind(this));
-    },
-        
-    sort: function(valFunc){
-        if(!valFunc)
-            valFunc=this.lastValFunc;
-        this.lastValFunc=valFunc;
-        if(typeof valFunc == "function")
-            this.matrix.sortBy(valFunc);
-    },
-        
-    save: function(){
-        this.el[0].parentNode.removeChild(this.el[0]);
-    },
-        
-    restore: function(matrix){
-        this.matrix=matrix;
-        $j('.matrix-corner-box').append(this.el);
-        this.filter();
-    }
-}));
-
-/*
- * Helper Classes
- */
-(function(){
-    var Matrix = ESP.Scheduling.Widgets.Matrix;
-    var Resources = ESP.Scheduling.Resources;
-    
-    /*
-     * object caches (mapping from table cells to other stuff)
+    /**
+     * Initialize the matrix
      */
-    Matrix.CELL_CACHE = 'ESP.SCHEDULING.WIDGET.MATRIX.CELL_DATA',
-    
-    /*
-     * accessibility classes (make it easy to manipulate table / data)
-     */
-    Matrix.Cell = Class.create({
-        initialize: function(){
-            this.td = $j('<td/>').addClass('matrix-cell');
-            this.td.data(Matrix.CELL_CACHE, this);
-        }
-    });
-    Matrix.HeaderCell = Class.create(Matrix.Cell,{
-        initialize: function($super){
-            $super();
-        }
-    });
-    Matrix.InvalidCell = Class.create(Matrix.Cell,{
-        initialize: function($super){
-            $super();
-            this.td.addClass('invalid-cell');
-        }
-    });
-    Matrix.TimeCell = Class.create(Matrix.HeaderCell,{
-        initialize: function($super, time){
-            $super()
-            this.time = time;
-            this.td.text(time.text);
-            this.td.addClass('column-header');
-        }
-    });
-    Matrix.RoomCell = Class.create(Matrix.HeaderCell,{
-        initialize: function($super, room){
-            $super()
-            this.room = room;
-            this.td.html(room.block_contents.clone(true));
-	    //matrix cell class sets the width too narrowly
-	    this.td.removeClass('matrix-cell');
-            this.td.addClass('matrix-row-header-box');
-            for (var j = 0; j < room.resources.length; j++) {
-                if (room.resources[j]) {
-                    this.td.addClass('ROOM_rsrc_' + room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
-                }
-            }
-            this.td.addClass('');
-        }
-    });
-    
-    var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
-    var StatusClasses = {};
-    StatusClasses[BlockStatus.NOT_OURS] = 'inactive';
-    StatusClasses[BlockStatus.AVAILABLE] = 'active';
-    StatusClasses[BlockStatus.RESERVED] = 'filled';
-    StatusClasses[BlockStatus.UNREVIEWED] = 'unreviewed';
-    
-    Matrix.BlockCell = Class.create(Matrix.Cell,{
-        initialize: function($super,block){
-            $super();
-            this.block = block;
-            this.td.addClass('data-cell')
-            this.block.__td = this.td;
-            ESP.Scheduling.DragDrop.make_draggable(this.td, function(){
-                if (this.block.section == null){
-                    console.log('null section on block [' + this.block.uid + ']');
-                }
-                return this.block.section;
+    this.init = function(){
+        // set up cells
+        var matrix = this;
+        this.cells = function(){
+            // cells has room names as keys to the outer object and timeslots as keys to the
+            // inner object
+            var cells = {};
+            $j.each(rooms, function(room_name, room){
+                cells[room_name] = [];
+                $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
+                    var timeslot_id = parseInt(timeslot_id_string);
+                    if (room.availability.indexOf(timeslot_id) >= 0){
+                        cells[room_name][timeslot.order] = new Cell($j("<td/>"), null, room_name,
+                            timeslot_id, matrix);
+                    } else {
+                        cells[room_name][timeslot.order] = new DisabledCell($j("<td/>"), room_name,
+                            timeslot_id)
+                    }
+                }.bind(this));
             }.bind(this));
-            ESP.Scheduling.DragDrop.make_droppable(this.td,
-                function(){ return this.block; }.bind(this));
-            this.status(block.status);
-        },
-        status: function(status) {
-            var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
-            if (status) {
-                this.td.removeClass(StatusClasses[this.block.status]);
-                this.block.status = status;
-                this.td.addClass(StatusClasses[status]);
-                this.td.draggable(status == BlockStatus.RESERVED || status == BlockStatus.UNREVIEWED ? 'enable' : 'disable');
-            } else {
-                return this.block.status;
+            return cells;
+        }.bind(this)();
+
+    };
+
+    this.init();
+
+    /**
+     * Highlight the timeslots on the grid.
+     *
+     * @param timeslots: A 2-d array. The first element is an array of
+     *                   timeslots where all teachers are completely available.
+     *                   The second is an array of timeslots where one or more
+     *                   teachers are teaching, but would be available otherwise.
+     */
+    this.highlightTimeslots = function(timeslots, section) {
+        /**
+         * Adds a class to all non-disabled cells corresponding to each
+         * timeslot in timeslots.
+         *
+         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param className: The class to add to the cells
+         */
+        addClassToTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                this.timeslotHeaders[timeslot].addClass(className);
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot);
+                    if(!cell.section && !cell.disabled) {
+                        cell.el.addClass(className);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        addClassToTimeslots(available_timeslots, "teacher-available-cell");
+        addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
+        if(section.length<=1) {
+            return;
+        }
+        $j.each(available_timeslots, function(j, timeslot_id) {
+            var timeslot = this.timeslots.get_by_id(timeslot_id);
+            $j.each(this.rooms, function(k, room) {
+                var cell = this.getCell(room.id, timeslot_id);
+                if(cell.el.hasClass("teacher-available-cell")) {
+                    var scheduleTimeslots = [timeslot.id];
+                    var notEnoughSlots = false;
+                    for(var i=1; i<section.length; i++) {
+                        var nextTimeslot = this.timeslots.get_by_order(timeslot.order+i);
+                        if(nextTimeslot) {
+                            scheduleTimeslots.push(nextTimeslot.id);
+                        } else {
+                            notEnoughSlots = true;
+                        }
+                    }
+                    if(notEnoughSlots ||
+                       !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
+                                cell.el.removeClass("teacher-available-cell");
+                                cell.el.addClass("teacher-available-not-first-cell");
+                    }
+                }
+            }.bind(this));
+        }.bind(this));
+    }
+
+    /**
+     * Unhighlight the cells that are currently highlighted
+     *
+     * @param timeslots: A 2-d array. The first element is an array of
+     *                   timeslots where all teachers are completely available.
+     *                   The second is an array of timeslots where one or more
+     *                   teachers are teaching, but would be available otherwise.
+     */
+    this.unhighlightTimeslots = function(timeslots) {
+        /**
+         * Removes a class from all non-disabled cells corresponding to each
+         * timeslot in timeslots.
+         *
+         * @param timeslots: A 1-d array of tiemslot IDs
+         * @param className: The class to remove from the cells
+         */
+        removeClassFromTimeslots = function(timeslots, className) {
+            $j.each(timeslots, function(j, timeslot) {
+                this.timeslotHeaders[timeslot].removeClass(className);
+                $j.each(this.rooms, function(k, room) {
+                    var cell = this.getCell(room.id, timeslot);
+                    cell.el.removeClass(className);
+                }.bind(this));
+            }.bind(this));
+        }.bind(this);
+
+        var available_timeslots = timeslots[0];
+        var teaching_timeslots = timeslots[1];
+        removeClassFromTimeslots(available_timeslots, "teacher-available-cell teacher-available-not-first-cell");
+        removeClassFromTimeslots(teaching_timeslots, "teacher-teaching-cell");
+    };
+
+
+    /**
+     * Initialize the sections that have already been scheduled. Must be called at the end
+     * after all other initialization happens.
+     */
+    this.initSections = function() {
+        // Associated already scheduled classes with rooms
+        $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
+            $j.each(assignmentData.timeslots, function(j, timeslot_id){
+                var cell = this.getCell(assignmentData.room_name, timeslot_id);
+                if(cell && !cell.disabled) {
+                    cell.addSection(sections.getById(class_id));
+                } else {
+                    if(!cell) {
+                        var errorMessage = "Error: Could not find cell with room "
+                            + assignmentData.room_name
+                            + " and timeslot with id "
+                            + timeslot_id
+                            + " to schedule section with id "
+                            + class_id;
+                        console.log(errorMessage);
+                        messagePanel.addMessage(errorMessage);
+                    }
+                    else {
+                        var errorMessage = "Error: Room "
+                            + assignmentData.room_name
+                            + " appears to be unavailable during timeslot with id "
+                            + timeslot_id
+                            + " but section with id "
+                            + class_id
+                            + " is scheduled there.";
+                        console.log(errorMessage);
+                        messagePanel.addMessage(errorMessage);
+                    }
+                }
+            }.bind(this));
+        }.bind(this));
+    };
+
+
+    /**
+     * Gets the cell that represents room_name and timeslot_id.
+     *
+     * @param room_name: The name of the room corresponding to the cell
+     * @param timeslot_id: The ID of the timeslot corresponding to the cell
+     */
+    this.getCell = function(room_name, timeslot_id){
+        return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
+    };
+
+
+    /**
+     * Checks a section we want to schedule in room_name during schedule_timeslots
+     * to make sure the room is available during that time and the length is nonzero.
+     *
+     * Returns an object with property valid that is set to whether the assignment is valid
+     * and reason which contains a message if valid is false.
+     *
+     * @param section: The section to validate.
+     * @param room_name: The name of the room we want to put the section into.
+     * @param schedule_timeslots: The array of timeslots we want to put the section into.
+     */
+    this.validateAssignment = function(section, room_name, schedule_timeslots){
+        var result = {
+            valid: true,
+            reason: null,
+        }
+
+        // Check to make sure there are timeslots
+        if (!schedule_timeslots){
+            result.valid = false;
+            result.reason = "Error: Not scheduled during a timeblock";
+            return result;
+        }
+
+        var availableTimeslots = this.sections.getAvailableTimeslots(section)[0];
+        var validateIndividualCell = function(index, cell) {
+            return !(cell.disabled || (cell.section && cell.section !== section) ||
+                    availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
+        };
+
+        var firstCell = this.getCell(room_name, schedule_timeslots[0]);
+        if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
+            result.valid = false;
+            result.reason = "first cell is not valid"
+            return result;
+        }
+
+        // Check to make sure all the cells are available
+        for(var timeslot_index in schedule_timeslots){
+            var cell = this.getCell(room_name, schedule_timeslots[timeslot_index]);
+            if (!validateIndividualCell(timeslot_index, cell)){
+                result.valid = false;
+                result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
+                    " already has a class in " + room_name + "."
+                return result;
             }
         }
-    });
-})();
 
-//TODO:  this.el is no longer as useful a notion as it used to be, so maybe we should name it something less confusing
-ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
-        initialize: function(){
-            this.el = $j('#garbage-div');
-            var target = this.el;
-            var activeClass = 'dd-highlight';
-            var options = $j.extend({
-                hoverClass: 'dd-hover',
-                tolerance: 'pointer',
-                accept: function(d){ return true; },
-                drop: function(e, ui) {
-                    target.removeClass(activeClass);
-                    ESP.Utilities.evm.fire('drag_dropped',{
-                        event: e,
-                        ui: ui,
-                        draggable:ui.draggable,
-                        droppable:this,
-                        blocks:[],
-                        section:ui.draggable.data('section')
-                    });
-                },
-                activate: function(e, ui) { target.addClass(activeClass); },
-                deactivate: function(e, ui) { target.removeClass(activeClass); }
-            }, options || {});
-            target.droppable(options);
+        // Check to make sure all timeslots are contiguous.
+        var timeslot_objects = schedule_timeslots.map(function(timeslot_id){return timeslots.get_by_id(timeslot_id);});
+        if (!timeslots.are_timeslots_contiguous(timeslot_objects)){
+            result.valid = false;
+            result.reason = "Error: timeslots starting from " + schedule_timeslots[0] +
+                " are not contiguous."
+            return result;
         }
-   })
-);
+
+        // Check lunch constraints.
+        var scheduled_over_lunch = false;
+        $j.each(this.timeslots.lunch_timeslots, function(day, lunch_slots) {
+            if(this.timeslots.on_same_day(lunch_slots[0], this.timeslots.get_by_id(schedule_timeslots[0]))) {
+               var count = 0;
+               $j.each(lunch_slots, function(index, lunch_slot) {
+                    if(schedule_timeslots.indexOf(lunch_slot.id) > -1) {
+                        count++;
+                    }
+                });
+                if(count == lunch_slots.length) {
+                    scheduled_over_lunch = true;
+                }
+            }
+        }.bind(this));
+        if(scheduled_over_lunch) {
+            result.valid = false;
+            result.reason = "scheduled over lunch";
+            return result;
+        }
+        return result;
+    };
+
+
+    /**
+     * Render the matrix.
+     */
+    this.render = function(){
+        var table = $j("<table/>");
+        var colModal = [{width: 140, align: "center"}];
+
+        //Time headers
+        var header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table));
+        header_row.append($j("<th/>"));
+        $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
+            var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
+            this.timeslotHeaders[timeslot.id] = timeslotHeader;
+            timeslotHeader.appendTo(header_row);
+            colModal.push({width: 80, align: 'center'});
+        }.bind(this));
+        //Room headers
+        var rows = {}; //table rows by room name
+        var room_ids = Object.keys(this.rooms);
+        room_ids.sort(function (room1, room2) {
+            // sort by building number
+            var bldg1 = parseInt(room1, 10);
+            var bldg2 = parseInt(room2, 10);
+            if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
+                return bldg1 - bldg2;
+            }
+            return room1.localeCompare(room2);
+        });
+        $j.each(this.rooms, function(id, room){
+            room = this.rooms[id];
+            var room_header = $j("<td>")
+                .addClass('room')
+                .text(id + " [" + room['num_students'] + "]")
+                .attr('data-id', id);
+            var row = $j("<tr></tr>");
+            room_header.appendTo(row);
+            rows[id] = row;
+        }.bind(this));
+        //populate cells
+        var cells = this.cells;
+        $j.each(room_ids, function(index, room_id){
+            row = rows[room_id];
+            for(i = 0; i < this.timeslots.timeslots_sorted.length; i++){
+                cells[room_id][i].el.appendTo(row);
+            }
+            row.appendTo(table);
+        }.bind(this));
+        table.appendTo(this.el);
+        table.fxdHdrCol({fixedCols: 1, colModal: colModal, width: "100%", height: "100%"});
+
+        // Hack to make tooltips work
+        var that = this;
+        this.el.tooltip({
+            content: function() {
+                var room = that.rooms[$j(this).data('id')];
+                var resource_lines = [];
+                $j.each(room.resources, function(index, resource) {
+                    var desc = resource.resource_type.name;
+                    if(resource.value) {
+                        desc += ': ' + resource.value;
+                    }
+                    resource_lines.push(desc);
+                });
+                var tooltipParts = [
+                    "<b>" + room.text + "</b>",
+                    "Capacity: " + room.num_students + " students",
+                    "Resources: " + "<ul><li>"+ resource_lines.join("</li><li>") + "</li></ul>",
+                ];
+                return tooltipParts.join("</br>");
+            },
+            items: ".ft_c td",
+            track: true,
+            show: {duration: 100},
+            hide: {duration: 100},
+        });
+    };
+
+
+    this.initSections();
+
+};

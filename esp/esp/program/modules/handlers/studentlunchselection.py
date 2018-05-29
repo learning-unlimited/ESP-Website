@@ -33,13 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student, meets_cap
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.users.models            import Record
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.web.util                import render_to_response
+from esp.utils.web               import render_to_response
 from esp.middleware              import ESPError
 
 from django                      import forms
@@ -55,32 +55,31 @@ class StudentLunchSelectionForm(forms.Form):
         self.day = day
 
         super(StudentLunchSelectionForm, self).__init__(*args, **kwargs)
-        
+
         #   Set choices for timeslot field
-        #   [(None, '')] + 
+        #   [(None, '')] +
         events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
         events_filtered = filter(lambda x: x.start.day == self.day.day, events_all)
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
-        
+
     def load_data(self):
         lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__category='Lunch', section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
         lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:
-                print 'Set initial to %s' % section.get_meeting_times()[0]
                 self.initial['timeslot'] = section.get_meeting_times()[0].id
-        
+
     def save_data(self):
         msg = ''
         result = False
-        
+
         #   Clear existing lunch periods for this day
         for section in self.user.getEnrolledSections(self.program):
             if section.parent_class.category.category == 'Lunch':
                 if section.get_meeting_times()[0].start.day == self.day.day:
                     section.unpreregister_student(self.user)
-        
+
         #   Attempt to sign up for a new lunch period if specified
         if int(self.cleaned_data['timeslot']) != -1:
             sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__category='Lunch', meeting_times=self.cleaned_data['timeslot']))
@@ -99,7 +98,7 @@ class StudentLunchSelectionForm(forms.Form):
         else:
             result = True
             msg = 'Lunch period declined.'
-                
+
         return (result, msg)
 
 
@@ -112,7 +111,7 @@ class StudentLunchSelection(ProgramModuleObj):
             "admin_title": "Student Lunch Period Selection",
             "module_type": "learn",
             "required": True,
-            "seq": 2
+            "seq": 5
             }
 
     def isCompleted(self):
@@ -120,6 +119,7 @@ class StudentLunchSelection(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_cap
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user
@@ -148,12 +148,9 @@ class StudentLunchSelection(ProgramModuleObj):
             forms = [StudentLunchSelectionForm(prog, user, dates[i], prefix='day%d' % i) for i in range(len(dates))]
             for i in range(len(forms)):
                 forms[i].load_data()
-          
-        if 'messages' in context:
-            print context['messages']
-        
+
         context['forms'] = forms
-        
+
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
 
     class Meta:

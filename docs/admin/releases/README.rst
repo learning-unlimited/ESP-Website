@@ -17,6 +17,12 @@ live sites. There is then a period of manual testing and bugfixing on the live
 sites before the code is declared stable. At this point, the code on the live
 sites is frozen until the next release.
 
+`SR09 - January 2017 <09/>`_
+----------------------------
+
+`SR08 - October 2016 <08/>`_
+----------------------------
+
 `SR07 - November 2015 <07/>`_
 -----------------------------
 

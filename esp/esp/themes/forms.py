@@ -49,7 +49,7 @@ class ThemeConfigurationForm(forms.Form):
 
     def recover_from_serialization(self, data):
         return data
-    
+
     def save_to_tag(self):
         tc = ThemeController()
         data = self.prepare_for_serialization(self.cleaned_data.copy())

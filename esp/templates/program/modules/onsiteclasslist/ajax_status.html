@@ -2,6 +2,7 @@
 <head>
 <title>Live Registration Status</title>
 <script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
@@ -19,9 +20,15 @@
     set_current_student({{ initial_student }});
     {% endif %}
 </script>
+<style type="text/css">
+    .no-profile {
+        background-color: #f7d0d0;
+    }
+</style>
 <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
+
 </head>
 
 <body>
@@ -44,6 +51,7 @@
     <div><input type="checkbox" id="override_control"/>Override size limits</div>
     <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
     <div><input type="checkbox" id="show_class_titles"/>Display class titles</div>
+    <div><input type="checkbox" id="show_class_rooms"/>Display class rooms</div>
     <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
     <div><input type="checkbox" id="hide_past_time_blocks"/>Hide past timeblocks</div>
     <div><input type="checkbox" id="hide_conflicting"/>Show only classes that fit in student's schedule</div>
@@ -89,7 +97,7 @@
 </select>
 </div>
 
-<div id='compact-classes-body' class='compact-classes'>
+<div id='compact-classes-body' class='compact-classes' style="z-index:-900;">
 <table class="narrow bordered">
 <tr>{% for timeslot in timeslots %}
     <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
@@ -101,6 +109,19 @@
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
 
 <a name="settings" />
-
+<div id="dialog-confirm" title="Register Account?" class="hide">
+  <div id="not-registered-msg">
+  <p>
+    This student is not registered with {{ program.name }}. 
+    </p>
+    <p>
+        Please verify that the student is wearing their {{ program.name }}-issued nametag or has otherwise completed all steps (including any forms and/or payment) necessary to participate in the program.
+    </p>
+  </div>
+  <div id="noinfo-msg" style="display:none;">
+  Sorry, but this student needs to supply more information. Please register this student
+  using the New Student Registration form.
+  </div>
+</div>
 </body>
 </html>

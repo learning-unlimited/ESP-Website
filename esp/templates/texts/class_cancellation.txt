@@ -1,0 +1,1 @@
+{{ prog.niceName }} class {% if classreg %}section {{ sec.emailcode }}{% else %}{{ sec.parent_class.emailcode }}{% endif %}: {{ sec.title|truncatechars:30 }} has been cancelled. {% if classreg and sec.friendly_times|length_is:1 %}The class{% if classreg %} section{% endif %} was scheduled for {{ sec.friendly_times.0 }}.{% endif %}

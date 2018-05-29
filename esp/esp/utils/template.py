@@ -51,11 +51,11 @@ INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
     is_usable = True
-    
+
     def __init__(self, *args, **kwargs):
         self.cache = {}
 
-    """ 
+    """
         There may be multiple processes running and they all need their caches invalidated
         when a template override is saved.  This is not done by Django's cached template loader.
         The compiled template cannot be stored directly in memcached since Template instances

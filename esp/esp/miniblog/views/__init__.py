@@ -35,29 +35,27 @@ Learning Unlimited, Inc.
 
 from datetime import datetime
 
-from django.contrib.auth.models import AnonymousUser
 from django.db.models.query import Q
 
 from esp.miniblog.models import Entry, AnnouncementLink
+from esp.users.models import ESPUser, AnonymousESPUser
 
 from argcache import cache_function
-from esp.users.models import ESPUser
 
-#	Function for previewing announcements  - Michael P
-#	Generates the block structure used by battle screens
+# Function for previewing announcements  - Michael P
+# Generates the block structure used by battle screens
 
 def preview_miniblog(request, section = None):
     """this function will return the last n miniblog entries from preview_miniblog """
     # last update: Axiak
 
     if request.user != None:
-        curUser = ESPUser(request.user)
-    
+        curUser = request.user
     else:
-        curUser = ESPUser(AnonymousUser())
+        curUser = AnonymousESPUser()
 
     return curUser.getMiniBlogEntries()
-    
+
 @cache_function
 def get_visible_announcements(user, limit, tl):
     models_to_search = [Entry, AnnouncementLink]
@@ -67,8 +65,8 @@ def get_visible_announcements(user, limit, tl):
     for model in models_to_search:
         result = model.objects.order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True)).filter(Q(highlight_begin__lte = datetime.now()) | Q(highlight_begin__isnull = True))
 
-	if tl:
-	    result = result.filter(section=tl)
+        if tl:
+            result = result.filter(section=tl)
 
         if limit:
             overflowed = ((len(result) - limit) > 0)

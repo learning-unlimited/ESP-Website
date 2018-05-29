@@ -1,43 +1,46 @@
-from django.conf.urls import *
+from django.conf.urls import url
 
+from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
+from esp.web.views import bio
+from esp.web.views import main
+from esp.web.views import myesp
+from django.views.generic import TemplateView
 
-urlpatterns = patterns('esp.users.views',
-                       (r'^register/?$', 'user_registration_phase1',),
-                       (r'^register/information/?$', 'user_registration_phase2'),
-                       (r'^activate/?$', 'registration.activate_account',),
-                       (r'^passwdrecover/(success)?/?$', 'initial_passwd_request',),
-                       (r'^passwdrecover/?$', 'initial_passwd_request',),
-                       (r'^recoveremail/(success)?/?$', 'email_passwd_followup',),
-                       (r'^recoveremail/?$', 'email_passwd_followup',),
-                       (r'^cancelrecover/?$', 'email_passwd_cancel',),
-                       (r'^resend/?$', 'resend_activation_view',),
-                       (r'^signout/?$', 'signout',),
-                       (r'^signedout/?$', 'signed_out_message',),
-                       (r'^login/?$',   'login_checked',),
-                       (r'^login/byschool/?$',   'login_byschool.login_byschool',),
-                       (r'^login/byschool/([0-9]+)/?$',   'login_byschool.login_byschool_pickname',),
-                       (r'^login/byschool/new/?$',   'login_byschool.login_byschool_new',),
-                       (r'^login/bybday/?$',   'login_by_bday.login_by_bday',),
-                       (r'^login/bybday/([0-9]+)/([0-9]+)/?$',   'login_by_bday.login_by_bday_pickname',),
-                       (r'^login/bybday/new/?$',   'login_by_bday.login_by_bday_new',),
-                       (r'^disableaccount/?$', 'disable_account'),
-                       (r'^emailpref/?$', 'emailpref'),
-                       (r'^emailpref/(success)?/?$', 'emailpref'),
-                       url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
-                       (r'^makeadmin/?$', 'make_admin'),
-                       (r'^morph/?$', 'morph_into_user'),
+urlpatterns = [
+    url(r'^register/?$', views.user_registration_phase1,
+        name='esp.users.views.user_registration_phase1'),
+    url(r'^register/information/?$', views.user_registration_phase2,
+        name='esp.users.views.user_registration_phase2'),
+    url(r'^activate/?$', views.registration.activate_account),
+    url(r'^passwdrecover/(success)?/?$', views.initial_passwd_request),
+    url(r'^passwdrecover/?$', views.initial_passwd_request),
+    url(r'^recoveremail/(success)?/?$', views.email_passwd_followup),
+    url(r'^recoveremail/?$', views.email_passwd_followup),
+    url(r'^cancelrecover/?$', views.email_passwd_cancel),
+    url(r'^resend/?$', views.resend_activation_view,
+        name='esp.users.views.resend_activation_view'),
+    url(r'^signout/?$', views.signout),
+    url(r'^signedout/?$', views.signed_out_message),
+    url(r'^login/?$',   views.login_checked),
+    url(r'^disableaccount/?$', views.disable_account),
+    url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
+    url(r'^makeadmin/?$', views.make_admin),
+    url(r'^loginhelp', TemplateView.as_view(template_name='users/loginhelp.html'), name='Login Help'),
+    url(r'^morph/?$', views.morph_into_user),
+]
 
-                       )
+urlpatterns += [
+    url(r'^redirect/?$', main.registration_redirect),
+]
 
-urlpatterns += patterns('esp.web.views.main',
-                        (r'^redirect/?$', 'registration_redirect',),
-                       )
+urlpatterns += [
+    url(r'^switchback/?$', myesp.myesp_switchback),
+    url(r'^onsite/?$', myesp.myesp_onsite),
+    url(r'^passwd/?$', myesp.myesp_passwd),
+    url(r'^profile/?$', myesp.edit_profile),
+]
 
-urlpatterns += patterns('esp.web.views.myesp',
-                        (r'^switchback/?$', 'myesp_switchback',),
-                        (r'^onsite/?$', 'myesp_onsite',),
-                        (r'^passwd/?$', 'myesp_passwd',),
-                        (r'^profile/?$', 'edit_profile',),
-                       )
-
+urlpatterns += [
+    url(r'^teacherbio/?$', bio.bio_edit)
+]

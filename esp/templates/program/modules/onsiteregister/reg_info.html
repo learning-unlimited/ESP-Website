@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
@@ -15,8 +13,6 @@
 </style>
 <br />
 <br />
-
-{{ program.mainteacherreg }}
 
 <br /><br />
 <h1>New Student Registration for {{ program.niceName }}</h1>
@@ -31,7 +27,7 @@ Please enter the information for the new student:
 {{ form }}
 <tr>
  <th colspan="2">
-  <input type="submit" value="Save Registration" />
+  <input type="submit" value="Save Registration" class="btn btn-primary" />
  </th>
 </tr>
 </form>

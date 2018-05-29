@@ -35,10 +35,9 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser
-from esp.users.controllers.usersearch import UserSearchController
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
@@ -60,10 +59,9 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        filterObj, found = UserSearchController().create_filter(request, self.program)
+        user, found = search_for_user(request)
         if not found:
-            return filterObj
-        user = filterObj.getList(ESPUser).distinct()[0]
+            return user
 
         #   Get the optional purchases for that user
         iac = IndividualAccountingController(prog, user)
@@ -74,7 +72,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
         context['amount_requested'] = iac.amount_requested()
         context['amount_finaid'] = iac.amount_finaid()
         context['amount_due'] = iac.amount_due()
-        
+
         return render_to_response(self.baseDir()+'paiditems.html', request, context)
 
 

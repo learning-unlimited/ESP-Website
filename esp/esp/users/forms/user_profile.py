@@ -3,14 +3,14 @@ from esp.tagdict.models import Tag
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
-from esp.users.models import K12School, StudentInfo
+from esp.users.models import K12School, StudentInfo, AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER, AFFILIATION_NONE
 from datetime import datetime
 from esp.program.models import RegistrationProfile
 from django.conf import settings
 import json
 from localflavor.us.forms import USPhoneNumberField
 
-_states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
+_states = ['' , 'AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -48,23 +48,28 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     e_mail = forms.EmailField()
     phone_day = USPhoneNumberField(required=False)
     phone_cell = USPhoneNumberField(required=False)
-    receive_txt_message = forms.BooleanField(required=False)
-    address_street = StrippedCharField(length=40, max_length=100)
-    address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'),(False, 'No')), widget=forms.RadioSelect)
+    address_street = StrippedCharField(required=False, length=40, max_length=100)
+    address_city = StrippedCharField(required=False, length=20, max_length=50)
+    address_state = forms.ChoiceField(required=False, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
-        if Tag.getTag('request_student_phonenum', default='True') == 'False':
+        if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getTag('text_messages_to_students'):
+        if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
+        if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = True):
+            self.fields['address_street'].required = True
+            self.fields['address_city'].required = True
+            self.fields['address_state'].required = True
+            self.fields['address_zip'].required = True
 
     def clean(self):
         super(UserContactForm, self).clean()
-        if self.user.isTeacher() or Tag.getTag('request_student_phonenum', default='True') != 'False':
+        if self.user.isTeacher() or Tag.getBooleanTag('request_student_phonenum', default=True):
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
@@ -99,28 +104,9 @@ class GuardContactForm(FormUnrestrictedOtherUser):
 
     guard_first_name = StrippedCharField(length=25, max_length=64)
     guard_last_name = StrippedCharField(length=30, max_length=64)
-    guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = USPhoneNumberField()
     guard_phone_cell = USPhoneNumberField(required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(GuardContactForm, self).__init__(*args, **kwargs)
-    
-        if not Tag.getTag('allow_guardian_no_email'):
-            if Tag.getTag('require_guardian_email'):
-                self.fields['guard_e_mail'].required = True
-            del self.fields['guard_no_e_mail']
-
-    def clean_guard_e_mail(self):
-        if 'guard_e_mail' not in self.cleaned_data or len(self.cleaned_data['guard_e_mail']) < 3:
-            if Tag.getTag('require_guardian_email') and not self.cleaned_data['guard_no_e_mail']:
-                if Tag.getTag('allow_guardian_no_email'):
-                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.  If they do not have access to e-mail, check the appropriate box.")
-                else:
-                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.")
-        else:
-            return self.cleaned_data['guard_e_mail']
 
     def clean(self):
         super(GuardContactForm, self).clean()
@@ -128,7 +114,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
             raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
         return self.cleaned_data
 
-HeardAboutESPChoices = (
+HEARD_ABOUT_ESP_CHOICES = (
     'Other...',
     'Teacher or Counselor',
     'Splash representative visited my school',
@@ -143,7 +129,7 @@ HeardAboutESPChoices = (
     'I came last year',
     )
 
-WhatToDoAfterHS = (
+WHAT_TO_DO_AFTER_HS = (
     'Other...',
     "I don't know yet",
     'Get a job',
@@ -153,7 +139,7 @@ WhatToDoAfterHS = (
     'Take the year off',
     )
 
-HowToGetToProgram = (
+HOW_TO_GET_TO_PROGRAM = (
     'Other...',
     'My school has already arranged for a bus',
     'I will ask my teachers and counselors to arrange for a bus for me and my peers',
@@ -177,17 +163,14 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
-    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HeardAboutESPChoices, HeardAboutESPChoices)))#forms.CharField(required=False)
+    heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HEARD_ABOUT_ESP_CHOICES, HEARD_ABOUT_ESP_CHOICES)))#forms.CharField(required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
 
     medical_needs = forms.CharField(required=False)
 
-    post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
-    transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
-    schoolsystem_id = forms.CharField(max_length=32, required=False)
-    schoolsystem_optout = forms.BooleanField(required=False)
+    transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HOW_TO_GET_TO_PROGRAM, HOW_TO_GET_TO_PROGRAM)))
 
     studentrep_error = True
 
@@ -217,7 +200,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
         self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in ESPUser.grade_options()]
-            
+
         #   Add user's current grade if it is out of range and they have already filled out the profile.
         if user and user.registrationprofile_set.count() > 0:
             user_grade = user.getGrade()
@@ -226,7 +209,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
-        if Tag.getTag('show_student_graduation_years_not_grades'):            
+        if Tag.getBooleanTag('show_student_graduation_years_not_grades'):
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:
@@ -239,58 +222,31 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
 
-        if not Tag.getTag('ask_student_about_post_hs_plans'):
-            del self.fields['post_hs']
-
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
 
         if not Tag.getTag('allow_change_grade_level'):
-            if kwargs.has_key('initial'):
+            if 'initial' in kwargs:
                 initial_data = kwargs['initial']
 
                 # Disable the age and grade fields if they already exist.
-                if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                if 'graduation_year' in initial_data and 'dob' in initial_data:
                     self.fields['graduation_year'].widget.attrs['disabled'] = "true"
                     self.fields['graduation_year'].required = False
                     self.fields['dob'].widget.attrs['disabled'] = "true"
                     self.fields['dob'].required = False
-
-        #   Add schoolsystem fields if directed by the Tag
-        if Tag.getTag('schoolsystem'):
-            sysinfo = json.loads(str(Tag.getTag('schoolsystem')))
-            for key in ['label', 'required', 'help_text']:
-                if key in sysinfo:
-                    setattr(self.fields['schoolsystem_id'], key, sysinfo[key])
-            if 'use_checkbox' in sysinfo and sysinfo['use_checkbox']:
-                if 'label' in sysinfo:
-                    self.fields['schoolsystem_optout'].help_text = '<span style="font-size: 0.8em;">Check this box if you don\'t have a %s</span>' % sysinfo['label']
-                else:
-                    self.fields['schoolsystem_optout'].help_text = '<span style="font-size: 0.8em;">Check this box if you don\'t have an ID number</span>'
-            else:
-                del self.fields['schoolsystem_optout']
-        else:
-            del self.fields['schoolsystem_id']
-            del self.fields['schoolsystem_optout']
 
         #   Add field asking about medical needs if directed by the Tag
         if Tag.getTag('student_medical_needs'):
             self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
         else:
             del self.fields['medical_needs']
-            
-        #   Make the schoolsystem_id field non-required if schoolsystem_optout is checked
-        if self.data and 'schoolsystem_optout' in self.data and 'schoolsystem_id' in self.data:
-            self.data = self.data.copy()
-            if self.data['schoolsystem_optout']:
-                self.fields['schoolsystem_id'].required = False
-                self.data['schoolsystem_id'] = ''
-                
+
         #   The unmatched_school field is for students to opt out of selecting a K12School.
         #   If we don't require a K12School to be selected, don't bother showing that field.
-        if not Tag.getTag('require_school_field', default=False):
+        if not Tag.getBooleanTag('require_school_field', default=False):
             del self.fields['unmatched_school']
-        
+
         self._user = user
 
     def repress_studentrep_expl_error(self):
@@ -310,29 +266,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['heard_about']
 
-    def clean_post_hs(self):
-        if self.cleaned_data['post_hs'] == 'Other...:':
-            raise forms.ValidationError("If 'Other...', please provide details")
-        return self.cleaned_data['post_hs']
-
     def clean_transportation(self):
         if self.cleaned_data['transportation'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['transportation']
-
-    def clean_schoolsystem_id(self):
-        if Tag.getTag('schoolsystem'):
-            sysinfo = json.loads(str(Tag.getTag('schoolsystem')))
-            if 'num_digits' in sysinfo:
-                input_str = self.cleaned_data['schoolsystem_id'].strip()
-                if len(input_str) > 0:
-                    if len(input_str) != int(sysinfo['num_digits']) or not input_str.isdigit():
-                        raise forms.ValidationError("Please enter a unique %d-digit number." % int(sysinfo['num_digits']))
-            if 'check_unique' in sysinfo and sysinfo['check_unique']:
-                if StudentInfo.objects.filter(schoolsystem_id=input_str).exclude(user=self._user).exists():
-                    if len(input_str.strip('0')) != 0:
-                        raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
-        return self.cleaned_data['schoolsystem_id']
 
     def clean(self):
         super(StudentInfoForm, self).clean()
@@ -353,11 +290,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             # If graduation year and dob were disabled, get old data.
             if (orig_prof.id is not None) and (orig_prof.student_info is not None):
 
-                if not cleaned_data.has_key('graduation_year'):
+                if not 'graduation_year' in cleaned_data:
                     # Get rid of the error saying this is missing
                     del self.errors['graduation_year']
 
-                if not cleaned_data.has_key('dob'):
+                if not 'dob' in cleaned_data:
                     del self.errors['dob']
 
                 # Always use the old birthdate if it exists, so that people can't
@@ -365,19 +302,26 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
-        
-        if Tag.getTag('require_school_field'):
+
+        if Tag.getBooleanTag('require_school_field'):
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
         return cleaned_data
-        
-    
+
+
 StudentInfoForm.base_fields['school'].widget.attrs['size'] = 24
 StudentInfoForm.base_fields['studentrep_expl'].widget = forms.Textarea()
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
+AFFILIATION_CHOICES = (
+    (AFFILIATION_OTHER, 'Other (please specify your affiliation)'),
+    (AFFILIATION_UNDERGRAD, 'Undergraduate Student'),
+    (AFFILIATION_GRAD, 'Graduate Student'),
+    (AFFILIATION_POSTDOC, 'Postdoc'),
+    (AFFILIATION_NONE, 'No affiliation (please specify your school or employer)')
+)
 
 class TeacherInfoForm(FormWithRequiredCss):
     """ Extra teacher-specific information """
@@ -388,50 +332,38 @@ class TeacherInfoForm(FormWithRequiredCss):
     from_here_answers = [ (True, "Yes"), (False, "No") ]
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
-    is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % settings.INSTITUTION_NAME)
-    school = SizedCharField(length=24, max_length=128, required=False)
+    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
-    full_legal_name = SizedCharField(length=24, max_length=128, required=False)
-    university_email = forms.EmailField(required=False)
-    student_id = SizedCharField(length=24, max_length=128, required=False)
-    mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
-        if not Tag.getTag('teacherinfo_reimbursement_options', default=False):
-            reimbursement_fields = ['full_legal_name', 'university_email', 'student_id', 'mail_reimbursement']
-            for field_name in reimbursement_fields:
-                del self.fields[field_name]
-
         if Tag.getTag('teacherinfo_shirt_options') == 'False':
             del self.fields['shirt_size']
             del self.fields['shirt_type']
         elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
             del self.fields['shirt_type']
-            
-        if Tag.getTag('teacherinfo_shirt_size_required'):
-            self.fields['shirt_size'].required = True
-            self.fields['shirt_size'].widget.attrs['class'] = 'required'
-        if Tag.getTag('teacherinfo_reimbursement_checks') == 'False':
-            del self.fields['mail_reimbursement']
-            
+
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
-        # If teacher is not from MIT, make sure they've filled in the next box
-        from_here = cleaned_data.get('from_here')
-        school = cleaned_data.get('school')
-
-        if from_here == "False" and school == "":
-            msg = u'Please enter your affiliation if you are not from %s.' % settings.INSTITUTION_NAME
-            self._errors['school'] = forms.util.ErrorList([msg])
-            del cleaned_data['from_here']
-            del cleaned_data['school']
-
+        affiliation_field = self.fields['affiliation']
+        affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
+        if affiliation == '':
+            msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+            self.add_error('affiliation', msg)
+        elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
+            cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
+        else: # OTHER or NONE -- Make sure they entered something into the other box
+            if school.strip() == '':
+                msg = u'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                if affiliation == AFFILIATION_OTHER:
+                    msg = u'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                elif affiliation == AFFILIATION_NONE:
+                    msg = u'Please enter your school or employer.'
+                self.add_error('affiliation', msg)
         return cleaned_data
 
 TeacherInfoForm.base_fields['graduation_year'].widget.attrs['size'] = 4
@@ -503,7 +435,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
             if gy != 'G':
                 gy = 'N/A'
         return gy
-    
+
 class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
     graduation_year = SizedCharField(length=4, max_length=4, required=False)

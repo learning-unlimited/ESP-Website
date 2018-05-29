@@ -62,13 +62,13 @@ class SplashInfoForm(forms.Form):
     #   The default choices are somewhat unappetizing...
     default_choices = [['no', 'No'], ['yes', 'Yes']]
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
-                        (True, 'I have a brother/sister already enrolled in Splash  (+ $20).')]
-                  
+                        (True, 'I have a sibling already enrolled in Splash  (+ $20).')]
+
     lunchsat = forms.ChoiceField(choices=default_choices)
     lunchsun = forms.ChoiceField(choices=default_choices)
     siblingdiscount = forms.ChoiceField(choices=discount_choices, widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
-    
+
     def __init__(self, *args, **kwargs):
         #   Extract a program if one was provided
         if 'program' in kwargs:
@@ -76,30 +76,30 @@ class SplashInfoForm(forms.Form):
             del kwargs['program']
         else:
             program = None
-            
+
         #   Run default init function
         super(SplashInfoForm, self).__init__(*args, **kwargs)
-        
+
         #   Set choices from Tag data (try to get program-specific choices if they exist)
         tag_data = None
         if program:
-            tag_data = Tag.getTag('splashinfo_choices', target=program)
+            tag_data = Tag.getProgramTag('splashinfo_choices', program)
         if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
         if tag_data:
             tag_struct = json.loads(tag_data)
             self.fields['lunchsat'].choices = tag_struct['lunchsat']
             self.fields['lunchsun'].choices = tag_struct['lunchsun']
 
-        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
+        if not Tag.getBooleanTag('splashinfo_siblingdiscount', default=True):
             del self.fields['siblingdiscount']
             del self.fields['siblingname']
 
-        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
+        if not Tag.getBooleanTag('splashinfo_lunchsat', default=True):
             del self.fields['lunchsat']
 
-        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
+        if not Tag.getBooleanTag('splashinfo_lunchsun', default=True):
             del self.fields['lunchsun']
-    
+
     def load(self, splashinfo):
         self.initial['lunchsat'] = splashinfo.lunchsat
         self.initial['lunchsun'] = splashinfo.lunchsun
@@ -112,9 +112,9 @@ class SplashInfoForm(forms.Form):
         if 'lunchsun' in self.cleaned_data:
             splashinfo.lunchsun = self.cleaned_data['lunchsun']
         if 'siblingdiscount' in self.cleaned_data:
-            splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
+            splashinfo.siblingdiscount = (self.cleaned_data['siblingdiscount'] == "True")
         if 'siblingname' in self.cleaned_data:
             splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
-        
+

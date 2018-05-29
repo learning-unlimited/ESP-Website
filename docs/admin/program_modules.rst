@@ -8,6 +8,8 @@ When you create a program, your primary means of controlling the registration pr
 
 You may select which program modules to include on the program creation form at http://[hostname]/manage/newprogram.  After a program has been created, you can select which modules to include within the administration pages; go to http://[hostname]/admin/program/program/, select your program and edit the "Program modules" multi-select field.
 
+You can also change the displayed name of program modules at http://[hostname]/admin/program/programmodule/.
+
 More background on program modules
 ==================================
 
@@ -33,8 +35,8 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (17)
-====================
+Student modules
+===============
 
 Extra Registration Info (CustomFormModule)
 ------------------------------------------
@@ -72,6 +74,24 @@ There are two options for a "lottery" registration where students select their c
 
 If you are using this module, make sure the StudentClassRegModule is not enabled at the same time.  Add only LotteryStudentRegModule to your program for the lottery phase, then remove it when that phase ends.  After running the lottery assignment script, you can add the StudentClassRegModule and set a deadline for first-come first-served registration.
 
+Student Registration Phase Zero
+-------------------------------
+
+For programs in which there is more demand than supply, this student lottery
+system allows a program to run a lottery to limit the number of students who
+can join the program.  This helps ensure that each student gets enough classes
+in later phases of registration.
+
+The program size is based on the ``program_size_by_grade`` Tag.  Students
+submit non-binding interest (which sends a confirmation email).  The lottery
+allows students to combine into groups of up to 4; each student will only be
+selected in the lottery if all can be.  (This can very slightly decrease each
+student's chance of being selected.)
+
+Also provides various situational templates (e.g. to explain if students didn't
+win the lottery).  To enable these, this module should NOT be disabled upon the
+conclusion of the student lottery.
+
 Student Profile Editor (RegProfileModule) 
 -----------------------------------------
 
@@ -81,7 +101,6 @@ It is required by default when enabled. However, if a student has filled out a p
 
 Relevant settings include: 
 
-* Tag 'schoolsystem': Controls whether students are prompted to enter the ID number for their local school system, and if so, how that part of the form should work.
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
 * Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
@@ -320,8 +339,8 @@ student applications.  For more information, see
 Class Change Request Module (ClassChangeRequest)
 ------------------------------------------------
 
-Teacher modules (13)
-====================
+Teacher modules
+===============
 
 Teacher Availability (AvailabilityModule)
 -----------------------------------------
@@ -340,13 +359,19 @@ Teacher Profile Editor (RegProfileModule)
 
 This module will prompt teachers to fill out their profile information before proceeding to create classes.  In addition to their contact information, they will be asked a few questions such as their affiliation (e.g. your university, or something else) and graduation year.  If you would like to ask additional questions, please use the CustomFormModule.
 
+If you would like to remove a question, you can do so using the following tag:
+
+* teacherreg_hide_fields - A comma seperated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+
 The questions shown on the teacher profile are configurable via the following tags:
 
-* teacherreg_label_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
-* teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+* teacherreg_label_purchase_requests - If tag exists, overwrites the label 'Planned Purchases' in teacher registration.
+* teacherreg_help_text_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
+* teacherreg_label_message_for_directors - If tag exists, overwrites the label 'Message for Directors' in teacher registration.
+* teacherreg_help_text_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+
 * teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
 * teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
-* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
 ------------------------------
@@ -414,8 +439,8 @@ Teacher Admissions Dashboard
 Provides an interface for teachers to review applications for their class.
 For more information, see `</docs/admin/student_apps.rst>`_.
 
-Management modules (26)
-=======================
+Management modules
+==================
 
 Class Management For Admin (AdminClass)
 ---------------------------------------
@@ -469,10 +494,28 @@ The scheduling interface will periodically fetch updates from the server so that
 
 The Ajax scheduling module does not have full support for overlapping time slots, and time slots that are not approximately 1 hr long.
 
-Managing Check List Items (CheckListModule)
--------------------------------------------
+Instructions for using the scheduler:
 
-This module is deprecated and will be removed in a future release.  Please consider using the new "class flags" feature described immediately below.
+- Click on the class you want to schedule (either in the directory or on the grid) to select it.
+- On the grid, the places you might put the class are highlighted. Legend:
+ - Green means you can put the class there.
+ - Green with stripes means the class can't start there, but there should be a green square to the left where you can place it (for multi-hour classes).
+ - Yellow means the teacher is available then, but teaching another class.
+- Click on a green highlighted square to place the class. Click anywhere else on the grid or directory to unselect the class.
+- When you have a class selected, the pane in the upper right corner displays info about the class as well as links to the manage and edit pages.
+- When no class is selected, the pane in the upper right corner displays scheduling errors.
+- Hovering over a room cell or a class section gives you a tooltip with info about the classes.
+- The lower right pane is the directory. You can search using the search bar at the top and select how you want to search with the radio buttons. You can move to the filters tab of the directory and set bounds on different parameters such as capacity and length.
+- To set a comment on a class's scheduling, select it and click on "Set Comment" in the upper right pane. A dialog for entering a comment will appear.
+- To lock a class, follow the instructions to set a comment, and check the "Lock" box in the comment dialog. A red border will appear around it in the schedule or directory, and no one will be able to move it without unlocking it first. To unlock a class, select it and then click on "Edit Comment or Unlock". Any admin can lock or unlock any class.
+
+Keyboard shortcuts:
+
+- ESC unselects the currently selected class
+- F1 switches to the directory tab
+- F2 switches to the filters tab
+- / selects the search box
+- DEL unschedules the currently selected class
 
 Class Flags (ClassFlagModule)
 -------------------------------------------
@@ -659,9 +702,37 @@ some of the same statistics as the dashboard, but is a lot faster to load, and
 has some fun extra numbers too.  Most of the statistics are most useful during
 lottery registration, but it is not restricted to the lottery.
 
+Teacher Registration Big Board
+--------------------------------------
 
-Onsite modules (8)
-==================
+Like the Student Registration Big Board, but for teacher registrations.
+Records the following information: number of registered classes, number of
+approved classes, numbers of teachers, number of class-hours, and number of
+class-student-hours. Also records the number of checked in teachers for the
+current day and the number of teachers registering a class in the last 10
+minutes.
+
+"Phase Zero" Management
+-----------------------
+
+This module is used to manage the Student Registration Phase Zero module.  It
+provides an admin interface to track student lottery registration and run the
+lottery. When the lottery is run, the winners will be given open-ended
+``OverridePhaseZero`` and ``Student/All`` permissions, which will enable them
+to reach the other student registration phases.
+
+Lottery Frontend
+--------------------------------------
+
+For programs that use the class registration lottery, this module allows admins
+to run the lottery without assistance from web-team.  To run the lottery,
+enable this module, go to "Run the Lottery Assignment Thing" in the list of
+modules.  Click the "Generate Student Schedules" button to run the lottery,
+examine the statistics, and then click "Save Schedules to Website".  This
+clobbers any existing student registrations, so use with care.
+
+Onsite modules
+==============
 
 On-Site User Check-In (OnSiteCheckinModule)
 -------------------------------------------
@@ -710,9 +781,13 @@ Teacher Check-in (TeacherCheckInModule)
 
 This is a very helpful module for recording which teachers have checked in (/onsite/[program]/[instance]/teachercheckin), avoiding the need for a Google Doc or paper checklist.  It divides teachers by the time of their first class on each day, and shows you their phone number if you need to call them.  Teachers will need to check in before the first class on each day that they are teaching.
 
+Unenroll Students (UnenrollModule)
+----------------------------------
 
-Volunteer modules (1)
-=====================
+This module allows you to find students who are late for their first class, based on whether they have checked in, and unroll them from their current or future classes. The page includes options to select the set of registrations to expire and a counter for how many students and registrations will be affected.
+
+Volunteer modules
+=================
 
 Volunteer Sign-up Module (VolunteerSignup)
 ------------------------------------------

@@ -87,28 +87,28 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     def test_grade_range_popup(self):
         # Login the teacher
-        self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.failUnless("grade_range_popup" in response.content)
+        self.assertTrue("grade_range_popup" in response.content)
 
         # Add a tag that specifically removes this functionality
         Tag.setTag('grade_range_popup', self.program, 'False')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.failUnless(not "grade_range_popup" in response.content)
+        self.assertTrue(not "grade_range_popup" in response.content)
 
         # Change the grade range of the program and reset the tag
         self.program.grade_min = 7
         self.program.grade_max = 8
         self.program.save()
         Tag.setTag('grade_range_popup', self.program, 'True')
- 
+
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.failUnless(not "check_grade_range" in response.content)
+        self.assertTrue(not "check_grade_range" in response.content)
 
     def apply_coteacher_op(self, dict):
         return self.client.post('%scoteachers' % self.program.get_teach_url(), dict)
@@ -118,58 +118,58 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     def test_adding_coteachers(self):
         # Login the teacher
-        self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
 
         cur_coteachers = []
 
         # Error on adding self
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.teacher.id, 'coteachers': ",".join([str(coteacher.id) for coteacher in cur_coteachers])})
-        self.failUnless("Error" in response.content)
+        self.assertTrue("Error" in response.content)
 
         # Error on no teacher selected
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': '', 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless("Error" in response.content)
+        self.assertTrue("Error" in response.content)
 
         # Add free_teacher1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless("Error" in response.content)
+        self.assertTrue("Error" in response.content)
 
         # Add free_teacher2
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.free_teacher2, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher2, response.content))
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(not self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content))
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
         response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(not self.has_coteacher(self.free_teacher1, response.content) and not self.has_coteacher(self.free_teacher2, response.content))
+        self.assertTrue(not self.has_coteacher(self.free_teacher1, response.content) and not self.has_coteacher(self.free_teacher2, response.content))
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        self.assertTrue(self.has_coteacher(self.free_teacher1, response.content))
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
         self.apply_coteacher_op({'op': 'save', 'clsid': self.cls.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.cls in self.teacher.getTaughtClasses())
-        self.failUnless(self.cls in self.free_teacher1.getTaughtClasses())
-        self.failUnless(not self.cls in self.free_teacher2.getTaughtClasses())
+        self.assertTrue(self.cls in self.teacher.getTaughtClasses())
+        self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
+        self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
 
     def add_resource_request(self, sec, res_type, val):
         rr = ResourceRequest()
@@ -198,15 +198,15 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         sec = random.choice(self.cls.sections.all())
 
         self.add_resource_request(sec, new_res_type1, 'Yes')
-        self.failUnless(self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+        self.assertTrue(self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
         self.add_resource_request(sec, new_res_type2, 'ThisValueIsAwesome')
-        self.failUnless(self.has_resource_pair_with_teacher(new_res_type2, 0, self.teacher))
+        self.assertTrue(self.has_resource_pair_with_teacher(new_res_type2, 0, self.teacher))
 
         self.delete_resource_request(sec, new_res_type1)
-        self.failUnless(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+        self.assertTrue(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
 
-    
+
     def check_all_teachers(self, all_teachers):
         teaching_teachers = [teacher for teacher in self.teachers
                                      if len(teacher.getTaughtClasses()) > 0]
@@ -217,9 +217,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Get the instance of StudentClassRegModule
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
         ProgramModuleObj.getFromProgModule(self.program, pm)
-        
+
         d = self.moduleobj.teachers()
-        
+
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
         cls1.status = -1
@@ -232,9 +232,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         cls3.save()
         # Check them
         d = self.moduleobj.teachers()
-        self.failUnless(self.teacher in d['class_rejected'])
-        self.failUnless(self.other_teacher1 in d['class_approved'])
-        self.failUnless(self.other_teacher2 in d['class_proposed'])
+        self.assertTrue(self.teacher in d['class_rejected'])
+        self.assertTrue(self.other_teacher1 in d['class_approved'])
+        self.assertTrue(self.other_teacher2 in d['class_proposed'])
         # Undo the statuses
         cls1.status = 10
         cls1.save()
@@ -252,10 +252,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         classes.remove(cls)
         for c in classes:
             c.removeTeacher(teacher)
-        #print teacher.getTaughtClasses()
         d = self.moduleobj.teachers()
         # Check it
-        self.failUnless(teacher not in d['class_full'] and teacher not in d['class_nearly_full'])
+        self.assertTrue(teacher not in d['class_full'] and teacher not in d['class_nearly_full'])
 
         # Mostly fill it
         self.add_student_profiles()
@@ -264,15 +263,15 @@ class TeacherClassRegTest(ProgramFrameworkTest):
             cls.preregister_student(cur_student)
         # Check it
         d = self.moduleobj.teachers()
-        self.failUnless(teacher in d['class_nearly_full'])
-        self.failUnless(teacher not in d['class_full'])
+        self.assertTrue(teacher in d['class_nearly_full'])
+        self.assertTrue(teacher not in d['class_full'])
 
         # Fill it
         cls.get_sections()[0].preregister_student(self.students[4])
         # Check it
         d = self.moduleobj.teachers()
-        self.failUnless(teacher in d['class_full'])
-        self.failUnless(teacher in d['class_nearly_full'])
+        self.assertTrue(teacher in d['class_full'])
+        self.assertTrue(teacher in d['class_nearly_full'])
 
         # Make a program
         self.create_past_program()
@@ -284,17 +283,17 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         new_class.accept()
         # Check taught_before
         d = self.moduleobj.teachers()
-        self.failUnless(self.teacher in d['taught_before'])
+        self.assertTrue(self.teacher in d['taught_before'])
 
     @transaction.atomic
     def test_deadline_met(self):
 
-        self.failUnless(self.moduleobj.deadline_met())
+        self.assertTrue(self.moduleobj.deadline_met())
         self.moduleobj.user = self.teachers[0]
-        self.failUnless(self.moduleobj.deadline_met())
+        self.assertTrue(self.moduleobj.deadline_met())
 
         Permission.objects.filter(permission_type__startswith='Teacher', program=self.moduleobj.program).delete()
 
-        self.failUnless(not self.moduleobj.deadline_met())
+        self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
-        self.failUnless(not self.moduleobj.deadline_met())
+        self.assertTrue(not self.moduleobj.deadline_met())

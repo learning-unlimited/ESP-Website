@@ -32,9 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap, meets_grade
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web       import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, Permission, Record, User
 from esp.tagdict.models import Tag
@@ -99,13 +99,15 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_grade
     @meets_deadline('/FormstackMedliab')
+    @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
         """
         Landing page redirecting to med-liab form on Formstack.
         """
-        t = Tag.getTag("formstack_id", self.program)
-        v = Tag.getTag("formstack_viewkey", self.program)
+        t = Tag.getProgramTag("formstack_id", self.program)
+        v = Tag.getProgramTag("formstack_viewkey", self.program)
         context = {"formstack_id": t, "formstack_viewkey": v}
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, context)
@@ -123,28 +125,65 @@ class FormstackMedliabModule(ProgramModuleObj):
     @needs_admin
     def medicalbypass(self, request, tl, one, two, module, extra, prog):
         status = None
-        
+        status_type = None
+
         if request.method == 'POST':
             form = GenericSearchForm(request.POST)
             if form.is_valid():
                 user = form.cleaned_data['target_user']
-                if Record.objects.filter(user=user,
-                                          program=self.program,
-                                          event="med_bypass").exists():
-                    status = 'bypass exists'
-                elif Record.objects.filter(user=user,
-                                            program=self.program,
-                                            event="med").exists():
-                    status = 'reg bit exists'
-                else:
-                    Record.objects.create(user=user,
-                                           program=self.program,
-                                           event="med_bypass")
-                    status = 'success'
-            else:
-                status = 'invalid user'
+                bypass_records = Record.objects.filter(
+                        user=user,
+                        program=self.program,
+                        event="med_bypass")
+                med_records = Record.objects.filter(
+                        user=user,
+                        program=self.program,
+                        event="med")
 
-        context = {'status': status, 'form': GenericSearchForm()}
+                if 'add-bypass' in request.POST:
+                    if bypass_records.exists():
+                        status_type = 'error'
+                        status = 'Bypass record already exists.'
+                    elif med_records.exists():
+                        status_type = 'error'
+                        status = 'User has already submitted form.'
+                    else:
+                        Record.objects.create(user=user,
+                                              program=self.program,
+                                              event="med_bypass")
+                        status_type = 'success'
+                        status = 'Bypass record added successfully.'
+                elif 'query-status' in request.POST:
+                    if med_records.exists():
+                        if bypass_records.exists():
+                            status_type = 'error'
+                            status = 'Both medical form and bypass record exist (!!).'
+                        else:
+                            status_type = 'success'
+                            status = 'User has submitted medical form.'
+                    else:
+                        if bypass_records.exists():
+                            status_type = 'success'
+                            status = 'User has bypass record.'
+                        else:
+                            status_type = 'info'
+                            status = 'User has neither medical form nor bypass record.'
+                elif 'delete-bypass' in request.POST:
+                    if bypass_records.exists():
+                        bypass_records.delete()
+                        status_type = 'success'
+                        status = 'Deleted user\'s bypass record.'
+                    else:
+                        status_type = 'error'
+                        status = 'User has no bypass record.'
+                else:
+                    status_type = 'error'
+                    status = 'Invalid operation.'
+            else:
+                status_type = 'error'
+                status = 'Invalid user.'
+
+        context = {'status': status, 'status_type': status_type, 'form': GenericSearchForm()}
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, context)

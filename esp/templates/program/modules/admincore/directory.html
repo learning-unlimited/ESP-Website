@@ -2,8 +2,6 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block xtrajs %}
 {{ block.super }}
 <script type="text/javascript">
@@ -18,16 +16,6 @@
 <script type="text/javascript">
 function initialize()
 {
-    $j("#hide_complete_list").click(function () {
-        $j("#show_complete_list").removeClass("manage_hidden");
-        $j("#hide_complete_list").addClass("manage_hidden");
-        $j("#complete_list").addClass("manage_hidden");
-    });
-    $j("#show_complete_list").click(function () {
-        $j("#show_complete_list").addClass("manage_hidden");
-        $j("#hide_complete_list").removeClass("manage_hidden");
-        $j("#complete_list").removeClass("manage_hidden");
-    });
     $j("div.module_link_large").button();
 }
 
@@ -39,7 +27,7 @@ $j(document).ready(initialize);
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
-    
+
     <style type="text/css">
     .nocheckmark { border: 1px solid black; }
     </style>
@@ -49,7 +37,7 @@ $j(document).ready(initialize);
 
 {% load render_qsd %}
 
-<h1>Admin Portal for {{ program.niceName }} </h1>
+<h1>Admin Portal for {{ program.niceName }} (ID: {{ program.id }})</h1>
 
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
@@ -61,11 +49,11 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Resources</div>
             <div class="module_link_caption">timeslots, classrooms</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Deadlines</div>
             <div class="module_link_caption">open/close registration</div>
         </button></a>
@@ -75,6 +63,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
             {% if manage_teacher_events %}<li><a href="/manage/{{ program.getUrlBase }}/teacher_events">Teacher Training and Interviews</a>: Teachers signed up for each slot</li>{% endif %}
             {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
             {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
+            <li><a href="/admin/program/program/{{ program.id }}/">Administer this program through Django</a>: Emails, program caps and modules, class categories, and flag types</li>
+            <li><a href="/admin/tagdict/tag/?object_id={{ program.id }}&amp;content_type__model=program">Administer tags for this program</a>: Generic miscellaneous settings, for experts only</li>
         </ul>
         </div>
     </div>
@@ -86,11 +76,11 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
     <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">E-mail</div>
             <div class="module_link_caption">communications panel</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Morph into User</div>
             <div class="module_link_caption">&nbsp;</div>
         </button></a>
@@ -104,21 +94,21 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Dashboard</div>
             <div class="module_link_caption">review classes and stats</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Scheduling</div>
             <div class="module_link_caption">assign rooms and times</div>
         </button></a>
         </div>
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Documents</div>
             <div class="module_link_caption">upload and view files</div>
         </button></a>
-        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-lg">
+        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-default btn-lg">
             <div class="module_link_main">Volunteers</div>
             <div class="module_link_caption">create shifts, view signups</div>
         </button></a>
@@ -162,10 +152,8 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 </tr>
 </table>
 
-<div id="show_complete_list" class="module_group_header header_special">Show Complete Module List</div>
-<div id="hide_complete_list" class="module_group_header header_special manage_hidden">Hide Complete Module List</div>
-
-<div id="complete_list" class="manage_hidden">
+<div class="module_group_header">Complete Module List</div>
+<div id="complete_list">
 <table border="0" width="100%">
 <tr>
  <td width="40%">
@@ -208,6 +196,3 @@ Please select an option to the left to continue, or look down below to select fu
 </td>
 
 {% endblock %}
-
-
-

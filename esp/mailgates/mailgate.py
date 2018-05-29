@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # Main mailgate for ESP.
 # Handles incoming messages etc.
@@ -8,6 +8,10 @@ new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+
+import logging
+# Make sure we end up in our logger even though this file is outside esp
+logger = logging.getLogger('esp.mailgate')
 
 import os.path
 project = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -81,7 +85,7 @@ try:
 
             send_mail(str(message))
             continue
-        
+
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
@@ -96,7 +100,7 @@ try:
         if handler.from_email:
             del(message['from'])
             message['From'] = handler.from_email
-            
+
         del message['Message-ID']
 
         # get a new message id
@@ -125,6 +129,7 @@ except Exception as e:
     if DEBUG:
         raise
     else:
+        logger.warning("Couldn't find user '%s'", user)
         print """
 ESP MAIL SERVER
 ===============

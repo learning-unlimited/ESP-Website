@@ -2,8 +2,6 @@
 
 {% block title %}Manage Resources for {{ prog.niceName }}{% endblock %}
 
-{% block subsection_name %}Resource Management{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
@@ -27,12 +25,18 @@ You have chosen to delete the resource type: {{ restype }}.  Please confirm this
     <tr><th colspan="2">
         Information
     </th></tr>
-    <tr><th class="small">Name:</th><td>{{ restype.name }}</td></tr>
+    <tr><th class="small" width="30%">Name:</th><td width="70%">{{ restype.name }}</td></tr>
     <tr><th class="small">Description:</th><td> {{ restype.description }}</td></tr>
     <tr><th class="small">Program Association:</th><td>{% if restype.program %}{{ restype.program }}{% else %}None (global){% endif %}</td></tr>
     <tr><th class="small">Priority:</th><td> {{ restype.priority_default }} </td></tr>
-    <tr><th class="small">Options:</th>
-        <td align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resoure editor</a>, or click here:
+    <tr><th class="small">Choices:</th> 
+        <td>
+        {% for choice in restype.choices %}
+        {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
+        {% endfor %}
+        </td>
+    </tr>
+    <tr><td colspan="2" align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resoure editor</a>, or click here:
         <input class="fancybutton" value="Delete" type="submit" /></td>
     </tr>
 </table>

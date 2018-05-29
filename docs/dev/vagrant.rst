@@ -1,7 +1,5 @@
 Vagrant based dev servers
 =========================
-Authors:
-   - Michael Price <price@learningu.org>
 
 .. contents:: :local:
 
@@ -17,10 +15,17 @@ A dev server requires a lot of software components to run properly, and it would
 
 For some time, we provided dev servers as Virtualbox images, which were prepared by (manually) creating a VM with Ubuntu installed, and then running our setup script inside the VM.  This worked well except that it was time-consuming to create these images (especially with chapter-specific databases and media files), and the files were very large (on the order of 5--10 GB) and time consuming to download.  That is what motivated the development of an alternative setup process, where the VM is created and prepared on your machine (with few manual steps).
 
-With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 12.04) without tying developers to that platform.
+With this new procedure, we should be able to standardize the platform that all development and production servers use (currently it's Ubuntu 14.04) without tying developers to that platform.
 
 Setup procedure
 ---------------
+
+Preparation
+~~~~~~~~~~~
+
+The site VM is 64-bit Ubuntu, so it will probably not work if your computer runs a 32-bit operating system, although such computers are rare as of 2017.
+
+On some computers, particularly Lenovo computers, you will need to enable hardware virtualization in the BIOS in order to run VMs. If you don't, this issue may manifest itself in Vagrant silently failing to boot your VM.
 
 Base components
 ~~~~~~~~~~~~~~~
@@ -29,11 +34,13 @@ This setup procedure does have some prerequisites of its own, which you will nee
 
 * `Git <http://git-scm.com/downloads>`_
 * `Virtualbox <https://www.virtualbox.org/wiki/Downloads>`_
-* `Vagrant <http://www.vagrantup.com/downloads.html>`_
-* `Python 2.7 <http://www.python.org/download/releases/2.7.6/>`_ and `pip <http://www.pip-installer.org/en/latest/installing.html>`_.
-* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip)
+* `Vagrant <http://www.vagrantup.com/downloads.html>`_ (make sure you install the 64-bit version)
+* `Python 2.7 <https://www.python.org/downloads/>`_
+* Python libraries ``fabric`` and ``fabtools`` (can be installed using pip, which comes with Python)
 
-If you are on a Linux system, it's likely that everything except Vagrant and Virtualbox can be installed using a package manager on the command line.
+If you are on a **Linux** system, it's likely that everything can be installed using a package manager on the command line, e.g. by running ``sudo apt-get install git virtualbox vagrant python2 python-pip && sudo pip install fabric fabtools``.
+
+If you are on a **Windows** system, it's easiest if you install the `PyCrypto binaries <http://www.voidspace.org.uk/python/modules.shtml#pycrypto>`_ before trying to install Fabric. In addition, you should modify the PATH environment variable (the system one, not the user one) in Control Panel -> System -> Environment Variables... by append ``C:\Python27`` and ``C:\Python27\Scripts``, in order to put ``python``, ``pip`` and ``fab`` on your PATH. (You may also want to append the path to the ``bin`` folder in your git installation for an SSH client.) You will need to restart Command Prompt after making this change. To append items to PATH, in Windows 10 you can edit Path and hit New to add new entries. In previous versions of Windows, you should add them to the end of your PATH, separated by semicolons. Finally, you may find that the Git Bash shell does not interact well with Fabric. The Windows Command Prompt works much better.
 
 Installation
 ~~~~~~~~~~~~
@@ -42,40 +49,44 @@ Using a shell, navigate to the directory where you would like to place the code 
 
     git clone https://github.com/learning-unlimited/ESP-Website.git devsite
     cd devsite
+    
+If you already have a GitHub account with SSH keys set up, you may want to use ``git clone git@github.com:learning-unlimited/ESP-Website.git devsite`` to make it easy to push new code.
 
 Next, use Vagrant to create your VM: ::
 
     vagrant up
 
+(If you get an error message suggesting that you run ``vagrant init``, you probably forgot to ``cd devsite``.)
+
 Note that you will not be able to see the VM, since it runs in a "headless" mode by default.
 
 The following command connects to the running VM and installs the software dependencies: ::
 
-    fab update_deps
+    fab setup
 
-Finally, you should use Fabric to deploy the development environment.
+The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer. The preferred way to load a database dump is automatically over HTTP; this assumes you've been provided with a download URL. If you have, run the following command. (**NOTE:** Run **only one** of the next three commands. They are alternative ways to created the database.) ::
 
-The development environment can be seeded with a database dump from an existing chapter, subject to a confidentiality agreement and security requirements on the part of the developer.  The 'vagrant_dev_setup' task accepts optional arguments to load a database dump in .sql.gz or .sql.gz.gpg format: ::
+    fab loaddb
 
-    fab vagrant_dev_setup:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+You will be prompted to provide the URL. On future runs of ``fab loaddb``, the database will be automatically reloaded from this URL. (If you mistype the URL, you can edit it by ``vagrant ssh``-ing into the VM and editing ``/mnt/encrypted/fabric/dbconfig``.)
 
-Typically the user name for the database is typically the lowercase name of the chapter; however, for MIT's system it is simply "esp".  Please ask the Web team for assistance if you need to know the user name, or obtain a database dump.
+Alternatively, the ``loaddb`` task accepts an optional argument to load a database dump in .sql or any other Potgres-supported dump format. If you've acquired a database dump, you can load a database by running the following, replacing ``/path/to/dump`` with the path to your database dump: ::
 
-Alternatively, you can set up your dev server with an empty database.  At some point during this process, you will be asked to enter information for the site's superuser account. ::
+    fab loaddb:/path/to/dump
 
-    fab vagrant_dev_setup
+Finally, you can set up your dev server with an empty database. At some point during this process, you will be asked to enter information for the site's superuser account. ::
 
-If you would like to load a database dump to a system that has already been set up, you may do so with the "load_db_dump" task (which overwrites the existing database on the dev server): ::
+    fab emptydb
 
-    fab load_db_dump:dbuser=chaptername,dbfile=/path/to/chaptername.sql.gz.gpg
+(If this step fails with an error "Operation now in progress", see the "Problems" section at the end.)
+
+These commands can also be used on a system that has already been set up to bring your database up to date. They will overwrite the existing database on your dev server.
 
 Now you can run the dev server: ::
 
-    fab run_devserver
+    fab runserver
 
 Once this is running, you should be able to open a Web browser on your computer (not within the VM) and navigate to http://localhost:8000, where you will see the site.
-
-If you are using encrypted databases, you will need to run 'fab open_db' after each time you start the VM ('vagrant up'), and enter the passphrase that you specified during the setup process.
 
 Usage
 -----
@@ -85,17 +96,8 @@ The working copy you checked out with Git at the beginning contains the code you
 If you need to debug things inside of the VM, you can open your shell, go to the directory where you checked out the code, and run ``vagrant ssh``.
 
 * The location of the working copy within the VM is ``/home/vagrant/devsite``
-* The location of the virtualenv used by the VM is ``/home/vagrant/devsite_virtualenv``
-  This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links.
-
-For example, if you want to run a shell: ::
-
-    vagrant ssh
-    source ~/devsite_virtualenv/bin/activate
-    cd ~/devsite/esp
-    ./manage.py shell_plus
-
-An Apache2 server is also set up; you can access it from http://localhost:8080.  Note that whenever you change the code, you will need to run ``fab reload_apache`` to reload Apache2 inside the VM so that your changes take effect.
+* The location of the virtualenv used by the VM is ``/home/vagrant/venv``
+  This is different from the conventional configuration (where the virtualenv is in an ``env`` directory within the working copy) so that the virtualenv is outside of the shared folder.  This is necessary to allow correct operation if the shared folders don't support symbolic links. The virtualenv is loaded automatically when you log in to the dev server.
 
 Usual workflow
 -----------------------------
@@ -105,26 +107,65 @@ Once you have everything set up, normal usage of your vagrant dev server should 
 Before you start anything: ::
 
     vagrant up
-    fab open_db
 
 To run your dev server: ::
 
-    fab run_devserver
+    fab runserver
 
 Other useful command examples: ::
 
     fab manage:shell_plus
-    fab manage:'migrate program'
+    fab psql:"SELECT * FROM pg_stat_activity"
 
 Once you're done: ::
 
     vagrant halt
 
-Functionality that is lacking
------------------------------
+One last command! When your devserver gets out of date, this command will update the dependencies, run migrations, and generally make things work again: ::
 
-This is a TODO list for the developers:
+    fab refresh
 
-* Support deploying to other targets (other than Vagrant VMs) - could be useful for deployment
-* Make things more customizable
-* Reduce number of setup steps
+If you want to add some custom shortcuts that don't need to go in the main fabfile, you can add them in a file called  ``local_fabfile.py`` in the same directory as ``fabfile.py``. Just add ``from fabfile import *`` at the top, and then write whatever commands you want.
+
+For instructions on contributing changes and our ``git`` workflow, see `<contributing.rst>`_.
+
+Problems
+--------
+
+1. The ``vagrant up`` command errors out, or times out while waiting for the VM to boot. (You may also want to investigate some of these for errors later in the process.)
+
+    If it errors out with a Ruby stack trace, there is a `known issue <https://github.com/mitchellh/vagrant/issues/6748>`_ with Vagrant/VirtualBox on IPv6 static networking.
+
+    One other thing to try is to run the VM not headlessly. You can run the VM directly from VirtualBox. You can also do this in Vagrant by uncommenting the line ``# vb.gui = true`` in ``Vagrantfile``, then running ``vagrant reload``. VirtualBox may give a more helpful error message, or you may be able to observe the VM getting stuck waiting for a keypress that never comes, say on the bootloader.
+
+    * If you have an older computer running a 32-bit operating system, then you might be out of luck since the VM runs 64-bit Ubuntu. Also check that you didn't install the 32-bit version of Vagrant.
+    * Check that hardware virtualization is enabled in your BIOS, particularly if you're running a Lenovo computer.
+
+2. When running ``fab emptydb`` or ``fab loaddb``, it fails with an error "Operation now in progress" OR with error "error 47 from memcached_mget: SERVER HAS FAILED AND IS DISABLED UNTIL TIMED RETRY".
+
+    You need to restart memcached.  First ssh into the VM with the command ``vagrant ssh``, then run
+
+        ``sudo service memcached restart``
+
+    Now try your ``fab`` command again.
+
+3. I forgot the passphrase for the encrypted partition.
+
+    You won't be able to recover the data, but you can start over by dropping the tablespace ``encrypted`` and then re-running ``fab setup``.
+
+Some other common dev setup issues are discussed `here <https://github.com/learning-unlimited/ESP-Website/issues/1432>`_.
+
+Creating a new dev VM
+---------------------
+
+Changes to the base VM should be needed very rarely, but you can't stay on the same Ubuntu version forever. Outline of steps used for the most recent upgrade:
+
+1. Find a Vagrant .box file for Virtualbox with the version of Ubuntu that you want. You might do this by downloading a publicly available one or by running ``sudo do-release-upgrade`` from an older base VM. Be sure to start from a base VM, not your current dev server with a database on it.
+
+2. Run ``esp/update_deps.sh`` on the VM from step 1. This isn't strictly required but will make dev setup easier in the future, especially dev setup testing.
+
+3. Follow Vagrant's documentation to export the box you have to a .box file.
+
+4. Upload the .box file to S3. If you don't have access, ask someone.
+
+5. Update the Vagrantfile with the new VM's URL.

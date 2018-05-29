@@ -37,7 +37,7 @@ from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarco
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.accounting.controllers import IndividualAccountingController
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, User, Record
 from django              import forms
@@ -58,12 +58,12 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "seq": 1
             }
 
-    def updatePaid(self, paid=True):   
+    def updatePaid(self, paid=True):
         """ Close off the student's invoice and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
             iac = IndividualAccountingController(self.program, self.student)
-            iac.add_required_transfers()
+            iac.ensure_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
 
@@ -76,7 +76,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                                      program=self.program)
         return created
 
-    def delete_record(self, extension):
+    def delete_record(self, event):
         if event=="paid":
             self.updatePaid(False)
 
@@ -93,7 +93,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         iac = IndividualAccountingController(self.program, self.student)
         return Record.user_completed(self.student, "paid", self.program) or \
             iac.has_paid(in_full=True)
-    
+
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
 
@@ -108,13 +108,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):
         students = ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id')
-        
+
         #   Populate some stats
         if 'snippets' in request.GET:
             snippet_list = request.GET['snippets'].split(',')
         else:
             snippet_list = ['grades']
-        
+
         if 'grades' in snippet_list:
             grade_levels = {}
             for student in students:
@@ -125,23 +125,23 @@ class OnSiteCheckinModule(ProgramModuleObj):
             context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
         else:
             context['grade_levels'] = None
-            
+
         if 'times' in snippet_list:
             start_times = {}
             for student in students:
                 start_time = student.getFirstClassTime(prog)
                 if start_time not in start_times:
                     start_times[start_time] = 0
-                start_times[start_time] += 1    
+                start_times[start_time] += 1
             context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
         else:
             context['start_times'] = None
-         
+
         if 'students' in snippet_list:
             context['students'] = students
         else:
             context['students'] = None
-        
+
         context['module'] = self
 
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
@@ -156,7 +156,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             #   Handle submission of student
             form = OnSiteRapidCheckinForm(request.POST)
             if form.is_valid():
-                student = ESPUser(form.cleaned_data['user'])
+                student = form.cleaned_data['user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     recs = Record.objects.filter(user=student, event="attended", program=prog)
@@ -171,11 +171,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
         else:
             form = OnSiteRapidCheckinForm()
-        
+
         context['module'] = self
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
-        
+
     @aux_call
     @needs_onsite
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
@@ -187,25 +187,21 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 codes=form.cleaned_data['uids'].split()
                 for code in codes:
                     try:
-                        result=ESPUser.objects.filter(id=code)
-                    except ValueError:
+                        student = ESPUser.objects.get(id=code)
+                    except (ValueError, ESPUser.DoesNotExist):
                         results['not_found'].append(code)
-                    if len(result) > 1:
-                        raise ESPError("Something weird happened, there are two students with ID %s." % code, log=False)
-                    elif len(result) == 0:
-                        results['not_found'].append(code)
-                    else:
-                        student=result[0]
-                        if student.isStudent():
-                            existing = Record.user_completed(student, 'attended', prog)
-                            if existing:
-                                results['existing'].append(code)
-                            else:
-                                new = Record(user=student, program=prog, event='attended')
-                                new.save()
-                                results['new'].append(code)
+                        continue
+
+                    if student.isStudent():
+                        existing = Record.user_completed(student, 'attended', prog)
+                        if existing:
+                            results['existing'].append(code)
                         else:
-                            results['not_student'].append(code)
+                            new = Record(user=student, program=prog, event='attended')
+                            new.save()
+                            results['new'].append(code)
+                    else:
+                        results['not_student'].append(code)
         else:
             results = {}
             form=OnsiteBarcodeCheckinForm()
@@ -213,8 +209,35 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context['form'] = form
         context['results'] = results
         return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
-        
 
+    @aux_call
+    @needs_onsite
+    def ajaxbarcodecheckin(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to check-in a student with a user ID.
+        POST data:
+          'code':          The student's ID.
+        """
+        json_data = {}
+        if request.method == 'POST' and 'code' in request.POST:
+            code = request.POST['code']
+            students = ESPUser.objects.filter(id=code)
+            if not students.exists():
+                json_data['message'] = '%s is not a user!' % code
+            else:
+                student = students[0]
+                info_string = student.name() + " (" + str(code) + ")"
+                if student.isStudent():
+                    existing = Record.user_completed(student, 'attended', prog)
+                    if existing:
+                        json_data['message'] = '%s is already checked in!' % info_string
+                    else:
+                        new = Record(user=student, program=prog, event='attended')
+                        new.save()
+                        json_data['message'] = '%s is now checked in!' % info_string
+                else:
+                    json_data['message'] = '%s is not a student!' % info_string
+        return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
     @needs_onsite
@@ -222,16 +245,16 @@ class OnSiteCheckinModule(ProgramModuleObj):
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user
-        
+
         self.student = user
-            
+
         if request.method == 'POST':
             for key in ['attended','paid','liab','med']:
-                if request.POST.has_key(key):
+                if key in request.POST:
                     self.create_record(key)
                 else:
                     self.delete_record(key)
-                
+
 
             return self.goToCore(tl)
 

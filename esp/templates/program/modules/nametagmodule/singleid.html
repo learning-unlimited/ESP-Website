@@ -28,7 +28,9 @@
     <span class="programtitle">{{ programname }}</span>
     <div class="title">{{ user.title }}</div>
     <hr />
-    <div class="name">{{ user.name }}</div>
+    {% if user.name %}
+        <div class="name">{{ user.name }}</div>
+    {% endif %}
   </div>
 </div>
 </div>

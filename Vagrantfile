@@ -7,12 +7,11 @@ VAGRANTFILE_API_VERSION = '2'
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Build off the basic Ubuntu 12.04 64-bit VM.
-  config.vm.box = 'ubuntu-12.04-encrypted'
-  config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-12.04-encrypted.box'
+  config.vm.box = 'ubuntu-14.04'
+  config.vm.box_url = 'https://s3.amazonaws.com/learningu-static/ubuntu-14.04.box'
   config.vm.hostname = 'ludev'
 
-  # Forward ports for Django dev server and Apache.
-  config.vm.network :forwarded_port, guest: 80, host: 8080
+  # Forward port for Django dev server
   config.vm.network :forwarded_port, guest: 8000, host: 8000
 
   # Create a private network, which allows host-only access to the machine

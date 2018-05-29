@@ -52,7 +52,7 @@ def makeChanges(filename,override=False):
                 print "I don't like room %s" % room
         print "Marking class %s accepted" % cls.emailcode()
         cls.accept()
-            
+
     for cls,sec,capacity,room in secs:
         if capacity is not "":
             print "Changing class %s size to %s" % (cls.emailcode(),capacity)

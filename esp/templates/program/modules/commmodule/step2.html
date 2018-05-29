@@ -2,8 +2,6 @@
 
 {% block title %}Communications Portal{% endblock %}
 
-{% block subsection_name %}Communications Portal{% endblock %}
-
 {% block xtrajs %}
 {{block.super}}
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
@@ -35,7 +33,8 @@
 
 <br />
 <p>
-There are <strong>{{listcount}}</strong> distinct users in your query.
+There are <strong>{{listcount}}</strong> distinct users in your
+query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}.
 If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
@@ -203,8 +202,9 @@ whitespace.</p>
 </tr>
 </table>
 
-<input type="submit" value="Go To Preview" name="submitform" />
+<input type="submit" value="Go To Preview" name="submitform" class="btn btn-primary" />
 <input type="hidden" name="listcount" value="{{listcount}}" />
+<input type="hidden" name="selected" value="{{selected}}" />
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 </form>
