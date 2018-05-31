@@ -1,6 +1,6 @@
 <html>
 {% autoescape off %}
-{{ msgbdy }}
+{{ msgbdy|safe }}
 {% endautoescape %}
 <small>
 You received this email because you have signed up for an account on our website,
