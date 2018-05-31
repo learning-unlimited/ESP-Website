@@ -11,6 +11,15 @@
   <script type="text/javascript">
     {% include "program/modules/commmodule/commpanel_step2.js" %}
   </script>
+  <script type="text/javascript">
+    <!-- If coming back from preview, check the language used before -->
+    window.onload = function() {
+        if ('{{ msglang }}' != '')
+        {
+            document.getElementById("{{msglang}}").checked = "checked";
+        }
+    };
+  </script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
@@ -56,9 +65,9 @@ whitespace.</p>
 
 <table border="0" cellspacing="0" width="100%">
 <tr>
-  <input type="radio" name="msglang" value="plaintext">Plain Text
+  <input type="radio" name="msglang" id="plaintext" value="plaintext">Plain Text
   <br />
-  <input type="radio" name="msglang" value="html" required> HTML
+  <input type="radio" name="msglang" id="html" value="html" required>HTML
 
   <td>
   <label for="from">
@@ -69,7 +78,8 @@ whitespace.</p>
   <input type="text" size="30" name="from" id="from" value="{{from}}" />
     <p class="help-block" id="from-help" style="display:none;"><small>"Your email"
     is an alias,
-    <span onclick="hideEmailExplanation()" style="float:right;">&times;</span>
+    <span onclick="hideEmailExplanation()"
+            style="float:right;cursor:pointer;">&times;</span>
     <script type="text/javascript">
     document.write(esp_user.cur_username);</script>@{{ settings.SITE_INFO.1 }},
     for your listed email (<script type="text/javascript">

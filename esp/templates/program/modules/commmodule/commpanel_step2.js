@@ -28,7 +28,7 @@ function validateMsgLang() {
       return confirm('You selected "Plain Text" but have HTML tags '
                 + '(such as <p>) in your message. '
                 + 'Continuing will leave your tags in your message '
-                + '(so you might see "<b>hello</b>" instead of '
+                + '(so you would see "<b>hello</b>" instead of '
                 + 'a bold "hello"). '
                 + 'Would you still like to proceed?');
   }
