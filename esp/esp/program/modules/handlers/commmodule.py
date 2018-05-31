@@ -111,11 +111,11 @@ class CommModule(ProgramModuleObj):
                         '  ', '&nbsp;&nbsp;')
         else:
             htmlbody = body
-        
+
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
 
-        htmlbody = unicode(loader.get_template('email/default_email.txt'
+        htmlbody = unicode(loader.get_template('email/default_email.html'
                     ).render(DjangoContext({'msgbdy': htmlbody,
                      'user': ActionHandler(firstuser, firstuser),
                      'program': ActionHandler(self.program, firstuser)})))
@@ -189,7 +189,7 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                      msgtext = unicode(loader.get_template('email/default_email.html').render(DjangoContext(
                                                                                                                                        {'msgbdy': htmlbody,
                                                                                                                                         'user': request.user,
                                                                                                                                         'program': self.program }))),
