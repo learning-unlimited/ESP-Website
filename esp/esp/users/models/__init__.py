@@ -1281,8 +1281,8 @@ class StudentInfo(models.Model):
             studentInfo.user = curUser
         elif studentInfo.user != curUser: # this should never happen, but you never know....
             raise ESPError("Your registration profile is corrupted. Please " +
-	    "contact websupport@learningu.org with your name and username in" +
-	    " the message to correct this issue.")
+                            "contact websupport@learningu.org with your name " +
+                            "and username in the message to correct this issue.")
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
