@@ -89,14 +89,17 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at" +
+            "websupport@learningu.org and tell us how you got this error," +
+            "and we'll look into it.")
 
         userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
         except:
-            raise ESPError("You seem to be trying to email 0 people!  Please go back, edit your search, and try again.")
+            raise ESPError("You seem to be trying to email 0 people!  " +
+            "Please go back, edit your search, and try again.")
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -162,7 +165,9 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
+            raise ESPError("Corrupted POST data!  Please contact us at " +
+            "websupport@learningu and tell us how you got this error, " +
+            "and we'll look into it.")
 
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
