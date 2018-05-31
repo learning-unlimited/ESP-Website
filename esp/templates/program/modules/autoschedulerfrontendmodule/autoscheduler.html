@@ -1,0 +1,137 @@
+{% extends "main.html" %}
+
+{% block title %}Run the Automatic Scheduling Assistant{% endblock %}
+
+{% block subsection_name %}Autoscheduler Options{% endblock %}
+
+{% block content %}
+
+<script>
+var program_url_base = '{{ program.getUrlBase }}';
+</script>
+<script type="text/javascript" src="/media/scripts/program/modules/autoschedulerfrontend.js"></script>
+
+<h1>Run the Automatic Scheduling Assistant</h1>
+
+<p>A list of options is below. You should generally be able to leave them at
+their defaults, but you can also play around with them if you prefer. If you
+think the defaults should be changed, you can create or modify the appropriate
+Tag; see the bottom of the page for more information. When you're ready, run
+the scheduling assistant, then save the results if you are satisfied.</p>
+
+<form id="autoschedulerform" action="javascript:runAutoscheduler()" class="form-inline" method="POST">
+<center>
+    <h2>Search Options</h2>
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in search.items %}
+<tr>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+</table>
+    <h2>Constraint Options
+    <button type="button"
+        onclick="$j('#autoschedulerconstraintsdiv').toggle()">
+        Show/hide Constraint Options</button></h2>
+    <div id="autoschedulerconstraintsdiv" style="display:none">
+<p>Constraints control what the automatic scheduling assistant it allowed to
+do. If a constraint is Required, you can't change it, but at least you know
+it's there. Otherwise, you can turn it on or off as you like by setting it to
+True or False. For information on ResourceCriteriaConstraint in particular,
+see Resource Criterion Options below.</p>
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in constraints.items %}
+<tr>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+</table>
+    </div>
+    <h2>Scoring Options
+    <button type="button"
+        onclick="$j('#autoschedulerscorersdiv').toggle()">
+        Show/hide Scoring Options</button></h2>
+    <div id="autoschedulerscorersdiv" style="display:none">
+<p>Scorers control what the automatic scheduling assistant optimizes for when
+it tries to find the best thing to do. They are aggregated together with
+different weights; you can configure the weights below. The weight roughly
+means how much, relatively speaking, the scorer matters for scheduling a
+single section. For more information on ResourceCriteriaScorer, see Resource
+Criterion Options below.</p>
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in scorers.items %}
+<tr>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+</table>
+    </div>
+
+    <h2>Resource Criterion Options
+    <button type="button"
+         onclick="$j('#autoschedulerresourcesdiv').toggle()">
+         Show/hide Resource Criterion Options</button></h2>
+    <div id="autoschedulerresourcesdiv" style="display:none">
+
+<p>A Resource Criterion controls how the scheduling assistant treats resources and
+classrooms. You can control their weights below. If the weight is set to -1,
+then it is a constraint, i.e. the automatic scheduling assistant is not allowed
+to violate it. For example, if restrict_star_classrooms has weight -1, the
+automatic scheduling assistant is not allowed to schedule any sections into
+classrooms marked with a star; however, it does not necessarily prevent the
+assistant from unscheduling a class already in a star classroom if you ask it
+to. If the weight is nonnegative, it is used as a Scorer, as a part of the
+ResourceCriteriaScorer. The weight is automatically scaled so that the
+highest-weighted scorer criterion has weight 1. To add more resource criteria,
+see the bottom of this page.</p>
+
+<table width="100%" cellpadding="5">
+{% for option_key, option_value in resources.items %}
+<tr>
+    <th>{{ option_key }}</th>
+    <td><input type="text" class="input-small" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td>{{ option_value.1 }}</td>
+</tr>
+{% endfor %}
+</table>
+    </div>
+
+<table width="100%" cellpadding="5">
+<tr>
+    <td colspan="3"><button type="submit" class="btn btn-primary btn-large"
+        style="background-color:blue; background-image: none;">Whee... Run the Automatic Scheduling Assistant!</button></td>
+</tr>
+<tr>
+    <td colspan="3">
+        <a href="javascript:saveAutoscheduler()"><button type="button" class="btn btn-success">Save room assignments</button></a>
+    </td>
+</tr>
+</table>
+</center>
+</form>
+
+<h1>Scheduling Information</h1>
+<p>Scheduling information should appear below after you run the automatic scheduling tool.</p>
+
+<div id="autoschedulerinfo"></div>
+
+<h1>Configuration Help</h1>
+
+<button type="button"
+    onclick="$j('#autoschedulerconfighelpdiv').toggle()">
+    Show/hide Configuration Help</button></h2>
+<div id="autoschedulerconfighelpdiv" style="display:none">
+    <br />
+
+    {% include "program/modules/autoschedulerfrontendmodule/config_help.html" %}
+</div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
