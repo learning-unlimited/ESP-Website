@@ -43,10 +43,10 @@ The program you are trying to create is: <b>{{ prog }}</b>
 <!-- This loop puts the modules in two columns (so the list isn't too long)
 and alternates in such a way that there isn't an unclosed tag if there's an
 odd number of modules -->
-{% for item in pretty_modules %}
+{% for item in modules %}
     {% if forloop.counter0|divisibleby:"2" %}<tr><td style="text-align:center">
     {% else %} <td style="text-align:center">{% endif %}
-    {{ item }}</td>
+    {{ item.0 }}</td>
     {% if forloop.last or not forloop.counter0|divisibleby:"2" %}</tr>{%endif %}
 {% endfor %}
 </table>
