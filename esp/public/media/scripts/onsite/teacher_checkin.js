@@ -89,6 +89,12 @@ $j(function(){
         $msg.text('Texting teacher...');
     });
 
+    $j(".text-all").click(function(){
+        $j(".text").click()
+        $j(this).attr("disabled",true);
+        $j(this).attr("title","Teachers already texted");
+    });
+
     $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
