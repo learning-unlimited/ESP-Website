@@ -59,6 +59,18 @@ function hideAll () {
     $j(".flag-detail").hide();
 }
 
+function approveAll () {
+    $j("#program_form .btn-approve").click();
+}
+
+function unreviewAll () {
+    $j("#program_form .btn-unreview").click();
+}
+
+function rejectAll () {
+    $j("#program_form .btn-reject").click();
+}
+
 $j(document).ready(function () {
     $j(".flag-detail").hide();
     $j(".manage-approve-link").hide();
