@@ -60,15 +60,24 @@ function hideAll () {
 }
 
 function approveAll () {
-    $j("#program_form .btn-approve").click();
+    var r = confirm("Are you sure you'd like to approve all of these classes?");
+    if (r) {
+        $j("#program_form .btn-approve").click();
+    }
 }
 
 function unreviewAll () {
-    $j("#program_form .btn-unreview").click();
+    var r = confirm("Are you sure you'd like to unreview all of these classes?");
+    if (r) {
+        $j("#program_form .btn-unreview").click();
+    }
 }
 
 function rejectAll () {
-    $j("#program_form .btn-reject").click();
+    var r = confirm("Are you sure you'd like to reject all of these classes?");
+    if (r) {
+        $j("#program_form .btn-reject").click();
+    }
 }
 
 $j(document).ready(function () {
