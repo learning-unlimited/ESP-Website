@@ -27,6 +27,12 @@
 Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
+<div class="btn-group">
+    <button class="btn btn-approve" onclick="approveAll();">approve all</button>
+    <button class="btn btn-unreview" onclick="unreviewAll();">unreview all</button>
+    <button class="btn btn-reject" onclick="rejectAll();">reject all</button>
+</div>
+
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
         <div class="fqr-class" id="fqr-class-{{class.id}}">
