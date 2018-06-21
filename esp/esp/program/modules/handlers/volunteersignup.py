@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
 from esp.middleware import ESPError
+from esp.cal.models import Event
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser
@@ -81,13 +82,19 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         if hasattr(request.user, 'email'):
             form.load(request.user)
 
-        #   Override default appearance; template doesn't mind taking a string instead
-        context['form'] = form._html_output(
-            normal_row = u'<tr%(html_class_attr)s><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
-            error_row = u'<tr><td colspan="2">%s</td></tr>',
-            row_ender = u'</td></tr>',
-            help_text_html = u'%s',
-            errors_on_separate_row = False)
+        context['form'] = form
+
+        vrs = prog.getVolunteerRequests()
+        time_options = [v.timeslot for v in vrs]
+        time_options_dict = dict(zip(time_options, vrs))
+
+        #   Group contiguous blocks
+        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
+            time_groups = [list(time_options)]
+        else:
+            time_groups = Event.group_contiguous(list(time_options))
+
+        context['groups'] = [[{'timeslot': t, 'request': time_options_dict[t]} for t in group] for group in time_groups]
 
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 

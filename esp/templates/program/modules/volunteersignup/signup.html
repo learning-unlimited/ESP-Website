@@ -3,8 +3,9 @@
 {% block title %}Sign up to volunteer{% endblock %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
 {% endblock %}    
 
 {% block xtrajs %}
@@ -41,10 +42,76 @@ $j(document).ready(function () {
         }
     });
 });
+
+var setting = false;
+var down = false;
+
+//Records mousedown
+function md(td) {
+  down = true;
+  setting = !isSet(td);
+  mo(td);
+}
+
+//Enables highlighting multiple cells
+function mo(td) {
+  if (!down) return;
+  if (setting) {
+    on(td);
+  } else {
+    off(td);
+  }
+}
+
+function isSet(td) {
+  return td.className == "canDo";
+}
+
+//Activate checkbox
+function on(td) {
+  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+  td.className = "canDo";
+  checkbox.checked = true;
+}
+
+//Deactivate checkbox
+function off(td) {
+  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+  if (td.className == "canDo") {
+    td.className = "proposed";
+    checkbox.checked = false;
+  }
+}
+
+//Clicking the header turns the entire block on/off
+function header(e, col) {
+  var somethingToSet = false;
+  var block = document.getElementById("block_" + col);
+  for (var i = 1; i < block.rows.length; i++) {
+    var td = block.rows[i].cells[0];
+    if (!isSet(td)) somethingToSet = true;
+  }
+  for (var i = 1; i < block.rows.length; i++) {
+    var td = block.rows[i].cells[0];
+    if (somethingToSet) {
+      on(td);
+    } else {
+      off(td);
+    }
+  }
+}
+
+//Sets classes of cells based on status of checkboxes upon loading page
+$j(document).ready(function() {
+  $j('#id_requests input:checked').each(function(i, e) {
+    document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
+  });
+});
 </script>
 {% endblock %}
 
 {% block content %}
+<h1>Volunteer for {{ program.niceName }}</h1>
 
 {% if complete %}
 <div class="alert alert-success">
@@ -73,24 +140,71 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 
 <div id="program_form">
 <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
+{% for hidden in form.hidden_fields %}
+    {{ hidden }}
+{% endfor %}
 <center>
-<table width="500">
-<tr>
-    <th colspan="2">Volunteer for {{ program.niceName }}</th>
-</tr>
-<tr>
-    <td colspan="2">{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</td>
-</tr>
+<p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
 {% if form.errors %}
-<tr>
-    <td colspan="2"><span style="color: red;">Please correct the errors in the form.</span></td>
-</tr>
+<p><span style="color: red;">Please correct the errors in the form.</span></p>
 {% endif %}
-    {{ form }}
-<tr>
-    <td colspan="2" align="center"><input id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" /></td>
-</tr>
-</table>
+{{ form.name.label_tag }}
+{{ form.name.errors }}
+{{ form.name }}
+{{ form.email.label_tag }}
+{{ form.email.errors }}
+{{ form.email }}
+{{ form.phone.label_tag }}
+{{ form.phone.errors }}
+{{ form.phone }}
+<center>
+  <div class="wrap">
+    <div class="side"></div>
+    <div class="container1">
+      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
+        <tbody>
+          <tr>
+            {% for group in groups %}
+            <td class="group">
+              <table class="group" id="block_{{ forloop.counter }}">
+                <tbody>
+                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
+                    <div class="headerText">
+                      {{ group.0.timeslot.start|date:"D" }}<br>
+                      {{ group.0.timeslot.start|date:"d" }}<br>
+                      {{ group.0.timeslot.start|date:"M" }}
+                    </div>
+                  </th></tr>
+                  {% for time in group %}
+                    <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ time.request.id }}">
+                      {{ time.timeslot.start|date:"g:i A"}}
+                    </td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+    <div class="side">
+      <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+      <span class="summary" style="background-color: #00FF00;">Available</span>
+    </div>
+
+  </div>
+  <div style="display:none">
+    {{ form.requests }}
+  </div>
+  {{ form.requests.errors }}
+<br><br>
+<span style="padding-right:5px">Confirm</span>{{ form.confirm }}
+{{ form.non_field_errors }}
+<br><br>
+<input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
 </center>
 </form>
 </div>
