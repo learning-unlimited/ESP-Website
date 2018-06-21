@@ -17,6 +17,17 @@
   font-family: sans-serif;
 }
 
+.left {
+  background-color: #dbe3e7;
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  padding: 5px 5px;
+  font-size: small;
+  width: 180px;
+  display: none;
+}
+
 .noselect {
   -webkit-user-select: none;
   -moz-user-select: none;

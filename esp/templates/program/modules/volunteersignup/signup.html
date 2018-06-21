@@ -101,12 +101,24 @@ function header(e, col) {
   }
 }
 
-//Sets classes of cells based on status of checkboxes upon loading page
+
 $j(document).ready(function() {
+  //Sets classes of cells based on status of checkboxes upon loading page
   $j('#id_requests input:checked').each(function(i, e) {
     document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
   });
+
+  //Shows volunteer details when hovering over timeslot
+  $j(".group td").mouseover(function() {
+    var label = $j('input[value='+parseInt($j(this).attr('name'))+']').prop('labels')[0]
+    $j(".summary.left").html($j.trim(label.innerText.split(": ")[1]));
+    $j(".summary.left").css("display", "block");
+  }).mouseout(function() {
+    $j(".summary.left").css("display", "none");
+  });
 });
+
+
 </script>
 {% endblock %}
 
@@ -157,9 +169,11 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {{ form.phone.label_tag }}
 {{ form.phone.errors }}
 {{ form.phone }}
-<center>
+
   <div class="wrap">
-    <div class="side"></div>
+    <div class="side">
+      <span class="summary left"></span>
+    </div>
     <div class="container1">
       <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
         <tbody>
@@ -191,8 +205,8 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 
     </div>
     <div class="side">
-      <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
-      <span class="summary" style="background-color: #00FF00;">Available</span>
+      <span class="summary right" style="background-color: #EFEFEF;">Not Available</span>
+      <span class="summary right" style="background-color: #00FF00;">Available</span>
     </div>
 
   </div>
@@ -201,7 +215,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
   </div>
   {{ form.requests.errors }}
 <br><br>
-<span style="padding-right:5px">Confirm</span>{{ form.confirm }}
+{{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
 {{ form.non_field_errors }}
 <br><br>
 <input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
