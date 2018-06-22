@@ -174,7 +174,9 @@ admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 class VolunteerOfferAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.request.program
-    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    def date(obj):
+        return obj.request.timeslot.pretty_date()
+    list_display = ('id', 'user', 'email', 'name', 'request', date, program, 'confirmed')
     list_filter = ('request__program',)
     search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
