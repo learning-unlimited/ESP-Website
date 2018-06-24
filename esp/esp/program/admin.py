@@ -166,7 +166,11 @@ class VolunteerOfferInline(admin.StackedInline):
 class VolunteerRequestAdmin(admin.ModelAdmin):
     def description(obj):
         return obj.timeslot.description
-    list_display = ('id', 'program', description, 'timeslot', 'num_volunteers')
+    def time(obj):
+        return obj.timeslot.short_time()
+    def date(obj):
+        return obj.timeslot.pretty_date()
+    list_display = ('id', 'program', description, time, date, 'num_volunteers')
     list_filter = ('program',)
     inlines = [VolunteerOfferInline,]
 admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
@@ -174,7 +178,13 @@ admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 class VolunteerOfferAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.request.program
-    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    def description(obj):
+        return obj.request.timeslot.description
+    def time(obj):
+        return obj.request.timeslot.short_time()
+    def date(obj):
+        return obj.request.timeslot.pretty_date()
+    list_display = ('id', 'user', 'email', 'name', description, time, date, program, 'confirmed')
     list_filter = ('request__program',)
     search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
