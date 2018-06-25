@@ -137,6 +137,7 @@ class ClassSearchModule(ProgramModuleObj):
                 # page as usual
             context['query'] = decoded
             context['queryset'] = queryset
+            context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)
