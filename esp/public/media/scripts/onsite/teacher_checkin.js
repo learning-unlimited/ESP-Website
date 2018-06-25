@@ -141,7 +141,7 @@ $j(function(){
     $j(".text-all").click(function(){
         var r = confirm("Are you sure you'd like to text ALL unchecked-in teachers?");
         if (r) {
-            $j(".checkin").closest('tr').find('.text').each(function() {
+            $j(".checkin:visible").closest('tr').find('.text').each(function() {
                 textTeacher($j(this))
             });
             $j(this).attr("disabled",true);
