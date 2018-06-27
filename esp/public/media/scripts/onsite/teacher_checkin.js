@@ -139,7 +139,8 @@ $j(function(){
     });
 
     $j(".text-all").click(function(){
-        var r = confirm("Are you sure you'd like to text ALL unchecked-in teachers?");
+        var num_teachers = $j(".checkin:visible").length
+        var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in teachers?");
         if (r) {
             $j(".checkin:visible").closest('tr').find('.text').each(function() {
                 textTeacher($j(this))
