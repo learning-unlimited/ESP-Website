@@ -28,9 +28,9 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </p>
 
 <div class="btn-group">
-    <button class="btn btn-approve" onclick="approveAll({{ IDs }});">approve all</button>
-    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs }});">unreview all</button>
-    <button class="btn btn-reject" onclick="rejectAll({{ IDs }});">reject all</button>
+    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">approve all</button>
+    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">unreview all</button>
+    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">reject all</button>
 </div>
 
 <div class="flag-query-results" id="program_form">
