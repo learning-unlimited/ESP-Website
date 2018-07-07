@@ -2,12 +2,33 @@
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+
+<script>
+//Sets classes of cells based on status of checkboxes upon loading page
+$j(document).ready(function() {
+  $j('#grid input:checked').each(function(i, e) {
+    if (this.disabled == true) {
+      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
+      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
+    } else {
+      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
+    }
+  });
+});
+</script>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}
-
-<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
 
 <h1>Your Availability for {{ prog.niceName }}</h1>
 
@@ -105,80 +126,5 @@ You submitted a schedule with no available times.  You can't register a class wi
 </form>
 
 </div>
-
-<script>
-var setting = false;
-var down = false;
-
-//Records mousedown
-function md(td) {
-  down = true;
-  setting = !isSet(td);
-  mo(td);
-}
-
-//Enables highlighting multiple cells
-function mo(td) {
-  if (!down) return;
-  if (setting) {
-    on(td);
-  } else {
-    off(td);
-  }
-}
-
-function isSet(td) {
-  return td.className == "canDo" || td.className == "teaching";
-}
-
-//Activate checkbox
-function on(td) {
-  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-  if (td.className != "teaching") {
-  	td.className = "canDo";
-  	checkbox.checked = true;
-  }
-}
-
-//Deactivate checkbox
-function off(td) {
-  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-  if (td.className == "canDo") {
-    td.className = "proposed";
-    checkbox.checked = false;
-  }
-}
-
-//Clicking the header turns the entire block on/off
-function header(e, col) {
-  var somethingToSet = false;
-  var block = document.getElementById("block_" + col);
-  for (var i = 1; i < block.rows.length; i++) {
-    var td = block.rows[i].cells[0];
-    if (!isSet(td)) somethingToSet = true;
-  }
-  for (var i = 1; i < block.rows.length; i++) {
-    var td = block.rows[i].cells[0];
-    if (somethingToSet) {
-      on(td);
-    } else {
-      off(td);
-    }
-  }
-}
-
-//Sets classes of cells based on status of checkboxes upon loading page
-$j(document).ready(function() {
-  $j('#grid input:checked').each(function(i, e) {
-    if (this.disabled == true) {
-      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
-      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
-    } else {
-      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
-    }
-  });
-});
-
-</script>
 
 {% endblock %}
