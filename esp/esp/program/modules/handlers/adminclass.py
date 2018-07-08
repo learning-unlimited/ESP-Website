@@ -217,7 +217,7 @@ class AdminClass(ProgramModuleObj):
                 cls_cancel_form.is_bound = True
                 if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to e-mail and remove students, etc.
-                    cls_cancel_form.cleaned_data['target'].cancel(email_students=True, email_teachers = cls_cancel_form.cleaned_data['email_teachers'], include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
+                    cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
                     cls_cancel_form = None
             else:
                 j = 0
@@ -226,7 +226,7 @@ class AdminClass(ProgramModuleObj):
                         sec_cancel_forms[j].data = request.POST
                         sec_cancel_forms[j].is_bound = True
                         if sec_cancel_forms[j].is_valid():
-                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, email_teachers = sec_cancel_forms[j].cleaned_data['email_teachers'], include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], explanation=sec_cancel_forms[j].cleaned_data['explanation'], unschedule=sec_cancel_forms[j].cleaned_data['unschedule'])
+                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], text_students=sec_cancel_forms[j].cleaned_data['text_students'], email_teachers = sec_cancel_forms[j].cleaned_data['email_teachers'], explanation=sec_cancel_forms[j].cleaned_data['explanation'], unschedule=sec_cancel_forms[j].cleaned_data['unschedule'])
                             sec_cancel_forms[j] = None
                     j += 1
 

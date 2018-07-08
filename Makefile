@@ -16,8 +16,8 @@ pre:
 	@echo "Backing things up and fixing permissions."
 	@# get credentials, if we lack them, before we try to do anything fancy with pipes
 	sudo -v
-        @# We might not have write permissions on the homedir, but www-data should.
-        sudo -u postgres pg_dump $(SITE)_django | gzip | sudo -u www-data tee $(SITE)_$(shell date +"%Y%m%d").sql.gz >/dev/null
+	@# We might not have write permissions on the homedir, but www-data should.
+	set -o pipefail; sudo -u postgres pg_dump $(SITE)_django | gzip | sudo -u www-data tee $(SITE)_$(shell date +"%Y%m%d").sql.gz >/dev/null
 	-sudo chown -RL "www-data:www-data" .
 
 src:
@@ -26,7 +26,7 @@ src:
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash ; fi
 	sudo -u www-data git fetch origin
 	sudo -u www-data git remote prune origin
-	sudo -u www-data git checkout $(NEWBRANCH)
+	sudo -u www-data git checkout origin/$(NEWBRANCH)
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash pop ; fi
 
 finish:

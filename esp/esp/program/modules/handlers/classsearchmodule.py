@@ -1,5 +1,6 @@
 import json
 import random
+import re
 
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
@@ -108,6 +109,16 @@ class ClassSearchModule(ProgramModuleObj):
         if data is not None:
             decoded = json.loads(data)
         elif namequery: # only search if not None and not ""
+            # if this looks like a class ID then just go to its manage page
+            id_match = re.match('^[a-zA-Z]?(\\d+)$', namequery)
+            if id_match:
+                id_query = int(id_match.group(1))
+                try:
+                    subj = ClassSubject.objects.get(id=id_query)
+                    return HttpResponseRedirect(subj.get_absolute_url())
+                except ClassSubject.DoesNotExist:
+                    context['failed_id_search'] = True
+                    context['id_query'] = id_query
             decoded = {'filter': 'title', 'negated': False, 'values': [namequery]}
 
         if decoded is not None:
@@ -119,9 +130,14 @@ class ClassSearchModule(ProgramModuleObj):
                 queryset = list(queryset)
                 random.shuffle(queryset)
             if request.GET.get('lucky'):
-                return HttpResponseRedirect(queryset[0].get_absolute_url())
+                if queryset:
+                    return HttpResponseRedirect(queryset[0].get_absolute_url())
+                # if you're not lucky enough and no classes satisfying your
+                # search exist, fall through and send you to the class search
+                # page as usual
             context['query'] = decoded
             context['queryset'] = queryset
+            context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)

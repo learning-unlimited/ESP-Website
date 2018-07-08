@@ -13,12 +13,23 @@
 
 {% block content %}
 {% with user.getLastProfile as profile %}
-{% with user.get_last_program_with_profile as program %}
 <h1>User Information</h1>
+{% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
 
 <div id="user-sidebar">
     {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
+    <form class="change-program" method="get">
+        <input type="hidden" name="username" value="{{user.username}}"/>
+        View:
+        <select name="program" onchange="$j(this).parent().submit();return false;">
+            {% for prog in all_programs %}
+            <option value="{{prog.id}}" {% if prog == program %}selected="selected"{% endif %}>
+                {{prog.name}}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
     {% if program %}
     <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}&onsite={{program.id}}">Onsite for {{program.niceName}}</a>
@@ -34,6 +45,9 @@
             Check availability for {{program.niceName}}</a>
     {% endif %}
     {% if profile.student_info %}
+        {% if program and program|hasModule:"AccountingModule" %}
+            <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
+        {% endif %}
         {% if program and program|hasModule:"FormstackMedliabModule" %}
             <form action="/manage/{{program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
                 <input type="hidden" name="target_user" value="{{user.id}}"/>
@@ -79,8 +93,20 @@
             (Teacher has no profiles for programs)
         {% endif %}
     {% endif %}
+    {% if volunteer %}
+        {% if program %}
+            <div id="print-volunteer-schedule">
+                <h2>
+                    Volunteer schedule<br/>
+                    (for {{program.niceName}})
+                </h2>
+                <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{profile.user.id}}" target="_new">Print locally</a>
+            </div>
+        {% else %}
+            (Volunteer has no profiles for programs)
+        {% endif %}
+    {% endif %}
 </div>
-{% endwith %}
 
 <table class="dottedtable">
 <tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>

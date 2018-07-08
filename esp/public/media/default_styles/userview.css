@@ -2,6 +2,16 @@
   float: right;
 }
 
+#user-sidebar .change-program {
+  display: block;
+  margin-top: 5px;
+  font-weight: bold;
+}
+
+#user-sidebar h2 {
+  line-height: normal;
+}
+
 #user-sidebar a.sidelink:link {
   text-decoration: none;
   

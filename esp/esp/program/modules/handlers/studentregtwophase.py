@@ -46,6 +46,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth
 from esp.users.models import Record, ESPUser
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
@@ -92,6 +93,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         for registration, and links to the phase1/phase2 sub-pages.
         """
 
+        context = {}
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
@@ -100,7 +102,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priority_regs = priority_regs.select_related(
             'relationship', 'section', 'section__parent_class')
         for student_reg in priority_regs:
-            rel = student_reg.relationship
+            rel = student_reg.relationship.name
             title = student_reg.section.parent_class.title
             sec = student_reg.section
             times = sec.meeting_times.all().order_by('start')
@@ -134,6 +136,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
         blockCount = 0
         schedule = []
         timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+
+        context['num_priority'] = prog.priorityLimit()
+        context['num_star'] = Tag.getProgramTag("num_stars", program = prog, default = 10)
+
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             if prevTimeSlot != None:
@@ -142,18 +148,24 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             if timeslot.id in timeslot_dict:
                 priority_dict = timeslot_dict[timeslot.id]
-                # (relationship, class_title) -> relationship.name
-                priority_list = sorted(priority_dict.items(), key=lambda item: item[0].name)
             else:
-                priority_list = []
+                priority_dict = {}
+            temp_list = []
+            for i in range(1, context['num_priority'] + 1):
+                priority_name = 'Priority/%s' % i
+                reg_type = RegistrationType.objects.get(name = priority_name, category = "student")
+                if priority_name in priority_dict:
+                    temp_list.append((reg_type, priority_dict[priority_name]))
+                else:
+                    temp_list.append((reg_type, ""))
+            priority_list = temp_list
+            star_count = 0
             if timeslot.id in star_counts:
-                priority_list.append((
-                    'Starred', "(%d classes)" % star_counts[timeslot.id]))
-            schedule.append((timeslot, priority_list, blockCount + 1))
+                star_count = star_counts[timeslot.id]
+            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
 
             prevTimeSlot = timeslot
 
-        context = {}
         context['timeslots'] = schedule
 
         return render_to_response(

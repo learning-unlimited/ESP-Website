@@ -767,9 +767,12 @@ class LotteryAssignmentController(object):
         if len(data_parts) != 3:
             raise ValueError('provided lottery_data is corrupted (doesn\'t contain three parts)')
 
-        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]))
-        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]))
-        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]))
+        # ndmin is for corner cases where one of the array dimensions is 1.  If you don't include the ndmin parameter,
+        # then "mono-dimensional axes will be squeezed" (see the numpy documentation), and the resulting array
+        # would not have the right shape.
+        self.student_sections = numpy.loadtxt(StringIO(data_parts[0]), ndmin=2)
+        self.student_ids = numpy.loadtxt(StringIO(data_parts[1]), ndmin=1)
+        self.section_ids = numpy.loadtxt(StringIO(data_parts[2]), ndmin=1)
 
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)

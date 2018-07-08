@@ -13,13 +13,14 @@ To deploy a new site, first make sure you know:
 
 Then ssh to ``diogenes``, grab the latest version of
 ``deploy/server_setup/new_site.sh``, ``cd`` to ``/lu/sites``, and
-run ``sudo new_site.sh --all``.  (You may instead clone the repository
-yourself, ``cd`` into it, and run the script from there.)  Follow the
-instructions to set up the site.  For the site directory name, choose something
-short that's likely to stay unique and understandable as we add more chapters.
-When it does the "create superuser", you should create yourself an account;
-afterwards chapter admins can create their own accounts and you can make them
-admins.
+run ``sudo new_site.sh --all``.  If the directory already exists for the
+chapter, you may wish to delete it to get a clean start.  (You may instead
+clone the repository yourself, ``cd`` into it, and run the script from there.)
+Follow the instructions to set up the site.  For the site directory name,
+choose something short that's likely to stay unique and understandable as we
+add more chapters.  When it does the "create superuser", you should create
+yourself an account; afterwards chapter admins can create their own accounts
+and you can make them admins.
 
 If something doesn't work, and you need to re-run a particular step, you can do
 so by passing the appropriate flag to ``new_site.sh``.  Note that some steps

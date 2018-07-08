@@ -24,12 +24,9 @@
 
 <p>Please list all others that will be helping you teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
 
-<p><b>Make sure you hit save!</b></p>
-
-{% if conflicts|length %}
-    <p style="color:red; font-weight: bold;">
-    The following teachers have conflicting schedules:<br />
-    {{ conflicts|join:"<br />" }}
+{% if conflict %}
+    <p>
+    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
     </p>
 {% endif %}
 
@@ -74,7 +71,7 @@ You currently have no coteachers for this class.
 <form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
 <table align="center" width="500">
     <tr>
-        <th colspan="2">Add More Coteachers</th>
+        <th colspan="2">Add a coteacher</th>
     </tr>
     <tr>
         <td colspan="2">Begin typing your coteacher's name in `Last, First' format to find them.</td>
@@ -94,21 +91,7 @@ You currently have no coteachers for this class.
     </tr>
 </table>
 </form>
-<table align="center" width="500">
-    <tr>
-        <td align="center" colspan="2">When you are done, click the button below to return to teacher registration.</td>
-    </tr>
-    <tr>
-        <td align="center" colspan="2">
-            <form action="{{request.path}}" method="post" name="submit">
-            <input type="hidden" name="op" value="save" />
-            <input type="hidden" name="clsid" value="{{ class.id }}" />
-            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-            <input type="submit" class="button" value="Save and Continue" /><br />
-            </form>
-        </td>
-    </tr>
-</table>
+{% include "program/modules/teacherregcore/returnlink.html" %}
 </div>
 
 {% endblock %}

@@ -52,7 +52,7 @@ class ResourceTypeForm(forms.Form):
         self.fields['is_global'].initial = (res_type.program == None)
         self.fields['id'].initial = res_type.id
 
-    def save_restype(self, program, res_type):
+    def save_restype(self, program, res_type, choices = None):
         res_type.name = self.cleaned_data['name']
         res_type.description  = self.cleaned_data['description']
         if self.cleaned_data['is_global']:
@@ -61,8 +61,19 @@ class ResourceTypeForm(forms.Form):
             res_type.program = program
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
+        if choices and filter(None, choices):
+            res_type.choices = filter(None, choices)
+        else:
+            """ This is already set by default when making a new resource type,
+                but if you remove all of the choices from a pre-existing resource type
+                you need to reset the default. Setting attributes_pickled is equivalent to
+                setting choices. """
+            res_type.attributes_pickled = ResourceType._meta.get_field('attributes_pickled').default
 
         res_type.save()
+
+class ResourceChoiceForm(forms.Form):
+    choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput)
 
 
 def setup_furnishings(restype_list):

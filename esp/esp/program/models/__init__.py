@@ -314,6 +314,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def niceSubName(self):
         return self.name
 
+    def grades(self):
+        """ Return an iterable list of the grades for a program. """
+        return range(self.grade_min, self.grade_max + 1)
+
     @property
     def program_type(self):
         return self.url.split('/')[0]
@@ -670,7 +674,13 @@ class Program(models.Model, CustomFormsLinkModel):
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
     getScheduleConstraints.depend_on_model('program.ScheduleConstraint')
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     getScheduleConstraints.depend_on_model('program.BooleanToken')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestTimeblock')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestOccupied')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestCategory')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestSectionList')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -1063,18 +1073,28 @@ class Program(models.Model, CustomFormsLinkModel):
         if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
-            query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                      'registrationprofile__teacher_info__shirt_size')
-            query = query.annotate(people=Count('id', distinct=True))
+            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
+                query = query.values_list('registrationprofile__teacher_info__shirt_size')
+                query = query.annotate(people=Count('id', distinct=True))
 
-            for row in query:
-                shirt_type, shirt_size, count = row
-                shirt_count[shirt_type][shirt_size] = count
+                for row in query:
+                    shirt_size, count = row
+                    shirt_count['M'][shirt_size] = count
+
+            else:
+                query = query.values_list('registrationprofile__teacher_info__shirt_type',
+                                          'registrationprofile__teacher_info__shirt_size')
+                query = query.annotate(people=Count('id', distinct=True))
+
+                for row in query:
+                    shirt_type, shirt_size, count = row
+                    shirt_count[shirt_type][shirt_size] = count
 
         shirts = {}
         shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
+
     #   Update cache whenever a class is approved or a teacher changes their profile
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_model('users.TeacherInfo')
@@ -1565,7 +1585,13 @@ class BooleanToken(models.Model):
     @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     subclass_instance.depend_on_row('program.BooleanToken', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestTimeblock', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestOccupied', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestCategory', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestSectionList', lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
@@ -1629,7 +1655,13 @@ class BooleanExpression(models.Model):
     @cache_function
     def get_stack(self):
         return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     get_stack.depend_on_row('program.BooleanToken', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestTimeblock', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestOccupied', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestCategory', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestSectionList', lambda token: {'self': token.exp})
 
     def reset(self):
         self.booleantoken_set.all().delete()
