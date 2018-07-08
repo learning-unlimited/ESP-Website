@@ -45,13 +45,13 @@ td.group, table.group {
   padding: 0 !important;
 }
 
-#program_form table {
+.wrap table {
   border-width: 0px !important;
   border-collapse: separate !important;
   border-spacing: 5px 1px;
 }
 
-#program_form th {
+.wrap th {
   text-align: center !important;
   font-weight: bold !important;
   background: #EFEFEF !important;
