@@ -51,10 +51,10 @@ $j(document).ready(function () {
     //Shows volunteer details when hovering over timeslot
     $j(".group td").mouseover(function() {
         var label = $j('input[value='+parseInt($j(this).attr('name'))+']').prop('labels')[0]
-        $j(".summary.left").html($j.trim(label.innerText.split(": ")[1]));
-        $j(".summary.left").css("display", "block");
+        $j(".left .summary").html($j.trim(label.innerText.split(": ")[1]));
+        $j(".left .summary").css("display", "block");
         }).mouseout(function() {
-        $j(".summary.left").css("display", "none");
+        $j(".left .summary").css("display", "none");
     });
 });
 
@@ -109,47 +109,8 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {{ form.phone.errors }}
 {{ form.phone }}
 
-  <div class="wrap">
-    <div class="side">
-      <span class="summary left"></span>
-    </div>
-    <div class="container1">
-      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
-        <tbody>
-          <tr>
-            {% for group in groups %}
-            <td class="group">
-              <table class="group" id="block_{{ forloop.counter }}">
-                <tbody>
-                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
-                    <div class="headerText">
-                      {{ group.0.timeslot.start|date:"D" }}<br>
-                      {{ group.0.timeslot.start|date:"d" }}<br>
-                      {{ group.0.timeslot.start|date:"M" }}
-                    </div>
-                  </th></tr>
-                  {% for time in group %}
-                    <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ time.request.id }}">
-                      {{ time.timeslot.start|date:"g:i A"}}
-                    </td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </td>
-            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
-            {% endfor %}
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
-    <div class="side">
-      <span class="summary right" style="background-color: #EFEFEF;">Not Available</span>
-      <span class="summary right" style="background-color: #00FF00;">Available</span>
-    </div>
-
-  </div>
-  <div style="display:none">
+  {% include "program/modules/availability.html" %}
+  <div hidden>
     {{ form.requests }}
   </div>
   {{ form.requests.errors }}
@@ -162,4 +123,9 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 </form>
 </div>
 <div id="confirm_cancellation_dialog" title="Confirm Cancellation">You have unchecked all volunteer shifts.  If you must cancel your volunteer commitments, please click "Confirm" to notify the directors.  Otherwise, click "Cancel".</div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+</div>
 {% endblock %}

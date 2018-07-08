@@ -207,7 +207,7 @@ class AvailabilityModule(ProgramModuleObj):
             #   for a in available_slots:
             #       teacher.addAvailableTime(self.program, a)
 
-        context = {'groups': [{'selections': [{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t} for t in group]} for group in time_groups]}
+        context = {'groups': [[{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t, 'id': t.id} for t in group] for group in time_groups]}
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
         context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))

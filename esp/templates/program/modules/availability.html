@@ -1,0 +1,36 @@
+<center>
+  <div class="wrap">
+    <div class="side left">
+      <span class="summary"></span>
+    </div>
+    <div class="container1">
+      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
+        <tbody>
+          <tr>
+          {% for group in groups %}
+            <td class="group">
+              <table class="group" id="block_{{ forloop.counter }}">
+                <tbody>
+                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
+                    <div class="headerText">
+                      {{ group.0.slot.start|date:"D" }}<br>
+                      {{ group.0.slot.start|date:"d" }}<br>
+                      {{ group.0.slot.start|date:"M" }}
+                    </div>
+                  </th></tr>
+                  {% for time in group %}
+                    <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ time.id }}">
+                      {{ time.slot.start|date:"g:i A"}}
+                    </td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</center>

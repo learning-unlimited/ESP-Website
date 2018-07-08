@@ -57,3 +57,9 @@ function header(e, col) {
     }
   }
 }
+
+//Populate the right sidebar
+$j(document).ready(function () {
+  $j(".wrap").append($j(".right"));
+  $j(".right").show();
+});

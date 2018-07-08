@@ -17,7 +17,7 @@
   font-family: sans-serif;
 }
 
-.left {
+.left span {
   background-color: #dbe3e7;
   border-radius: 4px;
   -moz-border-radius: 4px;
@@ -35,8 +35,7 @@
   user-select: none;
 }
 
-input,
-select {
+input, select {
   padding: 2px;
 }
 

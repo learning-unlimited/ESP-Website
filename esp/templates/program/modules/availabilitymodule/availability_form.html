@@ -14,7 +14,7 @@
 <script>
 //Sets classes of cells based on status of checkboxes upon loading page
 $j(document).ready(function() {
-  $j('#grid input:checked').each(function(i, e) {
+  $j('#checkboxes input:checked').each(function(i, e) {
     if (this.disabled == true) {
       document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
       document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
@@ -78,53 +78,28 @@ You submitted a schedule with no available times.  You can't register a class wi
 <input type="hidden" name="user" value="{{ teacher_user.username }}" />
 
 <center>
-  <div class="wrap">
-    <div class="side"></div>
-    <div class="container1">
-      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
-        <tbody>
-          <tr>
-          {% for group in groups %}
-            <td class="group">
-              <table class="group" id="block_{{ forloop.counter }}">
-                <tbody>
-                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
-                    <div class="headerText">
-                      {{ group.selections.0.slot.start|date:"D" }}<br>
-                      {{ group.selections.0.slot.start|date:"d" }}<br>
-                      {{ group.selections.0.slot.start|date:"M" }}
-                    </div>
-                  </th></tr>
-                  {% for selection in group.selections %}
-                  <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ selection.slot.id }}">
-                      <input type="checkbox" class="hidden" name="timeslots" value="{{ selection.slot.id }}" {% if selection.checked %}checked{% endif %} {% if selection.taken %}disabled{% endif %}>
-                      {{ selection.slot.start|date:"g:i A"}}
-                  </td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </td>
-            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
-          {% endfor %}
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
-    <div class="side">
-      <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
-      <span class="summary" style="background-color: #00FF00;">Available</span>
-      <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
-    </div>
-
+  {% include "program/modules/availability.html" %}
+  <div hidden id="checkboxes">
+    {% for group in groups %}
+      {% for time in group %}
+        <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+      {% endfor %}
+    {% endfor %}
   </div>
   <br>
 
   <input type="submit" class="btn btn-primary" value="Submit" />
 </center>
 
+
 </form>
 
+</div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
 </div>
 
 {% endblock %}
