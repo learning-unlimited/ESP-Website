@@ -57,7 +57,10 @@
             {% endif %}
         </div>
         <div id="unenroll-student">
-            <a id="unenrollstudentlink" class="sidelink" href="/manage/userview?username={{user.username}}&unenroll={{program.id}}">Unenroll from all classes</a>
+            <form action="/manage/unenroll_student" method="post">{% csrf_token %}
+            <input type="hidden" name="user_id" value="{{user.id}}"/>
+            <input type="hidden" name="program" value="{{program.id}}"/>
+            <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Unenroll from all classes</a>
         </div>
         {% else %}
             (Student has no profiles for programs)

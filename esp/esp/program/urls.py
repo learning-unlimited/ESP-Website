@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^manage/userview/?$', views.userview),
     url(r'^manage/deactivate_user/?$', views.deactivate_user),
     url(r'^manage/activate_user/?$', views.activate_user),
+    url(r'^manage/unenroll_student/?$', views.unenroll_student),
     url(r'^manage/usersearch/?$', views.usersearch),
     url(r'^manage/flushcache/?$', views.flushcache),
     url(r'^manage/statistics/?$', views.statistics),
