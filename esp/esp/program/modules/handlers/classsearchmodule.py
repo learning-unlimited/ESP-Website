@@ -50,12 +50,14 @@ class ClassSearchModule(ProgramModuleObj):
                                        flag_datetime_inputs)
 
         resource_types = ResourceType.objects.filter(program=self.program)
+        resource_value_input = OptionalInput(name="desired value",
+            inner=TextInput(field_name='sections__resourcerequest__desired_value', english_name=''))
         resource_select_input = SelectInput(
             field_name='sections__resourcerequest__res_type',
             options={str(rt.id): rt.name for rt in resource_types})
         any_resource_input = ConstantInput(Q(sections__resourcerequest__isnull=False))
         resource_filter = SearchFilter(name='resource', title='the requested resource',
-                                   inputs=[resource_select_input])
+                                   inputs=[resource_select_input] + [resource_value_input])
         any_resource_filter = SearchFilter(name='any_resource', title='any requested resource',
                                        inputs=[any_resource_input])
 
