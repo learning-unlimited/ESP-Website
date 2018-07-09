@@ -327,8 +327,6 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import ESPUser
-
         #   Allow submitting class ID via either GET or POST.
         if 'clsid' in request.GET:
             clsid = request.GET['clsid']
