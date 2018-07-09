@@ -723,8 +723,12 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
+        elif key == 'teacher_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
+        elif key == 'volunteer_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer', include_date=True)
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -778,7 +782,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None, room_numbers=True):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
 
         if schedule_type is None:
             if user.isStudent():
@@ -816,7 +820,7 @@ class ProgramPrintables(ProgramModuleObj):
                                         "Room")
             schedule += format_html(u"</tr>")
             for cls in classes:
-                times = cls.friendly_times()
+                times = cls.friendly_times(include_date=include_date)
                 if len(times) == 0:
                     # don't show classes with no times
                     continue
@@ -853,7 +857,7 @@ class ProgramPrintables(ProgramModuleObj):
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
                 schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
-                                        str(shift.request.timeslot.pretty_time()),
+                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
                                         str(shift.request.timeslot.description))
             schedule += format_html(u"</table>")
 
