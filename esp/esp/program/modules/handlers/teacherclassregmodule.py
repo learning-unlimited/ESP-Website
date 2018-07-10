@@ -590,9 +590,11 @@ class TeacherClassRegModule(ProgramModuleObj):
             # potentially relevant
             if Tag.getTag('allow_global_restypes'):
                 resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_global=True)
+                                                       include_global=True,
+                                                       include_hidden=False)
             else:
-                resource_types = prog.getResourceTypes(include_classroom=True)
+                resource_types = prog.getResourceTypes(include_classroom=True,
+                                                       include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
 

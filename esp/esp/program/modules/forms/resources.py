@@ -82,7 +82,7 @@ class ResourceChoiceForm(forms.Form):
 
 def setup_furnishings(restype_list):
     #   Populate the available choices for furnishings based on a particular program.
-    return ((str(r.id), r.name) for r in restype_list)
+    return ((str(r.id), r.name + (" (Hidden)" if r.hidden else "")) for r in restype_list)
 
 def setup_timeslots(program):
     return ((str(e.id), e.short_description) for e in program.getTimeSlots())

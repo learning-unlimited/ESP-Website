@@ -867,7 +867,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return None
 
     @cache_function
-    def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=False):
+    def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
         #   Show all resources pertaining to the program that aren't these hidden ones.
         from esp.resources.models import ResourceType
 
