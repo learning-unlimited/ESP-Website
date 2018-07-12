@@ -99,7 +99,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             time_groups = Event.group_contiguous(list(time_options))
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
-        
+
         context['isAdmin'] = isAdmin
 
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
