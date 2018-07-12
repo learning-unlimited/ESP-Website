@@ -36,7 +36,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
     <td>{{ vr.timeslot.pretty_time }}</td>
     <td>{{ vr.timeslot.description }}: {{ vr.num_offers }} / {{ vr.num_volunteers }} volunteers <br />
         <div id="offers" style="color: blue; font-size: 0.9em;">{% for offer in vr.get_offers %}
-        {{ offer.name }}, {{ offer.email }}, {{ offer.phone }} <br />
+        <a href="/manage/{{ program.getUrlBase }}/check_volunteer?user={{ offer.user.id }}">{{ offer.name }}</a>, {{ offer.email }}, {{ offer.phone }} <br />
         {% if offer.comments %}<span style="color: gray;"><i>Comments:</i> {{ offer.comments }}</span><br />{% endif %}
         {% endfor %}
         </div>
