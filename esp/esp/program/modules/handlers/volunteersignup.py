@@ -61,6 +61,10 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
     @no_auth
     @meets_deadline("/Signup")
     def signup(self, request, tl, one, two, module, extra, prog):
+        return self.signupForm(request, tl, one, two, prog, request.user)
+
+    @staticmethod
+    def signupForm(request, tl, one, two, prog, volunteer, isAdmin=False):
         context = {}
 
         if request.method == 'POST':
@@ -79,8 +83,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             form = VolunteerOfferForm(program=prog)
 
         #   Pre-fill information if possible
-        if hasattr(request.user, 'email'):
-            form.load(request.user)
+        if hasattr(volunteer, 'email'):
+            form.load(volunteer)
 
         context['form'] = form
 
@@ -95,6 +99,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             time_groups = Event.group_contiguous(list(time_options))
 
         context['groups'] = [[{'slot': t, 'id': time_options_dict[t].id} for t in group] for group in time_groups]
+        
+        context['isAdmin'] = isAdmin
 
         return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 

@@ -23,6 +23,10 @@ function decline_cancellation() {
 }
 
 $j(document).ready(function () {
+    {% if isAdmin %}
+    toggle_edit();
+    {% endif %}
+
     $j("#confirm_cancellation_dialog").dialog({
         autoOpen: false,
         buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
@@ -88,6 +92,12 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_signup" %}
+
+{% if isAdmin %}
+<center>
+<input style="display: block" id="edit_form" type="submit" value="Click to Edit Volunteer Offers" class="btn btn-primary" onclick="toggle_edit();"/>
+</center></br>
+{% endif %}
 
 <div id="program_form">
 <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">

@@ -63,3 +63,11 @@ $j(document).ready(function () {
   $j(".wrap").append($j(".right"));
   $j(".right").show();
 });
+
+function toggle_edit() {
+    if ($j("#program_form").css("pointer-events") == "none"){
+        $j("#program_form").css("pointer-events", "auto");
+    }else {
+        $j("#program_form").css("pointer-events", "none");
+    }
+}
