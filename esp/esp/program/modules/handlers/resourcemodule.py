@@ -274,6 +274,30 @@ class ResourceModule(ProgramModuleObj):
                         )
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
+                        if import_form.cleaned_data['import_furnishings']:
+                            furnishings = resource.furnishings
+                            for f in furnishings:
+                                res_type = f.res_type
+                                new_res_type = ResourceType.objects.get_or_create(
+                                    name = res_type.name,
+                                    description = res_type.description,
+                                    consumable = res_type.consumable,
+                                    priority_default = res_type.priority_default,
+                                    only_one = res_type.only_one,
+                                    attributes_pickled = res_type.attributes_pickled,
+                                    program = prog,
+                                    autocreated = res_type.autocreated,
+                                    hidden = res_type.hidden
+                                )
+                                #   Create associated resource
+                                new_furnishing = Resource(
+                                    event = timeslot,
+                                    res_type = new_res_type,
+                                    name = new_res_type.name + ' for ' + new_res.name,
+                                    res_group = new_res.res_group
+                                )
+                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+                                    new_furnishing.save()
                         resource_list.append(new_res)
             else:
                 #   Attempt to match timeslots for the programs
@@ -297,7 +321,30 @@ class ResourceModule(ProgramModuleObj):
                         #   Check to avoid duplicating rooms (so the process is idempotent)
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
-                        #   Note: furnishings are messed up, so don't bother copying those yet.
+                        if import_form.cleaned_data['import_furnishings']:
+                            furnishings = res.furnishings
+                            for f in furnishings:
+                                res_type = f.res_type
+                                new_res_type = ResourceType.objects.get_or_create(
+                                    name = res_type.name,
+                                    description = res_type.description,
+                                    consumable = res_type.consumable,
+                                    priority_default = res_type.priority_default,
+                                    only_one = res_type.only_one,
+                                    attributes_pickled = res_type.attributes_pickled,
+                                    program = prog,
+                                    autocreated = res_type.autocreated,
+                                    hidden = res_type.hidden
+                                )
+                                #   Create associated resource
+                                new_furnishing = Resource(
+                                    event = timeslot,
+                                    res_type = new_res_type,
+                                    name = new_res_type.name + ' for ' + new_res.name,
+                                    res_group = new_res.res_group
+                                )
+                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+                                    new_furnishing.save()
                         resource_list.append(new_res)
 
             #   Render a preview page showing the resources for the previous program if desired
