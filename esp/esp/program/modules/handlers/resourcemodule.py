@@ -258,6 +258,7 @@ class ResourceModule(ProgramModuleObj):
         else:
             past_program = import_form.cleaned_data['program']
             complete_availability = import_form.cleaned_data['complete_availability']
+            import_furnishings = import_form.cleaned_data['import_furnishings']
 
             resource_list = []
             if complete_availability:
@@ -274,18 +275,18 @@ class ResourceModule(ProgramModuleObj):
                         )
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
-                        if import_form.cleaned_data['import_furnishings']:
+                        if import_furnishings:
                             furnishings = resource.furnishings
                             for f in furnishings:
                                 res_type = f.res_type
-                                new_res_type = ResourceType.objects.get_or_create(
+                                new_res_type, created = ResourceType.objects.get_or_create(
                                     name = res_type.name,
                                     description = res_type.description,
                                     consumable = res_type.consumable,
                                     priority_default = res_type.priority_default,
                                     only_one = res_type.only_one,
                                     attributes_pickled = res_type.attributes_pickled,
-                                    program = prog,
+                                    program = self.program,
                                     autocreated = res_type.autocreated,
                                     hidden = res_type.hidden
                                 )
@@ -293,10 +294,12 @@ class ResourceModule(ProgramModuleObj):
                                 new_furnishing = Resource(
                                     event = timeslot,
                                     res_type = new_res_type,
-                                    name = new_res_type.name + ' for ' + new_res.name,
-                                    res_group = new_res.res_group
+                                    name = f.name,
+                                    #This doesn't work unless the classroom resource has been saved
+                                    res_group = new_res.res_group,
+                                    attribute_value = f.attribute_value
                                 )
-                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_furnishing.event).exists():
                                     new_furnishing.save()
                         resource_list.append(new_res)
             else:
@@ -321,18 +324,18 @@ class ResourceModule(ProgramModuleObj):
                         #   Check to avoid duplicating rooms (so the process is idempotent)
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
-                        if import_form.cleaned_data['import_furnishings']:
+                        if import_furnishings:
                             furnishings = res.furnishings
                             for f in furnishings:
                                 res_type = f.res_type
-                                new_res_type = ResourceType.objects.get_or_create(
+                                new_res_type, created = ResourceType.objects.get_or_create(
                                     name = res_type.name,
                                     description = res_type.description,
                                     consumable = res_type.consumable,
                                     priority_default = res_type.priority_default,
                                     only_one = res_type.only_one,
                                     attributes_pickled = res_type.attributes_pickled,
-                                    program = prog,
+                                    program = self.program,
                                     autocreated = res_type.autocreated,
                                     hidden = res_type.hidden
                                 )
@@ -350,6 +353,7 @@ class ResourceModule(ProgramModuleObj):
             #   Render a preview page showing the resources for the previous program if desired
             context['past_program'] = past_program
             context['complete_availability'] = complete_availability
+            context['import_furnishings'] = import_furnishings
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
@@ -436,8 +440,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
-        context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
+        context['resource_types'] = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True

@@ -25,6 +25,7 @@ You have chosen to import the classrooms from {{ past_program.niceName }} to {{ 
 <input type="hidden" name="import_confirm" value="yes" />
 <input type="hidden" name="program" value="{{ past_program.id }}" />
 <input type="hidden" name="complete_availability" value="{{ complete_availability }}" />
+<input type="hidden" name="import_furnishings" value="{{ import_furnishings }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
     <tr><th colspan="2">Proposed classrooms for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
@@ -32,6 +33,7 @@ You have chosen to import the classrooms from {{ past_program.niceName }} to {{ 
         <td class="underline"><b>Room</b></td>
         <td class="underline"><b>Capacity</b></td>
         <td class="underline"><b>Timeslots</b></td>
+        <td class="underline"><b>Furnishings</b></td>
     </tr>
     {% for c in new_rooms %}
     <tr>
@@ -40,6 +42,7 @@ You have chosen to import the classrooms from {{ past_program.niceName }} to {{ 
         </td>
         <td class="underline">{{ c.num_students }}</td>
         <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
+        <td class="underline">{% for f in c.furnishings %}{{ f }}<br />{% endfor %}</td>
     </tr>
     {% endfor %}
     </table></td></tr>
