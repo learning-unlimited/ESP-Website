@@ -292,7 +292,7 @@ class ResourceModule(ProgramModuleObj):
                                 )
                                 #   Create associated resource
                                 new_furnishing = Resource(
-                                    event = timeslot,
+                                    event = new_res.event,
                                     res_type = new_res_type,
                                     name = f.name,
                                     #This doesn't work unless the classroom resource has been saved
@@ -341,7 +341,7 @@ class ResourceModule(ProgramModuleObj):
                                 )
                                 #   Create associated resource
                                 new_furnishing = Resource(
-                                    event = timeslot,
+                                    event = new_res.event,
                                     res_type = new_res_type,
                                     name = f.name,
                                     #This doesn't work unless the classroom resource has been saved
