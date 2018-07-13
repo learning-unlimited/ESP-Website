@@ -44,12 +44,14 @@ class ResourceTypeForm(forms.Form):
     description = forms.CharField(required=False,widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     is_global = forms.BooleanField(label='Global?', required=False)
+    hidden = forms.BooleanField(label='Hidden?', required=False, help_text='Should this resource type be hidden during teacher registration?')
 
     def load_restype(self, res_type):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
         self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id
 
     def save_restype(self, program, res_type, choices = None):
@@ -59,6 +61,8 @@ class ResourceTypeForm(forms.Form):
             res_type.program = None
         else:
             res_type.program = program
+        if self.cleaned_data['hidden']:
+            res_type.hidden = self.cleaned_data['hidden']
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
         if choices and filter(None, choices):
@@ -78,7 +82,7 @@ class ResourceChoiceForm(forms.Form):
 
 def setup_furnishings(restype_list):
     #   Populate the available choices for furnishings based on a particular program.
-    return ((str(r.id), r.name) for r in restype_list)
+    return ((str(r.id), r.name + (" (Hidden)" if r.hidden else "")) for r in restype_list)
 
 def setup_timeslots(program):
     return ((str(e.id), e.short_description) for e in program.getTimeSlots())

@@ -44,6 +44,9 @@
         <td width="10%"></td>
     </tr>
     {% for h in resource_types %}
+    {% ifchanged h.hidden %}{% if h.hidden %}
+    <tr><th colspan="5">Resource Types Hidden During Teacher Registration</th></tr>
+    {% endif %}{% endifchanged %}
         <tr>
             <td><div id="restype-{{ h.id }}">{{ h.name }}</div> {% if h.is_global %}(global){% endif %}</td>
             <td>{{ h.description }}</td>
