@@ -343,8 +343,10 @@ class ResourceModule(ProgramModuleObj):
                                 new_furnishing = Resource(
                                     event = timeslot,
                                     res_type = new_res_type,
-                                    name = new_res_type.name + ' for ' + new_res.name,
-                                    res_group = new_res.res_group
+                                    name = f.name,
+                                    #This doesn't work unless the classroom resource has been saved
+                                    res_group = new_res.res_group,
+                                    attribute_value = f.attribute_value
                                 )
                                 if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
                                     new_furnishing.save()
