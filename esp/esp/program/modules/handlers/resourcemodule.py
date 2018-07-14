@@ -276,31 +276,7 @@ class ResourceModule(ProgramModuleObj):
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
                         if import_furnishings:
-                            furnishings = resource.furnishings
-                            for f in furnishings:
-                                res_type = f.res_type
-                                new_res_type, created = ResourceType.objects.get_or_create(
-                                    name = res_type.name,
-                                    description = res_type.description,
-                                    consumable = res_type.consumable,
-                                    priority_default = res_type.priority_default,
-                                    only_one = res_type.only_one,
-                                    attributes_pickled = res_type.attributes_pickled,
-                                    program = self.program,
-                                    autocreated = res_type.autocreated,
-                                    hidden = res_type.hidden
-                                )
-                                #   Create associated resource
-                                new_furnishing = Resource(
-                                    event = new_res.event,
-                                    res_type = new_res_type,
-                                    name = f.name,
-                                    #This doesn't work unless the classroom resource has been saved
-                                    res_group = new_res.res_group,
-                                    attribute_value = f.attribute_value
-                                )
-                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_furnishing.event).exists():
-                                    new_furnishing.save()
+                            self.furnishings_import(resource, new_res, self.program, import_mode)
                         resource_list.append(new_res)
             else:
                 #   Attempt to match timeslots for the programs
@@ -314,42 +290,19 @@ class ResourceModule(ProgramModuleObj):
                 for res in past_program.getClassrooms():
                     #   If we know what timeslot to put it in, make a copy
                     if res.event.id in ts_map:
-                        new_res = Resource()
-                        new_res.name = res.name
-                        new_res.res_type = res.res_type
-                        new_res.num_students = res.num_students
-                        new_res.is_unique = res.is_unique
-                        new_res.user = res.user
-                        new_res.event = ts_map[res.event.id]
+                        new_res = Resource(
+                            name = res.name,
+                            res_type = res.res_type,
+                            num_students = res.num_students,
+                            is_unique = res.is_unique,
+                            user = res.user,
+                            event = ts_map[res.event.id]
+                        )
                         #   Check to avoid duplicating rooms (so the process is idempotent)
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
                         if import_furnishings:
-                            furnishings = res.furnishings
-                            for f in furnishings:
-                                res_type = f.res_type
-                                new_res_type, created = ResourceType.objects.get_or_create(
-                                    name = res_type.name,
-                                    description = res_type.description,
-                                    consumable = res_type.consumable,
-                                    priority_default = res_type.priority_default,
-                                    only_one = res_type.only_one,
-                                    attributes_pickled = res_type.attributes_pickled,
-                                    program = self.program,
-                                    autocreated = res_type.autocreated,
-                                    hidden = res_type.hidden
-                                )
-                                #   Create associated resource
-                                new_furnishing = Resource(
-                                    event = new_res.event,
-                                    res_type = new_res_type,
-                                    name = f.name,
-                                    #This doesn't work unless the classroom resource has been saved
-                                    res_group = new_res.res_group,
-                                    attribute_value = f.attribute_value
-                                )
-                                if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
-                                    new_furnishing.save()
+                            self.furnishings_import(res, new_res, self.program, import_mode)
                         resource_list.append(new_res)
 
             #   Render a preview page showing the resources for the previous program if desired
@@ -367,6 +320,34 @@ class ResourceModule(ProgramModuleObj):
                 extra = 'classroom'
 
         return (response, context)
+
+    @staticmethod
+    def furnishings_import(old_res, new_res, prog, import_mode):
+        furnishings = old_res.associated_resources()
+        for f in furnishings:
+            res_type = f.res_type
+            new_res_type, created = ResourceType.objects.get_or_create(
+                name = res_type.name,
+                description = res_type.description,
+                consumable = res_type.consumable,
+                priority_default = res_type.priority_default,
+                only_one = res_type.only_one,
+                attributes_pickled = res_type.attributes_pickled,
+                program = prog,
+                autocreated = res_type.autocreated,
+                hidden = res_type.hidden
+            )
+            #   Create associated resource
+            new_furnishing = Resource(
+                event = new_res.event,
+                res_type = new_res_type,
+                name = f.name,
+                #This doesn't work unless the classroom resource has been saved
+                res_group = new_res.res_group,
+                attribute_value = f.attribute_value
+            )
+            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+                new_furnishing.save()
 
     def resources_equipment(self, request, tl, one, two, module, extra, prog):
         context = {}
