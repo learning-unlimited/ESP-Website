@@ -326,7 +326,8 @@ class ResourceModule(ProgramModuleObj):
         furnishings = old_res.associated_resources()
         for f in furnishings:
             res_type = f.res_type
-            new_res_type, created = ResourceType.objects.get_or_create(
+            # Create new ResourceType in case it doesn't exist yet
+            new_res_type = ResourceType(
                 name = res_type.name,
                 description = res_type.description,
                 consumable = res_type.consumable,
@@ -337,6 +338,8 @@ class ResourceModule(ProgramModuleObj):
                 autocreated = res_type.autocreated,
                 hidden = res_type.hidden
             )
+            if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, program = prog).exists():
+                new_res_type.save()
             #   Create associated resource
             new_furnishing = Resource(
                 event = new_res.event,
