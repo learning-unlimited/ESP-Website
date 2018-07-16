@@ -315,8 +315,8 @@ class ResourceModule(ProgramModuleObj):
                         if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
                             new_res.save()
                         if import_furnishings:
-                            new_furn = self.furnishings_import(resource, new_res, self.program, import_mode)
-                            furnishing_dict[resource].add(new_furn)
+                            new_furns = self.furnishings_import(resource, new_res, self.program, import_mode)
+                            furnishing_dict[resource.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
                         resource_list.append(new_res)
             else:
                 #   Attempt to match timeslots for the programs
@@ -344,7 +344,7 @@ class ResourceModule(ProgramModuleObj):
                             new_res.save()
                         if import_furnishings:
                             new_furns = self.furnishings_import(res, new_res, self.program, import_mode)
-                            furnishing_dict[res.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") for new_furn in new_furns)
+                            furnishing_dict[res.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
                         resource_list.append(new_res)
 
             #   Render a preview page showing the resources for the previous program if desired

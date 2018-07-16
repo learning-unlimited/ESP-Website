@@ -45,7 +45,13 @@ You have chosen to import the classrooms from {{ past_program.niceName }} to {{ 
         <td class="underline">{{ c.num_students }}</td>
         <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
         {% if import_furnishings %}
-        <td class="underline">{% for f in c.furnishings %}{{ f }}<br />{% endfor %}</td>
+        <td class="underline">
+            <ol>
+            {% for f in c.furnishings %}
+            <li>{{ f }}</li>
+            {% endfor %}
+            </ol>
+        </td>
         {% endif %}
     </tr>
     {% endfor %}

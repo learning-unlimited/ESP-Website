@@ -59,9 +59,11 @@
             <td>{{ h.description }}</td>
             <td>{{ h.priority_default }}</td>
             <td>
-            {% for choice in h.choices %}
-            {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
-            {% endfor %}
+                <ol>
+                {% for choice in h.choices %}
+                <li>{{ choice }}</li>
+                {% endfor %}
+                </ol>
             </td>
             <td>
             <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
