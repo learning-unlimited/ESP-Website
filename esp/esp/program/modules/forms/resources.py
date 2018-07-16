@@ -244,3 +244,6 @@ class ClassroomImportForm(forms.Form):
 class TimeslotImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
+
+class ResTypeImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())

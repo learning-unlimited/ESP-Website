@@ -48,7 +48,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -242,6 +242,49 @@ class ResourceModule(ProgramModuleObj):
 
         return (response, context)
 
+    def resources_restype_import(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        response = None
+
+        controller = ResourceController(prog)
+
+        import_mode = 'preview'
+        if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
+            import_mode = 'save'
+
+        import_form = ResTypeImportForm(request.POST)
+        if not import_form.is_valid():
+            context['import_restype_form'] = import_form
+        else:
+            past_program = import_form.cleaned_data['program']
+            res_type_list = []
+            res_types = ResourceType.objects.filter(program = past_program)
+            for res_type in res_types:
+                #   Create new ResourceType in case it doesn't exist yet
+                new_res_type = ResourceType(
+                    name = res_type.name,
+                    description = res_type.description,
+                    consumable = res_type.consumable,
+                    priority_default = res_type.priority_default,
+                    only_one = res_type.only_one,
+                    attributes_pickled = res_type.attributes_pickled,
+                    program = self.program,
+                    autocreated = res_type.autocreated,
+                    hidden = res_type.hidden
+                )
+                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists():
+                    new_res_type.save()
+                res_type_list.append(new_res_type)
+            context['past_program'] = past_program
+            if import_mode == 'preview':
+                context['prog'] = self.program
+                context['new_restypes'] = sorted(res_type_list, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
+                response = render_to_response(self.baseDir()+'restype_import.html', request, context)
+            else:
+                extra = 'restype'
+
+        return (response, context)
+
     def resources_classroom_import(self, request, tl, one, two, module, extra, prog):
         context = {}
         response = None
@@ -254,7 +297,7 @@ class ResourceModule(ProgramModuleObj):
 
         import_form = ClassroomImportForm(request.POST)
         if not import_form.is_valid():
-            context['import_form'] = import_form
+            context['import_classroom_form'] = import_form
         else:
             past_program = import_form.cleaned_data['program']
             complete_availability = import_form.cleaned_data['complete_availability']
@@ -315,7 +358,6 @@ class ResourceModule(ProgramModuleObj):
             context['past_program'] = past_program
             context['complete_availability'] = complete_availability
             context['import_furnishings'] = import_furnishings
-            print furnishing_dict
             if import_mode == 'preview':
                 context['prog'] = self.program
                 result = self.program.collapsed_dict(resource_list)
@@ -422,6 +464,7 @@ class ResourceModule(ProgramModuleObj):
             'restype': self.resources_restype,
             'classroom': self.resources_classroom,
             'timeslot_import': self.resources_timeslot_import,
+            'restype_import': self.resources_restype_import,
             'classroom_import': self.resources_classroom_import,
             'equipment': self.resources_equipment,
         }
@@ -445,7 +488,8 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        context['resource_types'] = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
+        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
+        context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
         for c in context['resource_types']:
             if c.program is None:
                 c.is_global = True
@@ -461,11 +505,14 @@ class ResourceModule(ProgramModuleObj):
         if 'equipment_form' not in context:
             context['equipment_form'] = EquipmentForm(self.program)
 
-        if 'import_form' not in context:
-            context['import_form'] = ClassroomImportForm()
+        if 'import_classroom_form' not in context:
+            context['import_classroom_form'] = ClassroomImportForm()
 
         if 'import_timeslot_form' not in context:
             context['import_timeslot_form'] = TimeslotImportForm()
+
+        if 'import_restype_form' not in context:
+            context['import_restype_form'] = ResTypeImportForm()
 
         context['open_section'] = extra
         context['prog'] = self.program
