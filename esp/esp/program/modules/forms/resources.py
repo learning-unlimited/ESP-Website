@@ -247,3 +247,7 @@ class TimeslotImportForm(forms.Form):
 
 class ResTypeImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
+
+class EquipmentImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new floating resources to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
