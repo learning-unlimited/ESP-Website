@@ -5,6 +5,15 @@
 {% block xtrajs %}
 {{block.super}}
 <script type="text/javascript">
+function confirmOverride(checkbox) {
+    if (checkbox.checked) {
+        var r = confirm("Are you sure you'd like to override the texting preferences of all of the recipients?");
+        if (!r) {
+            checkbox.checked = false;
+        }
+    }
+}
+
 <!--
 
 var lists = [
@@ -50,6 +59,7 @@ var TextMessage = {
 <form action="/manage/{{ program.getUrlBase }}/grouptextfinal?filterid={{ filterid }}" method="post" name="grouptext">
 <textarea name="message" id="message_input" cols="40" rows="4" oninput="TextMessage.onMessageChange();"></textarea>
 <p id="length_remaining">160 characters remaining.</p>
+<input type="checkbox" name="text-override" onchange='confirmOverride(this);'> Override texting preferences.<br><br>
 <input type="submit" value="Send your message!" />
 </form>
 

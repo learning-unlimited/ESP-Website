@@ -88,10 +88,13 @@ class GroupTextModule(ProgramModuleObj):
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         message = request.POST['message']
+        override = False
+        if 'text-override' in request.POST:
+            override = request.POST['text-override']
 
-        log = self.sendMessages(filterObj, message)
+        log = self.sendMessages(filterObj, message, override = override)
 
-        return render_to_response(self.baseDir()+'finished.html', request, {'log': log})
+        return render_to_response(self.baseDir()+'finished.html', request, {'log': log, 'override': override})
 
     @main_call
     @needs_admin
