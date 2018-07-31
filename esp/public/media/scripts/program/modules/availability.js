@@ -1,8 +1,10 @@
 var setting = false;
 var down = false;
+var noclick = false;
 
 //Records mousedown
 function md(td) {
+  if (noclick) return;
   down = true;
   setting = !isSet(td);
   mo(td);
@@ -10,6 +12,7 @@ function md(td) {
 
 //Enables highlighting multiple cells
 function mo(td) {
+  if (noclick) return;
   if (!down) return;
   if (setting) {
     on(td);
@@ -42,6 +45,7 @@ function off(td) {
 
 //Clicking the header turns the entire block on/off
 function header(e, col) {
+  if (noclick) return;
   var somethingToSet = false;
   var block = document.getElementById("block_" + col);
   for (var i = 1; i < block.rows.length; i++) {
@@ -65,9 +69,19 @@ $j(document).ready(function () {
 });
 
 function toggle_edit() {
-    if ($j("#program_form").css("pointer-events") == "none"){
-        $j("#program_form").css("pointer-events", "auto");
+    if (noclick){
+        //allow availability functions
+        noclick = false;
+        //allow clicking other specific fields
+        $j(".noclick").css("pointer-events", "auto");
+        //change button label
+        $j("#edit_form").val("Click to Stop Editing Form");
     }else {
-        $j("#program_form").css("pointer-events", "none");
+        //prevent availability functions
+        noclick = true;
+        //prevent clicking other specific fields
+        $j(".noclick").css("pointer-events", "none");
+        //change button label
+        $j("#edit_form").val("Click to Edit Form");
     }
 }

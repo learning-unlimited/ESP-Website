@@ -93,12 +93,6 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {% load render_qsd %}
 {% render_inline_program_qsd program "volunteer_signup" %}
 
-{% if isAdmin %}
-<center>
-<input style="display: block" id="edit_form" type="submit" value="Click to Edit Volunteer Offers" class="btn btn-primary" onclick="toggle_edit();"/>
-</center></br>
-{% endif %}
-
 <div id="program_form">
 <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
 {% for hidden in form.hidden_fields %}
@@ -109,6 +103,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {% if form.errors %}
 <p><span style="color: red;">Please correct the errors in the form.</span></p>
 {% endif %}
+<div class="noclick">
 {{ form.name.label_tag }}
 {{ form.name.errors }}
 {{ form.name }}
@@ -118,6 +113,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 {{ form.phone.label_tag }}
 {{ form.phone.errors }}
 {{ form.phone }}
+</div>
 
   {% include "program/modules/availability.html" %}
   <div hidden>
@@ -125,7 +121,9 @@ The directors have been notified that you are no longer able to volunteer at {{ 
   </div>
   {{ form.requests.errors }}
 <br><br>
+<div class="noclick">
 {{ form.confirm }}<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>
+</div>
 {{ form.non_field_errors }}
 <br><br>
 <input style="display: block" id="volunteer_form_submit" type="submit" value="Submit" class="btn btn-primary" />
