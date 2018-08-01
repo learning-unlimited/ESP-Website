@@ -165,7 +165,7 @@ class AvailabilityModule(ProgramModuleObj):
                     avail_and_teaching.append(timeslot)
                 teaching_times[timeslot]=section
 
-        if request.method == 'POST':
+        if request.method == 'POST' and 'search' not in request.POST:
             #   Process form
             post_vars = request.POST
 
@@ -217,6 +217,10 @@ class AvailabilityModule(ProgramModuleObj):
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
         context['isAdmin'] = isAdmin
+
+        if isAdmin:
+            form = GenericSearchForm(initial={'target_user': teacher.id})
+            context['search_form'] = form
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
@@ -311,6 +315,8 @@ class AvailabilityModule(ProgramModuleObj):
             target_id = request.GET['user']
         elif 'user' in request.POST:
             target_id = request.POST['user']
+        elif 'target_user' in request.POST:
+            target_id = request.POST['target_user']
         else:
             form = GenericSearchForm()
             context = {'form': form}

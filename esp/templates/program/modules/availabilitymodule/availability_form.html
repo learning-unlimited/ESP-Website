@@ -109,6 +109,15 @@ You submitted a schedule with no available times.  You can't register a class wi
 
 </div>
 
+{% if search_form %}
+<br><br>
+<form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
+{{ search_form.as_p }}
+<input type="hidden" name="search" hidden />
+<input type="submit" value="Search" />
+</form>
+{% endif %}
+
 <div class="side right" hidden>
   <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
   <span class="summary" style="background-color: #00FF00;">Available</span>
