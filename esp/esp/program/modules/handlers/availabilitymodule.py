@@ -135,7 +135,7 @@ class AvailabilityModule(ProgramModuleObj):
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
-    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
+    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin=False):
         time_options = self.program.getTimeSlots(types=[self.event_type()])
         #   Group contiguous blocks
         if not Tag.getBooleanTag('availability_group_timeslots', default=True):
@@ -214,6 +214,7 @@ class AvailabilityModule(ProgramModuleObj):
         context['submitted_blank'] = blank
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
+        context['isAdmin'] = isAdmin
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
@@ -309,7 +310,8 @@ class AvailabilityModule(ProgramModuleObj):
         elif 'user' in request.POST:
             target_id = request.POST['user']
         else:
-            context = {}
+            form = GenericSearchForm()
+            context = {'form': form}
             return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
         try:

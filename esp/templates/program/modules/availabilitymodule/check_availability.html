@@ -29,7 +29,7 @@
 <br /><br />
 {% endif %}
 
-<form method="POST" action="{{ request.path }}">
+<form method="POST" action="/manage/{{ program.getUrlBase }}/check_availability">
 {{ form.as_p }}
 <input type="submit" value="Search" />
 </form>
