@@ -245,8 +245,6 @@ class AvailabilityModule(ProgramModuleObj):
                 context = {'form': form}
                 return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
-            form = GenericSearchForm(initial={'target_user': target_id})
-
             try:
                 teacher = ESPUser.objects.get(id=target_id)
             except:
@@ -254,6 +252,8 @@ class AvailabilityModule(ProgramModuleObj):
                     teacher = ESPUser.objects.get(username=target_id)
                 except:
                     raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+
+            form = GenericSearchForm(initial={'target_user': teacher.id})
 
         if teacher is None:
             form = GenericSearchForm()
