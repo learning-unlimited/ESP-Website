@@ -154,6 +154,7 @@ class AvailabilityModule(ProgramModuleObj):
         taken_slots = []
         avail_and_teaching = []
         user_sections = teacher.getTaughtSections(self.program)
+        teaching_times = {}
         conflict_found = False
         for section in user_sections:
             for timeslot in section.get_meeting_times():
@@ -162,6 +163,7 @@ class AvailabilityModule(ProgramModuleObj):
                     conflict_found = True
                 else:
                     avail_and_teaching.append(timeslot)
+                teaching_times[timeslot]=section
 
         if request.method == 'POST':
             #   Process form
@@ -207,7 +209,7 @@ class AvailabilityModule(ProgramModuleObj):
             #   for a in available_slots:
             #       teacher.addAvailableTime(self.program, a)
 
-        context = {'groups': [[{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t, 'id': t.id} for t in group] for group in time_groups]}
+        context = {'groups': [[{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t, 'id': t.id, 'section': teaching_times.get(t)} for t in group] for group in time_groups]}
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
         context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))

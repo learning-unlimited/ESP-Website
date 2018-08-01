@@ -26,6 +26,15 @@ $j(document).ready(function() {
       document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
     }
   });
+
+  //Shows class details when hovering over teaching timeslot
+    $j(".teaching").mouseover(function() {
+        var section = $j('input[value='+parseInt($j(this).attr('name'))+']').data('section')
+        $j(".left .summary").html(section);
+        $j(".left .summary").css("display", "block");
+        }).mouseout(function() {
+        $j(".left .summary").css("display", "none");
+    });
 });
 </script>
 {% endblock %}
@@ -86,7 +95,7 @@ You submitted a schedule with no available times.  You can't register a class wi
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+        <input type="checkbox" name="timeslots" {% if time.section %}data-section="{{ time.section }}"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
       {% endfor %}
     {% endfor %}
   </div>
