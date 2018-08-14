@@ -2210,6 +2210,7 @@ class Permission(ExpirableModel):
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
+            ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),

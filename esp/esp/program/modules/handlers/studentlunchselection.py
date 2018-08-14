@@ -120,7 +120,7 @@ class StudentLunchSelection(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_cap
-    @meets_deadline('/Classes')
+    @meets_deadline('/Classes/Lunch')
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user
