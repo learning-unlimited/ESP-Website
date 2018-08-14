@@ -5,19 +5,16 @@ from esp.users.models   import ESPUser, Record
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.tagdict.models import Tag
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
     bases = (forms.Form,)
     date_range = prog.date_range()
 
-    label = Tag.getTag('teacher_acknowledgement_text', target=prog)
-    if not label:
-        if date_range is None:
-            label = u"I have read the above, and commit to teaching my %s class." % (prog.program_type)
-        else:
-            label = u"I have read the above, and hereby commit to teaching my %s class on %s." % (prog.program_type, date_range)
+    if date_range is None:
+        label = u"I have read the above, and commit to teaching my %s class." % (prog.program_type)
+    else:
+        label = u"I have read the above, and commit to teaching my %s class on %s." % (prog.program_type, date_range)
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
@@ -52,7 +49,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             else:
                 rec.delete()
         elif self.isCompleted():
-            context['form'] = teacheracknowledgementform_factory(prog)(dict([('acknowledgement_%s'%i, True) for i in range(3)]))
+            context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
         return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
