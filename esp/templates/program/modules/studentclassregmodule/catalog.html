@@ -15,34 +15,7 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/prototype.js"></script>
 
 <script type="text/javascript">
-<!--
 {% include "program/modules/studentclassregmodule/common-js.html.js" %}
-
-var student_grade = esp_user.cur_grade;
-
-if (student_grade != "" && student_grade != null) {
-  student_grade = parseInt(student_grade);
-}
-
-if (document.getElementsByClassName == null) {
-alert("No document.getElementsByClassName!");
-// Alternate implementation from http://lawrence.ecorp.net/inet/samples/js-getelementsbyclassname.shtml
-document.getElementsByClassName = function(class_name) {
-    var docList = this.all || this.getElementsByTagName('*');
-    var matchArray = new Array();
-
-    /*Create a regular expression object for class*/
-    var re = new RegExp("(?:^|\\s)"+class_name+"(?:\\s|$)");
-    for (var i = 0; i < docList.length; i++) {
-        if (re.test(docList[i].className) ) {
-            matchArray[matchArray.length] = docList[i];
-        }
-    }
-
-			return matchArray;
-}//eof annonymous function
-}
-//-->
 </script>
 {% endblock %}
 
@@ -61,6 +34,18 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% endif %}
 
 <div id="catalog">
+
+<br>
+<div align="right">
+<b>Filter Catalog by Grade:</b><br>
+<select id = "grade_filter" style="width:auto !important">
+  <option value="all" selected="selected">All Grades</option>
+  {% for grade in program.grades %}
+    <option value="{{ grade }}">Grade {{ grade }}</option>
+  {% endfor %}
+</select>
+</div>
+<br>
 
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
@@ -101,67 +86,38 @@ if (document.getElementById("student_schedule")) {
 </div>
 
 <script type="text/javascript">
-function hideClassesOutOfGradeRange(stu_grade) {
-  if (student_grade == "") {
-    return;
-  }
-
-  mins = {};
-  maxes = {};
-
-  var grade;
-  var clsid;
-  var arr;
-  arr = document.getElementsByClassName("grademin");
-  for (var grademin in arr) {
-    var grademin_node = arr[grademin];
-    if (grademin_node && grademin_node.id) {
-      grade = parseInt(grademin_node.innerHTML);
-      clsid = grademin_node.id.split("_")[0];
-      mins[clsid] = grade;
+function hideOtherGrades(grade){
+    if(grade == "all"){
+        $j('.show_class').show();
+    }else{
+    	$j('.show_class').hide();
+        $j('.grade_' + grade).show();
     }
-  }
-
-  arr = document.getElementsByClassName("grademax");
-  for (var grademax in arr) {
-    grademax_node = arr[grademax];
-    if (grademax_node && grademax_node.id) {
-      grade = parseInt(grademax_node.innerHTML);
-      clsid = grademax_node.id.split("_")[0];
-      maxes[clsid] = grade;
-    }
-  }
-  
-  class_arrays = ["classcontent", "classdetails", "classregbuttons"];
-  for (var i = 0; i < class_arrays.length; i++)
-  {
-    arr = document.getElementsByClassName(class_arrays[i]);
-    for (var clsnum in arr) {
-        cls = arr[clsnum];
-        if (cls && cls.id) {
-          clsid = cls.id.split("_")[0];
-          if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
-            cls.style.display = 'none';
-          }
-        }
-    }
-  }
-
-  return [mins, maxes];
 }
 
-hideClassesOutOfGradeRange(student_grade);
+$j(document).ready(function() {
+    var student_grade = esp_user.cur_grade;
+    if (student_grade != "" && student_grade != null) {
+        student_grade = parseInt(student_grade);
+        if($j("#grade_filter").find('option[value="'+student_grade +'"]').length > 0){
+            $j("#grade_filter").val(student_grade);
+        }
+    }
+    hideOtherGrades($j("#grade_filter").find('option:selected').val());
+});
+
+$j("#grade_filter").change(function(){
+	hideOtherGrades($j(this).find('option:selected').val());
+});
 </script>
+
 
 <script type="text/javascript">
 function configure_addbuttons()
 {
     {% if register_from_catalog %}
     //  Registration from the catalog is allowed
-    $j("input.addbutton").removeClass("addbutton_hidden");
-    {% else %}
-    //  Registration from the catalog is not allowed
-    $j("input.addbutton").addClass("addbutton_hidden");
+    $j("input.addbutton").show();
     {% endif %}
 }
 $j(document).ready(configure_addbuttons);

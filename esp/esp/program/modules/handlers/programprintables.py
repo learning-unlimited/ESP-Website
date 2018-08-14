@@ -50,6 +50,8 @@ from esp.program.models import VolunteerOffer
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
+from django.utils.html import mark_safe
+from django.utils.html import format_html
 
 from decimal import Decimal
 import json
@@ -721,8 +723,12 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
+        elif key == 'teacher_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
+        elif key == 'volunteer_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer', include_date=True)
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -776,7 +782,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None, room_numbers=True):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
 
         if schedule_type is None:
             if user.isStudent():
@@ -788,43 +794,75 @@ class ProgramPrintables(ProgramModuleObj):
 
         schedule = u''
         if schedule_type in [u'Student', u'Teacher']:
-            if room_numbers:
-                schedule = u"""
-    %s schedule for %s:
 
-     Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
-            else:
-                schedule = u"""
-    %s schedule for %s:
-
-     Time                   | Class                                  \n""" % (schedule_type, user.name())
-            schedule += u'------------------------+---------------------------------------------------\n'
             if schedule_type == u'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
+                classes.sort()
             elif schedule_type == u'Teacher':
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
+                classes.sort()
+
+            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
+                                    schedule_type,
+                                    " schedule for ",
+                                    user.name(),
+                                    " for ",
+                                    program.niceName(),
+                                    ":")
+            schedule += format_html(u" {} {} {} {} </th>",
+                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=20%>"),
+                                    "Time",
+                                    mark_safe("</th><th width=60%>"),
+                                    "Class")
+            if room_numbers:
+                schedule += format_html(u"{} {} </th>",
+                                        mark_safe("<th width=20%>"),
+                                        "Room")
+            schedule += format_html(u"</tr>")
             for cls in classes:
-                rooms = cls.prettyrooms()
-                if len(rooms) == 0:
-                    rooms = u' N/A'
+                times = cls.friendly_times(include_date=include_date)
+                if len(times) == 0:
+                    # don't show classes with no times
+                    continue
                 else:
-                    rooms = u' ' + u", ".join(rooms)
+                    times = ' ' + ', '.join(times)
+                schedule += format_html(u"<tr><td> {} </td><td> {} </td>",
+                                        str(times),
+                                        cls.title())
                 if room_numbers:
-                    schedule += u'%s|%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40), rooms)
-                else:
-                    schedule += u'%s|%s\n' % ((u' '+u",".join(cls.friendly_times())).ljust(24), (u' ' + cls.title()).ljust(40))
+                    rooms = cls.prettyrooms()
+                    if len(rooms) == 0:
+                        rooms = 'N/A'
+                    else:
+                        rooms = ' ' + ', '.join(rooms)
+                    schedule += format_html(u"<td> {} </td>",
+                                            str(rooms))
+                schedule += format_html(u"</tr>")
+            schedule += format_html(u"</table>")
 
         elif schedule_type == u'Volunteer':
-            schedule = u"""
-Volunteer schedule for %s:
-
- Time                   | Shift                                  \n""" % (user.name())
-            schedule += u'------------------------+----------------------------------------\n'
+            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
+                                   schedule_type,
+                                   " schedule for ",
+                                   user.name(),
+                                   " for ",
+                                   program.niceName(),
+                                   ":")
+            schedule += format_html(u" {} {} {} {} </th>",
+                                    mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
+                                    "Time",
+                                    mark_safe("</th><th width=65%>"),
+                                    "Shift")
+            schedule += format_html(u"</tr>")
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += u' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
+                schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
+                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
+                                        str(shift.request.timeslot.description))
+            schedule += format_html(u"</table>")
 
-        return schedule
+        return mark_safe(schedule)
+
 
     @aux_call
     @needs_admin
@@ -1076,7 +1114,7 @@ Volunteer schedule for %s:
                     else:
                         rooms[room.name] = [update_dict]
 
-        for room_name in rooms:
+        for room_name in sorted(rooms.keys()):
             rooms[room_name].sort(key=lambda x: x['timeblock'].start)
             for val in rooms[room_name]:
                 scheditems.append(val)

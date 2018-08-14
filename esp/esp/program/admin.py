@@ -43,7 +43,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -166,7 +166,11 @@ class VolunteerOfferInline(admin.StackedInline):
 class VolunteerRequestAdmin(admin.ModelAdmin):
     def description(obj):
         return obj.timeslot.description
-    list_display = ('id', 'program', description, 'timeslot', 'num_volunteers')
+    def time(obj):
+        return obj.timeslot.short_time()
+    def date(obj):
+        return obj.timeslot.pretty_date()
+    list_display = ('id', 'program', description, time, date, 'num_volunteers')
     list_filter = ('program',)
     inlines = [VolunteerOfferInline,]
 admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
@@ -174,7 +178,13 @@ admin_site.register(VolunteerRequest, VolunteerRequestAdmin)
 class VolunteerOfferAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.request.program
-    list_display = ('id', 'user', 'email', 'name', 'request', program, 'confirmed')
+    def description(obj):
+        return obj.request.timeslot.description
+    def time(obj):
+        return obj.request.timeslot.short_time()
+    def date(obj):
+        return obj.request.timeslot.pretty_date()
+    list_display = ('id', 'user', 'email', 'name', description, time, date, program, 'confirmed')
     list_filter = ('request__program',)
     search_fields = default_user_search() + ['email', 'name']
 admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
@@ -323,3 +333,9 @@ class ClassFlagAdmin(admin.ModelAdmin):
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     list_filter = ['subject__parent_program','flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
+
+class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'display_user', 'program')
+    search_fields = ['user__username']
+    list_filter = ['program']
+admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)

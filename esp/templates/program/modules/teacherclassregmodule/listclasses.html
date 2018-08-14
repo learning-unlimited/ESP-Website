@@ -1,5 +1,41 @@
+<style>
+.ui-dialog-titlebar-close {
+    padding:0 !important;
+}
+
+.ui-dialog-titlebar-close:after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    background-image: url(/media/styles/jquery-ui/images/ui-icons_222222_256x240.png);
+    background-position: -96px -128px;
+    background-repeat: no-repeat;
+}
+</style>
+
 {% block xtrajs %}
 <script type="text/javascript">
+function requestCancel(cls) {
+    $j('#request_' + cls).dialog({
+        height: "auto",
+        width: 500,
+        resizable: false,
+        modal: true,
+        autoOpen: true,
+        closeText: "Close",
+        closeOnEscape: true,
+        title: "Class Cancellation Request",
+        // Allows user to escape popup by clicking outside of it
+        open: function(event, ui) { 
+            $j('.ui-widget-overlay').bind('click', function()
+            { 
+                $j(this).siblings('.ui-dialog').find('.ui-dialog-content').dialog('close');
+            });
+        },
+    });
+}
+
 <!--
 
 function deleteClass() {
@@ -14,6 +50,7 @@ function deleteClass() {
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css">
 
 <br />
 <br />
@@ -47,7 +84,7 @@ If you have any questions regarding the program, <br /> please email the
     </th>
   </tr>
   <tr>
-    <td colspan="7">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.  Also, e-mail the directors immediately if you need to cancel a class.</td>
+    <td colspan="7">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; e-mail the directors if you believe there is a problem with your time or room assignment.</td>
    </tr>
   {% if crmi.noclasses %}
   <tr>
@@ -61,7 +98,7 @@ If you have any questions regarding the program, <br /> please email the
   {% endif %}
   {% load class_render_row %}
   {% for cls in clslist %}
-    {% render_class_teacher_list_row cls %}
+    {% render_class_teacher_list_row cls can_req_cancel %}
   {% endfor %}
 
    {% if can_create %}

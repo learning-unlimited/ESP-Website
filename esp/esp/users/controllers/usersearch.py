@@ -40,6 +40,7 @@ from esp.dbmail.models import MessageRequest
 
 from django.db.models import Count
 from django.db.models.query import Q
+from django.contrib.auth.models import Group
 
 import collections
 import re
@@ -88,6 +89,12 @@ class UserSearchController(object):
         else:
 
             ##  Select users based on all other criteria that was entered
+            if 'group' in criteria and criteria['group'] != "":
+                group = criteria['group']
+                #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
+                Q_include &= Q(registrationprofile__user__groups=group)
+                self.updated = True
+
             for field in ['username','last_name','first_name', 'email']:
                 if criteria.get(field, '').strip():
                     #   Check that it's a valid regular expression
@@ -145,7 +152,7 @@ class UserSearchController(object):
                     self.updated = True
 
             #   Filter by graduation years if specifically looking for teachers.
-            possible_gradyears = range(1920, 2020)
+            possible_gradyears = range(1920, 2120)
             if criteria.get('gradyear_min', '').strip():
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
@@ -357,6 +364,7 @@ class UserSearchController(object):
         if target_path is None:
             target_path = '/manage/%s/commpanel' % program.getUrlBase()
         context['action_path'] = target_path
+        context['groups'] = Group.objects.all()
 
         return context
 
@@ -383,3 +391,12 @@ class UserSearchController(object):
             target_path = request.path
 
         return (render_to_response(template, request, self.prepare_context(program, target_path)), False)
+
+    def selected_list_from_postdata(self, data):
+        selected = []
+        selected.append(str(data.get('base_list', '')) or str(data.get('combo_base_list', ':').split(':')[1]))
+        for k,v in data.items():
+            if k.startswith('checkbox_'):
+                selected.append(str(k.split('checkbox_')[1]))
+
+        return str(', '.join(selected))

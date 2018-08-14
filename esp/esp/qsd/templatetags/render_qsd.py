@@ -21,20 +21,20 @@ def render_qsd(qsd):
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 render_qsd.cached_function.depend_on_model(Tag)
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj}
+    return {'qsdrec': qsd_obj, 'inline': True}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_inline_program_qsd(program, name):
     #unlike the above method, we don't know the url, just a program object
     #we could attempt to construct the url in the template
     #or just do this
     url = QuasiStaticData.prog_qsd_url(program, name)
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj}
+    return {'qsdrec': qsd_obj, 'inline': True}
 def program_qsd_key_set(qsd):
     prog_and_name = QuasiStaticData.program_from_url(qsd.url)
     if prog_and_name is None:
@@ -71,7 +71,7 @@ class InlineQSDNode(template.Node):
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         # Note: this is django's render_to_response, not ours!
-        return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj}, context_instance=context).content
+        return render_to_response("inclusion/qsd/render_qsd.html", {'qsdrec': qsd_obj, 'inline': True}, context_instance=context).content
 
 @register.tag
 def inline_qsd_block(parser, token):

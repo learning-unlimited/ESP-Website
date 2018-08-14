@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from esp.users.models import ContactInfo, Permission
-from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
@@ -234,5 +233,16 @@ def ajax_qsd(request):
         result['status'] = 1
         result['content'] = markdown(qsd.content)
         result['url'] = qsd.url
+
+    return HttpResponse(json.dumps(result))
+
+def ajax_qsd_preview(request):
+    """ Ajax function for previewing the result of QSD editing. """
+    import json
+    from markdown import markdown
+
+    # We don't necessarily need to wrap it in JSON, but this seems more
+    # future-proof.
+    result = {'content': markdown(request.POST['data'])}
 
     return HttpResponse(json.dumps(result))

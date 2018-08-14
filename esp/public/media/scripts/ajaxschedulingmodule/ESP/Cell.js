@@ -81,7 +81,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             this.el.addClass("available-cell");
 
             if(this.ghostSection) {
-                this.el.css("background", this.cellColors.color(this.ghostSection));
+                this.el.css("background", this.cellColors.background(this.ghostSection));
                 this.el.css("color", this.cellColors.textColor(this.ghostSection));
                 this.el.addClass("ghost-section");
                 this.el[0].innerHTML = this.ghostSection.emailcode;
@@ -96,8 +96,9 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
             if(this.selected) {
                 this.el.addClass("selected-section");
             }
-            this.el.css("background-color", this.cellColors.color(this.section));
+            this.el.css("background", this.cellColors.background(this.section));
             this.el.css("color", this.cellColors.textColor(this.section));
+            this.el.css("background-size", "cover");
             this.el[0].innerHTML = "<a href='#'>" + this.section.emailcode + "</a>";
         }
     };

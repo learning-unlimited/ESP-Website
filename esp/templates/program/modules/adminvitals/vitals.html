@@ -10,6 +10,7 @@ json_data = {};
     $j(document).ready(function() {
       $module_groups = $j("#stats_students")
         .add("#stats_teachers")
+        .add("#stats_volunteers")
         .add("#stats_classes")
         .add("#stats_categories")
         .add("#stats_grades")
@@ -41,6 +42,12 @@ json_data = {};
       </div>
       <div class="module_group" id="stats_teachers">
 	<div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_volunteers">
+	<div class="module_group_header module_group_expandable">Volunteers <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body" style="display:none">
 	  Loading data...
 	</div>

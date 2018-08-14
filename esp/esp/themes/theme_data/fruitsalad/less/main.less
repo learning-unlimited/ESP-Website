@@ -487,12 +487,15 @@ position: absolute;
 top: 9px; right: 48px;
 height: 21px; width: 45px;
 font-size: 10.5px;
-padding-right: 15px;
+text-decoration: none;
 border-radius: 0px;
 color: white;
 border: none;
 cursor: pointer;
 z-index: 0;
+padding: 0px;
+padding-right: 10px;
+font-family: Arial, Lucida, Helvetica, sans-serif;
 }
 
 #login_arrow1 {
@@ -594,6 +597,29 @@ content: '*';
 color: #fff;
 }
 
+#submenu li.navbar-manage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  line-height: normal;
+}
+#submenu li.navbar-manage:before {
+  content: '';
+}
+#submenu li.navbar-manage a, #submenu li.navbar-manage .navbar-manage-expander {
+  color: white;
+  display: block;
+  padding: 2px 5px 5px;
+  background-color: rgba(0, 0, 0, 75%);
+}
+#submenu li.navbar-manage .navbar-manage-expander {
+  font-weight: bold;
+  cursor: pointer;
+}
+#submenu li.navbar-manage a:hover, #submenu li.navbar-manage .navbar-manage-expander:hover {
+  background-color: #000;
+}
+
 /* ANNOUNCEMENTS */
 
 #divannouncements {
@@ -660,8 +686,16 @@ cursor: pointer;
 background: #bbb;
 }
 
+#adminbar_content small {
+    font-size: smaller;
+}
+
 #adminbar_content .content {
-padding: 6px 10px 15px;
+    padding: 8px;
+}
+
+#adminbar_content form, #adminbar_content .input-append {
+    margin: 0;
 }
 
 
@@ -918,12 +952,18 @@ div .adminbar_user {
     width: 170px;
 }
 
-#user_search_field {
-    width: 160px;
-    padding: 2px;
+#user_search_field, #class_search_field {
+    width: 135px;
 }
 
 #user_data {
     color: #444;
     font-style: italic;
 }
+
+.done-sign { color: green; }
+.not-done-sign { color: red; }
+
+.glyphicon.glyphicon-btn-height:before { line-height: 18px; }
+
+.fqr-class-buttons.btn-toolbar { margin: 0; }

@@ -14,52 +14,91 @@
 {% block content %}
 {% with user.getLastProfile as profile %}
 <h1>User Information</h1>
+{% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
 
 <div id="user-sidebar">
     {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
-    <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}">Morph into this user</a>
-    <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}&onsite={{profile.program.id}}">Onsite for {{profile.program.niceName}}</a>
-    <a class="sidelink" href="/admin/users/espuser/{{profile.user.id}}/">View on admin panel</a>
+    <form class="change-program" method="get">
+        <input type="hidden" name="username" value="{{user.username}}"/>
+        View:
+        <select name="program" onchange="$j(this).parent().submit();return false;">
+            {% for prog in all_programs %}
+            <option value="{{prog.id}}" {% if prog == program %}selected="selected"{% endif %}>
+                {{prog.name}}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+    <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}">Morph into this user</a>
+    {% if program %}
+    <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{user.id}}&onsite={{program.id}}">Onsite for {{program.niceName}}</a>
+    {% endif %}
+    <a class="sidelink" href="/admin/users/espuser/{{user.id}}/">View on admin panel</a>
+    <a class="sidelink" href="/admin/program/registrationprofile/?user__id={{user.id}}">View registration profiles</a>
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
     </form>
-    {% if profile.teacher_info and profile.program|hasModule:"AvailabilityModule" %}
-        <a class="sidelink" href="/manage/{{profile.program.getUrlBase}}/check_availability?user={{user.username}}">
-            Check availability for {{profile.program.niceName}}</a>
+    {% if profile.teacher_info and program and program|hasModule:"AvailabilityModule" %}
+        <a class="sidelink" href="/manage/{{program.getUrlBase}}/check_availability?user={{user.username}}">
+            Check availability for {{program.niceName}}</a>
     {% endif %}
     {% if profile.student_info %}
-        {% if profile.program|hasModule:"FormstackMedliabModule" %}
-            <form action="/manage/{{profile.program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
+        {% if program and program|hasModule:"AccountingModule" %}
+            <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
+        {% endif %}
+        {% if program and program|hasModule:"FormstackMedliabModule" %}
+            <form action="/manage/{{program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
                 <input type="hidden" name="target_user" value="{{user.id}}"/>
                 <a class="sidelink" onclick="$j(this).parent().submit();return false;"
-                   href="/manage/{{profile.program.getUrlBase}}/medicalbypass">
-                    Grant medical bypass for {{profile.program.niceName}}</a>
+                   href="/manage/{{program.getUrlBase}}/medicalbypass">
+                    Grant medical bypass for {{program.niceName}}</a>
             </form>
         {% endif %}
+        {% if program %}
         <div id="print-student-schedule">
             <h2>
                 Student schedule<br/>
-                (for {{profile.program.niceName}})
+                (for {{program.niceName}})
             </h2>
-            <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{profile.program.getUrlBase}}/studentschedule?user={{profile.user.id}}" target="_new">Print locally</a>
-            <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{profile.program.getUrlBase}}/printschedule?user={{profile.user.id}}&next=/manage/userview?username={{user.username}}">Print to default printer</a>
+            <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print locally</a>
+            <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print to default printer</a>
             {% if printers %}
                 {% for printer in printers %}
-                <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{profile.program.getUrlBase}}/printschedule?user={{profile.user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print to {{ printer }}</a>
+                <a id="printstudentschedulelink-{{printer|slugify}}" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&printer={{ printer }}&next=/manage/userview?username={{user.username}}">Print to {{ printer }}</a>
                 {% endfor %}
             {% endif %}
         </div>
+        {% else %}
+            (Student has no profiles for programs)
+        {% endif %}
     {% endif %}
     {% if profile.teacher_info %}
-        <div id="print-teacher-schedule">
-            <h2>
-                Teacher schedule<br/>
-                (for {{profile.program.niceName}})
-            </h2>
-            <a id="getteacherschedulelink" class="sidelink" href="/teach/{{profile.program.getUrlBase}}/teacherschedule?user={{profile.user.id}}" target="_new">Print locally</a>
-        </div>
+        {% if program %}
+            <div id="print-teacher-schedule">
+                <h2>
+                    Teacher schedule<br/>
+                    (for {{program.niceName}})
+                </h2>
+                <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{profile.user.id}}" target="_new">Print locally</a>
+            </div>
+        {% else %}
+            (Teacher has no profiles for programs)
+        {% endif %}
+    {% endif %}
+    {% if volunteer %}
+        {% if program %}
+            <div id="print-volunteer-schedule">
+                <h2>
+                    Volunteer schedule<br/>
+                    (for {{program.niceName}})
+                </h2>
+                <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{profile.user.id}}" target="_new">Print locally</a>
+            </div>
+        {% else %}
+            (Volunteer has no profiles for programs)
+        {% endif %}
     {% endif %}
 </div>
 
@@ -92,7 +131,7 @@
 <form action="/manage/userview/" method="get" name="change_grade">
 {{ change_grade_form.graduation_year }}
 <input type="hidden" name="username" value="{{ user.username }}" />
-<input type="submit" value="Change" />
+<input type="submit" value="Change" class="btn btn-default" />
 </form></td></tr>
 <tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
 <tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
@@ -103,7 +142,8 @@
 {% if profile.teacher_info %}
 <h2>Teacher Info</h2>
 <table class="dottedtable long">
-<tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
+    <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
+    <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
 <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
 <tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
 <tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>

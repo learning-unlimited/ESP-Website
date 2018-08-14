@@ -84,7 +84,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         self.get_change_log(prog).prune()
 
         #actually return the page
-        context = {}
+        context = {
+            "has_autoscheduler_frontend":
+                prog.hasModule("AutoschedulerFrontendModule")}
 
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
@@ -222,7 +224,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             times = []
             classrooms = []
             for br in blockrooms:
-                timeslot, classroom = br.split(",")
+                timeslot, classroom = br.split(",", 1)
                 times.append(timeslot)
                 classrooms.append(classroom)
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user)

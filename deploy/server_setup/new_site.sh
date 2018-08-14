@@ -8,7 +8,6 @@ set -ef -o pipefail
 
 # Parameters
 GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
-GIT_BRANCH="stable-release-7"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 APACHE_REDIRECT_CONF_FILE="/etc/apache2/sites-available/esp_sites/https_redirect.conf"
 AUTH_USER_FILE="/lu/auth/dav_auth"
@@ -219,6 +218,8 @@ read THROWAWAY
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]] ; then
+    echo -n "Enter the current release branch --> "
+    read GIT_BRANCH
     if [[ -e "$BASEDIR/.git" ]] ; then
         echo "Updating code in $BASEDIR.  Please tend to any conflicts."
         cd "$BASEDIR"
@@ -289,7 +290,8 @@ CACHE_PREFIX = "${SITENAME}ESP"
 
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
-        'archive': 'learninguarchive@gmail.com',
+        'archive': 'splashwebsitearchive@learningu.org',
+        # TODO(benkraft): Change this to an @learningu as well
         'bounces': 'learningubounces@gmail.com',
         'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
@@ -333,6 +335,12 @@ ALLOWED_HOSTS = ['$ESPHOSTNAME']
 EOF
 
     chown -R $WWW_USER:$WWW_USER "$BASEDIR"
+    # TODO(benkraft): This shouldn't be necessary; we should just set things up
+    # to get the right perms on creation.
+    for ext in .shell.log .log ; do
+        touch "$DJANGO_LOGDIR/$SITENAME-django$ext"
+        chown $WWW_USER:$WWW_USER "$DJANGO_LOGDIR/$SITENAME-django$ext"
+    done
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -424,10 +432,13 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
 
 EOF
     service apache2 graceful
+    # TODO(benkraft): put the renewal script in git too.
+    /lu/certbot/renew_lu.py
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
 
-    echo "Apache has been set up.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
+    echo "Apache has been set up, and a new SSL cert has been requested."
+    echo "Please check them by looking over the output above, then press"
+    echo -n "enter to continue or Ctrl-C to quit."
     read THROWAWAY
 fi
 

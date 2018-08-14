@@ -111,7 +111,7 @@ class StudentLunchSelection(ProgramModuleObj):
             "admin_title": "Student Lunch Period Selection",
             "module_type": "learn",
             "required": True,
-            "seq": 2
+            "seq": 5
             }
 
     def isCompleted(self):

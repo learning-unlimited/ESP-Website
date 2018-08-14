@@ -127,6 +127,13 @@ input.addbutton {
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
     border-radius: 0px;
+    display: none;
+}
+
+.btn.addbutton {
+    font-weight: bold;
+    width: 100%;
+    border-radius: 0px;
 }
 
 input.addbutton:hover {

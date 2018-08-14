@@ -8,7 +8,7 @@
 <head>
 
 <!-- meta -->
-<meta http-equiv="Content-Script-Type" content="text/javascript">
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
 
 <title>ESP Scheduling Application</title>
 
@@ -17,8 +17,8 @@
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
-<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css">
-<link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css"></link>
+<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css" />
+<link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
@@ -29,8 +29,11 @@
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
 
 <!--Scheduler-->
-<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
-<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
+<script type="text/javascript">
+  var base_url = "{{ program.getUrlBase }}";
+  var program_base_url = "/json/"+base_url+"/";
+  var has_autoscheduler_frontend = "{{ has_autoscheduler_frontend }}";
+</script>
 
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/CellColors.js"></script>
@@ -73,11 +76,11 @@
                             <label for="class-search-text">Search:</label>
                             <input id="class-search-text"
                                    style="width: 8em;"></input>
-                            
-                            <label for="class-search-title" 
+
+                            <label for="class-search-title"
                                    class="ui-helper-hidden"
                                   >Search Type</label>
-                            <input type="radio" name="class-search-type" value="title" 
+                            <input type="radio" name="class-search-type" value="title"
                                    checked="checked">title</input>
                             <input type="radio" name="class-search-type" value="emailcode">code</input>
                         </form>
@@ -86,26 +89,35 @@
                 </div>
                 <div id="filters">
                   <form>
-                    <label for="section-filter-length"><b>Class Length</b></label></br>
+                    <label for="section-filter-length"><b>Class Length</b></label><br />
                     <div id="section-filter-length">
                         <label for="section-filter-length-min">Min:</label>
                         <input id="section-filter-length-min" class="numeric"></input> Hours
-                        </br>
+                        <br />
                         <label for="section-filter-length-max">Max:</label>
                         <input id="section-filter-length-max" class="numeric"></input> Hours
                     </div>
-                    </br> 
-                    <label for="section-filter-capacity"><b>Class Capacity</b></label></br>
+                    <br />
+                    <label for="section-filter-capacity"><b>Class Capacity</b></label><br />
                     <div id="section-filter-length">
-                        <label for="section-filter-capacity-min">Min:</label> 
+                        <label for="section-filter-capacity-min">Min:</label>
                         <input id="section-filter-capacity-min" class="numeric"></input> Students
-                        </br>
+                        <br />
                         <label for="section-filter-capacity-max">Max:</label>
                         <input id="section-filter-capacity-max" class="numeric"></input> Students
                     </div>
-                    </br>
+                    <br />
+                    <label for="section-filter-grade"><b>Class Grades</b></label><br />
+                    <div id="section-filter-length">
+                        <label for="section-filter-grade-min">Min:</label>
+                        <input id="section-filter-grade-min" class="numeric"></input>
+                        <br />
+                        <label for="section-filter-grade-max">Max:</label>
+                        <input id="section-filter-grade-max" class="numeric"></input>
+                    </div>
+                    <br />
                     <div id="section-filter-teacher">
-                        <label for="section-filter-teacher-text"><b>Teacher</b></label></br>
+                        <label for="section-filter-teacher-text"><b>Teacher</b></label><br />
                         <input id="section-filter-teacher-text"></input>
                     </div>
                     <div id="section-filter-unapproved">
@@ -114,7 +126,7 @@
                     </div>
                   </form>
                 </div>
-          </div> 
+          </div>
         </div>
       </div>
     </td>

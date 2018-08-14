@@ -53,7 +53,7 @@ class EditPermissionForm(forms.Form):
 
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
-    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers")])
+    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 

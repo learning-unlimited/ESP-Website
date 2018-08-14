@@ -54,7 +54,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 
-from argcache import cache_function, wildcard
+from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
@@ -313,6 +313,10 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def niceSubName(self):
         return self.name
+
+    def grades(self):
+        """ Return an iterable list of the grades for a program. """
+        return range(self.grade_min, self.grade_max + 1)
 
     @property
     def program_type(self):
@@ -591,7 +595,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return True
         if self._student_is_in_program(user):
             return True
-        caps = self._grade_caps()
+        caps = self.grade_caps()
         grade = user.getGrade(self, assume_student=True)
         for grades, cap in caps.iteritems():
             if (grade in grades and
@@ -600,7 +604,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return True
 
     @cache_function
-    def _grade_caps(self):
+    def grade_caps(self):
         """Parses the program_size_by_grade Tag.
 
         See user_can_join for the tag syntax.
@@ -617,7 +621,7 @@ class Program(models.Model, CustomFormsLinkModel):
             else:
                 size_dict[(int(k),)] = v
         return size_dict
-    _grade_caps.depend_on_model('tagdict.Tag')
+    grade_caps.depend_on_model('tagdict.Tag')
 
     def _user_can_join_at_all(self, user):
         """Helper function for user_can_join, when using program_size_max.
@@ -670,7 +674,13 @@ class Program(models.Model, CustomFormsLinkModel):
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
     getScheduleConstraints.depend_on_model('program.ScheduleConstraint')
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     getScheduleConstraints.depend_on_model('program.BooleanToken')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestTimeblock')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestOccupied')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestCategory')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestSectionList')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -787,13 +797,62 @@ class Program(models.Model, CustomFormsLinkModel):
                 result.append(ts_day)
         return result
 
+    def datetime_range(self):
+        slots = self.getTimeSlots()
+        if slots:
+            return (min(slots).start, max(slots).end)
+        return None
+
+    # @staticmethod --- applied below after the depend_on_model call
+    @cache_function_for(60*60*24)
+    def current_program():
+        """ Guess the "current program", which is the first of the following programs that exists:
+
+        - the shortest program such that the current time is between the
+          start of its first timeslot and the end of its last timeslot
+        - the program in the future (<100 years) that will start the soonest
+        - the program in the past that ended the most recently
+        """
+        now = datetime.now()
+        far_future = now + timedelta(days=36500)
+        def currentness_penalty(program):
+            # The lower the return value (lexicographically), the more
+            # current a program is.
+            if "test" in program.name.lower():
+                return (9001, None)
+
+            datetime_range = program.datetime_range()
+            if datetime_range is None:
+                return (1337, None)
+            start, end = datetime_range
+            if start <= now <= end:
+                # most current: a program running now.
+                # tiebreak by shortest
+                return (0, (end - start))
+            elif now <= start <= far_future:
+                # second most current: program coming up in <100 years
+                # tiebreak by soonest
+                return (1, start)
+            elif start <= now:
+                # past programs; tiebreak by latest
+                return (2, now - end)
+            else:
+                # far future programs, which must be for testing: tiebreak by
+                # soonest
+                return (3, start)
+        programs = Program.objects.all()
+        if programs:
+            return min(programs, key=currentness_penalty)
+        return None
+    current_program.depend_on_model('cal.Event')
+    current_program = staticmethod(current_program)
+
     def date_range(self):
         """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
-        dates = self.getTimeSlots()
+        datetime_range = self.datetime_range()
 
-        if dates:
-            d1 = min(dates).start
-            d2 = max(dates).end
+        if datetime_range:
+            d1, d2 = datetime_range
             if d1.year == d2.year:
                 if d1.month == d2.month:
                     if d1.day == d2.day:
@@ -1014,18 +1073,28 @@ class Program(models.Model, CustomFormsLinkModel):
         if 'class_approved' in teacher_dict:
             query = teacher_dict['class_approved']
             query = query.filter(registrationprofile__most_recent_profile=True)
-            query = query.values_list('registrationprofile__teacher_info__shirt_type',
-                                      'registrationprofile__teacher_info__shirt_size')
-            query = query.annotate(people=Count('id', distinct=True))
+            if not Tag.getBooleanTag('teacherinfo_shirt_type_selection'):
+                query = query.values_list('registrationprofile__teacher_info__shirt_size')
+                query = query.annotate(people=Count('id', distinct=True))
 
-            for row in query:
-                shirt_type, shirt_size, count = row
-                shirt_count[shirt_type][shirt_size] = count
+                for row in query:
+                    shirt_size, count = row
+                    shirt_count['M'][shirt_size] = count
+
+            else:
+                query = query.values_list('registrationprofile__teacher_info__shirt_type',
+                                          'registrationprofile__teacher_info__shirt_size')
+                query = query.annotate(people=Count('id', distinct=True))
+
+                for row in query:
+                    shirt_type, shirt_size, count = row
+                    shirt_count[shirt_type][shirt_size] = count
 
         shirts = {}
         shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
+
     #   Update cache whenever a class is approved or a teacher changes their profile
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_model('users.TeacherInfo')
@@ -1156,8 +1225,7 @@ class SplashInfo(models.Model):
 
     def pretty_version(self, attr_name):
         #   Look up choices
-        tag_data = Tag.getTag('splashinfo_choices', target=self.program)
-        if not tag_data: tag_data = Tag.getTag('splashinfo_choices')
+        tag_data = Tag.getProgramTag('splashinfo_choices', self.program)
 
         #   Check for matching item in list of choices
         if tag_data:
@@ -1225,8 +1293,6 @@ class RegistrationProfile(models.Model):
     guardian_info = AjaxForeignKey(GuardianInfo, blank=True, null=True, related_name='as_guardian')
     educator_info = AjaxForeignKey(EducatorInfo, blank=True, null=True, related_name='as_educator')
     last_ts = models.DateTimeField(default=timezone.now)
-    emailverifycode = models.TextField(blank=True, null=True)
-    email_verified  = models.BooleanField(default=False, blank=True)
     most_recent_profile = models.BooleanField(default=False)
 
     old_text_reminder = models.NullBooleanField(db_column='text_reminder')  ## Kept around for database-migration purposes
@@ -1255,12 +1321,19 @@ class RegistrationProfile(models.Model):
 
     @cache_function
     def getLastProfile(user):
+        """Return the user's most recent profile, or an empty profile.
+
+        Return the user's most recently written profile if one exists. If none
+        exist because the user has no profiles or is an AnonymousUser, create
+        and return (but don't save) an empty profile for the user.
+        """
         regProf = None
 
+        # check if this is an actual User, not an AnonymousUser
         if isinstance(user.id, (int, long)):
             try:
                 regProf = RegistrationProfile.objects.filter(user__exact=user).select_related().latest('last_ts')
-            except:
+            except RegistrationProfile.DoesNotExist:
                 pass
 
         if regProf != None:
@@ -1272,6 +1345,30 @@ class RegistrationProfile(models.Model):
         return regProf
     getLastProfile.depend_on_row('program.RegistrationProfile', lambda profile: {'user': profile.user})
     getLastProfile = staticmethod(getLastProfile) # a bit annoying, but meh
+
+    @cache_function
+    def get_last_program_with_profile(user):
+        """Return the program for which the user most recently wrote a profile.
+
+        Look up the profile most recently written by the user, skipping
+        profiles not associated with a program, and return the associated
+        program. If no such programs exist, return None. Used as an
+        approximation of the most recent program attended by the user, which is
+        also often a currently running program.
+        """
+        try:
+            return (
+                RegistrationProfile.objects
+                .filter(user__exact=user, program__isnull=False)
+                .select_related('program')
+                .latest('last_ts')
+                .program
+            )
+        except RegistrationProfile.DoesNotExist:
+            return None
+    get_last_program_with_profile.depend_on_row('program.RegistrationProfile',
+            lambda profile: {'user': profile.user})
+    get_last_program_with_profile = staticmethod(get_last_program_with_profile)
 
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1488,7 +1585,13 @@ class BooleanToken(models.Model):
     @cache_function
     def subclass_instance(self):
         return get_subclass_instance(BooleanToken, self)
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     subclass_instance.depend_on_row('program.BooleanToken', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestTimeblock', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestOccupied', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestCategory', lambda bt: {'self': bt})
+    subclass_instance.depend_on_row('program.ScheduleTestSectionList', lambda bt: {'self': bt})
 
     @staticmethod
     def evaluate(stack, *args, **kwargs):
@@ -1552,7 +1655,13 @@ class BooleanExpression(models.Model):
     @cache_function
     def get_stack(self):
         return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
+    # Sadly, the way django signals work, we have to depend on every subclass
+    # of BooleanToken, not just BooleanToken itself.
     get_stack.depend_on_row('program.BooleanToken', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestTimeblock', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestOccupied', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestCategory', lambda token: {'self': token.exp})
+    get_stack.depend_on_row('program.ScheduleTestSectionList', lambda token: {'self': token.exp})
 
     def reset(self):
         self.booleantoken_set.all().delete()
@@ -1864,6 +1973,19 @@ class RegistrationType(models.Model):
             return self.displayName
         else:
             return self.name
+
+class PhaseZeroRecord(models.Model):
+    def __unicode__(self):
+        return str(self.id)
+
+    user = models.ManyToManyField(ESPUser)
+    program = models.ForeignKey(Program, blank=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+    def display_user(self):
+        # Creates a string for the Users. This is required to display user in Admin.
+        return ', '.join([user.username for user in self.user.all()])
+    display_user.short_description = 'Username(s)'
 
 class StudentRegistration(ExpirableModel):
     """

@@ -59,6 +59,33 @@ function hideAll () {
     $j(".flag-detail").hide();
 }
 
+function approveAll (IDs) {
+    var r = confirm("Are you sure you'd like to approve ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            approve(element);
+        });
+    }
+}
+
+function unreviewAll (IDs) {
+    var r = confirm("Are you sure you'd like to unreview ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            unreview(element);
+        });
+    }
+}
+
+function rejectAll (IDs) {
+    var r = confirm("Are you sure you'd like to reject ALL of these classes?");
+    if (r) {
+        IDs.forEach(function(element) {
+            reject(element);
+        });
+    }
+}
+
 $j(document).ready(function () {
     $j(".flag-detail").hide();
     $j(".manage-approve-link").hide();

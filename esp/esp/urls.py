@@ -49,6 +49,7 @@ import esp.customforms.urls
 import esp.formstack.urls
 import esp.program.urls
 import esp.qsdmedia.urls
+import esp.random.urls
 import esp.survey.urls
 import esp.tests.urls
 import esp.themes.urls
@@ -74,7 +75,8 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 # Admin stuff
 urlpatterns += [
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
-    url(r'^admin/ajax_qsd/?', esp.qsd.views.ajax_qsd),
+    url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
+    url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
     url(r'^admin/ajax_autocomplete/?', esp.db.views.ajax_autocomplete),
     url(r'^grappelli/', include('grappelli.urls')),
     url(r'^admin/filebrowser/', include(filebrowser_site.urls)),
@@ -99,6 +101,7 @@ urlpatterns += [
     url(r'^__debug__/', include(debug_toolbar.urls)),
     url(r'^accounting/', include(esp.accounting.urls)),
     url(r'^customforms', include(esp.customforms.urls)),
+    url(r'^random', include(esp.random.urls)),
     url(r'^', include(esp.formstack.urls)),
     url(r'^',  include(esp.program.urls)),
     url(r'^download', include(esp.qsdmedia.urls)),

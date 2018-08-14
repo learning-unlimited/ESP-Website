@@ -214,6 +214,11 @@ class BaseESPUser(object):
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
+    def nonblank_name(self):
+        name = self.name()
+        if name.strip() == '': name = self.username
+        return name
+
     def get_email_sendto_address_pair(self):
         """
         Returns the pair of data needed to send an email to the user.
@@ -247,6 +252,12 @@ class BaseESPUser(object):
         # for coherence w.r.t clearing and more caching
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
+
+    def get_last_program_with_profile(self):
+        # as in getLastProfile, caching is handled in
+        # RegistrationProfile.getLastProfile for coherence
+        from esp.program.models import RegistrationProfile
+        return RegistrationProfile.get_last_program_with_profile(self)
 
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
@@ -607,6 +618,9 @@ class BaseESPUser(object):
             else:
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+
+    def can_skip_phase_zero(self, program):
+        return Permission.user_has_perm(self, 'OverridePhaseZero', program)
 
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots.
@@ -1332,6 +1346,13 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+
+AFFILIATION_UNDERGRAD = 'Undergrad'
+AFFILIATION_GRAD = 'Grad'
+AFFILIATION_POSTDOC = 'Postdoc'
+AFFILIATION_OTHER = 'Other'
+AFFILIATION_NONE = 'None'
+
 class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
 
@@ -1340,6 +1361,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     link_fields_list = [
         ('graduation_year', 'Graduation year'),
         ('from_here', 'Current student checkbox'),
+        ('affiliation', 'School affiliation type'),
         ('is_graduate_student', 'Graduate student status'),
         ('college', 'School/employer'),
         ('major', 'Major/department'),
@@ -1354,6 +1376,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
+    affiliation = models.CharField(max_length=100, blank=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
     college = models.CharField(max_length=128,blank=True, null=True)
@@ -1399,9 +1422,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
     def updateForm(self, form_dict):
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['from_here']        = self.from_here
-        form_dict['is_graduate_student'] = self.is_graduate_student
-        form_dict['school']          = self.college
+        form_dict['affiliation'] = self.affiliation
         form_dict['major']           = self.major
         form_dict['shirt_size']      = self.shirt_size
         form_dict['shirt_type']      = self.shirt_type
@@ -1417,12 +1438,17 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         else:
             teacherInfo = regProfile.teacher_info
         teacherInfo.graduation_year = new_data['graduation_year']
-        teacherInfo.from_here        = (new_data['from_here'] == "True")
-        teacherInfo.is_graduate_student = new_data['is_graduate_student']
-        teacherInfo.college         = new_data['school']
-        teacherInfo.major           = new_data['major']
-        teacherInfo.shirt_size      = new_data['shirt_size']
-        teacherInfo.shirt_type      = new_data['shirt_type']
+        teacherInfo.affiliation = new_data['affiliation']
+        affiliation = teacherInfo.affiliation.split(':', 1)[0]
+        teacherInfo.from_here           = affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC, AFFILIATION_OTHER)
+        teacherInfo.is_graduate_student = (affiliation == AFFILIATION_GRAD)
+        if affiliation == AFFILIATION_NONE:
+            teacherInfo.college         = teacherInfo.affiliation.split(':', 1)[1]
+        else:
+            teacherInfo.college         = ''
+        teacherInfo.major               = new_data['major']
+        teacherInfo.shirt_size          = new_data['shirt_size']
+        teacherInfo.shirt_type          = new_data['shirt_type']
         teacherInfo.save()
         return teacherInfo
 
@@ -1646,6 +1672,7 @@ class ZipCodeSearches(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_zipcodesearches'
+        verbose_name_plural = 'Zip Code Searches'
 
     def __unicode__(self):
         return u'%s Zip Codes that are less than %s miles from %s' % \
@@ -1764,7 +1791,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     def updateForm(self, form_data, prepend=''):
         newkey = self.__dict__
         for key, val in newkey.items():
-            if val and key != 'id':
+            if val not in [None, ''] and key != 'id':
                 form_data[prepend+key] = val
         return form_data
 
@@ -2176,6 +2203,22 @@ class Record(models.Model):
                                    time__day=when.day)
         return filter.distinct()
 
+    @classmethod
+    def createBit(cls, extension, program, user):
+        from esp.accounting.controllers import IndividualAccountingController
+        if extension == 'Paid':
+            IndividualAccountingController.updatePaid(True, program, user)
+
+        if cls.user_completed(user, extension.lower(), program):
+            return False
+        else:
+            cls.objects.create(
+                user = user,
+                event = extension.lower(),
+                program = program
+            )
+            return True
+
     def __unicode__(self):
         return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
 
@@ -2204,6 +2247,7 @@ class Permission(ExpirableModel):
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
+        ("OverridePhaseZero", "Bypass Phase Zero to proceed to other student reg modules"),
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
@@ -2212,6 +2256,7 @@ class Permission(ExpirableModel):
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
+            ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
             ("Student/ExtraCosts", "Extra costs page"),
             ("Student/MainPage", "Registration mainpage"),
@@ -2235,16 +2280,20 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/All", "Classes/All"),
             ("Teacher/Classes/View", "Classes/View"),
             ("Teacher/Classes/Edit", "Classes/Edit"),
+            ("Teacher/Classes/CancelReq", "Request class cancellation"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
-            ("Teacher/Classes/SelectStudents", "Classes/SelectStudents"),
             ("Teacher/Events", "Teacher training signup"),
             ("Teacher/Quiz", "Teacher quiz"),
             ("Teacher/MainPage", "Registration mainpage"),
             ("Teacher/Survey", "Teacher Survey"),
             ("Teacher/Profile", "Set profile info"),
             ("Teacher/Survey", "Access to survey"),
+        )),
+        ("Volunteer Deadlines", (
+            ("Volunteer", "Basic volunteer access"),
+            ("Volunteer/Signup", "Volunteer signup"),
         )),
     )
 
@@ -2277,6 +2326,39 @@ class Permission(ExpirableModel):
 
     class Meta:
         app_label = 'users'
+
+    @classmethod
+    def null_user_has_perm(cls, permission_type, program):
+        return cls.valid_objects().filter(permission_type=permission_type,
+                program=program, user__isnull=True).exists()
+
+    @classmethod
+    def q_permissions_on_program(cls, perm_q, name, program=None, when=None, program_is_none_implies_all=False):
+        """
+        Build a QuerySet of permissions that would grant a permission.
+
+        Given a Q object on Permission, a permission type, and a program,
+        return a QuerySet of permissions satisfying the Q object constraint
+        that would grant the permission on the program.
+        """
+        # As explained above, some Permissions have no specified Program; for
+        # some types these are global across all programs, but for most they
+        # are not:
+        if name in cls.deadline_types:
+            program_is_none_implies_all = False
+
+        perms = [name]
+        for k,v in cls.implications.items():
+            # k implies v: it's a parent permission that includes v
+            if name in v: perms.append(k)
+        # perms is the list of all permission types that might imply the
+        # requested permission
+
+        qprogram = Q(program=program)
+        if program_is_none_implies_all:
+            qprogram |= Q(program=None)
+        initial_qset = cls.objects.filter(perm_q & qprogram).filter(permission_type__in=perms)
+        return initial_qset.filter(cls.is_valid_qobject(when=when))
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2329,21 +2411,37 @@ class Permission(ExpirableModel):
         """
         if user.isAdministrator(program=program):
             return True
-        if name in cls.deadline_types:
-            program_is_none_implies_all = False
-        perms=[name]
-        for k,v in cls.implications.items():
-            if name in v: perms.append(k)
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        qprogram = Q(program=program)
-        if program_is_none_implies_all:
-            qprogram |= Q(program=None)
-        initial_qset = cls.objects.filter(quser & qprogram).filter(permission_type__in=perms)
-        return initial_qset.filter(cls.is_valid_qobject(when=when)).exists()
+        return cls.q_permissions_on_program(quser, name, program, when,
+                program_is_none_implies_all).exists()
+
+    @classmethod
+    def list_roles_with_perm(cls, name, program):
+        """Given a permission type on a program, list roles that would give the
+        permission on the program.
+
+        :param name:
+            The unique identifier of the permission identifier to check for.
+            Must be in PERMISSION_CHOICES_FLAT.
+        :type name:
+            `str`
+        :param program:
+            Check for permission for `name` on this program.
+        :type program:
+            `Program`
+        :return:
+            List of role names that would give the specified permission.
+        :rtype:
+            `list` of `str`
+        """
+
+        qrole = Q(user=None, role__isnull=False)
+        return list(cls.q_permissions_on_program(
+                qrole, name, program).values_list('role__name', flat=True))
 
     #list of all the permission types which are deadlines
-    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student")]
+    deadline_types = [x for x in PERMISSION_CHOICES_FLAT if x.startswith("Teacher") or x.startswith("Student") or x.startswith("Volunteer")]
 
     @classmethod
     def deadlines(cls):

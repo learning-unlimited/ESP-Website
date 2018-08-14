@@ -1,5 +1,5 @@
 # Django
-Django==1.8.15
+Django==1.8.19
 
 # Django-specific packages
 git+https://github.com/luac/django-argcache.git@0.1 # Handles caching
@@ -8,7 +8,7 @@ django-extensions==1.5.5 # Provides shell_plus, runserver_plus, and other utilit
 django-filebrowser==3.5.7 # Provides admin panel interface for files
 django-form-utils==1.0.3 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
 django-formtools==1.0 # Used once in customforms
-django-grappelli==2.7.1 # Makes the admin panel better
+django-grappelli==2.7.3 # Makes the admin panel better
 django-localflavor==1.1 # Provides address and phone number fields
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
@@ -31,7 +31,7 @@ pytz==2015.4 # Required for timezone support
 raven # Required for Sentry error reporting
 selenium==2.44.0 # Runs selenium tests which probably don't work anymore
 shortuuid==0.4.2 # django-extensions dependency
-stripe==1.12.2 # Required for credit card processing
+stripe==1.19.1 # Required for credit card processing
 twilio==3.6.5 # Required for text messaging support
 werkzeug # Required for runserver_plus (alternative to runserver provided by django-extensions)
 xlwt==1.0.0 # Does form and survey exporting

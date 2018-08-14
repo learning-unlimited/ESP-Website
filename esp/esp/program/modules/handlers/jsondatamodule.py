@@ -100,7 +100,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [ar.res_type_id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'associated_resources': [
+                    {
+                        'res_type_id': ar.res_type_id,
+                        'value': ar.attribute_value,
+                    }
+                    for ar in classrooms_grouped[room_id][0].associated_resources()
+                ],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
@@ -384,6 +390,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             classes.append(cls)
             if catalog:
                 cls['class_info'] = c.class_info
+                cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
@@ -647,6 +654,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'title': cls.title,
             'class_info': cls.class_info,
             'category': cls.category.category,
+            'class_style': cls.class_style,
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs,
             'sections': section_info,
@@ -735,6 +743,13 @@ teachers[key].filter(is_active = True).distinct().count()))
             else:
                 vitals['studentnum'].append((key, students[key].filter(is_active = True).distinct().count()))
 
+
+        volunteer_list = []
+        volunteer_dict = prog.volunteers()
+        if 'volunteer_all' in volunteer_dict:
+            volunteer_list.append(("Volunteers who are signed up for at least one time slot", volunteer_dict['volunteer_all'].count()))
+        vitals['volunteernum'] = volunteer_list
+
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
 
@@ -815,6 +830,8 @@ teachers[key].filter(is_active = True).distinct().count()))
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         #   Convert Decimal values to float for serialization
         for i in range(len(annotated_categories)):
+            if annotated_categories[i]['num_class_hours'] is None:
+                annotated_categories[i]['num_class_hours'] = 0
             annotated_categories[i]['num_class_hours'] = float(annotated_categories[i]['num_class_hours'])
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 

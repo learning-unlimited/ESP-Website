@@ -3,7 +3,6 @@ from django.conf import settings
 
 from esp.program.models import Program
 from esp.users.models import ESPUser
-from esp.web.views.navBar import makeNavBar
 
 def media_url(request):
     return {'media_url': settings.MEDIA_URL}
