@@ -248,7 +248,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 q_dict[q.id]=i
                 ws.write(0,i,q.name)
                 i+=1
-            i=2
+            i=1
             sr_dict={}
             for sr in srs:
                 sr_dict[sr.id]=i
