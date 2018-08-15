@@ -2280,6 +2280,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "Classes/View"),
             ("Teacher/Classes/Edit", "Classes/Edit"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),
