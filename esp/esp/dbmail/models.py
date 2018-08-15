@@ -345,8 +345,7 @@ class MessageRequest(models.Model):
                 # from receiving a duplicate when a message request needs to
                 # be resent after a bug prevented it from being received by
                 # all recipients the first time.
-                # We've temporarily disabled it for Stanford in hopes that it
-                # will make postgres less sad.
+                # Disabled in hopes that it will make postgres less sad.
                 # TODO(benkraft): Figure out a more permanent solution.
                 newtxt = TextOfEmail.objects.create(**newtxt)
                 newemailrequest['textofemail'] = newtxt
