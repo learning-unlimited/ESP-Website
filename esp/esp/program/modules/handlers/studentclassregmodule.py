@@ -457,14 +457,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         # Is the catalog sorted by category? If so, by which aspect of category?
         # Default is to sort by category symbol
-        cat_sort = 'category__symbol'
+        catalog_sort = 'category__symbol'
         program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
         if program_sort_fields:
-            cat_sort = program_sort_fields.split(',')[0]
+            catalog_sort = program_sort_fields.split(',')[0]
 
-        cat_sort_split = cat_sort.split('__')
-        if cat_sort_split[0] == 'category' and cat_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(categories.values(), key = lambda cat: cat[cat_sort_split[1]])
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
         else:
             categories_sort = None
 
