@@ -453,12 +453,25 @@ class StudentClassRegModule(ProgramModuleObj):
 
         categories = {}
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
+
+        # Is the catalog sorted by category? If so, by which aspect of category?
+        # Default is to sort by category symbol
+        catalog_sort = 'category__symbol'
+        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
+        if program_sort_fields:
+            catalog_sort = program_sort_fields.split(',')[0]
+
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+        else:
+            categories_sort = None
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
@@ -479,7 +492,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         class_category_id = None
         for cls in classes:
-            if cls.category.id != class_category_id:
+            if cls.category.id != class_category_id and categories_sort:
                 class_category_id = cls.category.id
                 class_blobs.append(category_header_str % (class_category_id, cls.category.category))
             class_blobs.append(render_class_direct(cls))
