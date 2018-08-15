@@ -127,7 +127,7 @@ def send_email_requests():
             exception = mailtxt.send()
             if exception is not None:
                 errors.append({'email': mailtxt, 'exception': str(exception)})
-                logger.warning("Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e))
+                logger.warning("Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(exception))
             else:
                 num_sent += 1
 
