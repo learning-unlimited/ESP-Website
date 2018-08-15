@@ -115,11 +115,11 @@
 {% if previous or next %}
 <div style="text-align:right">
 {% if start_time %}
-{% if previous %}<a class="btn" href="missingteachers?start={{ previous.id }}{% if when %}when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
-{% if next %}<a class="btn" href="missingteachers?start={{ next.id }}{% if when %}when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
+{% if previous %}<a class="btn" href="missingteachers?start={{ previous.id }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?start={{ next.id }}{% if when %}&when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
 {% elif date %}
-{% if previous %}<a class="btn" href="missingteachers?date={{ previous }}{% if when %}when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
-{% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if when %}when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
+{% if previous %}<a class="btn" href="missingteachers?date={{ previous }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
 {% endif %}
 </div>
 <br>
