@@ -53,7 +53,7 @@
         </td>
         <td class="underline">{{ c.num_students }}</td>
         <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
-        <td class="underline">{% for f in c.furnishings %}{{ f.res_type.name }}<br />{% endfor %}</td>
+        <td class="underline">{% for f in c.furnishings %}{{ f.res_type.name }}{% if f.res_type.hidden %} (Hidden){% endif %}<br />{% endfor %}</td>
     </tr>
     {% endfor %}
     </table></td></tr>

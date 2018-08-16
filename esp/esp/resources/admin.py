@@ -42,7 +42,7 @@ class ResourceTypeAdmin(admin.ModelAdmin):
         return "%s" % str(obj.choices)
     rt_choices.short_description = 'Choices'
 
-    list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'priority_default', 'rt_choices', 'program')
+    list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'hidden', 'priority_default', 'rt_choices', 'program')
     search_fields = ['name', 'description', 'consumable', 'priority_default',
             'attributes_pickled', 'program__name']
 
