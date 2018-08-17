@@ -35,12 +35,6 @@ Please select from the option below to continue.
 {% endif %}
 {% endfor %}
 
-{% if core_admin %}
-  <li><a href="/manage/{{program.getUrlBase }}/main" title="Manage {{program.niceName}}!">
-      Manage {{program.niceName}}!</a>
-  </li>
-{% endif %}
-
 </ul>
 
 
@@ -56,7 +50,8 @@ Please select from the option below to continue.
 {% endfor %}
 
 
-
-
+{% if core_admin %}
+{% include "program/modules/admincore/returnlink.html" %}
+{% endif %}
 
 {% endblock %}
