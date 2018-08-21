@@ -15,7 +15,7 @@
 
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/equipment_import">
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Import floating resources from a previous program</th></tr>
     {{ import_equipment_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
@@ -23,11 +23,14 @@
 </form>
 <form method="post" action="/manage/{{ prog.url }}/resources/equipment">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="450">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Add/modify a floating resource</th></tr>
     {{ equipment_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Resource" /></td></tr>
-    
+</table>
+</form>
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">Floating Resources for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
@@ -48,7 +51,6 @@
     {% endfor %}
     </table></td></tr>
 </table>
-</form>
 </div>
 
 {% ifequal open_section "equipment" %}
