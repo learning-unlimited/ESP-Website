@@ -112,7 +112,7 @@ $j(function(){
         $msg.text('Checking in...');
     });
 
-    function textTeacher(user, sec, callback, errorCallback){
+    function sendText(user, sec, callback, errorCallback){
         var data = {username: user, section: sec, csrfmiddlewaretoken: csrf_token()};
         $j.post('ajaxteachertext', data, "json").success(callback)
         .error(function(){
@@ -123,16 +123,31 @@ $j(function(){
         });
     }
 
-    $j(".text").click(function(){
-        var username = $j(this).data("username");
-        var section = $j(this).data("section");
-        var $td = $j(this.parentNode);
-        var $msg = $td.children('.message');
-        textTeacher(username, section, function(response) {
-            $msg.text(response.message);
+    function textTeacher(btn) {
+        var username = $j(btn).data("username");
+        var section = $j(btn).data("section");
+        var msg = $j(btn).closest('td').find('.message');
+        sendText(username, section, function(response) {
+            $j(msg).text(response.message);
         });
-        $j(this).attr("disabled",true);
-        $msg.text('Texting teacher...');
+        $j(btn).attr("disabled",true);
+        $j(msg).text('Texting teacher...');
+    }
+
+    $j(".text").click(function(){
+        textTeacher($j(this))
+    });
+
+    $j(".text-all").click(function(){
+        var num_teachers = $j(".checkin:visible").length
+        var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in teachers?");
+        if (r) {
+            $j(".checkin:visible").closest('tr').find('.text').each(function() {
+                textTeacher($j(this))
+            });
+            $j(this).attr("disabled",true);
+            $j(this).attr("title","Teachers already texted");
+        }
     });
 
     $j(".uncheckin:enabled").click(function(){

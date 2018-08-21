@@ -334,7 +334,7 @@ class MessageRequest(models.Model):
                     'subject': subject,
                     'msgtext': msgtext,
                     'created_at': self.created_at,
-                    'defaults': {'sent': None},
+                    'sent': None,
                 }
 
                 # Use get_or_create so that, if this send_to address is
@@ -345,13 +345,11 @@ class MessageRequest(models.Model):
                 # from receiving a duplicate when a message request needs to
                 # be resent after a bug prevented it from being received by
                 # all recipients the first time.
-                newtxt, created = TextOfEmail.objects.get_or_create(**newtxt)
-                if not created:
-                    logger.warning('Skipped duplicate creation of message to %s for message request %d: %s', send_to, self.id, self.subject)
-
+                # Disabled in hopes that it will make postgres less sad.
+                # TODO(benkraft): Figure out a more permanent solution.
+                newtxt = TextOfEmail.objects.create(**newtxt)
                 newemailrequest['textofemail'] = newtxt
-
-                EmailRequest.objects.get_or_create(**newemailrequest)
+                EmailRequest.objects.create(**newemailrequest)
 
         # Mark ourselves processed.  We don't have to worry about the DB
         # falling over between the above writes and this one, because the whole

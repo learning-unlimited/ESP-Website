@@ -29,7 +29,7 @@
 <p>Multiple users matched the criteria that you specified.  Please select one to view:</p>
 
 <table>
-<tr><th>Name</th><th>Username</th><th>E-mail</th><th>User Type</th></tr>
+<tr><th>Name</th><th>Username</th><th>E-mail</th><th>User Type</th><th>Activated?</th></tr>
 {% for user in found_users %}
 <tr>
   <td>
@@ -48,6 +48,11 @@
     {% endif %}
     {% endwith %}
   </td>
+  <td>{% if user.is_active %} 
+    <span>Activated</span>
+    {% else %}
+    <span>Deactivated</span>
+    {% endif %}</td>
 </tr>
 {% endfor %}
 </table>

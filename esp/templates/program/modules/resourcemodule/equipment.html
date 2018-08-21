@@ -35,7 +35,7 @@
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=edit&id={{ r.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=delete&id={{ r.id }}">[Delete]</a>
             </td>
-            <td class="underline">{{ r.res_type.name }}</td>
+            <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
             <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
         </tr>
     {% endfor %}

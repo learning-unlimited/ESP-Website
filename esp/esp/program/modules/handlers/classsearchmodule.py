@@ -1,5 +1,6 @@
 import json
 import random
+import re
 
 from django.http import HttpResponseRedirect
 from django.db.models.query import Q
@@ -7,6 +8,7 @@ from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
+from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
@@ -46,6 +48,18 @@ class ClassSearchModule(ProgramModuleObj):
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
                                        inputs=[any_flag_input] +
                                        flag_datetime_inputs)
+
+        resource_types = ResourceType.objects.filter(program=self.program)
+        resource_value_input = OptionalInput(name="desired value",
+            inner=TextInput(field_name='sections__resourcerequest__desired_value', english_name=''))
+        resource_select_input = SelectInput(
+            field_name='sections__resourcerequest__res_type',
+            options={str(rt.id): rt.name for rt in resource_types})
+        any_resource_input = ConstantInput(Q(sections__resourcerequest__isnull=False))
+        resource_filter = SearchFilter(name='resource', title='the requested resource',
+                                   inputs=[resource_select_input] + [resource_value_input])
+        any_resource_filter = SearchFilter(name='any_resource', title='any requested resource',
+                                       inputs=[any_resource_input])
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
@@ -89,6 +103,8 @@ class ClassSearchModule(ProgramModuleObj):
                 username_filter,
                 flag_filter,
                 any_flag_filter,
+                resource_filter,
+                any_resource_filter,
                 all_scheduled_filter,
                 some_scheduled_filter,
             ])
@@ -108,6 +124,16 @@ class ClassSearchModule(ProgramModuleObj):
         if data is not None:
             decoded = json.loads(data)
         elif namequery: # only search if not None and not ""
+            # if this looks like a class ID then just go to its manage page
+            id_match = re.match('^[a-zA-Z]?(\\d+)$', namequery)
+            if id_match:
+                id_query = int(id_match.group(1))
+                try:
+                    subj = ClassSubject.objects.get(id=id_query)
+                    return HttpResponseRedirect(subj.get_absolute_url())
+                except ClassSubject.DoesNotExist:
+                    context['failed_id_search'] = True
+                    context['id_query'] = id_query
             decoded = {'filter': 'title', 'negated': False, 'values': [namequery]}
 
         if decoded is not None:
@@ -119,9 +145,14 @@ class ClassSearchModule(ProgramModuleObj):
                 queryset = list(queryset)
                 random.shuffle(queryset)
             if request.GET.get('lucky'):
-                return HttpResponseRedirect(queryset[0].get_absolute_url())
+                if queryset:
+                    return HttpResponseRedirect(queryset[0].get_absolute_url())
+                # if you're not lucky enough and no classes satisfying your
+                # search exist, fall through and send you to the class search
+                # page as usual
             context['query'] = decoded
             context['queryset'] = queryset
+            context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)

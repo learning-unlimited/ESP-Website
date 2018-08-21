@@ -2,7 +2,7 @@ import datetime
 import operator
 import subprocess
 
-from django.db.models.aggregates import Count, Max, Min
+from django.db.models.aggregates import Min, Sum
 from django.db.models.query import Q
 
 from argcache import cache_function_for
@@ -108,7 +108,11 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_checked_in_teachers(self, prog):
-        return Record.objects.filter(program=prog, event='teacher_checked_in').count()
+        now = datetime.datetime.now()
+        return Record.objects.filter(program=prog, event='teacher_checked_in',
+            time__year=now.year,
+            time__month=now.month,
+            time__day=now.day).count()
 
     @cache_function_for(105)
     def num_class_reg(self, prog):
@@ -116,7 +120,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_class_app(self, prog):
-        return ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0).count()
+        return ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0).distinct().count()
 
     @cache_function_for(105)
     def reg_classes(self, prog):
@@ -128,7 +132,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def approved_classes(self, prog):
         #all ClassSubjects that are approved (and have an approved section)
         class_times = ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
-        ).values_list('timestamp', flat=True)
+        ).values_list('timestamp', flat=True).distinct()
         return sorted(class_times)
 
     @cache_function_for(105)
@@ -140,10 +144,10 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def get_hours(self, prog):
         hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('timestamp','duration','class_size_max')
+        ).exclude(category__category__iexact="Lunch").values_list('timestamp','class_size_max').annotate(duration=Sum('sections__duration'))
         sorted_hours = sorted(hours, key=operator.itemgetter(0))
-        class_hours = [(hour[1],hour[0]) for hour in sorted_hours]
-        student_hours = [(hour[1]*hour[2], hour[0]) for hour in sorted_hours]
+        class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
+        student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
         return class_hours, student_hours
 
     @cache_function_for(105)

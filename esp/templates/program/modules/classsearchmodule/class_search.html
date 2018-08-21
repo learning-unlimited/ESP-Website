@@ -19,6 +19,10 @@
 
 <h1>Search Classes for {{ program.niceName }}</h1>
 
+{% if failed_id_search %}
+<p><strong>No class with ID {{ id_query }} found. Attempting as title search:</strong></p>
+{% endif %}
+
 {% load query_builder %}
 {% render_query_builder query_builder query %}
 
@@ -26,6 +30,12 @@
 <p>
 Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
+
+<div class="btn-group">
+    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">approve all</button>
+    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">unreview all</button>
+    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">reject all</button>
+</div>
 
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
