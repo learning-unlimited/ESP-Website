@@ -349,7 +349,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/MainPage')
+    @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
         if not 'clsid' in request.POST:
             return self.goToCore(tl) # just fails.

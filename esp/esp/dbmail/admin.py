@@ -54,8 +54,8 @@ class PlainRedirectAdmin(admin.ModelAdmin):
 admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
 class MessageRequestAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'creator', 'sender', 'recipients', 'processed_by')
-    list_filter = ('processed_by',)
+    list_display = ('subject', 'creator', 'sender', 'recipients', 'created_at', 'processed_by', 'processed')
+    list_filter = ('processed', 'processed_by',)
     search_fields = default_user_search('creator') + ['subject', 'sender']
     date_hierarchy = 'processed_by'
 admin_site.register(MessageRequest, MessageRequestAdmin)

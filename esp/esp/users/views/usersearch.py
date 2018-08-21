@@ -256,7 +256,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
     return (render_to_response('users/userchecklist.html', request, context), False) # make the checklist
 
 
-def search_for_user(request, user_type='Any', extra='', returnList = False):
+def search_for_user(request, user_type='Any', extra='', returnList = False, add_to_context = None):
     """ Interface to search for a user. If you need a user, just use this.
         Returns (user or response, user returned?) """
 
@@ -283,7 +283,10 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         users = None
 
     if users is None:
-        return (render_to_response('users/usersearch.html', request, {'error': error, 'extra':extra,  'list': returnList}), False)
+        context = {'error': error, 'extra':extra,  'list': returnList}
+        if add_to_context:
+            context.update(add_to_context)
+        return (render_to_response('users/usersearch.html', request, context), False)
 
     if len(users) == 1:
         return (users[0], True)
@@ -298,6 +301,8 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             return (Q_Filter, True)
 
         context = {'users': users, 'extra':str(extra), 'list': returnList}
+        if add_to_context:
+            context.update(add_to_context)
 
         return (render_to_response('users/userpick.html', request, context), False)
 

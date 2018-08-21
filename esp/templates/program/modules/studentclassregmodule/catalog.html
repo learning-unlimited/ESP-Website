@@ -47,6 +47,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </div>
 <br>
 
+{% if categories %}
 <table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
  <tr>
   <th colspan="2">
@@ -70,6 +71,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 </tr>
 {% endif %}
 </table>
+{% endif %}
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:catalog" %}
