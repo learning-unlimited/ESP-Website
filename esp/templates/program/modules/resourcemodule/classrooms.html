@@ -19,22 +19,23 @@
 
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom_import">
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Import classrooms from a previous program</th></tr>
-    {{ import_form }}
+    {{ import_classroom_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
 </table>
 </form>
+
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="2" class="small">Add a new classroom</th></tr>
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Add/modify a classroom</th></tr>
     {{ classroom_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Classroom" /></td></tr>
 </table>
 </form>
 
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">Classrooms for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
@@ -53,7 +54,12 @@
         </td>
         <td class="underline">{{ c.num_students }}</td>
         <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
-        <td class="underline">{% for f in c.furnishings %}{{ f.res_type.name }}{% if f.res_type.hidden %} (Hidden){% endif %}<br />{% endfor %}</td>
+        <td class="underline">
+            <ol>
+            {% for f in c.furnishings %}
+            <li>{{ f.res_type.name }}{% if f.res_type.hidden %} (Hidden){% endif %}{% if f.attribute_value %}: {{ f.attribute_value }}{% endif %}</li>
+            {% endfor %}</td>
+            </ol>
     </tr>
     {% endfor %}
     </table></td></tr>

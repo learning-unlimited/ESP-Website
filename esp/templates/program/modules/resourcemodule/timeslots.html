@@ -13,11 +13,11 @@
 
 <p>Timeslots represent each of the class periods for your program, at the finest scale if overlapping classes will be allowed (e.g. 1 hour for Splash).  Each resource is available for a particular range of times (resources will not become available until you select a set of times).  Please add all necessary timeslots below.</p>
 
-<p>Keep in mind that classes generally begin 5 minutes after the hour (or half hour) and end 5 minuts before the hour (or half hour), allowing 10 minutes between classes.  So, for example, a 9 - 10 AM time block really should start at 09:05 and be 50 minutes long.  Please put the approximate time in the 'name' field (i.e. 9 - 10 AM) and the exact times in the 'description' field (i.e. 9:05 - 9:55 AM).</p>
+<p>Keep in mind that classes generally begin 5 minutes after the hour (or half hour) and end 5 minutes before the hour (or half hour), allowing 10 minutes between classes.  So, for example, a 9 - 10 AM time block really should start at 09:05 and be 50 minutes long.  Please put the approximate time in the 'name' field (i.e. 9 - 10 AM) and the exact times in the 'description' field (i.e. 9:05 - 9:55 AM).</p>
 
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/timeslot_import">
-<table align="center" cellpadding="0" cellspacing="0" width="450">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Import timeslots from a previous program</th></tr>
     {{ import_timeslot_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
@@ -25,11 +25,14 @@
 </form>
 <form method="post" action="/manage/{{ prog.url }}/resources/timeslot">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="450"> 
-    <tr><th colspan="2" class="small">Add a new timeslot (or edit an existing one)</th></tr>
+<table align="center" cellpadding="0" cellspacing="0" width="100%"> 
+    <tr><th colspan="2" class="small">Add/modify a timeslot</th></tr>
     {{ timeslot_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit Timeslot" /></td></tr>
-    
+</table>
+</form>
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">Timeslots for {{ prog.niceName }}</th></tr>
     <tr>
         <td><b>Timeslot Name (Length)</b></td>
@@ -50,7 +53,6 @@
         {% endfor %}
     {% endfor %}
 </table>
-</form>
 </div>
 
 {% ifequal open_section "timeslot" %}
