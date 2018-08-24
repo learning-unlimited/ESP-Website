@@ -1,6 +1,6 @@
 <tr>
     <th class="smaller">Teachers:</th>
-	<td>{% for teacher in class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+	<td>{% for teacher in class.get_teachers %}<a href="/manage/userview?username={{ teacher.username|urlencode }}">{{ teacher.nonblank_name }}</a> (<a href="mailto:{{teacher.email}}" target="_blank">{{teacher.email}}</a>){% if not forloop.last %}, {% endif %}{% endfor %}
 	<br />
     <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
     Edit Teacher List </a>
@@ -33,6 +33,12 @@
     </td>
 </tr>
 <tr>
+    <th class="smaller">Class Format:</th>
+    <td>
+        {{ class.class_style }}
+    </td>
+</tr>
+<tr>
     <th class="smaller">Room Request:</th>
     <td>
         {{ class.requested_room }}
@@ -48,5 +54,13 @@
     <th class="smaller">Comments for Directors:</th>
     <td>
         {{ class.message_for_directors }}
+    </td>
+</tr>
+<tr>
+    <th class="smaller">Resource Requests:</th>
+        <td>
+	    {% for r in class.sections.all.0.resourcerequest_set.all %}
+	    {{ r.desired_value }} <br/>
+	    {% endfor %}
     </td>
 </tr>

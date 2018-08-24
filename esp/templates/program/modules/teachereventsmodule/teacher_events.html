@@ -5,6 +5,29 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <style>
+    .trs:not(:last-child) {
+        border-bottom: 1px dashed grey !important;
+    }
+
+    button {
+        font-weight: bold;
+        border-style: solid;
+        border-width: 1px;
+        border-color: #000000;
+        border-radius: 4px;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        font-size: 0.9em;
+        vertical-align: middle;
+        padding: 4px;
+        cursor: pointer;
+        float: right;
+        margin: 5px 2px 5px 2px;
+    }
+
+
+</style>
 {% endblock %}
 
 {% block content %}

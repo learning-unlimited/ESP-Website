@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Class: {{ class.title }}{% endblock %}
+{% block title %}Manage Class: {{ class.emailcode }}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -16,7 +16,7 @@
 
 <div id="divmaintext">
 
-<h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
+<h1>Manage Class {{ class.emailcode }}: {{ class.title }}</h1>
 
 <div id="program_form">
 
@@ -172,7 +172,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}
-            {{ rr.res_type.name }} <br />
+            {{ rr.res_type.name }} ({{ rr.desired_value }})<br />
         {% endfor %}
         {% endif %}
     </td>
