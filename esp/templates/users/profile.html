@@ -19,9 +19,14 @@ div.required label:after {
     <div class="span12 offset1">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
-<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+
+<p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+
+                               
+                             
+ 
       {% end_inline_qsd_block %}
     </div>
   </div>
@@ -68,6 +73,10 @@ div.required label:after {
 	{% include "users/profiles/usercontact.html" %}
 	{% include "users/profiles/guardianinfo.html" %}
 	{% else %}
+    
+    {% ifequal profiletype "Volunteer" %}
+    {% include "users/profiles/usercontact.html" %}
+    {% else %}
 
 	{% include "../templates/themes/bs_form.html" %}
 
@@ -75,6 +84,7 @@ div.required label:after {
 	{% endifequal %}
 	{% endifequal %}
 	{% endifequal %}
+    {% endifequal %}
 
 	<div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
 
