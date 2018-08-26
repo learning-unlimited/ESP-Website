@@ -8,14 +8,6 @@
 {% endblock %}
 
 {% block content %}
-
-<style>
-.blank_row
-{
-    height: 7px !important; /* overwrites any other rules */
-}
-</style>
-
 <a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>
 
 <br /><br />
@@ -25,7 +17,7 @@
 
 <div id="battlescreen">
 
-<table cellpadding="4" cellspacing="0" align="center">
+<table cellpadding="4" cellspacing="0" align="center" style="border-collapse: separate !important">
   <tr>
     <th colspan="7">
       Choose a class to import
@@ -45,14 +37,6 @@
   {% load class_render_row %}
   {% for cls in all_class_list %}
     {% render_class_copy_row cls %}
-    {% if not forloop.last %}
-      <tr class="blank_row">
-        <td style="border-bottom: 1px solid black;" colspan="10"></td>
-      </tr>
-      <tr class="blank_row">
-        <td colspan="10"></td>
-      </tr>
-    {% endif %}
   {% endfor %}
 
 </table>

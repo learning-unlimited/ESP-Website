@@ -128,7 +128,7 @@ $j(function(){
         .prop("name", $j(this).val())
         .html(text_br)
         .click(function () {
-            $("#id_interview").val($j('#id_interview option').filter(function () { return $j(this).html() == text; }).val());
+            $j("#id_interview").val($j('#id_interview option').filter(function () { return $j(this).html() == text; }).val());
         })
         .appendTo("#buttons2");}
 		});

@@ -9,25 +9,7 @@
     .trs:not(:last-child) {
         border-bottom: 1px dashed grey !important;
     }
-
-    button {
-        font-weight: bold;
-        border-style: solid;
-        border-width: 1px;
-        border-color: #000000;
-        border-radius: 4px;
-        -moz-border-radius: 4px;
-        -webkit-border-radius: 4px;
-        font-size: 0.9em;
-        vertical-align: middle;
-        padding: 4px;
-        cursor: pointer;
-        float: right;
-        margin: 5px 2px 5px 2px;
-    }
-
-
-</style>
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -44,18 +26,24 @@ Teacher Events include (for now) <a href="#training">teacher training</a> and <a
 <table align="center" cellpadding="0" cellspacing="0" width="450">
      <tr><th colspan="2" class="small">Add a Training or Interview</th></tr>
     {{ timeslot_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" name = "submit" value="Add Training" /> <input class="fancybutton" type="submit" name="submit" value="Add Interview" /></td></tr>
+    <tr><td colspan="2" align="center"><input class="btn btn-primary" type="submit" name = "submit" value="Add Training" /> <input class="btn btn-primary" type="submit" name="submit" value="Add Interview" /></td></tr>
 </table>
 </form>
 
+<center>Training Session Descriptions can be edited <a href="/admin/cal/event/">here</a>.</center>
+</br></br>
+
 <table align="center" cellpadding="4" cellspacing="0"> 
-    <tr><th colspan="4"><a name="interviews"></a>Interviews</th></tr>
-    <tr><th>Start</th><th>End</th><th>Teachers</th><th>Delete</th></tr>
+    <tr><th colspan="5"><a name="interview"></a>Teacher Interviews</th></tr>
+    <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:5%">Delete</th></tr>
     {% with interview_times as timeslots %}
         {% include "program/modules/teachereventsmodule/event_row.html" %}
     {% endwith %}
-    <tr><th colspan="4"><a name="training"></a>Teacher Training</th></tr>
-    <tr><th>Start</th><th>End</th><th>Teachers</th><th>Delete</th></tr>
+</table>
+<br><br>
+<table align="center" cellpadding="4" cellspacing="0"> 
+    <tr><th colspan="5"><a name="training"></a>Teacher Training</th></tr>
+    <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:5%">Delete</th></tr>
     {% with training_times as timeslots %}
         {% include "program/modules/teachereventsmodule/event_row.html" %}
     {% endwith %}
