@@ -12,12 +12,12 @@
 <script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
 
 <script>
-//Sets classes of cells based on status of checkboxes upon loading page
 $j(document).ready(function() {
   {% if isAdmin %}
     toggle_edit();
   {% endif %}
 
+  //Sets classes of cells based on status of checkboxes upon loading page
   $j('#checkboxes input:checked').each(function(i, e) {
     if (this.disabled == true) {
       document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
@@ -43,8 +43,9 @@ $j(document).ready(function() {
 
 {% load render_qsd %}
 
-<h1>Your Availability for {{ prog.niceName }}</h1>
+<h1>{% if isAdmin %}Manage{% else %}Your{% endif %} Availability for {{ prog.niceName }}</h1>
 
+{% if groups %}
 <div id="program_form">
 
 {% inline_program_qsd_block prog "availability_instructions" %}
@@ -95,7 +96,7 @@ You submitted a schedule with no available times.  You can't register a class wi
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" {% if time.section %}data-section="{{ time.section }}"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+        <input type="checkbox" name="timeslots" {% if time.section %}data-section="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
       {% endfor %}
     {% endfor %}
   </div>
@@ -107,7 +108,19 @@ You submitted a schedule with no available times.  You can't register a class wi
 
 </form>
 
+<h2>Unscheduled classes</h2>
+{% for s in unscheduled %}
+{{ s }} ({{ s.prettyDuration }})<br>
+{% endfor %}
+
 </div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+</div>
+{% endif %}
 
 {% if search_form %}
 <br><br>
@@ -117,11 +130,5 @@ You submitted a schedule with no available times.  You can't register a class wi
 <input type="submit" value="Search" />
 </form>
 {% endif %}
-
-<div class="side right" hidden>
-  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
-  <span class="summary" style="background-color: #00FF00;">Available</span>
-  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
-</div>
 
 {% endblock %}
