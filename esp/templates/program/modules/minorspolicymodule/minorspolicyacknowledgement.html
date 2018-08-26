@@ -1,0 +1,17 @@
+{% extends "main.html" %}
+{% block title %}{{program.niceName}} Minors Policy Acknowledgement{% endblock %}
+{% block content %}
+<h2>Minors Policy Acknowledgement for {{program.niceName}} </h2>
+<br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "teach:minors_policy_acknowledgement_instructions" %}
+All classes must follow the minor policy. If you cannot satisfy this policy on your own, we can try to find students for you, but if this fails, you <strong>must</strong> get a background check.
+
+If you have any questions about the minors policy or background checks, please contact the program directors at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a>.
+{% end_inline_program_qsd_block %}
+<br />
+<form action="minorspolicyacknowledgement" method="post">
+{{ form.as_p }}
+<input type="submit" value="Submit" class="btn btn-primary" />
+</form>
+{% endblock %}

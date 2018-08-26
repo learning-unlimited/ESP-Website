@@ -2155,6 +2155,7 @@ class Record(models.Model):
         ("onsite","Registered for program on-site"),
         ("schedule_printed","Printed student schedule on-site"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("minorspolicyacknowledgement","Acknowledged minors policy"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
