@@ -172,7 +172,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}
-            {{ rr.res_type.name }} ({{ rr.desired_value }})<br />
+            {{ rr.res_type.name }}: {{ rr.desired_value }}<br />
         {% endfor %}
         {% endif %}
     </td>
