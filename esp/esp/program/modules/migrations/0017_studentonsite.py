@@ -5,11 +5,11 @@ from django.db import migrations, models
 import esp.program.modules.base
 
 class Migration(migrations.Migration):
-     dependencies = [
+    dependencies = [
         ('modules', '0016_merge'),
     ]
-     operations = [
-       migrations.CreateModel(
+    operations = [
+        migrations.CreateModel(
             name='StudentOnsite',
             fields=[
             ],
