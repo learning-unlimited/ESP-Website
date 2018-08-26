@@ -48,6 +48,10 @@
             background-color: #FFFF00;
         }
 
+        .observer, #program_form .observer {
+            font-style: italic;
+        }
+
         .checkin-column {
             min-width: 90px;
         }
@@ -155,10 +159,10 @@
 {% endif %}
 {% for section in sections %}
 <tr class="section-first-row">
-    <td rowspan="{{ section.teachers|length }}" class="section-code">
+    <td rowspan="{{ section.teachers_list|length }}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}">
+    <td class="room" rowspan="{{ section.teachers_list|length }}">
         {% if start_time %}
             {{ section.room }}
         {% else %}
@@ -166,18 +170,17 @@
         {% endif %}
     </td>
     {% for teacher in section.teachers_list %}
-        {% if teacher.id in arrived %}
-        <td class="checked-in">
-        {% else %}
-        <td class="not-checked-in">
-        {% endif %}
+    <td class="{% if teacher.id in arrived %}checked-in{% else %}not-checked-in{% endif %} {% if teacher.is_observer %}observer{% endif %}">
             <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+            {% if teacher.is_observer %}
+            (observer)
+            {% endif %}
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
             <span class="message"></span>
             <input id="checkin_{{ teacher.username }}" name="{{ section.parent_class.emailcode }}: {{ section.name }}"
-                   class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
+                   class="btn btn-primary checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             Already checked-in
             {% endif %}
@@ -186,7 +189,7 @@
         <td class="text-teacher">
             <span class="message"></span>
             <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
-                   class="button text" type="button" value="Text Teacher"
+                   class="btn btn-default text" type="button" value="Text Teacher"
                    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
         </tr>
         <tr>

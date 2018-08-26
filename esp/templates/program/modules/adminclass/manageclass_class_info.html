@@ -7,6 +7,18 @@
     </td>
 </tr>
 <tr>
+    <th class="smaller">Observers:</th>
+    <td>{% for sec in sections %}
+            Section {{ sec.index }}:
+            {% with sec.get_observers as observers %}
+            {% if observers %}
+            {% for observer in observers %}<a href="/manage/userview?username={{ observer.username|urlencode }}">{{ observer.nonblank_name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% else %}(none){% endif %}
+            {% endwith %}
+        {% endfor %}
+    </td>
+</tr>
+<tr>
     <th class="smaller">Reviewing Status:<br />
         (Unreviewed, Accepted, or Rejected)
     </th>

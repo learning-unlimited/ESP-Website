@@ -12,26 +12,70 @@
 {% endif %}
 
 {% if teacher_name %}
-<p>Below is a list of all timeslots in this program. <font color="blue">Blue</font> indicates that the teacher is available. <font color="black">Black</font> indicates that the teacher is marked as available and scheduled to teach. <font color="orange">Orange</font> indicates that the teacher is scheduled to teach, but not marked as available. <font color="silver">Gray</font> indicates that the teacher is not available.</p>
+<p>Below is a list of all timeslots in this program. A legend:</p>
+<ul>
+	<li class="unavailable"><i class="glyphicon glyphicon-ban-circle"></i> The teacher is not available.</li>
+	<li class="available"><i class="glyphicon glyphicon-asterisk"></i> The teacher is available.</li>
+	<li class="teaching"><i class="glyphicon glyphicon-ok"></i> The teacher is available and scheduled to teach.</li>
+	<li class="observing"><i class="glyphicon glyphicon-ok-circle"></i> The teacher is available and scheduled to observe.</li>
+	<li class="teaching-unavailable"><i class="glyphicon glyphicon-alert"></i> The teacher is scheduled to teach, but not marked as available.</li>
+	<li class="observing-unavailable"><i class="glyphicon glyphicon-exclamation-sign"></i> The teacher is scheduled to observe, but not marked as available.</li>
+	<li class="conflict"><i class="glyphicon glyphicon-fire"></i> The teacher is scheduled to teach or observe more than one section.</li>
+</ul>
 <p><a href="{{ edit_path }}">Click here to edit teacher availability.</a></p>
 
 <dl>
-{% for t in available %}
-<dt><font color={% if t.2 and t.3 %}"black"{% elif t.2 and not t.3 %}"blue"{% elif t.3 and not t.2 %}"orange"{% else %}"silver"{% endif %}>{{ t.0 }} to {{ t.1 }}{% if t.3 %} </dt><dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ t.4 }}">{{ t.5 }}: {{ t.6 }} ({{ t.7 }})</a></dd>{% else %}</dt>{% endif %}</font>
-{% endfor %}
-<br><br>
-<dl>
-<dt>Unscheduled classes</dt>
-{% for s in unscheduled %}
-<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ s.0 }}">{{ s.1 }}: {{ s.2 }} ({{ s.3 }})</a></dd>
+{% for t in timeslots %}
+	{% if t.conflict %}
+		<dt class="conflict"><i class="glyphicon glyphicon-fire"></i>
+	{% elif t.available %}
+		{% if t.teaching %}
+			<dt class="teaching"><i class="glyphicon glyphicon-ok"></i>
+		{% elif t.observing %}
+			<dt class="observing"><i class="glyphicon glyphicon-ok-circle"></i>
+		{% else %}
+			<dt class="available"><i class="glyphicon glyphicon-asterisk"></i>
+		{% endif %}
+	{% else %} {# unavailable #}
+		{% if t.teaching %}
+			<dt class="teaching-unavailable"><i class="glyphicon glyphicon-alert"></i>
+		{% elif t.observing %}
+			<dt class="observing-unavailable"><i class="glyphicon glyphicon-exclamation-sign"></i>
+		{% else %}
+			<dt class="unavailable"><i class="glyphicon glyphicon-ban-circle"></i>
+		{% endif %}
+	{% endif %}
+		{{ t.start }} to {{ t.end }}
+	</dt>
+	{% for sec in t.teaching %}
+		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.rooms }})</a></dd>
+	{% endfor %}
+	{% for sec in t.observing %}
+		<dd>Observing <a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.rooms }})</a></dd>
+	{% endfor %}
 {% endfor %}
 </dl>
+
 <br /><br />
-{% endif %}
+
+<dl>
+	<dt>Unscheduled class sections {{ teacher_name }} is teaching</dt>
+	{% for sec in unscheduled_teaching %}
+		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.duration }})</a></dd>
+	{% endfor %}
+	<dt>Unscheduled class sections {{ teacher_name }} is observing</dt>
+	{% for sec in unscheduled_observing %}
+		<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ sec.class_id }}">{{ sec.emailcode }}: {{ sec.class_title }} ({{ sec.duration }})</a></dd>
+	{% endfor %}
+</dl>
+
+<br /><br />
+
+{% endif %}{# teacher_name #}
 
 <form method="POST" action="{{ request.path }}">
 {{ form.as_p }}
-<input type="submit" value="Search" />
+<button type="submit" class="btn btn-primary"><i class="glyphicon glyphicon-search" aria-hidden="true"></i> Search</button>
 </form>
 
 {% include "program/modules/admincore/returnlink.html" %}
