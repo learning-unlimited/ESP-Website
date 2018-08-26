@@ -646,11 +646,11 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections()
+            classes = [cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
-                    and cls.isAccepted()                       ]
+                    and cls.status > 0]
             # now we sort them by time/title
             classes.sort()
             for cls in classes:
@@ -723,8 +723,12 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
+        elif key == 'teacher_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
+        elif key == 'volunteer_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer', include_date=True)
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -778,7 +782,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None, room_numbers=True):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
 
         if schedule_type is None:
             if user.isStudent():
@@ -798,31 +802,31 @@ class ProgramPrintables(ProgramModuleObj):
                 classes = ProgramPrintables.get_teacher_classlist(program, user)
                 classes.sort()
 
-            schedule = format_html("<p> {} {} {} {} {} {} </p>",
+            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
                                     schedule_type,
                                     " schedule for ",
                                     user.name(),
                                     " for ",
                                     program.niceName(),
                                     ":")
-            schedule += format_html(" {} {} {} {} </th>",
+            schedule += format_html(u" {} {} {} {} </th>",
                                     mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=20%>"),
                                     "Time",
                                     mark_safe("</th><th width=60%>"),
                                     "Class")
             if room_numbers:
-                schedule += format_html("{} {} </th>",
+                schedule += format_html(u"{} {} </th>",
                                         mark_safe("<th width=20%>"),
                                         "Room")
-            schedule += format_html("</tr><indent>")
+            schedule += format_html(u"</tr>")
             for cls in classes:
-                times = cls.friendly_times()
+                times = cls.friendly_times(include_date=include_date)
                 if len(times) == 0:
                     # don't show classes with no times
                     continue
                 else:
                     times = ' ' + ', '.join(times)
-                schedule += format_html("<tr><td> {} </td><td> {} </td>",
+                schedule += format_html(u"<tr><td> {} </td><td> {} </td>",
                                         str(times),
                                         cls.title())
                 if room_numbers:
@@ -831,31 +835,31 @@ class ProgramPrintables(ProgramModuleObj):
                         rooms = 'N/A'
                     else:
                         rooms = ' ' + ', '.join(rooms)
-                    schedule += format_html("<td> {} </td>",
+                    schedule += format_html(u"<td> {} </td>",
                                             str(rooms))
-                schedule += format_html("</tr>")
-            schedule += format_html("</indent></table>")
+                schedule += format_html(u"</tr>")
+            schedule += format_html(u"</table>")
 
         elif schedule_type == u'Volunteer':
-            schedule = format_html("<p> {} {} {} {} {} {} </p>",
+            schedule = format_html(u"<p> {} {} {} {} {} {} </p>",
                                    schedule_type,
                                    " schedule for ",
                                    user.name(),
                                    " for ",
                                    program.niceName(),
                                    ":")
-            schedule += format_html(" {} {} {} {} </th>",
+            schedule += format_html(u" {} {} {} {} </th>",
                                     mark_safe("<table cellspacing=0 cellpadding=10 border=1 width=100%><tr><th width=35%>"),
                                     "Time",
                                     mark_safe("</th><th width=65%>"),
                                     "Shift")
-            schedule += format_html("</tr><indent>")
+            schedule += format_html(u"</tr>")
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
-                schedule += format_html("<tr><td> {} </td><td> {} </td></tr>",
-                                        str(shift.request.timeslot.pretty_time()),
+                schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
+                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
                                         str(shift.request.timeslot.description))
-            schedule += format_html("</indent></table>")
+            schedule += format_html(u"</table>")
 
         return mark_safe(schedule)
 

@@ -59,7 +59,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -392,6 +392,7 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
         'all_programs': Program.objects.all().order_by('-id'),
         'program': program,
+        'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
     }
     return render_to_response("users/userview.html", request, context )
 
