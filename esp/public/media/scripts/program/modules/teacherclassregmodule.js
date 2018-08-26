@@ -18,38 +18,42 @@ and change the grade range.");
 function setup_autocomplete()
 {
     $j("#teacher_name").autocomplete({
-	source: function(request, response) {
+        source: function(request, response) {
             $j.ajax({
-		url: "/teach/"+base_url+"/teacherlookup/",
-		dataType: "json",
-		data: {name: request.term},
-		success: function(data) {
-		    var output = $j.map(data, function(item) {
-			return {
-			    label: item.name + " (" + item.username + ")",
-			    value: item.name,
-			    id: item.id
-			};
-		    });
-		    response(output);
-		}
-	    });
-	},
-	select: function(event, ui) {
-	    $j("#teacher_id").val(ui.item.id);
-	}
+                url: "/teach/"+base_url+"/teacherlookup/",
+                dataType: "json",
+                data: {name: request.term},
+                success: function(data) {
+                    var output = $j.map(data, function(item) {
+                        return {
+                            label: item.name + " (" + item.username + ")",
+                            value: item.name,
+                            id: item.id
+                        };
+                    });
+                    response(output);
+                }
+            });
+        },
+        select: function(event, ui) {
+            $j("#teacher_id").val(ui.item.id);
+            // TODO: this is a hack, ideally we'd keep the buttons enabled iff
+            // the text box is populated by a valid autocomplete item or
+            // something
+            $j(".needs_teacher_selected").prop('disabled', false);
+        }
     });
 }
 $j(document).ready(function() {
-	$j("#clsform").submit(function() {
-		$j(this).submit(function() {
-		    return false;
-		});
+    $j("#clsform").submit(function() {
+        $j(this).submit(function() {
+            return false;
+        });
 
-		if($j(this).hasClass("grade_range_popup")) {
-			return check_grade_range($j(this), $j(this).attr("grademin"), $j(this).attr("grademax"));
-		} else {
-			return true;
-		}
-	});
+        if($j(this).hasClass("grade_range_popup")) {
+            return check_grade_range($j(this), $j(this).attr("grademin"), $j(this).attr("grademax"));
+        } else {
+            return true;
+        }
+    });
 });

@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from collections import defaultdict
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
@@ -346,22 +347,11 @@ class AdminClass(ProgramModuleObj):
 
         cls = classes[0]
 
-        # set txtTeachers and coteachers....
-        if not 'coteachers' in request.POST:
-            coteachers = cls.get_teachers()
-            txtTeachers = ",".join([str(user.id) for user in coteachers ])
+        coteachers = list(cls.get_teachers())
 
-        else:
-            txtTeachers = request.POST['coteachers']
-            coteachers = txtTeachers.split(',')
-            coteachers = [ x for x in coteachers if x != '' ]
-            coteachers = [ ESPUser.objects.get(id=userid)
-                           for userid in coteachers                ]
+        op = request.POST.get('op')
 
-        op = ''
-        if 'op' in request.POST:
-            op = request.POST['op']
-
+        conflicting_user = None
         error = False
 
         old_coteachers_set = set(cls.get_teachers())
@@ -374,14 +364,20 @@ class AdminClass(ProgramModuleObj):
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
-            elif request.POST['teacher_selected'] in txtTeachers.split(','):
+            try:
+                maybe_section_index = int(request.POST.get('submit'))
+            except TypeError:
+                maybe_section_index = None
+            except ValueError:
+                maybe_section_index = None
+
+            if maybe_section_index is None and any(str(teacher.id) == request.POST['teacher_selected'] for teacher in coteachers):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
                 return render_to_response(self.baseDir()+'coteachers.html', request,
                                           {'class': cls,
                                            'ajax': ajax,
-                                           'txtTeachers': txtTeachers,
                                            'coteachers': coteachers,
                                            'error': error,
                                            'conflict': []})
@@ -389,36 +385,42 @@ class AdminClass(ProgramModuleObj):
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
-            if cls.conflicts(teacher):
-                conflictinguser = (teacher.first_name+' '+teacher.last_name)
+            if maybe_section_index is None:
+                if cls.conflicts(teacher):
+                    conflicting_user = teacher
+                else:
+                    coteachers.append(teacher)
+                    ccc = ClassCreationController(self.program)
+                    ccc.associate_teacher_with_class(cls, teacher)
+                    ccc.send_class_mail_to_directors(cls)
             else:
-                coteachers.append(teacher)
-                txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
-                ccc.associate_teacher_with_class(cls, teacher)
-                ccc.send_class_mail_to_directors(cls)
+                # section.index is one-indexed, something seems wrong about
+                # all this because we usually do a really good job of never
+                # having to get a section in this exact way, but oh well
+                cls.get_sections()[maybe_section_index - 1].observers.add(teacher)
 
         elif op == 'del':
             ids = request.POST.getlist('delete_coteachers')
-            newcoteachers = []
-            for coteacher in coteachers:
-                if str(coteacher.id) not in ids:
-                    newcoteachers.append(coteacher)
-
-            coteachers = newcoteachers
-            txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
-
-            new_coteachers_set = set(coteachers)
-            to_be_deleted = old_coteachers_set - new_coteachers_set
-            for teacher in to_be_deleted:
+            new_coteachers = [teacher for teacher in coteachers if str(teacher.id) not in ids]
+            for teacher in set(coteachers) - set(new_coteachers):
                 cls.removeTeacher(teacher)
-            ccc.send_class_mail_to_directors(cls)
+            coteachers = new_coteachers
+
+            comma_sep_ids = request.POST.getlist('delete_observers')
+            all_observer_ids_to_delete = defaultdict(list)
+            for comma_sep_id in request.POST.getlist('delete_observers'):
+                index_str, id_str = comma_sep_id.split(',')
+                all_observer_ids_to_delete[int(index_str)].append(id_str)
+            for section in cls.get_sections():
+                ids_to_delete = all_observer_ids_to_delete[section.index()]
+                for observer in section.observers.filter(id__in=ids_to_delete):
+                    section.observers.remove(observer)
 
         return render_to_response(self.baseDir()+'coteachers.html', request,
                                   {'class': cls,
                                    'ajax': ajax,
-                                   'txtTeachers': txtTeachers,
                                    'coteachers': coteachers,
-                                   'conflict': conflictinguser})
+                                   'conflict': conflicting_user})
 
     @aux_call
     @needs_admin

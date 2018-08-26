@@ -36,57 +36,83 @@
 </p>
 {% endif %}
 <div id="program_form">
-{% if not coteachers|length %}
-There are currently no teachers associated with this class.
-{% else %}
 <form action="{{request.path}}" method="post" name="manage_coteachers">
+<input type="hidden" name="op" value="del" />
+<input type="hidden" name="clsid" value="{{ class.id }}" />
 <table align="center" width="400">
     <tr>
-        <th colspan="2">Current Teachers</th>
+        <th>Current Teachers/Observers</th>
     </tr>
     <tr>
-        <td width="50%">
-            <input type="hidden" name="op" value="del" />
-            <input type="hidden" name="clsid" value="{{ class.id }}" />
-            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-
-            <select id="current_coteachers"
-                    class="coteachers" name="delete_coteachers" 
-                    size="5" multiple="multiple">
-            {% for teacher in coteachers %}
-                <option value="{{teacher.id}}">{{teacher.last_name }}, 
-                    {{teacher.first_name}} ({{teacher.username}})</option>
-            {% endfor %}
-            </select>
-            <br />
-            
-        </td>
         <td>
-            <input type="submit" class="button" value="Delete Selected" /><br />
+            {% if coteachers %}
+            <ul>
+            {% for teacher in coteachers %}
+                <li>
+                <input type="checkbox" id="delete-{{teacher.id}}" name="delete_coteachers" value="{{teacher.id}}" />
+                <label for="delete-{{teacher.id}}">{{teacher.last_name }},
+                    {{teacher.first_name}} ({{teacher.username}})</label>
+                </li>
+            {% endfor %}
+            </ul>
+            {% else %}
+            There are currently no teachers associated with this class.
+            {% endif %}
+            <ul>
+            {% for section in class.get_sections %}
+            {% with section.index as section_index %}
+            {% if section.get_observers %}
+                <li>Observers for Section {{ section_index }}:
+                    <ul>
+                    {% for observer in section.get_observers %}
+                        <li>
+                        <input type="checkbox" id="delete-{{section_index}}-{{observer.id}}" name="delete_observers" value="{{section_index}},{{observer.id}}" />
+                        <label for="delete-{{section_index}}-{{observer.id}}">{{observer.last_name }},
+                            {{observer.first_name}} ({{observer.username}})</label>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </li>
+            {% else %}
+                <li>
+                    No observers for Section {{ section_index }}
+                </li>
+            {% endif %}
+            {% endwith %}
+            {% endfor %}
+            </ul>
+            <button type="submit" class="btn btn-danger"><span class="glyphicon glyphicon-trash"></span> Delete Selected</button>
         </td>
     </tr>
 </table>
 </form>
-{% endif %}
 <form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
 <table align="center" width="400">
     <tr>
-        <th colspan="2">Add a coteacher</th>
+        <th>Add a coteacher or observer</th>
     </tr>
     <tr>
-        <td colspan="2">Begin typing the teacher's name in `Last, First' format to find them.</td>
+        <td>Begin typing the teacher's name in `Last, First' format to find them.</td>
     </tr>
     <tr>
-        <td width="50%">
+        <td>
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
-            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-
-	    <input type="text" name="teacher_name" id="teacher_name" />
-	    <input type="hidden" name="teacher_selected" id="teacher_id" />
+            <input type="text" name="teacher_name" id="teacher_name" />
+            <input type="hidden" name="teacher_selected" id="teacher_id" />
         </td>
+    </tr>
+    <tr>
         <td>
-            <input type="submit" class="button" value="Add Teacher" />
+            <button type="submit" class="btn btn-primary needs_teacher_selected" disabled="disabled" name="submit" value="teacher"><span class="glyphicon glyphicon-plus"></span> Add Teacher</button>
+            <ul>
+            {% for section in class.get_sections %}
+            <li>
+                <button type="submit" class="btn btn-default needs_teacher_selected" disabled="disabled" name="submit" value="{{ section.index }}"><span class="glyphicon glyphicon-plus"></span> Add Observer to Section {{ section.index }}</button>
+                ({% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in section.friendly_times %}{{ f }}{% endfor %}{% endif %}{% endif %})
+            </li>
+            {% endfor %}
+            </ul>
         </td>
     </tr>
 </table>
