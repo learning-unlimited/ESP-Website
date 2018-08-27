@@ -1288,6 +1288,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     class_info = models.TextField(blank=True)
     teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
+    minors_policy = models.TextField(blank=True)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
     optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True)

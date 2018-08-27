@@ -182,6 +182,17 @@ Resources Required (check all that apply):
 <br />
 <br />
 
+<label for="minors_policy" class="header">
+Minors Policy
+</label>
+<br />
+{% if form.minors_policy.errors %}
+   <br /><span class="form_error">{{ form.minors_policy.errors|join:", " }}</span><br />
+{% endif %}
+{{ form.minors_policy }}
+<br />
+<br />
+
 <label for="id_message_for_directors" class="header">
 Message for Director
 </label>

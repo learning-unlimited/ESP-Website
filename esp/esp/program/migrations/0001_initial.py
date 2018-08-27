@@ -136,6 +136,7 @@ class Migration(migrations.Migration):
                 ('title', models.TextField()),
                 ('class_info', models.TextField(blank=True)),
                 ('allow_lateness', models.BooleanField(default=False)),
+                ('minors_policy', models.TextField(blank=True)),
                 ('message_for_directors', models.TextField(blank=True)),
                 ('class_size_optimal', models.IntegerField(null=True, blank=True)),
                 ('grade_min', models.IntegerField()),

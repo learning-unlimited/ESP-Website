@@ -44,6 +44,8 @@ Special Resources:
 Planned purchases:
 {{ purchase_requests }}
 
+{{ minors_policy }}
+
 Comments to Director:
 {{ message_for_directors }}
 
