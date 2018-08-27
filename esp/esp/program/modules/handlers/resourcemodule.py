@@ -188,17 +188,22 @@ class ResourceModule(ProgramModuleObj):
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
                 FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
                 furnishings = []
-                furnishings_dict = {}
                 for i in range(0,num_forms):
-                    furnishing = data['furnishings-'+str(i)+'-furnishing']
-                    choice = data['furnishings-'+str(i)+'-choice']
-                    furnishings.append({'furnishing': furnishing, 'choice': choice})
-                    furnishings_dict[furnishing] = choice
-                context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
+                    #   Filter out blank furnishings or choices
+                    if 'furnishings-'+str(i)+'-furnishing' in data:
+                        furnishing = data['furnishings-'+str(i)+'-furnishing']
+                        if 'furnishings-'+str(i)+'-choice' in data:
+                            choice = data['furnishings-'+str(i)+'-choice']
+                        else:
+                            choice = ''
+                        furnishings.append({'furnishing': furnishing, 'choice': choice})
+                #   Filter out duplicates
+                furnishings = list(map(dict, frozenset(frozenset(i.items()) for i in furnishings)))
                 if form.is_valid():
-                    controller.add_or_edit_classroom(form, furnishings_dict)
+                    controller.add_or_edit_classroom(form, furnishings)
                 else:
                     context['classroom_form'] = form
+                    context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         return (response, context)
 

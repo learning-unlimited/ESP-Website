@@ -37,19 +37,23 @@
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Add/modify a classroom</th></tr>
     {{ classroom_form }}
-    <tr><th><label>Furnishings:<br>(optional)</label></th>
-    <td>
-    {{ furnishing_formset.management_form }}
-    {% if not furnishing_formset.0 %}
-        <div class="furnishing-formset"></div>
-    {% else %}
-        {% for furnishing_form in furnishing_formset %}
-            <div class="furnishing-formset">
-                {{ furnishing_form.furnishing }} {{ furnishing_form.choice }}
+    <tr>
+        <th><label>Furnishings:<br>(optional)</label></th>
+        <td>
+            <div id="furnishing_formset">
+            {{ furnishing_formset.management_form }}
+            {% if not furnishing_formset.0 %}
+                <div class="furnishing-formset"></div>
+            {% else %}
+                {% for furnishing_form in furnishing_formset %}
+                    <div class="furnishing-formset">
+                        {{ furnishing_form.furnishing }} {{ furnishing_form.choice }}
+                    </div>
+                {% endfor %}
+            {% endif %}
             </div>
-        {% endfor %}
-    {% endif %}
-    </td>
+        </td>
+    </tr>
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Classroom" /></td></tr>
 </table>
 </form>
@@ -96,14 +100,34 @@
 
 <!--This branch has a fix for when the form is originally hidden-->
 <script src="https://rawgit.com/elo80ka/django-dynamic-formset/f5f68c818953ddf43ffa7cb2e9aa391c3d4dfb47/src/jquery.formset.js"></script>
+<!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
+<script src="https://rawgit.com/pie6k/jquery.initialize/master/jquery.initialize.js"></script>
 <script>
-    $j('.furnishing-formset').formset({
-        prefix: 'furnishings',
-        formTemplate: '#id_empty_form',
-        addText: 'add choice',
-        deleteText: 'remove',
-        addCssClass: 'furnishing-add',
-        deleteCssClass: 'furnishing-delete',
-        formCssClass: 'furnishing-dynamic-form',
-    });
+$j('.furnishing-formset').formset({
+    prefix: 'furnishings',
+    formTemplate: '#id_empty_form',
+    addText: 'add choice',
+    deleteText: 'remove',
+    addCssClass: 'furnishing-add',
+    deleteCssClass: 'furnishing-delete',
+    formCssClass: 'furnishing-dynamic-form',
+});
+
+$j.initialize("select", function() {
+    var opt = $j(this).find("option")[0];
+    $j(opt).hide();
+    $j(opt).css("display", "none");
+    opt.disabled = true;
+}, { target: $j("#furnishing_formset")[0] });
+
+function update_choices(obj) {
+    var num = $j(obj).attr('id').split("-")[1];
+    $j('#id_furnishings-' + num + '-choice').remove();
+    $j(obj).after('<select id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" type="text"></select>');
+    $j('#id_furnishings-' + num + '-choice').append('<option>(option)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>');
+}
+
+$j('.furnishing-dynamic-form select').change(function() {
+    update_choices($j(this));
+});
 </script>

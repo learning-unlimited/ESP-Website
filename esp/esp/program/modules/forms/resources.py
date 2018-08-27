@@ -169,7 +169,6 @@ class ClassroomForm(forms.Form):
             initial_furnishings[r] = list(r.associated_resources())
 
         timeslots = Event.objects.filter(id__in=[int(id_str) for id_str in self.cleaned_data['times_available']])
-        furnishings_obj = ResourceType.objects.filter(id__in=[int(id_str) for id_str in furnishings.keys()])
 
         rooms_to_keep = list(initial_rooms.filter(event__in=timeslots))
         rooms_to_delete = list(initial_rooms.exclude(event__in=timeslots))
@@ -187,17 +186,17 @@ class ClassroomForm(forms.Form):
             new_room.save()
             t.new_room = new_room
 
-            for f in furnishings_obj:
+            for f in furnishings:
                 #   Create associated resource
                 new_resource = Resource()
                 new_resource.event = t
-                new_resource.res_type = f
-                new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
+                res_type = ResourceType.objects.get(id=int(f['furnishing']))
+                new_resource.res_type = res_type
+                new_resource.name = res_type.name + ' for ' + self.cleaned_data['room_number']
                 new_resource.res_group = new_room.res_group
-                new_resource.attribute_value = furnishings[str(f.id)]
+                new_resource.attribute_value = f['choice']
                 new_resource.save()
-                f.new_resource = new_resource
-
+                res_type.new_resource = new_resource
 
         #   Delete old, no-longer-valid resources
         for rm in rooms_to_delete:
@@ -220,26 +219,24 @@ class ClassroomForm(forms.Form):
             room.save()
 
             # Add furnishings that we didn't have before
-            for f in furnishings_obj.exclude(resource__res_group=room.res_group):
-                #   Create associated resource
-                new_resource = Resource()
-                new_resource.event = room.event
-                new_resource.res_type = f
-                new_resource.name = f.name + ' for ' + self.cleaned_data['room_number']
-                new_resource.res_group = room.res_group
-                new_resource.attribute_value = furnishings[str(f.id)]
-                new_resource.save()
-                f.new_resource = new_resource
+            for f in furnishings:
+                res_type = ResourceType.objects.get(id=int(f['furnishing']))
+                if Resource.objects.filter(res_type=res_type, res_group=room.res_group, attribute_value=f['choice']).count() == 0:
+                    #   Create associated resource
+                    new_resource = Resource()
+                    new_resource.event = room.event
+                    new_resource.res_type = res_type
+                    new_resource.name = res_type.name + ' for ' + self.cleaned_data['room_number']
+                    new_resource.res_group = room.res_group
+                    new_resource.attribute_value = f['choice']
+                    new_resource.save()
+                    res_type.new_resource = new_resource
 
             # Delete furnishings that we don't have any more
-            for f in Resource.objects.filter(res_group=room.res_group).exclude(id=room.id).exclude(res_type__in=furnishings):
-                f.delete()
-
-            # Update attribute value of any old furnishings
-            for f in furnishings_obj.filter(resource__res_group=room.res_group).exclude(id=room.id):
-                for res in Resource.objects.filter(res_type=f, res_group=room.res_group):
-                    res.attribute_value = furnishings[str(f.id)]
-                    res.save()
+            for f in initial_furnishings[room]:
+                print({'furnishing': str(f.res_type.id), 'choice': f.attribute_value})
+                if {'furnishing': str(f.res_type.id), 'choice': f.attribute_value} not in furnishings:
+                    f.delete()
 
 # This would be easier in Django 1.9
 # https://docs.djangoproject.com/en/1.9/topics/forms/formsets/#passing-custom-parameters-to-formset-forms
@@ -248,7 +245,8 @@ def FurnishingFormForProgram(prog):
         furnishing = forms.ChoiceField()
         choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={'placeholder': '(option)'}))
         def __init__(self, *args, **kwargs):
-            self.base_fields['furnishing'].choices = setup_furnishings(prog.getResourceTypes())
+            furnishings = setup_furnishings(prog.getResourceTypes())
+            self.base_fields['furnishing'].choices = tuple([(u'', '(furnishing)')] + list(furnishings))
             super(FurnishingForm, self).__init__(*args, **kwargs)
     return FurnishingForm
 
