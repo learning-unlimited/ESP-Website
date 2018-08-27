@@ -234,7 +234,6 @@ class ClassroomForm(forms.Form):
 
             # Delete furnishings that we don't have any more
             for f in initial_furnishings[room]:
-                print({'furnishing': str(f.res_type.id), 'choice': f.attribute_value})
                 if {'furnishing': str(f.res_type.id), 'choice': f.attribute_value} not in furnishings:
                     f.delete()
 

@@ -37,6 +37,7 @@ from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
 
 from esp.utils.web import render_to_response
+from esp.utils.decorators import json_response
 
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
@@ -557,6 +558,19 @@ class ResourceModule(ProgramModuleObj):
                 extra = 'equipment'
 
         return(response, context)
+
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    def ajaxfurnishingchoices(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to get the choices for a particular furnishing.
+         POST data:
+          'furnishing':     The ID of the furnishing of interest.
+        """
+        if 'furnishing' in request.POST:
+            res_type = ResourceType.objects.get(id = int(request.POST['furnishing']))
+            return {'choices': res_type.choices}
 
     @main_call
     @needs_admin
