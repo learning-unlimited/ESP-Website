@@ -60,11 +60,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
         ("****", "**** - You should not expect to be able to understand most of this class.",),
     ]
 
-    minors_choices = [
-        (False, 'I commit to finding a coteacher or observer by the teacher registration deadline'),
-        (True, 'I agree to be assigned an observer in exchange for observing at least as many hours as I teach'),
-    ]
-
     # The following is a dummy list (because using None causes an error). To enable class styles, admins should set the
     # Tag class_style_choices with value in the following JSON format, where the first element of each list
     # is the value stored in the database, and the second value is the option shown on the form.
@@ -112,9 +107,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
                                          help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt with attached reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
-
-    minors_policy  = forms.ChoiceField( label='Minors Policy Satisfaction', choices=minors_choices, widget=BlankSelectWidget(),
-                                        help_text='(The MIT Minors Policy requires that at least two adults are in the room at all times.)' , required=True)
 
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
                                                    help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
@@ -230,7 +222,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         custom_helptext_fields = [
             'duration', 'class_size_max', 'num_sections', 'requested_room',
             'message_for_directors', 'purchase_requests', 'class_info',
-            'grade_max', 'grade_min', 'minors_policy'] + custom_fields.keys()
+            'grade_max', 'grade_min'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
