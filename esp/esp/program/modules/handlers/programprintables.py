@@ -1407,7 +1407,6 @@ class ProgramPrintables(ProgramModuleObj):
                  cls.category,
                  smart_str(cls.class_info),
                  ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
-                 smart_str(cls.minors_policy),
                  smart_str(cls.message_for_directors),
                  smart_str(cls.prereqs),
                  smart_str(cls.directors_notes),
