@@ -14,16 +14,23 @@ def minorspolicyacknowledgementform_factory(prog):
     label = u"I have read the above, and commit to satisfy the MIT Minors policy."
 
     d = dict(
-        minorspolicy_choice = forms.ChoiceField(label='Background Checks', choices=[
+        backgroundcheck_choice = forms.ChoiceField(label='Background Checks', choices=[
             ('affiliated', 'I am an MIT student, faculty, or staff.'),
             ('recent_check', 'I have received a background check in the past year.'),
             ('commit_check', 'I commit to getting a background check.'),
         ], widget=BlankSelectWidget(),
-                                        help_text='(The MIT Minors Policy requires that all non-MIT affiliated teachers be background checked.)' , required=True)
+                                        help_text='(The MIT Minors Policy requires that all non-MIT affiliated teachers be background checked.)' , required=True),
+        observing_choice = forms.ChoiceField(label='Observing', choices=[
+            ('yes', 'I agree to have an observer assigned in exchange for observing as many hours as I teach.'),
+            ('no', 'I have a coteacher or commit to finding a coteacher by the teacher registration deadline.'),
+            ('other', 'Other: I will elaborate in the message to directors.'),
+        ], widget=BlankSelectWidget(),
+                                        help_text='(The MIT Minors Policy requires that all classes have at least 2 adults present at all times.)' , required=True),
     )
     return type(name, bases, d)
 
-MINORS_POLICY_CHOICE_PREFIX = "minorspolicy_"
+BACKGROUNDCHECK_CHOICE_PREFIX = "minorspolicy_"
+OBSERVING_CHOICE_PREFIX = "observing_"
 
 # The module name is limited to length 32. Whoops.
 class MinorsPolicyModule(ProgramModuleObj):
@@ -48,7 +55,8 @@ class MinorsPolicyModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = minorspolicyacknowledgementform_factory(prog)(request.POST)
-            selection = context['form']['minorspolicy_choice'].data
+            backgroundcheck_selection = context['form']['backgroundcheck_choice'].data
+            observing_selection = context['form']['observing_choice'].data
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
                                                         event="minorspolicyacknowledgement")
@@ -56,29 +64,47 @@ class MinorsPolicyModule(ProgramModuleObj):
             Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=MINORS_POLICY_CHOICE_PREFIX).delete()
-            # minorspolicy_affiliated / minorspolicy_recent_check / minorspolicy_commit_check
-            rec_type, _ = Record.objects.get_or_create(user=request.user,
+                    event__startswith=BACKGROUNDCHECK_CHOICE_PREFIX).delete()
+            Record.objects.filter(
+                    user=get_current_request().user,
+                    program=self.program,
+                    event__startswith=OBSERVING_CHOICE_PREFIX).delete()
+            # backgroundcheck_affiliated / backgroundcheck_recent_check / backgroundcheck_commit_check
+            backgroundcheck_rec_type, _ = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event=MINORS_POLICY_CHOICE_PREFIX + selection)
+                                                        event=BACKGROUNDCHECK_CHOICE_PREFIX + backgroundcheck_selection)
+            # observing_yes / observing_no / observing_other
+            observing_rec_type, _ = Record.objects.get_or_create(user=request.user,
+                                                        program=self.program,
+                                                        event=OBSERVING_CHOICE_PREFIX + observing_selection)
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
                 rec.delete()
-                rec_type.delete()
+                backgroundcheck_rec_type.delete()
+                observing_rec_type.delete()
         elif self.isCompleted():
-            # TODO: fill in with previously submitted data
-            minorspolicy_choice_records = Record.objects.filter(
+            backgroundcheck_choice_records = Record.objects.filter(
                     user=get_current_request().user,
                     program=self.program,
-                    event__startswith=MINORS_POLICY_CHOICE_PREFIX)
+                    event__startswith=BACKGROUNDCHECK_CHOICE_PREFIX)
 
-            minorspolicy_choice = None
-            if minorspolicy_choice_records:
-                minorspolicy_choice = minorspolicy_choice_records[0].event[len(MINORS_POLICY_CHOICE_PREFIX):]
+            backgroundcheck_choice = None
+            if backgroundcheck_choice_records:
+                backgroundcheck_choice = backgroundcheck_choice_records[0].event[len(BACKGROUNDCHECK_CHOICE_PREFIX):]
+
+            observing_choice_records = Record.objects.filter(
+                    user=get_current_request().user,
+                    program=self.program,
+                    event__startswith=OBSERVING_CHOICE_PREFIX)
+
+            observing_choice = None
+            if observing_choice_records:
+                observing_choice = observing_choice_records[0].event[len(OBSERVING_CHOICE_PREFIX):]
 
             context['form'] = minorspolicyacknowledgementform_factory(prog)({
-                'minorspolicy_choice': minorspolicy_choice
+                'backgroundcheck_choice': backgroundcheck_choice,
+                'observing_choice': observing_choice,
             })
         else:
             context['form'] = minorspolicyacknowledgementform_factory(prog)()
