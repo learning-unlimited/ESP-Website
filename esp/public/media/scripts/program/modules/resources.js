@@ -28,20 +28,20 @@ function getChoices(furnishing, callback){
 }
 
 //Update the option field to reflect whether there are specific choices (dropdown) or not (open response). If a value is supplied, set that value as selected afterwards.
-function update_choices(obj, value) {
-    var furnishing = $j(obj).val()
+function update_choices(furnishing_select_obj, value) {
+    var furnishing = $j(furnishing_select_obj).val()
     getChoices(furnishing, function(response) {
         var choices = response.choices;
-        var num = $j(obj).attr('id').split("-")[1];
+        var num = $j(furnishing_select_obj).attr('id').split("-")[1];
         $j('#id_furnishings-' + num + '-choice').remove();
         if (choices.length > 1) {
-            $j(obj).after('<select style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" type="text"></select>');
+            $j(furnishing_select_obj).after('<select style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" type="text"></select>');
             $j('#id_furnishings-' + num + '-choice').append('<option>(option)</option>');
             for (i in choices) {
                 $j('#id_furnishings-' + num + '-choice').append('<option value=' + choices[i] + '>' + choices[i] + '</option>');
             }
         } else {
-            $j(obj).after('<input style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" maxlength="50" placeholder="(option)" type="text"></select>');
+            $j(furnishing_select_obj).after('<input style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" maxlength="50" placeholder="(option)" type="text"></select>');
         }
         if (value) {
             $j('#id_furnishings-' + num + '-choice').val(value);
