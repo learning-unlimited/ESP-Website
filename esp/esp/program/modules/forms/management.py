@@ -69,8 +69,15 @@ class ClassManageForm(ManagementForm):
 
     def save_data(self, cls):
         cls.status = self.cleaned_data['status']
-        #   If the section's status has not already been marked, apply the subject's status.
+        cls.grade_min = self.cleaned_data['min_grade']
+        cls.grade_max = self.cleaned_data['max_grade']
+        cls.duration = Decimal(str(self.cleaned_data['duration']))
+        cls.class_size_max = self.cleaned_data['class_size']
+        cls.directors_notes = self.cleaned_data['notes']
+
         for sec in cls.sections.all():
+            sec.duration = cls.duration
+            #   If the section's status has not already been marked, apply the subject's status.
             if sec.status == 0:
                 sec.status = self.cleaned_data['status']
             if self.cleaned_data['reg_status']:
@@ -79,14 +86,7 @@ class ClassManageForm(ManagementForm):
             if self.cleaned_data['class_size'] != cls.class_size_max and sec.max_class_capacity is not None:
                 sec.max_class_capacity = self.cleaned_data['class_size']
             sec.save()
-        cls.grade_min = self.cleaned_data['min_grade']
-        cls.grade_max = self.cleaned_data['max_grade']
-        cls.duration = self.cleaned_data['duration']
-        cls.class_size_max = self.cleaned_data['class_size']
-        cls.directors_notes = self.cleaned_data['notes']
 
-        if cls.duration:
-            cls.duration = Decimal(str(cls.duration))
         cls.save()
 
 class SectionManageForm(ManagementForm):
