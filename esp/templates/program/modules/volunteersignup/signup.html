@@ -23,9 +23,7 @@ function decline_cancellation() {
 }
 
 $j(document).ready(function () {
-    {% if isAdmin %}
-    toggle_edit();
-    {% endif %}
+    init({{ isAdmin|yesno:"true,false" }});
 
     $j("#confirm_cancellation_dialog").dialog({
         autoOpen: false,
@@ -46,19 +44,6 @@ $j(document).ready(function () {
             //  They are not cancelling all shifts; submit the form normally
             $j("#volunteer_shift_form").submit();
         }
-    });
-    //Sets classes of cells based on status of checkboxes upon loading page
-    $j('#id_requests input:checked').each(function(i, e) {
-        document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
-    });
-
-    //Shows volunteer details when hovering over timeslot
-    $j(".group td").mouseover(function() {
-        var label = $j('input[value='+parseInt($j(this).attr('name'))+']').prop('labels')[0]
-        $j(".left .summary").html($j.trim(label.innerText.split(": ")[1]));
-        $j(".left .summary").css("display", "block");
-        }).mouseout(function() {
-        $j(".left .summary").css("display", "none");
     });
 });
 
@@ -116,8 +101,10 @@ The directors have been notified that you are no longer able to volunteer at {{ 
 </div>
 
   {% include "program/modules/availability.html" %}
-  <div hidden>
-    {{ form.requests }}
+  <div hidden id="checkboxes">
+    {% for request in form.requests %}
+      <input {% if request.is_checked %}checked="checked" {% endif %}id="{{ request.id_for_label }}" name="{{ request.name }}" type="checkbox" value="{{ request.choice_value }}" data-hover="{{ request.choice_label }}">
+    {% endfor %}
   </div>
   {{ form.requests.errors }}
 <br><br>

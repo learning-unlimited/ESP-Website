@@ -13,28 +13,7 @@
 
 <script>
 $j(document).ready(function() {
-  {% if isAdmin %}
-    toggle_edit();
-  {% endif %}
-
-  //Sets classes of cells based on status of checkboxes upon loading page
-  $j('#checkboxes input:checked').each(function(i, e) {
-    if (this.disabled == true) {
-      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
-      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
-    } else {
-      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
-    }
-  });
-
-  //Shows class details when hovering over teaching timeslot
-    $j(".teaching").mouseover(function() {
-        var section = $j('input[value='+parseInt($j(this).attr('name'))+']').data('section')
-        $j(".left .summary").html(section);
-        $j(".left .summary").css("display", "block");
-        }).mouseout(function() {
-        $j(".left .summary").css("display", "none");
-    });
+  init({{ isAdmin|yesno:"true,false" }}, "teaching", "You are currently scheduled to teach at this time");
 });
 </script>
 {% endblock %}
@@ -96,7 +75,7 @@ You submitted a schedule with no available times.  You can't register a class wi
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" {% if time.section %}data-section="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+        <input type="checkbox" name="timeslots" {% if time.section %}data-hover="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
       {% endfor %}
     {% endfor %}
   </div>

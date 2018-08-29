@@ -1,3 +1,30 @@
+function init(isAdmin, disabledClass, disabledText) {
+  if (isAdmin) {
+    toggle_edit();
+  }
+
+  //Sets classes of cells based on status of checkboxes upon loading page
+  $j('#checkboxes input:checked').each(function(i, e) {
+    if (this.disabled == true) {
+      document.getElementsByName($j(this).attr('value'))[0].className = disabledClass;
+      document.getElementsByName($j(this).attr('value'))[0].title = disabledText;
+    } else {
+      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
+    }
+  });
+
+  //If there is hover text, show it when hovering over the timeslot
+  $j(".group td").mouseover(function() {
+    var hover_text = $j('input[value='+parseInt($j(this).attr('name'))+']').data('hover')
+    if (hover_text) {
+      $j(".left .summary").html(hover_text);
+      $j(".left .summary").css("display", "block");
+    }
+    }).mouseout(function() {
+      $j(".left .summary").css("display", "none");
+  });
+}
+
 var setting = false;
 var down = false;
 var noclick = false;
