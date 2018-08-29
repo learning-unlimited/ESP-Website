@@ -1,4 +1,4 @@
-function init(isAdmin, disabledClass, disabledText) {
+function init(isAdmin, disabledText) {
   if (isAdmin) {
     toggle_edit();
   }
@@ -6,7 +6,7 @@ function init(isAdmin, disabledClass, disabledText) {
   //Sets classes of cells based on status of checkboxes upon loading page
   $j('#checkboxes input:checked').each(function(i, e) {
     if (this.disabled == true) {
-      document.getElementsByName($j(this).attr('value'))[0].className = disabledClass;
+      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
       document.getElementsByName($j(this).attr('value'))[0].title = disabledText;
     } else {
       document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
