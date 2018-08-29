@@ -10,14 +10,14 @@
       <span class="summary"></span>
     </div>
     <div class="container1">
-      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
+      <table class="noselect" id="grid" onmouseup="mouse_down=false;" style="cursor: default;">
         <tbody>
           <tr>
           {% for group in groups %}
             <td class="group">
               <table class="group" id="block_{{ forloop.counter }}">
                 <tbody>
-                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
+                  <tr><th class="dateHeader weekday" onclick="header_switch(event,{{ forloop.counter }});">
                     <div class="headerText">
                       {{ group.0.slot.start|date:"D" }}<br>
                       {{ group.0.slot.start|date:"d" }}<br>
@@ -25,7 +25,7 @@
                     </div>
                   </th></tr>
                   {% for time in group %}
-                    <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ time.id }}">
+                    <tr><td nowrap="" class="proposed" onmousedown="mousedown_event(this);" onmouseover="mouseover_event(this);" name="{{ time.id }}">
                       {{ time.slot.start|date:"g:i A"}}
                     </td></tr>
                   {% endfor %}

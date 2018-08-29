@@ -13,6 +13,12 @@ function init(isAdmin, disabledClass, disabledText) {
     }
   });
 
+  //Populate the right sidebar
+  $j(document).ready(function () {
+    $j(".wrap").append($j(".right"));
+    $j(".right").show();
+  });
+
   //If there is hover text, show it when hovering over the timeslot
   $j(".group td").mouseover(function() {
     var hover_text = $j('input[value='+parseInt($j(this).attr('name'))+']').data('hover')
@@ -25,26 +31,29 @@ function init(isAdmin, disabledClass, disabledText) {
   });
 }
 
-var setting = false;
-var down = false;
+//Used to keep track of the state of a checkbox
+var checkbox_setting = false;
+//Used to keep track of whether the mouse is still held down
+var mouse_down = false;
+//Used to prevent any clicking if on admin page
 var noclick = false;
 
 //Records mousedown
-function md(td) {
+function mousedown_event(td) {
   if (noclick) return;
-  down = true;
-  setting = !isSet(td);
-  mo(td);
+  mouse_down = true;
+  checkbox_setting = !isSet(td);
+  mouseover_event(td);
 }
 
 //Enables highlighting multiple cells
-function mo(td) {
+function mouseover_event(td) {
   if (noclick) return;
-  if (!down) return;
-  if (setting) {
-    on(td);
+  if (!mouse_down) return;
+  if (checkbox_setting) {
+    checkbox_on(td);
   } else {
-    off(td);
+    checkbox_off(td);
   }
 }
 
@@ -53,7 +62,7 @@ function isSet(td) {
 }
 
 //Activate checkbox
-function on(td) {
+function checkbox_on(td) {
   var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
   if (td.className != "teaching") {
   	td.className = "canDo";
@@ -62,7 +71,7 @@ function on(td) {
 }
 
 //Deactivate checkbox
-function off(td) {
+function checkbox_off(td) {
   var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
   if (td.className == "canDo") {
     td.className = "proposed";
@@ -71,7 +80,7 @@ function off(td) {
 }
 
 //Clicking the header turns the entire block on/off
-function header(e, col) {
+function header_switch(e, col) {
   if (noclick) return;
   var somethingToSet = false;
   var block = document.getElementById("block_" + col);
@@ -82,18 +91,12 @@ function header(e, col) {
   for (var i = 1; i < block.rows.length; i++) {
     var td = block.rows[i].cells[0];
     if (somethingToSet) {
-      on(td);
+      checkbox_on(td);
     } else {
-      off(td);
+      checkbox_off(td);
     }
   }
 }
-
-//Populate the right sidebar
-$j(document).ready(function () {
-  $j(".wrap").append($j(".right"));
-  $j(".right").show();
-});
 
 function toggle_edit() {
     if (noclick){
