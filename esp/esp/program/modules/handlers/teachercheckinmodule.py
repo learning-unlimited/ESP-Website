@@ -51,7 +51,6 @@ from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from django.db.models.query   import Q
 from datetime import datetime, timedelta
-from twilio.rest import TwilioRestClient
 
 import collections
 import json
@@ -169,8 +168,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
                 message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.friendly_times(include_date = True)[0] + "!"
-                GroupTextModule.sendMessages(teacher, message, True)
-                return {'message': "Texted teacher"}
+                log = GroupTextModule.sendMessages(teacher, message, True)
+                if "error" in log:
+                    return {'message': "Error texting teacher"}
+                else:
+                    return {'message': "Texted teacher"}
             else:
                 return {'message': "Username and/or section not provided"}
         else:
