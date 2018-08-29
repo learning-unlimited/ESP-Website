@@ -35,13 +35,13 @@ function update_choices(furnishing_select_obj, value) {
         var num = $j(furnishing_select_obj).attr('id').split("-")[1];
         $j('#id_furnishings-' + num + '-choice').remove();
         if (choices.length > 1) {
-            $j(furnishing_select_obj).after('<select style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" type="text"></select>');
-            $j('#id_furnishings-' + num + '-choice').append('<option>(option)</option>');
+            $j(furnishing_select_obj).after($j('<select>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
+            $j('#id_furnishings-' + num + '-choice').append($j('<option>').text('(option)'));
             for (i in choices) {
-                $j('#id_furnishings-' + num + '-choice').append('<option value=' + choices[i] + '>' + choices[i] + '</option>');
+                $j('#id_furnishings-' + num + '-choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
         } else {
-            $j(furnishing_select_obj).after('<input style="margin-left: 4px" id="id_furnishings-' + num + '-choice" name="furnishings-' + num + '-choice" maxlength="50" placeholder="(option)" type="text"></select>');
+            $j(furnishing_select_obj).after($j('<input>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('maxlength', '50').attr('placeholder', '(option)').attr('type', 'text'));
         }
         if (value) {
             $j('#id_furnishings-' + num + '-choice').val(value);
