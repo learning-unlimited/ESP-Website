@@ -1,3 +1,15 @@
+/*
+This code provides a way to have an availability or signup page with whenisgood.net-like behavior. This includes clicking single cells to switch their status, but also holding down and moving the mouse to multiple cells to switch all of their statuses to on or off (depending on the status of the cell that was originally clicked). Users can also click a <th> to switch the status of an entire table column.
+A generic version of this is implemented in templates/program/modules/availability.html, so any other implementation should be modelled off of that.
+This has been designed to create an interface between the cells of the table and (hidden) checkboxes within a form on the page. The checkboxes should be within a div with the id "checkboxes" and each checkbox should follow the following guidelines:
+- the checkbox should correspond to a single <td> element on the page (and vice versa)
+- the checkbox should have a value that matches the name of the respective <td> (and vice-versa)
+- the checkbox should have the checked attribute if the checkbox is "on" and the respective <td> should reflect this
+- the checkbox should have the disabled attribute if you do not want the user to change the status of the <td> (and thus the checkbox)
+- the checkbox should have the data-hover attribute with custom text if you'd like that text to be displayed when hovering over the respective <td>
+This should leave plenty of flexibility for the use of the id and name attributes of the checkboxes to maintain form functionality.
+*/
+
 var Availability = (function availabilityIIFE() {
     //Used to keep track of the state of a checkbox
     var checkbox_setting = false;
