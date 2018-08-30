@@ -23,7 +23,7 @@ function decline_cancellation() {
 }
 
 $j(document).ready(function () {
-    init({{ isAdmin|yesno:"true,false" }});
+    Availability.init({{ isAdmin|yesno:"true,false" }});
 
     $j("#confirm_cancellation_dialog").dialog({
         autoOpen: false,
