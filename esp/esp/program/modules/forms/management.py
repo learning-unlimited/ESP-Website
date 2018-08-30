@@ -46,6 +46,9 @@ class ClassManageForm(ManagementForm):
                 prefix = kwargs['prefix'] + '-'
             initial_dict = self.load_data(self.cls, prefix)
             super(ClassManageForm, self).__init__(data=initial_dict, *args, **kwargs)
+            if self.cls.hasScheduledSections():
+                self.fields['duration'].widget.attrs['disabled'] = True
+                self.fields['duration'].widget.attrs['title'] = "At least one section of this class has already been scheduled"
         else:
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
@@ -71,7 +74,8 @@ class ClassManageForm(ManagementForm):
         cls.status = self.cleaned_data['status']
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
-        cls.duration = Decimal(str(self.cleaned_data['duration']))
+        if not cls.hasScheduledSections():
+            cls.duration = Decimal(str(self.cleaned_data['duration']))
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
 
