@@ -37,6 +37,7 @@ from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
 
 from esp.utils.web import render_to_response
+from esp.utils.decorators import json_response
 
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
@@ -48,7 +49,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -119,7 +120,7 @@ class ResourceModule(ProgramModuleObj):
             context['restype_form'].load_restype(current_slot)
             choices = [{'choice': choice} for choice in current_slot.choices]
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if len(choices) else 1)
-            context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
+            context['reschoice_formset'] = ResourceChoiceSet(initial=choices, prefix='resourcechoices')
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
@@ -136,14 +137,14 @@ class ResourceModule(ProgramModuleObj):
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = ResourceTypeForm(data)
-                num_choices = int(data.get('form-TOTAL_FORMS', '0'))
+                num_choices = int(data.get('resourcechoices-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
                 choices, choices_list = [],[]
                 for i in range(0,num_choices):
-                    choice = data['form-'+str(i)+'-choice']
+                    choice = data['resourcechoices-'+str(i)+'-choice']
                     choices.append({'choice': choice})
                     choices_list.append(choice)
-                context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
+                context['reschoice_formset'] = ResourceChoiceSet(initial=choices, prefix='resourcechoices')
                 if form.is_valid():
                     controller.add_or_edit_restype(form, choices_list)
                 else:
@@ -162,6 +163,9 @@ class ResourceModule(ProgramModuleObj):
             current_room = Resource.objects.get(id=request.GET['id'])
             context['classroom_form'] = ClassroomForm(self.program)
             context['classroom_form'].load_classroom(self.program, current_room)
+            furnishings = [{'furnishing': furnishing.res_type.id, 'choice': furnishing.attribute_value} for furnishing in current_room.associated_resources()]
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+            context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
@@ -182,10 +186,25 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 form = ClassroomForm(self.program, data)
+                num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
+                FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+                furnishings = []
+                for i in range(0,num_forms):
+                    #   Filter out blank furnishings or choices
+                    if 'furnishings-'+str(i)+'-furnishing' in data:
+                        furnishing = data['furnishings-'+str(i)+'-furnishing']
+                        if 'furnishings-'+str(i)+'-choice' in data:
+                            choice = data['furnishings-'+str(i)+'-choice']
+                        else:
+                            choice = ''
+                        furnishings.append({'furnishing': furnishing, 'choice': choice})
+                #   Filter out duplicates
+                furnishings = list(map(dict, frozenset(frozenset(i.items()) for i in furnishings)))
                 if form.is_valid():
-                    controller.add_or_edit_classroom(form)
+                    controller.add_or_edit_classroom(form, furnishings)
                 else:
                     context['classroom_form'] = form
+                    context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         return (response, context)
 
@@ -540,6 +559,19 @@ class ResourceModule(ProgramModuleObj):
 
         return(response, context)
 
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    def ajaxfurnishingchoices(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to get the choices for a particular furnishing.
+         POST data:
+          'furnishing':     The ID of the furnishing of interest.
+        """
+        if 'furnishing' in request.POST:
+            res_type = ResourceType.objects.get(id = int(request.POST['furnishing']))
+            return {'choices': res_type.choices}
+
     @main_call
     @needs_admin
     def resources(self, request, tl, one, two, module, extra, prog):
@@ -589,10 +621,12 @@ class ResourceModule(ProgramModuleObj):
 
         if 'restype_form' not in context:
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10)
-            context['reschoice_formset'] = ResourceChoiceSet
+            context['reschoice_formset'] = ResourceChoiceSet(prefix='resourcechoices')
             context['restype_form'] = ResourceTypeForm()
 
         if 'classroom_form' not in context:
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+            context['furnishing_formset'] = FurnishingFormSet(prefix='furnishings')
             context['classroom_form'] = ClassroomForm(self.program)
 
         if 'equipment_form' not in context:
