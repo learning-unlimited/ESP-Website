@@ -11,14 +11,21 @@
 <div class="dspcont">
 {% endifequal %}
 
-<p>The following types of resources will be available for teachers to select on the teacher registration page.  You may customize the available options (beyond the default yes/no choice) for each resource type using the <a href="/admin/resources/resourcetype/?program__id={{ prog.id }}">administrative interface</a> for this program.</p>
+<p>The following types of resources will be available for teachers to select on the teacher registration page.</p>
 
 <p>Teachers are also asked to make special requests in the "Message for Directors" that gets e-mailed to you.  However, covering the most commonly needed things with these resource types would be a good idea.</p>
 
 <div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/resources/restype_import">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Import resource types from a previous program</th></tr>
+    {{ import_restype_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
+</table>
+</form>
 <form method="post" action="/manage/{{ prog.url }}/resources/restype">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Add/modify a resource type</th></tr>
     {{ restype_form }}
     
@@ -33,7 +40,10 @@
     </td></tr>
     
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Resource" /></td></tr>
-    
+</table>
+</form>
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">Resource Types for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table width="100%" cellpadding="0" cellspacing="0">
     <tr>
@@ -48,13 +58,15 @@
     <tr><th colspan="5">Resource Types Hidden During Teacher Registration</th></tr>
     {% endif %}{% endifchanged %}
         <tr>
-            <td><div id="restype-{{ h.id }}">{{ h.name }}</div> {% if h.is_global %}(global){% endif %}</td>
+            <td><div id="restype-{{ h.id }}">{{ h.name }}</div>{% if h.is_global %} (global){% endif %}</td>
             <td>{{ h.description }}</td>
             <td>{{ h.priority_default }}</td>
             <td>
-            {% for choice in h.choices %}
-            {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
-            {% endfor %}
+                <ol>
+                {% for choice in h.choices %}
+                <li>{{ choice }}</li>
+                {% endfor %}
+                </ol>
             </td>
             <td>
             <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
@@ -64,7 +76,6 @@
     {% endfor %}
     </table></td></tr>
 </table>
-</form>
 </div>
 
 {% ifequal open_section "restype" %}

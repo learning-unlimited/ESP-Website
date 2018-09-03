@@ -239,7 +239,15 @@ class ClassroomForm(forms.Form):
 class ClassroomImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
+    import_furnishings = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to have the same furnishings as they did for the previous program.')
 
 class TimeslotImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
+
+class ResTypeImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+
+class EquipmentImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new floating resources to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
