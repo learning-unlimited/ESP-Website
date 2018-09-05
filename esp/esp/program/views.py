@@ -404,6 +404,20 @@ def activate_user(request):
     return activate_or_deactivate_user(request, activate=True)
 
 @admin_required
+def unenroll_student(request):
+    if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
+        return HttpResponseBadRequest('')
+    users = ESPUser.objects.filter(id=request.POST['user_id'])
+    if users.count() != 1:
+        return HttpResponseBadRequest('')
+    else:
+        user = users[0]
+        sections = user.getSections(program = request.POST['program'])
+        for sec in sections:
+            sec.unpreregister_student(user)
+        return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
+
+@admin_required
 def activate_or_deactivate_user(request, activate):
     """Linked from the userview page."""
     if request.method != 'POST' or 'user_id' not in request.POST:
