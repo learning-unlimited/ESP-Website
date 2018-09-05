@@ -43,6 +43,7 @@ class ResourceTypeForm(forms.Form):
     name = forms.CharField()
     description = forms.CharField(required=False,widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
+    only_one = forms.BooleanField(label='Only one?', required=False, help_text='Limit teachers to selecting only one of the options?')
     is_global = forms.BooleanField(label='Global?', required=False)
     hidden = forms.BooleanField(label='Hidden?', required=False, help_text='Should this resource type be hidden during teacher registration?')
 
@@ -51,6 +52,7 @@ class ResourceTypeForm(forms.Form):
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
         self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['only_one'].initial = res_type.only_one
         self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id
 
@@ -61,8 +63,14 @@ class ResourceTypeForm(forms.Form):
             res_type.program = None
         else:
             res_type.program = program
+        if self.cleaned_data['only_one']:
+            res_type.only_one = self.cleaned_data['only_one']
+        else:
+            res_type.only_one = False
         if self.cleaned_data['hidden']:
             res_type.hidden = self.cleaned_data['hidden']
+        else:
+            res_type.hidden = False
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
         if choices and filter(None, choices):

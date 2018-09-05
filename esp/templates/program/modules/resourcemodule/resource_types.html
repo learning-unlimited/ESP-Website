@@ -47,20 +47,22 @@
     <tr><th colspan="2">Resource Types for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table width="100%" cellpadding="0" cellspacing="0">
     <tr>
-        <td width="20%"><b>Type</b></td>
+        <td width="15%"><b>Type</b></td>
         <td width="30%"><b>Description</b></td>
         <td width="10%"><b>Priority</b></td>
+        <td width="5%"><b>Only<br/>One</b></td>
         <td width="30%"><b>Choices</b></td>
         <td width="10%"></td>
     </tr>
     {% for h in resource_types %}
     {% ifchanged h.hidden %}{% if h.hidden %}
-    <tr><th colspan="5">Resource Types Hidden During Teacher Registration</th></tr>
+    <tr><th colspan="6">Resource Types Hidden During Teacher Registration</th></tr>
     {% endif %}{% endifchanged %}
         <tr>
             <td><div id="restype-{{ h.id }}">{{ h.name }}</div>{% if h.is_global %} (global){% endif %}</td>
             <td>{{ h.description }}</td>
             <td>{{ h.priority_default }}</td>
+            <td>{% if h.only_one %}&#10003;{% endif %}</td>
             <td>
                 <ol>
                 {% for choice in h.choices %}
