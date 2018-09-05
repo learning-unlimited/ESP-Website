@@ -25,17 +25,18 @@ You have chosen to import the resource types from {{ past_program.niceName }} to
 <input type="hidden" name="import_confirm" value="yes" />
 <input type="hidden" name="program" value="{{ past_program.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="2">Proposed resource types for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="6">Proposed resource types for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="6"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
         <td width="20%"><b>Type</b></td>
-        <td width="35%"><b>Description</b></td>
+        <td width="32.5%"><b>Description</b></td>
         <td width="10%"><b>Priority</b></td>
-        <td width="35%"><b>Choices</b></td>
+        <td width="5%"><b>Only<br/>One</b></td>
+        <td width="32.5%"><b>Choices</b></td>
     </tr>
     {% for r in new_restypes %}
     {% ifchanged r.hidden %}{% if r.hidden %}
-    <tr><th colspan="5">Resource Types Hidden During Teacher Registration</th></tr>
+    <tr><th colspan="6">Resource Types Hidden During Teacher Registration</th></tr>
     {% endif %}{% endifchanged %}
     <tr>
         <td>
@@ -43,6 +44,7 @@ You have chosen to import the resource types from {{ past_program.niceName }} to
         </td>
         <td>{{ r.description }}</td>
         <td>{{ r.priority_default }}</td>
+        <td>{% if r.only_one %}&#10003;{% endif %}</td>
         <td>
         {% for choice in r.choices %}
             {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
@@ -51,7 +53,7 @@ You have chosen to import the resource types from {{ past_program.niceName }} to
     </tr>
     {% endfor %}
     </table></td></tr>
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+    <tr><td colspan="6" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
 </table>
 </form>
 </div>
