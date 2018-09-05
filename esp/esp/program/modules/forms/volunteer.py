@@ -116,7 +116,7 @@ class VolunteerOfferForm(forms.Form):
 
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
+        self.fields['requests'].choices = [(v.id, '%s (%d more needed)' % (v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
 
 
         #   Show t-shirt fields if specified by Tag (disabled by default)

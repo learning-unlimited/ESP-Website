@@ -2,107 +2,29 @@
 
 {% block title %}Availability for {{ prog.niceName }}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+
+<script>
+$j(document).ready(function() {
+  Availability.init({{ isAdmin|yesno:"true,false" }}, "You are currently scheduled to teach at this time");
+});
+</script>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}
 
-<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<h1>{% if isAdmin %}Manage{% else %}Your{% endif %} Availability for {{ prog.niceName }}</h1>
 
-<style>
-.wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.side {
-  width: 280px;
-}
-
-.summary {
-  display: block;
-  padding: 5px 5px;
-  font-size: 16px;
-  width: 100px;
-  margin: 5px 5px 5px 5px;
-  font-family: sans-serif;
-}
-
-.noselect {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-input,
-select {
-  padding: 2px;
-}
-
-td.group, table.group {
-  vertical-align: top !important;
-  border-spacing: 0px 2px !important;
-  padding: 0 !important;
-}
-
-#program_form table {
-  border-width: 0px;
-  border-collapse: separate;
-  border-spacing: 5px 1px;
-}
-
-#program_form th {
-  text-align: center;
-  font-weight: bold;
-  background: #EFEFEF;
-  padding: 3px;
-  height: 80px;
-  width: 75px;
-}
-
-.label {
-  text-align: right;
-  /* font-weight:bold; */
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-.proposed, .canDo, .teaching {
-  font-size: 16px !important;
-  text-align: center;
-}
-
-.proposed {
-  background: #EFEFEF;
-}
-
-.canDo {
-  background: #00FF00;
-}
-
-.teaching {
-  background: #42b3f4;
-}
-
-.headerText {
-  font-size: 18px;
-}
-
-form {
-  margin: 0px;
-  padding: 0px;
-}
-
-tbody {
-  display: table-row-group;
-  vertical-align: middle;
-  border-color: inherit;
-}
-</style>
-
-<h1>Your Availability for {{ prog.niceName }}</h1>
-
+{% if groups %}
 <div id="program_form">
 
 {% inline_program_qsd_block prog "availability_instructions" %}
@@ -149,128 +71,43 @@ You submitted a schedule with no available times.  You can't register a class wi
 <input type="hidden" name="user" value="{{ teacher_user.username }}" />
 
 <center>
-  <div class="wrap">
-    <div class="side"></div>
-    <div class="container1">
-      <table class="noselect" id="grid" onmouseup="down=false;" style="cursor: default;">
-        <tbody>
-          <tr>
-          {% for group in groups %}
-            <td class="group">
-              <table class="group" id="block_{{ forloop.counter }}">
-                <tbody>
-                  <tr><th class="dateHeader weekday" onclick="header(event,{{ forloop.counter }});" onmouseover="down=false;">
-                    <div class="headerText">
-                      {{ group.selections.0.slot.start|date:"D" }}<br>
-                      {{ group.selections.0.slot.start|date:"d" }}<br>
-                      {{ group.selections.0.slot.start|date:"M" }}
-                    </div>
-                  </th></tr>
-                  {% for selection in group.selections %}
-                  <tr><td nowrap="" class="proposed" onmousedown="md(this);" onmouseover="mo(this);" name="{{ selection.slot.id }}">
-                      <input type="checkbox" class="hidden" name="timeslots" value="{{ selection.slot.id }}" {% if selection.checked %}checked{% endif %} {% if selection.taken %}disabled{% endif %}>
-                      {{ selection.slot.start|date:"g:i A"}}
-                  </td></tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </td>
-            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
-          {% endfor %}
-          </tr>
-        </tbody>
-      </table>
-
-    </div>
-    <div class="side">
-      <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
-      <span class="summary" style="background-color: #00FF00;">Available</span>
-      <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
-    </div>
-
+  {% include "program/modules/availability.html" %}
+  <div hidden id="checkboxes">
+    {% for group in groups %}
+      {% for time in group %}
+        <input type="checkbox" name="timeslots" {% if time.section %}data-hover="{{ time.section }} ({{ time.section.prettyrooms|join:", " }})"{% endif %} value="{{ time.slot.id }}" {% if time.checked %}checked{% endif %} {% if time.taken %}disabled{% endif %}>
+      {% endfor %}
+    {% endfor %}
   </div>
   <br>
 
   <input type="submit" class="btn btn-primary" value="Submit" />
 </center>
 
+
 </form>
+
+<h2>Unscheduled classes</h2>
+{% for s in unscheduled %}
+{{ s }} ({{ s.prettyDuration }})<br>
+{% endfor %}
 
 </div>
 
-<script>
-var setting = false;
-var down = false;
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">Available</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled to Teach</span>
+</div>
+{% endif %}
 
-//Records mousedown
-function md(td) {
-  down = true;
-  setting = !isSet(td);
-  mo(td);
-}
-
-//Enables highlighting multiple cells
-function mo(td) {
-  if (!down) return;
-  if (setting) {
-    on(td);
-  } else {
-    off(td);
-  }
-}
-
-function isSet(td) {
-  return td.className == "canDo" || td.className == "teaching";
-}
-
-//Activate checkbox
-function on(td) {
-  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-  if (td.className != "teaching") {
-  	td.className = "canDo";
-  	checkbox.checked = true;
-  }
-}
-
-//Deactivate checkbox
-function off(td) {
-  var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-  if (td.className == "canDo") {
-    td.className = "proposed";
-    checkbox.checked = false;
-  }
-}
-
-//Clicking the header turns the entire block on/off
-function header(e, col) {
-  var somethingToSet = false;
-  var block = document.getElementById("block_" + col);
-  for (var i = 1; i < block.rows.length; i++) {
-    var td = block.rows[i].cells[0];
-    if (!isSet(td)) somethingToSet = true;
-  }
-  for (var i = 1; i < block.rows.length; i++) {
-    var td = block.rows[i].cells[0];
-    if (somethingToSet) {
-      on(td);
-    } else {
-      off(td);
-    }
-  }
-}
-
-//Sets classes of cells based on status of checkboxes upon loading page
-$j(document).ready(function() {
-  $j('#grid input:checked').each(function(i, e) {
-    if (this.disabled == true) {
-      document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
-      document.getElementsByName($j(this).attr('value'))[0].title = "You are currently scheduled to teach at this time";
-    } else {
-      document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
-    }
-  });
-});
-
-</script>
+{% if search_form %}
+<br><br>
+<form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
+{{ search_form.as_p }}
+<input type="hidden" name="search" hidden />
+<input type="submit" value="Search" />
+</form>
+{% endif %}
 
 {% endblock %}

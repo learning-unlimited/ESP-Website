@@ -1,0 +1,42 @@
+{% if isAdmin %}
+<center>
+<input style="display: block" id="edit_form" value="Click to Edit Form" class="btn btn-primary" onclick="Availability.toggle_edit();"/>
+</center><br/>
+{% endif %}
+
+<center>
+  <div class="wrap">
+    <div class="side left">
+      <span class="summary"></span>
+    </div>
+    <div class="container1">
+      <table class="noselect" id="grid" onmouseup="Availability.mouseup_event();" style="cursor: default;">
+        <tbody>
+          <tr>
+          {% for group in groups %}
+            <td class="group">
+              <table class="group" id="block_{{ forloop.counter }}">
+                <tbody>
+                  <tr><th class="dateHeader weekday" onclick="Availability.header_switch(event,{{ forloop.counter }});">
+                    <div class="headerText">
+                      {{ group.0.slot.start|date:"D" }}<br>
+                      {{ group.0.slot.start|date:"d" }}<br>
+                      {{ group.0.slot.start|date:"M" }}
+                    </div>
+                  </th></tr>
+                  {% for time in group %}
+                    <tr><td nowrap="" class="proposed" onmousedown="Availability.mousedown_event(this);" onmouseover="Availability.mouseover_event(this);" name="{{ time.id }}">
+                      {{ time.slot.start|date:"g:i A"}}
+                    </td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </td>
+            {% if forloop.counter|divisibleby:2 %}</tr><tr><td></td></tr><tr>{% endif %}
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</center>
