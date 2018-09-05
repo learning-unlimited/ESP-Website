@@ -10,7 +10,7 @@ This has been designed to create an interface between the cells of the table and
 This should leave plenty of flexibility for the use of the id and name attributes of the checkboxes to maintain form functionality.
 */
 
-var Availability = (function availabilityIIFE() {
+var Availability = (function () {
     //Used to keep track of the state of a checkbox
     var checkbox_setting = false;
     //Used to keep track of whether the mouse is still held down
@@ -142,4 +142,4 @@ var Availability = (function availabilityIIFE() {
         toggle_edit: toggle_edit,
         init: init
     };
-}());
+})();

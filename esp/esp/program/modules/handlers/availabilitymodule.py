@@ -213,7 +213,19 @@ class AvailabilityModule(ProgramModuleObj):
             #   for a in available_slots:
             #       teacher.addAvailableTime(self.program, a)
 
-        context = {'groups': [[{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t, 'id': t.id, 'section': teaching_times.get(t)} for t in group] for group in time_groups]}
+        context =   {
+                        'groups': [
+                            [
+                                {
+                                    'checked': t in available_slots,
+                                    'taken': t in taken_slots,
+                                    'slot': t,
+                                    'id': t.id,
+                                    'section': teaching_times.get(t),
+                                }
+                            for t in group]
+                        for group in time_groups]
+                    }
         context['unscheduled'] = unscheduled_classes
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
