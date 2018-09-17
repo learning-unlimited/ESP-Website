@@ -27,9 +27,9 @@ function requestCancel(cls) {
         closeOnEscape: true,
         title: "Class Cancellation Request",
         // Allows user to escape popup by clicking outside of it
-        open: function(event, ui) { 
+        open: function(event, ui) {
             $j('.ui-widget-overlay').bind('click', function()
-            { 
+            {
                 $j(this).siblings('.ui-dialog').find('.ui-dialog-content').dialog('close');
             });
         },
@@ -57,13 +57,13 @@ function deleteClass() {
 
 {% if not can_create %}
 <div class="info">
-<b>Note:</b> Class registration is closed. 
+<b>Note:</b> Class registration is closed.
 You are welcome to use this page to view your classes' status and upload documents related to it.
 {% if can_edit %}
 However, you may edit classes that you have already created.
 {% endif %}
 {% if program.director_email %}<br />
-If you have any questions regarding the program, <br /> please email the 
+If you have any questions regarding the program, <br /> please email the
 <a href="mailto:{{program.director_email }}" title="{{program.niceName }} director(s)">program directors</a> (<span class="monospace">{{program.director_email }}</span>).
 {% endif %}
 </div>
@@ -131,18 +131,18 @@ If you have any questions regarding the program, <br /> please email the
 
    {% if can_create %}
    <tr>
-   <td colspan="7" class="clsleft bordertop2"><b>Registration form:</b>
+   <td colspan="7" class="clsleft bordertop2 add-class-cell">
      {% if can_create_class %}
-     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
+     <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for ESP!">
        Add a new class for {{ program.niceName }}!
      </a>
      <br />
-     <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
+     <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for ESP!">
        Teach a class from a previous program for {{ program.niceName }}!
      </a>
      {% endif %}
      {% if can_create_open_class %}<br />
-     <a href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
+     <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
        Add a new {{ open_class_category }} for {{ program.niceName }}!
      </a> {% endif %}
    </td>

@@ -164,7 +164,7 @@ color: #006600;
    padding: 0;
    margin: 0 0 20px 0;
    height: 20px
-   
+
 }
 #battlescreen .clsright {
    text-align: right;
@@ -206,7 +206,18 @@ color: #006600;
 }
 
 .clsmiddle {
-    vertical-align: middle;
+  vertical-align: middle;
+}
+
+.add-class-cell {
+  text-align: center;
+}
+
+.create-class-link {
+  font-size: large;
+  padding: 5px;
+  display: inline-block;
+  background-color: inherit;
 }
 
 .cancelbutton {
