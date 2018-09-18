@@ -620,7 +620,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['url']   = newclass.emailcode()
                 min_grade = newclass.grade_min
                 max_grade = newclass.grade_max
-                if Tag.getTag('grade_ranges'):
+                if Tag.getProgramTag('grade_ranges', prog):
                     current_data['grade_range'] = [min_grade,max_grade]
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:
