@@ -44,7 +44,7 @@ class ClassCreationController(object):
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
         reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
-        
+
         if form_class == TeacherOpenClassRegForm:
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
             reg_form.cleaned_data['grade_max'] = self.program.grade_max
