@@ -321,7 +321,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        if self.fields.get('grade_min') and self.fields.get('grade_min'):
+        if self.fields.get('grade_min') and self.fields.get('grade_max'):
             del self.fields['grade_min']
             del self.fields['grade_max']
         else:
