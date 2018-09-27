@@ -148,7 +148,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if Tag.getProgramTag('grade_ranges', prog):
+        if not isinstance(self, TeacherOpenClassRegForm) and Tag.getProgramTag('grade_ranges', prog):
             grade_ranges = json.loads(Tag.getProgramTag('grade_ranges', prog))
             self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
             del self.fields['grade_min']
@@ -321,10 +321,8 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        del self.fields['grade_range']
-
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max), ('grade_min', program.grade_min),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]
