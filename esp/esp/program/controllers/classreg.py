@@ -1,7 +1,7 @@
 from esp.mailman import add_list_member
 from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
-from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.resources.forms import ResourceRequestFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
@@ -44,6 +44,10 @@ class ClassCreationController(object):
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
         reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+        
+        if form_class == TeacherOpenClassRegForm:
+            reg_form.cleaned_data['grade_min'] = self.program.grade_min
+            reg_form.cleaned_data['grade_max'] = self.program.grade_max
 
         self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
