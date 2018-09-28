@@ -1,0 +1,71 @@
+{% extends "main.html" %}
+
+{% block title %}Approve Financial Aid Requests for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <style>
+    #program_form {
+      overflow: auto;
+      max-height: 500px;
+      width: 700px;
+      margin: 0px 10px 15px 10px;
+    }
+    </style>
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" language="javascript">
+function toggle(source) {
+  checkboxes = document.getElementsByName('user');
+  for(var i=0, n=checkboxes.length;i<n;i++) {
+    checkboxes[i].checked = source.checked;
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div style="padding-bottom: 1.1em;">
+  <h1>Financial Aid Requests for {{ program.niceName }}</h1>
+  <p>Below is a list of users that have requested financial aid.</p>
+  <p>Please select the requests that you would like to approve.</p>
+
+  <form action="/manage/{{ program.getUrlBase }}/finaidapprove/" method="post">
+    <div id="program_form">
+      <table align="center">
+        <tr>
+          <th><input type="checkbox" onClick="toggle(this)" /></th>
+          <th>Approved?</th>
+          <th width="70px">Name</th>
+          <th width="70px">Household Income</th>
+          <th>Financial Situation</th>
+        </tr>
+        {% for req in requests %}
+        <tr>
+          <td><input type="checkbox" name="user" value={{ req.user.id }}></td>
+          <td>
+            {% if req.approved %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
+          <td align="center" style="max-width: 70px; overflow-wrap:break-word;">{{ req.user.name }}</td>
+          <td align="center">${{ req.household_income }}</td>
+          <td>{{ req.extra_explaination }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <input type="submit" value="Approve Requests" class="btn btn-primary" >
+  </form>
+
+  {% if message %}
+  <h3 style="padding-top: 10px;">{{ message }}</h3>
+  {% endif %}
+</div>
+
+{% endblock %}

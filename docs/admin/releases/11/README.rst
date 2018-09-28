@@ -6,7 +6,7 @@
 
 Changelog
 =========
-
+ - Added a new module to easily view and approve financial aid requests. :)
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
