@@ -4,7 +4,7 @@ Program modules
 
 .. contents:: :local:
 
-When you create a program, your primary means of controlling the registration process is to choose which program modules to include.  Each program module corresponds to a "view" that users will be able (or perhaps compelled) to see when they are registering.  
+When you create a program, your primary means of controlling the registration process is to choose which program modules to include.  Each program module corresponds to a "view" that users will be able (or perhaps compelled) to see when they are registering.
 
 You may select which program modules to include on the program creation form at http://[hostname]/manage/newprogram.  After a program has been created, you can select which modules to include within the administration pages; go to http://[hostname]/admin/program/program/, select your program and edit the "Program modules" multi-select field.
 
@@ -42,13 +42,13 @@ Extra Registration Info (CustomFormModule)
 ------------------------------------------
 
 This module can be used in teacher and/or student registration to add a custom form into the registration process.  This can be helpful if you want to collect information (e.g. about dietary restrictions or demographics) that is not collected by the other program modules.  To use it:
-1) Create a custom form at /customforms/.  Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+1) Create a custom form at /customforms/.  Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]).
 2) Create a Tag (/admin/tagdict/tag/add/) called either "learn_extraform_id" (students) or "teach_extraform_id" (teachers), with the form ID as its value.
 3) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.
 4) To view results, use the main custom forms page at /customforms/.
 
 
-Financial Aid Application (FinancialAidAppModule) 
+Financial Aid Application (FinancialAidAppModule)
 -------------------------------------------------
 
 We recommend that you include this module in all programs.  It will add a step to registration for students so that they can request financial aid.  You will be e-mailed whenever someone submits the form.  Students indicating that they receive free or reduced price lunch at school will automatically be granted financial aid.
@@ -67,7 +67,7 @@ We are not permitted to directly handle sensitive information such as medical in
 
 This registration step is controlled by the FormstackMedliab deadline type.
 
-Lottery Student Registration (LotteryStudentRegModule) 
+Lottery Student Registration (LotteryStudentRegModule)
 ------------------------------------------------------
 
 There are two options for a "lottery" registration where students select their classes of interest and are later assigned to classes by the Web site.  This option shows students a list of classes beginning in each time slot and allows them to choose.  After saving their preferences they are taken back to the main student reg page (where they can fill out other parts of registration if the deadlines are open).
@@ -92,31 +92,31 @@ Also provides various situational templates (e.g. to explain if students didn't
 win the lottery).  To enable these, this module should NOT be disabled upon the
 conclusion of the student lottery.
 
-Student Profile Editor (RegProfileModule) 
+Student Profile Editor (RegProfileModule)
 -----------------------------------------
 
-This module should be enabled if you would like students to fill out their profile form as part of the program registration process. The profile form includes contact information for the student, parent and emergency contact, as well as student-specific information like "how you heard about Splash?" and "what school do you go to?". 
+This module should be enabled if you would like students to fill out their profile form as part of the program registration process. The profile form includes contact information for the student, parent and emergency contact, as well as student-specific information like "how you heard about Splash?" and "what school do you go to?".
 
-It is required by default when enabled. However, if a student has filled out a profile within the previous 5 days (e.g. for a newly created account), their previous profile will be duplicated and they won't have to fill it out again. 
+It is required by default when enabled. However, if a student has filled out a profile within the previous 5 days (e.g. for a newly created account), their previous profile will be duplicated and they won't have to fill it out again.
 
-Relevant settings include: 
+Relevant settings include:
 
 * Tag 'require_school_field':&nbsp;Controls whether the 'School' field is required.
 * Tags 'require_guardian_email' and 'allow_guardian_no_email':&nbsp;Controls whether students have to enter their parent's e-mail address.&nbsp; If 'allow_guardian_no_email' is set, then students can check a box saying "My parents don't have e-mail" to make the e-mail field non-required.
-* Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required. 
+* Tag 'request_student_phonenum':&nbsp;Controls whether the student phone number field is required.
 * Tag 'allow_change_grade_level': By default, a student's graduation year is fixed after the first time they fill out their profile; this is intended to prevent students from lying about their age in order to get into certain classes. If this Tag is set, students may change their grade level at any time.
-* Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive). 
-* Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'. 
-* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form. 
-* Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile 
-* Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile 
-* Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers 
-* Tag 'ask_student_about_post_hs_plans': If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc) 
+* Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive).
+* Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'.
+* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form.
+* Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile
+* Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile
+* Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers
+* Tag 'ask_student_about_post_hs_plans': If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc)
 * Tag 'ask_student_about_transportation_to_program': If tag exists, ask in the student profile about how the student is going to get to the upcoming program
 
 More details on these Tags can be found here at http://wiki.learningu.org/Customize_behavior_with_Tags.
 
-Lunch Preferences and Sibling Discount (SplashInfoModule) 
+Lunch Preferences and Sibling Discount (SplashInfoModule)
 ---------------------------------------------------------
 
 This module was designed specifically for Stanford Splash, although other chapters can use it too.  It will prompt students to choose a lunch option for each of the 1-2 days in the program.  It will also allow students to enter the name of their sibling in order to get a "sibling discount" for the program deducted from their invoice.  You will need to set up the following Tags (/admin/tagdict/tag), which can be program-specific:
@@ -132,7 +132,7 @@ This module was designed specifically for Stanford Splash, although other chapte
     ["burrito_vegetarian", "Yes: Burrito-Vegetarian"],
     ["burrito_meat", "Yes: Burrito-Meat"],
     ["no", "No, I will bring my own lunch."]
-  ], 
+  ],
     "lunchsun": [
     ["pizza_vegetarian", "Yes: Pizza-Vegetarian"],
     ["pizza_meat", "Yes: Pizza-Meat"],
@@ -146,16 +146,16 @@ This module was designed specifically for Stanford Splash, although other chapte
 * splashinfo_costs: A JSON structure of form options for the "lunchsat" and "lunchsun" keys.  The option labels must be consistent with all of the options specified in splashinfo_choices.  Example:
 
 ::
-  
+
   {
-    "lunchsat": { 
+    "lunchsat": {
         "pizza_vegetarian": 0.0,
         "pizza_meat": 0.0,
         "burrito_vegetarian": 0.0,
         "burrito_meat": 0.0,
         "no": 0.0
     },
-    "lunchsun": { 
+    "lunchsun": {
         "pizza_vegetarian": 0.0,
         "pizza_meat": 0.0,
         "burrito_vegetarian": 0.0,
@@ -170,19 +170,19 @@ The dollar amount of the sibling discount can be configured as a line item type 
 Student Class Registration (StudentClassRegModule)
 --------------------------------------------------
 
-This module should be enabled if your program involves students picking and choosing their classes. It is used to display the catalog, schedule, and class selection pages. Settings affecting this module are: 
+This module should be enabled if your program involves students picking and choosing their classes. It is used to display the catalog, schedule, and class selection pages. Settings affecting this module are:
 
-* Student module control field 'Enforce max': Unchecking this box allows students to sign up for full classes. 
-* Student module control fields 'Class cap multiplier' and 'Class cap offset': Allows you to apply a linear function to the capacities of all classes. For example, to limit classes to half full (perhaps for the first day of registration) you could use a multiplier of 0.5 and an offset of 0; to allow 3 extra students to sign up for each class you could use a multiplier of 1 and an offset of 3. 
-* Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs. 
-* Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices. 
-* Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for. 
-* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this. 
-* Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section: 
-* Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section. 
-* Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles. 
-* Student module control 'Show unscheduled classes': If unchecked, the publicly available catalog will not show classes that do not have meeting times associated with them. 
-* Student module control 'Temporarily full text': You may enter text here to customize the label shown on disabled 'Add class' buttons when the class is full. 
+* Student module control field 'Enforce max': Unchecking this box allows students to sign up for full classes.
+* Student module control fields 'Class cap multiplier' and 'Class cap offset': Allows you to apply a linear function to the capacities of all classes. For example, to limit classes to half full (perhaps for the first day of registration) you could use a multiplier of 0.5 and an offset of 0; to allow 3 extra students to sign up for each class you could use a multiplier of 1 and an offset of 3.
+* Student module control field 'Signup verb': Controls which type of registration students are given when they select a class. The default is "Enrolled," which adds the student to the class roster (i.e. first-come first served). However, you may choose "Applied" to allow teachers to select which students to enroll, or create other registration types for your needs.
+* Student module control field 'Use priority': When this box is checked, students will be allowed to choose multiple classes per time slot and their registration types will be annotated in the order they signed up. This is typically used with the 'Priority' registration type to allow students to indicate 1st, 2nd and 3rd choices.
+* Student module control field 'Priority limit': If 'Use priority' is checked, this number controls the maximum number of simultaneous classes that students may register for.
+* Student module control field 'Register from catalog': If this box is checked, students will see 'Register for section [index]' buttons below the description of each available class in the catalog. If their browser supports Javascript they will be able to register for the classes by clicking those buttons. You will need to add an appropriate fragment to the editable text area on the catalog if you would like students to see their schedule while doing this.
+* Student module control field 'Visible enrollments': If unchecked, the publicly available catalog will not show how many students are enrolled in each class section:
+* Student module control field 'Visible meeting times': If unchecked, the publicly available catalog will not show the meeting times of each class section.
+* Student module control field 'Show emailcodes': If unchecked, the catalog will not show codes such as 'E464:' and 'M21:' before class titles.
+* Student module control 'Show unscheduled classes': If unchecked, the publicly available catalog will not show classes that do not have meeting times associated with them.
+* Student module control 'Temporarily full text': You may enter text here to customize the label shown on disabled 'Add class' buttons when the class is full.
 * Tag 'studentschedule_show_empty_blocks': Controls whether the student schedule includes time slots for which the student has no classes. By default, empty blocks are displayed.
 
 
@@ -255,13 +255,13 @@ If you pay attention to whether students have a confirmed registration (e.g. for
 Core Student Reg (StudentRegCore)
 ---------------------------------
 
-This module should be enabled if students will be registering using the Web site. It aggregates information and links to other other student modules that are enabled on the main registration page at http://[hostname]/learn/[program]/[instance]/studentreg. Settings affecting this module are: 
+This module should be enabled if students will be registering using the Web site. It aggregates information and links to other other student modules that are enabled on the main registration page at http://[hostname]/learn/[program]/[instance]/studentreg. Settings affecting this module are:
 
-* Student module control field "Progress mode": Set to 1 to show registration steps as checkboxes, 2 to show registration steps as a progress bar, or 0 to not show them at all. 
-* Student module control field 'Force show required modules': Check the box to show the student all required modules (e.g. profile editor, lunch/sibling information, etc.) before allowing them to proceed to the main registration page. If unchecked, the student can complete registration steps in any order but must finish all required steps before confirming their registration. 
-* Student module control fields 'Confirm button text,' 'Cancel button text,' and 'View button text': You may enter text here to customize the labels shown on these buttons at the bottom of the main registration page. 
-* Student module control field 'Cancel button dereg': If you check this box, students will be removed from all classes they registered for when they click the 'Cancel registration' button. 
-* Student module control field 'Send confirmation': If checked, students will receive e-mail when they click the 'Confirm registration' button. You need to create an e-mail receipt as described here: [[Add a registration receipt]] 
+* Student module control field "Progress mode": Set to 1 to show registration steps as checkboxes, 2 to show registration steps as a progress bar, or 0 to not show them at all.
+* Student module control field 'Force show required modules': Check the box to show the student all required modules (e.g. profile editor, lunch/sibling information, etc.) before allowing them to proceed to the main registration page. If unchecked, the student can complete registration steps in any order but must finish all required steps before confirming their registration.
+* Student module control fields 'Confirm button text,' 'Cancel button text,' and 'View button text': You may enter text here to customize the labels shown on these buttons at the bottom of the main registration page.
+* Student module control field 'Cancel button dereg': If you check this box, students will be removed from all classes they registered for when they click the 'Cancel registration' button.
+* Student module control field 'Send confirmation': If checked, students will receive e-mail when they click the 'Confirm registration' button. You need to create an e-mail receipt as described here: [[Add a registration receipt]]
 * Tag 'allowed_student_types': Controls which types of user accounts may access student registration. By default, student and administrator accounts have access.
 
 Two-phase Student Registration (StudentRegTwoPhase)
@@ -317,7 +317,7 @@ Views provided
 * /learn/<program>/rank_classes -- Step 2 of registration: marking priorities for timeslots (Fig. 3).
 
 
-Student Surveys (SurveyModule) 
+Student Surveys (SurveyModule)
 ------------------------------
 
 Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
@@ -417,7 +417,7 @@ You can use this module to show teachers a quiz as part of the registration proc
 
 The teacher quiz is based on a custom form.  To set it up:
 1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
-2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]).
 3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
 4) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.  This will allow you to use different quizzes for different programs.
 
@@ -601,7 +601,13 @@ page. It can be edited inline by an admin to something more customized.
 Credit Card Viewer
 ------------------
 
-This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.  
+This module provides one view, viewpay_cybersource.  The name is a misnomer as it will display accounting information regardless of how that information was collected (Cybersource, First Data, or manual entry).  The view shows a list of students who have invoices for your program, and summarizes their amounts owed and payment[s] so far.
+
+Easily Approve Financial Aid Requests
+-------------------------------------
+
+This module allows you to easily view and approve any financial aid requests for your program in bulk.
+
 
 JSON Data (JSONDataModule)
 --------------------------
@@ -664,7 +670,7 @@ much more quickly than the entire page.
 Old-style scheduling (SchedulingModule)
 ---------------------------------------
 
-This module is deprecated and will be removed in a future release.  
+This module is deprecated and will be removed in a future release.
 
 Survey Management (SurveyManagement)
 ------------------------------------
