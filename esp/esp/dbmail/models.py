@@ -303,6 +303,7 @@ class MessageRequest(models.Model):
         It is the caller's responsibility to call this only on unprocessed
         MessageRequests.
         """
+        logger.info("Processing %s" % self)
 
         # figure out who we're sending from...
         if self.sender is not None and len(self.sender.strip()) > 0:
