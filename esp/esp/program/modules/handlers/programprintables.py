@@ -912,8 +912,9 @@ class ProgramPrintables(ProgramModuleObj):
             if room_numbers:
                 schedule += format_html(u"{} {} </th>",
                                         mark_safe("<th width=20%>"),
-                                        "Room")
+                                        "Room") 
             schedule += format_html(u"</tr>")
+
             for cls in classes:
                 times = cls.friendly_times(include_date=include_date)
                 if len(times) == 0:
