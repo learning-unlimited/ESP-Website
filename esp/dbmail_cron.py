@@ -49,10 +49,11 @@ try:
     send_email_requests()
     logger.info('dbmail_cron: sent emails.')
 except Exception as e:
+    logger.info('dbmail_cron: fatal error!')
     logger.exception(e)
 finally:
     # Release the lock when message sending is complete.
     fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
     lock_file_handle.close()
 
-logger.info('dbmail_cron: done!')
+logger.info('dbmail_cron: done.')
