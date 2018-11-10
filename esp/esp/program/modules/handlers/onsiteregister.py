@@ -68,7 +68,7 @@ class OnSiteRegister(ProgramModuleObj):
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'])
 
-                self.student = new_user
+                self.user = new_user
 
                 regProf = RegistrationProfile.getLastForProgram(new_user,
                                                                 self.program)
@@ -97,12 +97,15 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
+                
+                print(self.program)
+                print(self.user)
 
                 if new_data['paid']:
                     Record.createBit('paid', self.program, self.user)
-                    IndividualAccountingController.updatePaid(True, self.program, self.user)
+                    IndividualAccountingController.updatePaid(self.program, self.user, True)
                 else:
-                    IndividualAccountingController.updatePaid(False, self.program, self.user)
+                    IndividualAccountingController.updatePaid(self.program, self.user, False)
 
                 Record.createBit('Attended', self.program, self.user)
 
