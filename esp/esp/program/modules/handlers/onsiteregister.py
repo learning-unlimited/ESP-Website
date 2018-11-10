@@ -97,7 +97,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-                
+
                 print(self.program)
                 print(self.user)
 
