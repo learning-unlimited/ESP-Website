@@ -766,7 +766,7 @@ teachers[key].filter(is_active = True).distinct().count()))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+        for cls in prog.classes().filter(status__gte=0, sections__status__gte=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += float(cls['subject_duration'])
                 shours += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
