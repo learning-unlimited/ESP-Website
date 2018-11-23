@@ -32,7 +32,7 @@
 }
 
 .scan_popup {
-    font-size: large;
+    font-size: xx-large;
     line-height: 1.5;
     position: absolute;
     z-index: 100;
@@ -247,6 +247,7 @@ $j(function() {
 
         if (App.lastResult !== code) {
             App.lastResult = code;
+            beep();
             if (autocheckin.checked){
                 var data = {code: code, csrfmiddlewaretoken: csrf_token()};
                 $j.post('ajaxbarcodecheckin', data, function(result) {
@@ -254,7 +255,7 @@ $j(function() {
                         var message = result.message;
                         $j('#scaninfo').show();
                         $j('#scaninfo').html(message);
-                        setTimeout("$j('#scaninfo').fadeOut(); ", 2000);
+                        setTimeout("$j('#scaninfo').fadeOut(); ", 4000);
                     }
                 }, "json");
             } else {
@@ -265,6 +266,29 @@ $j(function() {
     });
 
 });
+
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function beep() {
+    var oscillator = audioCtx.createOscillator();
+    var gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    gainNode.gain.value = 1;
+    oscillator.frequency.value = 3000;
+    oscillator.type = 'sine';
+
+    oscillator.start();
+  
+    setTimeout(
+      function(){
+        oscillator.stop();
+      }, 
+      150
+    );  
+};
 </script>
 
 
