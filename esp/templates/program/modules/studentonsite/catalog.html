@@ -1,38 +1,35 @@
-<head>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
-    <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
-    <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
-    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
-    <script type="text/javascript" src="/media/scripts/common.js"></script>
-    <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
-</head>
+{% extends "program/modules/studentonsite/webapp.html" %}
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block head %}
 
-<body>
+<script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+
 <script>
 function topFunction() {
     document.body.scrollTop = 0; // For Safari
     document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
 }
+
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        document.getElementById("topBtn").style.display = "block";
+    } else {
+        document.getElementById("topBtn").style.display = "none";
+    }
+}
 </script>
 
-<div class="navbar">
-  <table>
-    <tr>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
-        <br>Schedule</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
-        <br>Map</a></td>
-      <td class="selected"><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
-        <br>Catalog</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
-        <br>Survey</td>
-    </tr>
-  </table>
-</div>
+{% endblock %}
+
+{% block body %}
+
+<button onclick="topFunction()" id="topBtn" title="Go to top"><i class="material-icons">arrow_upward</i></button>
 
 {% load class_render %}
 
@@ -105,4 +102,4 @@ function topFunction() {
   </div>
 </center>
 
-</body>
+{% endblock %}

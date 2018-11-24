@@ -73,6 +73,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['webapp_page'] = 'schedule'
         context['scrmi'] = prog.studentclassregmoduleinfo
         context['checked_in'] = Record.objects.filter(program=prog, event='attended', user=user).exists()
 
@@ -89,6 +90,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['webapp_page'] = 'map'
         context['center'] = Tag.getTag('program_center', default='{lat: 37.427490, lng: -122.170267}')
         #extra should be a classroom id
         if extra:
@@ -114,6 +116,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['webapp_page'] = 'catalog'
         user_grade = user.getGrade(self.program)
         if extra:
             try:
@@ -150,6 +153,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['webapp_page'] = 'survey'
         return render_to_response(self.baseDir()+'survey.html', request, context)
 
     @aux_call

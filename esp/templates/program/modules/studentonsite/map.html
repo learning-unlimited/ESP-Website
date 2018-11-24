@@ -1,85 +1,69 @@
-<head>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
-    <script>
-      function addMap() {
-        var position;
-        navigator.geolocation.getCurrentPosition(onSuccess, onError);
-        function onSuccess(pos) {
-          position = pos.coords.latitude + "," + pos.coords.longitude;
-          document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
-        }
-        function onError(error) {
-          alert('code: '    + error.code    + '\n' +
-              'message: ' + error.message + '\n');
-          var center = {{ center }};
-          position = center.lat + "," + center.lng;
-          document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
-        }
-      }
-      // Note: This example requires that you consent to location sharing when
-      // prompted by your browser. If you see the error "The Geolocation service
-      // failed.", it means you probably did not give permission for the browser to
-      // locate you.
-      var map, infoWindow;
-      function initMap() {
-        map = new google.maps.Map(document.getElementById('map'), {
-          center: {{ center }},
-          zoom: 17
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block head %}
+
+<script>
+  function addMap() {
+    var position;
+    navigator.geolocation.getCurrentPosition(onSuccess, onError);
+    function onSuccess(pos) {
+      position = pos.coords.latitude + "," + pos.coords.longitude;
+      document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
+    }
+    function onError(error) {
+      alert('code: '    + error.code    + '\n' +
+          'message: ' + error.message + '\n');
+      var center = {{ center }};
+      position = center.lat + "," + center.lng;
+      document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
+    }
+  }
+  // Note: This example requires that you consent to location sharing when
+  // prompted by your browser. If you see the error "The Geolocation service
+  // failed.", it means you probably did not give permission for the browser to
+  // locate you.
+  var map, infoWindow;
+  function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+      center: {{ center }},
+      zoom: 17
+    });
+    infoWindow = new google.maps.InfoWindow;
+
+    // Try HTML5 geolocation.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+
+        var marker = new google.maps.Marker({
+          position: pos,
+          map: map,
+          title: 'Your location'
         });
-        infoWindow = new google.maps.InfoWindow;
+      }, function() {
+        handleLocationError(true, infoWindow, map.getCenter());
+      });
+    } else {
+      // Browser doesn't support Geolocation
+      handleLocationError(false, infoWindow, map.getCenter());
+    }
+  }
 
-        // Try HTML5 geolocation.
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(function(position) {
-            var pos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
+  function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+    infoWindow.setPosition(pos);
+    infoWindow.setContent(browserHasGeolocation ?
+                          'Error: The Geolocation service failed.' :
+                          'Error: Your browser doesn\'t support geolocation.');
+    infoWindow.open(map);
+  }
+</script>
 
-            var marker = new google.maps.Marker({
-              position: pos,
-              map: map,
-              title: 'Your location'
-            });
-          }, function() {
-            handleLocationError(true, infoWindow, map.getCenter());
-          });
-        } else {
-          // Browser doesn't support Geolocation
-          handleLocationError(false, infoWindow, map.getCenter());
-        }
-      }
+{% endblock %}
 
-      function handleLocationError(browserHasGeolocation, infoWindow, pos) {
-        infoWindow.setPosition(pos);
-        infoWindow.setContent(browserHasGeolocation ?
-                              'Error: The Geolocation service failed.' :
-                              'Error: Your browser doesn\'t support geolocation.');
-        infoWindow.open(map);
-      }
-    </script>
-</head>
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<body>
-
-<div class="navbar">
-  <table>
-    <tr>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
-        <br>Schedule</td>
-      <td class="selected"><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
-        <br>Map</a></td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
-        <br>Catalog</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
-        <br>Survey</td>
-    </tr>
-  </table>
-</div>
+{% block body %}
 
 <center>
 
@@ -95,4 +79,4 @@
 
 </center>
 
-</body>
+{% endblock %}

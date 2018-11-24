@@ -1,12 +1,6 @@
-<head>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
-</head>
+{% extends "program/modules/studentonsite/webapp.html" %}
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<body>
+{% block head %}
 
 <script>
 function togglePopup() {
@@ -15,20 +9,9 @@ function togglePopup() {
 }
 </script>
 
-<div class="navbar">
-  <table>
-    <tr>
-      <td class="selected"><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
-        <br>Schedule</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
-        <br>Map</a></td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
-        <br>Catalog</td>
-      <td><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
-        <br>Survey</td>
-    </tr>
-  </table>
-</div>
+{% endblock %}
+
+{% block body %}
 
 <center>
 
@@ -93,4 +76,4 @@ function togglePopup() {
 
 </center>
 
-</body>
+{% endblock %}
