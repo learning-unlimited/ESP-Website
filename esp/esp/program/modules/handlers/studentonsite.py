@@ -95,11 +95,15 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
-            classroom = Resource.objects.get(id=extra)
             try:
-                res = classroom.associated_resources().get(res_type__name='Lat/Long')
+                classroom = Resource.objects.get(id=extra)
             except:
                 res = None
+            else:
+                try:
+                    res = classroom.associated_resources().get(res_type__name='Lat/Long')
+                except:
+                    res = None
             if res and res.attribute_value:
                 context['classroom'] = res.attribute_value
         return render_to_response(self.baseDir()+'map.html', request, context)
