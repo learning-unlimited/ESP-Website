@@ -2,22 +2,56 @@
 
 {% block head %}
 
+{% if classroom %}
+<meta http-equiv="refresh" content="30">
+{% endif %}
+
 <script>
-  function addMap() {
+  function initDirections() {
     var position;
     navigator.geolocation.getCurrentPosition(onSuccess, onError);
     function onSuccess(pos) {
-      position = pos.coords.latitude + "," + pos.coords.longitude;
-      document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
+      position = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      };
+      setupMap(position);
     }
     function onError(error) {
       alert('code: '    + error.code    + '\n' +
           'message: ' + error.message + '\n');
-      var center = {{ center }};
-      position = center.lat + "," + center.lng;
-      document.getElementById("map").innerHTML = "<iframe width='100%' height='100%' frameborder='0' style='border:0' src='https://www.google.com/maps/embed/v1/directions?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&zoom=16&mode=walking&origin=" + position + "&destination={{ classroom }}'>";
+      position = {{ center }};
+      setupMap(position);
     }
   }
+
+  function setupMap(position) {
+    var directionsService = new google.maps.DirectionsService;
+    var directionsDisplay = new google.maps.DirectionsRenderer;
+    var map = new google.maps.Map(document.getElementById('map'), {
+      zoom: 7,
+      center: position
+    });
+    directionsDisplay.setMap(map);
+    calculateAndDisplayRoute(directionsService, directionsDisplay, position);
+  }
+
+  function calculateAndDisplayRoute(directionsService, directionsDisplay, position) {
+    var classroom = {{ classroom }};
+    var dest = new google.maps.LatLng(classroom.lat, classroom.lng);
+    directionsService.route({
+      origin: position,
+      destination: dest,
+      travelMode: 'WALKING'
+    }, function(response, status) {
+      if (status === 'OK') {
+        directionsDisplay.setDirections(response);
+      } else {
+        window.alert('Directions request failed due to ' + status);
+      }
+    });
+  }
+
   // Note: This example requires that you consent to location sharing when
   // prompted by your browser. If you see the error "The Geolocation service
   // failed.", it means you probably did not give permission for the browser to
@@ -68,15 +102,15 @@
 <center>
 
     <div class="main">
-        <div id="map">
-            {% if classroom %}
-                <script>addMap()</script>
-            {% else %}
-                <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initMap"></script>
-            {% endif %}
-        </div>
+        <div id="map"></div>
     </div>
 
 </center>
+
+{% if classroom %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initDirections"></script>
+{% else %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initMap"></script>
+{% endif %}
 
 {% endblock %}

@@ -105,7 +105,8 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                 except:
                     res = None
             if res and res.attribute_value:
-                context['classroom'] = res.attribute_value
+                classroom = res.attribute_value.split(",")
+                context['classroom'] = '{lat: ' + classroom[0].strip() + ', lng: ' + classroom[1].strip() + '}'
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
