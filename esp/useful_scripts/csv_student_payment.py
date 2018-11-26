@@ -20,7 +20,7 @@ import argparse
 
 from datetime import datetime
 
-def main:
+def main():
     parser = argparse.ArgumentParser(description = "Add accounting records for students that have already paid")
     parser.add_argument("program", help="Program name")
     parser.add_argument("csv_filename",
