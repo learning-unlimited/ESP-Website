@@ -1,0 +1,271 @@
+.navbar {
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  overflow: hidden;
+  background-color: #333;
+  width: calc(100vh * 9 / 16);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
+  z-index: 1000;
+}
+
+.navbar .selected {
+  background: #ddd;
+  color: black;
+}
+
+.navbar td:hover {
+  background: #ddd;
+  color: black;
+}
+
+.navbar td {
+  color: #ddd;
+  text-align: center;
+  text-decoration: none;
+  padding: 0px;
+  font-size: 2vh;
+  width: 25%;
+}
+
+.navbar table {
+  width: 100%;
+}
+
+.main table, th, td {
+  text-align: center;
+}
+
+.main {
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  margin-top: 7.9vh;
+  width: calc(100vh * 9 / 16);
+  height: 92.1vh;
+  background-color: #c8e6dc;
+}
+
+.main table {
+  background-color: #c8e6dc;
+  border-collapse: collapse;
+  width: calc(100vh * 9 / 16);
+}
+
+.main tbody, tr, th, td {
+  background: none;
+}
+
+/*.main th, td {
+  padding-left: 6vw;
+  padding-right: 6vw;
+  padding-bottom: 2vw;
+  padding-top: 2vw;
+}*/
+
+.main td {
+  font-size: 2.5vh;
+  vertical-align: middle;
+}
+
+.main th {
+  font-size: 3vh;
+  height: 25%;
+}
+
+.main td, th {
+  padding-top: 1.5vh;
+  padding-bottom: 1.5vh;
+  padding-left: 1vh;
+  padding-right: 1vh;
+  line-height: 1.2 !important;
+}
+
+.main tr {
+  border-top: 1px solid #999999;
+  border-bottom: 1px solid #999999;
+  border-collapse: collapse;
+}
+
+.checkinnote {
+  font-size: 1.75vh !important;
+}
+
+.time {
+  width: 20%;
+  font-size: 1.75vh !important;
+}
+
+.cls {
+  font-size: 2vh !important;
+  width: 60%;
+}
+
+.location {
+  font-size: 1.75vh !important;
+}
+
+.edit {
+  width: 20%;
+}
+
+.schedule_row {
+  background-color: #F7F7F7;
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.material-icons.md-4 {
+  font-size: 4vh;
+  width: 4vh;
+}
+
+.material-icons.md-5 {
+  font-size: 5vh;
+  width: 5vh;
+}
+
+.material-icons.greyed {
+  color: grey;
+}
+
+.popuptext {
+  visibility: hidden;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 1.5vh;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2.5vh;
+  font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
+  box-shadow: 0.5vh 0.5vh #888888;
+}
+
+.popup .show {
+  visibility: visible;
+}
+
+.min-font {
+  font-size: 60px !important;
+}
+
+.no-dec {
+  color: inherit;
+  text-decoration: none;
+}
+
+.linktop {
+  font-size: 2vh !important;
+}
+
+.class_title {
+  font-size: 2vh !important;
+  padding-bottom: .25vh;
+}
+
+.class_teachers, .class_content, .class_style, .class_prereqs, .class_meeting_times, .class_grades {
+  font-size: 1.5vh !important;
+  padding-bottom: .25vh;
+  padding-top: .25vh;
+}
+
+.jump {
+  border-bottom: none !important;
+}
+
+.header_category {
+  width: 50%;
+  vertical-align: top;
+  font-size: 2vh !important;
+  padding: 0 !important;
+  padding-bottom: 1vh !important;
+}
+
+.categories {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.last_categories {
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.last_categories td {
+  padding-bottom: 1.5vh !important;
+}
+
+.category_row {
+  border-bottom: none !important;
+  border-top: 1px solid black;
+}
+
+.category {
+  padding-bottom: .5vh;
+  text-transform: uppercase;
+}
+
+.class_row {
+  border-bottom: none !important;
+  border-top: none !important;
+}
+
+.no_classes {
+  border-bottom: none !important;
+}
+
+.btn {
+  border-radius: 12px;
+  background-color: #efefef;
+  color: black;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
+.btn-disabled {
+  border-radius: 12px;
+  border: 2px solid black;
+  font-size: 1.5vh !important;
+}
+
+.btn:hover {
+    background-color: black; /* Green */
+    color: white;
+}
+
+.add_button {
+  padding-bottom: .25vh;
+  padding-top: .25vh;
+}
+
+a.anchor {
+    display: block;
+    position: relative;
+    top: -9.3vh;
+    visibility: hidden;
+}
+
+#map {
+  height: 100%;
+  width: 100%;
+}
+
+#topBtn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: calc((100vw - 100vh * 9 / 16) / 2 + 20px);
+  z-index: 99;
+  font-size: 18px;
+  border: none;
+  outline: none;
+  background-color: blue;
+  color: white;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 4px;
+}

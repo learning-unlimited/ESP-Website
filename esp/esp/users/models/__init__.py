@@ -2243,7 +2243,7 @@ class Permission(ExpirableModel):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
-        # The following two are outside of "Student/" so that they aren't
+        # The following are outside of "Student/" so that they aren't
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
@@ -2268,6 +2268,7 @@ class Permission(ExpirableModel):
             ("Student/Survey", "Access to survey"),
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/Finaid", "Access to financial aid application"),
+            ("Student/Webapp", "Access to student onsite webapp"),
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
