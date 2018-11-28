@@ -68,15 +68,15 @@ def render_class_webapp(cls, user=None, filter=False, timeslot=None, checked_in=
     context['checked_in'] = checked_in
     context['prereg_url'] = cls.parent_program.get_learn_url() + 'onsiteaddclass'
     return context
-render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
-render_class.cached_function.get_or_create_token(('cls',))
+render_class_webapp.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+render_class_webapp.cached_function.get_or_create_token(('cls',))
 # We need to depend on not only the user's StudentRegistrations for this
 # section, but in fact on their StudentRegistrations for all sections, because
 # of things like lunch constraints -- a change made in another block could
 # affect whether you can add a class in this one.  So we depend on all SRs for
 # this user.  This only applies to tags that can depend on a user.
-render_class.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
-render_class.cached_function.get_or_create_token(('user',))
+render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
+render_class_webapp.cached_function.get_or_create_token(('user',))
 
 @cache_function
 def render_class_direct(cls):

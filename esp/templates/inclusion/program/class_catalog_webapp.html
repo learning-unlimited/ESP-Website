@@ -27,7 +27,7 @@
 <div class="class_meeting_times">
     {% if not section %}
         {% for sec in class.get_sections %}
-           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}<b><font color="#990000">{% if sec.isFull %} (Full!){% elif sec.isRegClosed %} (Closed!){% endif %}</font></b><br />
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}{% endif %}<b><font color="#990000">{% if sec.isFull %} (Full!){% elif sec.isRegClosed %} (Closed!){% elif sec.isCancelled %} (Cancelled!){% endif %}</font></b><br />
         {% endfor %}
     {% else %}
         Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFull %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>

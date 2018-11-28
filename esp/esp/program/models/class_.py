@@ -866,6 +866,10 @@ class ClassSection(models.Model):
         if not self.isRegOpen():
             return u'Registration for this section is not currently open.'
 
+        # check to see if the section has been cancelled
+        if self.isCancelled():
+            return u'This section has been cancelled.'
+
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
@@ -1639,10 +1643,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return u'You are not in the requested grade range for this class.'
-
-        # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=['Enrolled']).count() == 0:
-            return False
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):
