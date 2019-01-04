@@ -54,9 +54,9 @@ function scrollFunction() {
                     {% if forloop.counter0|divisibleby:2 %}
                     <tr {% if forloop.revcounter > 2 %}class="categories"{% else %}class="last_categories"{% endif %}>{% endif %}
                         <td class="header_category" valign="top" align="center">
-                            <a href="#cat{{ category.id }}" title="Click to skip down to `{{ category.category }}'">
+                            <button class = "header btn" onClick="location.href='#cat{{ category.id }}'" title="Click to skip down to `{{ category.category }}'">
                             {{category.category}}
-                            </a>
+                            </button>
                         </td>
                     {% if forloop.counter|divisibleby:2 %}
                         </tr>
