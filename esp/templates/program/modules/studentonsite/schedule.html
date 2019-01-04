@@ -37,13 +37,13 @@ function togglePopup() {
                 {% if cls %}
                     <!--link to course details?-->
                     <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% endif %}</b>
+                    {% if checked_in and not cls.section.initial_rooms|length_is:0 %}
+                        <div class="location">
+                            <button class="btn" onClick="location.href='/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}'">{{ cls.section.prettyrooms|join:", " }}</button>
+                        </div>
+                    {% endif %}
                 {% else %}
                     No class
-                {% endif %}
-                {% if checked_in %}
-                    <div class="location">
-                        <a href="/learn/{{one}}/{{two}}/onsitemap/{{ cls.section.initial_rooms.0.id }}"><i>{{ cls.section.prettyrooms|join:", " }}</i></a>
-                    </div>
                 {% endif %}
                 </td>
                 <td class="edit">
