@@ -4,7 +4,6 @@
 
 {% if classroom %}
 <meta http-equiv="refresh" content="30">
-{% endif %}
 
 <script>
   function initDirections() {
@@ -51,7 +50,10 @@
       }
     });
   }
+</script>
+{% endif %}
 
+<script>
   // Note: This example requires that you consent to location sharing when
   // prompted by your browser. If you see the error "The Geolocation service
   // failed.", it means you probably did not give permission for the browser to
@@ -107,10 +109,12 @@
 
 </center>
 
-{% if classroom %}
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initDirections"></script>
-{% else %}
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC6nleEyK0uu4gZl8NhFkbnFGMx3FVlv8E&callback=initMap"></script>
+{% if API_key %}
+    {% if classroom %}
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ API_key }}&callback=initDirections"></script>
+    {% else %}
+        <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ API_key }}&callback=initMap"></script>
+    {% endif %}
 {% endif %}
 
 {% endblock %}

@@ -91,7 +91,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getTag('program_center', default='{lat: 37.427490, lng: -122.170267}')
+        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
+        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+		
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
