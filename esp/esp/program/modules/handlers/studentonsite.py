@@ -93,7 +93,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'map'
         context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
         context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
-		
+
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
@@ -141,10 +141,23 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         categories = {}
 
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
+
+        # Should the catalog be sorted by category? If so, by which aspect of category?
+        # Default is to sort by category symbol
+        catalog_sort = 'category__symbol'
+        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
+        if program_sort_fields:
+            catalog_sort = program_sort_fields.split(',')[0]
+
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+        else:
+            categories_sort = None
 
         context['classes'] = classes
-        context['categories'] = categories.values()
+        context['categories'] = categories_sort
         context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
 
         return render_to_response(self.baseDir()+'catalog.html', request, context)
