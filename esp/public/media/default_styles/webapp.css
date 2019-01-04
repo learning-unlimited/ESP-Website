@@ -213,7 +213,7 @@
 }
 
 .btn {
-  border-radius: 12px;
+  border-radius: 1.5vh;
   background-color: #efefef;
   color: black;
   border: 2px solid black;
@@ -227,8 +227,14 @@
 }
 
 .btn:hover {
-    background-color: black;
-    color: white;
+  background-color: black;
+  color: white;
+}
+
+.header.btn {
+  margin: .5vh;
+  border-radius: 1vh !important;
+  font-size: 2.25vh !important;
 }
 
 .add_button {
@@ -237,10 +243,10 @@
 }
 
 a.anchor {
-    display: block;
-    position: relative;
-    top: -9.3vh;
-    visibility: hidden;
+  display: block;
+  position: relative;
+  top: -9.3vh;
+  visibility: hidden;
 }
 
 #map {
