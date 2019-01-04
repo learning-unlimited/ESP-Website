@@ -76,19 +76,21 @@ function scrollFunction() {
                 </tr>
             {% else %}
                 {% for class in classes %}
-                    {% ifchanged class.category_id %}
-                        <tr class="category_row">
-                            <td colspan="2">
-                                <a name="cat{{class.category_id}}" class="anchor"></a>
-                                <div class="category">
-                                    <b>{{ class.category.category }}</b>
-                                </div>
-                                <div class="linktop">
-                                    <button onclick="topFunction()" class="btn">Return to Category List</button>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endifchanged %}
+                    {% if categories %}
+                        {% ifchanged class.category_id %}
+                            <tr class="category_row">
+                                <td colspan="2">
+                                    <a name="cat{{class.category_id}}" class="anchor"></a>
+                                    <div class="category">
+                                        <b>{{ class.category.category }}</b>
+                                    </div>
+                                    <div class="linktop">
+                                        <button onclick="topFunction()" class="btn">Return to Category List</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endifchanged %}
+                    {% endif %}
 
                     <tr class="class_row">
                         <td colspan="2">
