@@ -422,6 +422,7 @@ class StudentClassRegModule(ProgramModuleObj):
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
+        #   Classes are sorted like the catalog
         if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
@@ -430,19 +431,28 @@ class StudentClassRegModule(ProgramModuleObj):
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
-        #   Sort class list
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.category.category)
-
         categories = {}
 
         for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
+
+        # Are the classes sorted by category? If so, by which aspect of category?
+        # Default is to sort by category symbol
+        catalog_sort = 'category__symbol'
+        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
+        if program_sort_fields:
+            catalog_sort = program_sort_fields.split(',')[0]
+
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+        else:
+            categories_sort = None
 
         return render_to_response(self.baseDir()+'fillslot.html', request, {'classes':    classes,
                                                                             'one':        one,
                                                                             'two':        two,
-                                                                            'categories': categories.values(),
+                                                                            'categories': categories_sort,
                                                                             'timeslot': ts})
 
     # This function actually renders the catalog
