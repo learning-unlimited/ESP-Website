@@ -943,6 +943,12 @@ class ClassSection(models.Model):
             result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
 
+    def students_checked_in(self):
+        return self.students() & ESPUser.objects.filter(record__event="attended", record__program=self.parent_program).distinct()
+
+    def num_students_checked_in(self):
+        return self.students_checked_in().count()
+
     @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
@@ -1096,11 +1102,19 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def isFull(self, ignore_changes=False):
-        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
+    def isFull(self, ignore_changes=False, checked_in_only = False):
+        if checked_in_only:
+            num_students = self.num_students_checked_in()
+        else:
+            num_students = self.num_students()
+        if (num_students == self._get_capacity(ignore_changes) == 0):
             return False
         else:
-            return (self.num_students() >= self._get_capacity(ignore_changes))
+            return (num_students >= self._get_capacity(ignore_changes))
+
+    def isFullWebapp(self, ignore_changes=False):
+        checked_in_only = Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False)
+        return self.isFull(ignore_changes = ignore_changes, checked_in_only = checked_in_only)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
