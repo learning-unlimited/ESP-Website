@@ -49,6 +49,7 @@ class ClassManageForm(ManagementForm):
             if self.cls.hasScheduledSections():
                 self.fields['duration'].widget.attrs['disabled'] = True
                 self.fields['duration'].widget.attrs['title'] = "At least one section of this class has already been scheduled"
+                self.fields['duration'].required = False
         else:
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
