@@ -108,4 +108,5 @@ all_program_tags = {
     'autoscheduler_resource_constraint_overrides': (False, ""),
     'autoscheduler_resource_scoring_overrides': (False, ""),
     'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
+    'count_checked_in_only': (True, "Whether to use registered students or checked in students to determine if a class is full (for studentonsite)"),
 }

@@ -59,7 +59,7 @@ render_class.cached_function.depend_on_row('program.StudentRegistration', lambda
 render_class.cached_function.get_or_create_token(('user',))
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_webapp.html')
-def render_class_webapp(cls, user=None, filter=False, timeslot=None, checked_in=False):
+def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False):
     """Render the entire class for the webapp, including user-specific parts.
 
     Calls render_class_core for non-user-specific parts.
@@ -77,6 +77,7 @@ render_class_webapp.cached_function.get_or_create_token(('cls',))
 # this user.  This only applies to tags that can depend on a user.
 render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class_webapp.cached_function.get_or_create_token(('user',))
+render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event == 'attended')
 
 @cache_function
 def render_class_direct(cls):
