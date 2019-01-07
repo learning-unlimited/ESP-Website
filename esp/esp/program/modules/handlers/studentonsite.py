@@ -138,7 +138,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             classes = list(ClassSubject.objects.catalog(prog))
 
-        categories_sort = self.sort_categories(classes, self.program)
+        categories_sort = StudentClassRegModule.sort_categories(classes, prog)
 
         context['classes'] = classes
         context['categories'] = categories_sort
