@@ -138,23 +138,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             classes = list(ClassSubject.objects.catalog(prog))
 
-        categories = {}
-
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
-
-        # Should the catalog be sorted by category? If so, by which aspect of category?
-        # Default is to sort by category symbol
-        catalog_sort = 'category__symbol'
-        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
-        if program_sort_fields:
-            catalog_sort = program_sort_fields.split(',')[0]
-
-        catalog_sort_split = catalog_sort.split('__')
-        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
-        else:
-            categories_sort = None
+        categories_sort = self.sort_categories(classes, self.program)
 
         context['classes'] = classes
         context['categories'] = categories_sort
