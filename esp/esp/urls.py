@@ -74,6 +74,7 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 
 # Admin stuff
 urlpatterns += [
+    url(r'^admin_tools/', include('admin_tools.urls')),
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     url(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     url(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),

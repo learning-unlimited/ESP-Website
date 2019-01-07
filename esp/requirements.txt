@@ -13,6 +13,7 @@ django-localflavor==1.1 # Provides address and phone number fields
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
+django-admin-tools==0.8.1 # Extends Django Admin
 
 # Non-Django-specific packages
 docutils==0.12 # Needed for django.contrib.admindocs

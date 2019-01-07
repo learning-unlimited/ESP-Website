@@ -181,8 +181,10 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
+                'django.core.context_processors.request',
             ],
             'loaders': [
+                'admin_tools.template_loaders.Loader',
                 'esp.utils.template.Loader',
                 ('django.template.loaders.cached.Loader',
                     (
@@ -216,6 +218,10 @@ ROOT_URLCONF = 'esp.urls'
 APPEND_SLASH=False
 
 INSTALLED_APPS = (
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.messages',
