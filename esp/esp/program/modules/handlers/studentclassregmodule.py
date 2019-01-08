@@ -398,6 +398,26 @@ class StudentClassRegModule(ProgramModuleObj):
             # TODO(benkraft): we shouldn't need to do this.  find a better way.
             raise AjaxError(inst)
 
+    @staticmethod
+    def sort_categories(classes, prog):
+        categories = {}
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
+
+        # Is the catalog sorted by category? If so, by which aspect of category?
+        # Default is to sort by category symbol
+        catalog_sort = 'category__symbol'
+        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
+        if program_sort_fields:
+            catalog_sort = program_sort_fields.split(',')[0]
+
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+        else:
+            categories_sort = None
+        return categories_sort
+
     @aux_call
     @needs_student
     @meets_deadline('/Classes')
@@ -422,6 +442,7 @@ class StudentClassRegModule(ProgramModuleObj):
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
+        #   Classes are sorted like the catalog
         if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
@@ -430,19 +451,12 @@ class StudentClassRegModule(ProgramModuleObj):
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
-        #   Sort class list
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.category.category)
-
-        categories = {}
-
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+        categories_sort = self.sort_categories(classes, self.program)
 
         return render_to_response(self.baseDir()+'fillslot.html', request, {'classes':    classes,
                                                                             'one':        one,
                                                                             'two':        two,
-                                                                            'categories': categories.values(),
+                                                                            'categories': categories_sort,
                                                                             'timeslot': ts})
 
     # This function actually renders the catalog
@@ -451,22 +465,7 @@ class StudentClassRegModule(ProgramModuleObj):
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
-        categories = {}
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
-
-        # Is the catalog sorted by category? If so, by which aspect of category?
-        # Default is to sort by category symbol
-        catalog_sort = 'category__symbol'
-        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
-        if program_sort_fields:
-            catalog_sort = program_sort_fields.split(',')[0]
-
-        catalog_sort_split = catalog_sort.split('__')
-        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
-            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
-        else:
-            categories_sort = None
+        categories_sort = self.sort_categories(classes, self.program)
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
