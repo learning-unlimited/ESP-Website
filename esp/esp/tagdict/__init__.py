@@ -55,7 +55,9 @@ all_global_tags = {
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
     'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag"),
-    'teacher_address_required': (True, "Is an address required for a teacher profile? (enabled by default, set to 'False' to disable)")
+    'teacher_address_required': (True, "Is an address required for a teacher profile? (enabled by default, set to 'False' to disable)"),
+    'webapp_isstep': (True, "Should the student onsite webapp be shown as a step in student registration?"),
+    'google_cloud_api_key': (False, "An API key for use with the Google Cloud Platform"),
 }
 
 # Any tag used with Tag.getProgramTag(),
@@ -103,5 +105,11 @@ all_program_tags = {
     'student_lottery_run': (False, ""),
     'formstack_id': (False, ""),
     'formstack_viewkey': (False, ""),
+    'autoscheduler_constraint_overrides': (False, ""),
+    'autoscheduler_scorer_weight_overrides': (False, ""),
+    'autoscheduler_resource_constraint_overrides': (False, ""),
+    'autoscheduler_resource_scoring_overrides': (False, ""),
     'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
+    'program_center': (False, "The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}"),
+    'count_checked_in_only': (True, "Whether to use registered students or checked in students to determine if a class is full (for studentonsite)"),
 }

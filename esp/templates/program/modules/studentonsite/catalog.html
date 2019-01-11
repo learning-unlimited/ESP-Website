@@ -1,0 +1,107 @@
+{% extends "program/modules/studentonsite/webapp.html" %}
+
+{% block head %}
+
+<script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+
+<script>
+function topFunction() {
+    document.body.scrollTop = 0; // For Safari
+    document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+}
+
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        document.getElementById("topBtn").style.display = "block";
+    } else {
+        document.getElementById("topBtn").style.display = "none";
+    }
+}
+</script>
+
+{% endblock %}
+
+{% block body %}
+
+<button onclick="topFunction()" id="topBtn" title="Go to top"><i class="material-icons">arrow_upward</i></button>
+
+{% load class_render %}
+
+<center>
+  <div class="main">
+    <table class="studentschedule">
+        <tbody>
+            <tr class="catalog">
+                <th colspan="2">
+                    <span>
+                        <a name="top"></a>{{ program.niceName }} Course Catalog{% if timeslot %}<br><i>Viewing classes for: {{ timeslot.short_description }}</i>{% endif %}
+                    </span>
+                </th>
+            </tr>
+            {% if categories %}
+                <tr class="jump">
+                    <td colspan="2">
+                        <b>Jump to Categories</b>
+                    </td>
+                </tr>
+                {% for category in categories %}
+                    {% if forloop.counter0|divisibleby:2 %}
+                    <tr {% if forloop.revcounter > 2 %}class="categories"{% else %}class="last_categories"{% endif %}>{% endif %}
+                        <td class="header_category" valign="top" align="center">
+                            <button class = "header btn" onClick="location.href='#cat{{ category.id }}'" title="Click to skip down to `{{ category.category }}'">
+                            {{category.category}}
+                            </button>
+                        </td>
+                    {% if forloop.counter|divisibleby:2 %}
+                        </tr>
+                    {% endif %} 
+                {% endfor %}
+                {% if not categories|length|divisibleby:2 %}
+                    <td class="header_category" valign="top" align="center">&nbsp;</td>
+                    </tr>
+                {% endif %}
+            {% endif %}
+
+            {% if classes|length_is:0 %}
+                <tr class="no_classes">
+                    <td colspan="2">
+                        <i>There are no available classes during this time block for students of your grade level!</i>
+                    </td>
+                </tr>
+            {% else %}
+                {% for class in classes %}
+                    {% if categories %}
+                        {% ifchanged class.category_id %}
+                            <tr class="category_row">
+                                <td colspan="2">
+                                    <a name="cat{{class.category_id}}" class="anchor"></a>
+                                    <div class="category">
+                                        <b>{{ class.category.category }}</b>
+                                    </div>
+                                    <div class="linktop">
+                                        <button onclick="topFunction()" class="btn">Return to Category List</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endifchanged %}
+                    {% endif %}
+
+                    <tr class="class_row">
+                        <td colspan="2">
+                            {% render_class_webapp class program user request.GET.filter timeslot checked_in %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+  </div>
+</center>
+
+{% endblock %}

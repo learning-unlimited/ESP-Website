@@ -59,7 +59,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        user, found = search_for_user(request)
+        user, found = search_for_user(request, add_to_context = {'tl': 'onsite'})
         if not found:
             return user
 

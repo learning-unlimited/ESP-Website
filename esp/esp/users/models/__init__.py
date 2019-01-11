@@ -2243,7 +2243,7 @@ class Permission(ExpirableModel):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
-        # The following two are outside of "Student/" so that they aren't
+        # The following are outside of "Student/" so that they aren't
         # implied by "Student/All".
         ("GradeOverride", "Ignore grade ranges for studentreg"),
         ("OverrideFull", "Register for a full program"),
@@ -2254,6 +2254,7 @@ class Permission(ExpirableModel):
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
+            ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
@@ -2267,6 +2268,7 @@ class Permission(ExpirableModel):
             ("Student/Survey", "Access to survey"),
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/Finaid", "Access to financial aid application"),
+            ("Student/Webapp", "Access to student onsite webapp"),
         )),
         ("Teacher Deadlines", (
             ("Teacher", "Basic teacher access"),
@@ -2280,6 +2282,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "Classes/View"),
             ("Teacher/Classes/Edit", "Classes/Edit"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),

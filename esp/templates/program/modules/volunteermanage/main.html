@@ -32,8 +32,11 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
     <tr><td colspan="3">No requests at this time.  Please add some using one of the forms below.</td></tr>
 {% else %}
     {% for vr in requests %}
+    {% ifchanged vr.timeslot.start.date %}
+    <th colspan="3" align="center">{{ vr.timeslot.pretty_date }}</th>
+    {% endifchanged %}
     <tr>
-    <td>{{ vr.timeslot.pretty_time }}</td>
+    <td>{{ vr.timeslot.short_time }}</td>
     <td>{{ vr.timeslot.description }}: {{ vr.num_offers }} / {{ vr.num_volunteers }} volunteers <br />
         <div id="offers" style="color: blue; font-size: 0.9em;">{% for offer in vr.get_offers %}
         {{ offer.name }}, {{ offer.email }}, {{ offer.phone }} <br />

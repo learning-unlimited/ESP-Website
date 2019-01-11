@@ -868,6 +868,10 @@ class ClassSection(models.Model):
         if not self.isRegOpen():
             return u'Registration for this section is not currently open.'
 
+        # check to see if the section has been cancelled
+        if self.isCancelled():
+            return u'This section has been cancelled.'
+
         # check to make sure they haven't already registered for too many classes in this section
         if scrmi.use_priority:
             priority = user.getRegistrationPriority(self.parent_class.parent_program, self.meeting_times.all())
@@ -940,6 +944,12 @@ class ClassSection(models.Model):
         for verb_str in verbs:
             result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
+
+    def students_checked_in(self):
+        return self.students() & ESPUser.objects.filter(record__event="attended", record__program=self.parent_program).distinct()
+
+    def num_students_checked_in(self):
+        return self.students_checked_in().count()
 
     @cache_function
     def num_students_prereg(self):
@@ -1094,11 +1104,19 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def isFull(self, ignore_changes=False):
-        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
+    def isFull(self, ignore_changes=False, checked_in_only = False):
+        if checked_in_only:
+            num_students = self.num_students_checked_in()
+        else:
+            num_students = self.num_students()
+        if (num_students == self._get_capacity(ignore_changes) == 0):
             return False
         else:
-            return (self.num_students() >= self._get_capacity(ignore_changes))
+            return (num_students >= self._get_capacity(ignore_changes))
+
+    def isFullWebapp(self, ignore_changes=False):
+        checked_in_only = Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False)
+        return self.isFull(ignore_changes = ignore_changes, checked_in_only = checked_in_only)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
@@ -1638,10 +1656,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                user.getGrade(self.parent_program) > self.grade_max:
             if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                 return u'You are not in the requested grade range for this class.'
-
-        # student has no classes...no conflict there.
-        if user.getClasses(self.parent_program, verbs=['Enrolled']).count() == 0:
-            return False
 
         for section in self.get_sections():
             if user.isEnrolledInClass(section):

@@ -59,9 +59,9 @@
         {% if program %}
         <div id="print-student-schedule">
             <h2>
-                Student schedule
+                Student schedule<br/>
+                (for {{program.niceName}})
             </h2>
-            <p>(for {{program.niceName}})</p>
             <a id="getstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/studentschedule?user={{user.id}}" target="_new">Print locally</a>
             <a id="printstudentschedulelink" class="sidelink" href="/onsite/{{program.getUrlBase}}/printschedule?user={{user.id}}&next=/manage/userview?username={{user.username}}">Print to default printer</a>
             {% if printers %}
@@ -85,6 +85,19 @@
             </div>
         {% else %}
             (Teacher has no profiles for programs)
+        {% endif %}
+    {% endif %}
+    {% if volunteer %}
+        {% if program %}
+            <div id="print-volunteer-schedule">
+                <h2>
+                    Volunteer schedule<br/>
+                    (for {{program.niceName}})
+                </h2>
+                <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{profile.user.id}}" target="_new">Print locally</a>
+            </div>
+        {% else %}
+            (Volunteer has no profiles for programs)
         {% endif %}
     {% endif %}
 </div>

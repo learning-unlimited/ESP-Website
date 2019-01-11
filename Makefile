@@ -26,7 +26,7 @@ src:
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash ; fi
 	sudo -u www-data git fetch origin
 	sudo -u www-data git remote prune origin
-	sudo -u www-data git checkout $(NEWBRANCH)
+	sudo -u www-data git checkout origin/$(NEWBRANCH)
 	if [ "$(STASH)" = "true" ] ; then sudo -u www-data git stash pop ; fi
 
 finish:

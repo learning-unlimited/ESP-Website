@@ -116,19 +116,33 @@ Don't forget to write the body in HTML, but no need for &lt;html&gt; and &lt;/ht
       </th>
       <td>Student's schedule without room numbers</td>
     </tr>
-        <tr>
+    <tr>
       <th><span style="white-space: nowrap;">
      {% templatetag openvariable %}program.teacher_schedule{% templatetag closevariable %}
           </span>
       </th>
       <td>Teacher's schedule for Program</td>
     </tr>
-        <tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}program.teacher_schedule_dates{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>Teacher's schedule with dates</td>
+    </tr>
+    <tr>
       <th><span style="white-space: nowrap;">
      {% templatetag openvariable %}program.volunteer_schedule{% templatetag closevariable %}
           </span>
       </th>
       <td>Volunteer's schedule for Program</td>
+    </tr>
+    <tr>
+      <th><span style="white-space: nowrap;">
+     {% templatetag openvariable %}program.volunteer_schedule_dates{% templatetag closevariable %}
+          </span>
+      </th>
+      <td>Volunteer's schedule with dates</td>
     </tr>
     <tr>
       <th><span style="white-space: nowrap;">

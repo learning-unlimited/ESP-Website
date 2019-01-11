@@ -199,18 +199,24 @@ class StudentClassRegModule(ProgramModuleObj):
                    super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
+        user = get_current_request().user
+        program = self.program
+        scrmi = self.program.studentclassregmoduleinfo
+        return self.prepare_static(user, program, context=context, scrm = self)
+
+    @staticmethod
+    def prepare_static(user, program, context={}, scrm = ""):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
-        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
-        timeslots = self.program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
+        regProf = RegistrationProfile.getLastForProgram(user, program)
+        timeslots = program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))
 
         prevTimeSlot = None
         blockCount = 0
 
-        user = get_current_request().user
-        is_onsite = user.isOnsite(self.program)
-        scrmi = self.program.studentclassregmoduleinfo
+        is_onsite = user.isOnsite(program)
+        scrmi = program.studentclassregmoduleinfo
 
         #   Filter out volunteer timeslots
         timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
@@ -267,7 +273,8 @@ class StudentClassRegModule(ProgramModuleObj):
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
-        context['allow_removal'] = self.deadline_met('/Removal')
+        if scrm:
+            context['allow_removal'] = scrm.deadline_met('/Removal')
 
         return context
 
@@ -326,11 +333,12 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return HttpResponse(json.dumps(json_data))
 
-    def addclass_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def addclass_logic(request, tl, one, two, module, extra, prog):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        scrmi = self.program.studentclassregmoduleinfo
+        scrmi = prog.studentclassregmoduleinfo
 
         #   Explicitly set the user's onsiteness, since we refer to it soon.
         if not hasattr(request.user, "onsite_local"):
@@ -344,10 +352,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,self.scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,self.scrmi.enforce_max) or section.cannotAdd(request.user, self.scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max) or section.cannotAdd(request.user, scrmi.enforce_max)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -367,7 +375,7 @@ class StudentClassRegModule(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes')
     @meets_cap
-    def addclass(self,request, tl, one, two, module, extra, prog):
+    def addclass(self, request, tl, one, two, module, extra, prog):
         """ Preregister a student for the specified class, then return to the studentreg page """
         if self.addclass_logic(request, tl, one, two, module, extra, prog):
             return self.goToCore(tl)
@@ -398,6 +406,26 @@ class StudentClassRegModule(ProgramModuleObj):
             # TODO(benkraft): we shouldn't need to do this.  find a better way.
             raise AjaxError(inst)
 
+    @staticmethod
+    def sort_categories(classes, prog):
+        categories = {}
+        for cls in classes:
+            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category, 'symbol':cls.category.symbol}
+
+        # Is the catalog sorted by category? If so, by which aspect of category?
+        # Default is to sort by category symbol
+        catalog_sort = 'category__symbol'
+        program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
+        if program_sort_fields:
+            catalog_sort = program_sort_fields.split(',')[0]
+
+        catalog_sort_split = catalog_sort.split('__')
+        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+            categories_sort = sorted(categories.values(), key = lambda cat: cat[catalog_sort_split[1]])
+        else:
+            categories_sort = None
+        return categories_sort
+
     @aux_call
     @needs_student
     @meets_deadline('/Classes')
@@ -422,6 +450,7 @@ class StudentClassRegModule(ProgramModuleObj):
         is_onsite = user.isOnsite(self.program)
 
         #   Override both grade limits and size limits during onsite registration
+        #   Classes are sorted like the catalog
         if is_onsite and not 'filter' in request.GET:
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
@@ -430,19 +459,12 @@ class StudentClassRegModule(ProgramModuleObj):
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
             classes = filter(lambda c: not c.isRegClosed(), classes)
 
-        #   Sort class list
-        classes = sorted(classes, key=lambda cls: cls.num_students() - cls.capacity)
-        classes = sorted(classes, key=lambda cls: cls.category.category)
-
-        categories = {}
-
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+        categories_sort = self.sort_categories(classes, self.program)
 
         return render_to_response(self.baseDir()+'fillslot.html', request, {'classes':    classes,
                                                                             'one':        one,
                                                                             'two':        two,
-                                                                            'categories': categories.values(),
+                                                                            'categories': categories_sort,
                                                                             'timeslot': ts})
 
     # This function actually renders the catalog
@@ -451,14 +473,12 @@ class StudentClassRegModule(ProgramModuleObj):
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
-        categories = {}
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+        categories_sort = self.sort_categories(classes, self.program)
 
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories_sort, 'collapse_full': collapse_full}
 
         scrmi = prog.studentclassregmoduleinfo
         context['register_from_catalog'] = scrmi.register_from_catalog
@@ -479,7 +499,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         class_category_id = None
         for cls in classes:
-            if cls.category.id != class_category_id:
+            if cls.category.id != class_category_id and categories_sort:
                 class_category_id = cls.category.id
                 class_blobs.append(category_header_str % (class_category_id, cls.category.category))
             class_blobs.append(render_class_direct(cls))
@@ -594,8 +614,8 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
-
-    def clearslot_logic(self, request, tl, one, two, module, extra, prog):
+    @staticmethod
+    def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
 
         #   Get the sections that the student is registered for in the specified timeslot.

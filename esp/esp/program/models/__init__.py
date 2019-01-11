@@ -867,14 +867,17 @@ class Program(models.Model, CustomFormsLinkModel):
             return None
 
     @cache_function
-    def getResourceTypes(self, include_classroom=False, include_global=None):
-        #   Show all resources pertaining to the program that aren't these two hidden ones.
+    def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
+        #   Show all resources pertaining to the program (except those of types that are excluded).
         from esp.resources.models import ResourceType
 
-        if include_classroom:
+        if include_hidden:
             exclude_types = []
         else:
-            exclude_types = [ResourceType.get_or_create('Classroom')]
+            exclude_types = list(ResourceType.objects.filter(hidden=True))
+
+        if not include_classroom:
+            exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
             include_global = Tag.getTag('allow_global_restypes')
