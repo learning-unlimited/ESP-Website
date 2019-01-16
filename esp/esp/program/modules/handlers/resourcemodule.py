@@ -213,8 +213,10 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
         import_form = TimeslotImportForm(request.POST)
         if not import_form.is_valid():
@@ -243,7 +245,7 @@ class ResourceModule(ProgramModuleObj):
                     end   = orig_timeslot.end + time_delta,
                 )
                 #   Save the new timeslot only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists():
+                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists() and new_timeslot.short_description + "_" + str(new_timeslot.start) in to_import:
                     new_timeslot.save()
                 new_timeslots.append(new_timeslot)
 
@@ -264,8 +266,10 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
         import_form = ResTypeImportForm(request.POST)
         if not import_form.is_valid():
@@ -287,7 +291,7 @@ class ResourceModule(ProgramModuleObj):
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
                 )
-                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists():
+                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists() and new_res_type.name in to_import:
                     new_res_type.save()
                 res_type_list.append(new_res_type)
             context['past_program'] = past_program
@@ -305,8 +309,10 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
         import_form = ClassroomImportForm(request.POST)
         if not import_form.is_valid():
@@ -331,10 +337,10 @@ class ResourceModule(ProgramModuleObj):
                             user = resource.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and new_res.name in to_import:
                             new_res.save()
                         if import_furnishings:
-                            new_furns = self.furnishings_import(resource, new_res, self.program, import_mode)
+                            new_furns = self.furnishings_import(resource, new_res, self.program, import_mode, to_import)
                             furnishing_dict[resource.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
                         resource_list.append(new_res)
             else:
@@ -359,10 +365,10 @@ class ResourceModule(ProgramModuleObj):
                             event = ts_map[res.event.id]
                         )
                         #   Check to avoid duplicating rooms (so the process is idempotent)
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and new_res.name in to_import:
                             new_res.save()
                         if import_furnishings:
-                            new_furns = self.furnishings_import(res, new_res, self.program, import_mode)
+                            new_furns = self.furnishings_import(res, new_res, self.program, import_mode, to_import)
                             furnishing_dict[res.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
                         resource_list.append(new_res)
 
@@ -388,7 +394,7 @@ class ResourceModule(ProgramModuleObj):
         return (response, context)
 
     @staticmethod
-    def furnishings_import(old_res, new_res, prog, import_mode):
+    def furnishings_import(old_res, new_res, prog, import_mode, to_import):
         furnishings = old_res.associated_resources()
         new_furnishings = []
         for f in furnishings:
@@ -420,7 +426,7 @@ class ResourceModule(ProgramModuleObj):
                 res_group = new_res.res_group,
                 attribute_value = f.attribute_value
             )
-            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists() and new_res.name in to_import:
                 new_furnishing.save()
             new_furnishings.append(new_furnishing)
         return new_furnishings
@@ -465,8 +471,10 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
         import_form = EquipmentImportForm(request.POST)
         if not import_form.is_valid():
@@ -504,7 +512,7 @@ class ResourceModule(ProgramModuleObj):
                             user = equipment.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and new_equip.name in to_import:
                             new_equip.save()
                         new_equipment_list.append(new_equip)
             else:
@@ -543,7 +551,7 @@ class ResourceModule(ProgramModuleObj):
                             user = equipment.user,
                             event = ts_map[equipment.event.id]
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and new_equip.name in to_import:
                             new_equip.save()
                         new_equipment_list.append(new_equip)
 
