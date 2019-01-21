@@ -400,6 +400,22 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def classesbyteacher(self, request, tl, one, two, module, extra, prog):
+        def cmp_teacher(one, other):
+            cmp0 = cmp(one.get_teachers()[0].last_name.lstrip(), other.get_teachers()[0].last_name.lstrip())
+
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+
+        def filt_teacher(cls):
+            return len(cls.get_teachers()) > 0
+
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher)
+
+    @aux_call
+    @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
             qs_one = one.initial_rooms()
