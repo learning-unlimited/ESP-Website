@@ -36,6 +36,16 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">unreview all</button>
     <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">reject all</button>
 </div>
+</br>
+<div class="btn-group" style="z-index: 99; margin-right: 5px; float: left;">
+    <a class="btn btn-approve" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">course catalog</a>
+</div>
+<div class="btn-group">
+    <a class="btn btn-approve" href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by ID)</a>
+    <a class="btn btn-unreview" href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by title)</a>
+    <a class="btn btn-reject" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by time)</a>
+</div>
+</br>
 
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
