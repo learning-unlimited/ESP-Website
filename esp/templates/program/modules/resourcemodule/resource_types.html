@@ -47,30 +47,30 @@
     <tr><th colspan="2">Resource Types for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table width="100%" cellpadding="0" cellspacing="0">
     <tr>
-        <td width="15%"><b>Type</b></td>
-        <td width="30%"><b>Description</b></td>
-        <td width="10%"><b>Priority</b></td>
-        <td width="5%"><b>Only<br/>One</b></td>
-        <td width="30%"><b>Choices</b></td>
-        <td width="10%"></td>
+        <td width="15%" class="underline"><b>Type</b></td>
+        <td width="30%" class="underline"><b>Description</b></td>
+        <td width="10%" class="underline"><b>Priority</b></td>
+        <td width="5%" class="underline"><b>Only<br/>One</b></td>
+        <td width="30%" class="underline"><b>Choices</b></td>
+        <td width="10%" class="underline"></td>
     </tr>
     {% for h in resource_types %}
     {% ifchanged h.hidden %}{% if h.hidden %}
     <tr><th colspan="6">Resource Types Hidden During Teacher Registration</th></tr>
     {% endif %}{% endifchanged %}
         <tr>
-            <td><div id="restype-{{ h.id }}">{{ h.name }}</div>{% if h.is_global %} (global){% endif %}</td>
-            <td>{{ h.description }}</td>
-            <td>{{ h.priority_default }}</td>
-            <td>{% if h.only_one %}&#10003;{% endif %}</td>
-            <td>
+            <td class="underline"><div id="restype-{{ h.id }}">{{ h.name }}</div>{% if h.is_global %} (global){% endif %}</td>
+            <td class="underline">{{ h.description }}</td>
+            <td class="underline">{{ h.priority_default }}</td>
+            <td class="underline">{% if h.only_one %}&#10003;{% endif %}</td>
+            <td class="underline">
                 <ol>
                 {% for choice in h.choices %}
                 <li>{{ choice }}</li>
                 {% endfor %}
                 </ol>
             </td>
-            <td>
+            <td class="underline">
             <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
             <a href="/manage/{{ prog.url }}/resources/restype?op=delete&id={{ h.id }}">[Delete]</a>
             </td>

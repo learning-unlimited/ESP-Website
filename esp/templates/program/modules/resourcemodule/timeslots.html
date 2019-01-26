@@ -33,18 +33,27 @@
 </form>
 
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
-    <tr><th colspan="2">Timeslots for {{ prog.niceName }}</th></tr>
+    <tr><th colspan="5">Timeslots for {{ prog.niceName }}</th></tr>
     <tr>
-        <td><b>Timeslot Name (Length)</b></td>
+        <td><b>Name</b></td>
+        <td><b>Type</b></td>
+        <td><b>Start Time</b></td>
+        <td><b>Duration</b></td>
         <td><b>Options</b></td>
     </tr>
     {% for h in timeslots %}
+    {% ifchanged h.selections.0.start.date %}
+    <th colspan="5" align="center">{{ h.selections.0.pretty_date }}</th>
+    {% endifchanged %}
     <tr>
-        <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }}</b></th>
+        <th class="small" colspan="5" align="center"><b>Block {{ forloop.counter }}</b></th>
     </tr>
         {% for t in h.selections %}
         <tr>
-            <td>{{ t.short_description }} <small>({{ t.event_type }}: {{ t.duration_str }})</small></td>
+            <td>{{ t.short_description }}</td>
+            <td>{{ t.event_type }}</td>
+            <td>{{ t.start.time }}</td>
+            <td>{{ t.duration_str }}</td>
             <td>
                 <a href="/manage/{{ prog.url }}/resources/timeslot?op=edit&id={{ t.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/timeslot?op=delete&id={{ t.id }}">[Delete]</a>

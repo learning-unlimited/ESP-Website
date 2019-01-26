@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 {% endblock %}
 
+{% block xtrajs %}
+<script>
+function toggle(source) {
+  $j('input[name=to_import]').prop('checked', source.checked);
+}
+</script>
+{% endblock %}
+
 {% block content %}
 
 <h1>Manage Resources for {{ prog.niceName }}</h1>
@@ -26,22 +34,24 @@ You have chosen to import the timeslots from {{ past_program.niceName }} to {{ p
 <input type="hidden" name="program" value="{{ past_program.id }}" />
 <input type="hidden" name="start_date" value="{{ start_date }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="2">Proposed timeslots for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="4">Proposed timeslots for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="4"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
         <td class="underline"><b>Date</b></td>
         <td class="underline"><b>Start</b></td>
         <td class="underline"><b>End</b></td>
+        <td class="underline"><b>Import? <input type="checkbox" onclick=toggle(this) checked></b></td>
     </tr>
     {% for t in new_timeslots %}
     <tr>
         <td class="underline">{{ t.start.date }}</td>
         <td class="underline">{{ t.start.time }}</td>
         <td class="underline">{{ t.end.time }}</td>
+        <td class="underline"><input type="checkbox" name="to_import" value="{{ t.old_id }}" checked></td>
     </tr>
     {% endfor %}
     </table></td></tr>
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
+    <tr><td colspan="4" align="center"><input class="fancybutton" type="submit" value="Complete Import" /></td></tr>
 </table>
 </form>
 </div>
