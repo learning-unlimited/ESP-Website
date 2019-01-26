@@ -47,7 +47,7 @@ You have chosen to import the floating resources from {{ past_program.niceName }
         <td class="underline">{{ r.name }}</td>
         <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
         <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
-        <td class="underline"><input type="checkbox" name="to_import" value="{{r.name}}" checked></td>
+        <td class="underline"><input type="checkbox" name="to_import" value="{{r.old_id}}" checked></td>
     </tr>
     {% endfor %}
     </table></td></tr>

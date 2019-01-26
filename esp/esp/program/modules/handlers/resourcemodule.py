@@ -245,8 +245,10 @@ class ResourceModule(ProgramModuleObj):
                     end   = orig_timeslot.end + time_delta,
                 )
                 #   Save the new timeslot only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists() and new_timeslot.short_description + "_" + str(new_timeslot.start) in to_import:
+                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists() and str(orig_timeslot.id) in to_import:
                     new_timeslot.save()
+                else:
+                    new_timeslot.old_id = orig_timeslot.id
                 new_timeslots.append(new_timeslot)
 
             #   Render a preview page showing the resources for the previous program if desired
@@ -291,8 +293,10 @@ class ResourceModule(ProgramModuleObj):
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
                 )
-                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists() and new_res_type.name in to_import:
+                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists() and str(res_type.id) in to_import:
                     new_res_type.save()
+                else:
+                    new_res_type.old_id = res_type.id
                 res_type_list.append(new_res_type)
             context['past_program'] = past_program
             if import_mode == 'preview':
@@ -337,8 +341,10 @@ class ResourceModule(ProgramModuleObj):
                             user = resource.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and new_res.name in to_import:
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and str(resource.id) in to_import:
                             new_res.save()
+                        else:
+                            new_res.old_id = resource.id
                         if import_furnishings:
                             new_furns = self.furnishings_import(resource, new_res, self.program, import_mode, to_import)
                             furnishing_dict[resource.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
@@ -365,8 +371,10 @@ class ResourceModule(ProgramModuleObj):
                             event = ts_map[res.event.id]
                         )
                         #   Check to avoid duplicating rooms (so the process is idempotent)
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and new_res.name in to_import:
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and str(res.id) in to_import:
                             new_res.save()
+                        else:
+                            new_res.old_id = res.id
                         if import_furnishings:
                             new_furns = self.furnishings_import(res, new_res, self.program, import_mode, to_import)
                             furnishing_dict[res.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
@@ -426,7 +434,7 @@ class ResourceModule(ProgramModuleObj):
                 res_group = new_res.res_group,
                 attribute_value = f.attribute_value
             )
-            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists() and new_res.name in to_import:
+            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists() and str(old_res.id) in to_import:
                 new_furnishing.save()
             new_furnishings.append(new_furnishing)
         return new_furnishings
@@ -512,8 +520,10 @@ class ResourceModule(ProgramModuleObj):
                             user = equipment.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and new_equip.name in to_import:
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
                             new_equip.save()
+                        else:
+                            new_equip.old_id = equipment.id
                         new_equipment_list.append(new_equip)
             else:
                 #   Attempt to match timeslots for the programs
@@ -551,8 +561,10 @@ class ResourceModule(ProgramModuleObj):
                             user = equipment.user,
                             event = ts_map[equipment.event.id]
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and new_equip.name in to_import:
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
                             new_equip.save()
+                        else:
+                            new_equip.old_id = equipment.id
                         new_equipment_list.append(new_equip)
 
             context['past_program'] = past_program

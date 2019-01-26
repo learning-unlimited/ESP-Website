@@ -59,7 +59,7 @@ You have chosen to import the resource types from {{ past_program.niceName }} to
             {{ forloop.counter }}. {{ choice }}{% if not forloop.last %}<br>{% endif %}
         {% endfor %}
         </td>
-        <td class="underline"><input type="checkbox" name="to_import" value="{{r.name}}" checked></td>
+        <td class="underline"><input type="checkbox" name="to_import" value="{{r.old_id}}" checked></td>
     </tr>
     {% endfor %}
     </table></td></tr>
