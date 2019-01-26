@@ -56,6 +56,7 @@ from django.utils.html import format_html
 from decimal import Decimal
 import json
 import collections
+import copy
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -310,11 +311,20 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_latex(self.baseDir()+template_name, context, extra)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
-        classes = ClassSubject.objects.filter(parent_program = self.program)
-
-        classes = [cls for cls in classes
-                   if cls.isAccepted()   ]
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
+        classes_raw = ClassSubject.objects.filter(parent_program = self.program)
+        
+        classes_filt = [cls for cls in classes_raw if cls.isAccepted()]
+        
+        if split_teachers:
+            classes = []
+            for cls in classes_filt:
+                for teacher in cls.get_teachers():
+                    cls_split = copy.copy(cls)
+                    cls_split.split_teacher = teacher
+                    classes.append(cls_split)
+        else:
+            classes = classes_filt
 
         classes = filter(filt_exp, classes)
 
@@ -333,7 +343,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes.sort(sort_exp)
 
-        context = {'classes': classes, 'program': self.program}
+        context = {'classes': classes, 'program': self.program, 'split_teachers': split_teachers}
 
         return render_to_response(self.baseDir()+'classes_list.html', request, context)
 
@@ -401,8 +411,12 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def classesbyteacher(self, request, tl, one, two, module, extra, prog):
+        split_teachers = ('split_teachers' in request.GET)
         def cmp_teacher(one, other):
-            cmp0 = cmp(one.get_teachers()[0].last_name.lstrip(), other.get_teachers()[0].last_name.lstrip())
+            if split_teachers:
+                cmp0 = cmp(one.split_teacher.last_name.lower(), other.split_teacher.last_name.lower())
+            else:
+                cmp0 = cmp(str(one.getTeacherNamesLast()[0].lower()), str(other.getTeacherNamesLast()[0]).lower())
 
             if cmp0 != 0:
                 return cmp0
@@ -412,7 +426,7 @@ class ProgramPrintables(ProgramModuleObj):
         def filt_teacher(cls):
             return len(cls.get_teachers()) > 0
 
-        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher)
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher, split_teachers)
 
     @aux_call
     @needs_admin
