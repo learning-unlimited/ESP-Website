@@ -313,9 +313,9 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
         classes_raw = ClassSubject.objects.filter(parent_program = self.program)
-        
+
         classes_filt = [cls for cls in classes_raw if cls.isAccepted()]
-        
+
         if split_teachers:
             classes = []
             for cls in classes_filt:
