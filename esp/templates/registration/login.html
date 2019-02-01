@@ -5,7 +5,7 @@
 {% block content %}
 <h1>Please log in</h1>
 
-{% if next %}
+{% if next and not initiated_login %}
 
 <p>
 You need to log in before you can access <tt>{{ next }}</tt>.

@@ -41,6 +41,9 @@ def login_checked(request, *args, **kwargs):
 
     reply = login(request, *args, **kwargs)
 
+    if hasattr(reply, 'context_data') and request.method == 'POST' and 'initiated_login' in request.POST:
+        reply.context_data['initiated_login'] = True
+
     # Check for user forwarders
     if request.user.is_authenticated():
         old_username = request.user.username
