@@ -343,7 +343,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         classes.sort(sort_exp)
 
-        context = {'classes': classes, 'program': self.program, 'split_teachers': split_teachers}
+        context = {'classes': classes, 'program': self.program}
 
         return render_to_response(self.baseDir()+'classes_list.html', request, context)
 
@@ -411,12 +411,8 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def classesbyteacher(self, request, tl, one, two, module, extra, prog):
-        split_teachers = ('split_teachers' in request.GET)
         def cmp_teacher(one, other):
-            if split_teachers:
-                cmp0 = cmp(one.split_teacher.last_name.lower(), other.split_teacher.last_name.lower())
-            else:
-                cmp0 = cmp(str(one.getTeacherNamesLast()[0].lower()), str(other.getTeacherNamesLast()[0]).lower())
+            cmp0 = cmp(one.split_teacher.last_name.lower(), other.split_teacher.last_name.lower())
 
             if cmp0 != 0:
                 return cmp0
@@ -426,7 +422,7 @@ class ProgramPrintables(ProgramModuleObj):
         def filt_teacher(cls):
             return len(cls.get_teachers()) > 0
 
-        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher, split_teachers)
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher, True)
 
     @aux_call
     @needs_admin
