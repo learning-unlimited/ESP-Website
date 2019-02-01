@@ -694,7 +694,7 @@ class ClassSection(models.Model):
 
         if rooms_to_assign.count() != self.meeting_times.count():
             status = False
-            errors.append( u'Room %s does not exist at the times requested by %s: %s != %s' % (base_room.name, self.emailcode(), rooms_to_assign, self.meeti
+            errors.append( u'Room %s does not exist at the times requested by %s: %s != %s' % (base_room.name, self.emailcode(), rooms_to_assign, self.meeting_times))
             if not allow_partial:
                 return (status, errors)
 
