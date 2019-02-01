@@ -165,8 +165,11 @@ class AS_ClassSection(object):
 class AS_Teacher(object):
     def __init__(self, availability, teacher_id, is_admin=False):
         self.id = teacher_id
-        self.availability = availability if availability is not None \
-            else []
+        self.availability = []
+        for av in availability:
+            if av not in self.availability:
+                self.availability.append(av)
+        self.availability = sorted(self.availability)
         # Dict from section ID to section
         self.taught_sections = {}
         self.is_admin = is_admin

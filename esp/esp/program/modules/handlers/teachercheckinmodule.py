@@ -219,7 +219,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                 .distinct('user__id')
                 .values_list('user', 'contact_user__phone_cell', 'contact_user__phone_day'))
         phone_entries = ((user, cell or day or default) for (user, cell, day) in profiles)
-        return collections.defaultdict(lambda _: default, phone_entries)
+        return collections.defaultdict(lambda: default, phone_entries)
 
     def get_missing_teachers(self, prog, date=None, starttime=None, when=None,
                            show_flags=True):

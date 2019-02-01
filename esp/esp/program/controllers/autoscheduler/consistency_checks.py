@@ -217,7 +217,7 @@ class ConsistencyChecker:
             if not all(t1 < t2 for t1, t2 in
                        zip(teacher.availability, teacher.availability[1:])):
                 raise ConsistencyError(
-                    "Teacher availability wasn't sorted.")
+                    "Teacher availability wasn't sorted. {}".format(teacher.availability))
 
     def check_teacher_taught_sections_consistency(self, schedule):
         """Make sure that the taught_sections dict has keys matching values,
