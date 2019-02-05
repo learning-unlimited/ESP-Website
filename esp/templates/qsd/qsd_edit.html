@@ -70,9 +70,12 @@
 <script type="text/javascript">
 var editor = new Jodit("#qsd_content", {
   "enter": "BR",
-  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,|,outdent,indent,|,font,fontsize,brush,paragraph,|,image,file,video,table,link,|,align,undo,redo,\n,cut,hr,eraser,copyformat,|,symbol,fullsize,selectall",
+  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,|,outdent,indent,|,font,fontsize,brush,paragraph,|,image,video,table,link,|,align,undo,redo,\n,cut,hr,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
-  "saveModeInStorage": true
+  "saveModeInStorage": true,
+  "uploader": {
+    "insertImageAsBase64URI": true
+  },
 });
 </script>
 {% endblock %}
