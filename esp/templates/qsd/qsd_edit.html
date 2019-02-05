@@ -4,6 +4,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <style type="text/css">
 .wikitoolbar {
    min-width: 233px;
@@ -30,7 +31,7 @@
 {% block xtrajs %}
 {{ block.super }}
 <script type="text/javascript" src="/media/scripts/jquery.js"></script>
-<script type="text/javascript" src="/media/scripts/markdown.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
 {% endblock %}
 
 
@@ -59,13 +60,19 @@
   </p>
 
   <h2>Content</h2>
-  <p>Please use <a href="http://daringfireball.net/projects/markdown/syntax">
-     Markdown</a> whenever possible. (Although HTML will work.)
-  </p>
-  <p><textarea class="wide markdown" name="content" rows="50" style="font-family: monospace;">{{ content|escape }}</textarea></p>
+  <p><textarea id="qsd_content" class="wide" name="content" rows="50" style="font-family: monospace;">{{ content|escape }}</textarea></p>
   <p><input type="submit" name="post_edit" value="Save Changes!" class="btn btn-primary" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">
   <p>Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date }}</p>
 </div>
+
+<script type="text/javascript">
+var editor = new Jodit("#qsd_content", {
+  "enter": "BR",
+  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,|,outdent,indent,|,font,fontsize,brush,paragraph,|,image,file,video,table,link,|,align,undo,redo,\n,cut,hr,eraser,copyformat,|,symbol,fullsize,selectall",
+  "toolbarAdaptive": false,
+  "saveModeInStorage": true
+});
+</script>
 {% endblock %}
