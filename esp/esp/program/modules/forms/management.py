@@ -58,7 +58,7 @@ class ClassManageForm(ManagementForm):
             csm = cls.class_size_max
         else:  csm = 0
         if cls.duration:
-            dur = Decimal(float(str(cls.duration)))
+            dur = cls.duration
         else:  dur = Decimal(0)
         self.initial = {
             prefix+'status': cls.status,
@@ -76,7 +76,7 @@ class ClassManageForm(ManagementForm):
         cls.grade_min = self.cleaned_data['min_grade']
         cls.grade_max = self.cleaned_data['max_grade']
         if not cls.hasScheduledSections():
-            cls.duration = Decimal(str(self.cleaned_data['duration']))
+            cls.duration = Decimal(self.cleaned_data['duration'])
         cls.class_size_max = self.cleaned_data['class_size']
         cls.directors_notes = self.cleaned_data['notes']
 

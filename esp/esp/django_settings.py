@@ -125,7 +125,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'splashwebsitearchive@learningu.org',
-    'bounces': 'learningubounces@gmail.com',
+    'bounces': 'emailbounces@learningu.org',
     'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
