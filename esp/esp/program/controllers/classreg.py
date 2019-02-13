@@ -49,6 +49,10 @@ class ClassCreationController(object):
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
             reg_form.cleaned_data['grade_max'] = self.program.grade_max
 
+        if form_class == TeacherOpenClassRegForm:
+            reg_form.cleaned_data['grade_min'] = self.program.grade_min
+            reg_form.cleaned_data['grade_max'] = self.program.grade_max
+
         self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
         cls = ClassSubject()
