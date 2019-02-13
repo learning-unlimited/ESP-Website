@@ -434,7 +434,7 @@ class ResourceModule(ProgramModuleObj):
                 res_group = new_res.res_group,
                 attribute_value = f.attribute_value
             )
-            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists() and str(old_res.id) in to_import:
+            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event, attribute_value=new_furnishing.attribute_value).exists() and str(old_res.id) in to_import:
                 new_furnishing.save()
             new_furnishings.append(new_furnishing)
         return new_furnishings
