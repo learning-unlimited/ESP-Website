@@ -825,11 +825,11 @@ class ClassSection(models.Model):
                     return u"You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
-    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False):
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
         # Check if section is full
-        if checkFull and self.isFull():
+        if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
@@ -1104,8 +1104,8 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def isFull(self, ignore_changes=False, checked_in_only = False):
-        if checked_in_only:
+    def isFull(self, ignore_changes=False, webapp=False):
+        if webapp and Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False):
             num_students = self.num_students_checked_in()
         else:
             num_students = self.num_students()
@@ -1115,8 +1115,7 @@ class ClassSection(models.Model):
             return (num_students >= self._get_capacity(ignore_changes))
 
     def isFullWebapp(self, ignore_changes=False):
-        checked_in_only = Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False)
-        return self.isFull(ignore_changes = ignore_changes, checked_in_only = checked_in_only)
+        return self.isFull(ignore_changes = ignore_changes, webapp = True)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
@@ -1226,7 +1225,7 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
-    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
+    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb == None:
             scrmi = self.parent_program.studentclassregmoduleinfo
             if scrmi and scrmi.use_priority:
@@ -1234,7 +1233,7 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull():
+        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
             qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
@@ -1579,14 +1578,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """ Return a prettified string listing of the class's teachers """
         return u", ".join([ u"%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
 
-    def isFull(self, ignore_changes=False, timeslot=None):
+    def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
+            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
                 return False
         return True
 
@@ -1637,7 +1636,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True, which_section=None):
+    def cannotAdd(self, user, checkFull=True, which_section=None, webapp=False):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent():
             return u'You are not a student!'
@@ -1648,7 +1647,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if checkFull and not self.parent_program.user_can_join(user):
             return u'This program cannot accept any more students!  Please try again in its next session.'
 
-        if checkFull and self.isFull():
+        if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
 
@@ -1668,7 +1667,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in sections:
-            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
         #   Pass on any errors that were triggered by the individual sections

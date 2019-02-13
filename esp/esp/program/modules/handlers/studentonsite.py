@@ -165,7 +165,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_grade
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
-        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog):
+        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
