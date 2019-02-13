@@ -30,7 +30,7 @@
            {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}}<b><font color="#990000">{% if sec.isFullWebapp %} (Full!){% elif sec.isRegClosed %} (Closed!){% elif sec.isCancelled %} (Cancelled!){% endif %}</font></b><br />{% endif %}
         {% endfor %}
     {% else %}
-        Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFull %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
+        Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFullWebapp %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
     {% endif %}
 </div>
 {% if section and checked_in %}

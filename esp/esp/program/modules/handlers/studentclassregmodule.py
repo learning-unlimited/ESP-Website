@@ -334,7 +334,7 @@ class StudentClassRegModule(ProgramModuleObj):
         return HttpResponse(json.dumps(json_data))
 
     @staticmethod
-    def addclass_logic(request, tl, one, two, module, extra, prog):
+    def addclass_logic(request, tl, one, two, module, extra, prog, webapp=False):
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
@@ -352,10 +352,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
-            error = section.cannotAdd(request.user,scrmi.enforce_max)
+            error = section.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp)
         if scrmi.use_priority or not error:
             cobj = ClassSubject.objects.get(id=classid)
-            error = cobj.cannotAdd(request.user,scrmi.enforce_max) or section.cannotAdd(request.user, scrmi.enforce_max)
+            error = cobj.cannotAdd(request.user,scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
 
         if scrmi.use_priority:
             priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -366,7 +366,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError(error, log=False)
 
         #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority):
+        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
             return True
         else:
             raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
