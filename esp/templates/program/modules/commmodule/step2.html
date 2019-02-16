@@ -4,16 +4,28 @@
 
 {% block xtrajs %}
 {{block.super}}
-<script type="text/javascript">
-<!--
-
-//-->
-</script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script type="text/javascript">
+    {% include "program/modules/commmodule/commpanel_step2.js" %}
+  </script>
+  <script type="text/javascript">
+    <!-- If coming back from preview, check the language used before -->
+    window.onload = function() {
+        if ('{{ msglang }}' != '')
+        {
+            document.getElementById("{{msglang}}").checked = "checked";
+        }
+    };
+  </script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
 <style type="text/css">
-.listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
+.listtable, .listtable th, .listtable td{ border: 1px solid #999;
+  border-collapse: collapse;}
 #divmaintext .unchosen { background-color: #CCC; }
 #divmaintext .chosen { background-color: #FFF; }
 #divmaintext td.notchooser { cursor: pointer }
@@ -30,23 +42,51 @@
 
 <br />
 <p>
-There are <strong>{{listcount}}</strong> distinct users in your query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}. If you feel this to be off, please
+There are <strong>{{listcount}}</strong> distinct users in your
+query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}.
+If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
-Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
-into the text of the message&mdash;the parameters are listed below.
 
-<p><b>Tip:</b> If you would like to send your message in HTML format, wrap your entire message body in &lt;html&gt; and &lt;/html&gt; tags.</p>
+Please write your email message now. Note that you can use
+<tt>&#123;&#123;parameter&#125;&#125;</tt> to enter a parameter into the text of the
+message&mdash;the parameters are listed below. The default
+{{ settings.ORGANIZATION_SHORT_NAME }} template (which you can modify
+<a href="/admin/utils/templateoverride/?q=default_email.html">here</a>)
+is automatically wrapped around your message below.
+You can choose to write the body in either plain text or HTML.
+If you choose to use HTML, there is no need for <tt>&lt;html&gt;</tt>
+and <tt>&lt;/html&gt;</tt> tags because they're are included in the wrapper
+template. If you choose plain text, do <b>not</b> use any HTML tags for
+whitespace.</p>
 
-<form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
+<form action="/manage/{{program.getUrlBase}}/commprev"
+  onsubmit="return validateMsgLang()" name="comm2" method="post">
+
 <table border="0" cellspacing="0" width="100%">
 <tr>
+  <input type="radio" name="msglang" id="plaintext" value="plaintext">Plain Text
+  <br />
+  <input type="radio" name="msglang" id="html" value="html" required>HTML
+
   <td>
   <label for="from">
   <strong>From:</strong>
-  <small>(If blank: your email)</small>
+  <small>(If blank: your email <span class="glyphicon glyphicon-info-sign"
+                          onclick="showEmailExplanation()"></span>)</small>
   </label><br />
   <input type="text" size="30" name="from" id="from" value="{{from}}" />
+    <p class="help-block" id="from-help" style="display:none;"><small>"Your email"
+    is an alias,
+    <span onclick="hideEmailExplanation()"
+            style="float:right;cursor:pointer;">&times;</span>
+    <script type="text/javascript">
+    document.write(esp_user.cur_username);</script>@{{ settings.SITE_INFO.1 }},
+    for your listed email (<script type="text/javascript">
+                            document.write(esp_user.cur_email);</script>),
+    which will receive all replies from and be visible to all
+    recipients.</small>
+    </p>
   <br />
   <label for="replyto">
   <strong>Reply-To:</strong>
@@ -57,12 +97,12 @@ into the text of the message&mdash;the parameters are listed below.
   <label for="subject">
   <strong>Subject:</strong>
   </label><br />
-  <input type="text" size="30" name="subject" id="subject" value="{{subject}}" />
+  <input type="text" size="30" name="subject" id="subject" value="{{subject}}" required />
   <br /><br />
   <label for="emailbody">
   <strong>Body:</strong>
   </label> <br />
-  <textarea cols="80" rows="20" name="body" id="emailbody">{{body}}</textarea>
+  <textarea cols="80" rows="20" name="body" id="emailbody" required />{{body}}</textarea>
   <br />
 
   </td>
@@ -162,7 +202,8 @@ into the text of the message&mdash;the parameters are listed below.
      {% templatetag openvariable %}program.full_classes{% templatetag closevariable %}
           </span>
       </th>
-      <td>Newline-separated list of user's classes that have full or nearly-full sections</td>
+      <td>Newline-separated list of user's classes that have full or
+        nearly-full sections</td>
     </tr>
     <tr>
       <th><span style="white-space: nowrap;">
