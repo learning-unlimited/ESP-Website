@@ -646,21 +646,22 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [cls for cls in teacher.getTaughtSections()
+            classes = [(cls, False) for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
                     and cls.isAccepted()                       ]
-            classes += [sec for sec in teacher.get_observing_sections_from_program(self.program)
+            classes += [(sec, True) for sec in teacher.get_observing_sections_from_program(self.program)
                     if sec.meeting_times.all().exists()
                     and sec.resourceassignment_set.all().exists()
                     and sec.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()
-            for cls in classes:
+            for cls, observing in classes:
                 scheditems.append({'name': teacher.name(),
                                    'teacher': teacher,
-                                   'cls' : cls})
+                                   'cls' : cls,
+                                   'observing': observing})
 
         context['scheditems'] = scheditems
 
