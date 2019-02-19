@@ -46,26 +46,29 @@ class UserAttributeGetter(object):
     def getFunctions():
         """ Enter labels for available fields here; they are sorted alphabetically by key """
         labels = {  '01_id': 'ID',
-                    '02_address': 'Address',
+                    '02_username': 'Username',
                     '03_fullname': 'Full Name',
-                    '04_lastname': 'Last Name',
-                    '05_firstname': 'First Name',
-                    '06_username': 'Username',
-                    '07_email': 'E-mail',
-                    '08_accountdate': 'Created Date',
-                    '09_first_regdate': 'Initial Registration Date',
-                    '10_last_regdate': 'Most Recent Registration Date',
-                    '11_cellphone': 'Cell Phone',
-                    '12_textmsg': 'Text Msg?',
-                    '13_studentrep': 'Student Rep?',
-                    '14_classhours': 'Num Class Hrs',
-                    '15_gradyear': 'Grad Year',
-                    '16_school': 'School',
-                    '17_heard_about': 'Heard about Splash from',
-                    '18_transportation': 'Plan to Get to Splash',
-                    '19_dob': 'Date of Birth',
-                    '21_tshirt_size': 'T-Shirt Size',
-                    '22_gender': 'Gender',
+                    '04_firstname': 'First Name',
+                    '05_lastname': 'Last Name',
+                    '06_email': 'E-mail',
+                    '07_cellphone': 'Cell Phone',
+                    '08_textmsg': 'Text Msg?',
+                    '09_address': 'Address',
+                    '10_tshirt_size': 'T-Shirt Size',
+                    '11_dob': 'Date of Birth',
+                    '12_gender': 'Gender',
+                    '13_gradyear': 'Grad Year',
+                    '14_school': 'School',
+                    '15_studentrep': 'Student Rep?',
+                    '16_heard_about': 'Heard about Splash from',
+                    '17_accountdate': 'Created Date',
+                    '18_first_regdate': 'Initial Registration Date',
+                    '19_last_regdate': 'Most Recent Registration Date',
+                    '20_classhours': 'Num Class Hrs',
+                    '21_transportation': 'Plan to Get to Splash',
+                    '22_guardian_name': 'Guardian Name',
+                    '23_guardian_email': 'Guardian E-mail',
+                    '24_guardian_cellphone': 'Guardian Cell Phone',
                  }
 
         last_label_index = len(labels)
@@ -124,6 +127,18 @@ class UserAttributeGetter(object):
     def get_email(self):
         return self.user.email
 
+    def get_guardian_email(self):
+        if self.profile.student_info:
+            return self.profile.contact_guardian.email
+
+    def get_guardian_name(self):
+        if self.profile.student_info:
+            return self.profile.contact_guardian.name
+
+    def get_guardian_cellphone(self):
+        if self.profile.student_info:
+            return self.profile.contact_guardian.phone_cell
+
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
 
@@ -154,17 +169,19 @@ class UserAttributeGetter(object):
         return sum([x.meeting_times.count() for x in self.user.getEnrolledSections(self.program)])
 
     def get_school(self):
-        if self.profile.student_info:
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.college
+        elif self.profile.student_info:
             if self.profile.student_info.k12school:
                 return self.profile.student_info.k12school.name
             else:
                 return self.profile.student_info.school
 
     def get_tshirt_size(self):
-        if self.profile.student_info:
-            return self.profile.student_info.shirt_size
-        elif self.profile.teacher_info:
+        if self.profile.teacher_info:
             return self.profile.teacher_info.shirt_size
+        elif self.profile.student_info:
+            return self.profile.student_info.shirt_size
         else:
             return None
 
@@ -173,7 +190,9 @@ class UserAttributeGetter(object):
             return self.profile.student_info.heard_about
 
     def get_gradyear(self):
-        if self.profile.student_info:
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.graduation_year
+        elif self.profile.student_info:
             return self.profile.student_info.graduation_year
 
     def get_transportation(self):
