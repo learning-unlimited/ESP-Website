@@ -169,19 +169,19 @@ class UserAttributeGetter(object):
         return sum([x.meeting_times.count() for x in self.user.getEnrolledSections(self.program)])
 
     def get_school(self):
-        if self.profile.student_info:
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.college
+        elif self.profile.student_info:
             if self.profile.student_info.k12school:
                 return self.profile.student_info.k12school.name
             else:
                 return self.profile.student_info.school
-        if self.profile.teacher_info:
-            return self.profile.teacher_info.college
 
     def get_tshirt_size(self):
-        if self.profile.student_info:
-            return self.profile.student_info.shirt_size
-        elif self.profile.teacher_info:
+        if self.profile.teacher_info:
             return self.profile.teacher_info.shirt_size
+        elif self.profile.student_info:
+            return self.profile.student_info.shirt_size
         else:
             return None
 
@@ -190,10 +190,10 @@ class UserAttributeGetter(object):
             return self.profile.student_info.heard_about
 
     def get_gradyear(self):
-        if self.profile.student_info:
-            return self.profile.student_info.graduation_year
         if self.profile.teacher_info:
             return self.profile.teacher_info.graduation_year
+        elif self.profile.student_info:
+            return self.profile.student_info.graduation_year
 
     def get_transportation(self):
         if self.profile.student_info:
