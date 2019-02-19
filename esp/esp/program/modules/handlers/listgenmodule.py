@@ -51,7 +51,7 @@ class UserAttributeGetter(object):
                     '04_firstname': 'First Name',
                     '05_lastname': 'Last Name',
                     '06_email': 'E-mail',
-                    '07_cellphone': 'Cell Phone',                    
+                    '07_cellphone': 'Cell Phone',
                     '08_textmsg': 'Text Msg?',
                     '09_address': 'Address',
                     '10_tshirt_size': 'T-Shirt Size',
@@ -126,19 +126,19 @@ class UserAttributeGetter(object):
 
     def get_email(self):
         return self.user.email
-        
+
     def get_guardian_email(self):
         if self.profile.student_info:
             return self.profile.contact_guardian.email
-        
+
     def get_guardian_name(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.name       
+            return self.profile.contact_guardian.name
 
     def get_guardian_cellphone(self):
         if self.profile.student_info:
-            return self.profile.contact_guardian.phone_cell        
-        
+            return self.profile.contact_guardian.phone_cell
+
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
 
