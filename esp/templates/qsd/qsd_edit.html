@@ -5,33 +5,13 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
-<style type="text/css">
-.wikitoolbar {
-   min-width: 233px;
-   border: 1px solid #333;
-   float: left;
-}
-
-.wikitoolbar a {
-   padding: 0;
-   margin: 0;
-}
-
-.wikitoolbar a img {
-   border: 2px solid #ccc;
-}
-
-.wikitoolbar a:hover img {
-   border: 2px solid #cc9;
-}
-
-</style>
 {% endblock %}
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript" src="/media/scripts/jquery.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
+<!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
+<script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 {% endblock %}
 
 
@@ -73,9 +53,12 @@ var editor = new Jodit("#qsd_content", {
   "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
   "toolbarAdaptive": false,
   "saveModeInStorage": true,
-  "uploader": {
-    "insertImageAsBase64URI": true
-  },
+});
+
+$j(document).ready(function() {
+  $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
+    $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
+  });
 });
 </script>
 {% endblock %}
