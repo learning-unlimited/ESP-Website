@@ -1,5 +1,6 @@
 #user-sidebar {
   float: right;
+  width: 44%;
 }
 
 #user-sidebar .change-program {
@@ -17,7 +18,6 @@
   
   display: block;
   border: 1px solid #3366cc;
-  border-right: none;
   
   padding: 7px;
   margin-right: -20px;
@@ -39,6 +39,7 @@
 table.dottedtable {
   border-spacing: 0;
   border-collapse: collapse;
+  width: 55%;
 }
 
 table.dottedtable tr {
@@ -53,14 +54,24 @@ table.dottedtable td {
 table.dottedtable .key {
   font-size: 90%;
   color: #444;
-  width: 150px;
+  width: 40%;
   padding-right: 20px;
   
   vertical-align: top;
 }
 
-table.dottedtable.long td:nth-child(even) {
-  min-width: 210px;
+select {
+  width: auto !important;
+}
+
+.biophoto {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.change-program {
+  text-align: center;
 }
 
 .yes {
