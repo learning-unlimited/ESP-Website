@@ -44,6 +44,7 @@ from django.template import Template
 from django.template import Context as DjangoContext
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
+from django.template import loader
 
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -181,7 +182,10 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext    = body,
+                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
+                                                                                                                                       {'msgbdy': body,
+                                                                                                                                        'user': request.user,
+                                                                                                                                        'program': self.program }))),
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
