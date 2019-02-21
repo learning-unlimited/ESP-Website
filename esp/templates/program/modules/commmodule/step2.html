@@ -101,8 +101,6 @@ var editor = new Jodit("#emailbody", {
         '{% templatetag openvariable %}program.transcript{% templatetag closevariable %}': 'Transcript (classes and descriptions) for Program',
         '{% templatetag openvariable %}program.receipt{% templatetag closevariable %}': 'Confirmation receipt for Program',
         '{% templatetag openvariable %}program.full_classes{% templatetag closevariable %}': 'Newline-separated list of user\'s classes that have full or nearly-full sections',
-        '{% templatetag openvariable %}program.diag_sat_scores{% templatetag closevariable %}': 'User\'s Diagnostic SAT Scores',
-        '{% templatetag openvariable %}program.prac_sat_scores{% templatetag closevariable %}': 'User\'s Practice SAT Scores',
       },
       exec: function(editor, current, control) {
         var key = control['name'];
