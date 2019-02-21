@@ -38,7 +38,7 @@
 
 {% if error_type == "declined" %}
 <b>Credit card was declined.</b>  You may have triggered fraud detection, made a typo in the credit card information, or accidentally used an expired card.
-<ul><li>The payment processor reports: {{ error_info.message }}</li></ul>
+<center>The payment processor reports: {{ error_info.message }}</center>
 {% endif %}
 
 {% if error_type == "invalid" %}
