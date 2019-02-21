@@ -368,14 +368,13 @@ FILEBROWSER_DIRECTORY = ''
 
 FILEBROWSER_EXTENSIONS = {
     'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
-    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv','.css'],
+    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
     'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
     'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
-    'Script': ['.js'],
 }
 
 FILEBROWSER_SELECT_FORMATS = {
-    'file': ['Image','Document','Video','Audio','Script'],
+    'file': ['Image','Document','Video','Audio'],
     'image': ['Image'],
     'document': ['Document'],
     'media': ['Video','Audio'],
