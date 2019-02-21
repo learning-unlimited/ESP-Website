@@ -40,9 +40,11 @@ The program you are trying to create is: <b>{{ prog }}</b>
 <tr>
 <th colspan="2" class="materials">The following program modules will be added:</th>
 </tr>
-<!-- This loop puts the modules in two columns (so the list isn't too long)
+{% comment %}
+This loop puts the modules in two columns (so the list isn't too long)
 and alternates in such a way that there isn't an unclosed tag if there's an
-odd number of modules -->
+odd number of modules
+{% endcomment %}
 {% for item in modules %}
     {% if forloop.counter0|divisibleby:"2" %}<tr><td style="text-align:center">
     {% else %} <td style="text-align:center">{% endif %}
