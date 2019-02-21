@@ -4,20 +4,19 @@
 
 {% block xtrajs %}
 {{block.super}}
-<script type="text/javascript">
-<!--
-
-//-->
-</script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
 {% endblock %}
 {% block stylesheets %}
 {{block.super}}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <style type="text/css">
 .listtable, .listtable th, .listtable td{ border: 1px solid #999; border-collapse: collapse;}
 #divmaintext .unchosen { background-color: #CCC; }
 #divmaintext .chosen { background-color: #FFF; }
 #divmaintext td.notchooser { cursor: pointer }
 #finalsentence { border: 1px solid black; width: 550px; }
+/*Fix css for template tag button*/
+.jodit_icon_insertDate { width: 16px; height: 16px}
 </style>
 {% endblock %}
 
@@ -33,17 +32,8 @@
 There are <strong>{{listcount}}</strong> distinct users in your query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}. If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
-Please write your email/message now. Note that you can use <tt>{{ parameter }}</tt> to enter a parameter
-into the text of the message&mdash;the parameters are listed below.
-The default {{ settings.ORGANIZATION_SHORT_NAME }} template (which you can
-modify
-<a href="/admin/utils/templateoverride/?name=default_email_html.txt">here</a>)
-is automatically wrapped around your message below.
-You can choose to write the body in either plain text or HTML.
-If you choose to use HTML, there is no need for &lt;html&gt; and &lt;/html&gt;
-tags because they're are included in the wrapper template.
-If you choose plain text, do <b>not</b> try to use any HTML tags for
-whitespace.</p>
+Please write your email message now. Note that you can use <tt>{% templatetag openvariable %} parameter {% templatetag closevariable %}</tt> to enter a parameter
+into the text of the message. You can use the {% templatetag openvariable %}{% templatetag closevariable %} button to choose from the possible parameters.
 
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
 
@@ -75,96 +65,7 @@ whitespace.</p>
   </label> <br />
   <textarea cols="80" rows="20" name="body" id="emailbody">{{body}}</textarea>
   <br />
-
   </td>
-
-  <td width="200">
-   <table class="listtable" cellspacing="0">
-    <tr>
-      <th>Invocation</th>
-      <th>Description</th>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}user.name{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>User's Full Name</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}user.username{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>User's {{ settings.ORGANIZATION_SHORT_NAME }} Web Site Username</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}user.first_name{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>User's First Name</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}user.last_name{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>User's Last Name</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.student_schedule{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Student's schedule for Program</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.student_schedule_norooms{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Student's schedule without room numbers</td>
-    </tr>
-        <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.teacher_schedule{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Teacher's schedule for Program</td>
-    </tr>
-        <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.volunteer_schedule{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Volunteer's schedule for Program</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.transcript{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Transcript (classes and descriptions) for Program</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.receipt{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Confirmation receipt for Program</td>
-    </tr>
-    <tr>
-      <th><span style="white-space: nowrap;">
-     {% templatetag openvariable %}program.full_classes{% templatetag closevariable %}
-          </span>
-      </th>
-      <td>Newline-separated list of user's classes that have full or nearly-full sections</td>
-    </tr>
-    </table>
-  </td>
-
-
 </tr>
 </table>
 
@@ -174,4 +75,42 @@ whitespace.</p>
 <input type="hidden" name="filterid" value="{{filterid}}" />
 <input type="hidden" name="sendto_fn_name" value="{{sendto_fn_name}}" />
 </form>
+
+<script type="text/javascript">
+var editor = new Jodit("#emailbody", {
+  "enter": "BR",
+  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall,|",
+  "toolbarAdaptive": false,
+  "saveModeInStorage": true,
+  extraButtons: [
+    {
+      name: 'insertDate',
+      iconURL: '/media/default_images/template_tag.svg',
+      mode: 3,
+      list: {
+        '{% templatetag openvariable %}user.name{% templatetag closevariable %}': 'User\'s Full Name',
+        '{% templatetag openvariable %}user.username{% templatetag closevariable %}': 'User\'s ESP Web Site Username',
+        '{% templatetag openvariable %}user.first_name{% templatetag closevariable %}': 'User\'s First Name',
+        '{% templatetag openvariable %}user.last_name{% templatetag closevariable %}': 'User\'s Last Name',
+        '{% templatetag openvariable %}program.student_schedule{% templatetag closevariable %}': 'Student\'s schedule for Program',
+        '{% templatetag openvariable %}program.student_schedule_norooms{% templatetag closevariable %}': 'Student\'s schedule without room numbers',
+        '{% templatetag openvariable %}program.teacher_schedule{% templatetag closevariable %}': 'Teacher\'s schedule for Program',
+        '{% templatetag openvariable %}program.teacher_schedule_dates{% templatetag closevariable %}': 'Teacher\'s schedule with dates',
+        '{% templatetag openvariable %}program.volunteer_schedule{% templatetag closevariable %}': 'Volunteer\'s schedule for Program',
+        '{% templatetag openvariable %}program.volunteer_schedule_dates{% templatetag closevariable %}': 'Volunteer\'s schedule with dates',
+        '{% templatetag openvariable %}program.transcript{% templatetag closevariable %}': 'Transcript (classes and descriptions) for Program',
+        '{% templatetag openvariable %}program.receipt{% templatetag closevariable %}': 'Confirmation receipt for Program',
+        '{% templatetag openvariable %}program.full_classes{% templatetag closevariable %}': 'Newline-separated list of user\'s classes that have full or nearly-full sections',
+        '{% templatetag openvariable %}program.diag_sat_scores{% templatetag closevariable %}': 'User\'s Diagnostic SAT Scores',
+        '{% templatetag openvariable %}program.prac_sat_scores{% templatetag closevariable %}': 'User\'s Practice SAT Scores',
+      },
+      exec: function(editor, current, control) {
+        var key = control['name'];
+        editor.selection.insertHTML(key);
+    },
+      tooltip: "Insert a template tag",
+    }
+  ],
+});
+</script>
 {% endblock %}

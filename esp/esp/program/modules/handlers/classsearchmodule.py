@@ -8,6 +8,7 @@ from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, main_call, needs_admin
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
+from esp.resources.models import Resource, ResourceType, ResourceRequest
 from esp.utils.query_builder import QueryBuilder, SearchFilter
 from esp.utils.query_builder import SelectInput, ConstantInput, TextInput
 from esp.utils.query_builder import OptionalInput, DatetimeInput
@@ -47,6 +48,18 @@ class ClassSearchModule(ProgramModuleObj):
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
                                        inputs=[any_flag_input] +
                                        flag_datetime_inputs)
+
+        resource_types = ResourceType.objects.filter(program=self.program)
+        resource_value_input = OptionalInput(name="desired value",
+            inner=TextInput(field_name='sections__resourcerequest__desired_value', english_name=''))
+        resource_select_input = SelectInput(
+            field_name='sections__resourcerequest__res_type',
+            options={str(rt.id): rt.name for rt in resource_types})
+        any_resource_input = ConstantInput(Q(sections__resourcerequest__isnull=False))
+        resource_filter = SearchFilter(name='resource', title='the requested resource',
+                                   inputs=[resource_select_input] + [resource_value_input])
+        any_resource_filter = SearchFilter(name='any_resource', title='any requested resource',
+                                       inputs=[any_resource_input])
 
         categories = list(self.program.class_categories.all())
         if self.program.open_class_registration:
@@ -90,6 +103,8 @@ class ClassSearchModule(ProgramModuleObj):
                 username_filter,
                 flag_filter,
                 any_flag_filter,
+                resource_filter,
+                any_resource_filter,
                 all_scheduled_filter,
                 some_scheduled_filter,
             ])
@@ -137,6 +152,7 @@ class ClassSearchModule(ProgramModuleObj):
                 # page as usual
             context['query'] = decoded
             context['queryset'] = queryset
+            context['IDs'] = [cls.id for cls in queryset]
             context['flag_types'] = self.program.flag_types.all()
         return render_to_response(self.baseDir()+'class_search.html',
                                   request, context)

@@ -130,12 +130,12 @@ class AvailabilityModule(ProgramModuleObj):
         #   Renders the teacher availability page and handles submissions of said page.
 
         if tl == "manage":
-            # They probably want to be check someone's availability instead-
-            return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
+            # They probably want to be check or edit someone's availability instead
+            return HttpResponseRedirect( '/manage/%s/%s/edit_availability' % (one, two) )
         else:
             return self.availabilityForm(request, tl, one, two, prog, request.user, False)
 
-    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
+    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin=False):
         time_options = self.program.getTimeSlots(types=[self.event_type()])
         #   Group contiguous blocks
         if not Tag.getBooleanTag('availability_group_timeslots', default=True):
@@ -153,17 +153,23 @@ class AvailabilityModule(ProgramModuleObj):
         #   If we found a timeslot that they are scheduled in but is not available, show a warning.
         taken_slots = []
         avail_and_teaching = []
+        unscheduled_classes = []
         user_sections = teacher.getTaughtSections(self.program)
+        teaching_times = {}
         conflict_found = False
         for section in user_sections:
-            for timeslot in section.get_meeting_times():
+            sec_times = section.get_meeting_times()
+            if len(sec_times) == 0:
+                unscheduled_classes.append(section)
+            for timeslot in sec_times:
                 taken_slots.append(timeslot)
                 if timeslot not in available_slots:
                     conflict_found = True
                 else:
                     avail_and_teaching.append(timeslot)
+                teaching_times[timeslot]=section
 
-        if request.method == 'POST':
+        if request.method == 'POST' and 'search' not in request.POST:
             #   Process form
             post_vars = request.POST
 
@@ -191,8 +197,8 @@ class AvailabilityModule(ProgramModuleObj):
                 ccc.send_availability_email(teacher)
 
                 if isAdmin:
-                    #   Return to the relevant check_availability page
-                    return HttpResponseRedirect( '/manage/%s/%s/check_availability?user=%s' % (one, two, teacher.id) )
+                    #   Return to the relevant edit_availability page
+                    return HttpResponseRedirect( '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.id) )
                 else:
                     #   Return to the main registration page
                     return self.goToCore(tl)
@@ -207,93 +213,33 @@ class AvailabilityModule(ProgramModuleObj):
             #   for a in available_slots:
             #       teacher.addAvailableTime(self.program, a)
 
-        context = {'groups': [{'selections': [{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t} for t in group]} for group in time_groups]}
+        context =   {
+                        'groups': [
+                            [
+                                {
+                                    'checked': t in available_slots,
+                                    'taken': t in taken_slots,
+                                    'slot': t,
+                                    'id': t.id,
+                                    'section': teaching_times.get(t),
+                                }
+                            for t in group]
+                        for group in time_groups]
+                    }
+        context['unscheduled'] = unscheduled_classes
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
         context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))
         context['submitted_blank'] = blank
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
+        context['isAdmin'] = isAdmin
+
+        if isAdmin:
+            form = GenericSearchForm(initial={'target_user': teacher.id})
+            context['search_form'] = form
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
-
-    @aux_call
-    @needs_admin
-    def check_availability(self, request, tl, one, two, module, extra, prog):
-        """
-        Check availability of the specified user.
-        """
-
-        teacher = None
-        form = None
-
-        if request.method == 'POST':
-            form = GenericSearchForm(request.POST)
-            if form.is_valid():
-                teacher = form.cleaned_data['target_user']
-
-        if teacher is None:
-            if 'user' in request.GET:
-                target_id = request.GET['user']
-            elif 'user' in request.POST:
-                target_id = request.POST['user']
-            else:
-                form = GenericSearchForm()
-                context = {'form': form}
-                return render_to_response(self.baseDir()+'check_availability.html', request, context)
-
-            form = GenericSearchForm(initial={'target_user': target_id})
-
-            try:
-                teacher = ESPUser.objects.get(id=target_id)
-            except:
-                try:
-                    teacher = ESPUser.objects.get(username=target_id)
-                except:
-                    raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
-
-        if teacher is None:
-            form = GenericSearchForm()
-            context = {'form': form}
-            return render_to_response(self.baseDir()+'check_availability.html', request, context)
-
-        timeslots = self.program.getTimeSlotList()
-
-        # Get the times that the teacher is marked as available
-        marked_available = set(teacher.getAvailableTimes(self.program, True))
-
-        # Now get times that teacher is teaching
-        # Also keep track of what class it is
-        teaching_sections = teacher.getTaughtSections(self.program)
-        teaching_times = {}
-        unscheduled_classes = []
-        for s in teaching_sections:
-            sec_times = s.get_meeting_times()
-            if len(sec_times) == 0:
-                unscheduled_classes.append((s.parent_class.id, s.emailcode(), s.parent_class.title, s.prettyDuration()))
-            for t in sec_times:
-                rooms = ""
-                for r in s.prettyrooms():
-                    rooms = rooms + r
-                    if r != s.prettyrooms()[-1]:
-                        rooms = rooms + ", "
-                teaching_times[t]=(s.parent_class.id, s.emailcode(), s.parent_class.title, rooms)
-
-
-        # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
-        available = []
-
-        for t in timeslots:
-            teaching = t in teaching_times
-            diff_day = t.start.date() != t.end.date()
-            available.append((self.prettyTime(t.start), self.prettyTime(t.end, inc_date=diff_day), (t in marked_available), teaching,
-                teaching_times.get(t)[0] if teaching else None,
-                teaching_times.get(t)[1] if teaching else None,
-                teaching_times.get(t)[2] if teaching else None,
-                teaching_times.get(t)[3] if teaching else None))
-
-        context = {'available': available, 'unscheduled': unscheduled_classes, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username), 'form': form }
-        return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
     @aux_call
     @needs_admin
@@ -308,9 +254,12 @@ class AvailabilityModule(ProgramModuleObj):
             target_id = request.GET['user']
         elif 'user' in request.POST:
             target_id = request.POST['user']
+        elif 'target_user' in request.POST:
+            target_id = request.POST['target_user']
         else:
-            context = {}
-            return render_to_response(self.baseDir()+'check_availability.html', request, context)
+            form = GenericSearchForm()
+            context = {'search_form': form, 'isAdmin': True, 'prog': self.program}
+            return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
         try:
             teacher = ESPUser.objects.get(id=target_id)

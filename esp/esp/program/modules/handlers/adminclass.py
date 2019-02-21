@@ -63,7 +63,7 @@ class AdminClass(ProgramModuleObj):
             "seq": 1,
             }
 
-    form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade']
+    form_choice_types = ['status', 'reg_status', 'room', 'resources', 'times', 'min_grade', 'max_grade', 'duration']
     def getFormChoices(self, field_str):
         """ A more compact function for zipping up the options available on class
         management forms. """
@@ -87,6 +87,8 @@ class AdminClass(ProgramModuleObj):
             if self.program.grade_max:
                 max_grade = self.program.grade_max
             return ((i, str(i)) for i in range(min_grade, max_grade + 1))
+        if field_str == 'duration':
+            return self.program.getDurations()
 
     def timeslot_counts(self):
         timeslots = self.program.getTimeSlots()
@@ -327,8 +329,6 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import ESPUser
-
         #   Allow submitting class ID via either GET or POST.
         if 'clsid' in request.GET:
             clsid = request.GET['clsid']
@@ -351,9 +351,6 @@ class AdminClass(ProgramModuleObj):
         # set txtTeachers and coteachers....
         if not 'coteachers' in request.POST:
             coteachers = cls.get_teachers()
-            coteachers = [ user for user in coteachers
-                           if user.id != request.user.id           ]
-
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
 
         else:
@@ -367,8 +364,12 @@ class AdminClass(ProgramModuleObj):
         if 'op' in request.POST:
             op = request.POST['op']
 
-        conflictingusers = []
         error = False
+
+        old_coteachers_set = set(cls.get_teachers())
+        ccc = ClassCreationController(self.program)
+
+        conflictinguser = ''
 
         if op == 'add':
 
@@ -384,16 +385,19 @@ class AdminClass(ProgramModuleObj):
                                            'ajax': ajax,
                                            'txtTeachers': txtTeachers,
                                            'coteachers': coteachers,
-                                           'error': error})
+                                           'error': error,
+                                           'conflict': []})
 
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
-                conflictingusers.append(teacher.first_name+' '+teacher.last_name)
+                conflictinguser = (teacher.first_name+' '+teacher.last_name)
             else:
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
+                ccc.associate_teacher_with_class(cls, teacher)
+                ccc.send_class_mail_to_directors(cls)
 
         elif op == 'del':
             ids = request.POST.getlist('delete_coteachers')
@@ -405,31 +409,18 @@ class AdminClass(ProgramModuleObj):
             coteachers = newcoteachers
             txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
 
-
-        elif op == 'save':
-            #            if
-            for teacher in coteachers:
-                if cls.conflicts(teacher):
-                    conflictingusers.append(teacher.first_name+' '+teacher.last_name)
-            if len(conflictingusers) == 0:
-                for teacher in cls.get_teachers():
-                    cls.removeTeacher(teacher)
-
-                # add bits for all new (and old) coteachers
-                ccc = ClassCreationController(self.program)
-                for teacher in coteachers:
-                    ccc.associate_teacher_with_class(cls, teacher)
-                ccc.send_class_mail_to_directors(cls)
-                return self.goToCore(tl)
-
-
+            new_coteachers_set = set(coteachers)
+            to_be_deleted = old_coteachers_set - new_coteachers_set
+            for teacher in to_be_deleted:
+                cls.removeTeacher(teacher)
+            ccc.send_class_mail_to_directors(cls)
 
         return render_to_response(self.baseDir()+'coteachers.html', request,
                                   {'class': cls,
                                    'ajax': ajax,
                                    'txtTeachers': txtTeachers,
                                    'coteachers': coteachers,
-                                   'conflicts': conflictingusers})
+                                   'conflict': conflictinguser})
 
     @aux_call
     @needs_admin

@@ -291,8 +291,7 @@ CACHE_PREFIX = "${SITENAME}ESP"
 # Default addresses to send archive/bounce info to
 DEFAULT_EMAIL_ADDRESSES = {
         'archive': 'splashwebsitearchive@learningu.org',
-        # TODO(benkraft): Change this to an @learningu as well
-        'bounces': 'learningubounces@gmail.com',
+        'bounces': 'emailbounces@learningu.org',
         'support': '$GROUPEMAIL',
         'membership': '$GROUPEMAIL',
         'default': '$GROUPEMAIL',
@@ -433,7 +432,7 @@ WSGIDaemonProcess $SITENAME processes=2 threads=1 maximum-requests=500 display-n
 EOF
     service apache2 graceful
     # TODO(benkraft): put the renewal script in git too.
-    /lu/certbot/renew_lu.py
+    /lu/scripts/certbot/renew_lu.py
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
 
     echo "Apache has been set up, and a new SSL cert has been requested."

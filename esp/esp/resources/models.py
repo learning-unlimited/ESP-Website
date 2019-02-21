@@ -81,6 +81,8 @@ class ResourceType(models.Model):
     choices = ListField('attributes_pickled')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
+    #   Whether to offer this resource type as an option in the class creation/editing form
+    hidden = models.BooleanField(default=False)
 
     def _get_attributes(self):
         if hasattr(self, '_attributes_cached'):

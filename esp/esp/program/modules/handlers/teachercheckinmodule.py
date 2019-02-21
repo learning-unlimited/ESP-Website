@@ -51,7 +51,6 @@ from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from django.db.models.query   import Q
 from datetime import datetime, timedelta
-from twilio.rest import TwilioRestClient
 
 import collections
 import json
@@ -169,8 +168,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
                 message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.friendly_times(include_date = True)[0] + "!"
-                GroupTextModule.sendMessages(teacher, message, True)
-                return {'message': "Texted teacher"}
+                log = GroupTextModule.sendMessages(teacher, message, True)
+                if "error" in log:
+                    return {'message': "Error texting teacher"}
+                else:
+                    return {'message': "Texted teacher"}
             else:
                 return {'message': "Username and/or section not provided"}
         else:
@@ -357,12 +359,24 @@ class TeacherCheckinModule(ProgramModuleObj):
                               getMissingTeachers(). Should be given in the
                               format "%m/%d/%Y %H:%M".
         """
-        starttime = date = None
+        starttime = date = next = previous = None
         if 'start' in request.GET:
             starttime = Event.objects.get(id=request.GET['start'])
             date = starttime.start.date()
+            times = prog.getTimeSlotList()
+            i = times.index(starttime)
+            if i > 0:
+                previous = times[i - 1]
+            if i < len(times) - 1:
+                next = times[i + 1]
         elif 'date' in request.GET:
             date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
+            dates = prog.dates()
+            i = dates.index(date)
+            if i > 0:
+                previous = dates[i - 1].strftime('%m/%d/%Y')
+            if i < len(dates) - 1:
+                next = dates[i + 1].strftime('%m/%d/%Y')
         context = {}
         context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
@@ -381,6 +395,8 @@ class TeacherCheckinModule(ProgramModuleObj):
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         context['start_time'] = starttime
+        context['next'] = next
+        context['previous'] = previous
         return render_to_response(self.baseDir()+'missingteachers.html',
                                   request, context)
 

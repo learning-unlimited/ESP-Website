@@ -95,5 +95,8 @@ Welcome to the student check-in for {{module.student.name}}. Please checkoff tha
   <label for="paid"><strong>Paid?</strong></label> &nbsp;&nbsp;
   <input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
   <br />
-  <br />{% endcomment %}
-  {% endblock %}
+  <br />
+{% endcomment %}
+
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endblock %}

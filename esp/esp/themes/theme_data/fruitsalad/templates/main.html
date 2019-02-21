@@ -74,14 +74,14 @@
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript">
-{% if current_program %}
-var currentProgram = {
-    urlBase: "{{ current_program.getUrlBase }}",
-    name: "{{ current_program.niceName }}",
-};
-{% else %}
-var currentProgram = undefined;
-{% endif %}
+var currentPrograms = [
+{% for current_program in current_programs %}
+    {
+        urlBase: "{{ current_program.getUrlBase }}",
+        name: "{{ current_program.niceName }}",
+    },
+{% endfor %}
+];
 </script>
 <script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">

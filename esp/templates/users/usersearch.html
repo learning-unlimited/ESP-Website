@@ -108,4 +108,8 @@ Max:
 
 <p>Please note that these operations may take a long time if they involve a lot of users.</p>
 
+{% if tl == "onsite" %}
+{% include "program/modules/onsitecore/returnlink.html" %}
+{% endif %}
+
 {% endblock %}

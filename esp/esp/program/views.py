@@ -59,7 +59,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -392,6 +392,7 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
         'all_programs': Program.objects.all().order_by('-id'),
         'program': program,
+        'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -401,6 +402,20 @@ def deactivate_user(request):
 
 def activate_user(request):
     return activate_or_deactivate_user(request, activate=True)
+
+@admin_required
+def unenroll_student(request):
+    if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
+        return HttpResponseBadRequest('')
+    users = ESPUser.objects.filter(id=request.POST['user_id'])
+    if users.count() != 1:
+        return HttpResponseBadRequest('')
+    else:
+        user = users[0]
+        sections = user.getSections(program = request.POST['program'])
+        for sec in sections:
+            sec.unpreregister_student(user)
+        return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
 def activate_or_deactivate_user(request, activate):
