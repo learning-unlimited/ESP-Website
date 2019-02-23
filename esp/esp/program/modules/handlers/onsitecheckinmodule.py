@@ -80,7 +80,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         if event=="paid":
             self.updatePaid(False)
 
-        recs = Record.objects.get_or_create(user=self.student,
+        recs, created = Record.objects.get_or_create(user=self.student,
                                             event=event,
                                             program=self.program)
         recs.delete()
@@ -242,23 +242,31 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
-        user, found = search_for_user(request, self.program.students_union())
-        if not found:
-            return user
+        if request.method == 'POST' and 'userid' in request.POST:
+            error = False
+            message = None
+            user = ESPUser.objects.filter(id = request.POST['userid']).first()
+            if user:
+                self.student = user
+                for key in ['attended','paid','liab','med']:
+                    if key in request.POST:
+                        self.create_record(key)
+                    else:
+                        self.delete_record(key)
+                message = "Check-in updated for " + user.username
+            else:
+                error = True
 
-        self.student = user
+            context = {'error': error, 'message': message}
+            return render_to_response('users/usersearch.html', request, context)
 
-        if request.method == 'POST':
-            for key in ['attended','paid','liab','med']:
-                if key in request.POST:
-                    self.create_record(key)
-                else:
-                    self.delete_record(key)
+        else:
+            user, found = search_for_user(request, self.program.students_union())
+            if not found:
+                return user
 
-
-            return self.goToCore(tl)
-
-        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
+            self.student = user
+            return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
 
 
     class Meta:
