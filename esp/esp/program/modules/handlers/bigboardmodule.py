@@ -72,7 +72,7 @@ class BigBoardModule(ProgramModuleObj):
             "numbers": numbers,
             "popular_classes": self.popular_classes(prog),
             "first_hour": start,
-            "graph_data": left_axis_data,
+            "left_axis_data": left_axis_data,
             "loads": zip([1, 5, 15], self.load_averages()),
         }
         return render_to_response(self.baseDir()+'bigboard.html',
