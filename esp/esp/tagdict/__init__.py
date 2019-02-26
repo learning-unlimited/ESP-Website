@@ -23,7 +23,7 @@ all_global_tags = {
     'min_available_timeslots': (False, ""),
     'availability_group_timeslots': (True, "Group timeslots into contiguous blocks in the availability interface (enabled by default, set to 'False' to disable)"),
     'group_phone_number': (False, ""),
-    'finaid_form_fields': (False, ""),
+    'finaid_form_fields': (False, "A comma-separated list of which Financial Aid Request fields to include in the form"),
     'onsite_classlist_min_refresh': (False, ""),
     'oktimes_collapse': (False, ""),
     'qsd_display_date_author': (False, ""),
