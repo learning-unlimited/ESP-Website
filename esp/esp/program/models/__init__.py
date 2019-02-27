@@ -805,15 +805,25 @@ class Program(models.Model, CustomFormsLinkModel):
 
     # @staticmethod --- applied below after the depend_on_model call
     @cache_function_for(60*60*24)
-    def current_program():
-        """ Guess the "current program", which is the first of the following programs that exists:
+    def current_programs():
+        """Guess a list of "current programs" by their time ranges.
 
-        - the shortest program such that the current time is between the
-          start of its first timeslot and the end of its last timeslot
-        - the program in the future (<100 years) that will start the soonest
-        - the program in the past that ended the most recently
+        - All programs' time ranges are determined by the start of their first
+          timeslot and the end of their last timeslot.
+        - If there are any programs currently running, any programs whose first
+          timeslot is in less than 60 days, or any programs whose last timeslot
+          was less than 30 days ago, we return all such programs as current
+          programs.
+        - Otherwise, the current program is the one program in the future (<100
+          years) that will start the soonest.
+        - If still no such program exists, the current program is the program
+          in the past that ended the most recently.
+        - Test programs (programs with "test" in their name) are skipped.
         """
+
         now = datetime.now()
+        near_future = now + timedelta(days=60)
+        near_past = now - timedelta(days=30)
         far_future = now + timedelta(days=36500)
         def currentness_penalty(program):
             # The lower the return value (lexicographically), the more
@@ -828,9 +838,17 @@ class Program(models.Model, CustomFormsLinkModel):
             if start <= now <= end:
                 # most current: a program running now.
                 # tiebreak by shortest
-                return (0, (end - start))
+                return (-3, (end - start))
+            elif now <= start <= near_future:
+                # second most current: program coming up quite soon
+                # tiebreak by soonest
+                return (-2, start)
+            elif near_past <= end <= now:
+                # third most current: program that ended quite recently
+                # tiebreak by most recent
+                return (-1, now - end)
             elif now <= start <= far_future:
-                # second most current: program coming up in <100 years
+                # fourth most current: program coming up in <100 years
                 # tiebreak by soonest
                 return (1, start)
             elif start <= now:
@@ -841,11 +859,18 @@ class Program(models.Model, CustomFormsLinkModel):
                 # soonest
                 return (3, start)
         programs = Program.objects.all()
+        always_current_cutoff = (0, 0)
         if programs:
-            return min(programs, key=currentness_penalty)
-        return None
-    current_program.depend_on_model('cal.Event')
-    current_program = staticmethod(current_program)
+            tagged_programs = list(sorted((currentness_penalty(prog), prog)
+                for prog in programs))
+            if tagged_programs[0][0] < always_current_cutoff:
+                return [prog for (penalty, prog) in tagged_programs
+                        if penalty < always_current_cutoff]
+            else:
+                return [tagged_programs[0][1]]
+        return []
+    current_programs.depend_on_model('cal.Event')
+    current_programs = staticmethod(current_programs)
 
     def date_range(self):
         """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
@@ -867,14 +892,17 @@ class Program(models.Model, CustomFormsLinkModel):
             return None
 
     @cache_function
-    def getResourceTypes(self, include_classroom=False, include_global=None):
-        #   Show all resources pertaining to the program that aren't these two hidden ones.
+    def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
+        #   Show all resources pertaining to the program (except those of types that are excluded).
         from esp.resources.models import ResourceType
 
-        if include_classroom:
+        if include_hidden:
             exclude_types = []
         else:
-            exclude_types = [ResourceType.get_or_create('Classroom')]
+            exclude_types = list(ResourceType.objects.filter(hidden=True))
+
+        if not include_classroom:
+            exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
             include_global = Tag.getTag('allow_global_restypes')
@@ -939,7 +967,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[Decimal(durationSeconds) / 3600] = \
+                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str((rounded_seconds / 60) % 60).rjust(2,'0')
 

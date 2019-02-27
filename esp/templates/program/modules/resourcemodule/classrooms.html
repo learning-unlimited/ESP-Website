@@ -19,22 +19,46 @@
 
 <div id="program_form">
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom_import">
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2" class="small">Import classrooms from a previous program</th></tr>
-    {{ import_form }}
+    {{ import_classroom_form }}
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Start" /></td></tr>
 </table>
 </form>
+
+{% with furnishing_formset.empty_form as form %}
+    <div id="id_empty_form" style="display:none;">
+        {{ form.furnishing }} {{ form.choice }}
+    </div>
+{% endwith %}
+
 <form method="post" action="/manage/{{ prog.url }}/resources/classroom">
 <input type="hidden" name="command" value="addedit" />
-<table align="center" cellpadding="0" cellspacing="0" width="550">
-    <tr><th colspan="2" class="small">Add a new classroom</th></tr>
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Add/modify a classroom</th></tr>
     {{ classroom_form }}
+    <tr>
+        <th><label>Furnishings:<br>(optional)</label></th>
+        <td>
+            <div id="furnishing_formset">
+            {{ furnishing_formset.management_form }}
+            {% if not furnishing_formset.0 %}
+                <div class="furnishing-formset"></div>
+            {% else %}
+                {% for furnishing_form in furnishing_formset %}
+                    <div class="furnishing-formset">
+                        {{ furnishing_form.furnishing }} {{ furnishing_form.choice }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            </div>
+        </td>
+    </tr>
     <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Classroom" /></td></tr>
 </table>
 </form>
 
-<table align="center" cellpadding="0" cellspacing="0" width="550">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
     <tr><th colspan="2">Classrooms for {{ prog.niceName }}</th></tr>
     <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
@@ -53,7 +77,12 @@
         </td>
         <td class="underline">{{ c.num_students }}</td>
         <td class="underline">{% for t in c.timegroup %}{{ t }}<br />{% endfor %}</td>
-        <td class="underline">{% for f in c.furnishings %}{{ f.res_type.name }}<br />{% endfor %}</td>
+        <td class="underline">
+            <ol>
+            {% for f in c.furnishings %}
+            <li>{{ f.res_type.name }}{% if f.res_type.hidden %} (Hidden){% endif %}{% if f.attribute_value %}: {{ f.attribute_value }}{% endif %}</li>
+            {% endfor %}</td>
+            </ol>
     </tr>
     {% endfor %}
     </table></td></tr>

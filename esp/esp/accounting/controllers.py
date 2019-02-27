@@ -513,7 +513,11 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_requested(self, ensure_required=True):
         #   Compute sum of all transfers into program that are for this user
-        return self.requested_transfers(ensure_required).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        amount_request = self.requested_transfers(ensure_required).aggregate(Sum('amount_dec'))['amount_dec__sum']
+        if amount_request is not None:
+            return amount_request
+        else:
+            return Decimal('0')
 
     def latest_finaid_grant(self):
         if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():

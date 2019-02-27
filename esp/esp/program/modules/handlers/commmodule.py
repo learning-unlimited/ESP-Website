@@ -101,16 +101,14 @@ class CommModule(ProgramModuleObj):
 
         MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
-        #   If they were trying to use HTML, don't sanitize the content.
+        # If they used the rich-text editor, we'll need to add <html> tags
         if '<html>' not in body:
-            htmlbody = body.replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br />')
-        else:
-            htmlbody = body
+            body = '<html>' + body + '</html>'
 
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser) }
 
-        renderedtext = Template(htmlbody).render(DjangoContext(contextdict))
+        renderedtext = Template(body).render(DjangoContext(contextdict))
 
         return render_to_response(self.baseDir()+'preview.html', request,
                                               {'filterid': filterid,
