@@ -89,7 +89,7 @@
         {% for series in right_axis_data %}
           {
             type: 'line',
-            yAxis: {% cycle 1 2 %},
+            yAxis: {% if 'student' in series.description %}2{% else %}1{% endif %},
             name: '{{series.description}}',
             pointInterval: 60 * 60 * 1000, // one hour
             pointStart: Date.UTC(
