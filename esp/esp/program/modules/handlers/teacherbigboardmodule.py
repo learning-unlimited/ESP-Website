@@ -186,12 +186,18 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def static_hours(self, prog):
         hours = self.get_hours(prog)
-        return [sum(zip(*j)[0]) for j in hours]
+        if hours[0]:
+            return [sum(zip(*j)[0]) for j in hours]
+        else:
+            return [0,0]
 
     @cache_function_for(105)
     def static_approved_hours(self, prog):
         hours = self.get_approved_hours(prog)
-        return [sum(zip(*j)[0]) for j in hours]
+        if hours[0]:
+            return [sum(zip(*j)[0]) for j in hours]
+        else:
+            return [0,0]
 
     # runs in 9ms, so don't bother caching
     def load_averages(self):

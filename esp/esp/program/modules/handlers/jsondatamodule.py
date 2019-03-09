@@ -783,7 +783,8 @@ teachers[key].filter(is_active = True).distinct().count()))
         vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", shours))
         vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", shours_app))
         vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", crhours))
-        vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * crhours / shours_app, 2)) + "%"))
+        if shours_app:
+            vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * crhours / shours_app, 2)) + "%"))
 
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
