@@ -6,7 +6,7 @@ from django.db.models.aggregates import Min, Sum
 from django.db.models.query import Q
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject
+from esp.program.models import ClassSubject, ClassSection
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.users.models import Record
 from esp.utils.decorators import cached_module_view
@@ -41,19 +41,26 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # Most of the numbers on the page are rendered from this list, which
         # should consist of pairs (description, number)
         hours_stats = self.static_hours(prog)
+        approved_hours_stats = self.static_approved_hours(prog)
         numbers = [
             ("teachers registering in the last 10 minutes",
              self.num_active_users(prog)),
-            ("teachers teaching a class",
+            ("teachers with a class registered",
              self.num_teachers_teaching(prog)),
+            ("teachers with a class approved",
+             self.num_teachers_approved(prog)),
             ("classes registered",
              self.num_class_reg(prog)),
             ("classes approved",
              self.num_class_app(prog)),
             ("class-hours registered",
              hours_stats[0]),
+            ("class-hours approved",
+             approved_hours_stats[0]),
             ("class-student-hours registered",
              hours_stats[1]),
+            ("class-student-hours approved",
+             approved_hours_stats[1]),
             ("teachers checked in today",
              self.num_checked_in_teachers(prog)),
         ]
@@ -63,16 +70,20 @@ class TeacherBigBoardModule(ProgramModuleObj):
         timess = [
             ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
             ("number of approved classes", [(1, time) for time in self.approved_classes(prog)]),
-            ("number of teachers teaching", [(1, time) for time in self.teach_times(prog)]),
+            ("number of teachers registered", [(1, time) for time in self.teach_times(prog)]),
+            ("number of teachers approved", [(1, time) for time in self.teach_times_approved(prog)]),
         ]
 
         left_axis_data, start = BigBoardModule.make_graph_data(timess)
 
         class_hours, student_hours = self.get_hours(prog)
+        class_hours_approved, student_hours_approved = self.get_approved_hours(prog)
 
         hourss = [
-            ("number of class-hours", class_hours),
-            ("number of class-student-hours", student_hours),
+            ("number of registered class-hours", class_hours),
+            ("number of approved class-hours", class_hours_approved),
+            ("number of registered class-student-hours", student_hours),
+            ("number of approved class-student-hours", student_hours_approved),
         ]
 
         right_axis_data, _ = BigBoardModule.make_graph_data(hourss)
@@ -98,6 +109,13 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
         return ClassSubject.objects.filter(parent_program=prog
+        ).values_list('teachers').distinct().count()
+
+    @cache_function_for(105)
+    def num_teachers_approved(self, prog):
+        # Querying for SRs and then extracting the users saves us joining the
+        # users table.
+        return ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
         ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
@@ -142,8 +160,23 @@ class TeacherBigBoardModule(ProgramModuleObj):
         return sorted(teacher_times.itervalues())
 
     @cache_function_for(105)
+    def teach_times_approved(self, prog):
+        teacher_times = dict(ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
+        ).values_list('teachers').annotate(Min('timestamp')))
+        return sorted(teacher_times.itervalues())
+
+    @cache_function_for(105)
     def get_hours(self, prog):
-        hours = ClassSubject.objects.filter(parent_program=prog, status__gte=0, sections__status__gte=0
+        hours = ClassSubject.objects.filter(parent_program=prog
+        ).exclude(category__category__iexact="Lunch").values_list('timestamp','class_size_max').annotate(duration=Sum('sections__duration'))
+        sorted_hours = sorted(hours, key=operator.itemgetter(0))
+        class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
+        student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
+        return class_hours, student_hours
+
+    @cache_function_for(105)
+    def get_approved_hours(self, prog):
+        hours = ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
         ).exclude(category__category__iexact="Lunch").values_list('timestamp','class_size_max').annotate(duration=Sum('sections__duration'))
         sorted_hours = sorted(hours, key=operator.itemgetter(0))
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
@@ -153,6 +186,11 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def static_hours(self, prog):
         hours = self.get_hours(prog)
+        return [sum(zip(*j)[0]) for j in hours]
+
+    @cache_function_for(105)
+    def static_approved_hours(self, prog):
+        hours = self.get_approved_hours(prog)
         return [sum(zip(*j)[0]) for j in hours]
 
     # runs in 9ms, so don't bother caching

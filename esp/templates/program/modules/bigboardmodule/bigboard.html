@@ -24,86 +24,104 @@
   <div class="bigboard-graph">
     <div id="highcharts-placeholder"></div>
     <script type="text/javascript">
-      $j(function () {
-        $j('#highcharts-placeholder').highcharts({
-          credits: {
-              enabled: false
-          },
-          legend: {
-            align: "left",
-            x: 40,
-            floating: true,
-            layout: "vertical",
-            verticalAlign: "top",
-            //backgroundColor: '#FFFFFF'
-          },
-          plotOptions: {
-            line: {
-              marker: {enabled: false},
-            },
-          },
-          title: {
-            text: null,
-          },
-          tooltip: {
-            shared: true,
-          },
-          xAxis: {
-            type: 'datetime',
-            minRange: 24 * 60 * 60 * 1000, // one day
-          },
-          yAxis: [{
-            title: {text: null},
-            min: 0,
-            maxPadding: 0.01,
-            endOnTick: false,
-          }
-          {% if right_axis_data %}
-          ,{
-            title: {text: '{{right_axis_data.0.description}}'},
-            min: 0,
-            maxPadding: 0.01,
-            endOnTick: false,
-            opposite: true,
-          },
+    var chart = Highcharts.chart('highcharts-placeholder', {
+      credits: {
+          enabled: false
+      },
+      legend: {
+        align: "left",
+        x: 40,
+        floating: true,
+        layout: "vertical",
+        verticalAlign: "top",
+        //backgroundColor: '#FFFFFF'
+      },
+      plotOptions: {
+        line: {
+          marker: {enabled: false},
+        },
+      },
+      title: {
+        text: null,
+      },
+      tooltip: {
+        shared: true,
+      },
+      xAxis: {
+        type: 'datetime',
+        minRange: 24 * 60 * 60 * 1000, // one day
+      },
+      yAxis: [{
+        title: {text: null},
+        min: 0,
+        maxPadding: 0.01,
+        endOnTick: false,
+      }
+      {% if right_axis_data %}
+      ,{
+        title: {text: 'class-hours'},
+        min: 0,
+        maxPadding: 0.01,
+        endOnTick: false,
+        opposite: true,
+      },
+      {
+        title: {text: 'class-student-hours'},
+        min: 0,
+        maxPadding: 0.01,
+        endOnTick: false,
+        opposite: true,
+      }
+      {% endif %}
+      ],
+      series: [
+        {% for series in left_axis_data %}
           {
-            title: {text: '{{right_axis_data.1.description}}'},
-            min: 0,
-            maxPadding: 0.01,
-            endOnTick: false,
-            opposite: true,
-          }
-          {% endif %}
-          ],
-          series: [
-            {% for series in left_axis_data %}
-              {
-                type: 'line',
-                name: '{{series.description}}',
-                pointInterval: 60 * 60 * 1000, // one hour
-                pointStart: Date.UTC(
-                    {{first_hour.year}}, {{first_hour.month}} - 1,
-                    {{first_hour.day}}, {{first_hour.hour}}),
-                data: {{series.data}},
-              },
-            {% endfor %}
-            {% for series in right_axis_data %}
-              {
-                type: 'line',
-                yAxis: {{ forloop.counter }},
-                name: '{{series.description}}',
-                pointInterval: 60 * 60 * 1000, // one hour
-                pointStart: Date.UTC(
-                    {{first_hour.year}}, {{first_hour.month}} - 1,
-                    {{first_hour.day}}, {{first_hour.hour}}),
-                data: {{series.data}},
-              },
-            {% endfor %}
-          ],
-        });
-      });
+            type: 'line',
+            name: '{{series.description}}',
+            pointInterval: 60 * 60 * 1000, // one hour
+            pointStart: Date.UTC(
+                {{first_hour.year}}, {{first_hour.month}} - 1,
+                {{first_hour.day}}, {{first_hour.hour}}),
+            data: {{series.data}},
+          },
+        {% endfor %}
+        {% for series in right_axis_data %}
+          {
+            type: 'line',
+            yAxis: {% cycle 1 2 %},
+            name: '{{series.description}}',
+            pointInterval: 60 * 60 * 1000, // one hour
+            pointStart: Date.UTC(
+                {{first_hour.year}}, {{first_hour.month}} - 1,
+                {{first_hour.day}}, {{first_hour.hour}}),
+            data: {{series.data}},
+          },
+        {% endfor %}
+      ],
+    });
     </script>
   </div>
+  {% if type == "Teacher" %}
+  <script type="text/javascript">
+    function showSeries(btn, filter) {
+      $j("#series-filters .btn").removeClass('active');
+      chart.series.forEach(function(series){
+        if (filter && series.name.indexOf(filter) == -1) {
+          series.hide()
+        } else {
+          series.show()
+        }
+      })
+      $j(btn).addClass('active');
+    }
+  </script>
+    <div id="series-filters" style="text-align: center;">
+      <button class="btn active" onclick="showSeries(this);">All Series</button>
+      <button class="btn" onclick="showSeries(this, 'registered');">Registered Only</button>
+      <button class="btn" onclick="showSeries(this, 'approved');">Approved Only</button>
+    </div>
+  {% endif %}
 {% endif %}
 
 <div class="bigboard-numbers">
