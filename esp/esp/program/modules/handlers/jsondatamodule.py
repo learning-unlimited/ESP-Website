@@ -755,7 +755,9 @@ teachers[key].filter(is_active = True).distinct().count()))
 
 
         shours = 0.0
+        shours_app = 0.0
         chours = 0.0
+        chours_app = 0.0
         crhours = 0.0
         ## Write this as a 'for' loop because PostgreSQL can't do it in
         ## one go without a subquery or duplicated logic, and Django
@@ -766,15 +768,22 @@ teachers[key].filter(is_active = True).distinct().count()))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in prog.classes().filter(status__gte=0, sections__status__gte=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+        for cls in prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += float(cls['subject_duration'])
                 shours += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
                 crhours += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
+        for cls in prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+            if cls['subject_duration']:
+                chours_app += float(cls['subject_duration'])
+                shours_app += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
         vitals["hournum"] = []
-        vitals["hournum"].append(("Total # of Class-Hours", chours))
-        vitals["hournum"].append(("Total # of Class-Student-Hours (capacity)", shours))
-        vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", crhours))
+        vitals["hournum"].append(("Total # of Class-Hours (registered)", chours))
+        vitals["hournum"].append(("Total # of Class-Hours (approved)", chours_app))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", shours))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (approved)", shours_app))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (enrolled)", crhours))
+        vitals["hournum"].append(("Class-Student-Hours Utilization", str(round(100 * crhours / shours_app, 2)) + "%"))
 
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
