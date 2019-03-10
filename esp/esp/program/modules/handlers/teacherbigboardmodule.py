@@ -4,6 +4,7 @@ import subprocess
 
 from django.db.models.aggregates import Min, Sum
 from django.db.models.query import Q
+from django.db.models import Count
 
 from argcache import cache_function_for
 from esp.program.models import ClassSubject
@@ -98,12 +99,14 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
         return ClassSubject.objects.filter(parent_program=prog
+        ).exclude(category__category__iexact="Lunch"
         ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
     def num_active_users(self, prog, minutes=10):
         recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
         return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
+        ).exclude(category__category__iexact="Lunch"
         ).values_list('teachers').distinct().count()
 
     @cache_function_for(105)
@@ -116,15 +119,20 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def num_class_reg(self, prog):
-        return ClassSubject.objects.filter(parent_program=prog).values_list('id').count()
+        return ClassSubject.objects.filter(parent_program=prog
+        ).exclude(category__category__iexact="Lunch"
+        ).values_list('id').count()
 
     @cache_function_for(105)
     def num_class_app(self, prog):
-        return ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0).distinct().count()
+        return ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
+        ).exclude(category__category__iexact="Lunch"
+        ).distinct().count()
 
     @cache_function_for(105)
     def reg_classes(self, prog):
         class_times = ClassSubject.objects.filter(parent_program=prog
+        ).exclude(category__category__iexact="Lunch"
         ).values_list('timestamp', flat=True)
         return sorted(class_times)
 
@@ -132,19 +140,24 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def approved_classes(self, prog):
         #all ClassSubjects that are approved (and have an approved section)
         class_times = ClassSubject.objects.filter(parent_program=prog, status__gt=0, sections__status__gt=0
+        ).exclude(category__category__iexact="Lunch"
         ).values_list('timestamp', flat=True).distinct()
         return sorted(class_times)
 
     @cache_function_for(105)
     def teach_times(self, prog):
         teacher_times = dict(ClassSubject.objects.filter(parent_program=prog
+        ).exclude(category__category__iexact="Lunch"
         ).values_list('teachers').annotate(Min('timestamp')))
         return sorted(teacher_times.itervalues())
 
     @cache_function_for(105)
     def get_hours(self, prog):
         hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('timestamp','class_size_max').annotate(duration=Sum('sections__duration'))
+        ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
+        ).exclude(category__category__iexact="Lunch"
+        ).values_list('timestamp','class_size_max'
+        ).annotate(duration=Sum('sections__duration'))
         sorted_hours = sorted(hours, key=operator.itemgetter(0))
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
