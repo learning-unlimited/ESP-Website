@@ -98,9 +98,6 @@ class OnSiteRegister(ProgramModuleObj):
 
                 regProf.save()
 
-                print(self.program)
-                print(self.user)
-
                 if new_data['paid']:
                     Record.createBit('paid', self.program, self.user)
                     IndividualAccountingController.updatePaid(self.program, self.user, True)
