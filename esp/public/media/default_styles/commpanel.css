@@ -6,6 +6,11 @@ label .commpanel_list_preferred {
     color: red;
 }
 
+.ui-widget select {
+    width: auto;
+    max-width: 100%;
+}
+
 #filter_accordion h4 {
     font-weight: bold;
     font-style: normal;
@@ -81,7 +86,7 @@ div #combo_list_form li {
 
 #combo_list_form label.ui-button {
     margin: 0px;
-    margin-left: -5px;
+    margin-left: 2px;
     padding: 2px;
 }
 
