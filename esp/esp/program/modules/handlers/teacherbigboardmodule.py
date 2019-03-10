@@ -76,7 +76,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         ]
 
         timess_data, start = BigBoardModule.make_graph_data(timess)
-        
+
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
         ]
