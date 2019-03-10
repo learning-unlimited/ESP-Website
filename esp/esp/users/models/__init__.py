@@ -214,6 +214,9 @@ class BaseESPUser(object):
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
+    def name_last_first(self):
+        return u'%s, %s' % (self.last_name, self.first_name)
+
     def nonblank_name(self):
         name = self.name()
         if name.strip() == '': name = self.username
