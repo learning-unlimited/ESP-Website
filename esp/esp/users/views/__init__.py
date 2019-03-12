@@ -73,13 +73,15 @@ def login_checked(request, *args, **kwargs):
         #   Even if the redirect was going to a reasonable place, we need to
         #   turn it into a 200 META redirect in order to set the cookies properly.
         reply = HttpMetaRedirect(reply.get('Location', ''))
-
+            
     #   Stick the user in the response in order to set cookies if necessary
     reply._new_user = request.user
     reply.no_set_cookies = False
-
-    return reply
-
+    
+    if request.user.is_authenticated():
+        return reply
+    else:
+        return render_to_response("registration/login.html", reply._request, reply.context_data)
 
 def signout(request):
     """ This view merges Django's logout view with our own "Goodbye" message. """
