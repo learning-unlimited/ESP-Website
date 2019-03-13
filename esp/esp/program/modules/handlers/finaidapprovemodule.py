@@ -59,19 +59,19 @@ class FinAidApproveModule(ProgramModuleObj):
     def finaidapprove(self, request, tl, one, two, module, extra, prog):
         context = {}
         message = ""
-        num_approved = 0
-        num_errors = 0
+        users_approved = []
+        users_error = []
 
         # The following code was copied and modified from finaid_approve.py in useful_scripts
 
-        reqs = FinancialAidRequest.objects.filter(program__name=prog)
+        reqs = FinancialAidRequest.objects.filter(program=prog)
 
         # computing len will use the same query we're probably going to use later and
         # populate the query set cache (whereas if we used .exists() or .count(), they
         # wouldn't, and the later iteration would hit the database again)
         if len(reqs) == 0:
             message = "No requests found."
-            context["message"] = message
+            context["error"] = message
             return render_to_response(self.baseDir()+'finaid.html', request, context)
 
         if request.method == 'POST':
@@ -79,42 +79,31 @@ class FinAidApproveModule(ProgramModuleObj):
 
             # ITERATE & APPROVE REQUESTS
             userchecklist = request.POST.getlist("user")
-
-            message += "{} New Approval{} ({} error{}): "
+            approve_blanks = request.POST.get('approve_blanks', False);
 
             def is_blank(x):
-                return x is None #or re.match(r'^(\s)*$', x)
+                return x is None or x == ""
 
             for req in reqs:
                 if str(req.user.id) not in userchecklist:
                     continue
 
-                if is_blank(req.household_income) and is_blank(req.extra_explaination):
-                    continue
+                if not approve_blanks:
+                    if is_blank(req.household_income) or is_blank(req.extra_explaination):
+                        continue
 
                 if req.approved:
                     continue
 
-                message += req.user.name() + ", "
                 try:
                     f = FinancialAidGrant(request = req, percent = 100, finalized = True)
                     f.save()
                     req.done = True
                     req.save()
-                    num_approved += 1
+                    users_approved.append(req.user.name())
                 except:
-                    message += "Error on user " + str(req.user.name) + ", "
-                    num_errors += 1
-
-
-        # Remove trailing commas or colons (if no new approvals) from the message
-        if (message[-2:] == ", " or message[-2:] == ": "):
-            message = message[:-2]
-
+                    users_error.append(req.user.name())
 
         context["requests"] = reqs
-        context["message"] = message.format(num_approved,
-                                            "" if num_approved == 1 else "s",
-                                            num_errors,
-                                            "" if num_errors == 1 else "s")
+        context["users_approved"] = users_approved
         return render_to_response(self.baseDir()+'finaid.html', request, context)

@@ -9,8 +9,11 @@
     #program_form {
       overflow: auto;
       max-height: 500px;
-      width: 700px;
+      width: 800px;
       margin: 0px 10px 15px 10px;
+    }
+    #approve_blanks_checkbox {
+      margin-left: 10px;
     }
     </style>
 {% endblock %}
@@ -18,10 +21,7 @@
 {% block xtrajs %}
 <script type="text/javascript" language="javascript">
 function toggle(source) {
-  checkboxes = document.getElementsByName('user');
-  for(var i=0, n=checkboxes.length;i<n;i++) {
-    checkboxes[i].checked = source.checked;
-  }
+  $j('input[name=user]').prop('checked', source.checked);
 }
 </script>
 {% endblock %}
@@ -39,8 +39,10 @@ function toggle(source) {
           <th><input type="checkbox" onClick="toggle(this)" /></th>
           <th>Approved?</th>
           <th width="70px">Name</th>
+          <th>Free/Reduced Lunch?</th>
           <th width="70px">Household Income</th>
           <th>Financial Situation</th>
+          <th>Filled Out Only by Student?</th>
         </tr>
         {% for req in requests %}
         <tr>
@@ -53,18 +55,49 @@ function toggle(source) {
             {% endif %}
           </td>
           <td align="center" style="max-width: 70px; overflow-wrap:break-word;">{{ req.user.name }}</td>
+          <td align="center">
+            {% if req.reduced_lunch %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
           <td align="center">${{ req.household_income }}</td>
           <td>{{ req.extra_explaination }}</td>
+          <td align="center">
+            {% if req.student_prepare == False %}
+            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            {% else %}
+            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </table>
     </div>
 
     <input type="submit" value="Approve Requests" class="btn btn-primary" >
+    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks" value=True> Approve blank requests?
   </form>
 
-  {% if message %}
-  <h3 style="padding-top: 10px;">{{ message }}</h3>
+  {% if error %}
+  <h3 style="padding-top: 10px;">{{ error }}</h3>
+  {% endif %}
+
+  {% if users_approved %}
+  <h3 style="padding-top: 10px;"> {{ users_approved|length }} New Approvals</h3>
+  <h4>
+    {{ users_approved|join:", " }}
+  </h4>
+  {% else %}
+  <h3 style="padding-top: 10px;"> 0 New Approvals </h3>
+  {% endif %}
+
+  {% if users_error %}
+  <h3 style="padding-top: 10px; color: firebrick"> {{ users_approved|length }} Errors</h3>
+  <h4>
+    {{ users_error|join:", " }}
+  </h4>
   {% endif %}
 </div>
 
