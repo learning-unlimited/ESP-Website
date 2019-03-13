@@ -42,5 +42,6 @@ Minor new features and fixes
 - For chapters that use barcodes for student check-in, the barcodes can now be scanned
   in using your device's camera, so a physical barcode scanner is no longer needed. The
   default behavior is to check-in the student automatically upon each successful scan.
+- Arbitrary user lists now allow you to get guardian name, email, and cell phone.
 
 TODO(willgearty): fill in other fixes
