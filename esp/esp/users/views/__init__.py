@@ -78,8 +78,10 @@ def login_checked(request, *args, **kwargs):
     reply._new_user = request.user
     reply.no_set_cookies = False
 
-    return reply
-
+    if request.user.is_authenticated():
+        return reply
+    else:
+        return render_to_response("registration/login.html", reply._request, reply.context_data)
 
 def signout(request):
     """ This view merges Django's logout view with our own "Goodbye" message. """
