@@ -37,6 +37,7 @@
   <div class="not_logged_in hidden">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
       <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
+      <input type="hidden" name="initiated_login"/>
       <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
       <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
 
