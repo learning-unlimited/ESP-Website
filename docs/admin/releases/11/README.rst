@@ -43,5 +43,8 @@ Minor new features and fixes
   in using your device's camera, so a physical barcode scanner is no longer needed. The
   default behavior is to check-in the student automatically upon each successful scan.
 - Arbitrary user lists now allow you to get guardian name, email, and cell phone.
+- In fruitsalad theme, the login button text now is the same font as everything else.
+- In fruitsalad theme, the contact info in the top left will no longer disappear when on the login form page.
+- The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 
 TODO(willgearty): fill in other fixes
