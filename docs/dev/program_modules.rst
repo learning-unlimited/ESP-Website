@@ -19,7 +19,7 @@ If you’re writing a new view for a program, you probably want to put it in a p
 
 Program modules live in python files in ``/esp/esp/program/modules/handlers/``. (Note that other utilities mentioned in this section live in the same file.)
 
-Any HTML web pages included in a module live in ``/esp/templates/program/modules/``
+Any HTML web pages included in a module live in ``/esp/templates/program/modules/``.
 
 For a list of the program modules, and what they do, see ``/docs/admin/program_modules.rst``.
 
