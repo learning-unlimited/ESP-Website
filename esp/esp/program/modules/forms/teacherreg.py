@@ -82,7 +82,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False, widget=BlankSelectWidget() )
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -148,16 +148,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if Tag.getTag('grade_ranges'):
-            grade_ranges = json.loads(Tag.getTag('grade_ranges'))
+        if Tag.getProgramTag('grade_ranges', prog):
+            grade_ranges = json.loads(Tag.getProgramTag('grade_ranges', prog))
             self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
-            self.fields['grade_range'].required = True
-            hide_field( self.fields['grade_min'] )
-            self.fields['grade_min'].required = False
-            hide_field( self.fields['grade_max'] )
-            self.fields['grade_max'].required = False
+            del self.fields['grade_min']
+            del self.fields['grade_max']
         else:
-            hide_field( self.fields['grade_range'] )
+            del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
             self.fields['class_size_max'].choices = class_sizes
@@ -324,10 +321,14 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        del self.fields['grade_range']
+        if self.fields.get('grade_min') and self.fields.get('grade_max'):
+            del self.fields['grade_min']
+            del self.fields['grade_max']
+        else:
+            del self.fields['grade_range']
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
+                  ('prereqs', ''), ('session_count', 1),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]

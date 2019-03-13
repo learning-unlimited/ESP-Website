@@ -125,7 +125,7 @@ EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
     'archive': 'splashwebsitearchive@learningu.org',
-    'bounces': 'learningubounces@gmail.com',
+    'bounces': 'emailbounces@learningu.org',
     'support': 'websupport@learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
@@ -365,6 +365,20 @@ CYBERSOURCE_CONFIG = {
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
+
+FILEBROWSER_EXTENSIONS = {
+    'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
+    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
+    'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
+    'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
+}
+
+FILEBROWSER_SELECT_FORMATS = {
+    'file': ['Image','Document','Video','Audio'],
+    'image': ['Image'],
+    'document': ['Document'],
+    'media': ['Video','Audio'],
+}
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (

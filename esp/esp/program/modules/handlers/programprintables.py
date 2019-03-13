@@ -56,6 +56,7 @@ from django.utils.html import format_html
 from decimal import Decimal
 import json
 import collections
+import copy
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -310,11 +311,20 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_latex(self.baseDir()+template_name, context, extra)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
-        classes = ClassSubject.objects.filter(parent_program = self.program)
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
+        classes_raw = ClassSubject.objects.filter(parent_program = self.program)
 
-        classes = [cls for cls in classes
-                   if cls.isAccepted()   ]
+        classes_filt = [cls for cls in classes_raw if cls.isAccepted()]
+
+        if split_teachers:
+            classes = []
+            for cls in classes_filt:
+                for teacher in cls.get_teachers():
+                    cls_split = copy.copy(cls)
+                    cls_split.split_teacher = teacher
+                    classes.append(cls_split)
+        else:
+            classes = classes_filt
 
         classes = filter(filt_exp, classes)
 
@@ -397,6 +407,22 @@ class ProgramPrintables(ProgramModuleObj):
             return cmp(one, other)
 
         return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_title)
+
+    @aux_call
+    @needs_admin
+    def classesbyteacher(self, request, tl, one, two, module, extra, prog):
+        def cmp_teacher(one, other):
+            cmp0 = cmp(one.split_teacher.last_name.lower(), other.split_teacher.last_name.lower())
+
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+
+        def filt_teacher(cls):
+            return len(cls.get_teachers()) > 0
+
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher, True)
 
     @aux_call
     @needs_admin
@@ -646,11 +672,11 @@ class ProgramPrintables(ProgramModuleObj):
 
         for teacher in teachers:
             # get list of valid classes
-            classes = [ cls for cls in teacher.getTaughtSections()
+            classes = [cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
                     and cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
-                    and cls.isAccepted()                       ]
+                    and cls.status > 0]
             # now we sort them by time/title
             classes.sort()
             for cls in classes:
@@ -723,8 +749,12 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user, u'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Teacher')
+        elif key == 'teacher_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Teacher', include_date=True)
         elif key == 'volunteer_schedule':
             return ProgramPrintables.getSchedule(self.program, user, u'Volunteer')
+        elif key == 'volunteer_schedule_dates':
+            return ProgramPrintables.getSchedule(self.program, user, u'Volunteer', include_date=True)
         elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
         elif key == 'transcript_html':
@@ -778,7 +808,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None, room_numbers=True):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True, include_date=False):
 
         if schedule_type is None:
             if user.isStudent():
@@ -816,7 +846,7 @@ class ProgramPrintables(ProgramModuleObj):
                                         "Room")
             schedule += format_html(u"</tr>")
             for cls in classes:
-                times = cls.friendly_times()
+                times = cls.friendly_times(include_date=include_date)
                 if len(times) == 0:
                     # don't show classes with no times
                     continue
@@ -853,7 +883,7 @@ class ProgramPrintables(ProgramModuleObj):
             shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
             for shift in shifts:
                 schedule += format_html(u"<tr><td> {} </td><td> {} </td></tr>",
-                                        str(shift.request.timeslot.pretty_time()),
+                                        str(shift.request.timeslot.pretty_time(include_date=include_date)),
                                         str(shift.request.timeslot.description))
             schedule += format_html(u"</table>")
 

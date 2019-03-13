@@ -416,10 +416,10 @@ Teacher Logistics Quiz (TeacherQuizModule)
 You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via e-mail or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
 
 The teacher quiz is based on a custom form.  To set it up:
-1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
-2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]).
-3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
-4) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.  This will allow you to use different quizzes for different programs.
+  1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
+  2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+  3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
+  4) (Optional, if you want the quiz to be associated with a single program) Associate the desired program with this Tag by selecting "Program" as the content type from the pull-down menu and the program ID (the number next to the program under /admin/program/program/) as the object ID.  This will allow you to use different quizzes for different programs.
 
 Core Teacher Reg (TeacherRegCore)
 ---------------------------------

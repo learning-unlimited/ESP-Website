@@ -214,6 +214,9 @@ class BaseESPUser(object):
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
+    def name_last_first(self):
+        return u'%s, %s' % (self.last_name, self.first_name)
+
     def nonblank_name(self):
         name = self.name()
         if name.strip() == '': name = self.username
@@ -2254,6 +2257,7 @@ class Permission(ExpirableModel):
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
+            ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
             ("Student/Classes/PhaseZero", "Enter Phase Zero"),
             ("Student/Classes/Lottery/View", "View lottery results"),
@@ -2280,6 +2284,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "Classes/View"),
             ("Teacher/Classes/Edit", "Classes/Edit"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
             ("Teacher/Classes/Create/OpenClass", "Create open classes"),

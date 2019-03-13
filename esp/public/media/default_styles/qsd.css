@@ -2,19 +2,9 @@
 .hidden {
   display: none;
 }
-.hidden {
-  display: none;
-}
-.hidden {
-  display: none;
-}
-.hidden {
-  display: none;
-}
 
 textarea.qsd_editor {
     width: 550px;
-    overflow: auto;
     border: 1px dashed #cccccc;
     border-top: none;
     margin: 8px 0 0;
@@ -36,33 +26,22 @@ div.qsd_header
     border: 1px dashed #cccccc;
     margin: 0px;
     height: 16px;
-    overflow: hidden;
     text-align: center;
 }
 
-div.hidden, div.qsd_edit_hidden
+div.hidden, div.qsd_edit_hidden, div.qsd_view_hidden
 {
     height: 0px;
     visibility: hidden;
+}
+
+div.qsd_buttons {
+    text-align: center;
 }
 
 div.qsd_edit_visible
 {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    color: #cccccc;
-    padding: 0px;
-    border: 1px dashed #cccccc;
-    margin: 0px;
-    overflow: hidden;
-    text-align: center;
     visibility: visible;
-}
-
-div.qsd_view_hidden
-{
-    height: 0px;
-    visibility: hidden;
 }
 
 div.qsd_view_visible

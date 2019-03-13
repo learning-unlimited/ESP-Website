@@ -24,13 +24,10 @@ An account, with username <strong>{{student.username}}</strong> was created for 
 <br />
 <br />
 <a href="{{retUrl}}" title="Schedule this student">Proceed to scheduling this student...</a>
-<br />
-<br />
-<a href="/onsite/{{program.getUrlBase}}/main">(click here to return to onsite reg.)</a>
 </p>
 
 
-
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 
 {% endblock %}

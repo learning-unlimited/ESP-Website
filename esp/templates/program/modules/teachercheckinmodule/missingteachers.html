@@ -9,8 +9,8 @@
     <style type="text/css">
         #shortcuts-box {
             position: fixed;
-            left: 10px;
-            top: 150px;
+            right: 10px;
+            top: 10px;
             width: 200px;
             border: 1px solid gray;
             padding: 5px;
@@ -21,6 +21,9 @@
         }
         #shortcuts-box:hover {
             opacity: 1;
+        }
+        #shortcuts-box input{
+            width: 190px;
         }
 
         .section-first-row {
@@ -110,7 +113,25 @@
 
 <div id='program_form'>
 
-<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
+<br/>
+<a class="btn" style="float: left" href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
+{% if previous or next %}
+<div style="text-align:right">
+{% if start_time %}
+{% if previous %}<a class="btn" href="missingteachers?start={{ previous.id }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?start={{ next.id }}{% if when %}&when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
+{% elif date %}
+{% if previous %}<a class="btn" href="missingteachers?date={{ previous }}{% if when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
+{% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
+{% endif %}
+</div>
+<br>
+{% endif %}
+
+<p style="text-align:right">
+<input class="button text-all" type="button" value="Text All Unchecked-In Teachers"
+    {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+</p>
 
 <p style="text-align: center">
 
@@ -226,13 +247,15 @@
 {% endfor %}
 </table>
 
-<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
+<br/><a class="btn" style="float: left" href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
 
 <br />
 {% load render_qsd %}
 {% render_inline_program_qsd program "onsite:status" %}
 
 </div>
+
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 
 {% endblock %}
