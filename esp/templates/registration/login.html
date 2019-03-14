@@ -24,9 +24,13 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 
 <div class="control-group">
     {% if form.username.errors %}
-       <div class="errors">
+       <ul class="errorlist">
             {{ form.username.errors|last }}
-       </div>
+       </ul>
+    {% elif wrong_user %}
+       <ul class="errorlist">
+            The username you entered is not valid. Keep in mind the username is case sensitive.
+       </ul>
     {% endif %}
 
     <label class="control-label required" for="id_username">Username:</label>
@@ -40,6 +44,10 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
     {% if form.password.errors %}
         <ul class="errorlist">
             {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% elif wrong_pw %}
+        <ul class="errorlist">
+            The password you entered is not valid.
         </ul>
     {% endif %}
 
