@@ -100,5 +100,5 @@ Minor new features and fixes
 - Added a printable that lists all of the classes for each teacher (sorted by teacher last name). Classes with multiple teachers are listed for each teacher.
 
 Known Issues
-~~~~~~~~~~~~
+============
 TODO(willgearty)
