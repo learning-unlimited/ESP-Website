@@ -44,7 +44,7 @@ def login_checked(request, *args, **kwargs):
     if hasattr(reply, 'context_data') and not request.GET:
         reply.context_data['initiated_login'] = True
 
-    if hasattr(reply, 'context_data') and request.user:
+    if hasattr(reply, 'context_data') and request.POST['username']:
         #if a user was entered and it's not in the database, the pw must be wrong
         if ESPUser.objects.filter(username=request.POST['username']).exists():
             reply.context_data['wrong_pw'] = True
