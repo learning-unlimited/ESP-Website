@@ -94,7 +94,7 @@ function toggle(source) {
   {% endif %}
 
   {% if users_error %}
-  <h3 style="padding-top: 10px; color: firebrick"> {{ users_approved|length }} Errors</h3>
+  <h3 style="padding-top: 10px; color: firebrick"> {{ users_error|length }} Errors</h3>
   <h4>
     {{ users_error|join:", " }}
   </h4>
