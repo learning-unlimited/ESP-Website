@@ -9,8 +9,10 @@ Changelog
 
 Resource improvements
 ~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): resource choices, hidden resource types, (selective) import
-#2595, #2598, #2547, #2614, #2653, #2651
+TODO(willgearty): #2595, #2598, #2547, #2614, #2653, #2651
+
+resource choices, hidden resource types, (selective) import
+
 - Can now modify resource choices from the resources management module.
 
 Automatic Scheduling Assistant
@@ -19,27 +21,32 @@ TODO(jerrywu64): #2442
 
 Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): unenroll, volunteer schedule link, formatting
-#2587, #2422, #2674, #2682
+TODO(willgearty): #2587, #2422, #2674, #2682
+
+unenroll, volunteer schedule link, formatting
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): change status of all classes, filter by resources/resource choices, printables
-#2580, #2594, #2654
+TODO(willgearty): #2580, #2594, #2654
+
+change status of all classes, filter by resources/resource choices, printables
 
 Onsite improvements
 ~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): teacher checkin, backlinks, advanced checkin, etc.
-#2582, #2603, #2602, #2640, #2686, #2684
-- For chapters that use barcodes for student check-in, the barcodes can now be scanned
+TODO(willgearty): #2582, #2603, #2602, #2640, #2686, #2684
+
+teacher checkin, backlinks, advanced checkin, etc.
+
+- For chapters that use barcodes for student check-in, the barcodes can now be scanned 
   in using your device's camera, so a physical barcode scanner is no longer needed. The
   default behavior is to check-in the student automatically upon each successful scan. The 
   page produces a beep for each new barcode that is scanned.
 
 QSD and comm panel improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): rich text and source code editor
-#2592, #2666, #2692
+TODO(willgearty): #2592, #2666, #2692
+
+rich text and source code editor
 
 Availability layout changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,6 +55,7 @@ TODO(willgearty): #2583
 Email improvements
 ~~~~~~~~~~~~~~~~~~
 TODO(benjaminkraft): #2549, #2604, #2627, #2667
+
 - Message requests in the admin panel now list their creation time/date and whether or not they have been processed.
 
 Theme fixes
