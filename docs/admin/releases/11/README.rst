@@ -101,4 +101,4 @@ Minor new features and fixes
 
 Known Issues
 ============
-TODO(willgearty)
+TODO(willgearty): #2697, #2670, #2629, #2616, #2596, #2469
