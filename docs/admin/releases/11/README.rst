@@ -35,14 +35,18 @@ Class search improvements
 
 Onsite improvements
 ~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2582, #2603, #2602, #2640, #2686, #2684
-
-teacher checkin, backlinks, advanced checkin, etc.
-
-- For chapters that use barcodes for student check-in, the barcodes can now be scanned 
+- For chapters that use barcodes for student checkin, the barcodes can now be scanned 
   in using your device's camera, so a physical barcode scanner is no longer needed. The
-  default behavior is to check-in the student automatically upon each successful scan. The 
+  default behavior is to checkin the student automatically upon each successful scan. The 
   page produces a beep for each new barcode that is scanned.
+- Fixed the layout of the teacher checkin page so as not to intefere with the admin toolbar in some themes.
+- Fixed the keyboard functionality of the teacher checkin page so shorcuts now function as described.
+- Added a button on the teacher checkin page that allows admins to text all teachers that are
+  not yet checked in yet (if the chapter has Twilio configured).
+- Added buttons on the teacher checkin page that allows admins to easily move to the next or previous time slots.
+- Added links to all onsite pages that return admins to the main onsite page.
+- Fixed the Onsite "New Student Registration" page.
+- Fixed the Onsite "Advanced Checkin" page.
 
 QSD and comm panel improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
