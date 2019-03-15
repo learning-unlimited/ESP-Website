@@ -9,11 +9,13 @@ Changelog
 
 Resource improvements
 ~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2595, #2598, #2547, #2614, #2653
-
-resource choices, hidden resource types, (selective) import
-
-- Can now modify resource choices from the resources management module.
+- Added ability to modify resource choices from the resources management module.
+- Added ability to specify if a resource type should be hidden during teacher registration.
+- Added ability to specify resource type choices as furnishings for classrooms.
+- Added ability to specify if only one option may be selected for a resource request during teacher registration.
+- Added ability to import resource types, floating resources, and classrooms (with their furnishings) from a 
+  previous program. All of the above properties are preserved when importing. Admins may also select a subset of
+  the old resources to be imported to the new program.
 
 Automatic Scheduling Assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,7 +30,7 @@ Userview improvements
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added buttons to approve, unreview, or reject all of the classes shown on the class search page.
-- You can now filter class search queries by resource requests (e.g. Classroom), including filtering by specific resource type choices (e.g. Lecture Hall).
+- Added ability to filter class search queries by resource requests (e.g. Classroom), including filtering by specific resource type choices (e.g. Lecture Hall).
 - Added links to make printables of the classes shown on the class search page.
 
 Onsite improvements
@@ -64,7 +66,7 @@ Theme fixes
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a default login help page /myesp/loginhelp.html that admins can modify.
-- Arbitrary user lists now allow you to get guardian name, email, and cell phone.
+- Arbitrary user lists now allow admins to get guardian name, email, and cell phone.
 - The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 - Fixed ordering of two-phase lottery priorities, now supports custom display names.
 - Fixed the classrosters admin printable. Teachers should use the /section_students and /class_students pages to access their class rosters.
