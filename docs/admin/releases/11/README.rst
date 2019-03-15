@@ -101,4 +101,9 @@ Minor new features and fixes
 
 Known Issues
 ============
-TODO(willgearty): #2697, #2670, #2629, #2616, #2596, #2469
+
+- The catalog may have blank spaces within or between class descriptions.
+- Not all required fields in the profile form are marked as required.
+- Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
+- The catalog can not be sorted using the start time of sections.
+- The nametag printables include deactivated users, causing them to include include differeent sets of users from other printables.
