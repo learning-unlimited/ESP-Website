@@ -80,11 +80,11 @@ Theme fixes
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Added a default login help page /myesp/loginhelp.html that admins can modify.
+- Added a default login help page ``/myesp/loginhelp.html`` that admins can modify.
 - Arbitrary user lists now allow admins to get guardian name, email, and cell phone.
 - The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 - Fixed ordering of two-phase lottery priorities, now supports custom display names.
-- Fixed the classrosters admin printable. Teachers should use the /section_students and /class_students pages to access their class rosters.
+- Fixed the classrosters admin printable. Teachers should use the ``/section_students`` and ``/class_students`` pages to access their class rosters.
 - Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
 - Updated admin coteacher page to be more user-friendly. Now shows all teachers, including admins, and admins can now remove themselves from classes.
 - Added a coteacher deadline, allowing the coteachers page to be closed independently of the teacher registration main page.
@@ -94,7 +94,7 @@ Minor new features and fixes
   However, this can also be used to text all students, regardless of their texting preferences.
 - Fixed the sorting of the categories at the top of the catalog to match the order of the categories in the catalog.
   If the catalog is not sorted by category, category headings are no longer displayed (see tag ``catalog_sort_fields``).
-  The /fillslot page is now sorted just like the catalog.
+  The ``/fillslot`` page is now sorted just like the catalog.
 - Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
 - Teacher schedules now include "Accepted but Hidden" classes.
 - Fixed an error where texting would fail (without finishing) if an invalid phone number was encountered.
