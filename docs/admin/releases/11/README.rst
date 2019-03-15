@@ -57,9 +57,9 @@ Editable text and comm panel improvements
   indenting, lists, fonts, headings, colors, alignment, tables, and symbols.  The editor supports 
   the pasting of rich text from various sources (including Microsoft Word), and images can be included
   from external sources or the filebrowser via URL (direct upload may be supported in a future release).
-  The template tags are now located in a dropdown menu with the {{}} label. Admins can click the
-  </> button to use a source code editor and write HTML code as before.
-- All comm panel emails are now HTML, so <html> tags are no longer necessary. We will address
+  The template tags are now located in a dropdown menu with the ``{{}}`` label. Admins can click the
+  ``</>`` button to use a source code editor and write HTML code as before.
+- All comm panel emails are now HTML, so ``<html>`` tags are no longer necessary. We will address
   the spam filter implications of this in a future release.
 - Added a rich text editor to editable text fields (QSD) like the comm panel (see above).
 - If you are using the source code editor in the comm panel or editable text fields, it is advised
@@ -93,17 +93,17 @@ Minor new features and fixes
   primarily designed for texting volunteers or teachers, since they can't set their texting preferences.
   However, this can also be used to text all students, regardless of their texting preferences.
 - Fixed the sorting of the categories at the top of the catalog to match the order of the categories in the catalog.
-  If the catalog is not sorted by category, category headings are no longer displayed (see tag 'catalog_sort_fields').
+  If the catalog is not sorted by category, category headings are no longer displayed (see tag ``catalog_sort_fields``).
   The /fillslot page is now sorted just like the catalog.
 - Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
 - Teacher schedules now include "Accepted but Hidden" classes.
 - Fixed an error where texting would fail (without finishing) if an invalid phone number was encountered.
 - Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet.
-- Teacher registration grade ranges can now be program specific (see tag 'grade_ranges').
+- Teacher registration grade ranges can now be program specific (see tag ``grade_ranges``).
 - Fixed walk-in registration and class import errors introduced by teacher registration grade ranges.
 - Fixed an error that occurred when students had no amount due.
 - Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places.
-- Fixed handling of the 'finaid_form_fields' tag.
+- Fixed handling of the ``finaid_form_fields`` tag.
 - Profile form now populates DOB and graduation year even if the form errors.
 - Custom form responses can now be viewed even if users are accidentally deleted.
 - Teacher big board no longer breaks if a class accidentally has no sections.
