@@ -39,8 +39,8 @@ Onsite improvements
   in using your device's camera, so a physical barcode scanner is no longer needed. The
   default behavior is to checkin the student automatically upon each successful scan. The 
   page produces a beep for each new barcode that is scanned.
-- Fixed the layout of the teacher checkin page so as not to intefere with the admin toolbar in some themes.
-- Fixed the keyboard functionality of the teacher checkin page so shorcuts now function as described.
+- Fixed the layout of the teacher checkin page so as to not intefere with the admin toolbar in some themes.
+- Fixed the keyboard functionality of the teacher checkin page so shortcuts now function as described.
 - Added a button on the teacher checkin page that allows admins to text all teachers that are
   not yet checked in yet (if the chapter has Twilio configured).
 - Added buttons on the teacher checkin page that allows admins to easily move to the next or previous time slots.
