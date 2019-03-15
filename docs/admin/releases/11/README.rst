@@ -9,7 +9,7 @@ Changelog
 
 Resource improvements
 ~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2595, #2598, #2547, #2614, #2653, #2651
+TODO(willgearty): #2595, #2598, #2547, #2614, #2653
 
 resource choices, hidden resource types, (selective) import
 
@@ -27,9 +27,9 @@ unenroll, volunteer schedule link, formatting
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2580, #2594, #2654
-
-change status of all classes, filter by resources/resource choices, printables
+- There are now buttons to approve, unreview, or reject all of the classes shown on the class search page.
+- You can now filter class search queries by resource requests (e.g. Classroom), including filtering by specific resource type choices (e.g. Lecture Hall).
+- There are now links to make printables of the classes shown on the class search page.
 
 Onsite improvements
 ~~~~~~~~~~~~~~~~~~~
@@ -47,10 +47,6 @@ QSD and comm panel improvements
 TODO(willgearty): #2592, #2666, #2692
 
 rich text and source code editor
-
-Availability layout changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2583
 
 Email improvements
 ~~~~~~~~~~~~~~~~~~
@@ -98,10 +94,10 @@ Minor new features and fixes
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - Added a printable that lists all of the classes for each teacher (sorted by teacher last name). Classes with multiple teachers are listed for each teacher.
+- The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
 
 Known Issues
 ============
-
 - The catalog may have blank spaces within or between class descriptions.
 - Not all required fields in the profile form are marked as required.
 - Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
