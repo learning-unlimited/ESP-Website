@@ -48,11 +48,22 @@ Onsite improvements
 - Fixed the Onsite "New Student Registration" page.
 - Fixed the Onsite "Advanced Checkin" page.
 
-QSD and comm panel improvements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2592, #2666, #2692
-
-rich text and source code editor
+Editable text and comm panel improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Added ability to include dates in teacher and volunteer schedules within comm panel emails.
+- Fixed the layout of the combination list page in the comm panel (and other user select modules).
+- Added a rich text editor to the comm panel that includes most functions that are common in
+  Microsoft Word/Google Docs, including stylings (bold, strikethrough, underline, and italics),
+  indenting, lists, fonts, headings, colors, alignment, tables, and symbols.  The editor supports 
+  the pasting of rich text from various sources (including Microsoft Word), and images can be included
+  from external sources or the filebrowser via URL (direct upload may be supported in a future release).
+  The template tags are now located in a dropdown menu with the {{}} label. Admins can click the
+  </> button to use a source code editor and write HTML code as before.
+- All comm panel emails are now HTML, so <html> tags are no longer necessary. We will address
+  the spam filter implications of this in a future release.
+- Added a rich text editor to editable text fields (QSD) like the comm panel (see above).
+- If you are using the source code editor in the comm panel or editable text fields, it is advised
+  that you switch back to the rich text editor view before saving/proceeding.
 
 Email improvements
 ~~~~~~~~~~~~~~~~~~
