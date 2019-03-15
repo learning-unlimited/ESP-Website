@@ -21,15 +21,15 @@ TODO(jerrywu64): #2442
 
 Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
-TODO(willgearty): #2587, #2422, #2674, #2682
-
-unenroll, volunteer schedule link, formatting
+- Added a link on the userview page to a user's volunteer schedule (if they are volunteering).
+- Added a link on the userview page to unenroll a student from all of their classes for the selected program.
+- Fixed two-column layout of the userview page.
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-- There are now buttons to approve, unreview, or reject all of the classes shown on the class search page.
+- Added buttons to approve, unreview, or reject all of the classes shown on the class search page.
 - You can now filter class search queries by resource requests (e.g. Classroom), including filtering by specific resource type choices (e.g. Lecture Hall).
-- There are now links to make printables of the classes shown on the class search page.
+- Added links to make printables of the classes shown on the class search page.
 
 Onsite improvements
 ~~~~~~~~~~~~~~~~~~~
@@ -63,7 +63,7 @@ Theme fixes
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- There is now a default login help page /myesp/loginhelp.html that admins can modify.
+- Added a default login help page /myesp/loginhelp.html that admins can modify.
 - Arbitrary user lists now allow you to get guardian name, email, and cell phone.
 - The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 - Fixed ordering of two-phase lottery priorities, now supports custom display names.
