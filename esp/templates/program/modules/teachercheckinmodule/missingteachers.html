@@ -190,7 +190,8 @@
             <span class="message"></span>
             <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
                    class="button text" type="button" value="Text Teacher"
-                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"
+                   {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
         <tr>
     {% endfor %}
