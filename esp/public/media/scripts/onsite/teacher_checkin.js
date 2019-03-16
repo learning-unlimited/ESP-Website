@@ -94,11 +94,14 @@ $j(function(){
         var $me = $j(this);
         var $td = $j(this.parentNode);
         var $msg = $td.children('.message');
+        var $txtbtn = $j(this).closest('tr').find('.text');
         checkIn(username, function(response) {
             $msg.text(response.message);
             $td.prev().prop('class', 'checked-in');
             checkins.push({username: username, name: response.name, $td: $td});
             $me.hide().prop('disabled', true);
+            $txtbtn.prop('disabled', true);
+            $txtbtn.attr("title","Teacher already checked-in");
             updateSelected(false);
 
             var $undoButton = $j(document.createElement('button'));
@@ -131,6 +134,7 @@ $j(function(){
             $j(msg).text(response.message);
         });
         $j(btn).attr("disabled",true);
+        $j(btn).attr("title","Teacher already texted");
         $j(msg).text('Texting teacher...');
     }
 
@@ -139,14 +143,13 @@ $j(function(){
     });
 
     $j(".text-all").click(function(){
-        var num_teachers = $j(".checkin:visible").length
+        var $buttons = $j(".checkin:visible").closest('tr').find('.text:enabled');
+        var num_teachers = $buttons.length
         var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in teachers?");
         if (r) {
-            $j(".checkin:visible").closest('tr').find('.text').each(function() {
+            $buttons.each(function() {
                 textTeacher($j(this))
             });
-            $j(this).attr("disabled",true);
-            $j(this).attr("title","Teachers already texted");
         }
     });
 
@@ -188,6 +191,7 @@ $j(function(){
         }
         username = targetCheckin.username;
         var $td = targetCheckin.$td;
+        var $txtbtn = $td.closest('tr').find('.text');
         var $msg = $td.children('.message');
         var $undoButton = $msg.children('.undo-button');
         $undoButton.text('Undoing...').prop('disabled', true);
@@ -201,6 +205,8 @@ $j(function(){
             }
             $msg.html(response.message+"<br/>");
             $td.children('.checkin').show().prop('disabled', false);
+            $txtbtn.prop('disabled', false);
+            $txtbtn.removeAttr("title");
             $td.prev().prop('class', 'not-checked-in');
             selected = $j('.checkin:enabled').index($td.find('.checkin'));
             updateSelected(true);
