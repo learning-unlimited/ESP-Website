@@ -658,7 +658,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
 
         #   Add recursive permissions to open registration to the appropriate people
         (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
