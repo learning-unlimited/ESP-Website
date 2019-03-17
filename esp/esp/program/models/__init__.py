@@ -786,7 +786,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
         time_sum = timedelta()
         for t in ts_list:
-            time_sum = time_sum + (t.end - t.start)
+            time_sum = time_sum + t.duration()
         return time_sum
 
     def dates(self):
@@ -959,7 +959,7 @@ class Program(models.Model, CustomFormsLinkModel):
             n = len(t_list)
             for i in range(0, n):
                 for j in range(i, n):
-                    time_option = t_list[j].end - t_list[i].start
+                    time_option = Event.total_length([t_list[i], t_list[j]])
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
                     if round:
@@ -967,7 +967,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
+                        durationDict[(Decimal(durationSeconds) / 3600)] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str((rounded_seconds / 60) % 60).rjust(2,'0')
 
