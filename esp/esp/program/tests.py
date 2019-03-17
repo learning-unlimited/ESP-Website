@@ -819,7 +819,7 @@ class ProgramFrameworkTest(TestCase):
         new_prog.save()
         pcf.save_m2m()
 
-        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'])
 
         self.new_prog = new_prog
 
