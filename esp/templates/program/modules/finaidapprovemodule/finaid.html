@@ -65,7 +65,7 @@ function toggle(source) {
           <td align="center">${{ req.household_income }}</td>
           <td>{{ req.extra_explaination }}</td>
           <td align="center">
-            {% if req.student_prepare == False %}
+            {% if not req.student_prepare %}
             <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
             {% else %}
             <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />

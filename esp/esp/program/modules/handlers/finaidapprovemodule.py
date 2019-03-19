@@ -33,8 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
-from esp.users.models import ESPUser
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
@@ -106,4 +105,5 @@ class FinAidApproveModule(ProgramModuleObj):
 
         context["requests"] = reqs
         context["users_approved"] = users_approved
+        context["users_error"] = users_error
         return render_to_response(self.baseDir()+'finaid.html', request, context)
