@@ -47,7 +47,7 @@ function toggle(source) {
         {% for req in requests %}
         <tr>
           <td><input type="checkbox" name="user" value={{ req.user.id }}></td>
-          <td>
+          <td align="center">
             {% if req.approved %}
             <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
             {% else %}

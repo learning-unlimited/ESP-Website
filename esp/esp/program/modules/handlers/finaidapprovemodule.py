@@ -63,7 +63,8 @@ class FinAidApproveModule(ProgramModuleObj):
 
         # The following code was copied and modified from finaid_approve.py in useful_scripts
 
-        reqs = FinancialAidRequest.objects.filter(program=prog)
+        reqs = FinancialAidRequest.objects.filter(program=prog).order_by("-id")
+
 
         # computing len will use the same query we're probably going to use later and
         # populate the query set cache (whereas if we used .exists() or .count(), they
