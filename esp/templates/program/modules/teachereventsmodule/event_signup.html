@@ -2,27 +2,177 @@
 
 {% block title %}Teacher Preparation Events for {{ prog.niceName }}{% endblock %}
 
-{% block content %}
-
+{% block stylesheets %}
+{{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<style>
+.bttn {
+    background-color: #dbe3e7;
+    border: 3px solid #5b78bb;
+    color: #3a3a3a;
+    padding: 15px 15px;
+    text-align: center;
+    border-radius: 8px;
+    -moz-border-radius:8px;
+    -webkit-border-radius:8px;
+    height: 140px !important;
+    width: 30% !important;
+    white-space: normal;
+    font-size: 15px !important;
+    margin: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    vertical-align: middle;
+    outline:none;
+}
 
+.bttn:hover {
+    background-color: #5ab897;
+    color: white;
+}
+
+.bttn.on{
+    background-color: #5ab897;
+    border: 3px solid #cc9933;
+    color: white;
+}
+
+.bttn2 {
+    background-color: #ffd7d7;
+    border: 3px solid #947070;
+    color: #3a3a3a;
+    padding: 15px 15px;
+    text-align: center;
+    border-radius: 8px;
+    -moz-border-radius:8px;
+    -webkit-border-radius:8px;
+    height: 120px !important;
+    width: 30% !important;
+    white-space: normal;
+    font-size: 15px !important;
+    margin: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    vertical-align: middle;
+    outline:none;
+}
+
+.bttn2:hover {
+    background-color: #824264;
+    color: white;
+}
+
+.bttn2.on{
+    background-color: #824264;
+    border: 3px solid #5b78bb;
+    color: white;
+}
+
+.submit {
+    text-align: center !important;
+    float: none !important;
+    height: 40px !important;
+    width: 100px !important;
+    font-size: 13px !important;
+}
+
+.hidden {
+    display: none;
+}
+
+</style>
+{% endblock %}
+
+{% block xtrajs %}
+<script>
+//http://jsfiddle.net/willgearty/t8980a1q/
+
+$j(function(){
+    $j("#id_training option").each(function(i, e) {
+    		var text = $j(this).text();
+        var text_br = text.replace(/(?:\\r\\n|\\r|\\n)/g, '<br />');
+        if(text != "Pick a teacher training session..."){
+        $j("<button type='button' class='bttn' />")
+        .prop("value", text)
+        .prop("name", $j(this).val())
+        .html(text_br)
+        .click(function () {
+            $j("#id_training").val($j('#id_training option').filter(function () { return $j(this).html() == text; }).val());
+        })
+        .appendTo("#buttons1");}
+		});
+});
+
+$j("#id_training").change(function(){
+		$j('.bttn').removeClass('on');
+    $j("button[name='"+this.value+"']").addClass('on');
+});
+
+$j(document).ready(function(){
+		var train =  $j('#id_training').find('option:selected').prop('value');
+		$j("button[name='"+train+"']").addClass('on');
+});
+
+$j(document).on('click', '.bttn', function() {
+    $j('.bttn').removeClass('on');
+    $j(this).addClass('on');
+});
+
+$j(function(){
+    $j("#id_interview option").each(function(i, e) {
+    		var text = $j(this).text();
+        var text_br = text.replace(/(?:\\r\\n|\\r|\\n)/g, '<br />');
+        if(text != "Pick an interview timeslot..."){
+        $j("<button type='button' class='bttn2' />")
+        .prop("value", text)
+        .prop("name", $j(this).val())
+        .html(text_br)
+        .click(function () {
+            $j("#id_interview").val($j('#id_interview option').filter(function () { return $j(this).html() == text; }).val());
+        })
+        .appendTo("#buttons2");}
+		});
+});
+
+$j("#id_interview").change(function(){
+		$j('.bttn2').removeClass('on');
+    $j("button[name='"+this.value+"']").addClass('on');
+});
+
+$j(document).ready(function(){
+		var train =  $j('#id_interview').find('option:selected').prop('value');
+		$j("button[name='"+train+"']").addClass('on');
+});
+
+$j(document).on('click', '.bttn2', function() {
+    $j('.bttn2').removeClass('on');
+    $j(this).addClass('on');
+});
+</script>
+{% endblock %}
+
+{% block content %}
 <h1>Teacher Preparation Events for {{ prog.niceName }}</h1>
 
 <div id="program_form">
 
-<p>
-Please let us know which events you will attend.
-</p>
-
 {% load render_qsd %}
 {% render_inline_program_qsd prog "teach:eventsignupheader" %}
 
+<center><div id="buttons1"></div></center>
+<br>
+<hr>
+<br>
+
+{% render_inline_program_qsd prog "teach:eventsignupheader2" %}
+
+<center><div id="buttons2"></div></center>
+
 <form method="post" action="{{ request.path }}">
-<table cellpadding="4" cellspacing="0" align="center" width="300">
+<center><input type="submit" class="btn btn-primary submit" value="Submit" /></center>
+</br></br>
+<table class="hidden" cellpadding="4" cellspacing="0" align="center" width="300">
     {{ form }}
-    <tr>
-        <td align="center" colspan="2"><input type="submit" class="btn btn-primary" value="Submit" /></td>
-    </tr>
 </table>
 </form>
 
