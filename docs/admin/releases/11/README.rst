@@ -44,6 +44,7 @@ Onsite improvements
 - Added a button on the teacher checkin page that allows admins to text all teachers that are
   not yet checked in yet (if the chapter has Twilio configured).
 - Added buttons on the teacher checkin page that allows admins to easily move to the next or previous time slots.
+- Teachers without contact info no longer break the teacher checkin page.
 - Added links to all onsite pages that return admins to the main onsite page.
 - Fixed the Onsite "New Student Registration" page.
 - Fixed the Onsite "Advanced Checkin" page.
