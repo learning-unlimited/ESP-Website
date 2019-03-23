@@ -32,12 +32,14 @@
         {{ class.prereqs }}
     </td>
 </tr>
+{% if class.class_style %}
 <tr>
     <th class="smaller">Class Format:</th>
     <td>
         {{ class.class_style }}
     </td>
 </tr>
+{% endif %}
 <tr>
     <th class="smaller">Room Request:</th>
     <td>
