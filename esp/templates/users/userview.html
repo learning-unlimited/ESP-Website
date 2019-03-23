@@ -44,7 +44,7 @@
         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
     </form>
     {% if profile.teacher_info and program and program|hasModule:"AvailabilityModule" %}
-        <a class="sidelink" href="/manage/{{program.getUrlBase}}/check_availability?user={{user.username}}">
+        <a class="sidelink" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
             Check availability for {{program.niceName}}</a>
     {% endif %}
     <h2>User Type(s):</h2>
@@ -145,7 +145,7 @@
 
 {% if profile.student_info %}
 <h2>Student Info</h2>
-<table class="dottedtable long">
+<table class="dottedtable">
 <tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
 <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} ({{ user.getGrade }}th Grade)<br />
 <form action="/manage/userview/" method="get" name="change_grade">
@@ -161,7 +161,7 @@
 
 {% if profile.teacher_info %}
 <h2>Teacher Info</h2>
-<table class="dottedtable long">
+<table class="dottedtable">
     <tr><td class="key">Affiliation</td><td>{{ profile.teacher_info.affiliation }}</td></tr>
     <tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
 <tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
@@ -171,14 +171,14 @@
 {% endif %}
 
 {% if profile.guardian_info %}
-<table class="dottedtable long">
+<table class="dottedtable">
 <tr><td class="key">Year Finished School</td><td>{{ profile.guardian_info.year_finished }}</td></tr>
 <tr><td class="key">Number of Children in ESP</td><td>{{ profile.guardian_info.num_kids }}</td></tr>
 </table>
 {% endif %}
 
 {% if profile.educator_info %}
-<table class="dottedtable long">
+<table class="dottedtable">
 <tr><td class="key">Subjects Taught</td><td>{{ profile.educator_info.subject_taught }}</td></tr>
 <tr><td class="key">Grades Taught</td><td>{{ profile.educator_info.grades_taught }}</td></tr>
 <tr><td class="key">School</td><td>{{ profile.educator_info.school }}</td></tr>
@@ -190,7 +190,7 @@
 
 <h2>Emergency Contact Info</h2>
 {% if profile.contact_emergency %}{# We want to explicitly say "no contact info here!" if we don't have any, so that, in an emergency, folks don't start burning admin power digging through the database for contact info that we don't have #}
-<table class="dottedtable long">
+<table class="dottedtable">
 <tr><td class="key">Name</td><td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td></tr>
 <tr><td class="key">E-mail</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
 <tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
@@ -204,7 +204,7 @@
 
 {% if profile.contact_guardian %}
 <h2>Parent/Guardian Contact Info</h2>
-<table class="dottedtable long">
+<table class="dottedtable">
 <tr><td class="key">Name</td><td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td></tr>
 <tr><td class="key">E-mail</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
 <tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
