@@ -121,5 +121,6 @@ Known Issues
 - The catalog may have blank spaces within or between class descriptions.
 - Not all required fields in the profile form are marked as required.
 - Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
+- Importing classrooms without complete availability results in them only being available for the first timeslot.
 - The catalog can not be sorted using the start time of sections.
 - The nametag printables include deactivated users, causing them to include include differeent sets of users from other printables.
