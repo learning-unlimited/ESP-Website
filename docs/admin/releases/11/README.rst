@@ -78,6 +78,7 @@ Theme fixes
 - In fruitsalad theme, the contact info in the top left will no longer disappear when on the login form page.
 - In fruitsalad theme, now show links and search fields for all "current" programs in the admin bar.
 - In circles theme, the user search box is now the correct width.
+- In bigpicture theme, fixed a signin/signout loop on the signout page.
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,6 +114,7 @@ Minor new features and fixes
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - Added a printable that lists all of the classes for each teacher (sorted by teacher last name). Classes with multiple teachers are listed for each teacher.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
+- When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
 
 Known Issues
 ============
