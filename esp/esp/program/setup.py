@@ -63,7 +63,7 @@ def prepare_program(program, data):
 
     return perms, modules
 
-def commit_program(prog, perms, modules, cost=0, sibling_discount=None):
+def commit_program(prog, perms, cost=0, sibling_discount=None):
     #   This function implements the changes suggested by prepare_program.
 
     def gen_perm(tup):

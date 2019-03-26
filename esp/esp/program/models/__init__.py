@@ -991,7 +991,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return li_types
 
     @cache_function
-    def getModules_cached(self, tl = None):
+    def getModules_cached(self, tl = None, old_prog = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
@@ -1005,7 +1005,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
                  for module in self.program_modules.filter(module_type = tl) ]
         else:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
         modules.sort(cmpModules)
@@ -1018,9 +1018,9 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
-    def getModules(self, user = None, tl = None):
+    def getModules(self, user = None, tl = None, old_prog = None):
         """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl)
+        modules = self.getModules_cached(tl, old_prog)
         if user:
             for module in modules:
                 module.setUser(user)
