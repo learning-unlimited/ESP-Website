@@ -570,9 +570,7 @@ class ClassSection(models.Model):
 
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
-        #   If you're 15 minutes short that's OK.
-        time_tolerance = 15 * 60
-        if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+        if Event.total_length(event_list).total_seconds() < duration * 3600:
             return False
         else:
             return True
@@ -1689,7 +1687,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         time_avail = 0.0
         #   Start with amount of total time pledged as available
         for tg in avail:
-            td = tg.end - tg.start
+            td = tg.duration()
             time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program):
