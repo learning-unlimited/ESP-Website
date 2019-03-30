@@ -48,6 +48,7 @@ from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
 from django.conf import settings
+from django.db.models import IntegerField, Case, When, Count
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
@@ -309,6 +310,22 @@ class ProgramPrintables(ProgramModuleObj):
             extra = 'pdf'
 
         return render_to_latex(self.baseDir()+template_name, context, extra)
+
+    @aux_call
+    @needs_admin
+    def classpopularity(self, request, tl, one, two, module, extra, prog):
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+        for prioritiy in priorities:
+            classes = classes.annotate(**{'priority' + str(prioritiy): Count(
+            Case(When(sections__studentregistration__relationship__name='Priority/' + str(prioritiy), then=1), default=None, output_field=IntegerField()
+            ))})
+        classes = classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
+        classes = classes.order_by('-ssi')
+
+        context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
+
+        return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):

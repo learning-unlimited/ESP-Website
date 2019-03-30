@@ -59,6 +59,10 @@ def bool_and(obj1,obj2):
     return obj1 and obj2
 
 @register.filter
+def get_field(object, field):
+    return getattr(object, field)
+
+@register.filter
 def extract_theme(url):
     #   Get the appropriate color scheme out of the Tag that controls nav structure
     #   (specific to MIT theme)
