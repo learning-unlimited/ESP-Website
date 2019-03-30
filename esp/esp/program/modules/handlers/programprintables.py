@@ -313,7 +313,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
         classes = ClassSubject.objects.filter(parent_program = self.program)
-        
+
         if 'clsids' in request.GET:
             clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
             classes = [cls for cls in classes if cls.id in clsids]
