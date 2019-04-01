@@ -104,7 +104,7 @@ Minor new features and fixes
 - Teacher registration grade ranges can now be program specific (see tag ``grade_ranges``).
 - Fixed walk-in registration and class import errors introduced by teacher registration grade ranges.
 - Fixed an error that occurred when students had no amount due.
-- Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places.
+- Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places (e.g. 50 minutes). This should fix errors that were encountered during scheduling, on class manage pages, and when adding coteachers, among others.
 - Fixed handling of the ``finaid_form_fields`` tag.
 - Profile form now populates DOB and graduation year even if the form errors.
 - Custom form responses can now be viewed even if users are accidentally deleted.
