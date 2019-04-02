@@ -125,7 +125,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
         if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
-            raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="/admin/tagdict/tag">edit the "stripe_settings" Tag here</a>.', True)
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href='mailto:{{settings.SUPPORT}}'>websupport team to get it set up.', True)
 
     @main_call
     @needs_student
