@@ -180,10 +180,7 @@ class CommModule(ProgramModuleObj):
                                                       sendto_fn_name  = sendto_fn_name,
                                                       sender     = fromemail,
                                                       creator    = request.user,
-                                                      msgtext = unicode(loader.get_template('email/default_email_html.txt').render(DjangoContext(
-                                                                                                                                       {'msgbdy': body,
-                                                                                                                                        'user': request.user,
-                                                                                                                                        'program': self.program }))),
+                                                      msgtext = body,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )
 
