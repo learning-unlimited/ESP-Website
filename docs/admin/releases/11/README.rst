@@ -19,7 +19,11 @@ Resource improvements
 
 Automatic Scheduling Assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO(jerrywu64): #2442
+This is a new module intended for use in parallel with the AJAX scheduler to find good scheduling choices for
+individual sections. When this module is enabled, a new link will appear for each section in the scheduler
+with the text "Optimize". This will bring the user to a new interface to find an appropriate time and
+classroom for the section. Documentation is provided on this page detailing how admins can configure the
+module before scheduling to better suit their program's needs, mostly through the use of custom tags.
 
 Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -62,6 +66,7 @@ Editable text and comm panel improvements
   ``</>`` button to use a source code editor and write HTML code as before.
 - All comm panel emails are now HTML, so ``<html>`` tags are no longer necessary. We will address
   the spam filter implications of this in a future release.
+- Fixed a bug in the generation of schedules in comm panel emails
 - Added a rich text editor to editable text fields (QSD) like the comm panel (see above).
 - **If you are using the source code editor in the comm panel or editable text fields, it is advised
   that you switch back to the rich text editor view before saving/proceeding.**
@@ -74,11 +79,12 @@ Printables improvements
 - Added a printable that shows class popularity (enrollment and lottery metrics).
 - Teacher schedules now include "Accepted but Hidden" classes.
 
-Email improvements
-~~~~~~~~~~~~~~~~~~
-TODO(benjaminkraft): #2549, #2604, #2627, #2667
-
-- Message requests in the admin panel now list their creation time/date and whether or not they have been processed.
+Email backend improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Implemented optimizations for really large email requests.
+- Added more logging to the email backend for better debugging of future email problems.
+- Updated the default bounces email address to address one of the most common reasons emails from the comm panel were being marked as spam.
+- Message requests in the admin panel now list their creation time/date and whether or not they have been processed ('processed' means that all of the email texts have been set up and the server is now sending the emails).
 
 Theme fixes
 ~~~~~~~~~~~
