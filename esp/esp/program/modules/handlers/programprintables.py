@@ -316,9 +316,9 @@ class ProgramPrintables(ProgramModuleObj):
     def classpopularity(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(parent_program = prog)
         priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
-        for prioritiy in priorities:
-            classes = classes.annotate(**{'priority' + str(prioritiy): Count(
-            Case(When(sections__studentregistration__relationship__name='Priority/' + str(prioritiy), then=1), default=None, output_field=IntegerField()
+        for priority in priorities:
+            classes = classes.annotate(**{'priority' + str(priority): Count(
+            Case(When(sections__studentregistration__relationship__name='Priority/' + str(priority), then=1), default=None, output_field=IntegerField()
             ))})
         classes = classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
         classes = classes.order_by('-ssi')
