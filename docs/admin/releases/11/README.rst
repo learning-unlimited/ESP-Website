@@ -126,6 +126,7 @@ Minor new features and fixes
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
+- Made login errors clearer
 
 Known Issues
 ============
@@ -135,3 +136,4 @@ Known Issues
 - Importing classrooms without complete availability results in them only being available for the first timeslot.
 - The catalog can not be sorted using the start time of sections.
 - The nametag printables include deactivated users, causing them to include differeent sets of users from other printables.
+- The ajax scheduler sometimes does not differentiate between classes with different background colors.
