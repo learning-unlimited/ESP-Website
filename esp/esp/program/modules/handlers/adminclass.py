@@ -480,7 +480,7 @@ class AdminClass(ProgramModuleObj):
         unavail_teachers = {}
         for time in time_options:
             unavail_teachers[time] = []
-            for teacher in cls.get_teachers():
+            for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog):
                     unavail_teachers[time].append(teacher)
             if len(unavail_teachers[time]) == 0:
