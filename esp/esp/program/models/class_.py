@@ -1506,6 +1506,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             result += sec.num_students_prereg()
         return result
 
+    def percent_capacity(self):
+        return 100 * self.num_students() / float(self.capacity)
+
     def max_students(self):
         return self.sections.count()*self.class_size_max
 
