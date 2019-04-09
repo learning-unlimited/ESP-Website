@@ -10,7 +10,7 @@ __all__ = ['PasswordResetForm','NewPasswordSetForm', 'UserPasswdForm']
 class PasswordResetForm(forms.Form):
 
     email     = forms.EmailField(max_length=75, required=False,
-                                 help_text="(e.g. johndoe@example.org)<br><br>---------- or ----------<br><br>")
+                                 help_text=mark_safe("(e.g. yourname@example.org)<br><br>---------- or ----------<br><br>"))
 
     username  = forms.CharField(max_length=30, required=False,
                                 help_text = '(Case sensitive)')
@@ -46,7 +46,7 @@ class NewPasswordSetForm(forms.Form):
 
     code     = forms.CharField(widget = forms.HiddenInput())
     username = forms.CharField(max_length=128,
-                               help_text='(The one you used to receive the email.)<br/><br/>')
+                               help_text=mark_safe('(The one you used to receive the email.)<br/><br/>'))
     password = forms.CharField(max_length=128, min_length=5,widget=forms.PasswordInput())
     password_confirm = forms.CharField(max_length = 128,widget=forms.PasswordInput(),
                                        label='Password Confirmation')

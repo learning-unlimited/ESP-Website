@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.utils.safestring import mark_safe
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
@@ -99,13 +100,13 @@ class VolunteerOfferForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
 
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple, required=False)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
 
     comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
 
-    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>', required=False)
+    confirm = forms.BooleanField(help_text=mark_safe('<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>'), required=False)
 
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:

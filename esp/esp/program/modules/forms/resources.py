@@ -1,4 +1,5 @@
 from django import forms
+from django.utils.safestring import mark_safe
 
 from datetime import timedelta
 
@@ -9,9 +10,9 @@ from esp.utils.widgets import DateTimeWidget, DateWidget
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    name = forms.CharField(help_text='Approximate time block (i.e. "Sat 9 - 10 AM")')
+    name = forms.CharField(help_text='Approximate time block (e.g. "Sat 9 - 10 AM")')
     description = forms.CharField(required=False, widget=forms.Textarea, help_text='Include the exact times here (e.g. "First class period: Sat 9:05 - 9:55 AM")')
-    start = forms.DateTimeField(label='Start Time', help_text='Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00', widget=DateTimeWidget)
+    start = forms.DateTimeField(label='Start Time', help_text=mark_safe('Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00'), widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")

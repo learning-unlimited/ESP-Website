@@ -61,7 +61,7 @@ from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
 from django.core import urlresolvers
 from django.utils.functional import SimpleLazyObject
-
+from django.utils.safestring import mark_safe
 
 
 from esp.cal.models import Event, EventType
@@ -1841,7 +1841,7 @@ class K12School(models.Model):
     All the schools that we know about.
     """
     contact = AjaxForeignKey(ContactInfo, null=True,blank=True,
-        help_text='A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.')
+        help_text=mark_safe('A set of contact information for this school. Type to search by name (Last, First), or <a href="/admin/users/contactinfo/add/">go edit a new one</a>.'))
     school_type = models.TextField(blank=True, null=True,
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
