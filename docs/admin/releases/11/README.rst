@@ -138,3 +138,4 @@ Known Issues
 - The nametag printables include deactivated users, causing them to include differeent sets of users from other printables.
 - The ajax scheduler sometimes does not differentiate between classes with different background colors.
 - The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
+- Some themes do not display the big boards as intended.
