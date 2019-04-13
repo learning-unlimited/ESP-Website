@@ -24,6 +24,10 @@ $j(document).ready(function() {
 
 <h1>Availability for <u>{{ class|escape }}</u></h1>
 
+<h2>Length:</h2>
+{{ class.prettyDuration }}
+</br></br>
+
 <h2>Teachers:</h2>
 {% for teacher in class.get_teachers %}
 <a href="/manage/userview?username={{ teacher.username|urlencode }}" target="_blank">{{ teacher.nonblank_name }}</a> (<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ teacher.username|urlencode }}" target="_blank">edit availability</a>)
@@ -39,7 +43,12 @@ $j(document).ready(function() {
   <div hidden id="checkboxes">
     {% for group in groups %}
       {% for time in group %}
-        <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.available %}checked{% endif %} {% if time.section %}disabled data-hover="{{ time.section }}"{% elif time.unavail_teachers %}data-hover="Unavailable:</br>{% for teacher in time.unavail_teachers %}{{ teacher.nonblank_name }} ({{ teacher.username }}){% if not forloop.last %}</br>{% endif %}{% endfor %}"{% endif %}>
+        <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.available %}checked{% endif %} 
+        {% if time.section %}disabled data-hover="{{ time.section }}"
+        {% elif time.unavail_teachers or time.teaching_teachers %}data-hover="
+        {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }}){% if not forloop.last %}</br>{% endif %}{% endfor %}
+        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }}){% if not forloop.last %}</br>{% endif %}{% endfor %}"
+        {% endif %}>
       {% endfor %}
     {% endfor %}
   </div>

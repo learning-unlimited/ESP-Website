@@ -478,12 +478,16 @@ class AdminClass(ProgramModuleObj):
         viable_times = list(meeting_times)
 
         unavail_teachers = {}
+        teaching_teachers = {}
         for time in time_options:
             unavail_teachers[time] = []
+            teaching_teachers[time] = []
             for teacher in teachers:
-                if time not in teacher.getAvailableTimes(prog):
+                if time in teacher.getTaughtTimes(prog):
+                    teaching_teachers[time].append(teacher)
+                elif time not in teacher.getAvailableTimes(prog):
                     unavail_teachers[time].append(teacher)
-            if len(unavail_teachers[time]) == 0:
+            if len(unavail_teachers[time]) + len(teaching_teachers[time]) == 0:
                 viable_times.append(time)
 
         context =   {
@@ -495,6 +499,7 @@ class AdminClass(ProgramModuleObj):
                                     'id': t.id,
                                     'section': cls.get_section(t),
                                     'unavail_teachers': unavail_teachers.get(t),
+                                    'teaching_teachers': teaching_teachers.get(t),
                                 }
                             for t in group]
                         for group in time_groups]
