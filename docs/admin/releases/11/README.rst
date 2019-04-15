@@ -122,6 +122,9 @@ Minor new features and fixes
 - Custom form responses can now be viewed even if users are accidentally deleted.
 - Teacher big board no longer breaks if a class accidentally has no sections.
 - Teacher big board calculations now consistently exclude lunch classes.
+- Teacher big board now shows data on registered and approved classes.
+- Big boards now display graphs even if there is no data to show.
+- Hours statistics on the dashboard are now show for registered and approved classes.
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
