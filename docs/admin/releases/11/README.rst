@@ -134,6 +134,7 @@ Minor new features and fixes
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
+- The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. You can get to this page from the scheduler, the manage class page, or the class search page.
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
 - Made login errors clearer
 - Added teacher interview and training descriptions to the manage page for these events.
