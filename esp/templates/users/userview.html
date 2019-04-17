@@ -50,7 +50,7 @@
     <h2>User Type(s):</h2>
     {% with user.getUserTypes as types %}
     {% if types %}
-    {% for type in user.getUserTypes %}
+    {% for type in types %}
     <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
     {% endfor %}
     {% else %}
