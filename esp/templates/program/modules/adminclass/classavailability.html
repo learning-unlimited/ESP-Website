@@ -46,8 +46,8 @@ $j(document).ready(function() {
         <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.available %}checked{% endif %} 
         {% if time.section %}disabled data-hover="{{ time.section }}"
         {% elif time.unavail_teachers or time.teaching_teachers %}data-hover="
-        {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }}){% if not forloop.last %}</br>{% endif %}{% endfor %}
-        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }}){% if not forloop.last %}</br>{% endif %}{% endfor %}"
+        {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
+        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}"
         {% endif %}>
       {% endfor %}
     {% endfor %}
