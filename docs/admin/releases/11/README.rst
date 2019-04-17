@@ -29,7 +29,11 @@ Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
 - Added a link on the userview page to a user's volunteer schedule (if they are volunteering).
 - Added a link on the userview page to unenroll a student from all of their classes for the selected program.
+- Added a link on the userview page to a teacher's biography.
 - Fixed two-column layout of the userview page.
+- User types are now listed on the userview page.
+- Classes on the userview page now link to their catalog (in addition to the preexisting links to the manage and edit pages).
+- Sections on the userview page are now colored based on section status (instead of using the class status).
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +107,7 @@ Minor new features and fixes
 - Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
 - Updated admin coteacher page to be more user-friendly. Now shows all teachers, including admins, and admins can now remove themselves from classes.
 - Added a coteacher deadline, allowing the coteachers page to be closed independently of the teacher registration main page.
+- Added more explicit steps for adding a coteacher to the coteacher page.
 - Added dates to the classes on the teacher bio page.
 - Added option to override users' texting preferences in the group texting module. This is 
   primarily designed for texting volunteers or teachers, since they can't set their texting preferences.
@@ -112,7 +117,8 @@ Minor new features and fixes
   The ``/fillslot`` page is now sorted just like the catalog.
 - Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
 - Fixed an error where texting would fail (without finishing) if an invalid phone number was encountered.
-- Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet.
+- Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet. The duration field was also added to the class search page.
+- Added class style (if used) and resource requests to the manage class and class search pages.
 - Teacher registration grade ranges can now be program specific (see tag ``grade_ranges``).
 - Fixed walk-in registration and class import errors introduced by teacher registration grade ranges.
 - Fixed an error that occurred when students had no amount due.
@@ -130,6 +136,8 @@ Minor new features and fixes
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
 - Made login errors clearer
+- Added teacher interview and training descriptions to the manage page for these events.
+- Fixed the format of the inline student schedule (on the student reg mainpage).
 
 Known Issues
 ============
