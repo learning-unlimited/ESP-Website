@@ -48,15 +48,11 @@
             Check availability for {{program.niceName}}</a>
     {% endif %}
     <h2>User Type(s):</h2>
-    {% with user.getUserTypes as types %}
-    {% if types %}
-    {% for type in types %}
+    {% for type in user.getUserTypes %}
     <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
-    {% endfor %}
-    {% else %}
+    {% empty %}
     <span class="no_usertype">None</span>
-    {% endif %}
-    {% endwith %}
+    {% endfor %}
     {% if profile.student_info %}
         {% if program and program|hasModule:"AccountingModule" %}
             <a href="/manage/{{program.getUrlBase}}/accounting/{{user.id}}" class="sidelink">View accounting info</a>
