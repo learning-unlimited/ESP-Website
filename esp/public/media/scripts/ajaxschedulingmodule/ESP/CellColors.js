@@ -5,6 +5,17 @@
  * @method color(section)
  * @method textColor(section)
  */
+var colors = palette('tol-rainbow', 100);
+
+function hexToRGB(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
 function CellColors() {
     this.specialColor = "rgb(255, 153, 0)";
     /**
@@ -15,17 +26,17 @@ function CellColors() {
      */
     this.color = function(section) {
         var code = section.emailcode;
-        var colcode = code.substr(1, code.lastIndexOf("s") - 1).padStart(3, "0");
-        return [16*(+colcode.charAt(colcode.length - 3)),
-                16*(+colcode.charAt(colcode.length - 2)),
-                16*(+colcode.charAt(colcode.length - 1))];
+        var colcode = code.substr(1, code.lastIndexOf("s") - 1).padStart(2, "0");
+        /* Use the last two digits of the class code to get a color */
+        var col = colors[parseInt(colcode.substr(colcode.length - 2)) * 23 % 100];
+        return hexToRGB(col);
     };
     this.background = function(section) {
         var color = this.color(section);
         var rgb = ("rgb(" +
-          color[0] + "," +
-          color[1] + "," +
-          color[2] + ")");
+          color.r + "," +
+          color.g + "," +
+          color.b + ")");
         if (section.flags.indexOf("Special scheduling needs") !== -1) {
           return ("linear-gradient(to bottom right, " +
             this.specialColor + " 0%," +
@@ -46,7 +57,7 @@ function CellColors() {
 
         // The relative luminance is a measure of how bright the color is.
         // Green counts more because human eyes are more sensitive to it.
-        relativeLuminance = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
+        relativeLuminance = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
         if(relativeLuminance < 128) {
             return "white";
         } else {
