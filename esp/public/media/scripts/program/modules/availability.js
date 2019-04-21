@@ -107,11 +107,11 @@ var Availability = (function () {
         }
 
         //Sets classes of cells based on status of checkboxes upon loading page
-        $j('#checkboxes input:checked').each(function(i, e) {
+        $j('#checkboxes input').each(function(i, e) {
             if (this.disabled == true) {
                 document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
                 document.getElementsByName($j(this).attr('value'))[0].title = disabledText;
-            } else {
+            } else if (this.checked == true) {
                 document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
             }
         });
