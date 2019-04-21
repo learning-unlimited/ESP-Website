@@ -35,7 +35,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-assert numpy.version.short_version >= "1.7.0"
+from pkg_resources import parse_version
+assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
 import Queue
 import random

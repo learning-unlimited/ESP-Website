@@ -75,22 +75,30 @@
 <font size="3">Financial Aid Request: {{ request.user.get_full_name }}</font>
 </th>
 </tr>
+{% if form.reduced_lunch %}
 <tr>
     <td width="30%">Do you qualify for free or reduced lunch at your school?</td>
     <td>{{ form.reduced_lunch }}</td>
 </tr>
+{% endif %}
+{% if form.household_income %}
 <tr>
     <td width="30%">What is your annual household income (round to the nearest $1,000)?</td>
     <td>{{ form.household_income }}</td>
 </tr>
+{% endif %}
+{% if form.extra_explaination %}
 <tr>
     <td width="30%">Please describe your family's financial situation:</td>
     <td>{{ form.extra_explaination }}</td>
 </tr>
+{% endif %}
+{% if form.student_prepare %}
 <tr>
     <td width="30%">Did anyone other than the student fill out any part of this form?</td>
     <td>{{ form.student_prepare }}</td>
 </tr>
+{% endif %}
 <tr style="border: 1px solid #CCCCCC">
  <th colspan="2" style="text-align: center;">
     {% if app.done %}
@@ -98,7 +106,7 @@
     {% else %}
     <input type="submit" class="button" name="submitform" value="Complete" />
     {% endif %}
-    &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <input type="submit" class="button" name="submitform" value="Save Progress" />
  </th>
 </tr>

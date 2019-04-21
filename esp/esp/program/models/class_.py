@@ -570,9 +570,7 @@ class ClassSection(models.Model):
 
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
-        #   If you're 15 minutes short that's OK.
-        time_tolerance = 15 * 60
-        if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+        if Event.total_length(event_list).total_seconds() < duration * 3600:
             return False
         else:
             return True
@@ -1485,7 +1483,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if hasattr(self, "_teachers"):
             return self._teachers
 
-        return self.teachers.all()
+        return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
 
     def students_dict(self):
@@ -1511,6 +1509,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for sec in self.get_sections():
             result += sec.num_students_prereg()
         return result
+
+    def percent_capacity(self):
+        return 100 * self.num_students() / float(self.capacity)
 
     def max_students(self):
         return self.sections.count()*self.class_size_max
@@ -1606,8 +1607,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getTeacherNames(self):
         teachers = []
         for teacher in self.get_teachers():
-            name = '%s %s' % (teacher.first_name,
-                              teacher.last_name)
+            name = teacher.name()
             if name.strip() == '':
                 name = teacher.username
             teachers.append(name)
@@ -1616,8 +1616,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getTeacherNamesLast(self):
         teachers = []
         for teacher in self.get_teachers():
-            name = '%s, %s' % (teacher.last_name,
-                              teacher.first_name)
+            name = teacher.name_last_first()
             if name.strip() == '':
                 name = teacher.username
             teachers.append(name)
@@ -1691,7 +1690,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         time_avail = 0.0
         #   Start with amount of total time pledged as available
         for tg in avail:
-            td = tg.end - tg.start
+            td = tg.duration()
             time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program):

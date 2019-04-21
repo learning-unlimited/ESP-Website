@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>List of Class Sections for {{ program.niceName }}</title>
+<title>Class Subject Popularity for {{ program.niceName }}</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
 .title { text-align: center; font-size: 12pt; font-family: georgia; }
@@ -37,33 +37,40 @@ table.sortable thead {
 
 </head>
 <body>
+{% load main %}
 
-<table class="sortable.js" style="border: 1px solid black; border-collapse: collapse;">
+<table class="sortable" style="border: 1px solid black; border-collapse: collapse;">
 <tr>
  <!-- <th>#</th> -->
  <th>Class Code</th>
  <th>Class Title</th>
  <th>Description (short)</th>
  <th>Teachers</th>
- <th>Teacher Phone #s</th>
- <th>Room(s)</th>
- <th>Time(s)</th>
- <th>Allow Late?</th>
+ <th>Number of Stars</th>
+ {% for priority in priorities %}
+ <th>Priority {{ priority }}</th>
+ {% endfor %}
+ <th>Students Enrolled</th>
+ <th>Class Capacity</th>
+ <th>Percent Capacity</th>
 </tr>
-{% for cls in sections %}
-{% autoescape off %}
+{% for cls in classes %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td>{{ cls.emailcode }}</td>
+ <td sorttable_customkey="{{ cls.id }}">{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
- <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}
- <td>{{ cls.parent_class.getTeacherNamesLast|join:"; " }}</td>
- <td>{% for teacher in cls.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
- <td>{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}</td>
- <td>{% if cls.friendly_times|length_is:0 %}Unassigned{% else %}{{ cls.friendly_times|join:"<br />"}}{% endif %}</td>
- <td>{% if cls.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>
+ <td>{{ cls.class_info|truncatewords_html:10 }}
+ <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ <td>{{ cls.ssi }}</td>
+ {% for priority in priorities %}
+ {% with prior_field="priority"|concat:priority %}
+ <td>{{ cls|get_field:prior_field }}</td>
+ {% endwith %}
+ {% endfor %}
+ <td>{{ cls.num_students }}</td>
+ <td>{{ cls.capacity }}</td>
+ <td>{{ cls.percent_capacity }}</td>
 </tr>
-{% endautoescape %}
 {% endfor %}
 </table>
 
