@@ -98,6 +98,14 @@ Theme fixes
 - In circles theme, the user search box is now the correct width.
 - In bigpicture theme, fixed a signin/signout loop on the signout page.
 
+Big board fixes
+~~~~~~~~~~~~~~~
+- Fixed styling of big board numbers to override some theme styling and to prevent overlap of numbers.
+- Teacher big board no longer breaks if a class accidentally has no sections.
+- Teacher big board calculations now consistently exclude lunch classes.
+- Teacher big board now shows data on registered and approved classes.
+- Big boards now display graphs even if there is no data to show.
+
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a default login help page ``/myesp/loginhelp.html`` that admins can modify.
@@ -126,11 +134,7 @@ Minor new features and fixes
 - Fixed handling of the ``finaid_form_fields`` tag.
 - Profile form now populates DOB and graduation year even if the form errors.
 - Custom form responses can now be viewed even if users are accidentally deleted.
-- Teacher big board no longer breaks if a class accidentally has no sections.
-- Teacher big board calculations now consistently exclude lunch classes.
-- Teacher big board now shows data on registered and approved classes.
-- Big boards now display graphs even if there is no data to show.
-- Hours statistics on the dashboard are now show for registered and approved classes.
+- Hours statistics on the dashboard are now shown for registered and approved classes.
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
@@ -139,6 +143,7 @@ Minor new features and fixes
 - Made login errors clearer
 - Added teacher interview and training descriptions to the manage page for these events.
 - Fixed the format of the inline student schedule (on the student reg mainpage).
+- Fixed the coloration of sections in the AJAX scheduler.
 
 Known Issues
 ============
@@ -148,6 +153,4 @@ Known Issues
 - Importing classrooms without complete availability results in them only being available for the first timeslot.
 - The catalog can not be sorted using the start time of sections.
 - The nametag printables include deactivated users, causing them to include differeent sets of users from other printables.
-- The ajax scheduler sometimes does not differentiate between classes with different background colors.
 - The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
-- Some themes do not display the big boards as intended.
