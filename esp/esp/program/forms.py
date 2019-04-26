@@ -42,6 +42,7 @@ from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm
+from django.utils.safestring import mark_safe
 
 
 def make_id_tuple(object_list):
@@ -50,8 +51,8 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label='Term or year, in URL form (e.g. <tt>2007_Fall</tt>)', widget=forms.TextInput(attrs={'size': '40'}))
-    term_friendly = forms.CharField(label='Term, in English (e.g. <tt>Fall 2007</tt>)', widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
