@@ -164,7 +164,7 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                  error_messages=None, show_hidden_initial=False, shadow_field_name=None,
                  *args, **kwargs):
 
-        error_css_class = 'error'
+        self.error_css_class = 'error'
         # To add a similar class for required forms (rather than form errors),
         # see https://docs.djangoproject.com/en/1.8/ref/forms/api/#styling-required-or-erroneous-form-rows
 
