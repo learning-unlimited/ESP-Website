@@ -115,7 +115,7 @@ class AvailabilityModule(ProgramModuleObj):
         return {'availability': teacher_list }#[t['user'] for t in teacher_list]}
 
     def teacherDesc(self):
-        return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
+        return {'availability': """Teachers who have indicated their scheduled availability for the program"""}
 
     def prettyTime(self, time, inc_date=True):
         if inc_date:

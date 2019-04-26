@@ -101,7 +101,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form"""}
 
     def check_setup(self):
         """ Validate the keys specified in the stripe_settings Tag.

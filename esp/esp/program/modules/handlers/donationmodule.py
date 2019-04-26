@@ -104,7 +104,7 @@ class DonationModule(ProgramModuleObj):
             return {'donation': ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'donation': """Students who have chosen to make an optional donation."""}
+        return {'donation': """Students who have chosen to make an optional donation"""}
 
     @main_call
     @usercheck_usetl

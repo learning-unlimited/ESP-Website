@@ -94,8 +94,8 @@ class TeacherEventsModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {
-            'interview': """Teachers who have signed up for an interview.""",
-            'training':  """Teachers who have signed up for teacher training.""",
+            'interview': """Teachers who have signed up for an interview""",
+            'training':  """Teachers who have signed up for teacher training""",
         }
 
     # Helper functions

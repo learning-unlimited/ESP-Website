@@ -76,7 +76,7 @@ class ClassFlagModule(ProgramModuleObj):
         fts = ClassFlagType.get_flag_types(self.program)
         descs = {}
         for flag_type in fts:
-            descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag.""" % flag_type.name
+            descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag""" % flag_type.name
         return descs
 
     @main_call
