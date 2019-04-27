@@ -51,7 +51,7 @@
   <p>
     {{module.student.name}} already checked in at <b>{{module.timeCheckedIn}}</b>.
   </p>
-  <form name="checkin">
+  <form name="checkin" method="POST" action="{{request.path}}">
     <table>
       <tr>
 	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>

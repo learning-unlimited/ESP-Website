@@ -13,7 +13,7 @@
         {% endif %}
     </ul>
     <div id="tab_basic">
-        <form id="form_basic_list" method="POST" action="{{ action_path }}">
+        <form id="form_basic_list" method="POST" action="{{ action_path }}" autocomplete="off">
 
         <div id="basic_step_container">
 
@@ -76,7 +76,7 @@
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
 
                 <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
+                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /></div>
 
                 <h4><a href="#">Last name</a></h4>
                 <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
@@ -138,7 +138,7 @@
     </div>
 
     <div id="tab_combo">
-        <form id="form_combo_list" method="POST" action="{{ action_path }}">
+        <form id="form_combo_list" method="POST" action="{{ action_path }}" autocomplete="off">
         <div id="combo_step_container">
 
         <div id="starting_list_select">
@@ -202,7 +202,7 @@
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
 
                 <h4><a href="#">User name</a></h4>
-                <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
+                <div>Enter a username: <input type="text" size="30" name="username" id="username" autocomplete="new-username" /></div>
 
                 <h4><a href="#">Last name</a></h4>
                 <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
@@ -264,7 +264,7 @@
     {% if include_prev_list %}
     <div id="tab_previous">
 
-        <form id="form_previous" method="POST" action="{{ action_path }}">
+        <form id="form_previous" method="POST" action="{{ action_path }}" autocomplete="off">
         <div id="previous_step_container">
 
         <div id="msgreq_selector_area" class="ui-widget">Begin typing an email title to find a previous message:

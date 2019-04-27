@@ -93,4 +93,8 @@ There are currently no teachers associated with this class.
 </form>
 </div>
 
+<a class="btn" href="/manage/{{ program.getUrlBase }}/classavailability/{{ class.id }}">Check the class availability</a>
+
+{% include "program/modules/adminclass/returnlink.html" %}
+
 {% endblock %}

@@ -657,7 +657,7 @@ class FormHandler:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
-            if not form.anonymous:
+            if not form.anonymous and response['user_id']:
                 user = users[response['user_id']]
                 response['user_id'] = unicode(response['user_id'])
                 response['user_display'] = user.name()

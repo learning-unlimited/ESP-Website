@@ -2,8 +2,8 @@
 
 <h3>Guardian Information</h3>
 
-<div class="control-group">
- <label for="id_year_finished" class="control-label">Est. year you finished with {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}<br /> (if applicable):</label>
+<div class="control-group"
+ <label for="id_year_finished" class="control-label">Estimated year you finished with {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}<br /> (if applicable):</label>
  <div class="controls">
  {{ form.year_finished }} {% if form.year_finished.errors %}
    <br /><span class="form_error">{{ form.year_finished.errors|join:", " }}</span>

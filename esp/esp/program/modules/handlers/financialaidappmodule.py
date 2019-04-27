@@ -104,7 +104,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 model = FinancialAidRequest
                 tag_data = Tag.getTag('finaid_form_fields')
                 if tag_data:
-                    fields = tuple(tag_data.split(','))
+                    fields = tuple(field.strip() for field in tag_data.split(',') if hasattr(FinancialAidRequest(), field.strip()))
                 else:
                     fields = '__all__'
 

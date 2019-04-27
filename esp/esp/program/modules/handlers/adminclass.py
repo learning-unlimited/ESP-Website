@@ -35,7 +35,9 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
+from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, ClassFlagType
+from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, User
 
 from esp.utils.web import render_to_response
@@ -420,7 +422,8 @@ class AdminClass(ProgramModuleObj):
                                    'ajax': ajax,
                                    'txtTeachers': txtTeachers,
                                    'coteachers': coteachers,
-                                   'conflict': conflictinguser})
+                                   'conflict': conflictinguser,
+                                   'program': prog})
 
     @aux_call
     @needs_admin
@@ -451,6 +454,62 @@ class AdminClass(ProgramModuleObj):
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
+
+    @aux_call
+    @needs_admin
+    def classavailability(self, request, tl, one, two, module, extra, prog):
+        """ Shows the collective availability of teachers for a class. """
+        cls = self.getClass(request,extra)
+        time_options = prog.getTimeSlots()
+        #   Group contiguous blocks
+        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
+            time_groups = [list(time_options)]
+        else:
+            time_groups = Event.group_contiguous(list(time_options))
+
+        teachers = cls.get_teachers()
+
+        meeting_times = cls.all_meeting_times
+        unscheduled_sections = []
+        for section in cls.get_sections():
+            if len(section.get_meeting_times()) == 0:
+                unscheduled_sections.append(section)
+
+        viable_times = list(meeting_times)
+
+        unavail_teachers = {}
+        teaching_teachers = {}
+        for time in time_options:
+            unavail_teachers[time] = []
+            teaching_teachers[time] = []
+            for teacher in teachers:
+                if time in teacher.getTaughtTimes(prog):
+                    teaching_teachers[time].append(teacher)
+                elif time not in teacher.getAvailableTimes(prog):
+                    unavail_teachers[time].append(teacher)
+            if len(unavail_teachers[time]) + len(teaching_teachers[time]) == 0:
+                viable_times.append(time)
+
+        context =   {
+                        'groups': [
+                            [
+                                {
+                                    'available': t in viable_times,
+                                    'slot': t,
+                                    'id': t.id,
+                                    'section': cls.get_section(t),
+                                    'unavail_teachers': unavail_teachers.get(t),
+                                    'teaching_teachers': teaching_teachers.get(t),
+                                }
+                            for t in group]
+                        for group in time_groups]
+                    }
+        context['class'] = cls
+        context['unscheduled'] = unscheduled_sections
+        context['num_groups'] = len(context['groups'])
+        context['program'] = prog
+
+        return render_to_response(self.baseDir()+'classavailability.html', request, context)
 
     class Meta:
         proxy = True

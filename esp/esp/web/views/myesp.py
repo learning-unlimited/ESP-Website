@@ -39,6 +39,7 @@ from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, Edu
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
@@ -196,6 +197,22 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
+            if not Tag.getTag('allow_change_grade_level'):
+                if prog_input is None:
+                    regProf = RegistrationProfile.getLastProfile(curUser)
+                else:
+                    regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+                if regProf.id is None:
+                    regProf = RegistrationProfile.getLastProfile(curUser)
+                if regProf.student_info:
+                    if regProf.student_info.dob:
+                        form.data['dob'] = regProf.student_info.dob
+                        form.fields['dob'].widget.attrs['disabled'] = "true"
+                        form.fields['dob'].required = False
+                    if regProf.student_info.graduation_year:
+                        form.data['graduation_year'] = regProf.student_info.graduation_year
+                        form.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                        form.fields['graduation_year'].required = False
 
     else:
         if prog_input is None:

@@ -214,6 +214,9 @@ class BaseESPUser(object):
     def name(self):
         return u'%s %s' % (self.first_name, self.last_name)
 
+    def name_last_first(self):
+        return u'%s, %s' % (self.last_name, self.first_name)
+
     def nonblank_name(self):
         name = self.name()
         if name.strip() == '': name = self.username
@@ -427,6 +430,14 @@ class BaseESPUser(object):
             if (include_scheduled or (s.start_time() is None)) and (s.status >= 0 and s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
+
+    def getTaughtTimes(self, program = None):
+        """ Return the times taught as a set. If a program is specified, return the times taught for that program. """
+        user_sections = self.getTaughtSections(program)
+        times = set()
+        for s in user_sections:
+            times.update(s.meeting_times.all())
+        return times
 
     @staticmethod
     def getUserFromNum(first, last, num):
