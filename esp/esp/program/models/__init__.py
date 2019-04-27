@@ -53,6 +53,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event
@@ -124,7 +125,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return u'Program Module: %s' % self.admin_title
+        return u'{}'.format(self.admin_title)
 
 
 class ArchiveClass(models.Model):
@@ -243,8 +244,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
+    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
@@ -1590,7 +1591,7 @@ class BooleanToken(models.Model):
         other models, such as:
         - Whether a user is violating a schedule constraint
         - Whether a user is in a particular age range
-        - Whether a user has been e-mailed in the last month
+        - Whether a user has been emailed in the last month
 
         Also meant to be combined into logical expressions for queries/tests
         (see BooleanExpression below).

@@ -6,9 +6,10 @@
 {% if accounts %}
 <div class="note">
   <p>
-    <b>Warning: Account not created!</b>  It looks like other accounts already exist for this
-    e-mail address.  Do you already have an {{ site }} account?  If so,
-    try logging in with one of the following username(s).  (If not, just
+    <b>Warning: Account not created!</b> It looks like other accounts already
+    exist for this email address. Do you already have an account for
+    {{ settings.INSTITUTION_NAME }}{{ settings.ORGANIZATION_SHORT_NAME }}?
+    If so, try logging in with one of the following username(s). (If not, just
     click "Create account" again below.)
   </p>
 
@@ -37,24 +38,30 @@
 {% load render_qsd %}
 {% inline_qsd_block "myesp/create_new_account_headertext" %}
 <p>
-  Welcome to ESP! To do almost anything with ESP, you first need to register
+  Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}!
+  To do almost anything with us, you first need to register
   an account with us. After you register account, you will be allowed to register
   for programs, sign up for classes, among other things.
 </p>
+{% if settings.USE_MAILMAN %}
 <p>
-  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists. (The latter gets emails about longer term ESP programs, targeted at people in the Boston area, while the former gets emails about programs that might be worth travelling for.) If you create an account, you will be automatically subscribed to our main Announcements list.
+  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
+  (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the local area,
+  while the former gets emails about programs that might be worth travelling for.)
+  If you create an account, you will be automatically subscribed to our main announcements.
 </p>
+{% endif %}
 {% end_inline_qsd_block %}
 </div>
 <div>
 <form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
   <fieldset>
     <h3>User Account Creation Form</h3>
-    
+
     {% if form.errors %}
 
     <div class="errors">
-      <p>There 
+      <p>There
       {% if form.errors|length_is:1 %}is an error{% else %}
       are errors{% endif %} in the below form. Please fix and resubmit.<p>
     </div>
@@ -66,7 +73,7 @@
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account{% endif %}" name="submit" class="btn btn-primary" />
+    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit" class="btn btn-primary" />
     </div>
   </fieldset>
 </form>

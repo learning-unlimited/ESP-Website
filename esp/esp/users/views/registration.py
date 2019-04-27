@@ -95,7 +95,7 @@ When there are already accounts with this email address (depending on some tags)
     form = EmailUserRegForm(request.POST)
 
     if form.is_valid():
-        ## First, check to see if we have any users with the same e-mail
+        ## First, check to see if we have any users with the same email
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts', default=False):
             existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
             awaiting_activation_accounts = ESPUser.objects.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
