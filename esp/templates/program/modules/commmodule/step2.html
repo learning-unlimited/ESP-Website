@@ -32,12 +32,13 @@
 There are <strong>{{listcount}}</strong> distinct users in your query{% if selected %} of <strong>{{ selected }}</strong>{% endif %}. If you feel this to be off, please
 <a href="javascript:history.go(-1);">go back</a> now.<br />
 <br />
-Please write your email/message now. Note that you can use <tt>{% templatetag openvariable %} parameter {% templatetag closevariable %}</tt> to enter a parameter
+Please write your email message now. Note that you can use <tt>{% templatetag openvariable %} parameter {% templatetag closevariable %}</tt> to enter a parameter
 into the text of the message. You can use the {% templatetag openvariable %}{% templatetag closevariable %} button to choose from the possible parameters.
 
 <form action="/manage/{{program.getUrlBase}}/commprev" method="post" name="comm2">
+
 <table border="0" cellspacing="0" width="100%">
-<tr>
+  <tr>
   <td>
   <label for="from">
   <strong>From:</strong>
@@ -97,8 +98,6 @@ var editor = new Jodit("#emailbody", {
         '{% templatetag openvariable %}program.transcript{% templatetag closevariable %}': 'Transcript (classes and descriptions) for Program',
         '{% templatetag openvariable %}program.receipt{% templatetag closevariable %}': 'Confirmation receipt for Program',
         '{% templatetag openvariable %}program.full_classes{% templatetag closevariable %}': 'Newline-separated list of user\'s classes that have full or nearly-full sections',
-        '{% templatetag openvariable %}program.diag_sat_scores{% templatetag closevariable %}': 'User\'s Diagnostic SAT Scores',
-        '{% templatetag openvariable %}program.prac_sat_scores{% templatetag closevariable %}': 'User\'s Practice SAT Scores',
       },
       exec: function(editor, current, control) {
         var key = control['name'];

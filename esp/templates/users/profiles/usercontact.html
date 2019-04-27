@@ -23,12 +23,12 @@
 {% ifequal profiletype "student" %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
-    <strong>Students:</strong> Please enter your primary e-mail address.  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' e-mail address in the parent/guardian section below.
+    <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
 </div>
 {% endifequal %}
 
 <div class="control-group">
- <label class="control-label" for="id_e_mail">E-mail address:</label>
+ <label class="control-label" for="id_e_mail">Email address:</label>
  <div class="controls">
  {{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>

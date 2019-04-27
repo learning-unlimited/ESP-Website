@@ -247,7 +247,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 def myesp_onsite(request):
     user = request.user
     if not user.isOnsite():
-        raise ESPError('You are not a valid on-site user, please go away.', log=False)
+        raise ESPError('You are not a valid onsite user, please go away.', log=False)
 
     progs = Permission.program_by_perm(user,"Onsite")
 

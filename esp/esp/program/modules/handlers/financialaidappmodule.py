@@ -123,7 +123,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 app.save()
 
                 # Automatically accept apps for people with subsidized lunches
-                # Send an e-mail announcing the application either way
+                # Send an email announcing the application either way
                 date_str = str(datetime.now())
                 iac = IndividualAccountingController(self.program, request.user)
                 if app.reduced_lunch:

@@ -46,7 +46,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         Does a message
         Future improvements should include:
         - more complex user lists
-        - 'smart text' like {{ program.schedule }} in e-mail content
+        - 'smart text' like {{ program.schedule }} in email content
     """
 
     def setUp(self, *args, **kwargs):
@@ -86,7 +86,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         s = re.search(r'<input type="hidden" name="listcount" value="([0-9]+)" />', response.content)
         listcount = s.groups()[0]
 
-        #   Enter e-mail information
+        #   Enter email information
         post_data = {
             'subject': 'Test Subject 123',
             'body':    'Test Body 123',
@@ -102,14 +102,14 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertTrue(m.count() == 1)
         self.assertFalse(m[0].processed)
 
-        #   Send out e-mail
+        #   Send out email
         msgs = process_messages()
         send_email_requests()
 
-        #   Check that the e-mail was sent to all students
+        #   Check that the email was sent to all students
         self.assertEqual(len(mail.outbox), len(self.students))
 
-        #   Check that the e-mails matched the entered information
+        #   Check that the emails matched the entered information
         msg = mail.outbox[0]
         self.assertEqual(msg.subject, 'Test Subject 123')
         self.assertEqual(msg.body, 'Test Body 123')

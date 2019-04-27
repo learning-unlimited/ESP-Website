@@ -58,7 +58,7 @@ class TeacherBioModule(ProgramModuleObj):
         return {'teacher_biographies': teachers }
 
     def teacherDesc(self):
-        return {'teacher_biographies': """Teachers who have completed the biography."""}
+        return {'teacher_biographies': """Teachers who have completed the biography"""}
 
     @main_call
     @needs_teacher

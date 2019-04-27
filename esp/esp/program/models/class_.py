@@ -992,7 +992,7 @@ class ClassSection(models.Model):
         ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
 
         if email_students:
-            #   Send e-mail to each student
+            #   Send email to each student
             students_to_email = {}
             if email_ssis:
                 q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
@@ -1020,7 +1020,7 @@ class ClassSection(models.Model):
                 students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
                 GroupTextModule.sendMessages(students_to_text, msgtext)
 
-        #   Send e-mail to administrators as well
+        #   Send email to administrators as well
         context['classreg'] = True
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         if email_ssis:
@@ -1030,7 +1030,7 @@ class ClassSection(models.Model):
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 
-        #   Send e-mail to teachers
+        #   Send email to teachers
         if email_teachers:
             context['director_email'] = self.parent_program.director_email
             email_content = render_to_string('email/class_cancellation_teacher.txt', context)
@@ -1269,7 +1269,7 @@ class ClassSection(models.Model):
 
             return True
         else:
-            #    Pre-registration failed because the class is full.
+            #    Registration failed because the class is full.
             return False
 
     def prettyDuration(self):

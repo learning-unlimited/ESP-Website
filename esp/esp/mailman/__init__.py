@@ -118,16 +118,16 @@ del sha
 def add_list_member(list_name, member):
     """Add the 'member' to the local Mailman mailing list 'list_name'.
 
-    'member' may be a User object, or an e-mail address.
+    'member' may be a User object, or an email address.
     """
     return add_list_members(list_name, [member])
 
 
 @enable_with_setting(settings.USE_MAILMAN)
 def add_list_members(list_name, members):
-    """Add e-mail addresses to the local Mailman mailing list 'list_name'.
+    """Add email addresses to the local Mailman mailing list 'list_name'.
 
-    'members' is an iterable of e-mail address strings or ESPUser objects.
+    'members' is an iterable of email address strings or ESPUser objects.
     """
     members = [x.get_email_sendto_address() if isinstance(x, User) else unicode(x) for x in members]
 
@@ -145,9 +145,9 @@ def add_list_members(list_name, members):
 @enable_with_setting(settings.USE_MAILMAN)
 def remove_list_member(list, member):
     """
-    Remove the e-mail address 'member' from the local Mailman mailing list 'list'
+    Remove the email address 'member' from the local Mailman mailing list 'list'
 
-    "member" may be a list (or other iterable) of e-mail address strings,
+    "member" may be a list (or other iterable) of email address strings,
     in which case all addresses will be removed.
     """
     if isinstance(member, User):
@@ -166,7 +166,7 @@ def remove_list_member(list, member):
 
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
-    """ Return the list of e-mail addresses on the specified mailing list """
+    """ Return the list of email addresses on the specified mailing list """
     contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
 
     try:
