@@ -59,12 +59,12 @@ render_class.cached_function.depend_on_row('program.StudentRegistration', lambda
 render_class.cached_function.get_or_create_token(('user',))
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_webapp.html')
-def render_class_webapp(cls, user=None, filter=False, timeslot=None, checked_in=False):
+def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False):
     """Render the entire class for the webapp, including user-specific parts.
 
     Calls render_class_core for non-user-specific parts.
     """
-    context = _render_class_helper(cls,  user, filter, timeslot)
+    context = _render_class_helper(cls,  user, filter, timeslot, webapp = True)
     context['checked_in'] = checked_in
     context['prereg_url'] = cls.parent_program.get_learn_url() + 'onsiteaddclass'
     return context
@@ -77,6 +77,7 @@ render_class_webapp.cached_function.get_or_create_token(('cls',))
 # this user.  This only applies to tags that can depend on a user.
 render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class_webapp.cached_function.get_or_create_token(('user',))
+render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event == 'attended')
 
 @cache_function
 def render_class_direct(cls):
@@ -88,7 +89,7 @@ def render_class_direct(cls):
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 
-def _render_class_helper(cls, user=None, filter=False, timeslot=None):
+def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = False):
     """Computes the context for render_class and render_class_direct."""
     scrmi = cls.parent_program.studentclassregmoduleinfo
     crmi = cls.parent_program.classregmoduleinfo
@@ -105,7 +106,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None):
         prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
-        errormsg = cls.cannotAdd(user, which_section=section)
+        errormsg = cls.cannotAdd(user, which_section=section, webapp = webapp)
     else:
         errormsg = None
 

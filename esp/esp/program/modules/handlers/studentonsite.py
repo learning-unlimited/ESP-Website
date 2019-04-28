@@ -91,7 +91,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getTag('program_center', default='{lat: 37.427490, lng: -122.170267}')
+        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
+        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+
         #extra should be a classroom id
         if extra:
             #gets lat/long of classroom and adds it to context
@@ -136,13 +138,10 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         else:
             classes = list(ClassSubject.objects.catalog(prog))
 
-        categories = {}
-
-        for cls in classes:
-            categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
+        categories_sort = StudentClassRegModule.sort_categories(classes, prog)
 
         context['classes'] = classes
-        context['categories'] = categories.values()
+        context['categories'] = categories_sort
         context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
 
         return render_to_response(self.baseDir()+'catalog.html', request, context)
@@ -166,7 +165,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @meets_grade
     @meets_deadline('/Webapp')
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
-        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog):
+        if StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True):
             return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
