@@ -33,7 +33,7 @@
         Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFullWebapp %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
     {% endif %}
 </div>
-{% if section and checked_in %}
+{% if section and checked_in and prereg_url %}
     <div class="add_button">
         <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
             <script type="text/javascript">add_csrf_token();</script>
