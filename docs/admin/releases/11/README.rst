@@ -106,10 +106,14 @@ Big board fixes
 - Teacher big board now shows data on registered and approved classes.
 - Big boards now display graphs even if there is no data to show.
 
+Arbitrary user list improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Arbitrary user lists now allow admins to get guardian name, email, and cell phone for student users.
+- When the selected users are teachers, selecting the "school" or "grad year" fields will fill in their university affiliation (if entered) and graduation year. Student users will still have these fields as before as well.
+
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added a default login help page ``/myesp/loginhelp.html`` that admins can modify.
-- Arbitrary user lists now allow admins to get guardian name, email, and cell phone.
 - The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 - Fixed ordering of two-phase lottery priorities, now supports custom display names.
 - Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
