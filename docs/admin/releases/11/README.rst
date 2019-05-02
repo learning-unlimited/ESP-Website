@@ -110,10 +110,11 @@ Arbitrary user list improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Arbitrary user lists now allow admins to get guardian name, email, and cell phone for student users.
 - When the selected users are teachers, selecting the "school" or "grad year" fields will fill in their university affiliation (if entered) and graduation year. Student users will still have these fields as before as well.
+- Arbitrary user lists no longer refer to "contacts" to avoid confusion with communications panel
 
 Minor new features and fixes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Added a default login help page ``/myesp/loginhelp.html`` that admins can modify.
+- Added a default login help page ``/myesp/loginhelp.html`` that admins can modify. (Other pages linked to this page, but it did not exist by default.)
 - The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
 - Fixed ordering of two-phase lottery priorities, now supports custom display names.
 - Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
@@ -148,6 +149,30 @@ Minor new features and fixes
 - Added teacher interview and training descriptions to the manage page for these events.
 - Fixed the format of the inline student schedule (on the student reg mainpage).
 - Fixed the coloration of sections in the AJAX scheduler.
+- Change mentions of "ESP" to your group name
+- Remove hyphens from sufficiently old/common words, such as "email"
+- Remove stray periods and other punctuation
+- Fix several misspellings, phrasing, etc.
+- Fix formatting of some hyperlinks
+- Change "Pre-registration" to "registration" (we specify "onsite reg" elsewhere, so online reg should be the default)
+- Change the infamous "Fitted for women" to "Fitted cut" and "plain" to "Straight cut."
+- Update a few defaults for courtesy/professionalism (editable text can be changed if anyone prefers the old way)
+- Make "parents should not be here" warnings more noticeable
+- Add some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, manage/pages/, myesp/makeadmin/, /statistics/ and manage/flushcache. In addition, there are instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
+- Make form errors (the "This field is required" message) bold and red to increase visibility
+- Update program creation form language so it doesn't make it sound so scary, and make its formatting nicer
+- Restyle list.html so static pages URLs don't run into next column.
+- Add LU logo as default favicon https://github.com/learning-unlimited/ESP-Website/tree/main/esp/public/media/default_images.
+- Rename go1.gif to go.gif for circles theme
+- remove Q tree references
+- remove old SAT score variables
+- Make Stripe failure page more salient (different from success page)
+- Other minor fixes to Stripe message & formatting
+- add default favicon
+- add a few more general email addresses
+- clean up language and colors on new program creation page
+- Update instructions for making QSD (editable text) pages
+
 
 Known Issues
 ============
