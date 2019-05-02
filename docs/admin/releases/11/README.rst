@@ -97,6 +97,7 @@ Theme fixes
 - In fruitsalad theme, now show links and search fields for all "current" programs in the admin bar.
 - In circles theme, the user search box is now the correct width.
 - In bigpicture theme, fixed a signin/signout loop on the signout page.
+- Renamed go1.gif to go.gif for circles theme
 
 Big board fixes
 ~~~~~~~~~~~~~~~
@@ -149,29 +150,25 @@ Minor new features and fixes
 - Added teacher interview and training descriptions to the manage page for these events.
 - Fixed the format of the inline student schedule (on the student reg mainpage).
 - Fixed the coloration of sections in the AJAX scheduler.
-- Change mentions of "ESP" to your group name
-- Remove hyphens from sufficiently old/common words, such as "email"
-- Remove stray periods and other punctuation
-- Fix several misspellings, phrasing, etc.
-- Fix formatting of some hyperlinks
-- Change "Pre-registration" to "registration" (we specify "onsite reg" elsewhere, so online reg should be the default)
-- Change the infamous "Fitted for women" to "Fitted cut" and "plain" to "Straight cut."
-- Update a few defaults for courtesy/professionalism (editable text can be changed if anyone prefers the old way)
-- Make "parents should not be here" warnings more noticeable
-- Add some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, manage/pages/, myesp/makeadmin/, /statistics/ and manage/flushcache. In addition, there are instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
-- Make form errors (the "This field is required" message) bold and red to increase visibility
-- Update program creation form language so it doesn't make it sound so scary, and make its formatting nicer
-- Restyle list.html so static pages URLs don't run into next column.
-- Add LU logo as default favicon https://github.com/learning-unlimited/ESP-Website/tree/main/esp/public/media/default_images.
-- Rename go1.gif to go.gif for circles theme
-- remove Q tree references
-- remove old SAT score variables
-- Make Stripe failure page more salient (different from success page)
-- Other minor fixes to Stripe message & formatting
-- add default favicon
-- add a few more general email addresses
-- clean up language and colors on new program creation page
-- Update instructions for making QSD (editable text) pages
+- Changed mentions of "ESP" to program name
+- Removed hyphens from sufficiently old/common words, such as "email"
+- Removed stray periods and other punctuation
+- Fixed several misspellings, phrasing, etc.
+- Fixed formatting of some hyperlinks
+- Changed "Pre-registration" to "registration" (we specify "onsite reg" elsewhere, so online reg should be the default)
+- Changed the infamous "Fitted for women" to "Fitted cut" and "plain" to "Straight cut."
+- Updated a few defaults for courtesy/professionalism (editable text can be changed if anyone prefers the old way)
+- Made "parents should not be here" warnings more noticeable
+- Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, /manage/pages/, myesp/makeadmin/, /statistics/ and /manage/flushcache. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
+- Made form errors (the "This field is required" message) bold and red to increase visibility
+- Updated the program creation form language so it doesn't make it sound so scary, and made its formatting nicer
+- Restyled list.html so static pages URLs don't run into next column.
+- Added LU logo as default favicon
+- Removed Q tree references
+- Removed old SAT score variables
+- Made Stripe failure page more salient (different from success page), made other minor fixes to Stripe message & formatting
+- Added a few more general email addresses
+- Updated instructions for making QSD (editable text) pages
 
 
 Known Issues
