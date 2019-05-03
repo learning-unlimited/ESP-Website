@@ -94,8 +94,8 @@ class TeacherEventsModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {
-            'interview': """Teachers who have signed up for an interview.""",
-            'training':  """Teachers who have signed up for teacher training.""",
+            'interview': """Teachers who have signed up for an interview""",
+            'training':  """Teachers who have signed up for teacher training""",
         }
 
     # Helper functions
@@ -136,7 +136,7 @@ class TeacherEventsModule(ProgramModuleObj):
                 # Register for interview
                 if data['interview']:
                     ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['interview'], role=self.availability_role())
-                    # Send the directors an e-mail
+                    # Send the directors an email
                     if self.program.director_email and created:
                         event_name = data['interview'].description
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \

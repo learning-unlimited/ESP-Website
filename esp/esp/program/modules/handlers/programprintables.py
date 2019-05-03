@@ -48,6 +48,7 @@ from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
 from django.conf import settings
+from django.db.models import IntegerField, Case, When, Count
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
@@ -310,36 +311,56 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_latex(self.baseDir()+template_name, context, extra)
 
+    @aux_call
+    @needs_admin
+    def classpopularity(self, request, tl, one, two, module, extra, prog):
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+        for priority in priorities:
+            classes = classes.annotate(**{'priority' + str(priority): Count(
+            Case(When(sections__studentregistration__relationship__name='Priority/' + str(priority), then=1), default=None, output_field=IntegerField()
+            ))})
+        classes = classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
+        classes = classes.order_by('-ssi')
+
+        context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
+
+        return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
+
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
-        classes_raw = ClassSubject.objects.filter(parent_program = self.program)
+        classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        classes_filt = [cls for cls in classes_raw if cls.isAccepted()]
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            classes = [cls for cls in classes if cls.id in clsids]
 
-        if split_teachers:
-            classes = []
-            for cls in classes_filt:
-                for teacher in cls.get_teachers():
-                    cls_split = copy.copy(cls)
-                    cls_split.split_teacher = teacher
-                    classes.append(cls_split)
-        else:
-            classes = classes_filt
+        if 'grade_min' in request.GET:
+            classes = [cls for cls in classes if cls.grade_max >= int(request.GET['grade_min'])]
+
+        if 'grade_max' in request.GET:
+            classes = [cls for cls in classes if cls.grade_min <= int(request.GET['grade_max'])]
+
+        if 'accepted' in request.GET:
+            classes = [cls for cls in classes if cls.status > 0]
+        elif 'cancelled' in request.GET:
+            classes = [cls for cls in classes if cls.isCancelled()]
+        elif 'all' not in request.GET:
+            classes = [cls for cls in classes if cls.status >= 0]
+
+        if 'scheduled' in request.GET:
+            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
 
         classes = filter(filt_exp, classes)
 
-        if 'grade_min' in request.GET:
-            classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
-
-        if 'grade_max' in request.GET:
-            classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
-
-        if 'clsids' in request.GET:
-            clsids = request.GET['clsids'].split(',')
-            cls_dict = {}
+        if split_teachers:
+            classes_temp = []
             for cls in classes:
-                cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids]
+                for teacher in cls.get_teachers():
+                    cls_split = copy.copy(cls)
+                    cls_split.split_teacher = teacher
+                    classes_temp.append(cls_split)
+            classes = classes_temp
 
         classes.sort(sort_exp)
 
@@ -354,24 +375,31 @@ class ProgramPrintables(ProgramModuleObj):
         if extra == 'csv':
             template_file = 'sections_list.csv'
 
-        if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
-            sections = filter(lambda z: z.isCancelled(), sections)
-        else:
-            sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
-        sections = filter(filt_exp, sections)
+        if 'secids' in request.GET:
+            secids = [int(secid) for secid in request.GET['secids'].split(",")]
+            sections = [sec for sec in sections if sec.id in secids]
+
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            sections = [sec for sec in sections if sec.parent_class.id in clsids]
 
         if 'grade_min' in request.GET:
-            sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
+            sections = [sec for sec in sections if sec.parent_class.grade_max >= int(request.GET['grade_min'])]
 
         if 'grade_max' in request.GET:
-            sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
+            sections = [sec for sec in sections if sec.parent_class.grade_min <= int(request.GET['grade_max'])]
 
-        if 'secids' in request.GET:
-            clsids = request.GET['secids'].split(',')
-            cls_dict = {}
-            for cls in sections:
-                cls_dict[str(cls.id)] = cls
-            sections = [cls_dict[clsid] for clsid in clsids]
+        if 'accepted' in request.GET:
+            sections = [sec for sec in sections if sec.status > 0]
+        elif 'cancelled' in request.GET or (extra and 'cancelled' in extra):
+            sections = [sec for sec in sections if sec.isCancelled()]
+        elif 'all' not in request.GET:
+            sections = [sec for sec in sections if sec.status >= 0]
+
+        if 'scheduled' in request.GET:
+            sections = [sec for sec in sections if sec.meeting_times.count() > 0]
+
+        sections = filter(filt_exp, sections)
 
         sections.sort(sort_exp)
 

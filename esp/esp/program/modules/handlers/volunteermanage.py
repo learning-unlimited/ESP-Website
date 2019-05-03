@@ -75,7 +75,7 @@ class VolunteerManage(ProgramModuleObj):
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
-            write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
+            write_csv.writerow(("Activity","Time","Name","Phone Number","Email Address"))
             for request in requests:
                 for offer in request.get_offers():
                     write_csv.writerow([codecs.encode(entry, 'utf-8') for entry in

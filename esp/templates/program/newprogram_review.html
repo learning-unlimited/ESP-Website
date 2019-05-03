@@ -38,18 +38,25 @@ The program you are trying to create is: <b>{{ prog }}</b>
 <div id="catalog">
 <table align="center">
 <tr>
-<th>The following program modules will be added:</th>
+<th colspan="2" class="materials">The following program modules will be added:</th>
 </tr>
-<tr><th class="materials">Module Name</th></tr>
+{% comment %}
+This loop puts the modules in two columns (so the list isn't too long)
+and alternates in such a way that there isn't an unclosed tag if there's an
+odd number of modules
+{% endcomment %}
 {% for item in modules %}
-    <tr><td>{{ item.0 }}</td></tr>
+    {% if forloop.counter0|divisibleby:"2" %}<tr><td style="text-align:center">
+    {% else %} <td style="text-align:center">{% endif %}
+    {{ item.0 }}</td>
+    {% if forloop.last or not forloop.counter0|divisibleby:"2" %}</tr>{%endif %}
 {% endfor %}
 </table>
 </div>
 </p>
 
 <center>
-<div class="info"><b>Warning</b>: it is difficult to undo the changes made by this function.  If you would like to change anything, please go back and re-submit.</div>
+<div class="info"><b>If you would like to change anything, please <a href="javascript:history.go(-1);" title="Go back">go back</a> and re-submit.</div>
 
 <div id="program_form">
 <form method="POST" action="{{ request.path }}?checked=1">

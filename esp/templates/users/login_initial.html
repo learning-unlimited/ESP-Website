@@ -1,13 +1,13 @@
 {% extends "main.html" %}
 
-{% block title %}Join ESP!{% endblock %}
+{% block title %}Join {{ settings.ORGANIZATION_SHORT_NAME }}!{% endblock %}
 
 {% block content %}
-<h2 style='text-align: center'>Ready to join ESP?</h2>
+<h2 style='text-align: center'>Ready to join {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}?</h2>
 <h1 style='text-align: center; margin-bottom: 0px'>Cool!</h1>
 <h3 style="text-align: center; font-weight: normal; margin-top: 0px">Please begin by choosing a username and password for your account on our system.<br/>
 
- Your account will be your portal for all of ESP's programs! </h3>
+ Your account will be your portal for all of {{ settings.ORGANIZATION_SHORT_NAME }}'s programs! </h3>
 
 <p style="text-align: center; color: #FF0000; margin-bottom: 0px;">
  <b>NOTE: You must have cookies enabled to login to this website.<br/>
@@ -53,7 +53,7 @@
 
 <tr>
  <td style="vertical-align: top"><b>I want to be a(n)...</b></td>
- <td align='left' colspan=2><select size=5 style="width: 95%"" name="pos"><option value="1" selected>ESP Student (Grade 12 and under)</option><option value="2">Parent/Guardian Contact</option><option value="3">K-12 Teacher/Educator Contact</option><option value="4">Teacher for ESP!</option></select></td>
+ <td align='left' colspan=2><select size=5 style="width: 95%"" name="pos"><option value="1" selected>{{ settings.ORGANIZATION_SHORT_NAME }} Student (Grade 12 and under)</option><option value="2">Parent/Guardian Contact</option><option value="3">K-12 Teacher/Educator Contact</option><option value="4">Teacher for {{ settings.ORGANIZATION_SHORT_NAME }}</option></select></td>
 </tr>
 </table>
 

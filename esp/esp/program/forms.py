@@ -42,6 +42,7 @@ from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
 from form_utils.forms import BetterModelForm
+from django.utils.safestring import mark_safe
 
 
 def make_id_tuple(object_list):
@@ -50,16 +51,17 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
-    term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
-    program_type      = forms.CharField(label = "Program Type")
+    base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+                                                help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
+    program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_modules   = forms.MultipleChoiceField(
                           choices=[],
                           label='Program Modules',
@@ -116,8 +118,8 @@ class ProgramCreationForm(BetterModelForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
-                     ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+                     ('Program Internal Details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
+                     ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
 ]                      # Here You can also add description for each fieldset.

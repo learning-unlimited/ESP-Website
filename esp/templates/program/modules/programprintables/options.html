@@ -51,13 +51,47 @@ Please select from options below.
 
 <h3>Admin Binder Stuff</h3>
 <ul>
-<li><a href="./classesbytime" title="Classes by Time">Class Sections sorted by time</a>
+<li><a href="./classesbytime" title="Classes by Time">Class Sections Sorted by Time</a>
     <ul>
-    <li><a href="./classesbytime?grade_min=7&grade_max=8" title="Classes by Time">Limit to middle school (grades 7-8)</a></li>
-    <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to high school (grades 9-12)</a></li>
+    <li><a href="./classesbytime?grade_min=7&grade_max=8" title="Classes by Time">Limit to Middle School (Grades 7-8)</a></li>
+    <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to High School (Grades 9-12)</a></li>
+    <li><a href="./classesbytime?accepted" title="Classes by Time">Accepted Only</a></li>
+    <li><a href="./classesbytime?scheduled" title="Classes by Time">Scheduled Only</a></li>
+    <li><a href="./classesbytime?accepted&scheduled" title="Classes by Time">Accepted and Scheduled Only</a></li>
+    <li><a href="./classesbytime?cancelled" title="Classes by Time">Cancelled Only</a></li>
     </ul>
 </li>
-<li><a href="./classesbytime?cancelled" title="Classes by Time">Cancelled Class Sections</a></li>
+<li><a href="./classesbyid" title="Classes by ID">Class Subjects Sorted by ID</a></li>
+    <ul>
+    <li><a href="./classesbyid?grade_min=7&grade_max=8" title="Classes by ID">Limit to Middle School (Grades 7-8)</a></li>
+    <li><a href="./classesbyid?grade_min=9&grade_max=12" title="Classes by ID">Limit to High School (Grades 9-12)</a></li>
+    <li><a href="./classesbyid?accepted" title="Classes by ID">Accepted Only</a></li>
+    <li><a href="./classesbyid?scheduled" title="Classes by ID">Scheduled Only</a></li>
+    <li><a href="./classesbyid?accepted&scheduled" title="Classes by ID">Accepted and Scheduled Only</a></li>
+    <li><a href="./classesbyid?cancelled" title="Classes by ID">Cancelled Only</a></li>
+    </ul>
+<li><a href="./classesbytitle" title="Classes by Name">Class Subjects Sorted by Title</a></li>
+    <ul>
+    <li><a href="./classesbytitle?grade_min=7&grade_max=8" title="Classes by Name">Limit to Middle School (Grades 7-8)</a></li>
+    <li><a href="./classesbytitle?grade_min=9&grade_max=12" title="Classes by Name">Limit to High School (Grades 9-12)</a></li>
+    <li><a href="./classesbytitle?accepted" title="Classes by Name">Accepted Only</a></li>
+    <li><a href="./classesbytitle?scheduled" title="Classes by Name">Scheduled Only</a></li>
+    <li><a href="./classesbytitle?accepted&scheduled" title="Classes by Name">Accepted and Scheduled Only</a></li>
+    <li><a href="./classesbytitle?cancelled" title="Classes by Name">Cancelled Only</a></li>
+    </ul>
+<li><a href="./classesbyteacher" title="Classes by Teacher">Class Subjects Sorted by Teacher</a></li>
+    <ul>
+    <li><a href="./classesbyteacher?grade_min=7&grade_max=8" title="Classes by Teacher">Limit to Middle School (Grades 7-8)</a></li>
+    <li><a href="./classesbyteacher?grade_min=9&grade_max=12" title="Classes by Teacher">Limit to High School (Grades 9-12)</a></li>
+    <li><a href="./classesbyteacher?accepted" title="Classes by Teacher">Accepted Only</a></li>
+    <li><a href="./classesbyteacher?scheduled" title="Classes by Teacher">Scheduled Only</a></li>
+    <li><a href="./classesbyteacher?accepted&scheduled" title="Classes by Teacher">Accepted and Scheduled Only</a></li>
+    <li><a href="./classesbyteacher?cancelled" title="Classes by Teacher">Cancelled Only</a></li>
+    </ul>
+<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time); <a href="./teachersbyname/secondday">teachers for second day of classes only</a></li>
+<li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
+<li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
+<li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
 {% if not li_types|length_is:0 %}
 <li>Students who have ordered/reserved line items:
     <ul>
@@ -67,12 +101,6 @@ Please select from options below.
     </ul>
 </li>
 {% endif %}
-<li><a href="./classesbytitle" title="Classes by Name">Class Subjects</a></li>
-<li><a href="./classesbyteacher" title="Classes by Teacher">Classes Sorted by Teacher</a></li>
-<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time); <a href="./teachersbyname/secondday">teachers for second day of classes only</a></li>
-<li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
-<li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
-<li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>
 </ul>
 
 <h3>Other Printables</h3>
@@ -81,7 +109,8 @@ Please select from options below.
 <li>Meal tickets (by students): <a href="./student_tickets/3" title="Meal Tickets">3 lines</a> <a href="./student_tickets/4" title="Meal Tickets">4 lines</a> <a href="./student_tickets/5" title="Meal Tickets">5 lines</a> <a href="./student_tickets/6" title="Meal Tickets">6 lines</a> <a href="./student_tickets/7" title="Meal Tickets">7 lines</a> </li>
 <li><a href="./onsiteregform" title="On-Site Reg Form">On-Site Reg Form</a></li>
 <li><a href="./all_classes_spreadsheet" title="All Classes Spreadsheet">All Classes Spreadsheet</a> (CSV format; opens in most spreadsheet programs)</li>
-<li><a href="./oktimes_spr" title="Viable Times for Classes">Viable Times for Sections Spreadsheet </a> (CSV format; 'X' indicates a viable time)</li>
+<li><a href="./oktimes_spr" title="Viable Times for Classes">Viable Times for Sections Spreadsheet</a> (CSV format; 'X' indicates a viable time)</li>
+<li><a href="./classpopularity" title="Class Popularity">Class Subject Popularity</a></li>
 </ul>
 
 <p>

@@ -53,6 +53,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 
 from argcache import cache_function, cache_function_for, wildcard
 from esp.cal.models import Event
@@ -124,7 +125,7 @@ class ProgramModule(models.Model):
             super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
     def __unicode__(self):
-        return u'Program Module: %s' % self.admin_title
+        return u'{}'.format(self.admin_title)
 
 
 class ArchiveClass(models.Model):
@@ -243,8 +244,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField(max_length=75) # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
+    director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
     program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
@@ -786,7 +787,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
         time_sum = timedelta()
         for t in ts_list:
-            time_sum = time_sum + (t.end - t.start)
+            time_sum = time_sum + t.duration()
         return time_sum
 
     def dates(self):
@@ -959,7 +960,7 @@ class Program(models.Model, CustomFormsLinkModel):
             n = len(t_list)
             for i in range(0, n):
                 for j in range(i, n):
-                    time_option = t_list[j].end - t_list[i].start
+                    time_option = Event.total_length([t_list[i], t_list[j]])
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
                     if round:
@@ -967,7 +968,7 @@ class Program(models.Model, CustomFormsLinkModel):
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
-                        durationDict[(Decimal(durationSeconds) / 3600).quantize(Decimal('.01'))] = \
+                        durationDict[(Decimal(durationSeconds) / 3600)] = \
                                         str(rounded_seconds / 3600) + ':' + \
                                         str((rounded_seconds / 60) % 60).rjust(2,'0')
 
@@ -991,7 +992,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return li_types
 
     @cache_function
-    def getModules_cached(self, tl = None):
+    def getModules_cached(self, tl = None, old_prog = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
@@ -1005,7 +1006,7 @@ class Program(models.Model, CustomFormsLinkModel):
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
                  for module in self.program_modules.filter(module_type = tl) ]
         else:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]
 
         modules.sort(cmpModules)
@@ -1018,9 +1019,9 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
-    def getModules(self, user = None, tl = None):
+    def getModules(self, user = None, tl = None, old_prog = None):
         """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl)
+        modules = self.getModules_cached(tl, old_prog)
         if user:
             for module in modules:
                 module.setUser(user)
@@ -1590,7 +1591,7 @@ class BooleanToken(models.Model):
         other models, such as:
         - Whether a user is violating a schedule constraint
         - Whether a user is in a particular age range
-        - Whether a user has been e-mailed in the last month
+        - Whether a user has been emailed in the last month
 
         Also meant to be combined into logical expressions for queries/tests
         (see BooleanExpression below).

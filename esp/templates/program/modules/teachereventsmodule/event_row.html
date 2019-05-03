@@ -1,15 +1,16 @@
 {% for timeslot in timeslots %}
-    <tr>
-        <td>{{ timeslot.start|date:"D, M j f A" }}</td>
-        <td>{{ timeslot.end|date:"f A" }}</td>
-        <td>
+    <tr class="trs">
+        <td class="desc" style="width:25%">{{ timeslot.description }}</td>
+        <td style="width:18%">{{ timeslot.start|date:"D, M j f A" }}</td>
+        <td style="width:7%">{{ timeslot.end|date:"f A" }}</td>
+        <td style="width:45%">
             {% if timeslot.teachers %}
                 {{ timeslot.teachers|join:",<br />" }}
             {% else %}
                 <em>(None)</em>
             {% endif %}
         </td>
-        <td>
+        <td style="width:5%">
             <form method="post" action="teacher_events">
             <input type="hidden" name="id" value="{{ timeslot.id }}" />
             <input type="hidden" name="command" value="delete" />

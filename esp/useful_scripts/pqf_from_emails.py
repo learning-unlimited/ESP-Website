@@ -27,10 +27,10 @@ for u in users:
 id_list = idmap.values()
 
 user_q = Q(id__in=id_list)
-pqf = PersistentQueryFilter.create_from_Q(User, user_q, 'Custom list generated from e-mail addresses')
+pqf = PersistentQueryFilter.create_from_Q(User, user_q, 'Custom list generated from email addresses')
 
 print 'Found %d users' % ESPUser.objects.filter(user_q).distinct().count()
 
-print 'Created filter.  Edit and send your e-mail at: %s' % ("""
+print 'Created filter.  Edit and send your email at: %s' % ("""
 %s?extra=%d&op=usersearch&userid=&username=&last_name=&first_name=&email=&zipdistance_exclude=&zipdistance=&zipcode=02139&states=&grade_min=7&grade_max=13&submitform=Use+Filtered+List""" % (url, pqf.id))
 

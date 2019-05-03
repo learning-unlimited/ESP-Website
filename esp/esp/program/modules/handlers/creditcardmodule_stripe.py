@@ -101,7 +101,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form"""}
 
     def check_setup(self):
         """ Validate the keys specified in the stripe_settings Tag.
@@ -125,7 +125,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
         valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
         if not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
-            raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="/admin/tagdict/tag">edit the "stripe_settings" Tag here</a>.', True)
+            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
 
     @main_call
     @needs_student
@@ -192,7 +192,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def send_error_email(self, request, context):
-        """ Send an e-mail to admins explaining the credit card error.
+        """ Send an email to admins explaining the credit card error.
             (Broken out from charge_payment view for readability.) """
 
         context['request'] = request
@@ -291,7 +291,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 context['error_type'] = 'generic'
 
         if 'error_type' in context:
-            #   If we got any sort of error, send an e-mail to the admins and render an error page.
+            #   If we got any sort of error, send an email to the admins and render an error page.
             self.send_error_email(request, context)
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
