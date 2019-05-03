@@ -7,6 +7,18 @@
 Changelog
 =========
 
+Automatic Scheduling Assistant
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This is a new module intended for use in parallel with the AJAX scheduler to find good scheduling choices for
+individual sections. When this module is enabled, a new link will appear for each section in the scheduler
+with the text "Optimize". This will bring the user to a new interface to find an appropriate time and
+classroom for the section. Documentation is provided on this page detailing how admins can configure the
+module before scheduling to better suit their program's needs, mostly through the use of custom tags.
+
+Financial Aid Approval Module
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A new program module that allows admins to easily view and approve financial aid applications in bulk.
+
 Resource improvements
 ~~~~~~~~~~~~~~~~~~~~~
 - Added ability to modify resource choices from the resources management module.
@@ -16,14 +28,6 @@ Resource improvements
 - Added ability to import resource types, floating resources, and classrooms (with their furnishings) from a 
   previous program. All of the above properties are preserved when importing. Admins may also select a subset of
   the old resources to be imported to the new program.
-
-Automatic Scheduling Assistant
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is a new module intended for use in parallel with the AJAX scheduler to find good scheduling choices for
-individual sections. When this module is enabled, a new link will appear for each section in the scheduler
-with the text "Optimize". This will bring the user to a new interface to find an appropriate time and
-classroom for the section. Documentation is provided on this page detailing how admins can configure the
-module before scheduling to better suit their program's needs, mostly through the use of custom tags.
 
 Userview improvements
 ~~~~~~~~~~~~~~~~~~~~~
