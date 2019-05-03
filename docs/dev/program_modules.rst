@@ -15,7 +15,84 @@ Program modules are an ESP website-specific framework for bits of code associate
 * aggregate data from various parts of the website into the dashboard
 * have various utilities for writing views
 
-If you’re writing a new view for a program, you probably want to put it in a program module, either an existing one or a new one.  Program modules live in ``/esp/esp/program/modules/handlers/``.  They consist of a python file, for example ``foobarmodule.py``, containing a class, for example ``FooBarModule`` which inherits from ``esp.program.modules.base.ProgramModuleObj``.  (Note that other utilities mentioned in this section live in the same file.)  For the most part, you can just copy existing program modules and figure out how they work.  If you want to know all the details of what can go in them, read the next section.  For a list of the program modules, and what they do, see ``/docs/admin/program_modules.rst``.
+If you’re writing a new view for a program, you probably want to put it in a program module, either an existing one or a new one.
+
+Program modules live in python files in ``/esp/esp/program/modules/handlers/``. (Note that other utilities mentioned in this section live in the same file.)
+
+Any HTML web pages included in a module live in ``/esp/templates/program/modules/``.
+
+For a list of the program modules, and what they do, see ``/docs/admin/program_modules.rst``.
+
+How To Create A New Module
+--------------------------
+If you want to create a new module, here's all you have to do:
+
+ * Create a python file in ``/esp/esp/program/modules/handlers/`` called something like ``foobarmodule.py``
+
+   * In that file, create a class ``FooBarModule`` that inherits from ``esp.program.modules.base.ProgramModuleObj``
+
+   * Create a function ``module_properties`` that returns some information about the module
+
+   * All module code goes in this file
+
+ * OPTIONAL: If you have any HTML pages you want to include in your module, create a new folder ``foobarmodule`` in ``/esp/templates/program/modules/`` and place your files in there
+
+ * Run ``fab refresh`` from your command line to make sure all changes are reflected on your server
+
+ * And you're done! That wasn't so bad, was it?
+
+### Example
+
+Here's an example of how you would create a super useful FooBar Module that shows an HTML page containing "Hello, world!" whenever you visit ``[YOURSITE].learningu.org/manage/[PROGRAM]/[YEAR]/foobar``.
+
+``/esp/esp/program/modules/handlers/foobarmodule.py``:
+
+```python
+#licensing info, etc. etc.
+
+from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.utils.web import render_to_response
+
+class FooBarModule(ProgramModuleObj):
+    @classmethod
+    def module_properties(cls):
+        return {
+            "admin_title": "Foo Bar", # This appears in the admin panel
+            "link_title": "Foo Bar",  # This appears in the manage page
+            "module_type": "manage",
+            "seq": 26,
+            }
+
+    class Meta:
+        proxy = True
+        app_label = 'modules'
+
+    @main_call
+    @needs_admin
+    def foobar(self, request, tl, one, two, module, extra, prog):
+        """
+        Renders a 'Hello World' webpage.
+        """
+
+        context = {}  # This is how you would pass information from this file to the webpage
+        return render_to_response(self.baseDir()+'hello.html', request, context) # Renders an HTML file from /esp/templates/program/modules/foobarmodule/hello.html
+```
+
+``/esp/templates/program/modules/foobarmodule/hello.html``:
+```HTML
+{% extends "main.html" %}
+
+{% block title %} Hello World! {% endblock %}
+
+
+{% block content %}
+
+Hello, world!
+
+{% endblock %}
+```
+
+If you want all the specifics of how modules work and what can go in them, read the next section. Or, you can take a look at some existing modules and go from there. Or (probably your best bet), do both.
 
 The Dirty Details
 -----------------
