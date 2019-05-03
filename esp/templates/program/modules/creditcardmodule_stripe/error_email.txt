@@ -4,10 +4,10 @@ Credit card failure (Stripe)
 
 A credit card transaction was not successful.  Some errors are harmless and require no action, but some may signify an error in the Web site code or configuration that should be addressed.  
 
-The user was shown a failure page and they may be contacting you for further help.  (Note that if a parent/guardian was paying, they may have entered a different e-mail address that you should use; check the stripeEmail field of the POST data below.)
+The user was shown a failure page and they may be contacting you for further help.  (Note that if a parent/guardian was paying, they may have entered a different email address that you should use; check the stripeEmail field of the POST data below.)
 - User ID: {{ request.user.id }}
 - User name: {{ request.user.name }}
-- User e-mail: {{ request.user.email }}
+- User email: {{ request.user.email }}
 - Program: {{ program }}
 
 - Error type: {{ error_type }}

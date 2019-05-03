@@ -297,7 +297,7 @@ def find_user(userstr):
         #try pk
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
-        #try e-mail?
+        #try email?
         if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
             user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
@@ -449,6 +449,7 @@ def newprogram(request):
        #try:
         template_prog_id = int(request.GET["template_prog"])
         tprogram = Program.objects.get(id=template_prog_id)
+        request.session['template_prog'] = template_prog_id
         template_prog = {}
         template_prog.update(tprogram.__dict__)
         del template_prog["id"]
@@ -492,7 +493,7 @@ def newprogram(request):
 
             new_prog = pcf.save(commit = True)
 
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
+            commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -500,8 +501,13 @@ def newprogram(request):
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
 
-            #   Force all ProgramModuleObjs and their extensions to be created now
-            new_prog.getModules()
+            # Force all ProgramModuleObjs and their extensions to be created now
+            # If we are using another program as a template, let's copy the seq and required values from that program.
+            if 'template_prog' in request.session:
+                old_prog = Program.objects.get(id=request.session['template_prog'])
+                new_prog.getModules(old_prog=old_prog)
+            else:
+                new_prog.getModules()
 
             manage_url = '/manage/' + new_prog.url + '/resources'
 

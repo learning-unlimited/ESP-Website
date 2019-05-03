@@ -59,7 +59,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return {'phasezero': ESPUser.objects.filter(q_phasezero).distinct()}
 
     def studentDesc(self):
-        return {'phasezero': """Students who have entered the Student Lottery."""}
+        return {'phasezero': """Students who have entered the Student Lottery"""}
 
     def isCompleted(self):
         return get_current_request().user.can_skip_phase_zero(self.program)

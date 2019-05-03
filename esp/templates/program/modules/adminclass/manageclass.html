@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Class: {{ class.title }}{% endblock %}
+{% block title %}Manage Class: {{ class.emailcode }}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -16,7 +16,7 @@
 
 <div id="divmaintext">
 
-<h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
+<h1>Manage Class {{ class.emailcode }}: {{ class.title }}</h1>
 
 <div id="program_form">
 
@@ -39,7 +39,7 @@
         </td>
     </tr>
     <tr>
-        <th class="smaller">E-mail addresses: </th>
+        <th class="smaller">Email addresses: </th>
         <td>
             Whole Class: <a href="mailto:{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-class@{{ EMAIL_HOST_SENDER }}</a><br />
             Teachers: <a href="mailto:{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">{{ class.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}</a><br />
@@ -77,7 +77,7 @@
 {% endif %}
 
 <br />
-<p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an e-mail to the students.</p>
+<p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an email to the students.</p>
 
 {% if cls_cancel_form %}
 <form name="class_cancel" action="{{ request.path }}?action=cancel_cls" method="POST">
@@ -172,7 +172,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}
-            {{ rr.res_type.name }} <br />
+            {{ rr.res_type.name }}: {{ rr.desired_value }}<br />
         {% endfor %}
         {% endif %}
     </td>

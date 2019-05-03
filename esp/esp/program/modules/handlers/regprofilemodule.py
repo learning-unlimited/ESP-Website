@@ -95,7 +95,7 @@ class RegProfileModule(ProgramModuleObj):
         else:
             role = user_roles[0]
 
-        #   Reset e-mail address for program registrations.
+        #   Reset email address for program registrations.
         if prog is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
         else:

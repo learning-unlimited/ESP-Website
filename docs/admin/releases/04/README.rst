@@ -374,7 +374,7 @@ Minor feature additions
   clearly, so that teachers only see section information if their class is
   approved.
 
-- The notification e-mails sent out when teachers register or edit classes now
+- The notification emails sent out when teachers register or edit classes now
   has a link you can click to directly approve the class.
 
 - When importing classrooms from a previous program, you can now specify that
@@ -384,7 +384,7 @@ Minor feature additions
 - You can now import timeslots from a previous program, specifying only the
   start date of the new program.
 
-- The US Zip codes are now populated by default, so new sites can send e-mails
+- The US Zip codes are now populated by default, so new sites can send emails
   based on location without any additional setup.
 
 - The "User list generator" program module now uses the newer interface that

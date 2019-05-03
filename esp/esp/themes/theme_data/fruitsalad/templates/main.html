@@ -118,7 +118,7 @@ var currentPrograms = [
       <div id="contact_info">
         <span class="title accentcolor">{{ theme.full_group_name }}</span>
         <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
-        <span class="normal">E-mail: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
+        <span class="normal">Email: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
         <span class="normal">
           {% if theme.faq_link %}
             <a href="{{theme.faq_link}}">FAQ</a> |
@@ -216,7 +216,7 @@ var currentPrograms = [
               {% if request.roles_with_perm %}
                   Roles with permission to view this page: {{ request.roles_with_perm|join:", " }}
               {% else %}
-                  <strong>No roles have permission to view this page!</strong>
+                  <strong>No (non-admin) roles have permission to view this page!</strong>
               {% endif %}
           </div>
           {% endif %}
