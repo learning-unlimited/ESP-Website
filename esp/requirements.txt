@@ -12,7 +12,7 @@ django-grappelli==2.7.3 # Makes the admin panel better
 django-localflavor==1.1 # Provides address and phone number fields
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-selenium==0.9.8 # Runs selenium tests which probably don't work anymore
-django-sendgrid-v5==0.7.1 # Provides support for using SendGrid as the EmailBackend
+django-sendgrid-v5==0.8.0 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
 
 # Non-Django-specific packages
