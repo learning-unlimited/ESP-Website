@@ -19,23 +19,24 @@ var Availability = (function () {
     var noclick = false;
     
     function isSet(td) {
-        return td.className == "canDo" || td.className == "teaching";
+        return $j(td).hasClass("canDo");
     }
     
     //Activate checkbox
     function checkbox_on(td) {
         var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-        if (td.className != "teaching") {
-            td.className = "canDo";
-            checkbox.checked = true;
-        }
+        $j(td).removeClass("proposed");
+        $j(td).addClass("canDo");
+        checkbox.checked = true;
+        checkbox.disabled = false;
     }
 
     //Deactivate checkbox
     function checkbox_off(td) {
         var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
-        if (td.className == "canDo") {
-            td.className = "proposed";
+        if (!$j(td).hasClass("teaching") && $j(td).hasClass("canDo")) {
+            $j(td).removeClass("canDo");
+            $j(td).addClass("proposed");
             checkbox.checked = false;
         }
     }
@@ -108,11 +109,15 @@ var Availability = (function () {
 
         //Sets classes of cells based on status of checkboxes upon loading page
         $j('#checkboxes input').each(function(i, e) {
+            var cell = document.getElementsByName($j(this).attr('value'))[0]
             if (this.disabled == true) {
-                document.getElementsByName($j(this).attr('value'))[0].className = "teaching";
-                document.getElementsByName($j(this).attr('value'))[0].title = disabledText;
-            } else if (this.checked == true) {
-                document.getElementsByName($j(this).attr('value'))[0].className = "canDo";
+                $j(cell).removeClass("proposed");
+                $j(cell).addClass("teaching");
+                cell.title = disabledText;
+            }
+            if (this.checked == true) {
+                $j(cell).removeClass("proposed");
+                $j(cell).addClass("canDo");
             }
         });
 
