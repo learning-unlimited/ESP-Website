@@ -52,7 +52,7 @@ We have detected that you are currently signed up to teach more hours of class t
 {% if conflict_found %}
 {% inline_program_qsd_block prog "teacher_conflict" %}
 <p style="color: red;">
-You are scheduled to teach a class during at least one timeslot in which you are not marked as available.  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
+You are scheduled to teach a class during at least one timeslot in which you are not marked as available (indicated with a red border below).  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
 </p>
 {% end_inline_program_qsd_block %}
 {% endif %}
