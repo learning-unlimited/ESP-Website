@@ -100,8 +100,8 @@ Theme fixes
 - In fruitsalad theme, the contact info in the top left will no longer disappear when on the login form page.
 - In fruitsalad theme, now show links and search fields for all "current" programs in the admin bar.
 - In circles theme, the user search box is now the correct width.
+- In circles theme, replaced the login button and fixed navbar styling.
 - In bigpicture theme, fixed a signin/signout loop on the signout page.
-- Renamed go1.gif to go.gif for circles theme
 
 Big board fixes
 ~~~~~~~~~~~~~~~
