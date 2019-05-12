@@ -432,7 +432,7 @@ class BaseESPUser(object):
         return total_time
 
     def getTaughtTimes(self, program = None, exclude = []):
-        """ Return the times taught as a set. If a program is specified, return the times taught for that program. 
+        """ Return the times taught as a set. If a program is specified, return the times taught for that program.
             If exclude is specified (as a list of classes), exclude sections from the specified classes. """
         user_sections = self.getTaughtSections(program)
         times = set()
