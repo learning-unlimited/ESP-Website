@@ -316,12 +316,30 @@ class ProgramPrintables(ProgramModuleObj):
     def classpopularity(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(parent_program = prog)
         priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+
+        # Fetch class SRs
+        sr_classes = classes
         for priority in priorities:
-            classes = classes.annotate(**{'priority' + str(priority): Count(
+            sr_classes = sr_classes.annotate(**{'priority' + str(priority): Count(
             Case(When(sections__studentregistration__relationship__name='Priority/' + str(priority), then=1), default=None, output_field=IntegerField()
             ))})
-        classes = classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
-        classes = classes.order_by('-ssi')
+
+        # Fetch class SSI
+        ssi_classes = classes
+        ssi_classes = ssi_classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
+
+        # Merge the two (by ID)
+        by_id = {}
+        for subject in sr_classes:
+            by_id[subject.id] = subject
+        for subject in ssi_classes:
+            if subject.id in by_id:
+                by_id[subject.id].ssi = subject.ssi
+            else:
+                by_id[subject.id] = subject
+
+        # Sort
+        classes = sorted(by_id.values(), key=lambda s: s.ssi, reverse = True)
 
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
