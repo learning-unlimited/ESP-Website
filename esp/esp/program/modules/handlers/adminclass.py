@@ -475,19 +475,20 @@ class AdminClass(ProgramModuleObj):
             if len(section.get_meeting_times()) == 0:
                 unscheduled_sections.append(section)
 
-        viable_times = list(meeting_times)
-
+        viable_times = []
         unavail_teachers = {}
         teaching_teachers = {}
+        conflict_found = False
         for time in time_options:
             unavail_teachers[time] = []
             teaching_teachers[time] = []
             for teacher in teachers:
-                if time in teacher.getTaughtTimes(prog):
-                    teaching_teachers[time].append(teacher)
-                elif time not in teacher.getAvailableTimes(prog):
+                if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
-            if len(unavail_teachers[time]) + len(teaching_teachers[time]) == 0:
+                    conflict_found = True
+                if time in teacher.getTaughtTimes(prog, exclude = [cls]):
+                    teaching_teachers[time].append(teacher)
+            if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:
                 viable_times.append(time)
 
         context =   {
@@ -506,6 +507,9 @@ class AdminClass(ProgramModuleObj):
                     }
         context['class'] = cls
         context['unscheduled'] = unscheduled_sections
+        context['conflict_found'] = conflict_found
+        # this seems kinda hacky, but it's probably fine for now
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times)])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 
