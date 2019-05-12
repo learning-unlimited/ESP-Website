@@ -317,6 +317,9 @@ class ProgramPrintables(ProgramModuleObj):
         classes = ClassSubject.objects.filter(parent_program = prog)
         priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
 
+        # We'll get the SRs and SSIs separately because otherwise we're joining two potentially large tables in a single query,
+        # which can result in an absurd number of rows for even moderate programs
+
         # Fetch class SRs
         sr_classes = classes
         for priority in priorities:
