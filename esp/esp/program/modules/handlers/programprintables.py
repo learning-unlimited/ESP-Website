@@ -48,7 +48,9 @@ from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
+from django.template import Context, loader
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
@@ -352,9 +354,6 @@ class ProgramPrintables(ProgramModuleObj):
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if extra == 'csv' or 'csv' in request.GET:
-            template_file = 'classes_list.csv'
-
         if 'clsids' in request.GET:
             clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
             classes = [cls for cls in classes if cls.id in clsids]
@@ -390,14 +389,19 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classes': classes, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, context)
+        if (extra and 'csv' in extra) or 'csv' in request.GET:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="classes_list.csv"'
+            t = loader.get_template(self.baseDir()+'classes_list.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @needs_admin
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
         sections = self.program.sections()
-
-        if extra == 'csv' or 'csv' in request.GET:
-            template_file = 'sections_list.csv'
 
         if 'secids' in request.GET:
             secids = [int(secid) for secid in request.GET['secids'].split(",")]
@@ -428,8 +432,16 @@ class ProgramPrintables(ProgramModuleObj):
         sections.sort(sort_exp)
 
         context = {'sections': sections, 'program': self.program}
-
-        return render_to_response(self.baseDir()+template_file, request, context)
+        
+        if (extra and 'csv' in extra) or 'csv' in request.GET:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="sections_list.csv"'
+            t = loader.get_template(self.baseDir()+'sections_list.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -507,9 +519,6 @@ class ProgramPrintables(ProgramModuleObj):
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
 
-        if 'csv' in extra:
-            template_file = 'teacherlist.csv'
-
         filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
@@ -522,7 +531,7 @@ class ProgramPrintables(ProgramModuleObj):
                 setattr(t, key, extra_dict[key])
         teachers.sort()
 
-        if 'secondday' in extra:
+        if extra and 'secondday' in extra:
             from django.db.models import Min
 
             allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
@@ -539,7 +548,7 @@ class ProgramPrintables(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()
 
-            if extra == 'secondday':
+            if  extra and 'secondday' in extra:
                 new_classes = []
                 first_timeblock = first_timeblock_dict['meeting_times__start__min']
 
@@ -574,7 +583,15 @@ class ProgramPrintables(ProgramModuleObj):
         context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+template_file, request, context)
+        if extra and 'csv' in extra:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="teacherlist.csv"'
+            t = loader.get_template(self.baseDir()+'teacherlist.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin

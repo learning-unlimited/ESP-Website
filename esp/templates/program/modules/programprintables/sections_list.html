@@ -50,18 +50,18 @@ table.sortable thead {
  <th>Time(s)</th>
  <th>Allow Late?</th>
 </tr>
-{% for cls in sections %}
+{% for sec in sections %}
 {% autoescape off %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td>{{ cls.emailcode }}</td>
- <td>{{ cls.title }}</td>
- <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}</td>
- <td>{{ cls.parent_class.getTeacherNamesLast|join:"; " }}</td>
- <td>{% for teacher in cls.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
- <td>{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}</td>
- <td>{% if cls.friendly_times|length_is:0 %}Unassigned{% else %}{{ cls.friendly_times|join:"<br />"}}{% endif %}</td>
- <td>{% if cls.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>
+ <td>{{ sec.emailcode }}</td>
+ <td>{{ sec.title }}</td>
+ <td>{{ sec.parent_class.class_info|truncatewords_html:10 }}</td>
+ <td>{{ sec.parent_class.getTeacherNamesLast|join:"; " }}</td>
+ <td>{% for teacher in sec.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ <td>{% if sec.prettyrooms|length_is:0 %}Unassigned{% else %}{{ sec.prettyrooms|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{{ sec.friendly_times|join:"<br />"}}{% endif %}</td>
+ <td>{% if sec.parent_class.allow_lateness %} Y {% else %} N {% endif %}</td>
 </tr>
 {% endautoescape %}
 {% endfor %}
