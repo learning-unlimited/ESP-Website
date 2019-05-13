@@ -431,12 +431,14 @@ class BaseESPUser(object):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
-    def getTaughtTimes(self, program = None):
-        """ Return the times taught as a set. If a program is specified, return the times taught for that program. """
+    def getTaughtTimes(self, program = None, exclude = []):
+        """ Return the times taught as a set. If a program is specified, return the times taught for that program.
+            If exclude is specified (as a list of classes), exclude sections from the specified classes. """
         user_sections = self.getTaughtSections(program)
         times = set()
         for s in user_sections:
-            times.update(s.meeting_times.all())
+            if s.parent_class not in exclude:
+                times.update(s.meeting_times.all())
         return times
 
     @staticmethod
