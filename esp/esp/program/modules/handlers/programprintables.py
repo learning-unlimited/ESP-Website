@@ -352,7 +352,7 @@ class ProgramPrintables(ProgramModuleObj):
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        if extra == 'csv':
+        if extra == 'csv' or 'csv' in request.GET:
             template_file = 'classes_list.csv'
 
         if 'clsids' in request.GET:
@@ -396,7 +396,7 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
         sections = self.program.sections()
 
-        if extra == 'csv':
+        if extra == 'csv' or 'csv' in request.GET:
             template_file = 'sections_list.csv'
 
         if 'secids' in request.GET:
@@ -507,7 +507,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
 
-        if extra == 'csv':
+        if 'csv' in extra:
             template_file = 'teacherlist.csv'
 
         filterObj, found = UserSearchController().create_filter(request, self.program)
@@ -522,7 +522,7 @@ class ProgramPrintables(ProgramModuleObj):
                 setattr(t, key, extra_dict[key])
         teachers.sort()
 
-        if extra == 'secondday':
+        if 'secondday' in extra:
             from django.db.models import Min
 
             allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
