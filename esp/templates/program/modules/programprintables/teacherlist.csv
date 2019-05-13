@@ -1,4 +1,4 @@
 "Name","Email","Home Phone #","Cell Phone #","Class Code","First Class","{% for rt in res_types %}{{ rt }}{% if not forloop.last %}","{% endif %}{% endfor %}","Time of First Class"</br>
 {% for scheditem in scheditems %}
-"{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}","{{ scheditem.user.email }}","{{ scheditem.phone_day }}","{{ scheditem.phone_cell }}","{{ scheditem.cls.emailcode }}","{{ scheditem.cls.title }}","{% for rv in scheditem.res_values %}{% if rv|length_is:0 %}None{% else %}{{ rv|join:', ' }}{% endif %}{% if not forloop.last %}","{% endif %}{% endfor %}","{{ scheditem.cls.friendly_times.0 }}"</br>
+"{{ scheditem.user.last_name|addslashes }}, {{ scheditem.user.first_name|addslashes }}","{{ scheditem.user.email|addslashes }}","{{ scheditem.phone_day }}","{{ scheditem.phone_cell }}","{{ scheditem.cls.emailcode }}","{{ scheditem.cls.title|addslashes }}","{% for rv in scheditem.res_values %}{% if rv|length_is:0 %}None{% else %}{{ rv|join:', ' }}{% endif %}{% if not forloop.last %}"; "{% endif %}{% endfor %}","{{ scheditem.cls.friendly_times.0 }}"</br>
 {% endfor %}
