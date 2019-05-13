@@ -133,6 +133,7 @@ Minor new features and fixes
 - Fixed the sorting of the categories at the top of the catalog to match the order of the categories in the catalog.
   If the catalog is not sorted by category, category headings are no longer displayed (see tag ``catalog_sort_fields``).
   The ``/fillslot`` page is now sorted just like the catalog.
+- Fixed styling of classes in the catalog when there was an error message (e.g. student is outside of the grade range).
 - Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
 - Fixed an error where texting would fail (without finishing) if an invalid phone number was encountered.
 - Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet. The duration field was also added to the class search page.
@@ -148,7 +149,8 @@ Minor new features and fixes
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
-- The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. You can get to this page from the scheduler, the manage class page, or the class search page.
+- The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselve, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
+- The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. If a section of the class is scheduled at a time when any teachers are unavailable, those timeslots are identified with a red border (and the hover text specifies which teachers have conflicts). You can get to this page from the scheduler, the manage class page, or the class search page.
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
 - Made login errors clearer
 - Added teacher interview and training descriptions to the manage page for these events.
