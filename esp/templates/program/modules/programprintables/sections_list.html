@@ -56,7 +56,7 @@ table.sortable thead {
  <!-- <td>{{ forloop.counter }}</td> -->
  <td>{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
- <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}
+ <td>{{ cls.parent_class.class_info|truncatewords_html:10 }}</td>
  <td>{{ cls.parent_class.getTeacherNamesLast|join:"; " }}</td>
  <td>{% for teacher in cls.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  <td>{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}</td>

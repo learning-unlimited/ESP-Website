@@ -349,8 +349,11 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
 
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False):
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
         classes = ClassSubject.objects.filter(parent_program = self.program)
+
+        if extra == 'csv':
+            template_file = 'classes_list.csv'
 
         if 'clsids' in request.GET:
             clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
@@ -387,7 +390,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classes': classes, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'classes_list.html', request, context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @needs_admin
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):

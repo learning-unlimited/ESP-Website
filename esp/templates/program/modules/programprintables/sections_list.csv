@@ -1,0 +1,4 @@
+"Class Code","Class Title","Description (short)","Teachers","Teacher Phone #s","Room(s)","Time(s)","Allow Late?"</br>
+{% for cls in sections %}
+"{{ cls.emailcode }}","{{ cls.title }}","{{ cls.parent_class.class_info|truncatewords_html:10 }}","{{ cls.parent_class.getTeacherNamesLast|join:"; " }}","{% for teacher in cls.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}","{% if cls.prettyrooms|length_is:0 %}Unassigned{% else %}{{ cls.prettyrooms|join:"<br />"}}{% endif %}","{% if cls.friendly_times|length_is:0 %}Unassigned{% else %}{{ cls.friendly_times|join:"<br />"}}{% endif %}","{% if cls.parent_class.allow_lateness %}Y{% else %}N{% endif %}"</br>
+{% endfor %}
