@@ -432,7 +432,7 @@ class ProgramPrintables(ProgramModuleObj):
         sections.sort(sort_exp)
 
         context = {'sections': sections, 'program': self.program}
-        
+
         if (extra and 'csv' in extra) or 'csv' in request.GET:
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="sections_list.csv"'
