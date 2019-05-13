@@ -5,6 +5,6 @@ http://{{ site }}/myesp/activate/?username={{ user.username }}&key={{ activation
 
 Once you've clicked on the link, your account will be activated and you'll be asked to type in your username and password as confirmation, and to fill out the rest of your profile information.
 
-If you did not intend to create an account, feel free to ignore this e-mail.
+If you did not intend to create an account, feel free to ignore this email.
 {% endautoescape %}
 

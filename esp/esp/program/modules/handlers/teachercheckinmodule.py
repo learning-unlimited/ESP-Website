@@ -60,7 +60,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Teacher Check-In",
-            "link_title": "Check-in teachers",
+            "link_title": "Check in teachers",
             "module_type": "onsite",
             "seq": 10
             }
@@ -157,7 +157,7 @@ class TeacherCheckinModule(ProgramModuleObj):
     @needs_onsite
     def ajaxteachertext(self, request, tl, one, two, module, extra, prog):
         """
-        POST to this view to text a teacher a reminder to check-in.
+        POST to this view to text a teacher a reminder to check in.
 
         POST data:
           'username':       The teacher's username.

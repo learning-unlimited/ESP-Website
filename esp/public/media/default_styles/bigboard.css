@@ -32,11 +32,12 @@
   text-align: center;
   margin-top: 25px;
   margin-bottom: 25px;
+  line-height: normal;
 }
 
 .bigboard-number-block {
   display: inline-block;
-  width: 250px;
+  min-width: 250px;
   height: 140px;
   padding: 10px 25px;
   vertical-align: bottom;

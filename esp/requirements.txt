@@ -21,7 +21,7 @@ flake8==2.5.0 # Required for linter
 ipython==3.2.1 # Used for shell_plus
 Markdown==2.3.1 # Used in QSD
 numpy==1.7.1 # Used mainly in the lottery and class change controller
-pillow==3.3.1 # Required for ImageField, which we use in teacher bios
+pillow==3.3.3 # Required for ImageField, which we use in teacher bios
 psycopg2==2.6.1 # Talks to postgres
 pycurl==7.19.5.1 # Used only in mailing labels and a formstack script which I think is outdated
 pydns==2.3.6 # Used for validating email addresses; imports as "DNS", not "pydns"

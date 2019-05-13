@@ -8,15 +8,16 @@
 {% endblock %}
 
 {% block content %}
-<h1>ESP Accounts and Emails</h1>
+<h1>{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} Accounts and Emails</h1>
 
 <p>
-If you would not like to receive email from ESP, you can disable your account.  If at any time you would like to start receiving email notifications again, you may return to this page (you will still be able to log in) and re-enable it.
+If you would not like to receive email from {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}, you can disable your account.
+If at any time you would like to start receiving email notifications again, you may return to this page (you will still be able to log in) and re-enable it.
 </p>
 
 {% if will_deactivate_others %}
 <p>
-There are multiple users associated with your email address.  <b>If you disable your account, this will disable all of the accounts with this email address.</b>
+There are multiple users associated with your email address. <b>If you disable your account, this will disable all of the accounts with this email address.</b>
 </p>
 {% endif %}
 
@@ -37,6 +38,6 @@ There are multiple users associated with your email address.  <b>If you disable 
 </ul>
 </p>
 
-<p>Thank you for your interest in ESP!  If you have any questions, please <a href="/contact/contact/">contact us</a>.
+<p>Thank you for your interest in {{ settings.ORGANIZATION_SHORT_NAME }}!  If you have any questions, please <a href="/contact/contact/">contact us</a>.
 
 {% endblock %}

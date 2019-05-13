@@ -9,11 +9,15 @@
     #program_form {
       overflow: auto;
       max-height: 500px;
-      width: 800px;
+      max-width: 800px;
       margin: 0px 10px 15px 10px;
     }
     #approve_blanks_checkbox {
       margin-left: 10px;
+    }
+    #finaid_table {
+      width: 100% !important;
+      margin: 0px !important;
     }
     </style>
 {% endblock %}
@@ -34,13 +38,13 @@ function toggle(source) {
 
   <form action="/manage/{{ program.getUrlBase }}/finaidapprove/" method="post">
     <div id="program_form">
-      <table align="center">
+      <table align="center" id="finaid_table">
         <tr>
           <th><input type="checkbox" onClick="toggle(this)" /></th>
           <th>Approved?</th>
-          <th width="70px">Name</th>
+          <th style="width:5.3em">Name</th>
           <th>Free/Reduced Lunch?</th>
-          <th width="70px">Household Income</th>
+          <th style="width:5.3em">Household Income</th>
           <th>Financial Situation</th>
           <th>Filled Out Only by Student?</th>
         </tr>
