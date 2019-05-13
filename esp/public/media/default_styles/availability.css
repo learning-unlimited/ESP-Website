@@ -84,6 +84,10 @@ td.group, table.group {
   background: #42b3f4;
 }
 
+.teaching:not(.canDo) {
+  border: solid 2px red !important;
+}
+
 .headerText {
   font-size: 18px;
 }
