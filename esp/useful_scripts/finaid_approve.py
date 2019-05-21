@@ -48,7 +48,7 @@ for req in reqs:
 
     print(req.user.email)
     try:
-        f = FinancialAidGrant(request = req, percent = 100)
+        f = FinancialAidGrant(request = req, percent = 0, amount_max_dec = 40)
         f.save()
         req.done = True
         req.save()

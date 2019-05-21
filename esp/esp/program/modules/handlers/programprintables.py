@@ -913,7 +913,9 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'module': self }
 
-        if onsite:
+        if 'hackuserids' in request.GET:
+            students = list(ESPUser.objects.filter(id__in=request.GET['hackuserids'].split(',')))
+        elif onsite:
             students = [ESPUser.objects.get(id=request.GET['userid'])]
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program)
