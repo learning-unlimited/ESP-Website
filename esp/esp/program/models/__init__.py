@@ -1407,19 +1407,22 @@ class RegistrationProfile(models.Model):
         super(RegistrationProfile, self).save(*args, **kwargs)
 
     @cache_function
-    def getLastForProgram(user, program):
-        """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
+    def getLastForProgram(user, program, tl = None):
+        """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program).
+            Can also specify whether the profile must be associated with a student or teacher info. """
         if user.is_anonymous():
             regProfList = RegistrationProfile.objects.none()
         else:
-            regProfList = (RegistrationProfile.objects
-                           .filter(user__exact=user, program__exact=program)
-                           .select_related(
+            regProfList = RegistrationProfile.objects.filter(user__exact=user, program__exact=program)
+            if tl == "learn":
+                regProfList = regProfList.filter(student_info__isnull=False)
+            elif tl == "teach":
+                regProfList = regProfList.filter(teacher_info__isnull=False)
+            regProfList = (regProfList.select_related(
                                'user', 'program', 'contact_user',
                                'contact_guardian', 'contact_emergency',
                                'student_info', 'teacher_info', 'guardian_info',
-                               'educator_info')
-                           .order_by('-last_ts','-id')[:1])
+                               'educator_info').order_by('-last_ts','-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
             regProf.program = program
