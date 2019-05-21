@@ -38,6 +38,9 @@ Userview improvements
 - User types are now listed on the userview page.
 - Classes on the userview page now link to their catalog (in addition to the preexisting links to the manage and edit pages).
 - Sections on the userview page are now colored based on section status (instead of using the class status).
+- Reorganized userview sidelinks into three categories (Administrative, Student, and Teacher).
+- Moved teacher information above student information on userview page, so student information is now next to parent and guardian contact information.
+- Changed conditions for showing different information sections on the userview page. Made it more explicit when contact info is missing.
 
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,6 +89,7 @@ Printables improvements
 - Fixed some printables that broke when non-approved classes were specified manually. Added more options for Classes by Time/ID/Title/Teacher printables.
 - Added a printable that shows class popularity (enrollment and lottery metrics).
 - Teacher schedules now include "Accepted but Hidden" classes.
+- Added alternative ``.csv`` versions for some class, section, and teacher printables.
 
 Email backend improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -144,6 +148,7 @@ Minor new features and fixes
 - Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places (e.g. 50 minutes). This should fix errors that were encountered during scheduling, on class manage pages, and when adding coteachers, among others.
 - Fixed handling of the ``finaid_form_fields`` tag.
 - Profile form now populates DOB and graduation year even if the form errors.
+- Profile form now shows teacher fields instead of student fields if a user has both user types (under the assumption that they used to be a student and now they are a teacher).
 - Custom form responses can now be viewed even if users are accidentally deleted.
 - Hours statistics on the dashboard are now shown for registered and approved classes.
 - Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
@@ -175,6 +180,7 @@ Minor new features and fixes
 - Made Stripe failure page more salient (different from success page), made other minor fixes to Stripe message & formatting
 - Added a few more general email addresses
 - Updated instructions for making QSD (editable text) pages
+- Fixed a bug that marked the profile form module as complete for teacher registration if it was completed for student registration (or vice versa).
 
 
 Known Issues
