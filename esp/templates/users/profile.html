@@ -41,48 +41,48 @@ div.required label:after {
       {% endif %}
 
     <form action="{{request.path}}" method="post" class="form-horizontal">
-	<fieldset>
-	<input type="hidden" name="profile_page" value="true" />
-	<input type="hidden" name="current_role" value="{{ profiletype }}" />
+        <fieldset>
+        <input type="hidden" name="profile_page" value="true" />
+        <input type="hidden" name="current_role" value="{{ profiletype }}" />
 
-	{% ifequal profiletype "student" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/studentinfo.html" %}
-	{% include "users/profiles/guardiancontact.html" %}
-	{% include "users/profiles/emergencycontact.html" %}
-	{% include "users/profiles/gradechangerequestinfo.html" %}
+        {% ifequal profiletype "teacher" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/teacherinfo.html" %}
+        {% else %}
+        
+        {% ifequal profiletype "student" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/studentinfo.html" %}
+            {% include "users/profiles/guardiancontact.html" %}
+            {% include "users/profiles/emergencycontact.html" %}
+            {% include "users/profiles/gradechangerequestinfo.html" %}
+        {% else %}
 
-	{% else %}
-	{% ifequal profiletype "teacher" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/teacherinfo.html" %}
-	{% else %}
+        {% ifequal profiletype "educator" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/educatorinfo.html" %}
+        {% else %}
 
-	{% ifequal profiletype "educator" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/educatorinfo.html" %}
-	{% else %}
+        {% ifequal profiletype "guardian" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/guardianinfo.html" %}
+        {% else %}
+        
+        {% ifequal profiletype "volunteer" %}
+            {% include "users/profiles/usercontact.html" %}
+        {% else %}
 
-	{% ifequal profiletype "guardian" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/guardianinfo.html" %}
-	{% else %}
-    
-    {% ifequal profiletype "Volunteer" %}
-    {% include "users/profiles/usercontact.html" %}
-    {% else %}
+        {% include "../templates/themes/bs_form.html" %}
 
-	{% include "../templates/themes/bs_form.html" %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
 
-	{% endifequal %}
-	{% endifequal %}
-	{% endifequal %}
-	{% endifequal %}
-    {% endifequal %}
+        <div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
 
-	<div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
-
-	</fieldset>
+        </fieldset>
     </form>
   </div>
 </div>

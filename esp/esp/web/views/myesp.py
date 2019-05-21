@@ -86,17 +86,20 @@ def edit_profile(request):
 
     curUser = request.user
 
-    if curUser.isStudent():
-        return profile_editor(request, None, True, 'student')
-
-    elif curUser.isTeacher():
+    if curUser.isTeacher():
         return profile_editor(request, None, True, 'teacher')
+
+    elif curUser.isStudent():
+        return profile_editor(request, None, True, 'student')
 
     elif curUser.isGuardian():
         return profile_editor(request, None, True, 'guardian')
 
     elif curUser.isEducator():
         return profile_editor(request, None, True, 'educator')
+
+    elif curUser.isVolunteer():
+        return profile_editor(request, None, True, 'volunteer')
 
     else:
         user_types = curUser.groups.all().order_by('-id')
