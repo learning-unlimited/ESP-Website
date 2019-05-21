@@ -570,9 +570,7 @@ class ClassSection(models.Model):
 
         if event_list is None:
             event_list = list(self.meeting_times.all().order_by('start'))
-        #   If you're 15 minutes short that's OK.
-        time_tolerance = 15 * 60
-        if Event.total_length(event_list).seconds + time_tolerance < duration * 3600:
+        if Event.total_length(event_list).total_seconds() < duration * 3600:
             return False
         else:
             return True
@@ -984,7 +982,7 @@ class ClassSection(models.Model):
         ssi_email_title = 'Class Cancellation at %s - Class %s' % (self.parent_program.niceName(), self.parent_class.emailcode())
 
         if email_students:
-            #   Send e-mail to each student
+            #   Send email to each student
             students_to_email = {}
             if email_ssis:
                 q_ssi = Q(studentsubjectinterest__subject=self.parent_class) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
@@ -1012,7 +1010,7 @@ class ClassSection(models.Model):
                 students_to_text = PersistentQueryFilter.create_from_Q(ESPUser, Q(id__in=[x.id for x in self.students(student_verbs)]))
                 GroupTextModule.sendMessages(students_to_text, msgtext)
 
-        #   Send e-mail to administrators as well
+        #   Send email to administrators as well
         context['classreg'] = True
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         if email_ssis:
@@ -1022,7 +1020,7 @@ class ClassSection(models.Model):
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 
-        #   Send e-mail to teachers
+        #   Send email to teachers
         if email_teachers:
             context['director_email'] = self.parent_program.director_email
             email_content = render_to_string('email/class_cancellation_teacher.txt', context)
@@ -1158,6 +1156,8 @@ class ClassSection(models.Model):
     def isRegClosed(self): return self.registration_status == CLOSED
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
+    def status_str(self): return STATUS_CHOICES_DICT[self.status]
+
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         if user == None:
@@ -1254,7 +1254,7 @@ class ClassSection(models.Model):
 
             return True
         else:
-            #    Pre-registration failed because the class is full.
+            #    Registration failed because the class is full.
             return False
 
     def prettyDuration(self):
@@ -1481,7 +1481,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if hasattr(self, "_teachers"):
             return self._teachers
 
-        return self.teachers.all()
+        return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
 
     def students_dict(self):
@@ -1507,6 +1507,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for sec in self.get_sections():
             result += sec.num_students_prereg()
         return result
+
+    def percent_capacity(self):
+        return 100 * self.num_students() / float(self.capacity)
 
     def max_students(self):
         return self.sections.count()*self.class_size_max
@@ -1602,8 +1605,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getTeacherNames(self):
         teachers = []
         for teacher in self.get_teachers():
-            name = '%s %s' % (teacher.first_name,
-                              teacher.last_name)
+            name = teacher.name()
             if name.strip() == '':
                 name = teacher.username
             teachers.append(name)
@@ -1612,8 +1614,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def getTeacherNamesLast(self):
         teachers = []
         for teacher in self.get_teachers():
-            name = '%s, %s' % (teacher.last_name,
-                              teacher.first_name)
+            name = teacher.name_last_first()
             if name.strip() == '':
                 name = teacher.username
             teachers.append(name)
@@ -1691,7 +1692,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         time_avail = 0.0
         #   Start with amount of total time pledged as available
         for tg in avail:
-            td = tg.end - tg.start
+            td = tg.duration()
             time_avail += (td.seconds / 3600.0)
         #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program):
@@ -1713,6 +1714,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
+
+    def status_str(self): return STATUS_CHOICES_DICT[self.status]
 
     def isRegOpen(self):
         for sec in self.sections.all():

@@ -39,6 +39,7 @@ from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, Edu
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
 from esp.program.models import Program, RegistrationProfile, ClassSubject
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect
 import datetime
 from esp.middleware import ESPError
@@ -85,17 +86,20 @@ def edit_profile(request):
 
     curUser = request.user
 
-    if curUser.isStudent():
-        return profile_editor(request, None, True, 'student')
-
-    elif curUser.isTeacher():
+    if curUser.isTeacher():
         return profile_editor(request, None, True, 'teacher')
+
+    elif curUser.isStudent():
+        return profile_editor(request, None, True, 'student')
 
     elif curUser.isGuardian():
         return profile_editor(request, None, True, 'guardian')
 
     elif curUser.isEducator():
         return profile_editor(request, None, True, 'educator')
+
+    elif curUser.isVolunteer():
+        return profile_editor(request, None, True, 'volunteer')
 
     else:
         user_types = curUser.groups.all().order_by('-id')
@@ -196,6 +200,22 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
+            if not Tag.getTag('allow_change_grade_level'):
+                if prog_input is None:
+                    regProf = RegistrationProfile.getLastProfile(curUser)
+                else:
+                    regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+                if regProf.id is None:
+                    regProf = RegistrationProfile.getLastProfile(curUser)
+                if regProf.student_info:
+                    if regProf.student_info.dob:
+                        form.data['dob'] = regProf.student_info.dob
+                        form.fields['dob'].widget.attrs['disabled'] = "true"
+                        form.fields['dob'].required = False
+                    if regProf.student_info.graduation_year:
+                        form.data['graduation_year'] = regProf.student_info.graduation_year
+                        form.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                        form.fields['graduation_year'].required = False
 
     else:
         if prog_input is None:
@@ -230,7 +250,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 def myesp_onsite(request):
     user = request.user
     if not user.isOnsite():
-        raise ESPError('You are not a valid on-site user, please go away.', log=False)
+        raise ESPError('You are not a valid onsite user, please go away.', log=False)
 
     progs = Permission.program_by_perm(user,"Onsite")
 

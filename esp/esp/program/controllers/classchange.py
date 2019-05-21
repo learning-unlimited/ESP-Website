@@ -35,7 +35,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-assert numpy.version.short_version >= "1.7.0"
+from pkg_resources import parse_version
+assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
 import numpy.random
 import Queue
 import random
@@ -100,7 +101,7 @@ class ClassChangeController(object):
             text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accomodate your class preferences this time, and we hope to see you at a future ESP program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /<br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
         text = text.encode('ascii','ignore')

@@ -99,9 +99,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         return retVal
 
     def studentDesc(self):
-        retVal = {'confirmed': """Students who have clicked on the `Confirm Pre-Registration' button.""",
+        retVal = {'confirmed': """Students who have clicked on the `Confirm Registration' button""",
                   'attended' : """Students who attended %s""" % self.program.niceName(),
-                  'studentrep': """All Student Representatives of ESP"""}
+                  'studentrep': """Student Representatives"""}
 
         if self.program.program_allow_waitlist:
             retVal['waitlisted_students'] = """Students on the program's waitlist"""

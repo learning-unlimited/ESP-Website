@@ -119,7 +119,7 @@ class LunchConstraintGenerator(object):
         lunch_subjects = ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category(), message_for_directors=day.isoformat())
         lunch_subject = None
         example_timeslot = self.days[day]['lunch'][0]
-        timeslot_length = (example_timeslot.end - example_timeslot.start).seconds / 3600.0
+        timeslot_length = (example_timeslot.duration()).total_seconds() / 3600.0
 
         if lunch_subjects.count() == 0:
             #   If no lunch was found, create a new subject

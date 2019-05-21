@@ -134,9 +134,9 @@ DEFAULT_EMAIL_ADDRESSES = {
 }
 # The name of your host institution.
 INSTITUTION_NAME = 'MIT'
-# A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
+# A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
-# The host for ESP site-supported e-mail lists.
+# The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
 #################################
@@ -290,8 +290,8 @@ AUTHENTICATION_BACKENDS = (
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
-    ('general','General ESP'),
-    ('esp-web','Web Site Problems'),
+    ('general','General'),
+    ('esp-web','Website Problems'),
     ('relations',  'K-12 School Relations'),
     )
 
@@ -365,6 +365,20 @@ CYBERSOURCE_CONFIG = {
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
+
+FILEBROWSER_EXTENSIONS = {
+    'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
+    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
+    'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
+    'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
+}
+
+FILEBROWSER_SELECT_FORMATS = {
+    'file': ['Image','Document','Video','Audio'],
+    'image': ['Image'],
+    'document': ['Document'],
+    'media': ['Video','Audio'],
+}
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (

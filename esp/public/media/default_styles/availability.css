@@ -54,7 +54,7 @@ td.group, table.group {
 .wrap th {
   text-align: center !important;
   font-weight: bold !important;
-  background: #EFEFEF !important;
+  background: #CCCCCC !important;
   padding: 3px !important;
   height: 80px !important;
   width: 75px !important;
@@ -82,6 +82,10 @@ td.group, table.group {
 
 .teaching {
   background: #42b3f4;
+}
+
+.teaching:not(.canDo) {
+  border: solid 2px red !important;
 }
 
 .headerText {

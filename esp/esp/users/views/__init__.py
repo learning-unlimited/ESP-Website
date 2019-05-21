@@ -41,6 +41,16 @@ def login_checked(request, *args, **kwargs):
 
     reply = login(request, *args, **kwargs)
 
+    if hasattr(reply, 'context_data'):
+        if not request.GET:
+            reply.context_data['initiated_login'] = True
+        if request.POST and request.POST['username']:
+            #if a user was entered and it's not in the database, the pw must be wrong
+            if ESPUser.objects.filter(username=request.POST['username']).exists():
+                reply.context_data['wrong_pw'] = True
+            else:
+                reply.context_data['wrong_user'] = True
+
     # Check for user forwarders
     if request.user.is_authenticated():
         old_username = request.user.username
@@ -61,7 +71,7 @@ def login_checked(request, *args, **kwargs):
                     context['next_title'] = 'the home page'
                 return render_to_response('users/login_duplicate_warning.html', request, context)
 
-    mask_locations = ['/', '/myesp/signout/', '/admin/logout/']
+    mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
     if reply.get('Location', '') in mask_locations:
         # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
@@ -78,8 +88,10 @@ def login_checked(request, *args, **kwargs):
     reply._new_user = request.user
     reply.no_set_cookies = False
 
-    return reply
-
+    if request.user.is_authenticated():
+        return reply
+    else:
+        return render_to_response("registration/login.html", reply._request, reply.context_data)
 
 def signout(request):
     """ This view merges Django's logout view with our own "Goodbye" message. """

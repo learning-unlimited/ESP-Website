@@ -82,6 +82,8 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
                 "'>Manage</a>" +
                 " <a target='_blank' href='" + baseURL + "editclass/" + section.parent_class +
                 "'>Edit</a>" +
+                " <a target='_blank' href='" + baseURL + "classavailability/" + section.parent_class +
+                "'>Class Availability</a>" +
                 autoschedulerLink);
         toolbar.append(links);
         return toolbar;

@@ -48,6 +48,9 @@ from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
 from django.conf import settings
+from django.http import HttpResponse
+from django.db.models import IntegerField, Case, When, Count
+from django.template import Context, loader
 from django.template.loader import render_to_string
 from django.utils.encoding import smart_str
 from django.utils.html import mark_safe
@@ -56,6 +59,7 @@ from django.utils.html import format_html
 from decimal import Decimal
 import json
 import collections
+import copy
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.
@@ -309,65 +313,135 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_latex(self.baseDir()+template_name, context, extra)
 
+    @aux_call
     @needs_admin
-    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+    def classpopularity(self, request, tl, one, two, module, extra, prog):
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        priorities = range(1, prog.studentclassregmoduleinfo.priority_limit + 1)
+
+        # We'll get the SRs and SSIs separately because otherwise we're joining two potentially large tables in a single query,
+        # which can result in an absurd number of rows for even moderate programs
+
+        # Fetch class SRs
+        sr_classes = classes
+        for priority in priorities:
+            sr_classes = sr_classes.annotate(**{'priority' + str(priority): Count(
+            Case(When(sections__studentregistration__relationship__name='Priority/' + str(priority), then=1), default=None, output_field=IntegerField()
+            ))})
+
+        # Fetch class SSI
+        ssi_classes = classes
+        ssi_classes = ssi_classes.annotate(ssi=Count('studentsubjectinterest', distinct=True))
+
+        # Merge the two (by ID)
+        by_id = {}
+        for subject in sr_classes:
+            by_id[subject.id] = subject
+        for subject in ssi_classes:
+            if subject.id in by_id:
+                by_id[subject.id].ssi = subject.ssi
+            else:
+                by_id[subject.id] = subject
+
+        # Sort
+        classes = sorted(by_id.values(), key=lambda s: s.ssi, reverse = True)
+
+        context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
+
+        return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
+
+    @needs_admin
+    def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
-        classes = [cls for cls in classes
-                   if cls.isAccepted()   ]
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            classes = [cls for cls in classes if cls.id in clsids]
+
+        if 'grade_min' in request.GET:
+            classes = [cls for cls in classes if cls.grade_max >= int(request.GET['grade_min'])]
+
+        if 'grade_max' in request.GET:
+            classes = [cls for cls in classes if cls.grade_min <= int(request.GET['grade_max'])]
+
+        if 'accepted' in request.GET:
+            classes = [cls for cls in classes if cls.status > 0]
+        elif 'cancelled' in request.GET:
+            classes = [cls for cls in classes if cls.isCancelled()]
+        elif 'all' not in request.GET:
+            classes = [cls for cls in classes if cls.status >= 0]
+
+        if 'scheduled' in request.GET:
+            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
 
         classes = filter(filt_exp, classes)
 
-        if 'grade_min' in request.GET:
-            classes = filter(lambda x: x.grade_max > int(request.GET['grade_min']), classes)
-
-        if 'grade_max' in request.GET:
-            classes = filter(lambda x: x.grade_min < int(request.GET['grade_max']), classes)
-
-        if 'clsids' in request.GET:
-            clsids = request.GET['clsids'].split(',')
-            cls_dict = {}
+        if split_teachers:
+            classes_temp = []
             for cls in classes:
-                cls_dict[str(cls.id)] = cls
-            classes = [cls_dict[clsid] for clsid in clsids]
+                for teacher in cls.get_teachers():
+                    cls_split = copy.copy(cls)
+                    cls_split.split_teacher = teacher
+                    classes_temp.append(cls_split)
+            classes = classes_temp
 
         classes.sort(sort_exp)
 
         context = {'classes': classes, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'classes_list.html', request, context)
+        if (extra and 'csv' in extra) or 'csv' in request.GET:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="classes_list.csv"'
+            t = loader.get_template(self.baseDir()+'classes_list.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @needs_admin
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
         sections = self.program.sections()
 
-        if extra == 'csv':
-            template_file = 'sections_list.csv'
+        if 'secids' in request.GET:
+            secids = [int(secid) for secid in request.GET['secids'].split(",")]
+            sections = [sec for sec in sections if sec.id in secids]
 
-        if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
-            sections = filter(lambda z: z.isCancelled(), sections)
-        else:
-            sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
-        sections = filter(filt_exp, sections)
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            sections = [sec for sec in sections if sec.parent_class.id in clsids]
 
         if 'grade_min' in request.GET:
-            sections = filter(lambda x: (x.parent_class.grade_max > int(request.GET['grade_min'])), sections)
+            sections = [sec for sec in sections if sec.parent_class.grade_max >= int(request.GET['grade_min'])]
 
         if 'grade_max' in request.GET:
-            sections = filter(lambda x: (x.parent_class.grade_min < int(request.GET['grade_max'])), sections)
+            sections = [sec for sec in sections if sec.parent_class.grade_min <= int(request.GET['grade_max'])]
 
-        if 'secids' in request.GET:
-            clsids = request.GET['secids'].split(',')
-            cls_dict = {}
-            for cls in sections:
-                cls_dict[str(cls.id)] = cls
-            sections = [cls_dict[clsid] for clsid in clsids]
+        if 'accepted' in request.GET:
+            sections = [sec for sec in sections if sec.status > 0]
+        elif 'cancelled' in request.GET or (extra and 'cancelled' in extra):
+            sections = [sec for sec in sections if sec.isCancelled()]
+        elif 'all' not in request.GET:
+            sections = [sec for sec in sections if sec.status >= 0]
+
+        if 'scheduled' in request.GET:
+            sections = [sec for sec in sections if sec.meeting_times.count() > 0]
+
+        sections = filter(filt_exp, sections)
 
         sections.sort(sort_exp)
 
         context = {'sections': sections, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, context)
+        if (extra and 'csv' in extra) or 'csv' in request.GET:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="sections_list.csv"'
+            t = loader.get_template(self.baseDir()+'sections_list.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -400,6 +474,22 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def classesbyteacher(self, request, tl, one, two, module, extra, prog):
+        def cmp_teacher(one, other):
+            cmp0 = cmp(one.split_teacher.last_name.lower(), other.split_teacher.last_name.lower())
+
+            if cmp0 != 0:
+                return cmp0
+
+            return cmp(one, other)
+
+        def filt_teacher(cls):
+            return len(cls.get_teachers()) > 0
+
+        return self.classesbyFOO(request, tl, one, two, module, extra, prog, cmp_teacher, filt_teacher, True)
+
+    @aux_call
+    @needs_admin
     def classesbyroom(self, request, tl, one, two, module, extra, prog):
         def cmp_room(one, other):
             qs_one = one.initial_rooms()
@@ -429,9 +519,6 @@ class ProgramPrintables(ProgramModuleObj):
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
 
-        if extra == 'csv':
-            template_file = 'teacherlist.csv'
-
         filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
@@ -444,7 +531,7 @@ class ProgramPrintables(ProgramModuleObj):
                 setattr(t, key, extra_dict[key])
         teachers.sort()
 
-        if extra == 'secondday':
+        if extra and 'secondday' in extra:
             from django.db.models import Min
 
             allclasses = prog.sections().filter(status=10, parent_class__status=10, meeting_times__isnull=False)
@@ -461,7 +548,7 @@ class ProgramPrintables(ProgramModuleObj):
             # now we sort them by time/title
             classes.sort()
 
-            if extra == 'secondday':
+            if  extra and 'secondday' in extra:
                 new_classes = []
                 first_timeblock = first_timeblock_dict['meeting_times__start__min']
 
@@ -496,7 +583,15 @@ class ProgramPrintables(ProgramModuleObj):
         context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+template_file, request, context)
+        if extra and 'csv' in extra:
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="teacherlist.csv"'
+            t = loader.get_template(self.baseDir()+'teacherlist.csv')
+            c = Context(context)
+            response.write(t.render(c))
+            return response
+        else:
+            return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
