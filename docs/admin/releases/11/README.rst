@@ -77,10 +77,11 @@ Editable text and comm panel improvements
   ``</>`` button to use a source code editor and write HTML code as before.
 - All comm panel emails are now HTML, so ``<html>`` tags are no longer necessary. We will address
   the spam filter implications of this in a future release.
-- Fixed a bug in the generation of schedules in comm panel emails
+- Fixed a bug in the generation of schedules in comm panel emails.
 - Added a rich text editor to editable text fields (QSD) like the comm panel (see above).
 - **If you are using the source code editor in the comm panel or editable text fields, it is advised
   that you switch back to the rich text editor view before saving/proceeding.**
+- Updated instructions for making QSD (editable text) pages.
   
 Printables improvements
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,68 +120,79 @@ Arbitrary user list improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Arbitrary user lists now allow admins to get guardian name, email, and cell phone for student users.
 - When the selected users are teachers, selecting the "school" or "grad year" fields will fill in their university affiliation (if entered) and graduation year. Student users will still have these fields as before as well.
-- Arbitrary user lists no longer refer to "contacts" to avoid confusion with communications panel
+- Arbitrary user lists no longer refer to "contacts" to avoid confusion with communications panel.
 
-Minor new features and fixes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- Added a default login help page ``/myesp/loginhelp.html`` that admins can modify. (Other pages linked to this page, but it did not exist by default.)
-- The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
-- Fixed ordering of two-phase lottery priorities, now supports custom display names.
-- Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
+Coteacher Improvements
+~~~~~~~~~~~~~~~~~~~~~~
 - Updated admin coteacher page to be more user-friendly. Now shows all teachers, including admins, and admins can now remove themselves from classes.
 - Added a coteacher deadline, allowing the coteachers page to be closed independently of the teacher registration main page.
 - Added more explicit steps for adding a coteacher to the coteacher page.
+
+Availability Page Improvements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
+- The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselve, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
+- The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. If a section of the class is scheduled at a time when any teachers are unavailable, those timeslots are identified with a red border (and the hover text specifies which teachers have conflicts). You can get to this page from the scheduler, the manage class page, or the class search page.
+
+Language Improvements
+~~~~~~~~~~~~~~~~~~~~~
+- Changed mentions of "ESP" to program name.
+- Removed hyphens from sufficiently old/common words, such as "email."
+- Removed stray periods and other punctuation.
+- Fixed several misspellings, phrasing, etc.
+- Fixed formatting of some hyperlinks.
+- Changed "Pre-registration" to "registration" (we specify "onsite reg" elsewhere, so online reg should be the default).
+- Changed the infamous "Fitted for women" to "Fitted cut" and "plain" to "Straight cut."
+- Updated a few defaults for courtesy/professionalism (editable text can be changed if anyone prefers the old way).
+- Made "parents should not be here" warnings more noticeable.
+- Made form errors (the "This field is required" message) bold and red to increase visibility.
+- Updated the program creation form language so it doesn't make it sound so scary, and made its formatting nicer.
+- Removed Q tree references.
+- Removed old SAT score variables.
+- Made Stripe failure page more salient (different from success page), made other minor fixes to Stripe message & formatting.
+- The credit card success page for Stripe now has a line about what the charge will appear on the statment as.
+- Added a few more general email addresses.
+- Made login errors clearer.
+- Added teacher interview and training descriptions to the manage page for these events.
+
+Minor new features
+~~~~~~~~~~~~~~~~~~
+- Added a default login help page ``/myesp/loginhelp.html`` that admins can modify. (Other pages linked to this page, but it did not exist by default.)
+- Fixed ordering of two-phase lottery priorities, now supports custom display names.
+- Volunteer requests are now separated by date, and admin pages now show dates of volunteer requests and offers.
 - Added dates to the classes on the teacher bio page.
 - Added option to override users' texting preferences in the group texting module. This is 
   primarily designed for texting volunteers or teachers, since they can't set their texting preferences.
   However, this can also be used to text all students, regardless of their texting preferences.
+- Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
+- Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet. The duration field was also added to the class search page.
+- Added class style (if used) and resource requests to the manage class and class search pages.
+- Teacher registration grade ranges can now be program specific (see tag ``grade_ranges``).
+- Profile form now populates DOB and graduation year even if the form errors.
+- Profile form now shows teacher fields instead of student fields if a user has both user types (under the assumption that they used to be a student and now they are a teacher).
+- Hours statistics on the dashboard are now shown for registered and approved classes.
+- Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
+- Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
+- Added LU logo as default favicon.
+- When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``).
+- Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, /manage/pages/, myesp/makeadmin/, /statistics/ and /manage/flushcache. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
+
+Minor Bug Fixes
+~~~~~~~~~~~~~~~
 - Fixed the sorting of the categories at the top of the catalog to match the order of the categories in the catalog.
   If the catalog is not sorted by category, category headings are no longer displayed (see tag ``catalog_sort_fields``).
   The ``/fillslot`` page is now sorted just like the catalog.
 - Fixed styling of classes in the catalog when there was an error message (e.g. student is outside of the grade range).
-- Added a lunch deadline for students. The "Student Lunch Selection" module depends on this deadline.
 - Fixed an error where texting would fail (without finishing) if an invalid phone number was encountered.
-- Added duration field on the manage class page, which can be modified if no sections of the class have been scheduled yet. The duration field was also added to the class search page.
-- Added class style (if used) and resource requests to the manage class and class search pages.
-- Teacher registration grade ranges can now be program specific (see tag ``grade_ranges``).
+- Fixed a bug that marked the profile form module as complete for teacher registration if it was completed for student registration (or vice versa).
 - Fixed walk-in registration and class import errors introduced by teacher registration grade ranges.
 - Fixed an error that occurred when students had no amount due.
 - Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places (e.g. 50 minutes). This should fix errors that were encountered during scheduling, on class manage pages, and when adding coteachers, among others.
 - Fixed handling of the ``finaid_form_fields`` tag.
-- Profile form now populates DOB and graduation year even if the form errors.
-- Profile form now shows teacher fields instead of student fields if a user has both user types (under the assumption that they used to be a student and now they are a teacher).
-- Custom form responses can now be viewed even if users are accidentally deleted.
-- Hours statistics on the dashboard are now shown for registered and approved classes.
-- Fields should no longer be autocompleted by browsers in the comm panel, group text module, or arbitrary user list (specifically the 'username' field).
-- Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
-- The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
-- The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselve, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
-- The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. If a section of the class is scheduled at a time when any teachers are unavailable, those timeslots are identified with a red border (and the hover text specifies which teachers have conflicts). You can get to this page from the scheduler, the manage class page, or the class search page.
-- When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``)
-- Made login errors clearer
-- Added teacher interview and training descriptions to the manage page for these events.
+- Restyled list.html so static pages URLs don't run into next column.
 - Fixed the format of the inline student schedule (on the student reg mainpage).
 - Fixed the coloration of sections in the AJAX scheduler.
-- Changed mentions of "ESP" to program name
-- Removed hyphens from sufficiently old/common words, such as "email"
-- Removed stray periods and other punctuation
-- Fixed several misspellings, phrasing, etc.
-- Fixed formatting of some hyperlinks
-- Changed "Pre-registration" to "registration" (we specify "onsite reg" elsewhere, so online reg should be the default)
-- Changed the infamous "Fitted for women" to "Fitted cut" and "plain" to "Straight cut."
-- Updated a few defaults for courtesy/professionalism (editable text can be changed if anyone prefers the old way)
-- Made "parents should not be here" warnings more noticeable
-- Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, /manage/pages/, myesp/makeadmin/, /statistics/ and /manage/flushcache. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
-- Made form errors (the "This field is required" message) bold and red to increase visibility
-- Updated the program creation form language so it doesn't make it sound so scary, and made its formatting nicer
-- Restyled list.html so static pages URLs don't run into next column.
-- Added LU logo as default favicon
-- Removed Q tree references
-- Removed old SAT score variables
-- Made Stripe failure page more salient (different from success page), made other minor fixes to Stripe message & formatting
-- Added a few more general email addresses
-- Updated instructions for making QSD (editable text) pages
-- Fixed a bug that marked the profile form module as complete for teacher registration if it was completed for student registration (or vice versa).
+- Custom form responses can now be viewed even if users are accidentally deleted.
 
 
 Known Issues
