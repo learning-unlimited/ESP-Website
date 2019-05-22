@@ -195,12 +195,11 @@ Minor bug fixes
 - Custom form responses can now be viewed even if users are accidentally deleted.
 
 
-Known issues
-============
+Known issues of new features
+============================
 - The catalog may have blank spaces within or between class descriptions.
-- Not all required fields in the profile form are marked as required.
 - Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
 - Importing classrooms without complete availability results in them only being available for the first timeslot.
-- The catalog can not be sorted using the start time of sections.
-- The nametag printables include deactivated users, causing them to include differeent sets of users from other printables.
 - The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
+- The new QSD rich text editor can break in some weird edge cases. See the discussion `here <https://github.com/learning-unlimited/ESP-Website/issues/2746>`_.
+- Users may notice errors reported in the browser console related to jquery.initialize. These errors do not affect the performance or functionality of the pages.
