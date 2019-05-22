@@ -7,7 +7,7 @@
 Changelog
 =========
 
-Automatic Scheduling Assistant
+Automatic scheduling assistant
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This is a new module intended for use in parallel with the AJAX scheduler to find good scheduling choices for
 individual sections. When this module is enabled, a new link will appear for each section in the scheduler
@@ -15,7 +15,7 @@ with the text "Optimize". This will bring the user to a new interface to find an
 classroom for the section. Documentation is provided on this page detailing how admins can configure the
 module before scheduling to better suit their program's needs, mostly through the use of custom tags.
 
-Financial Aid Approval Module
+Financial aid approval module
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 A new program module that allows admins to easily view and approve financial aid applications in bulk.
 
@@ -122,19 +122,19 @@ Arbitrary user list improvements
 - When the selected users are teachers, selecting the "school" or "grad year" fields will fill in their university affiliation (if entered) and graduation year. Student users will still have these fields as before as well.
 - Arbitrary user lists no longer refer to "contacts" to avoid confusion with communications panel.
 
-Coteacher Improvements
+Coteacher improvements
 ~~~~~~~~~~~~~~~~~~~~~~
 - Updated admin coteacher page to be more user-friendly. Now shows all teachers, including admins, and admins can now remove themselves from classes.
 - Added a coteacher deadline, allowing the coteachers page to be closed independently of the teacher registration main page.
 - Added more explicit steps for adding a coteacher to the coteacher page.
 
-Availability Page Improvements
+Availability page improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
 - The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselve, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
 - The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. If a section of the class is scheduled at a time when any teachers are unavailable, those timeslots are identified with a red border (and the hover text specifies which teachers have conflicts). You can get to this page from the scheduler, the manage class page, or the class search page.
 
-Language Improvements
+Language improvements
 ~~~~~~~~~~~~~~~~~~~~~
 - Changed mentions of "ESP" to program name.
 - Removed hyphens from sufficiently old/common words, such as "email."
@@ -177,7 +177,7 @@ Minor new features
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``).
 - Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, /manage/pages/, myesp/makeadmin/, /statistics/ and /manage/flushcache. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
 
-Minor Bug Fixes
+Minor bug fixes
 ~~~~~~~~~~~~~~~
 - Fixed the sorting of the categories at the top of the catalog to match the order of the categories in the catalog.
   If the catalog is not sorted by category, category headings are no longer displayed (see tag ``catalog_sort_fields``).
@@ -195,7 +195,7 @@ Minor Bug Fixes
 - Custom form responses can now be viewed even if users are accidentally deleted.
 
 
-Known Issues
+Known issues
 ============
 - The catalog may have blank spaces within or between class descriptions.
 - Not all required fields in the profile form are marked as required.
