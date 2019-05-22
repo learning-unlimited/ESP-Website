@@ -45,7 +45,7 @@ Userview improvements
 Class search improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 - Added buttons to approve, unreview, or reject all of the classes shown on the class search page.
-- Added ability to filter class search queries by resource requests (e.g. Classroom), including filtering by specific resource type choices (e.g. Lecture Hall).
+- Added ability to filter class search queries by resource requests (e.g. Classroom Type), including filtering by specific resource type choices (e.g. Lecture Hall).
 - Added links to make printables of the classes shown on the class search page.
 
 Onsite improvements
@@ -98,6 +98,7 @@ Email backend improvements
 - Added more logging to the email backend for better debugging of future email problems.
 - Updated the default bounces email address to address one of the most common reasons emails from the comm panel were being marked as spam.
 - Message requests in the admin panel now list their creation time/date and whether or not they have been processed ('processed' means that all of the email texts have been set up and the server is now sending the emails).
+- Added ability to use Sendgrid as the email backend.
 
 Theme fixes
 ~~~~~~~~~~~
@@ -131,7 +132,7 @@ Coteacher improvements
 Availability page improvements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - The new availability layout for teachers has been extended to volunteer and admin modules. Admins can now check and edit availability on the same page.
-- The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselve, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
+- The teacher availability page now identifies (with a red border) which scheduled sections conflict with the teacher's availability (and allows for teachers to mark themselves, or admins to mark teachers, as available for timeslots when they are teaching but weren't previously available).
 - The new availability layout is now co-opted for a new Class Availability page which shows when a class can be scheduled (like in the scheduler) and which teachers of the class are causing unavailability at particular times due to being unavailable or teaching another class. If a section of the class is scheduled at a time when any teachers are unavailable, those timeslots are identified with a red border (and the hover text specifies which teachers have conflicts). You can get to this page from the scheduler, the manage class page, or the class search page.
 
 Language improvements
@@ -175,7 +176,7 @@ Minor new features
 - Chapters can now upload .ico files in the filebrowser without changing their file extension before and after upload.
 - Added LU logo as default favicon.
 - When using a template program to create a new problem, module info from the template program will now be copied to the new program (including ``seq`` values, whether or not they are ``required``, and the ``required_label``).
-- Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, /manage/pages/, myesp/makeadmin/, /statistics/ and /manage/flushcache. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
+- Added links to some useful pages to the QSD box in /manage/programs. These pages were not previously linked to by any other current page on the site: Custom forms page, ``/manage/pages/``, ``myesp/makeadmin/``, ``/statistics/`` and ``/manage/flushcache``. In addition, there are now instructions on how to create a new page, links to various website guides, and a reminder to contact mentors, websupport, or Chapter Services with additional troubles or requests.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -189,7 +190,7 @@ Minor bug fixes
 - Fixed an error that occurred when students had no amount due.
 - Fixed errors that occurred when timeslot durations resulted in floating point numbers with more than two decimal places (e.g. 50 minutes). This should fix errors that were encountered during scheduling, on class manage pages, and when adding coteachers, among others.
 - Fixed handling of the ``finaid_form_fields`` tag.
-- Restyled list.html so static pages URLs don't run into next column.
+- Restyled ``list.html`` so static pages' URLs don't run into next column.
 - Fixed the format of the inline student schedule (on the student reg mainpage).
 - Fixed the coloration of sections in the AJAX scheduler.
 - Custom form responses can now be viewed even if users are accidentally deleted.
