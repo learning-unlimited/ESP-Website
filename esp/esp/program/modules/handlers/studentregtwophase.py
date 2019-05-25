@@ -153,7 +153,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             temp_list = []
             for i in range(1, context['num_priority'] + 1):
                 priority_name = 'Priority/%s' % i
-                reg_type = RegistrationType.objects.get(name = priority_name, category = "student")
+                reg_type, created = RegistrationType.objects.get_or_create(name = priority_name, category = "student")
                 if priority_name in priority_dict:
                     temp_list.append((reg_type, priority_dict[priority_name]))
                 else:
