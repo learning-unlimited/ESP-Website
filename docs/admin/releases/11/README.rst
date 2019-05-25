@@ -204,3 +204,6 @@ Known issues of new features
 - The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
 - The new QSD rich text editor can break in some weird edge cases. See the discussion `here <https://github.com/learning-unlimited/ESP-Website/issues/2746>`_.
 - Users may notice errors reported in the browser console related to jquery.initialize. These errors do not affect the performance or functionality of the pages.
+- The teacher big board does not work for programs before 2016 (when we implemented timestamps for class registration).
+- The class search toolbar shows in the fruitsalad admin toolbar even if the class search module is not enabled (and using it in such cases results in an error).
+-Viewing a teacher's availability as an admin uses the admin's availability to determine if the teacher has enough availability to teach all of their classes (this does not affect the actual availability that is shown in the form, only whether or not a red message is shown on the page).
