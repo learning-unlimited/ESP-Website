@@ -207,3 +207,4 @@ Known issues of new features
 - The teacher big board does not work for programs before 2016 (when we implemented timestamps for class registration).
 - The class search toolbar shows in the fruitsalad admin toolbar even if the class search module is not enabled (and using it in such cases results in an error).
 - Viewing a teacher's availability as an admin uses the admin's availability to determine if the teacher has enough availability to teach all of their classes (this does not affect the actual availability that is shown in the form, only whether or not a red message is shown on the page).
+- Class durations may be listed as one minute shorter than expected.
