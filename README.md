@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/learning-unlimited/ESP-Website.svg?branch=main)](https://travis-ci.com/learning-unlimited/ESP-Website)
 # ESP Website
 A website to help manage the logistics of large short-term educational programs
 

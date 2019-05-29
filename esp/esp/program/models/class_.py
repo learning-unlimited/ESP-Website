@@ -1173,6 +1173,8 @@ class ClassSection(models.Model):
     def isRegClosed(self): return self.registration_status == CLOSED
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
+    def status_str(self): return STATUS_CHOICES_DICT[self.status]
+
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         if user == None:
@@ -1725,6 +1727,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def isRejected(self): return self.status == REJECTED
     def isCancelled(self): return self.status == CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
+
+    def status_str(self): return STATUS_CHOICES_DICT[self.status]
 
     def isRegOpen(self):
         for sec in self.sections.all():

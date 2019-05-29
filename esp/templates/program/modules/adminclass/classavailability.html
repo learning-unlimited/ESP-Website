@@ -24,6 +24,18 @@ $j(document).ready(function() {
 
 <h1>Availability for <u>{{ class|escape }}</u></h1>
 
+{% if is_overbooked %}
+<p style="color: red;">
+This class is registered for more hours than the number of hours for which the teachers are jointly availabile.
+</p>
+{% endif %}
+
+{% if conflict_found %}
+<p style="color: red;">
+This class is scheduled during at least one timeslot in which at least one teacher is not marked as available (indicated with a red border).
+</p>
+{% endif %}
+
 <h2>Length:</h2>
 {{ class.prettyDuration }}
 </br></br>
@@ -44,11 +56,12 @@ $j(document).ready(function() {
     {% for group in groups %}
       {% for time in group %}
         <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.available %}checked{% endif %} 
-        {% if time.section %}disabled data-hover="{{ time.section }}"
-        {% elif time.unavail_teachers or time.teaching_teachers %}data-hover="
+        {% if time.section %}disabled {% endif %}
+        {% if time.unavail_teachers or time.teaching_teachers or time.section %}data-hover="
+        {% if time.section %}{{ time.section }}</br>{% endif %}
         {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
-        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}"
-        {% endif %}>
+        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
+        {% endif %}">
       {% endfor %}
     {% endfor %}
   </div>
