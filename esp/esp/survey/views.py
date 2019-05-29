@@ -235,7 +235,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         wb=xlwt.Workbook()
         for s in surveys:
             if len(s.name)>31:
-                ws=wb.add_sheet(s.name[:28] + "...")
+                ws=wb.add_sheet("%s... (%s)" % (s.name[:20], s.category))
             else:
                 ws=wb.add_sheet(s.name)
             ws.write(0,0,'Response ID')
@@ -259,7 +259,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 ws.write(sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
             #PER-CLASS QUESTIONS
             if len(s.name)>19:
-                ws_perclass=wb.add_sheet(s.name[:16] + "... (per-class)")
+                ws_perclass=wb.add_sheet("%s... (%s, per-class)" % (s.name[:8], s.category))
             else:
                 ws_perclass=wb.add_sheet(s.name + " (per-class)")
             ws_perclass.write(0,0,"Response ID")
