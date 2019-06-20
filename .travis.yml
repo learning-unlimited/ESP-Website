@@ -17,3 +17,4 @@ before_script:
   - deploy/travis/before_script
 script:
   - deploy/travis/script
+dist: trusty
