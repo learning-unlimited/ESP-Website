@@ -1,4 +1,5 @@
 /*
+  Source attribution:
   SortTable
   version 2
   7th April 2007
@@ -13,6 +14,8 @@
   Thanks to many, many people for contributions and suggestions.
   Licenced as X11: http://www.kryogenix.org/code/browser/licence.html
   This basically means: do what you want with it.
+  ===============
+  Modifications made for Learning Unlimited
 */
 
 var stIsIE = /*@cc_on!@*/false;
@@ -100,7 +103,7 @@ sorttable = {
             sortrevind = document.createElement('span');
             sortrevind.id = "sorttable_sortrevind";
             sortrevind.innerHTML = stIsIE ? '&nbsp<font face="webdings">5</font>' : '&nbsp;&#x25B4;';
-            this.appendChild(sortrevind);
+            this.childNodes[0].appendChild(sortrevind);
             return;
           }
           if (this.className.search(/\bsorttable_sorted_reverse\b/) != -1) {
@@ -113,7 +116,7 @@ sorttable = {
             sortfwdind = document.createElement('span');
             sortfwdind.id = "sorttable_sortfwdind";
             sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
-            this.appendChild(sortfwdind);
+            this.childNodes[0].appendChild(sortfwdind);
             return;
           }
           
@@ -134,7 +137,7 @@ sorttable = {
           sortfwdind = document.createElement('span');
           sortfwdind.id = "sorttable_sortfwdind";
           sortfwdind.innerHTML = stIsIE ? '&nbsp<font face="webdings">6</font>' : '&nbsp;&#x25BE;';
-          this.appendChild(sortfwdind);
+          this.childNodes[0].appendChild(sortfwdind);
 
 	        // build an array to sort. This is a Schwartzian transform thing,
 	        // i.e., we "decorate" each row with the actual sort key,
