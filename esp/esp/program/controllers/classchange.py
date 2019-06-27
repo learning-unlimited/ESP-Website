@@ -504,7 +504,7 @@ class ClassChangeController(object):
         except IndexError:
             pass
 
-        self.student_not_checked_in[numpy.transpose(numpy.nonzero(True-self.enroll_orig.any(axis=(1,2))))] = True
+        self.student_not_checked_in[numpy.transpose(numpy.nonzero(numpy.logical_not(self.enroll_orig.any(axis=(1,2)))))] = True
 
         #   Populate request matrix
         request_regs = [
@@ -574,7 +574,7 @@ class ClassChangeController(object):
             self.section_capacities_base[sec_ind] = sec_cap_orig + opt_drops
             # Commit to enrolling students into this section if they were
             # originally in it and they didn't request any overlapping classes
-            self.enroll_final_base[numpy.transpose(numpy.nonzero(sec_enroll_orig * (True - any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
+            self.enroll_final_base[numpy.transpose(numpy.nonzero(sec_enroll_orig * numpy.logical_not(any_overlapping_requests))), sec_ind, self.section_schedules[sec_ind,:]] = True
             self.section_scores_base[sec_ind] = -self.section_capacities_base[sec_ind]
             self.section_scores_base[sec_ind] += numpy.count_nonzero(self.request[:, sec_ind, :].any(axis=1)) # number who want to switch in
 
@@ -636,11 +636,11 @@ class ClassChangeController(object):
 
         #   Filter students by who has all of the section's timeslots available
         for [ts_ind,] in timeslots:
-            possible_students *= (True - self.enroll_final[:, :, ts_ind].any(axis=1))
+            possible_students *= numpy.logical_not(self.enroll_final[:, :, ts_ind].any(axis=1))
 
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.same_subject[:, si])[0]:
-            possible_students *= (True - self.enroll_final[:, sec_index, :].any(axis=1))
+            possible_students *= numpy.logical_not(self.enroll_final[:, sec_index, :].any(axis=1))
 
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
@@ -650,7 +650,7 @@ class ClassChangeController(object):
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != ts_ind:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+                        possible_students *= numpy.logical_not(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
         num_spaces = self.section_capacities[si]
@@ -699,7 +699,7 @@ class ClassChangeController(object):
                 # 1-dimensional matrix of whether students are free during the
                 # times of this class section in the enrollment we've computed
                 # so far
-                no_enroll_final = True - self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2))
+                no_enroll_final = numpy.logical_not(self.enroll_final[:,:,self.section_schedules[sec_ind,:]].any(axis=(1,2)))
                 # Find students that were originally enrolled in this class and
                 # did not get any classes overlapping it in the enrollment
                 # we've computed so far
@@ -778,8 +778,8 @@ class ClassChangeController(object):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
 
-        assignments = numpy.transpose(numpy.nonzero((self.enroll_final * (True - self.enroll_orig)).any(axis=2)))
-        removals = numpy.transpose(numpy.nonzero((self.enroll_orig * (True - self.enroll_final)).any(axis=2)))
+        assignments = numpy.transpose(numpy.nonzero((self.enroll_final * numpy.logical_not(self.enroll_orig)).any(axis=2)))
+        removals = numpy.transpose(numpy.nonzero((self.enroll_orig * numpy.logical_not(self.enroll_final)).any(axis=2)))
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
 
         for (student_ind,section_ind) in removals:
@@ -833,5 +833,5 @@ class ClassChangeController(object):
         self.extra_headers['Reply-To'] = self.from_email
         for [student_ind] in numpy.transpose(numpy.nonzero(self.changed)):
             self.send_student_email(student_ind, changed = True, for_real = for_real, f = f)
-        for [student_ind] in numpy.transpose(numpy.nonzero(True-self.changed)):
+        for [student_ind] in numpy.transpose(numpy.nonzero(numpy.logical_not(self.changed))):
             self.send_student_email(student_ind, changed = False, for_real = for_real, f = f)

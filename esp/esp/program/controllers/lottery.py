@@ -393,11 +393,11 @@ class LotteryAssignmentController(object):
 
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
-            possible_students *= (True - self.student_schedules[:, timeslots[i]])
+            possible_students *= numpy.logical_not(self.student_schedules[:, timeslots[i]])
 
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.section_overlap[:, si])[0]:
-            possible_students *= (True - self.student_sections[:, sec_index])
+            possible_students *= numpy.logical_not(self.student_sections[:, sec_index])
 
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
@@ -407,7 +407,7 @@ class LotteryAssignmentController(object):
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != timeslots[i]:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+                        possible_students *= numpy.logical_not(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
         if candidate_students.shape[0] <= num_spaces:
