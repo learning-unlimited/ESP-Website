@@ -394,7 +394,7 @@ class AdminClass(ProgramModuleObj):
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
-                conflictinguser = (teacher.first_name+' '+teacher.last_name)
+                conflictinguser = teacher
             else:
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])

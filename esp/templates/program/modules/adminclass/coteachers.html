@@ -26,7 +26,7 @@
 
 {% if conflict %}
     <p>
-    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
+    <b><font color="red"><a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name}}</a> has a conflicting schedule.</b></font><br />
     </p>
 {% endif %}
 
