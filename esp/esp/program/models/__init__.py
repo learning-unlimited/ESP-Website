@@ -941,7 +941,7 @@ class Program(models.Model, CustomFormsLinkModel):
         #   Filters down the floating resources to those that are not taken.
         return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
 
-    def getDurations(self, round=False):
+    def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
@@ -963,14 +963,14 @@ class Program(models.Model, CustomFormsLinkModel):
                     time_option = Event.total_length([t_list[i], t_list[j]])
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
-                    if round:
+                    if round_15:
                         rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
                         durationDict[(Decimal(durationSeconds) / 3600)] = \
                                         str(rounded_seconds / 3600) + ':' + \
-                                        str((rounded_seconds / 60) % 60).rjust(2,'0')
+                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
         durationList = durationDict.items()
 

@@ -1263,7 +1263,7 @@ class ClassSection(models.Model):
 
         return u'%s:%02d' % \
                (int(self.duration),
-            int((self.duration - int(self.duration)) * 60))
+            int(round((self.duration - int(self.duration)) * 60)))
 
     class Meta:
         db_table = 'program_classsection'
