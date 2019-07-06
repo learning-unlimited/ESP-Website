@@ -226,6 +226,9 @@ class VolunteerImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, prog = None, *args, **kwargs):
         super(VolunteerImportForm, self).__init__(*args, **kwargs)
-        self.fields['program'].queryset = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        if prog is not None:
+            qs = qs.exclude(id=prog.id)
+        self.fields['program'].queryset = qs
