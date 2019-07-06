@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.safestring import mark_safe
+from django.db.models import IntegerField, Case, When, Count
 
 from datetime import timedelta
 
@@ -259,17 +260,37 @@ def FurnishingFormForProgram(prog):
     return FurnishingForm
 
 class ClassroomImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
     import_furnishings = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to have the same furnishings as they did for the previous program.')
 
+    def __init__(self, *args, **kwargs):
+        super(ClassroomImportForm, self).__init__(*args, **kwargs)
+        progs = Resource.objects.filter(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
+        self.fields['program'].queryset = Program.objects.filter(id__in=progs)
+
 class TimeslotImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
 
+    def __init__(self, *args, **kwargs):
+        super(TimeslotImportForm, self).__init__(*args, **kwargs)
+        self.fields['program'].queryset = Program.objects.annotate(vr_count = Count(
+            Case(When(event__event_type__description='Class Time Block', then=1), default=None, output_field=IntegerField()
+            ))).filter(vr_count__gt=0)
+
 class ResTypeImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
+
+    def __init__(self, *args, **kwargs):
+        super(ResTypeImportForm, self).__init__(*args, **kwargs)
+        self.fields['program'].queryset = Program.objects.annotate(rt_count = Count('resourcetype')).filter(rt_count__gt=0)
 
 class EquipmentImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new floating resources to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
+
+    def __init__(self, *args, **kwargs):
+        super(EquipmentImportForm, self).__init__(*args, **kwargs)
+        progs = Resource.objects.filter(is_unique=True).exclude(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
+        self.fields['program'].queryset = Program.objects.filter(id__in=progs)
