@@ -68,34 +68,40 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
         numbers = [(desc, num) for desc, num in numbers if num]
 
-        timess = [
-            ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
-            ("number of approved classes", [(1, time) for time in self.reg_classes(prog, True)]),
-            ("number of teachers registered", [(1, time) for time in self.teach_times(prog)]),
-            ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)]),
-        ]
+        # if there are any classes without a timestamp, don't even bother calculating the graph data
+        if ClassSubject.objects.filter(parent_program=prog, timestamp__isnull=True).exists():
+            timess_data = []
+            class_hourss_data = []
+            student_hourss_data = []
+            start = self.mindate
+        else:
+            timess = [
+                ("number of registered classes", [(1, time) for time in self.reg_classes(prog)]),
+                ("number of approved classes", [(1, time) for time in self.reg_classes(prog, True)]),
+                ("number of teachers registered", [(1, time) for time in self.teach_times(prog)]),
+                ("number of teachers approved", [(1, time) for time in self.teach_times(prog, True)]),
+            ]
 
-        timess_data, start = BigBoardModule.make_graph_data(timess)
+            timess_data, start = BigBoardModule.make_graph_data(timess)
+
+            class_hours, student_hours = self.get_hours(prog)
+            class_hours_approved, student_hours_approved = self.get_hours(prog, approved = True)
+
+            class_hourss = [
+                ("number of registered class-hours", class_hours),
+                ("number of approved class-hours", class_hours_approved),
+            ]
+            class_hourss_data, _ = BigBoardModule.make_graph_data(class_hourss)
+
+            student_hourss = [
+                ("number of registered class-student-hours", student_hours),
+                ("number of approved class-student-hours", student_hours_approved),
+            ]
+            student_hourss_data, _ = BigBoardModule.make_graph_data(student_hourss)
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
         ]
-
-        class_hours, student_hours = self.get_hours(prog)
-        class_hours_approved, student_hours_approved = self.get_hours(prog, approved = True)
-
-        class_hourss = [
-            ("number of registered class-hours", class_hours),
-            ("number of approved class-hours", class_hours_approved),
-        ]
-        class_hourss_data, _ = BigBoardModule.make_graph_data(class_hourss)
-
-        student_hourss = [
-            ("number of registered class-student-hours", student_hours),
-            ("number of approved class-student-hours", student_hours_approved),
-        ]
-        student_hourss_data, _ = BigBoardModule.make_graph_data(student_hourss)
-
         right_axis_data = [
             {"axis_name": "class-hours", "series_data": class_hourss_data},
             {"axis_name": "class-student-hours", "series_data": student_hourss_data},
@@ -116,6 +122,9 @@ class TeacherBigBoardModule(ProgramModuleObj):
     # seconds, which is long enough that they hopefully won't get recomputed a
     # bunch if multiple admins are loading the page, but short enough that each
     # time the page refreshes for the same admin, they will get new numbers
+
+    # this is the date we added timestamps
+    mindate = datetime.datetime(2016, 1, 30)
 
     @cache_function_for(105)
     def num_teachers_teaching(self, prog, approved = False):
@@ -166,7 +175,8 @@ class TeacherBigBoardModule(ProgramModuleObj):
         ).exclude(category__category__iexact="Lunch"
         ).values_list('timestamp','class_size_max'
         ).annotate(duration=Sum('sections__duration'))
-        sorted_hours = sorted(hours, key=operator.itemgetter(0))
+        # use mindate if a class is missing a timestamp so we can still calculate static stats
+        sorted_hours = sorted(hours, key=lambda x:x[0] or self.mindate)
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
         return class_hours, student_hours
