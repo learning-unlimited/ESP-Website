@@ -1,5 +1,4 @@
 import datetime
-import operator
 import subprocess
 
 from django.db.models.aggregates import Min, Sum
