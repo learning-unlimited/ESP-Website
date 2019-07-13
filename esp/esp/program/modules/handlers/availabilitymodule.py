@@ -82,9 +82,11 @@ class AvailabilityModule(ProgramModuleObj):
         context['availabilitymodule'] = self
         return context
 
-    def isCompleted(self):
+    def isCompleted(self, user = None):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=True)
+        if user is None:
+            user = get_current_request().user
+        available_slots = user.getAvailableTimes(self.program, ignore_classes=True)
 
         #   Check number of timeslots against Tag-specified minimum
         if Tag.getTag('min_available_timeslots'):
@@ -93,7 +95,7 @@ class AvailabilityModule(ProgramModuleObj):
                 return False
 
         # Round durations of both classes and timeslots to nearest 30 minutes
-        total_time = get_current_request().user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
+        total_time = user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
             available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )
@@ -229,7 +231,7 @@ class AvailabilityModule(ProgramModuleObj):
         context['unscheduled'] = unscheduled_classes
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
-        context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))
+        context['is_overbooked'] = (not self.isCompleted(user = teacher) and (teacher.getTaughtTime(self.program) > timedelta(0)))
         context['submitted_blank'] = blank
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
