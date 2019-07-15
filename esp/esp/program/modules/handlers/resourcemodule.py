@@ -624,7 +624,7 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(exclude_types=[])
+        time_options = self.program.getTimeSlots(types=['Class Time Block','Open Class Time Block'])
         time_groups = Event.group_contiguous(list(time_options))
 
         #   Retrieve remaining context information
