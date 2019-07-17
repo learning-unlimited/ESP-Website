@@ -218,7 +218,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = TimeslotImportForm(request.POST)
+        import_form = TimeslotImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_timeslot_form'] = import_form
         else:
@@ -273,7 +273,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = ResTypeImportForm(request.POST)
+        import_form = ResTypeImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_restype_form'] = import_form
         else:
@@ -318,7 +318,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = ClassroomImportForm(request.POST)
+        import_form = ClassroomImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_classroom_form'] = import_form
         else:
@@ -484,7 +484,7 @@ class ResourceModule(ProgramModuleObj):
             import_mode = 'save'
             to_import = request.POST.getlist('to_import')
 
-        import_form = EquipmentImportForm(request.POST)
+        import_form = EquipmentImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_equipment_form'] = import_form
         else:
@@ -653,16 +653,16 @@ class ResourceModule(ProgramModuleObj):
             context['equipment_form'] = EquipmentForm(self.program)
 
         if 'import_classroom_form' not in context:
-            context['import_classroom_form'] = ClassroomImportForm()
+            context['import_classroom_form'] = ClassroomImportForm(cur_prog = prog)
 
         if 'import_timeslot_form' not in context:
-            context['import_timeslot_form'] = TimeslotImportForm()
+            context['import_timeslot_form'] = TimeslotImportForm(cur_prog = prog)
 
         if 'import_restype_form' not in context:
-            context['import_restype_form'] = ResTypeImportForm()
+            context['import_restype_form'] = ResTypeImportForm(cur_prog = prog)
 
         if 'import_equipment_form' not in context:
-            context['import_equipment_form'] = EquipmentImportForm()
+            context['import_equipment_form'] = EquipmentImportForm(cur_prog = prog)
 
         context['open_section'] = extra
         context['prog'] = self.program
