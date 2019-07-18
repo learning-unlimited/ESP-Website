@@ -359,8 +359,8 @@ class ResourceModule(ProgramModuleObj):
 
                 #   Iterate over the classrooms in the previous program
                 for resource in past_program.groupedClassrooms():
+                    furnishing_dict[resource.name] = set()
                     for event in resource.timegroup:
-                        furnishing_dict[resource.name] = set()
                         #   If we know what timeslot to put it in, make a copy
                         if event.id in ts_map:
                             new_res = Resource(
