@@ -8,7 +8,7 @@
 # or Tag.getBooleanTag() with no program argument
 all_global_tags = {
     'teacherreg_custom_forms': (False, ""),
-    'allow_global_restypes': (False, "Include global resource types in the options shown"),
+    'allow_global_restypes': (True, "Include global resource types in the manage resources and teacher registration options"),
     'splashinfo_choices': (False, ""),
     'full_group_name': (False, ""),
     'nearly_full_threshold': (False, ""),

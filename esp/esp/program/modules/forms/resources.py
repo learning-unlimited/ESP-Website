@@ -8,6 +8,7 @@ from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
+from esp.tagdict.models import Tag
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -46,8 +47,13 @@ class ResourceTypeForm(forms.Form):
     description = forms.CharField(required=False,widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     only_one = forms.BooleanField(label='Only one?', required=False, help_text='Limit teachers to selecting only one of the options?')
-    is_global = forms.BooleanField(label='Global?', required=False)
+    is_global = forms.BooleanField(label='Global?', required=False, help_text='Should this resource be associated with all programs?')
     hidden = forms.BooleanField(label='Hidden?', required=False, help_text='Should this resource type be hidden during teacher registration?')
+
+    def __init__(self, *args, **kwargs):
+        super(ResourceTypeForm, self).__init__(*args, **kwargs)
+        if not Tag.getBooleanTag('allow_global_restypes', default = False):
+            self.fields['is_global'].widget = forms.HiddenInput()
 
     def load_restype(self, res_type):
         self.fields['name'].initial = res_type.name
