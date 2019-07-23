@@ -62,7 +62,7 @@ content_html:
 
 if (currentPrograms && currentPrograms.forEach) {
     currentPrograms.forEach(function (currentProgram) {
-        if currentProgram.hasModule("ClassSearchModule") {
+        if (currentProgram.class_search) {
             ESP.registerAdminModule({
                 content_html:
                     '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +

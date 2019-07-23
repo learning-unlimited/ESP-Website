@@ -79,6 +79,7 @@ var currentPrograms = [
     {
         urlBase: "{{ current_program.getUrlBase }}",
         name: "{{ current_program.niceName }}",
+        class_search: {% if current_program|hasModule:"ClassSearchModule" %} true {% else %} false {% endif %}
     },
 {% endfor %}
 ];
