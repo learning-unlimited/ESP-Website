@@ -3,6 +3,7 @@
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% load main %} {# helpful functions #}
+{% load modules %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -74,16 +75,15 @@
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript">
-var module_name = "ClassSearchModule"
 var currentPrograms = [
 {% for current_program in current_programs %}
     {
         urlBase: "{{ current_program.getUrlBase }}",
         name: "{{ current_program.niceName }}",
-        class_search: {{current_program|hasModule:module_name }}
+        class_search: {% if current_program|hasModule:"ClassSearchModule" %}true{% else %}false{% endif %}
     },
 {% endfor %}
-];
+]; 
 </script>
 <script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
     <div id="page" class="{{ request.path|extract_theme }}">
