@@ -588,13 +588,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             # that we didn't start out with
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
-            if Tag.getTag('allow_global_restypes'):
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_global=True,
-                                                       include_hidden=False)
-            else:
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_hidden=False)
+            resource_types = prog.getResourceTypes(include_classroom=True,
+                                                   include_global=Tag.getBooleanTag('allow_global_restypes', default = False),
+                                                   include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
 
