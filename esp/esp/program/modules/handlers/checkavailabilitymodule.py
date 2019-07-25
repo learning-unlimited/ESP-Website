@@ -66,7 +66,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
             "seq": 0
             } ]
 
-    @aux_call
+    @main_call
     @needs_admin
     def edit_availability(self, request, tl, one, two, module, extra, prog):
         """
@@ -84,7 +84,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
         else:
             form = GenericSearchForm()
             context = {'search_form': form, 'isAdmin': True, 'prog': self.program}
-            return render_to_response(self.baseDir()+'availability_form.html', request, context)
+            return render_to_response('program/modules/availabilitymodule/availability_form.html', request, context)
 
         try:
             teacher = ESPUser.objects.get(id=target_id)
@@ -93,7 +93,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
                 teacher = ESPUser.objects.get(username=target_id)
             except:
                 raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
-        availability = AvailabilityModule
+        availability = AvailabilityModule(program = prog)
         return availability.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     class Meta:
