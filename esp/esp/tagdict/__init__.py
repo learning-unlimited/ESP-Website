@@ -55,7 +55,7 @@ all_global_tags = {
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
     'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag"),
-    'teacher_address_required': (True, "Is an address required for a teacher profile? (enabled by default, set to 'False' to disable)")
+    'teacher_address_required': (True, "Is an address required for a teacher profile? (disabled by default, set to 'True' to enable)")
 }
 
 # Any tag used with Tag.getProgramTag(),
