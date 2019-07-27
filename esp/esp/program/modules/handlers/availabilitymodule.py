@@ -226,7 +226,7 @@ class AvailabilityModule(ProgramModuleObj):
             context['search_form'] = form
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
-        
+
     class Meta:
         proxy = True
         app_label = 'modules'
