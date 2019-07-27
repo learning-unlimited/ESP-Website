@@ -32,24 +32,10 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
-from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSection
-from esp.program.controllers.classreg import ClassCreationController
+from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
-from django.http import HttpResponse, HttpResponseRedirect
-from django                      import forms
-from esp.cal.models              import Event, EventType
-from esp.tagdict.models          import Tag
-from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, UserAvailability
-from esp.resources.models        import ResourceType, Resource
-from django.conf import settings
-from django.template.loader      import render_to_string
-from esp.dbmail.models           import send_mail
-from datetime                    import timedelta, datetime
-from esp.middleware.threadlocalrequest import get_current_request
+from esp.users.models            import ESPUser
 from esp.users.forms.generic_search_form import GenericSearchForm
 from esp.program.modules.handlers.availabilitymodule import AvailabilityModule
 
