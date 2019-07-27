@@ -33,8 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call
-from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSection
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
@@ -43,12 +41,8 @@ from django                      import forms
 from esp.cal.models              import Event, EventType
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, UserAvailability
-from esp.resources.models        import ResourceType, Resource
-from django.conf import settings
-from django.template.loader      import render_to_string
-from esp.dbmail.models           import send_mail
-from datetime                    import timedelta, datetime
+from esp.users.models            import ESPUser, UserAvailability
+from datetime                    import timedelta
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.users.forms.generic_search_form import GenericSearchForm
 
