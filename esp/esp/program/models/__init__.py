@@ -907,7 +907,7 @@ class Program(models.Model, CustomFormsLinkModel):
             exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
-            include_global = Tag.getTag('allow_global_restypes')
+            include_global = Tag.getBooleanTag('allow_global_restypes', default = False)
 
         if include_global:
             Q_filters = Q(program=self) | Q(program__isnull=True)
