@@ -96,7 +96,7 @@
                     (for {{program.niceName}})
                 </h2>
                 {% if profile.teacher_info %}
-                    {% if program|hasModule:"AvailabilityModule" %}
+                    {% if program|hasModule:"CheckAvailabilityModule" %}
                         <a class="sidelink" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
                         Check/edit availability</a>
                     {% endif %}

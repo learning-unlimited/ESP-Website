@@ -32,9 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
-from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSection
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
@@ -43,14 +41,11 @@ from django                      import forms
 from esp.cal.models              import Event, EventType
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, UserAvailability
-from esp.resources.models        import ResourceType, Resource
-from django.conf import settings
-from django.template.loader      import render_to_string
-from esp.dbmail.models           import send_mail
-from datetime                    import timedelta, datetime
+from esp.users.models            import ESPUser, UserAvailability
+from datetime                    import timedelta
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.users.forms.generic_search_form import GenericSearchForm
+
 
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -62,11 +57,6 @@ class AvailabilityModule(ProgramModuleObj):
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
             "required": True,
-            "seq": 0
-            }, {
-            "admin_title": "Teacher Availability Checker",
-            "link_title": "Check Teacher Availability",
-            "module_type": "manage",
             "seq": 0
             } ]
 
@@ -118,12 +108,6 @@ class AvailabilityModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program"""}
-
-    def prettyTime(self, time, inc_date=True):
-        if inc_date:
-            return time.strftime('%A, %b %d, ').decode('utf-8') + time.strftime('%I:%M %p').lower().strip('0').decode('utf-8')
-        else:
-            return time.strftime('%I:%M %p').lower().strip('0').decode('utf-8')
 
     @main_call
     @needs_teacher
@@ -243,36 +227,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
-    @aux_call
-    @needs_admin
-    def edit_availability(self, request, tl, one, two, module, extra, prog):
-        """
-        Admins edits availability of the specified user.
-        """
-
-        target_id = None
-
-        if 'user' in request.GET:
-            target_id = request.GET['user']
-        elif 'user' in request.POST:
-            target_id = request.POST['user']
-        elif 'target_user' in request.POST:
-            target_id = request.POST['target_user']
-        else:
-            form = GenericSearchForm()
-            context = {'search_form': form, 'isAdmin': True, 'prog': self.program}
-            return render_to_response(self.baseDir()+'availability_form.html', request, context)
-
-        try:
-            teacher = ESPUser.objects.get(id=target_id)
-        except:
-            try:
-                teacher = ESPUser.objects.get(username=target_id)
-            except:
-                raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
-
-        return self.availabilityForm(request, tl, one, two, prog, teacher, True)
-
     class Meta:
         proxy = True
         app_label = 'modules'
+
