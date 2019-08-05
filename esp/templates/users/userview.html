@@ -25,6 +25,9 @@
             <input type="hidden" name="username" value="{{user.username}}"/>
             View:
             <select name="program" onchange="$j(this).parent().submit();return false;">
+                <option disabled {% if not program %}selected="selected"{% endif %}>
+                    (Select a program)
+                </option>
                 {% for prog in all_programs %}
                     <option value="{{prog.id}}" {% if prog == program %}selected="selected"{% endif %}>
                         {{prog.name}}
