@@ -11,21 +11,21 @@ def minorspolicyacknowledgementform_factory(prog):
     name = "MinorsPolicyAcknowledgementForm"
     bases = (forms.Form,)
     date_range = prog.date_range()
-    label = u"I have read the above, and commit to satisfy the MIT Minors policy."
+    label = u"I have read the above, and commit to satisfying the MIT Minors policy."
 
     d = dict(
         backgroundcheck_choice = forms.ChoiceField(label='Background Checks', choices=[
-            ('affiliated', 'I am an MIT student, faculty, or staff.'),
-            ('recent_check', 'I have received a background check in the past year.'),
-            ('commit_check', 'I commit to getting a background check.'),
+            ('affiliated', 'I am a current MIT student, faculty, or staff.'),
+            ('recent_check', 'I am not currently MIT-affiliated, but I have received an MIT background check in the past year.'),
+            ('commit_check', 'I am not currently MIT-affiliated, and I will initiate a background check by Thursday, October 17.'),
         ], widget=BlankSelectWidget(),
-                                        help_text='(The MIT Minors Policy requires that all non-MIT affiliated teachers be background checked.)' , required=True),
-        observing_choice = forms.ChoiceField(label='Observing', choices=[
-            ('yes', 'I agree to have an observer assigned in exchange for observing as many hours as I teach.'),
+                                        help_text='\n(The MIT Minors Policy requires that all non-MIT-affiliated teachers be background checked.)' , required=True),
+        observing_choice = forms.ChoiceField(label='Coteaching or Observing', choices=[
             ('no', 'I have a coteacher or commit to finding a coteacher by the teacher registration deadline.'),
+            ('yes', 'I agree to observe as many hours as I teach in exchange for having an observer assigned to my classes'),
             ('other', 'Other: I will elaborate in the message to directors.'),
         ], widget=BlankSelectWidget(),
-                                        help_text='(The MIT Minors Policy requires that all classes have at least 2 adults present at all times.)' , required=True),
+                                        help_text='\n(The MIT Minors Policy requires that all classes have at least 2 adults present at all times.)' , required=True),
     )
     return type(name, bases, d)
 
