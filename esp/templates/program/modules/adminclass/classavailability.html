@@ -21,6 +21,7 @@ $j(document).ready(function() {
 {% block content %}
 
 {% load render_qsd %}
+{% load modules %}
 
 <h1>Availability for <u>{{ class|escape }}</u></h1>
 
@@ -42,7 +43,7 @@ This class is scheduled during at least one timeslot in which at least one teach
 
 <h2>Teachers:</h2>
 {% for teacher in class.get_teachers %}
-<a href="/manage/userview?username={{ teacher.username|urlencode }}" target="_blank">{{ teacher.nonblank_name }}</a> (<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ teacher.username|urlencode }}" target="_blank">edit availability</a>)
+<a href="/manage/userview?username={{ teacher.username|urlencode }}" target="_blank">{{ teacher.nonblank_name }}</a>{% if program|hasModule:"CheckAvailabilityModule" %} (<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ teacher.username|urlencode }}" target="_blank">edit availability</a>){% endif %}
 </br>
 {% endfor %}
 </br>
