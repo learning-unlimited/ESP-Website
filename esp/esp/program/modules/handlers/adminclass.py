@@ -485,7 +485,8 @@ class AdminClass(ProgramModuleObj):
             for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
-                    conflict_found = True
+                    if time in meeting_times:
+                        conflict_found = True
                 if time in teacher.getTaughtTimes(prog, exclude = [cls]):
                     teaching_teachers[time].append(teacher)
             if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:
