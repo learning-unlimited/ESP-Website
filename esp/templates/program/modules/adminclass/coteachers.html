@@ -28,7 +28,7 @@
 
 {% if conflict %}
     <p>
-    <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% endif %}{{ conflict.name }} has a conflicting schedule.</b></font><br />
+    <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
     </p>
 {% endif %}
 
