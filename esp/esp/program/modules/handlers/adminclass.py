@@ -399,9 +399,18 @@ class AdminClass(ProgramModuleObj):
             if cls.conflicts(teacher):
                 conflictinguser = teacher
             else:
-                if not RegistrationProfile.getLastForProgram(teacher, prog).teacher_info:
-                    lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
-                    lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {'graduation_year': ''})
+                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = teacher.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
                     lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
