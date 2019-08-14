@@ -76,9 +76,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
     num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
-                                        help_text='(How many independent sections (copies) of your class would you like to teach?)' )
+                                        help_text='How many independent sections (copies) of your class would you like to teach?' )
     session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
-                                        help_text='(How many days will your class take to complete?)' )
+                                        help_text='How many days will your class take to complete?' )
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
