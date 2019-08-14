@@ -11,7 +11,7 @@ def minorspolicyacknowledgementform_factory(prog):
     name = "MinorsPolicyAcknowledgementForm"
     bases = (forms.Form,)
     date_range = prog.date_range()
-    label = u"I have read the above, and I commit to satisfying the MIT minors policy."
+    label = u"I have read the above, and I commit to satisfying the MIT Minors Policy."
 
     d = dict(
         backgroundcheck_choice = forms.ChoiceField(label='Background Checks', choices=[
@@ -22,7 +22,7 @@ def minorspolicyacknowledgementform_factory(prog):
                                         help_text='\n(The MIT Minors Policy requires that all non-MIT-affiliated teachers be background checked.)' , required=True),
         observing_choice = forms.ChoiceField(label='Coteaching or Observing', choices=[
             ('no', 'I have coteachers or commit to finding coteachers for all of my classes by the registration deadline.'),
-            ('yes', "I agree to sit in on someone else's class for each of my classes without a coteacher."),
+            ('yes', "I agree to sit in on an hour of someone else's class for each hour of my classes without a coteacher."),
             ('other', 'Other: I will explain in an email to the directors at splash@mit.edu.'),
         ], widget=BlankSelectWidget(),
                                         help_text='\n(The MIT Minors Policy requires that all classes have at least 2 adults present at all times.)' , required=True),
