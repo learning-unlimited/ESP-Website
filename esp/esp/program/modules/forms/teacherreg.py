@@ -70,7 +70,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text='<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>' )
+                                        help_text='<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt> (e.g. use $$\pi$$ for &pi;).</span>' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
@@ -91,7 +91,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimal" or "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
-    optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', help_text="This is the student capacity of your class in the most ideal situation. These are not hard limits, but we will try to schedule you in an appropriately-sized classroom.", choices=[(0, 0)], widget=BlankSelectWidget() )
+    optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', help_text="This is the student capacity of your class in the most ideal situation; we will try to schedule you in an appropriately-sized classroom. If (for any reason) your class has strict requirements on the number of students it can allow, please pick the closest range and specify in 'Message for directors.'", choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(),
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     class_style = forms.ChoiceField( label='Class Style', choices=style_choices, required=False, widget=BlankSelectWidget())
@@ -106,10 +106,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                                    help_text="Write in any specific resources you need, like a piano, empty room, or kitchen. We cannot guarantee you any of the special resources you request, but we will contact you if we are unable to get you the resources you need. Please include any necessary explanations in the 'Message for Directors' box! " )
 
     purchase_requests = forms.CharField( label='Planned Purchases', widget=forms.Textarea(), required=False,
-                                         help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt with attached reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, what it will cost, and why you would like to purchase it.' )
+                                         help_text='We give all teachers a $30 budget per class section for their classes; we can reimburse you if you turn in an itemized receipt and reimbursement form before the end of the program.  If you would like to exceed this budget, please type a budget proposal here stating what you would like to buy, how much it will cost, and why you would like to purchase it.' )
 
     message_for_directors       = forms.CharField( label='Message for Directors', widget=forms.Textarea(), required=False,
-                                                   help_text='Please explain any special circumstances and equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
+                                                   help_text='Please explain any special circumstances or equipment requests. Remember that you can be reimbursed for up to $30 (or more with the directors\' approval) for class expenses if you submit itemized receipts.' )
 
 
     def __init__(self, crmi, *args, **kwargs):
