@@ -411,7 +411,7 @@ class AdminClass(ProgramModuleObj):
                                                                          'shirt_type': anyInfo.shirt_type})
                     else:
                         lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
-                    lastProf.save()
+                lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
