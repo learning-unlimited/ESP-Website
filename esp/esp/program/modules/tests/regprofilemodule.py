@@ -66,7 +66,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
 
         # First student: Test non-saving of initial program profile
         get_current_request().user = self.students[0]
-        prof = self.students[0].getLastForProgram(self.program)
+        prof = RegistrationProfile.getLastForProgram(self.students[0], self.program)
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 0, "Profile was saved when it shouldn't have been." )
         # Test migration of initial non-program profile to a program
         prof = self.students[0].getLastProfile()
