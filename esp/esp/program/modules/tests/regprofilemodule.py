@@ -75,7 +75,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
         self.assertTrue( self.moduleobj.isCompleted(), "Profile id wiped." )
-        self.assertTrue( self.students[0].registrationprofile_set[0].program == self.program, "Profile failed to migrate to program." )
+        self.assertTrue( self.students[0].registrationprofile_set.all()[0].program == self.program, "Profile failed to migrate to program." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
