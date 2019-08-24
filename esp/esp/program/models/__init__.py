@@ -1427,9 +1427,14 @@ class RegistrationProfile(models.Model):
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
             regProf.program = program
-            regProf.id = None
-            if (datetime.now() - regProf.last_ts).days >= 5:
-                regProf.save()
+            #if the user didn't have any profiles before (id = None), just return the brand new one unsaved
+            if regProf.id is not None:
+                #if the latest profile is old, wipe the id, so it saves as a new object when submitted
+                if (datetime.now() - regProf.last_ts).days >= 5:
+                    regProf.id = None
+                #if the latest profile is new-ish, save the new program association
+                else:
+                    regProf.save()
         else:
             regProf = regProfList[0]
         return regProf
