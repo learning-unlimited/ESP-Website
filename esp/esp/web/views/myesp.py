@@ -153,7 +153,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         if form.is_valid():
             new_data = form.cleaned_data
 
-            regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+            if prog_input is None:
+                regProf = RegistrationProfile.getLastProfile(curUser)
+            else:
+                regProf = RegistrationProfile.getLastForProgram(curUser, prog)
 
             if regProf.id is None:
                 old_regProf = RegistrationProfile.getLastProfile(curUser)
