@@ -46,6 +46,9 @@ from esp.program.modules.forms.management import ClassManageForm, SectionManageF
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
 from esp.program.controllers.classreg import ClassCreationController
+from esp.users.models import TeacherInfo
+from esp.program.models import RegistrationProfile
+
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -396,6 +399,19 @@ class AdminClass(ProgramModuleObj):
             if cls.conflicts(teacher):
                 conflictinguser = teacher
             else:
+                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = teacher.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
+                lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
