@@ -1426,10 +1426,24 @@ class RegistrationProfile(models.Model):
                                'educator_info').order_by('-last_ts','-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
+            # get the old program, if any
+            prog = regProf.program
             regProf.program = program
+            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                regProf.id = None
-                if (datetime.now() - regProf.last_ts).days <= 5:
+                # if the latest profile is old, wipe the id,
+                # then it will save as a new object if submitted with the profile form
+                if (datetime.now() - regProf.last_ts).days >= 5:
+                    regProf.id = None
+                # if the latest profile is new-ish,
+                # assume the info is up-to-date and save it now
+                else:
+                    # but, if the profile was for a previous program, we should keep the old profile
+                    # and make a new one for this program by wiping the id, then saving
+                    if prog is not None:
+                        regProf.id = None
+                    # otherwise, it was a profile without a program,
+                    # and we can just associate it with this program now, so just save
                     regProf.save()
         else:
             regProf = regProfList[0]
