@@ -46,6 +46,9 @@ from esp.program.modules.forms.management import ClassManageForm, SectionManageF
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
 from esp.program.controllers.classreg import ClassCreationController
+from esp.users.models import TeacherInfo
+from esp.program.models import RegistrationProfile
+
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -394,8 +397,21 @@ class AdminClass(ProgramModuleObj):
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
-                conflictinguser = (teacher.first_name+' '+teacher.last_name)
+                conflictinguser = teacher
             else:
+                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = teacher.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
+                lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
@@ -485,7 +501,8 @@ class AdminClass(ProgramModuleObj):
             for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
-                    conflict_found = True
+                    if time in meeting_times:
+                        conflict_found = True
                 if time in teacher.getTaughtTimes(prog, exclude = [cls]):
                     teaching_teachers[time].append(teacher)
             if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:

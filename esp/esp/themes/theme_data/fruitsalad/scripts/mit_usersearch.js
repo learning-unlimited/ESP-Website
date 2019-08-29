@@ -62,18 +62,20 @@ content_html:
 
 if (currentPrograms && currentPrograms.forEach) {
     currentPrograms.forEach(function (currentProgram) {
-        ESP.registerAdminModule({
-            content_html:
-                '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
-                '<div class="input-append">' +
-                '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
-                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
-                '</div>' +
-                '</form>',
-            name: 'class_search',
-            displayName: 'Class Search' +
-                ' <small>(' + currentProgram.name + ')</small>'
-        });
+        if (currentProgram.class_search) {
+            ESP.registerAdminModule({
+                content_html:
+                    '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
+                    '<div class="input-append">' +
+                    '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
+                    '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+                    '</div>' +
+                    '</form>',
+                name: 'class_search',
+                displayName: 'Class Search' +
+                    ' <small>(' + currentProgram.name + ')</small>'
+            });
+        };
     });
 }
 
