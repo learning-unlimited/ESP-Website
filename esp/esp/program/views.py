@@ -45,7 +45,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
@@ -393,6 +393,7 @@ def userview(request):
         'all_programs': Program.objects.all().order_by('-id'),
         'program': program,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
+        'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
     }
     return render_to_response("users/userview.html", request, context )
 

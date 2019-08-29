@@ -195,16 +195,31 @@ Minor bug fixes
 - Fixed the coloration of sections in the AJAX scheduler.
 - Custom form responses can now be viewed even if users are accidentally deleted.
 
+Minor bug fixes released in August 2019
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Fixed alignment of the gender field in the profile form.
+- Rounded popularity printable percent capacity to 2 decimals.
+- Added a link to the conflicting teacher's availability page on the coteachers page.
+- Fixed the rounding of class durations on the class search and class manage pages (previously class lengths were often listed as 1 minute shorter than the truth).
+- Fixed the logic of the error message on the teacher availability page (previously this used the admin's availability instead of the teacher's availability).
+- Within-page anchors on QSD pages (e.g. on FAQ pages) work as intended again.
+- The teacher big board now works for all programs. If the classes for a program are not timestamped (pre-2016), the graph will be omitted.
+- Fixed the gaps that showed up in the catalog when using the grade filter.
+- Limited time blocks shown on the resources page to Class Time Blocks and Open Class Time Blocks (i.e. teacher training and interview blocks will no longer be displayed here).
+- Fixed the height of the comm panel dropdown menus to avoid extending beyond the bottom of the page.
+- Dropdowns to select programs for importing things are now filtered to only programs that have things to import and are not the current program (e.g. resources, volunteer requests).
+- Classrooms can now be imported with matched/incomplete availability again (i.e. not selecting the "Complete availability" option).
+- Added help text for the "Global?" option in the resource types management form. This option is now hidden unless the ``allow_global_restypes`` tag is set to ``True``.
+- Teacher addresses are now optional by default in the profile form. Addresses can be required for teachers by setting the ``teacher_address_required`` Tag to ``True``.
+- The class search bar in the fruitsalad admin bar is now hidden if the class search module is not enabled.
+- Teacher availability links on the userview, class availability, and admin coteachers pages are now hidden if the check availability module is not enabled.
+- In the case where a user has no registration profiles associated with programs, the program dropdown on the userview page now displays a null option (previously, this misleadingly showed a program as selected even though it wasn't).
+- Fixed the logic for the conflict error message on the class availability page.
+- When coteachers are added to a class by an admin or teacher (e.g. admin setting availability manually, then adding on the teach or manage coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
+- Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immmediately after making an account.
+- Added styling to indicate on the userview page whether a teacher has set their availability yet.
 
 Known issues of new features
 ============================
-- The catalog may have blank spaces within or between class descriptions.
-- Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
-- Importing classrooms without complete availability results in them only being available for the first timeslot.
-- The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
 - The new QSD rich text editor can break in some weird edge cases. See the discussion `here <https://github.com/learning-unlimited/ESP-Website/issues/2746>`_.
 - Users may notice errors reported in the browser console related to jquery.initialize. These errors do not affect the performance or functionality of the pages.
-- The teacher big board does not work for programs before 2016 (when we implemented timestamps for class registration).
-- The class search toolbar shows in the fruitsalad admin toolbar even if the class search module is not enabled (and using it in such cases results in an error).
-- Viewing a teacher's availability as an admin uses the admin's availability to determine if the teacher has enough availability to teach all of their classes (this does not affect the actual availability that is shown in the form, only whether or not a red message is shown on the page).
-- Class durations may be listed as one minute shorter than expected.

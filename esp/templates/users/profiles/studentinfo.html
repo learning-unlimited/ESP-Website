@@ -45,7 +45,7 @@ detailed explanation of our age and grade level policy, please click
 
 {% if form.gender %}
 <div class="control-group">
-    <label for="id_dob">Gender:</label>
+    <label for="id_dob"  class="control-label">Gender:</label>
     <div class="controls">
     {{ form.gender }} {% if form.gender.errors %}
     <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
