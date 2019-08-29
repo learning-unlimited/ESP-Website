@@ -215,7 +215,9 @@ Minor bug fixes released in August 2019
 - Teacher availability links on the userview, class availability, and admin coteachers pages are now hidden if the check availability module is not enabled.
 - In the case where a user has no registration profiles associated with programs, the program dropdown on the userview page now displays a null option (previously, this misleadingly showed a program as selected even though it wasn't).
 - Fixed the logic for the conflict error message on the class availability page.
-- When coteachers are added manually to a class by an admin (e.g. setting availability manually, then adding on the coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
+- When coteachers are added to a class by an admin or teacher (e.g. admin setting availability manually, then adding on the teach or manage coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
+- Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immmediately after making an account.
+- Added styling to indicate on the userview page whether a teacher has set their availability yet.
 
 Known issues of new features
 ============================
