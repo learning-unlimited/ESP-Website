@@ -98,13 +98,13 @@
                     Teacher links<br/>
                     (for {{program.niceName}})
                 </h2>
+                {% if program|hasModule:"CheckAvailabilityModule" %}
+                    <a class="sidelink{% if not avail_set %} stripes{% endif %}" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
+                    Check/edit availability{% if not avail_set %} (not set){% endif %}</a>
+                {% endif %}
                 {% if profile.teacher_info %}
-                    {% if program|hasModule:"CheckAvailabilityModule" %}
-                        <a class="sidelink" href="/manage/{{program.getUrlBase}}/edit_availability?user={{user.username}}">
-                        Check/edit availability</a>
-                    {% endif %}
                     <div id="print-teacher-schedule">
-                        <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{profile.user.id}}" target="_new">Print schedule locally</a>
+                        <a id="getteacherschedulelink" class="sidelink" href="/teach/{{program.getUrlBase}}/teacherschedule?user={{user.id}}" target="_new">Print schedule locally</a>
                     </div>
                 {% else %}
                     (Teacher has no profile for this program)
@@ -116,7 +116,7 @@
                         Volunteer links<br/>
                         (for {{program.niceName}})
                     </h2>
-                    <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{profile.user.id}}" target="_new">Print schedule locally</a>
+                    <a id="getvolunteerschedulelink" class="sidelink" href="/volunteer/{{program.getUrlBase}}/volunteerschedule?user={{user.id}}" target="_new">Print schedule locally</a>
                 </div>
             {% endif %}
         {% endif %}
