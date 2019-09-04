@@ -75,8 +75,11 @@ def login_checked(request, *args, **kwargs):
     if reply.get('Location', '') in mask_locations:
         # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
+        admin_home_url = Tag.getTag('admin_home_page')
         if request.user.isTeacher():
             reply = HttpMetaRedirect("/teach/index.html")
+        elif request.user.isAdmin() and admin_home_url:
+            reply = HttpMetaRedirect(admin_home_url)
         else:
             reply = HttpMetaRedirect("/learn/index.html")
     elif reply.status_code == 302:

@@ -205,7 +205,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if user and user.registrationprofile_set.count() > 0:
             user_grade = user.getGrade()
             grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
-            if grade_tup not in self.fields['graduation_year'].choices:
+            # Prevent 0th grade from showing up -ageng 2013-08-26
+            if grade_tup not in self.fields['graduation_year'].choices and user_grade > 0:
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.

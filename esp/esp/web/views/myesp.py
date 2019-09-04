@@ -238,6 +238,9 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
 
+        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], unicode)):
+            new_data['unmatched_school'] = True
+
         #   Set default values for state fields
         state_fields = ['address_state', 'emerg_address_state']
         state_tag_map = {}
