@@ -221,9 +221,9 @@ Minor bug fixes released in August 2019
 - Fixed profile handling for the userview page so information on the userview page correctly reflects the profile of the selected program.
 - Emails are no longer archived in an LU email address (but comm panel emails are still archived on sites and other emails still get copied to the director email address).
 - The catalog now only says "check out the other sections!" if there is actually at least one other approved and scheduled section.
-- The tag ``volunteer_help_text_comments`` can be used to override the help text of the comments field in the volunteer form (which must be enabled by setting the ``volunteer_allow_comments`` tag to ``True``.
+- The tag ``volunteer_help_text_comments`` can be used to override the help text of the comments field in the volunteer form (which must be enabled by setting the ``volunteer_allow_comments`` tag to ``True``).
 - Volunteers that register without an account are now sent a password recovery email upon submitting the volunteer form (because an account is created for them but they are not told the password).
-- Only scheduled and approved (but not hidden) classes now appear in a teacher's schedule.
+- Only scheduled and approved classes (including approved but hidden classes) now appear in a teacher's schedule.
 - The volunteer csv now includes the comments field.
 - Saving a QSD that someone else has edited since you started editing will now result in an error message.
 - The survey dump now includes the survey number in the sheet title.
