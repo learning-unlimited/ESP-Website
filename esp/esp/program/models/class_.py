@@ -860,7 +860,10 @@ class ClassSection(models.Model):
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    return u'This section conflicts with your schedule--check out the other sections!'
+                    if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=10).exclude(id=self.id):
+                        return u'This section conflicts with your schedule--check out the other sections!'
+                    else:
+                        return u'This class conflicts with your schedule!'
 
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
