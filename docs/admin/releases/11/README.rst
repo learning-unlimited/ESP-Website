@@ -218,6 +218,17 @@ Minor bug fixes released in August 2019
 - When coteachers are added to a class by an admin or teacher (e.g. admin setting availability manually, then adding on the teach or manage coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
 - Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immmediately after making an account.
 - Added styling to indicate on the userview page whether a teacher has set their availability yet.
+- Fixed profile handling for the userview page so information on the userview page correctly reflects the profile of the selected program.
+- Emails are no longer archived in an LU email address (but comm panel emails are still archived on sites and other emails still get copied to the director email address).
+- The catalog now only says "check out the other sections!" if there is actually at least one other approved and scheduled section.
+- The tag ``volunteer_help_text_comments`` can be used to override the help text of the comments field in the volunteer form (which must be enabled by setting the ``volunteer_allow_comments`` tag to ``True``.
+- Volunteers that register without an account are now sent a password recovery email upon submitting the volunteer form (because an account is created for them but they are not told the password).
+- Only scheduled and approved (but not hidden) classes now appear in a teacher's schedule.
+- The volunteer csv now includes the comments field.
+- Saving a QSD that someone else has edited since you started editing will now result in an error message.
+- The survey dump now includes the survey number in the sheet title.
+- 0th grade no longer shows up in the profile form.
+- The tag ``admin_home_page`` can be used to specify the relative or absolute page that admins should be redirected to upon signing in.
 
 Known issues of new features
 ============================
