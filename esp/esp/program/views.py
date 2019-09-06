@@ -59,7 +59,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -366,6 +366,11 @@ def userview(request):
     else:
         program = user.get_last_program_with_profile()
 
+    if program:
+        profile = RegistrationProfile.getLastForProgram(user, program)
+    else:
+        profile = user.getLastProfile()
+
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
@@ -392,6 +397,7 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
         'all_programs': Program.objects.all().order_by('-id'),
         'program': program,
+        'profile': profile,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
         'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
     }
