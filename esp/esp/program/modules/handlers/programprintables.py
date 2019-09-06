@@ -849,7 +849,8 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [ cls for cls in teacher.getTaughtSections()]
         classes = [ cls for cls in classes
                     if cls.parent_program == program
-                    and cls.isAccepted()                       ]
+                    and cls.meeting_times.exists()
+                    and cls.status >= 0                       ]
         classes.sort()
         return classes
 
