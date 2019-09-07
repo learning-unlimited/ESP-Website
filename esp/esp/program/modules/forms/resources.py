@@ -1,5 +1,6 @@
 from django import forms
 from django.utils.safestring import mark_safe
+from django.db.models import IntegerField, Case, When, Count
 
 from datetime import timedelta
 
@@ -7,6 +8,7 @@ from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
+from esp.tagdict.models import Tag
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -45,8 +47,13 @@ class ResourceTypeForm(forms.Form):
     description = forms.CharField(required=False,widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     only_one = forms.BooleanField(label='Only one?', required=False, help_text='Limit teachers to selecting only one of the options?')
-    is_global = forms.BooleanField(label='Global?', required=False)
+    is_global = forms.BooleanField(label='Global?', required=False, help_text='Should this resource be associated with all programs?')
     hidden = forms.BooleanField(label='Hidden?', required=False, help_text='Should this resource type be hidden during teacher registration?')
+
+    def __init__(self, *args, **kwargs):
+        super(ResourceTypeForm, self).__init__(*args, **kwargs)
+        if not Tag.getBooleanTag('allow_global_restypes', default = False):
+            self.fields['is_global'].widget = forms.HiddenInput()
 
     def load_restype(self, res_type):
         self.fields['name'].initial = res_type.name
@@ -259,17 +266,53 @@ def FurnishingFormForProgram(prog):
     return FurnishingForm
 
 class ClassroomImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
     import_furnishings = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to have the same furnishings as they did for the previous program.')
 
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(ClassroomImportForm, self).__init__(*args, **kwargs)
+        progs = Resource.objects.filter(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
+        qs = Program.objects.filter(id__in=progs)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs
+
 class TimeslotImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
 
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(TimeslotImportForm, self).__init__(*args, **kwargs)
+        qs = Program.objects.annotate(vr_count = Count(
+            Case(When(event__event_type__description='Class Time Block', then=1), default=None, output_field=IntegerField()
+            ))).filter(vr_count__gt=0)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs
+
 class ResTypeImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
+
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(ResTypeImportForm, self).__init__(*args, **kwargs)
+        qs = Program.objects.annotate(rt_count = Count('resourcetype')).filter(rt_count__gt=0)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs
 
 class EquipmentImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new floating resources to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
+
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(EquipmentImportForm, self).__init__(*args, **kwargs)
+        progs = Resource.objects.filter(is_unique=True).exclude(res_type=ResourceType.get_or_create('Classroom')).values_list('event__program', flat = True).distinct()
+        qs = Program.objects.filter(id__in=progs)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs

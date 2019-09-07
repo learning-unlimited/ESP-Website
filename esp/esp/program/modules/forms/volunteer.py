@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.db.models import Count
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
@@ -109,6 +110,9 @@ class VolunteerOfferForm(forms.Form):
     confirm = forms.BooleanField(help_text=mark_safe('<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>'), required=False)
 
     def __init__(self, *args, **kwargs):
+        def positive_or_no(n):
+            return (n > 0) and ('%d' % n) or 'no'
+
         if 'program' in kwargs:
             self.program = kwargs['program']
             del kwargs['program']
@@ -117,7 +121,7 @@ class VolunteerOfferForm(forms.Form):
 
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s (%d more needed)' % (v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
+        self.fields['requests'].choices = [(v.id, '%s: %s (%s more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, positive_or_no(v.num_volunteers - v.num_offers()))) for v in vrs]
 
 
         #   Show t-shirt fields if specified by Tag (disabled by default)
@@ -129,6 +133,10 @@ class VolunteerOfferForm(forms.Form):
 
         if not Tag.getTag('volunteer_allow_comments'):
             del self.fields['comments']
+        else:
+            tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)
+            if tag_data:
+                self.fields['comments'].help_text = tag_data
 
     def load(self, user):
         self.fields['user'].initial = user.id
@@ -176,6 +184,8 @@ class VolunteerOfferForm(forms.Form):
                 user = ESPUser.objects.create_user(auto_username, user_data['email'])
                 user.__dict__.update(user_data)
                 user.save()
+                #   Send them an email so they can set their password
+                user.recoverPassword()
 
         #   Record this user account as a volunteer
         user.makeVolunteer()
@@ -222,5 +232,13 @@ class VolunteerOfferForm(forms.Form):
         return self.cleaned_data
 
 class VolunteerImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
+
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(VolunteerImportForm, self).__init__(*args, **kwargs)
+        qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs
