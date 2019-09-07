@@ -195,13 +195,43 @@ Minor bug fixes
 - Fixed the coloration of sections in the AJAX scheduler.
 - Custom form responses can now be viewed even if users are accidentally deleted.
 
+Minor bug fixes released in August 2019
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Fixed alignment of the gender field in the profile form.
+- Rounded popularity printable percent capacity to 2 decimals.
+- Added a link to the conflicting teacher's availability page on the coteachers page.
+- Fixed the rounding of class durations on the class search and class manage pages (previously class lengths were often listed as 1 minute shorter than the truth).
+- Fixed the logic of the error message on the teacher availability page (previously this used the admin's availability instead of the teacher's availability).
+- Within-page anchors on QSD pages (e.g. on FAQ pages) work as intended again.
+- The teacher big board now works for all programs. If the classes for a program are not timestamped (pre-2016), the graph will be omitted.
+- Fixed the gaps that showed up in the catalog when using the grade filter.
+- Limited time blocks shown on the resources page to Class Time Blocks and Open Class Time Blocks (i.e. teacher training and interview blocks will no longer be displayed here).
+- Fixed the height of the comm panel dropdown menus to avoid extending beyond the bottom of the page.
+- Dropdowns to select programs for importing things are now filtered to only programs that have things to import and are not the current program (e.g. resources, volunteer requests).
+- Classrooms can now be imported with matched/incomplete availability again (i.e. not selecting the "Complete availability" option).
+- Added help text for the "Global?" option in the resource types management form. This option is now hidden unless the ``allow_global_restypes`` tag is set to ``True``.
+- Teacher addresses are now optional by default in the profile form. Addresses can be required for teachers by setting the ``teacher_address_required`` Tag to ``True``.
+- The class search bar in the fruitsalad admin bar is now hidden if the class search module is not enabled.
+- Teacher availability links on the userview, class availability, and admin coteachers pages are now hidden if the check availability module is not enabled.
+- In the case where a user has no registration profiles associated with programs, the program dropdown on the userview page now displays a null option (previously, this misleadingly showed a program as selected even though it wasn't).
+- Fixed the logic for the conflict error message on the class availability page.
+- When coteachers are added to a class by an admin or teacher (e.g. admin setting availability manually, then adding on the teach or manage coteachers page), their registration profile is now updated appropriately (i.e. the correct program is now selected on their userview page).
+- Fixed the handling of program registration profiles. If a user's most recent profile is fairly recent (last five days), they won't need to fill out a new one for a new program. This is most relevant for concurrent programs, but also makes it easier on new users who want to register for a program immmediately after making an account.
+- Added styling to indicate on the userview page whether a teacher has set their availability yet.
+- Fixed profile handling for the userview page so information on the userview page correctly reflects the profile of the selected program.
+- Emails are no longer archived in an LU email address (but comm panel emails are still archived on sites and other emails still get copied to the director email address).
+- The catalog now only says "check out the other sections!" if there is actually at least one other approved and scheduled section.
+- The tag ``volunteer_help_text_comments`` can be used to override the help text of the comments field in the volunteer form (which must be enabled by setting the ``volunteer_allow_comments`` tag to ``True``).
+- Volunteers that register without an account are now sent a password recovery email upon submitting the volunteer form (because an account is created for them but they are not told the password).
+- Only scheduled and approved classes (including approved but hidden classes) now appear in a teacher's schedule.
+- The volunteer csv now includes the comments field.
+- Saving a QSD that someone else has edited since you started editing will now result in an error message.
+- The survey dump now includes the survey number in the sheet title.
+- 0th grade no longer shows up in the profile form.
+- The tag ``admin_home_page`` can be used to specify the relative or absolute page that admins should be redirected to upon signing in.
 
 Known issues of new features
 ============================
-- The catalog may have blank spaces within or between class descriptions.
-- Importing classrooms before importing the resource types they use will cause resource types to be created with no choices.
-- Importing classrooms without complete availability results in them only being available for the first timeslot.
-- The new QSD rich text editor breaks pre-existing HTML anchors (links to parts of the current page). These can be replaced with javascript as described `here <https://github.com/learning-unlimited/ESP-Website/issues/2701>`_.
 - The new QSD rich text editor can break in some weird edge cases. See the discussion `here <https://github.com/learning-unlimited/ESP-Website/issues/2746>`_.
 - Users may notice errors reported in the browser console related to jquery.initialize. These errors do not affect the performance or functionality of the pages.
 - The teacher big board does not work for programs before 2016 (when we implemented timestamps for class registration).

@@ -872,6 +872,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return [tagged_programs[0][1]]
         return []
     current_programs.depend_on_model('cal.Event')
+    current_programs.depend_on_model('program.ProgramModule')
     current_programs = staticmethod(current_programs)
 
     def date_range(self):
@@ -907,7 +908,7 @@ class Program(models.Model, CustomFormsLinkModel):
             exclude_types += [ResourceType.get_or_create('Classroom')]
 
         if include_global is None:
-            include_global = Tag.getTag('allow_global_restypes')
+            include_global = Tag.getBooleanTag('allow_global_restypes', default = False)
 
         if include_global:
             Q_filters = Q(program=self) | Q(program__isnull=True)
@@ -942,7 +943,7 @@ class Program(models.Model, CustomFormsLinkModel):
         #   Filters down the floating resources to those that are not taken.
         return filter(lambda x: x.is_available(), self.getFloatingResources(timeslot))
 
-    def getDurations(self, round=False):
+    def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
         from esp.program.modules.module_ext import ClassRegModuleInfo
         from decimal import Decimal
@@ -964,14 +965,14 @@ class Program(models.Model, CustomFormsLinkModel):
                     time_option = Event.total_length([t_list[i], t_list[j]])
                     durationSeconds = time_option.seconds
                     #   If desired, round up to the nearest 15 minutes
-                    if round:
+                    if round_15:
                         rounded_seconds = int(durationSeconds / 900.0 + 1.0) * 900
                     else:
                         rounded_seconds = durationSeconds
                     if (max_seconds is None) or (durationSeconds <= max_seconds):
                         durationDict[(Decimal(durationSeconds) / 3600)] = \
                                         str(rounded_seconds / 3600) + ':' + \
-                                        str((rounded_seconds / 60) % 60).rjust(2,'0')
+                                        str(int(round((rounded_seconds / 60.0) % 60))).rjust(2,'0')
 
         durationList = durationDict.items()
 
@@ -1426,10 +1427,24 @@ class RegistrationProfile(models.Model):
                                'educator_info').order_by('-last_ts','-id')[:1])
         if len(regProfList) < 1:
             regProf = RegistrationProfile.getLastProfile(user)
+            # get the old program, if any
+            prog = regProf.program
             regProf.program = program
+            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                regProf.id = None
-                if (datetime.now() - regProf.last_ts).days <= 5:
+                # if the latest profile is old, wipe the id,
+                # then it will save as a new object if submitted with the profile form
+                if (datetime.now() - regProf.last_ts).days >= 5:
+                    regProf.id = None
+                # if the latest profile is new-ish,
+                # assume the info is up-to-date and save it now
+                else:
+                    # but, if the profile was for a previous program, we should keep the old profile
+                    # and make a new one for this program by wiping the id, then saving
+                    if prog is not None:
+                        regProf.id = None
+                    # otherwise, it was a profile without a program,
+                    # and we can just associate it with this program now, so just save
                     regProf.save()
         else:
             regProf = regProfList[0]
