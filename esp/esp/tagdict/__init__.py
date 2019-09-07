@@ -55,7 +55,7 @@ all_global_tags = {
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
     'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag"),
-    'teacher_address_required': (True, "Is an address required for a teacher profile? (disabled by default, set to 'True' to enable)")
+    'teacher_address_required': (True, "Is an address required for a teacher profile? (disabled by default, set to 'True' to enable)"),
     'webapp_isstep': (True, "Should the student onsite webapp be shown as a step in student registration?"),
     'google_cloud_api_key': (False, "An API key for use with the Google Cloud Platform"),
 }
