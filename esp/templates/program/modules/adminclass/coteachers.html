@@ -20,13 +20,15 @@
 
 {% block content %}
 
+{% load modules %}
+
 <h1>Setting Teachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
 
 <p>Please list all teachers that will be helping teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
 
 {% if conflict %}
     <p>
-    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
+    <b><font color="red">{% if program|hasModule:"CheckAvailabilityModule" %}<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ conflict.username }}">{{ conflict.name }}</a>{% else %}{{ conflict.name }}{% endif %} has a conflicting schedule.</b></font><br />
     </p>
 {% endif %}
 
