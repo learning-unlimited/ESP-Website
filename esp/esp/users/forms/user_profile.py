@@ -61,7 +61,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
-        if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = True):
+        if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = False):
             self.fields['address_street'].required = True
             self.fields['address_city'].required = True
             self.fields['address_state'].required = True

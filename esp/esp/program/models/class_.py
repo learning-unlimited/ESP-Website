@@ -860,8 +860,6 @@ class ClassSection(models.Model):
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    # Chicago wants to acknowledge classes without siblings.
-                    # -ageng 2013-08-28
                     if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=10).exclude(id=self.id):
                         return u'This section conflicts with your schedule--check out the other sections!'
                     else:
@@ -1268,7 +1266,7 @@ class ClassSection(models.Model):
 
         return u'%s:%02d' % \
                (int(self.duration),
-            int((self.duration - int(self.duration)) * 60))
+            int(round((self.duration - int(self.duration)) * 60)))
 
     class Meta:
         db_table = 'program_classsection'

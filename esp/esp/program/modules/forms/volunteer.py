@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.db.models import Count
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget, DateWidget
@@ -113,6 +114,7 @@ class VolunteerOfferForm(forms.Form):
     def __init__(self, *args, **kwargs):
         def positive_or_no(n):
             return (n > 0) and ('%d' % n) or 'no'
+
         if 'program' in kwargs:
             self.program = kwargs['program']
             del kwargs['program']
@@ -184,6 +186,7 @@ class VolunteerOfferForm(forms.Form):
                 user = ESPUser.objects.create_user(auto_username, user_data['email'])
                 user.__dict__.update(user_data)
                 user.save()
+                #   Send them an email so they can set their password
                 user.recoverPassword()
 
         #   Record this user account as a volunteer
@@ -231,5 +234,13 @@ class VolunteerOfferForm(forms.Form):
         return self.cleaned_data
 
 class VolunteerImportForm(forms.Form):
-    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    program = forms.ModelChoiceField(queryset=None)
     start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)
+
+    def __init__(self, *args, **kwargs):
+        cur_prog = kwargs.pop('cur_prog', None)
+        super(VolunteerImportForm, self).__init__(*args, **kwargs)
+        qs = Program.objects.annotate(vr_count = Count('volunteerrequest')).filter(vr_count__gt=0)
+        if cur_prog is not None:
+            qs = qs.exclude(id=cur_prog.id)
+        self.fields['program'].queryset = qs

@@ -69,7 +69,7 @@ table.sortable thead {
  {% endfor %}
  <td>{{ cls.num_students }}</td>
  <td>{{ cls.capacity }}</td>
- <td>{{ cls.percent_capacity }}</td>
+ <td>{{ cls.percent_capacity|floatformat:2 }}</td>
 </tr>
 {% endfor %}
 </table>

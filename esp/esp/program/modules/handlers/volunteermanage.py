@@ -75,8 +75,7 @@ class VolunteerManage(ProgramModuleObj):
             response = HttpResponse(content_type="text/csv")
             requests = self.program.getVolunteerRequests()
             write_csv = csv.writer(response)
-            # UChicago wanted to see comments. -ageng 2013-07-14
-            write_csv.writerow(("Activity","Time","Name","Phone Number","Email Address", "Comments"))
+            write_csv.writerow(("Activity","Time","Name","Phone Number","Email Address","Comments"))
             for request in requests:
                 for offer in request.get_offers():
                     write_csv.writerow([codecs.encode(entry, 'utf-8') for entry in
@@ -108,7 +107,7 @@ class VolunteerManage(ProgramModuleObj):
 
         context['shift_form'] = form
         if 'import_request_form' not in context:
-            context['import_request_form'] = VolunteerImportForm()
+            context['import_request_form'] = VolunteerImportForm(cur_prog = prog)
         context['requests'] = self.program.getVolunteerRequests()
         return render_to_response('program/modules/volunteermanage/main.html', request, context)
 
@@ -116,7 +115,7 @@ class VolunteerManage(ProgramModuleObj):
         context = {}
         response = None
 
-        import_form = VolunteerImportForm(request.POST)
+        import_form = VolunteerImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_request_form'] = import_form
         else:
