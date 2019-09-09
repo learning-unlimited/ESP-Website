@@ -38,7 +38,7 @@ def schoolyear(request):
     if getattr(request, "program", None):
         program = request.program
     elif getattr(request, "prog", None):
-        program = reqest.prog
+        program = request.prog
     else:
         path_parts = request.path.lstrip('/').split('/')
         if len(path_parts) > 3:
