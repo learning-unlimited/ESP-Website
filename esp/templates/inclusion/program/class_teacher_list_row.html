@@ -73,6 +73,7 @@ Popup div for class cancellation request
        title="View Class' Students" class="abutton">
       View Students
     </a>
+    <a href="mailto:{{ cls.emailcode }}-class@{{ email_host_sender }}" class="abutton">Email Students</a>
     {% endif %}
   {% endblock %}
   </td>
@@ -124,7 +125,7 @@ Popup div for class cancellation request
   </td>
   <td class="clsright" valign="top">
   {% block cls_row_5_buttons %}
-    <a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}">Email students</a>
+    <a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}">Email section students</a>
   {% endblock %}
   </td>
 </tr>
