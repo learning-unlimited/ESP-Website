@@ -43,6 +43,7 @@ from esp.tagdict.models import Tag
 from esp.web.views.json_utils import JsonResponse
 
 from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -88,37 +89,34 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
-        in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
 
-        if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
+        if user.can_skip_phase_zero(self.program):
+            return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
+        else:
+            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+            lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
+            context['lottery_perm'] = lottery_perm
+            context['lottery_run'] = lottery_run
+
+            if lottery_run and not in_lottery:
+                #Generic phase zero closed page ("you didn't enter")
+                return render_to_response('errors/program/phasezero_closed.html', request, context)
+            elif request.method == 'POST':
+                form = SubmitForm(request.POST, program=prog)
+                if form.is_valid():
+                    form.save(user, prog)
+                    self.send_confirmation_email(user)
+                    in_lottery = True
+
             if in_lottery:
                 context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
                 context['lottery_size'] = context['lottery_group'].user.count()
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
-                if request.method == 'POST':
-                    form = SubmitForm(request.POST, program=prog)
-                    if form.is_valid():
-                        form.save(user, prog)
-                    context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
-                    context['lottery_size'] = context['lottery_group'].user.count()
-                    self.send_confirmation_email(user)
-                    return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-                else:
-                    form = SubmitForm(program=prog)
-                    context['form'] = form
-                    return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-        else:
-            if in_lottery:
-                if Tag.getBooleanTag('student_lottery_run', prog, default=False):
-                    #Sorry page
-                    return render_to_response('program/modules/studentregphasezero/sorry.html', request, context)
-                else:
-                    #Lottery has not yet been run page
-                    return render_to_response('program/modules/studentregphasezero/notyet.html', request, context)
-            else:
-                #Generic error page
-                return render_to_response('errors/program/phasezero_closed.html', request, context)
+                form = SubmitForm(program=prog)
+                context['form'] = form
+                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
     @aux_call
     @needs_student

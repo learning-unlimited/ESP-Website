@@ -50,7 +50,7 @@
 {% block content %}
 <h1 style="color: black">Phase Zero (Student Lottery) for {{program.niceName}}</h1>
 {% inline_program_qsd_block program "learn:studentregphasezero/top" %}
-Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. The class lottery and FCFS phases remain as they have been in previous programs. Only students selected in the student lottery may proceed to register for classes.
+Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any student that submits interest to the program before the end of phase zero will receive a lottery ticket. We will then select a random portion of these tickets that will then have guaranteed entry into the program. Only students selected in the student lottery may proceed to register for classes.
 {% end_inline_program_qsd_block %}
 
 {% if join_error %}
@@ -60,9 +60,19 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
 <hr>
 
 <center>
+{% if lottery_run %}
+<h1>
+The student lottery has been run and <u>your group was not selected</u>. Please try again next time.
+</h1>
+{% elif lottery_perm %}
 <h1>
 This is confirmation that you are entered into our student lottery.
 </h1>
+{% else %}
+<h1>
+The student lottery is now closed. No more changes may be made at this time. This page will be updated once the lottery has been run.
+</h1>
+{% endif %}
 <br><br>
 <h2>
 {% if lottery_size == 1 %}
@@ -89,13 +99,12 @@ Note: Your lottery group is at the maximum size (4)
 </h3>
 </center>
 
+{% if lottery_perm and not lottery_run %}
 <hr>
 
-{% inline_program_qsd_block program "learn:studentregphasezero/confirmation" %}
 <p>
 If you would like to join a different lottery group, please click the button below for further instructions:
 </p>
-{% end_inline_program_qsd_block %}
 
 <center>
 
@@ -116,6 +125,7 @@ If you would like to join a different lottery group, please click the button bel
 </center>
 </form>
 </div>
+{% endif %}
 
 <script>
 var toggle  = document.getElementById("toggle");
