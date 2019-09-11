@@ -218,6 +218,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
         email_to = ['%s <%s>' % (student.name(), student.email)]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
+    def isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'
