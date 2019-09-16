@@ -46,7 +46,7 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         enabled = ((not request.is_ajax()) and settings.DEBUG_TOOLBAR and (
                 (settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or
                 (request.session.get('debug_toolbar') == 't' and
-                (request.user.isAdmin() or request.user.isMorphed()))))
+                (request.user.isAdmin() or request.user.is_morphed()))))
 
         # Avoid setting Vary: Cookie across this middleware in production and
         # testing (see above).
