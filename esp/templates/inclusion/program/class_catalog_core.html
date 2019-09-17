@@ -29,9 +29,7 @@
     <div id="class_{{ class.id }}_content">
     <br />
     <div class="class_content">
-        {% autoescape off %}
-         {{ class.class_info|escape|linebreaksbr }}<br />
-        {% endautoescape %}
+       {{ class.class_info|linebreaksbr }}<br />
        {% if class.class_style %}
        <br /><br />
        <b>Class Style</b><br />
