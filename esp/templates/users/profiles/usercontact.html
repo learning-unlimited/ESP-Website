@@ -1,5 +1,12 @@
 <!-- User ContactInfo -->
 
+<style>
+div.required label:after {
+  content:"*";
+  color:red;
+}
+</style>
+
 <h3>Contact Information</h3>
 
  <div class="control-group">
@@ -74,7 +81,7 @@
 
 {{ form.address_postal }}
 
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:</h4>
+<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:<font color="red">*</font></h4>
 
 {% if form.phone_day %}
 <div class="control-group">
