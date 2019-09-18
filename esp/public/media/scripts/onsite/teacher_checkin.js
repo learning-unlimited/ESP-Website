@@ -142,13 +142,29 @@ $j(function(){
         textTeacher($j(this))
     });
 
+    var skip_semi_checked_in = false
+    $j("#skip-semi-checked-in").click(function() {
+        skip_semi_checked_in = !skip_semi_checked_in
+    });
+    
     $j(".text-all").click(function(){
         var $buttons = $j(".checkin:visible").closest('tr').find('.text:enabled');
-        var num_teachers = $buttons.length
+        if (skip_semi_checked_in) {
+            var keep = [];
+            for (i = 0; i < $buttons.length; i++) {
+                var teacher = $j($buttons[i]).closest("tr");
+                var sec_id = $j(teacher).data("sec-id");
+                if ($j(teacher).siblings("[data-sec-id='" + sec_id + "']").find("td.checked-in").length == 0) {
+                    keep.push($buttons[i]);
+                }
+            }
+            $buttons = $j($buttons).filter(keep);
+        }
+        var num_teachers = $buttons.length;
         var r = confirm("Are you sure you'd like to text " + num_teachers + " unchecked-in teachers?");
         if (r) {
             $buttons.each(function() {
-                textTeacher($j(this))
+                textTeacher($j(this));
             });
         }
     });
