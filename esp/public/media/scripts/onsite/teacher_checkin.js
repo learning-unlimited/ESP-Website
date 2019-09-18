@@ -151,7 +151,7 @@ $j(function(){
         var $buttons = $j(".checkin:visible").closest('tr').find('.text:enabled');
         if (skip_semi_checked_in) {
             var keep = [];
-            for (i = 0; i < $buttons.length; i++) {
+            for (var i = 0; i < $buttons.length; i++) {
                 var teacher = $j($buttons[i]).closest("tr");
                 var sec_id = $j(teacher).data("sec-id");
                 if ($j(teacher).siblings("[data-sec-id='" + sec_id + "']").find("td.checked-in").length == 0) {
