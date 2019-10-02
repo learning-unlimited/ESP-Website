@@ -197,9 +197,10 @@ class SchedulingCheckRunner:
                    #filter out rejected/cancelled sections
                    qs = qs.exclude(status__lt=0)
                else:
-                   #filter out non-approved and unscheduled sections
+                   #filter out non-approved
                    qs = qs.exclude(status__lte=0)
-                   qs = qs.exclude(resourceassignment__isnull=True)
+               #filter out unscheduled classes
+               qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
                qs = qs.exclude(parent_class__category__category=u'Lunch')
                qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
