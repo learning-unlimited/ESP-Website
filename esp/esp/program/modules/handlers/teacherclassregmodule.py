@@ -133,7 +133,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         #   teachers who have taught for a previous program and teachers
         #   who are teaching for the current program.  You have to chain calls
         #   to .filter().
-        Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
+        previous_programs = [x for x in Program.objects.all() if x.dates()[0] < self.program.dates()[0]]
+        Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
