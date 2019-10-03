@@ -40,21 +40,21 @@
 <h2>Contact Form</h2>
 {% if contact_form.errors %}
 <div class="errors">
-  There
+  There 
   {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
   in the below form. Please fix and resubmit.
 </div>
 {% endif %}
 
-  <table class="contact">
-    <tbody>
-      {{ contact_form }}
-      <tr>
-        <td></td>
-        <td><input type="submit" name="sendemail" value="Send!" class="btn btn-primary contact-send" /></td>
-      </tr>
-    </tbody>
-  </table>
+    <table class="contact">
+      <tbody>
+        {{ contact_form }}
+        <tr>
+          <td></td>
+          <td><input type="submit" name="sendemail" value="Send!" class="btn btn-primary contact-send" /></td>
+        </tr>
+      </tbody>
+    </table>
 
 </form>
 {% endblock %}

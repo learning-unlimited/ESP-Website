@@ -38,6 +38,8 @@ from django.utils.translation import gettext_lazy as _
 
 from django.conf import settings
 
+from captcha.fields import ReCaptchaField
+
 person_type = (
     ('Student', 'K-12 Student'),
     ('Parent',  'Parent/Guardian'),
@@ -76,6 +78,7 @@ class ContactForm(forms.Form):
                               widget = forms.Textarea(attrs={'cols': 60,
                                                              'rows': 15,
                                                              'style': "width: 400px"}))
+    captcha = ReCaptchaField()
 
     # If this is true, then the user has seen and clicked through a message
     # checking whether they want to recover login information.

@@ -252,6 +252,7 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
+    'captcha',
 )
 
 import os
