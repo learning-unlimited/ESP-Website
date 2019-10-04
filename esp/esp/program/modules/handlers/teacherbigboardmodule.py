@@ -143,8 +143,17 @@ class TeacherBigBoardModule(ProgramModuleObj):
 
     @cache_function_for(105)
     def get_hours(self, prog):
-        hours = ClassSubject.objects.filter(parent_program=prog
-        ).exclude(category__category__iexact="Lunch").values_list('timestamp','class_size_optimal').annotate(duration=Sum('sections__duration'))
+        hours = ClassSubject.objects.filter(
+            parent_program=prog
+        ).exclude(
+            category__category__iexact="Lunch"
+        ).exclude(
+            category__category__iexact="Walk-in Activity"
+        ).values_list(
+            'timestamp', 'class_size_optimal'
+        ).annotate(
+            duration=Sum('sections__duration')
+        )
         sorted_hours = sorted(hours, key=operator.itemgetter(0))
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
