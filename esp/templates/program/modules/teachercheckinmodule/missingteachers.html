@@ -128,10 +128,12 @@
 <br>
 {% endif %}
 
-<p style="text-align:right">
+<div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
 <input class="button text-all" type="button" value="Text All Unchecked-In Teachers"
     {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
-</p>
+</br>
+<input type="checkbox" id="skip-semi-checked-in" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
+</div>
 
 <p style="text-align: center">
 
@@ -157,7 +159,7 @@
 </tr>
 {% endif %}
 {% for section in sections %}
-<tr class="section-first-row">
+<tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
     <td rowspan="{{ section.teachers|length }}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
@@ -193,7 +195,7 @@
                    {% if not text_configured %} disabled title="Twilio texting settings are not configured"
                    {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr>
+        <tr data-sec-id="{{ section.emailcode }}">
     {% endfor %}
     <td colspan="6" class="section-detail-td">
         <div class="section-detail fqr-class">
