@@ -21,21 +21,34 @@ def email_settings(request):
     return context
 
 def program(request):
-    path_parts = request.path.lstrip('/').split('/')
-    if len(path_parts) > 3:
-        program_url = '/'.join(path_parts[1:3])
-        if Program.objects.filter(url=program_url).count() == 1:
-            return {'program': Program.objects.get(url=program_url)}
+    if getattr(request, "program", None):
+        return {'program': request.program}
+    elif getattr(request, "prog", None):
+        return {'program': request.prog}
+    else:
+        path_parts = request.path.lstrip('/').split('/')
+        if len(path_parts) > 3:
+            program_url = '/'.join(path_parts[1:3])
+            if Program.objects.filter(url=program_url).count() == 1:
+                return {'program': Program.objects.get(url=program_url)}
     return {}
 
 def schoolyear(request):
-    path_parts = request.path.lstrip('/').split('/')
-    if len(path_parts) > 3:
-        program_url = '/'.join(path_parts[1:3])
-        if Program.objects.filter(url=program_url).count() == 1:
-            program = Program.objects.get(url=program_url)
-            return {'schoolyear': ESPUser.program_schoolyear(program)}
-    return {'schoolyear': ESPUser.current_schoolyear()}
+    program = None
+    if getattr(request, "program", None):
+        program = request.program
+    elif getattr(request, "prog", None):
+        program = request.prog
+    else:
+        path_parts = request.path.lstrip('/').split('/')
+        if len(path_parts) > 3:
+            program_url = '/'.join(path_parts[1:3])
+            if Program.objects.filter(url=program_url).count() == 1:
+                program = Program.objects.get(url=program_url)
+    if program:
+        return {'schoolyear': ESPUser.program_schoolyear(program)}
+    else:
+        return {'schoolyear': ESPUser.current_schoolyear()}
 
 def index_backgrounds(request):
     #if request.path.strip() == '':
