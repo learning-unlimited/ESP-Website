@@ -19,7 +19,17 @@
 .no {
   color: red;
 }
+
+.sortable {
+  border-spacing: 5px 5px;
+  border-collapse: separate;
+}
 </style>
+{% endblock %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/sorttable.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -28,14 +38,21 @@
 
 <p>Multiple users matched the criteria that you specified.  Please select one to view:</p>
 
-<table>
-<tr><th>Name</th><th>Username</th><th>Email</th><th>User Type</th><th>Activated?</th></tr>
+<table class="sortable">
+<tr>
+  <th>First Name</th>
+  <th>Last Name</th>
+  <th>Username</th>
+  <th>Email</th>
+  <th>User Type(s)</th>
+  <th class="sorttable_sorted_reverse">Last Program</th>
+  <th>Active?</th>
+</tr>
 {% for user in found_users %}
 <tr>
-  <td>
-    <a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.name }}</a>
-  </td>
-  <td>{{ user.username }}</td>
+  <td>{{ user.first_name }}</td>
+  <td>{{ user.last_name }}</td>
+  <td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.username }}</a></td>
   <td>{{ user.email }}</td>
   <td>
     {% with user.getUserTypes as types %}
@@ -48,11 +65,8 @@
     {% endif %}
     {% endwith %}
   </td>
-  <td>{% if user.is_active %} 
-    <span>Activated</span>
-    {% else %}
-    <span>Deactivated</span>
-    {% endif %}</td>
+  <td>{{ user.get_last_program_with_profile }}
+  <td>{% if user.is_active %}<span>&#10003;</span>{% endif %}</td>
 </tr>
 {% endfor %}
 </table>
