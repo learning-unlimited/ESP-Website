@@ -76,6 +76,7 @@ import re
 import pickle
 import operator
 import json
+import datetime
 from collections import defaultdict
 from decimal import Decimal
 from reversion import revisions as reversion
@@ -346,7 +347,7 @@ def usersearch(request):
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
-        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0], reverse=True)
+        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name!", log=False)
