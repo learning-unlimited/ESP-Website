@@ -20,9 +20,21 @@
   color: red;
 }
 
-.sortable {
-  border-spacing: 5px 5px;
-  border-collapse: separate;
+th {
+  background: black;
+  color: white;
+}
+
+th, td {
+  border-bottom: 1px solid #ddd;
+  padding-top: 5px !important;
+  padding-left: 5px;
+  padding-bottom: 5px;
+  padding-right: 5px;
+}
+
+tbody > tr:hover {
+  background-color: #f5f5f5;
 }
 </style>
 {% endblock %}
@@ -39,36 +51,40 @@
 <p>Multiple users matched the criteria that you specified.  Please select one to view:</p>
 
 <table class="sortable">
-<tr>
-  <th>First Name</th>
-  <th>Last Name</th>
-  <th>Username</th>
-  <th>Email</th>
-  <th>User Type(s)</th>
-  <th class="sorttable_sorted_reverse">Last Program</th>
-  <th>Active?</th>
-</tr>
-{% for user in found_users %}
-<tr>
-  <td>{{ user.first_name }}</td>
-  <td>{{ user.last_name }}</td>
-  <td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.username }}</a></td>
-  <td>{{ user.email }}</td>
-  <td>
-    {% with user.getUserTypes as types %}
-    {% if types %}
-    {% for type in user.getUserTypes %}
-    <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
+  <thead>
+    <tr>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Username</th>
+      <th>Email</th>
+      <th>User Type(s)</th>
+      <th>Last Program</th>
+      <th>Active?</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in found_users %}
+    <tr>
+      <td>{{ user.first_name }}</td>
+      <td>{{ user.last_name }}</td>
+      <td><a href="/manage/userview?username={{ user.username|urlencode }}">{{ user.username }}</a></td>
+      <td>{{ user.email }}</td>
+      <td>
+        {% with user.getUserTypes as types %}
+        {% if types %}
+        {% for type in user.getUserTypes %}
+        <span class="{{ type }}">{{ type }}</span>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        {% else %}
+        <span class="no_usertype">None</span>
+        {% endif %}
+        {% endwith %}
+      </td>
+      <td sorttable_customkey="{{ user.get_last_program_with_profile.dates.0|date:'Ymd' }}">{{ user.get_last_program_with_profile }}
+      <td>{% if user.is_active %}<span>&#10003;</span>{% endif %}</td>
+    </tr>
     {% endfor %}
-    {% else %}
-    <span class="no_usertype">None</span>
-    {% endif %}
-    {% endwith %}
-  </td>
-  <td>{{ user.get_last_program_with_profile }}
-  <td>{% if user.is_active %}<span>&#10003;</span>{% endif %}</td>
-</tr>
-{% endfor %}
+  </tbody>
 </table>
 
 {% endblock %}

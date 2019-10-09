@@ -345,7 +345,9 @@ def usersearch(request):
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
+        found_users = found_users.all()
+        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0], reverse=True)
+        return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name!", log=False)
 
