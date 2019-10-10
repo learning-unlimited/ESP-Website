@@ -406,8 +406,9 @@ def convert_classection_obj(
 def get_section_capacity(section):
     if section.max_class_capacity is not None:
         return section.max_class_capacity
-    else:
-        return section.parent_class.class_size_max
+
+    # return optimal class size if it's not None, otherwise max
+    return section.parent_class.class_size_optimal or section.parent_class.class_size_max
 
 
 @util.timed_func("db_interface_load_section_assignments")
