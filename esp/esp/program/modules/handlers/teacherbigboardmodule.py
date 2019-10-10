@@ -146,14 +146,21 @@ class TeacherBigBoardModule(ProgramModuleObj):
         hours = ClassSubject.objects.filter(
             parent_program=prog
         ).exclude(
-            category__category__iexact="Lunch"
+            status__lt=0 # no rejected classes
         ).exclude(
-            category__category__iexact="Walk-in Activity"
+            category__category__iexact="Lunch"
         ).values_list(
-            'timestamp', 'class_size_optimal'
+            'timestamp', 'class_size_max', 'class_size_optimal'
         ).annotate(
             duration=Sum('sections__duration')
         )
+
+        # class size is optimal if it's available, otherwise max, otherwise zero
+	hours = [
+            (timestamp, size_optimal or size_max or 0, duration_sum)
+            for (timestamp, size_max, size_optimal, duration_sum) in hours
+        ]
+
         sorted_hours = sorted(hours, key=operator.itemgetter(0))
         class_hours = [(hour[2],hour[0]) for hour in sorted_hours]
         student_hours = [(hour[2]*hour[1], hour[0]) for hour in sorted_hours]
