@@ -266,7 +266,7 @@ class SchedulingCheckRunner:
                  expected_hours = "Error"
 
              try:
-                 wrong = abs(scheduled_hours - desired_hours) > 0.3
+                 wrong = abs(scheduled_hours - expected_hours) > 0.3
              except TypeError: # ok, this is not good code
                  wrong = True
 
