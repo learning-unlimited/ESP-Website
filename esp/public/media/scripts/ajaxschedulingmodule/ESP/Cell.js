@@ -132,7 +132,11 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
                 (this.section.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
         }
         tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
-        tooltip_parts['Class size max'] = this.section.class_size_max;
+        if (this.section.class_size_optimal && !this.section.class_size_max) {
+            tooltip_parts['Class size optimal'] = this.section.class_size_optimal;
+        } else {
+            tooltip_parts['Class size max'] = this.section.class_size_max;
+        }
         tooltip_parts['Length'] = Math.ceil(this.section.length);
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
         tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(this.section);

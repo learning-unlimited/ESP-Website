@@ -282,6 +282,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'grade_min': s.parent_class.grade_min,
                 'title': s.parent_class.title,
                 'class_size_max': s.parent_class.class_size_max,
+                'class_size_optimal': s.parent_class.class_size_optimal,
                 'num_students': s.enrolled_students,
                 'resource_requests': rrequest_dict,
                 'comments': cls.message_for_directors,
