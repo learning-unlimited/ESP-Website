@@ -301,9 +301,10 @@ class SchedulingCheckRunner:
                if len(r) > 0:
                     room = r[0]
                     cls = s.parent_class
-                    if room.num_students < lower_reporting_ratio*cls.class_size_max or room.num_students > upper_reporting_ratio*cls.class_size_max:
-                         l.append({"Section": str(s), "Class Max": cls.class_size_max, "Room Max": room.num_students})
-          return self.formatter.format_table(l, {'headings': ["Section", "Class Max", "Room Max"]})
+                    size = cls.class_size_max or cls.class_size_optimal or 0
+                    if room.num_students < lower_reporting_ratio*size or room.num_students > upper_reporting_ratio*size:
+                         l.append({"Section": str(s), "Class Max/Optimal": size, "Room Max": room.num_students})
+          return self.formatter.format_table(l, {'headings': ["Section", "Class Max/Optimal", "Room Max"]})
 
      def hungry_teachers(self, ignore_open_classes=True):
          lunches = self.lunch_blocks
