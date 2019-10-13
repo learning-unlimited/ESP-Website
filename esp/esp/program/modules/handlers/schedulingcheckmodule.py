@@ -252,12 +252,29 @@ class SchedulingCheckRunner:
      def classes_wrong_length(self):
          output = []
          for sec in self._all_class_sections():
-             start_time = sec.start_time_prefetchable()
-             end_time = sec.end_time_prefetchable()
-             length = end_time - start_time
-             if abs(length.total_seconds()/float(3600) - float(sec.duration)) > 0.3:
-                 output.append(sec)
-         return self.formatter.format_list(output)
+             try:
+                 start_time = sec.start_time_prefetchable()
+                 end_time = sec.end_time_prefetchable()
+                 length = end_time - start_time
+                 scheduled_hours = length.total_seconds() / float(3600)
+             except TypeError: # None, but, EAFP
+                 scheduled_hours = "Error"
+
+             try:
+                 expected_hours = float(sec.duration)
+             except TypeError: # None, but, EAFP
+                 expected_hours = "Error"
+
+             try:
+                 wrong = abs(scheduled_hours - desired_hours) > 0.3
+             except TypeError: # ok, this is not good code
+                 wrong = True
+
+             if wrong:
+                 output.append({"Section": sec, "Scheduled (hrs)": scheduled_hours, "Expected (hrs)": expected_hours})
+
+         return self.formatter.format_table(output,
+             {"headings": ["Section", "Scheduled (hrs)", "Expected (hrs)"]})
 
      def unapproved_scheduled_classes(self):
          output = []
