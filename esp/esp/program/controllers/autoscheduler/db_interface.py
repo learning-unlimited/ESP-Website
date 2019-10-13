@@ -408,7 +408,7 @@ def get_section_capacity(section):
         return section.max_class_capacity
 
     # return optimal class size if it's not None, otherwise max
-    return section.parent_class.class_size_optimal or section.parent_class.class_size_max
+    return section.parent_class.class_size_optimal or section.parent_class.class_size_max or 0
 
 
 @util.timed_func("db_interface_load_section_assignments")
