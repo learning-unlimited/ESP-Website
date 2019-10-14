@@ -80,7 +80,7 @@ tbody > tr:hover {
         {% endif %}
         {% endwith %}
       </td>
-      <td sorttable_customkey="{{ user.get_last_program_with_profile.dates.0|date:'Ymd' }}">{{ user.get_last_program_with_profile }}
+      <td sorttable_customkey="{{ user.get_last_program_with_profile.dates.0|date:'Ymd' }}">{{ user.get_last_program_with_profile }}</td>
       <td>{% if user.is_active %}<span>&#10003;</span>{% endif %}</td>
     </tr>
     {% endfor %}
