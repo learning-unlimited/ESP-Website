@@ -47,7 +47,7 @@ from esp.users.models    import ESPUser, PersistentQueryFilter, Record, ContactI
 from esp.cal.models import Event
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
-from django.template.loader import render_to_string, select_template
+from django.template.loader import render_to_string, get_template
 from django.db.models.aggregates import Min
 from django.db.models.query   import Q
 from datetime import datetime, timedelta
@@ -167,7 +167,9 @@ class TeacherCheckinModule(ProgramModuleObj):
             if 'username' in request.POST and 'section' in request.POST:
                 sec = ClassSection.objects.get(id=request.POST['section'])
                 teacher = PersistentQueryFilter.create_from_Q(ESPUser, Q(username=request.POST['username']))
-                message = "Don't forget to check-in for your " + one + " class that is scheduled for " + sec.friendly_times(include_date = True)[0] + "!"
+                template = get_template(self.baseDir() + 'teachertext.txt')
+                context = {'prog': prog, 'one': one, 'two': two, 'sec': sec, 'teacher': teacher}
+                message = template.render(context)
                 log = GroupTextModule.sendMessages(teacher, message, True)
                 if "error" in log:
                     return {'message': "Error texting teacher"}

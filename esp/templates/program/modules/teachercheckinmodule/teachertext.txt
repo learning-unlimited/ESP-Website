@@ -1,0 +1,1 @@
+Don't forget to check-in for your {{ one }} class that is scheduled for {{ sec.friendly_times_with_date.0 }}!
