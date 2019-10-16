@@ -165,21 +165,18 @@ class StudentClassRegModule(ProgramModuleObj):
         Q_enrolled = Enrolled & Par & Unexpired
         Q_enrolled_past_and_now = Past_enrolled & Par & Unexpired
 
-        if QObject:
-            result = {
-                'enrolled': Q_enrolled,
-                'classreg': Q_classreg,
-                'enrolled_past_and_now': Q_enrolled_past_and_now
+        qobjects = {
+            'enrolled': Q_enrolled,
+            'classreg': Q_classreg,
+            'enrolled_past_and_now': Q_enrolled_past_and_now
         }
 
-        else:
-            result = {
-                'enrolled': ESPUser.objects.filter(Q_enrolled).distinct(),
-                'classreg': ESPUser.objects.filter(Q_classreg).distinct(),
-                'enrolled_past_and_now': ESPUser.objects.filter(Q_enrolled_past_and_now).distinct()
-            }
+        if QObject:
+            return qobjects
 
-        return result
+        else:
+            return {k: ESPUser.objects.filter(v).distinct()
+                    for k, v in qobjects.iteritems()}
 
     def studentDesc(self):
         #   Label these heading nicely like the user registration form

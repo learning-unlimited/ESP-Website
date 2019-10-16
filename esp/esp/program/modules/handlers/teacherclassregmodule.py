@@ -139,8 +139,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         for item in self.get_resource_pairs():
             additional_qs[item[0]] = Q_isteacher & (Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher) & item[2]
 
-        if QObject:
-            result = {
+        qobjects = {
                 'class_submitted': Q_isteacher,
                 'class_approved': Q_approved_teacher,
                 'class_proposed': Q_proposed_teacher,
@@ -148,19 +147,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_nearly_full': Q_nearly_full_teacher,
                 'class_full': Q_full_teacher,
                 'taught_before_and_now': Q_taught_before_and_now,
-            }
+        }
+
+        if QObject:
+            result = qobjects
             for key in additional_qs:
                 result[key] = additional_qs[key]
         else:
-            result = {
-                'class_submitted': ESPUser.objects.filter(Q_isteacher).distinct(),
-                'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
-                'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
-                'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
-                'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
-                'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
-                'taught_before_and_now': ESPUser.objects.filter(Q_taught_before_and_now).distinct(),
-            }
+            result = {k: ESPUser.objects.filter(v).distinct()
+                      for k, v in qobjects.iteritems()}
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
 
