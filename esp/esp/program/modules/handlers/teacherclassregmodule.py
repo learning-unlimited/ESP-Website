@@ -129,12 +129,10 @@ class TeacherClassRegModule(ProgramModuleObj):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        #   With the new schema it is impossible to make a single Q object for
-        #   teachers who have taught for a previous program and teachers
-        #   who are teaching for the current program.  You have to chain calls
-        #   to .filter().
-        previous_programs = [x for x in Program.objects.all() if x.dates()[0] < self.program.dates()[0]]
+        previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
         Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
+        taught_before_users = ESPUser.objects.filter(Q_taught_before).values('id')
+        Q_taught_before_and_now = Q(classsubject__in=classes_qs, id__in=taught_before_users)
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
@@ -149,7 +147,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_rejected': Q_rejected_teacher,
                 'class_nearly_full': Q_nearly_full_teacher,
                 'class_full': Q_full_teacher,
-                'taught_before': Q_taught_before,     #   not exactly correct, see above
+                'taught_before_and_now': Q_taught_before_and_now,
             }
             for key in additional_qs:
                 result[key] = additional_qs[key]
@@ -161,7 +159,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
                 'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
-                'taught_before': ESPUser.objects.filter(Q_isteacher).filter(Q_taught_before).distinct(),
+                'taught_before_and_now': ESPUser.objects.filter(Q_taught_before_and_now).distinct(),
             }
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
@@ -177,7 +175,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             'class_rejected': """Teachers teaching a rejected class""",
             'class_full': """Teachers teaching a completely full class""",
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
-            'taught_before': """Teachers who have taught for a previous program""",
+            'taught_before_and_now': """Teachers who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
             result[item[0]] = item[1]

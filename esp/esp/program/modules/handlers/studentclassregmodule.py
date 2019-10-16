@@ -149,8 +149,10 @@ class StudentClassRegModule(ProgramModuleObj):
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        previous_programs = [x for x in Program.objects.all() if x.dates()[0] < self.program.dates()[0]]
-        Past = Q(studentregistration__section__parent_class__parent_program__in=previous_programs)
+        past_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
+        Past = Q(studentregistration__section__parent_class__parent_program__in=past_programs)
+        past_users = ESPUser.objects.filter(Past).values('id')
+        Past_enrolled = Q(studentregistration__relationship__name='Enrolled', id__in=past_users)
 
         # Force Django to generate two subqueries without joining SRs to SSIs,
         # as efficiently as possible since it's still a big query.
@@ -161,24 +163,20 @@ class StudentClassRegModule(ProgramModuleObj):
             subject__parent_program=self.program).values('user').distinct()
         Q_classreg = Q(id__in = sr_ids) | Q(id__in = ssi_ids)
         Q_enrolled = Enrolled & Par & Unexpired
-        #   With the new schema it is impossible to make a single Q object for
-        #   students who were enrolled in a previous program and students
-        #   who are enrolled for the current program.  You have to chain calls
-        #   to .filter().
-        Q_enrolled_past = Enrolled & Past & Unexpired
+        Q_enrolled_past_and_now = Past_enrolled & Par & Unexpired
 
         if QObject:
             result = {
                 'enrolled': Q_enrolled,
                 'classreg': Q_classreg,
-                'enrolled_past': Q_enrolled_past  # not exactly correct, see above
+                'enrolled_past_and_now': Q_enrolled_past_and_now
         }
 
         else:
             result = {
                 'enrolled': ESPUser.objects.filter(Q_enrolled).distinct(),
                 'classreg': ESPUser.objects.filter(Q_classreg).distinct(),
-                'enrolled_past': ESPUser.objects.filter(Q_enrolled).filter(Q_enrolled_past).distinct()
+                'enrolled_past_and_now': ESPUser.objects.filter(Q_enrolled_past_and_now).distinct()
             }
 
         return result
@@ -192,7 +190,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
         return {'classreg': """Students who signed up for at least one class""",
                 'enrolled': """Students who are enrolled in at least one class""",
-                'enrolled_past': """Students who are enrolled and have enrolled in a past program"""}
+                'enrolled_past_and_now': """Students who are enrolled and have enrolled in a past program"""}
 
     def isCompleted(self):
         return (len(get_current_request().user.getSectionsFromProgram(self.program)[:1]) > 0)
