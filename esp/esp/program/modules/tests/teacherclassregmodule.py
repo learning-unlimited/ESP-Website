@@ -283,7 +283,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         new_class.accept()
         # Check taught_before
         d = self.moduleobj.teachers()
-        self.assertTrue(self.teacher in d['taught_before'])
+        self.assertTrue(self.teacher in d['taught_before_and_now'])
 
     @transaction.atomic
     def test_deadline_met(self):
