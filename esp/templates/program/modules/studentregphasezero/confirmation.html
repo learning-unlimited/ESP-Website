@@ -61,14 +61,17 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
 
 <center>
 {% if lottery_run %}
+{# The lottery has already been run, so student must not have won #}
 <h1>
 The student lottery has been run and <u>your group was not selected</u>. Please try again next time.
 </h1>
 {% elif lottery_perm %}
+{# Lottery is still open, student entered #}
 <h1>
 This is confirmation that you are entered into our student lottery.
 </h1>
 {% else %}
+{# Lottery is closed, but not run yet, student entered #}
 <h1>
 The student lottery is now closed. No more changes may be made at this time. This page will be updated once the lottery has been run.
 </h1>
@@ -100,6 +103,7 @@ Note: Your lottery group is at the maximum size (4)
 </center>
 
 {% if lottery_perm and not lottery_run %}
+{# Lottery is still open (and hasn't been run) #}
 <hr>
 
 <p>

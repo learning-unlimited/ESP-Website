@@ -91,8 +91,12 @@ class StudentRegPhaseZero(ProgramModuleObj):
         user = request.user
 
         if user.can_skip_phase_zero(self.program):
+            #Student has permission to skip this module, redirect to main student reg page
+            #This includes students that won the lottery
             return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
         else:
+            #Student must win the lottery to progress
+            #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
             lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
             lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
@@ -100,9 +104,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
             context['lottery_run'] = lottery_run
 
             if lottery_run and not in_lottery:
-                #Generic phase zero closed page ("you didn't enter")
+                #Lottery has been run, student did not enter
+                #Show generic phase zero closed page ("you didn't enter")
                 return render_to_response('errors/program/phasezero_closed.html', request, context)
+            elif not lottery_perm:
+                #Lottery hasn't opened yet
+                #Show generic deadline error page
+                context['moduleObj'] = self
+                context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                return render_to_response('errors/program/deadline-learn.html', request, context)
             elif request.method == 'POST':
+                #Lottery is open, student just entered
+                #Send confirmation email, then show confirmation page below
                 form = SubmitForm(request.POST, program=prog)
                 if form.is_valid():
                     form.save(user, prog)
@@ -110,10 +123,15 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     in_lottery = True
 
             if in_lottery:
+                #Lottery is open or closed, student has entered
+                #This includes students that didn't win after the lottery is run
+                #Show confirmation page with details about lottery group and lottery status
                 context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
                 context['lottery_size'] = context['lottery_group'].user.count()
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
+                #Lottery is open, student has not entered
+                #Show lottery enrollment page
                 form = SubmitForm(program=prog)
                 context['form'] = form
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
