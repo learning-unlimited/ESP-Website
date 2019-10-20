@@ -5,12 +5,13 @@
 <h3>Teacher Information</h3>
 
 <div class="control-group">
-<label for="id_affiliation" class="control-label">{{ form.affiliation.label }}</label>
-<div class="controls">
+    <label for="id_affiliation" class="control-label">{{ form.affiliation.label }}<font color="red">*</font></label>
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other" or "No affiliation," please explain in the lower box.)</span><br />
     {{ form.affiliation }} {% if form.affiliation.errors %}
-  <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
-  {% endif %}
-</div>
+    <br /><span class="form_error">{{ form.affiliation.errors|join:", " }}</span>
+    {% endif %}
+    </div>
 </div>
 
 <div class="control-group">

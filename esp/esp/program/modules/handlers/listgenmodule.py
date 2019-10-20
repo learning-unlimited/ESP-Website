@@ -59,16 +59,18 @@ class UserAttributeGetter(object):
                     '12_gender': 'Gender',
                     '13_gradyear': 'Grad Year',
                     '14_school': 'School',
-                    '15_studentrep': 'Student Rep?',
-                    '16_heard_about': 'Heard about Splash from',
-                    '17_accountdate': 'Created Date',
-                    '18_first_regdate': 'Initial Registration Date',
-                    '19_last_regdate': 'Most Recent Registration Date',
-                    '20_classhours': 'Num Class Hrs',
-                    '21_transportation': 'Plan to Get to Splash',
-                    '22_guardian_name': 'Guardian Name',
-                    '23_guardian_email': 'Guardian E-mail',
-                    '24_guardian_cellphone': 'Guardian Cell Phone',
+                    '15_affiliation': 'Affiliation',
+                    '16_major': 'Major',
+                    '17_studentrep': 'Student Rep?',
+                    '18_heard_about': 'Heard about Splash from',
+                    '19_accountdate': 'Created Date',
+                    '20_first_regdate': 'Initial Registration Date',
+                    '21_last_regdate': 'Most Recent Registration Date',
+                    '22_classhours': 'Num Class Hrs',
+                    '23_transportation': 'Plan to Get to Splash',
+                    '24_guardian_name': 'Guardian Name',
+                    '25_guardian_email': 'Guardian E-mail',
+                    '26_guardian_cellphone': 'Guardian Cell Phone',
                  }
 
         last_label_index = len(labels)
@@ -176,6 +178,14 @@ class UserAttributeGetter(object):
                 return self.profile.student_info.k12school.name
             else:
                 return self.profile.student_info.school
+
+    def get_affiliation(self):
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.affiliation
+
+    def get_major(self):
+        if self.profile.teacher_info:
+            return self.profile.teacher_info.major
 
     def get_tshirt_size(self):
         if self.profile.teacher_info:

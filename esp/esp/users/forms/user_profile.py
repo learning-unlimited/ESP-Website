@@ -49,10 +49,10 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     phone_day = USPhoneNumberField(required=False)
     phone_cell = USPhoneNumberField(required=False)
     receive_txt_message = forms.TypedChoiceField(coerce=lambda x: x =='True', choices=((True, 'Yes'),(False, 'No')), widget=forms.RadioSelect)
-    address_street = StrippedCharField(required=False, length=40, max_length=100)
-    address_city = StrippedCharField(required=False, length=20, max_length=50)
-    address_state = forms.ChoiceField(required=False, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_street = StrippedCharField(required=True, length=40, max_length=100)
+    address_city = StrippedCharField(required=True, length=20, max_length=50)
+    address_state = forms.ChoiceField(required=True, choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -61,11 +61,11 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
-        if not self.user.isTeacher() or Tag.getBooleanTag('teacher_address_required', default = False):
-            self.fields['address_street'].required = True
-            self.fields['address_city'].required = True
-            self.fields['address_state'].required = True
-            self.fields['address_zip'].required = True
+        if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required', default = False):
+            self.fields['address_street'].required = False
+            self.fields['address_city'].required = False
+            self.fields['address_state'].required = False
+            self.fields['address_zip'].required = False
 
     def clean(self):
         super(UserContactForm, self).clean()
@@ -115,6 +115,7 @@ class GuardContactForm(FormUnrestrictedOtherUser):
         return self.cleaned_data
 
 HEARD_ABOUT_ESP_CHOICES = (
+    '',
     'Other...',
     'Teacher or Counselor',
     'Splash representative visited my school',
@@ -130,6 +131,7 @@ HEARD_ABOUT_ESP_CHOICES = (
     )
 
 WHAT_TO_DO_AFTER_HS = (
+    '',
     'Other...',
     "I don't know yet",
     'Get a job',
@@ -140,6 +142,7 @@ WHAT_TO_DO_AFTER_HS = (
     )
 
 HOW_TO_GET_TO_PROGRAM = (
+    '',
     'Other...',
     'My school has already arranged for a bus',
     'I will ask my teachers and counselors to arrange for a bus for me and my peers',
@@ -317,10 +320,10 @@ StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['rows'] = 8
 StudentInfoForm.base_fields['studentrep_expl'].widget.attrs['cols'] = 45
 
 AFFILIATION_CHOICES = (
-    (AFFILIATION_OTHER, 'Other (please specify your affiliation)'),
     (AFFILIATION_UNDERGRAD, 'Undergraduate Student'),
     (AFFILIATION_GRAD, 'Graduate Student'),
     (AFFILIATION_POSTDOC, 'Postdoc'),
+    (AFFILIATION_OTHER, 'Other (please specify your affiliation)'),
     (AFFILIATION_NONE, 'No affiliation (please specify your school or employer)')
 )
 

@@ -21,21 +21,23 @@ function updateDocs(docs) {
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/scheduling_checks.css" />
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    </style>
 {% endblock %}
 
 {% block content %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
+{% include "program/modules/admincore/returnlink.html" %}
 
 <h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
+<a class="btn" href="scheduling_checks{% if unreviewed %}">Exclude{% else %}?unreviewed">Include{% endif %} unreviewed classes</a>
 
 <div id="scheduling-check-wrapper" />
 <script type="text/jsx">
   React.render(
     <SchedulingCheckList>
       {% for slug, title in check_list %}
-        <SchedulingCheck slug="{{slug}}" title="{{title}}" />
+        <SchedulingCheck slug="{{slug}}{% if unreviewed %}?unreviewed{% endif %}" title="{{title}}" />
       {% endfor %}
     </SchedulingCheckList>,
     document.getElementById("scheduling-check-wrapper"));
