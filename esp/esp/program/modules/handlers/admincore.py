@@ -39,9 +39,7 @@ from django.forms.formsets import formset_factory
 from django.http import HttpResponseRedirect
 
 from esp.accounting.controllers import ProgramAccountingController
-from esp.middleware import ESPError
-from esp.program.modules import module_ext
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.users.models import Permission
 from esp.utils.web import render_to_response
