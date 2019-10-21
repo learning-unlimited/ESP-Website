@@ -2,11 +2,6 @@
 
 {% block title %}{{program.niceName}} Settings{% endblock %}
 
-{% block xtrajs %}
-    {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
-{% endblock %}
-
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
@@ -24,10 +19,9 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
 {% end_inline_program_qsd_block %}
 
 {% for title, form in forms %}
-<p class="dspsection">
-<a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
-   <span class="dspchar">+</span> <b>{{ title }}</b> (click to expand/contract)
-</a>
+<button class="dsphead">
+   <b>{{ title }}</b> (click to expand/contract)
+</button>
 
 <div class="dspcont">
   <div id="settings_form">
@@ -88,6 +82,8 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
   </div>
 </div>
 {% endfor %}
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
