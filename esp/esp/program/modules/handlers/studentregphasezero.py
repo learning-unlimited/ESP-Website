@@ -43,6 +43,7 @@ from esp.tagdict.models import Tag
 from esp.web.views.json_utils import JsonResponse
 
 from django.conf import settings
+from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -88,37 +89,52 @@ class StudentRegPhaseZero(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
         user = request.user
-        in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
 
-        if Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog):
+        if user.can_skip_phase_zero(self.program):
+            #Student has permission to skip this module, redirect to main student reg page
+            #This includes students that won the lottery
+            return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
+        else:
+            #Student must win the lottery to progress
+            #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
+            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
+            lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
+            context['lottery_perm'] = lottery_perm
+            context['lottery_run'] = lottery_run
+
+            if lottery_run and not in_lottery:
+                #Lottery has been run, student did not enter
+                #Show generic phase zero closed page ("you didn't enter")
+                return render_to_response('errors/program/phasezero_closed.html', request, context)
+            elif not lottery_perm:
+                #Lottery hasn't opened yet
+                #Show generic deadline error page
+                context['moduleObj'] = self
+                context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                return render_to_response('errors/program/deadline-learn.html', request, context)
+            elif request.method == 'POST':
+                #Lottery is open, student just entered
+                #Send confirmation email, then show confirmation page below
+                form = SubmitForm(request.POST, program=prog)
+                if form.is_valid():
+                    form.save(user, prog)
+                    self.send_confirmation_email(user)
+                    in_lottery = True
+
             if in_lottery:
+                #Lottery is open or closed, student has entered
+                #This includes students that didn't win after the lottery is run
+                #Show confirmation page with details about lottery group and lottery status
                 context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
                 context['lottery_size'] = context['lottery_group'].user.count()
                 return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
             else:
-                if request.method == 'POST':
-                    form = SubmitForm(request.POST, program=prog)
-                    if form.is_valid():
-                        form.save(user, prog)
-                    context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
-                    context['lottery_size'] = context['lottery_group'].user.count()
-                    self.send_confirmation_email(user)
-                    return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
-                else:
-                    form = SubmitForm(program=prog)
-                    context['form'] = form
-                    return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
-        else:
-            if in_lottery:
-                if Tag.getBooleanTag('student_lottery_run', prog, default=False):
-                    #Sorry page
-                    return render_to_response('program/modules/studentregphasezero/sorry.html', request, context)
-                else:
-                    #Lottery has not yet been run page
-                    return render_to_response('program/modules/studentregphasezero/notyet.html', request, context)
-            else:
-                #Generic error page
-                return render_to_response('errors/program/phasezero_closed.html', request, context)
+                #Lottery is open, student has not entered
+                #Show lottery enrollment page
+                form = SubmitForm(program=prog)
+                context['form'] = form
+                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
     @aux_call
     @needs_student
@@ -217,6 +233,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
         email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
         email_to = ['%s <%s>' % (student.name(), student.email)]
         send_mail(email_title, email_contents, email_from, email_to, False)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True
