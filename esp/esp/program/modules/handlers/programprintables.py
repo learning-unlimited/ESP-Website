@@ -913,7 +913,7 @@ class ProgramPrintables(ProgramModuleObj):
             if room_numbers:
                 schedule += format_html(u"{} {} </th>",
                                         mark_safe("<th width=20%>"),
-                                        "Room") 
+                                        "Room")
             schedule += format_html(u"</tr>")
 
 
