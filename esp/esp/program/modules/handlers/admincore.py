@@ -114,7 +114,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
 
         #Set up any other forms on the page
-        if submitted_form is not "Program Settings":
+        if submitted_form != "Program Settings":
             prog_dict = {}
             prog_dict.update(prog.__dict__)
             #We need to populate all of these manually
@@ -130,10 +130,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
-        if submitted_form is not "Teacher Registration Settings":
+        if submitted_form != "Teacher Registration Settings":
             crmi_form = TeacherRegSettingsForm(instance = crmi)
 
-        if submitted_form is not "Student Registration Settings":
+        if submitted_form != "Student Registration Settings":
             scrmi_form = StudentRegSettingsForm(instance = scrmi)
 
         context['one'] = one
