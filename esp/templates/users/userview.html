@@ -13,6 +13,7 @@
 
 {% block content %}
 <h1>User Information</h1>
+<div class="clearfix">
 {% if not user.is_active %} <b>This user has been deactivated.</b> {% endif %}
 
 <div id="user-sidebar">
@@ -266,5 +267,5 @@
     {% if forloop.last %}</ul>{% endif %}
     {% endfor %}
 {% endif %}{% endwith %}
-
+</div>
 {% endblock %}
