@@ -135,6 +135,7 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
         tooltip_parts['Class size max'] = this.section.class_size_max;
         tooltip_parts['Length'] = Math.ceil(this.section.length);
         tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
+        tooltip_parts['Room Request'] = this.section.requested_room;
         tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(this.section);
         tooltip_parts['Flags'] = this.section.flags;
         if(this.section.comments) {
