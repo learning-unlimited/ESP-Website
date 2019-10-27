@@ -422,10 +422,10 @@ def top_classes(request, tl, program, instance):
 
         categories = prog.class_categories.all().order_by('category')
 
-        subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+        section_ct=ContentType.objects.get(app_label="program",model="classsection")
 
         perclass_data = []
-        initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(object_id=x.id, content_type=subject_ct, question=rating_question) ] } for x in classes ]
+        initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]
         for c in initclass_data:
             c['numratings'] = len(c['ratings'])
             if c['numratings'] < num_cut:
@@ -434,8 +434,8 @@ def top_classes(request, tl, program, instance):
             if c['avg'] < rating_cut:
                 continue
             teachers = list(c['class'].get_teachers())
-            c['teacher'] = teachers[0]
-            c['numteachers'] = len(teachers)
+            c['teacher'] = teachers[0] if len(teachers) > 0 else None
+            c['numteachers'] = max(len(teachers), 1) #in case there are no teachers
             if c['numteachers'] > 1:
                 c['coteachers'] = teachers[1:]
             del c['ratings']
