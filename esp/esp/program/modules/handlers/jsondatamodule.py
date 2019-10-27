@@ -275,15 +275,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section = {
                 'id': s.id,
                 'status': s.status,
-                'parent_class': s.parent_class.id,
-                'category': s.parent_class.category.symbol,
-                'category_id': s.parent_class.category.id,
-                'grade_max': s.parent_class.grade_max,
-                'grade_min': s.parent_class.grade_min,
-                'title': s.parent_class.title,
-                'class_size_max': s.parent_class.class_size_max,
+                'parent_class': cls.id,
+                'category': cls.category.symbol,
+                'category_id': cls.category.id,
+                'grade_max': cls.grade_max,
+                'grade_min': cls.grade_min,
+                'title': cls.title,
+                'class_size_max': cls.class_size_max,
                 'num_students': s.enrolled_students,
                 'resource_requests': rrequest_dict,
+                'requested_room': cls.requested_room,
                 'comments': cls.message_for_directors,
                 'special_requests': cls.requested_special_resources,
                 'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
@@ -292,7 +293,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
-            class_teachers = s.parent_class.get_teachers()
+            class_teachers = cls.get_teachers()
             section['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
                 if t.id in teacher_dict:
