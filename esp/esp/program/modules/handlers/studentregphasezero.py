@@ -103,24 +103,25 @@ class StudentRegPhaseZero(ProgramModuleObj):
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
 
-            if lottery_run and not in_lottery:
-                #Lottery has been run, student did not enter
-                #Show generic phase zero closed page ("you didn't enter")
-                return render_to_response('errors/program/phasezero_closed.html', request, context)
-            elif not lottery_perm:
-                #Lottery hasn't opened yet
-                #Show generic deadline error page
-                context['moduleObj'] = self
-                context['extension'] = ('the deadline Student/Classes/PhaseZero was')
-                return render_to_response('errors/program/deadline-learn.html', request, context)
-            elif request.method == 'POST' and not in_lottery:
-                #Lottery is open, student just entered
-                #Send confirmation email, then show confirmation page below
-                form = SubmitForm(request.POST, program=prog)
-                if form.is_valid():
-                    form.save(user, prog)
-                    self.send_confirmation_email(user)
-                    in_lottery = True
+            if not in_lottery:
+                if lottery_run:
+                    #Lottery has been run, student did not enter
+                    #Show generic phase zero closed page ("you didn't enter")
+                    return render_to_response('errors/program/phasezero_closed.html', request, context)
+                elif not lottery_perm:
+                    #Lottery hasn't opened yet
+                    #Show generic deadline error page
+                    context['moduleObj'] = self
+                    context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                    return render_to_response('errors/program/deadline-learn.html', request, context)
+                elif request.method == 'POST':
+                    #Lottery is open, student just entered
+                    #Send confirmation email, then show confirmation page below
+                    form = SubmitForm(request.POST, program=prog)
+                    if form.is_valid():
+                        form.save(user, prog)
+                        self.send_confirmation_email(user)
+                        in_lottery = True
 
             if in_lottery:
                 #Lottery is open or closed, student has entered
