@@ -113,7 +113,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 context['moduleObj'] = self
                 context['extension'] = ('the deadline Student/Classes/PhaseZero was')
                 return render_to_response('errors/program/deadline-learn.html', request, context)
-            elif request.method == 'POST':
+            elif request.method == 'POST' and not in_lottery:
                 #Lottery is open, student just entered
                 #Send confirmation email, then show confirmation page below
                 form = SubmitForm(request.POST, program=prog)
