@@ -823,6 +823,21 @@ class ProgramFrameworkTest(TestCase):
 
         self.new_prog = new_prog
 
+        #   Default parameters
+        past_settings = {'num_timeslots': 3,
+                    'timeslot_length': 50,
+                    'timeslot_gap': 10,
+                    'start_time': datetime(1111, 7, 7, 7, 5),
+                    }
+
+        #   Create timeblocks
+        self.event_type = EventType.get_from_desc('Class Time Block')
+        for i in range(past_settings['num_timeslots']):
+            start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
+            end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
+            event, created = Event.objects.get_or_create(program=self.program, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
+        self.timeslots = self.program.getTimeSlots()
+
 
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
