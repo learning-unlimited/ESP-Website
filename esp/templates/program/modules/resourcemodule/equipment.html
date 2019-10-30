@@ -36,6 +36,7 @@
     <tr>
         <td class="underline"><b>Name</b></td>
         <td class="underline"><b>Type</b></td>
+        <td class="underline"><b>Choice</b></td>
         <td class="underline"><b>Available Times</b></td>
     </tr>
     {% for r in prog.getFloatingResources %}
@@ -46,6 +47,7 @@
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=delete&id={{ r.id }}">[Delete]</a>
             </td>
             <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
+            <td class="underline">{{ r.attribute_value }}</td>
             <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
         </tr>
     {% endfor %}

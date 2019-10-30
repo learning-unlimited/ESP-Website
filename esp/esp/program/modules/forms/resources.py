@@ -109,10 +109,11 @@ class EquipmentForm(forms.Form):
     name = forms.CharField()
     times_available = forms.MultipleChoiceField()
     resource_type = forms.ChoiceField()
+    choice = forms.CharField(label = "Choice (optional)", required=False, max_length=50)
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
-            self.base_fields['resource_type'].choices = setup_furnishings(args[0].getResourceTypes())
+            self.base_fields['resource_type'].choices = tuple([(u'', '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super(EquipmentForm, self).__init__(*args[1:], **kwargs)
         else:
@@ -121,8 +122,9 @@ class EquipmentForm(forms.Form):
     def load_equipment(self, program, resource):
         self.fields['id'].initial = resource.id
         self.fields['name'].initial = resource.name
-        self.fields['times_available'].initial = [mt.short_description for mt in resource.matching_times()]
-        self.fields['resource_type'].initial = resource.res_type.name
+        self.fields['times_available'].initial = [mt.id for mt in resource.matching_times()]
+        self.fields['resource_type'].initial = resource.res_type.id
+        self.fields['choice'].initial = resource.attribute_value
 
     def save_equipment(self, program):
         initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__program=program))
@@ -134,6 +136,7 @@ class EquipmentForm(forms.Form):
             new_res.res_type = new_restype
             new_res.event = t
             new_res.name = self.cleaned_data['name']
+            new_res.attribute_value = self.cleaned_data['choice']
             new_res.save()
 
         for r in initial_resources:
