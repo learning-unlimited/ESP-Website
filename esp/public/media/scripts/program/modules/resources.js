@@ -37,6 +37,7 @@ function update_furnishing_choices(furnishing_select_obj, value) {
         if (choices.length > 1) {
             $j(furnishing_select_obj).after($j('<select>').css('margin-left', '4px').attr('id','id_furnishings-' + num + '-choice').attr('name','furnishings-' + num + '-choice').attr('type', 'text'));
             $j('#id_furnishings-' + num + '-choice').append($j('<option>').text('(option)'));
+            var i;
             for (i in choices) {
                 $j('#id_furnishings-' + num + '-choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
@@ -80,6 +81,7 @@ function update_floating_choices(floating_select_obj, floating_choice_obj, value
             $j(floating_choice_obj).remove();
             $j("#id_choice").append($j('<option>').text('(choice)').hide().css("display", "none"));
             $j("#id_choice > option")[0].disabled = true;
+            var i;
             for (i in choices) {
                 $j('#id_choice').append($j('<option>').val(choices[i]).text(choices[i]));
             }
