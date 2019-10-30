@@ -831,12 +831,11 @@ class ProgramFrameworkTest(TestCase):
                     }
 
         #   Create timeblocks
-        self.event_type = EventType.get_from_desc('Class Time Block')
+        event_type = EventType.get_from_desc('Class Time Block')
         for i in range(past_settings['num_timeslots']):
             start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
-            event, created = Event.objects.get_or_create(program=self.program, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
-        self.timeslots = self.program.getTimeSlots()
+            event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
 
 class ProgramCapTest(ProgramFrameworkTest):
