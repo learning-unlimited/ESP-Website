@@ -62,9 +62,11 @@
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
-        <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
-
+        <div id="info-panel">
+          <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+          <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          <div id="separator" class="ui-resizable-handle ui-resizable-s"></div>
+        </div>
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
@@ -144,6 +146,16 @@
     </fieldset>
   </form>
 </div>
+
+<script>
+$j("#info-panel").resizable({
+  handles: {s: '#separator'},
+  containment: '#side-panel-wrapper',
+  resize: function() {
+    $j("#side-panel").outerHeight($j("#side-panel-wrapper").innerHeight() - $j("#info-panel").outerHeight());
+  }
+});
+</script>
 
 </body>
 </html>
