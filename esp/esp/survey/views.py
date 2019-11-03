@@ -235,6 +235,11 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         wb=xlwt.Workbook()
         survey_index = 0
         for s in surveys:
+            # Certain characters are forbidden in sheet names
+            # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name.encode('ascii', 'ignore'))
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category.encode('ascii', 'ignore'))
+            # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name)>31:
                 ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
@@ -299,7 +304,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
         out=StringIO()
         wb.save(out)
         response=HttpResponse(out.getvalue(),content_type='application/vnd.ms-excel')
-        response['Content-Disposition']='attachment; filename=dump.xls'
+        response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
