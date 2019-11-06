@@ -725,7 +725,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for ft in ClassFlagType.get_flag_types(prog):
             flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft).distinct().count()))
         vitals['flagsnum'] = flags_num_list
-        
 
         #   Display pretty labels for teacher and student numbers
         teacher_labels_dict = {}
