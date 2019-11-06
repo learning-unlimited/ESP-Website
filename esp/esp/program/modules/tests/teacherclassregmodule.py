@@ -282,7 +282,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         new_class.add_section(duration=50.0/60.0)
         new_class.accept()
         # Check taught_before
-        ProgramModuleObj.getFromProgModule(self.program, pm)
         d = self.moduleobj.teachers()
         self.assertTrue(self.teacher in d['taught_before_and_now'])
 
