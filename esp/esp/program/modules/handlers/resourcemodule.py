@@ -535,7 +535,7 @@ class ResourceModule(ProgramModuleObj):
                     ts_map[ts_old[i].id] = ts_new[i]
 
                 #   Iterate over the floating resources in the previous program
-                for equipment in past_program.getFloatingResources(queryset=True):
+                for equipment in past_program.getFloatingResources():
                     res_type = equipment.res_type
                     res_types = ResourceType.objects.filter(name=res_type.name, program = self.program)
                     if res_types.exists():
@@ -552,21 +552,23 @@ class ResourceModule(ProgramModuleObj):
                             autocreated = res_type.autocreated,
                             hidden = res_type.hidden
                         )
-                    if import_mode == 'save':
+                    if import_mode == 'save' and str(equipment.id) in to_import:
                         new_res_type.save()
-                    #   If we know what timeslot to put it in, make a copy
-                    if equipment.event.id in ts_map:
-                        new_equip = Resource(
-                            name = equipment.name,
-                            res_type = new_res_type,
-                            user = equipment.user,
-                            event = ts_map[equipment.event.id]
-                        )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
-                            new_equip.save()
-                        else:
-                            new_equip.old_id = equipment.id
-                        new_equipment_list.append(new_equip)
+                    for event in equipment.timegroup:
+                        #   If we know what timeslot to put it in, make a copy
+                        if event.id in ts_map:
+                            new_equip = Resource(
+                                name = equipment.name,
+                                res_type = new_res_type,
+                                user = equipment.user,
+                                event = ts_map[event.id],
+                                attribute_value = equipment.attribute_value
+                            )
+                            if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
+                                new_equip.save()
+                            else:
+                                new_equip.old_id = equipment.id
+                            new_equipment_list.append(new_equip)
 
             context['past_program'] = past_program
             context['complete_availability'] = complete_availability
