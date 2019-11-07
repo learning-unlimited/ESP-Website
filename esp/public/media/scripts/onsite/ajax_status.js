@@ -1083,6 +1083,7 @@ function populate_classes()
         new_sec.num_students_checked_in = 0;
         //  Place max capacity here, and lower it later if it turns out the room is smaller
         new_sec.capacity = parent_class.class_size_max;
+        if (!new_sec.capacity && parent_class.class_size_optimal) new_sec.capacity = parent_class.class_size_optimal;
         if ((parent_class.class_size_max == 0) || ((parent_class.class_size_max_optimal) && (parent_class.class_size_max_optimal < new_sec.capacity)))
             new_sec.capacity = parent_class.class_size_max_optimal;
         if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
