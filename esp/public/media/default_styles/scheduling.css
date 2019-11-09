@@ -109,3 +109,7 @@ button.sidetoolbar {
 .room-description {
 	font-size: .7em;
 }
+
+.ft_c {
+    height: unset !important; /* allows us to hide rows properly */
+}

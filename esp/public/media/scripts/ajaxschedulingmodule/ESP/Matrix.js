@@ -21,6 +21,92 @@ function Matrix(
 
     this.timeslots = timeslots;
     this.rooms = rooms;
+    
+    // Set up filtering
+    this.filter = {
+        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), type: "number"},
+        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), type: "number"},
+        roomResource: {active: false, el: $j("input#room-filter-resource-text"), type: "string"},
+        roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
+    };
+    this.filter.roomCapacityMin.valid = function(a) {
+        return Math.ceil(a.num_students) >= this.filter.roomCapacityMin.val;
+    }.bind(this);
+    this.filter.roomCapacityMax.valid = function(a) {
+        return Math.ceil(a.num_students) <= this.filter.roomCapacityMax.val;
+    }.bind(this);
+    this.filter.roomResource.valid = function(a) {
+        var result = false;
+        $j.each(a.resource_lines, function(index, resource) {
+            if((resource).toLowerCase().search(this.filter.roomResource.val)>-1) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
+    this.filter.roomName.valid = function(a) {
+        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
+    }.bind(this);
+
+    $j.each(this.filter, function(filterName, filterObject) {
+        filterObject.el.change(function() {
+            filterObject.val = filterObject.el.val().trim();
+            if(filterObject.type==="number") {
+                filterObject.val = parseInt(filterObject.val);
+            } else if(filterObject.type==="string") {
+                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+            } else if(filterObject.type==="boolean") {
+                filterObject.val = filterObject.el.prop('checked');
+            }
+            if((filterObject.type==="number" && isNaN(filterObject.val))
+                || (filterObject.type==="string" && filterObject.val.trim()==="")
+                || (filterObject.type==="boolean" && !filterObject.val)) {
+                filterObject.active = false;
+            } else {
+                filterObject.active = true;
+            }
+            $j("body").trigger("room-filters-changed");
+        });
+    }.bind(this));
+    
+    /**
+     * Get the rooms satisfying the search criteria.
+     */
+    this.filtered_rooms = function(allowScheduled){
+        var returned_rooms = [];
+        $j.each(this.rooms, function(index, room) {
+            var roomValid;
+            // check every criterion in the room filter tab, short-circuiting if possible
+            roomValid = true;
+            for (var filterName in this.filter) {
+                if (this.filter.hasOwnProperty(filterName)) {
+                    var filterObject = this.filter[filterName];
+                    // this loops over properties in this.filter
+                    if (filterObject.active && !filterObject.valid(room)) {
+                        roomValid = false;
+                        break;
+                    }
+                }
+            }
+            if (roomValid) {
+                returned_rooms.push(room);
+            }
+        }.bind(this));
+        return returned_rooms;
+    };
+    
+    this.update = function(){
+        var filt_rooms = this.filtered_rooms()
+        $j.each(this.rooms, function(index, room) {
+            // get rows to show or hide
+            var rows = $j(".room[data-id='" + room.id + "']").parent();
+            if (filt_rooms.includes(room)) {
+                rows.css("display", "table-row");
+            } else {
+                rows.css("display", "none");
+            }
+        }.bind(this));
+    };
 
     this.sections = sections;
     this.sections.bindMatrix(this);
@@ -33,6 +119,7 @@ function Matrix(
      * Initialize the matrix
      */
     this.init = function(){
+        $j("body").on("room-filters-changed", this.update.bind(this));
         // set up cells
         var matrix = this;
         this.cells = function(){
@@ -337,18 +424,10 @@ function Matrix(
         this.el.tooltip({
             content: function() {
                 var room = that.rooms[$j(this).data('id')];
-                var resource_lines = [];
-                $j.each(room.resources, function(index, resource) {
-                    var desc = resource.resource_type.name;
-                    if(resource.value) {
-                        desc += ': ' + resource.value;
-                    }
-                    resource_lines.push(desc);
-                });
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
-                    "Resources: " + "<ul><li>"+ resource_lines.join("</li><li>") + "</li></ul>",
+                    "Resources: " + "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>",
                 ];
                 return tooltipParts.join("</br>");
             },
