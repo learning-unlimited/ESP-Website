@@ -131,7 +131,7 @@ function Scheduler(
         var cell = $j(evt.currentTarget).data("cell");
         if(this.sections.selectedSection) {
             this.sections.scheduleSection(this.sections.selectedSection,
-                                          cell.room_name, cell.timeslot_id);
+                                          cell.room_id, cell.timeslot_id);
         }
     }.bind(this));
 
@@ -141,7 +141,7 @@ function Scheduler(
 
    $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
         var cell = $j(evt.currentTarget).data("cell");
-        this.sections.scheduleAsGhost(cell.room_name, cell.timeslot_id);
+        this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
     }.bind(this));
 
     // Render all the objects on the page

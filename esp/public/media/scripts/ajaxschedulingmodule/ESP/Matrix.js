@@ -123,18 +123,18 @@ function Matrix(
         // set up cells
         var matrix = this;
         this.cells = function(){
-            // cells has room names as keys to the outer object and timeslots as keys to the
+            // cells has room ids as keys to the outer object and timeslots as keys to the
             // inner object
             var cells = {};
-            $j.each(rooms, function(room_name, room){
-                cells[room_name] = [];
+            $j.each(rooms, function(room_id, room){
+                cells[room_id] = [];
                 $j.each(this.timeslots.timeslots, function(timeslot_id_string, timeslot){
                     var timeslot_id = parseInt(timeslot_id_string);
                     if (room.availability.indexOf(timeslot_id) >= 0){
-                        cells[room_name][timeslot.order] = new Cell($j("<td/>"), null, room_name,
+                        cells[room_id][timeslot.order] = new Cell($j("<td/>"), null, room_id,
                             timeslot_id, matrix);
                     } else {
-                        cells[room_name][timeslot.order] = new DisabledCell($j("<td/>"), room_name,
+                        cells[room_id][timeslot.order] = new DisabledCell($j("<td/>"), room_id,
                             timeslot_id)
                     }
                 }.bind(this));
@@ -246,13 +246,13 @@ function Matrix(
         // Associated already scheduled classes with rooms
         $j.each(this.sections.scheduleAssignments, function(class_id, assignmentData){
             $j.each(assignmentData.timeslots, function(j, timeslot_id){
-                var cell = this.getCell(assignmentData.room_name, timeslot_id);
+                var cell = this.getCell(assignmentData.room_id, timeslot_id);
                 if(cell && !cell.disabled) {
                     cell.addSection(sections.getById(class_id));
                 } else {
                     if(!cell) {
-                        var errorMessage = "Error: Could not find cell with room "
-                            + assignmentData.room_name
+                        var errorMessage = "Error: Could not find cell with room with id "
+                            + assignmentData.room_id
                             + " and timeslot with id "
                             + timeslot_id
                             + " to schedule section with id "
@@ -261,8 +261,8 @@ function Matrix(
                         messagePanel.addMessage(errorMessage);
                     }
                     else {
-                        var errorMessage = "Error: Room "
-                            + assignmentData.room_name
+                        var errorMessage = "Error: Room with id "
+                            + assignmentData.room_id
                             + " appears to be unavailable during timeslot with id "
                             + timeslot_id
                             + " but section with id "
@@ -278,28 +278,28 @@ function Matrix(
 
 
     /**
-     * Gets the cell that represents room_name and timeslot_id.
+     * Gets the cell that represents room_id and timeslot_id.
      *
-     * @param room_name: The name of the room corresponding to the cell
+     * @param room_id: The id of the room corresponding to the cell
      * @param timeslot_id: The ID of the timeslot corresponding to the cell
      */
-    this.getCell = function(room_name, timeslot_id){
-        return this.cells[room_name][this.timeslots.get_by_id(timeslot_id).order];
+    this.getCell = function(room_id, timeslot_id){
+        return this.cells[room_id][this.timeslots.get_by_id(timeslot_id).order];
     };
 
 
     /**
-     * Checks a section we want to schedule in room_name during schedule_timeslots
+     * Checks a section we want to schedule in room_id during schedule_timeslots
      * to make sure the room is available during that time and the length is nonzero.
      *
      * Returns an object with property valid that is set to whether the assignment is valid
      * and reason which contains a message if valid is false.
      *
      * @param section: The section to validate.
-     * @param room_name: The name of the room we want to put the section into.
+     * @param room_id: The name of the room we want to put the section into.
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
      */
-    this.validateAssignment = function(section, room_name, schedule_timeslots){
+    this.validateAssignment = function(section, room_id, schedule_timeslots){
         var result = {
             valid: true,
             reason: null,
@@ -318,7 +318,7 @@ function Matrix(
                     availableTimeslots.indexOf(schedule_timeslots[index]) == -1);
         };
 
-        var firstCell = this.getCell(room_name, schedule_timeslots[0]);
+        var firstCell = this.getCell(room_id, schedule_timeslots[0]);
         if (section.length <= 1 && !validateIndividualCell(0, firstCell)) {
             result.valid = false;
             result.reason = "first cell is not valid"
@@ -327,11 +327,11 @@ function Matrix(
 
         // Check to make sure all the cells are available
         for(var timeslot_index in schedule_timeslots){
-            var cell = this.getCell(room_name, schedule_timeslots[timeslot_index]);
+            var cell = this.getCell(room_id, schedule_timeslots[timeslot_index]);
             if (!validateIndividualCell(timeslot_index, cell)){
                 result.valid = false;
                 result.reason = "Error: timeslot" +  schedule_timeslots[timeslot_index] +
-                    " already has a class in " + room_name + "."
+                    " already has a class in " + room_id + "."
                 return result;
             }
         }
@@ -390,18 +390,18 @@ function Matrix(
         var room_ids = Object.keys(this.rooms);
         room_ids.sort(function (room1, room2) {
             // sort by building number
-            var bldg1 = parseInt(room1, 10);
-            var bldg2 = parseInt(room2, 10);
+            var bldg1 = parseInt(room1.text, 10);
+            var bldg2 = parseInt(room2.text, 10);
             if (!isNaN(bldg1) && !isNaN(bldg2) && bldg1 != bldg2) {
                 return bldg1 - bldg2;
             }
-            return room1.localeCompare(room2);
+            return rooms[room1].text.localeCompare(rooms[room2].text);
         });
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td>")
                 .addClass('room')
-                .text(id + " [" + room['num_students'] + "]")
+                .text(room.text + " [" + room['num_students'] + "]")
                 .attr('data-id', id);
             var row = $j("<tr></tr>");
             room_header.appendTo(row);
