@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.users.models import ESPUser, Permission
 from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
+from esp.middleware import ESPError
 from django.contrib.auth.models import Group
 
 #   Changed this function to accept a dictionary so that it can be called directly
@@ -55,10 +56,6 @@ def prepare_program(program, data):
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
 
-    #   Grant onsite bit (for all times) if an onsite user is available.
-    if ESPUser.onsite_user():
-        perms += [('Onsite', ESPUser.onsite_user(), None, None)]
-
     modules += [(ProgramModule.objects.get(id=i).admin_title, i) for i in data['program_modules']]
 
     return perms, modules
@@ -76,24 +73,23 @@ def commit_program(prog, perms, cost=0, sibling_discount=None):
 
         if tup[1] is not None:
             new_perm.user=tup[1]
-            new_perm.save()
-            return
         elif tup[1] is None and tup[0].startswith("Student"):
             new_perm.role=Group.objects.get(name="Student")
-            new_perm.save()
-            return
         elif tup[1] is None and tup[0].startswith("Teacher"):
             new_perm.role=Group.objects.get(name="Teacher")
-            new_perm.save()
-            return
+        else:
+            raise ESPError('Invalid permission/deadline: `{}`'.format(tup[1]))
+        new_perm.save()
+        return
 
-        #It's not for a specific user and not a teacher or student deadline
-        for x in ESPUser.getTypes():
-            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), start_date=new_perm.start_date, end_date=new_perm.end_date, program=prog)
-            newnew_perm.save()
 
     for perm_tup in perms:
         gen_perm(perm_tup)
+    
+    # Grant onsite permission to admins and onsite user (if an onsite user is available).
+    Permission(permission_type='Onsite', role=Group.objects.get(name="Administrator"), start_date=None, end_date=None, program=prog).save()
+    if ESPUser.onsite_user():
+        Permission(permission_type='Onsite', user=ESPUser.onsite_user(), start_date=None, end_date=None, program=prog).save()
 
     pac = ProgramAccountingController(prog)
     pac.setup_accounts()
