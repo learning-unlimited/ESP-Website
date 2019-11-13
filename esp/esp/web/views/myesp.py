@@ -264,6 +264,9 @@ def myesp_onsite(request):
     # - Currently reverse the list in Python, otherwise fbap's cache is ignored
     # TODO: Fix this
     progs = list(progs)
+    if len(progs) > 0:
+        # filter out past programs; admins can always go to those through /manage/programs to access their onsite pages
+        progs = [p for p in progs if p.datetime_range() is None or len(p.datetime_range()) == 0 or p.datetime_range()[-1] > datetime.datetime.now()]
     progs.reverse()
 
     if len(progs) == 1:
