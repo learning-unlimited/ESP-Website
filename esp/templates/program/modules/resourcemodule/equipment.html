@@ -1,12 +1,13 @@
-{% ifequal open_section "equipment" %}
-<!-- Not in a dspcont div. The section below always shows -->
-<h2>Step 4: Floating Resources</h2>
-<br />
+{% ifequal open_section "restype" %}
+<button class="dsphead active">
+   <b>Step 4: Floating Resources</b> (click to expand/contract)
+</button>
+
+<div class="dspcont active">
 {% else %}
-<p class="dspsection">
-<a href="javascript:void(0)" class="dsphead" onclick="expand_disp(this)">
-   <span class="dspchar">+</span> <b>Step 4: Floating Resources</b> (click to expand/contract)
-</a>
+<button class="dsphead">
+   <b>Step 4: Floating Resources</b> (click to expand/contract)
+</button>
 
 <div class="dspcont">
 {% endifequal %}
@@ -54,12 +55,4 @@
     </table></td></tr>
 </table>
 </div>
-
-{% ifequal open_section "equipment" %}
-<!-- Not in a dspcont div. -->
-{% else %}
 </div>
-</p>
-{% endifequal %}
-
-<br />

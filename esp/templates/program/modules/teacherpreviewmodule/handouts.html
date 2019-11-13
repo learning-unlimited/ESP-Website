@@ -2,11 +2,11 @@
 <div id="catalog">
   <table align="center" cellpadding="0" cellspacing="0" class="fullwidth">
     <tr>
-        <th align="center">Handouts</th>
+        <th align="center"><h2>Handouts</h2></th>
     </tr>
     {% if prog.documents.count > 0 %}
     <tr>
-        <th class="materials">Informational documents for {{ prog.program_type }}</th>
+        <th class="materials"><h3>Informational documents for {{ prog.program_type }}</h3></th>
     </tr>
     {% for doc in prog.getDocuments %}
     <tr>
@@ -16,7 +16,7 @@
     {% endif %}
     {% if handouts %}
     <tr>
-        <th class="materials">Information specific to your classes</th>
+        <th class="materials"><h3>Information specific to your classes</h3></th>
     </tr>
     {% for h in handouts %}
     <tr>
