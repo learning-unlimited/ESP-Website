@@ -131,7 +131,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         previous_programs = [x for x in Program.objects.all() if len(x.dates()) and x.dates()[0] < self.program.dates()[0]]
         Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=previous_programs)
-        taught_before_users = ESPUser.objects.filter(Q_taught_before).values('id')
+        taught_before_users = ESPUser.objects.filter(Q_taught_before).values('id').distinct()
         Q_taught_before_and_now = Q(classsubject__in=classes_qs, id__in=taught_before_users)
 
         #   Add dynamic queries for checking for teachers with particular resource requests
