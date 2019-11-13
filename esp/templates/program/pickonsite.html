@@ -11,12 +11,15 @@
 <br />
 
 <br /><br />
+{% if progs|length == 0 %}
+<h1>No onsite programs available</h1>
+
+Sorry, it looks like you aren't an onsite user for any programs.
+If you believe you got this message in error, check with the program directors.
+
+{% else %}
 <h1>Select Program to run onsite registration for!</h1>
-
-
-<br />
-<h2>It seems there are multiple programs that are having registrations on the same day?</h2>
-<br />
+There are {{progs|length}} programs available for you.
 Please choose the program you want to run onsite registration for below:<br />
 
 <br />
@@ -26,5 +29,6 @@ Please choose the program you want to run onsite registration for below:<br />
 </span>
 <br />
 {% endfor %}
+{% endif %}
 
 {% endblock %}
