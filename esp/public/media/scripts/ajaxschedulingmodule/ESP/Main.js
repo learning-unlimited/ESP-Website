@@ -14,11 +14,9 @@ $j.getJSON('ajax_schedule_last_changed', function(data, status) {
 var resizeElements = function() {
     var window_height = window.innerHeight - 20;
     var window_width = window.innerWidth - 20;
-    var sidePanelTopHeight = 180;
     $j("#matrix-div").height(window_height)
         .width(window_width*3/4);
-    $j("#side-panel-wrapper").width(window_width/4);
-    $j("#side-panel").height(window_height - sidePanelTopHeight);
+    $j("#side-panel-wrapper").width(window_width/4).height(window_height);
 };
 
 // Resize window handler
