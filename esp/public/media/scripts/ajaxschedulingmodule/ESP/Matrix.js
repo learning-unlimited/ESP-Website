@@ -54,7 +54,7 @@ function Matrix(
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
             } else if(filterObject.type==="string") {
-                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+                filterObject.val = filterObject.val.toLowerCase()
             } else if(filterObject.type==="boolean") {
                 filterObject.val = filterObject.el.prop('checked');
             }
