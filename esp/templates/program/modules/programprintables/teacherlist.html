@@ -43,12 +43,10 @@ table.sortable thead {
 <tr>
  <th />
  <th>Name</th>
- <th>Home Phone #</th>
+ <th>Username</th>
+ <th>Email</th>
  <th>Cell Phone #</th>
  <th>First Class</th>
- {% for rt in res_types %}
- <th>{{ rt }}</th>
- {% endfor %}
  <th width="15%">Time of First Class</th>
 </tr>
 </thead>
@@ -56,13 +54,11 @@ table.sortable thead {
 {% for scheditem in scheditems %}
 <tr>
  <td>{{forloop.counter}}</td>
- <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name}}</td>
- <td>{{ scheditem.phone_day }}</td>
+ <td>{{ scheditem.user.last_name }}, {{ scheditem.user.first_name }}</td>
+ <td>{{ scheditem.user.username }}</td>
+ <td>{{ scheditem.user.email }}</td>
  <td>{{ scheditem.phone_cell }}</td>
  <td>{{ scheditem.cls.title }}</td>
- {% for rv in scheditem.res_values %}
- <td>{% if rv|length_is:0 %}None{% else %}{{ rv|join:', ' }}{% endif %}</td>
- {% endfor %}
  <td sorttable_customkey="{{ scheditem.cls.start_time.start|date:'Y-m-d H:i:s' }}">{{ scheditem.cls.friendly_times.0 }}</td>
 </tr>
 {% endfor %}
