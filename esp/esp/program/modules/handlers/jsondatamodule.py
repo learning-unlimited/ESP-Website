@@ -304,7 +304,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     'username': t.username,
                     'first_name': t.first_name,
                     'last_name': t.last_name,
-                    'sections': [s.id]
+                    'sections': [s.id],
+                    'is_admin': t.isAdmin()
                 }
                 teachers.append(teacher)
                 teacher_dict[t.id] = teacher
