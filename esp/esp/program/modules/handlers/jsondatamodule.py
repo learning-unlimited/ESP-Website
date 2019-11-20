@@ -118,7 +118,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def resource_types(prog):
-        res_types = ResourceType.objects.filter(program = prog)
+        res_types = prog.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', default = False))
         if len(res_types) == 0:
             res_types = ResourceType.objects.filter(program__isnull=True)
 
