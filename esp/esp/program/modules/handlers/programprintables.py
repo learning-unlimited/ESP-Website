@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassFlagType, ClassFlag
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -349,6 +350,44 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
         return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def classflagdetails(self, request, tl, one, two, module, extra, prog):
+        comments = 'comments' in request.GET
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            classes = [cls for cls in classes if cls.id in clsids]
+        if 'accepted' in request.GET:
+            classes = [cls for cls in classes if cls.status > 0]
+        elif 'cancelled' in request.GET:
+            classes = [cls for cls in classes if cls.isCancelled()]
+        elif 'all' not in request.GET:
+            classes = [cls for cls in classes if cls.status >= 0]
+        if 'scheduled' in request.GET:
+            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
+
+        cls_list = []
+        flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
+
+        for cls in classes:
+            flags = cls.flags.all()
+            type_dict = {flag.flag_type:flag for flag in flags}
+            cls.flag_list = []
+            for type in flag_types:
+                if type in type_dict.keys():
+                    if type_dict[type].comment and comments:
+                        cls.flag_list.append(type_dict[type].comment)
+                    else:
+                        cls.flag_list.append(True)
+                else:
+                    cls.flag_list.append(False)
+            cls_list.append(cls)
+
+        context = {'classes': cls_list, 'program': prog, 'flag_types': flag_types}
+
+        return render_to_response(self.baseDir()+'classes_flags.html', request, context)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
