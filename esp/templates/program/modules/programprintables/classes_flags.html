@@ -41,7 +41,7 @@ table.sortable thead {
  <td>{{ cls.title }}</td>
  <td>{% for teacher in cls.teachers.all %}{% if teacher.id == cls.split_teacher.id %}<b>{% endif %}{{ teacher.name_last_first }}{% if teacher.id == cls.split_teacher.id %}</b>{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
  {% for flag in cls.flag_list %}
- <td sorttable_customkey="{% if flag %}{% if flag != True %}1{% else %}2{% endif %}{% else %}3{% endif %}">{% if flag %}{% if flag != True %}{{ flag }}{% else %}&#10003;{% endif %}{% else %}&#10005;{% endif %}</td>
+ <td sorttable_customkey="{% if flag %}{% if flag != True %}1{% else %}2{% endif %}{% else %}3{% endif %}">{% if flag %}{% if flag != True %}{{ flag|join:"; " }}{% else %}&#10003;{% endif %}{% else %}&#10005;{% endif %}</td>
  {% endfor %}
 </tr>
 {% endfor %}

@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
-from esp.program.models  import ClassFlagType, ClassFlag
+from esp.program.models  import ClassFlagType
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -373,12 +373,18 @@ class ProgramPrintables(ProgramModuleObj):
 
         for cls in classes:
             flags = cls.flags.all()
-            type_dict = {flag.flag_type:flag for flag in flags}
+            type_dict = {}
+            for flag in flags:
+                if flag.flag_type in type_dict:
+                    type_dict[flag.flag_type].append(flag)
+                else:
+                    type_dict[flag.flag_type] = [flag]
             cls.flag_list = []
             for type in flag_types:
                 if type in type_dict.keys():
-                    if type_dict[type].comment and comments:
-                        cls.flag_list.append(type_dict[type].comment)
+                    comms = [flag.comment for flag in type_dict[type] if flag.comment]
+                    if len(comms) > 0 and comments:
+                        cls.flag_list.append(comms)
                     else:
                         cls.flag_list.append(True)
                 else:
