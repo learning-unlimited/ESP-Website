@@ -3,7 +3,7 @@ function submitFlagForm (event) {
     var form = $j(this)
     var data = form.serialize();
     $j.post(form.attr("action"), data, function (data) {
-        form.parents("div.fqr-class").children("div.fqr-class-flags").append(data.flag_name);
+        form.parents("div.fqr-class").find("div.fqr-class-flags").append(data.flag_name);
         form.parents("div.flag-detail").replaceWith(data.flag_detail);
     }, 'json')
     event.preventDefault();
