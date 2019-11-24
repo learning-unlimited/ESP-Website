@@ -1096,10 +1096,10 @@ class ClassSection(models.Model):
             return eventList[0]
 
     def isFull(self, ignore_changes=False):
-        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
-            return False
-        elif len(self.get_meeting_times()) == 0:
+        if len(self.get_meeting_times()) == 0:
             return True
+        elif (self.num_students() == self._get_capacity(ignore_changes) == 0):
+            return False
         else:
             return (self.num_students() >= self._get_capacity(ignore_changes))
 
