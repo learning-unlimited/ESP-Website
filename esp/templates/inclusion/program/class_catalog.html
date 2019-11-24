@@ -83,4 +83,12 @@
     setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
   }
   </script>
+  {% if collapse_full %}
+  {% if class.isFull or class.isRegClosed %}
+  <!-- This class is already full; hide any buttons -->
+  <script type="text/javascript">
+  swap_visible('class_{{ class.id }}_regbuttons');
+  </script>
+  {% endif %}
+  {% endif %}
 {% endif %}
