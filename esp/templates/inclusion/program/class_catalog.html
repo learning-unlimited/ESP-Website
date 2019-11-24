@@ -40,10 +40,16 @@
                       <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
                       <script type="text/javascript">add_csrf_token();</script>
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
-                      <input type="hidden" name="section_id" value="{{ sec.id }}" />
+                      <input type="hidden" name="section_id" value="{{ sec.id }}" />                      
                       <div id="addbutton_catalog_sec{{ sec.id }}">
-                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
-                      <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      {% if not sec.isFull %}
+                          <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }} (Please choose just one section)" />
+                          <!--                      <input type="submit" class="addbutton" name="action" value="Register for section {{ sec.index }}" onclick="return submit_prereg({{ sec.id }});" id="submitbutton{{ sec.id }}" /> -->
+                      {% elif not class.isFullOrClosed %}
+                          <input type="submit" class="addbutton_disabled" name="action" value="Section {{ sec.index }} is full; check other sections of this class" id="submitbutton{{ sec.id }}" disabled />
+                      {% else %}
+                          <input type="submit" class="addbutton_disabled" name="action" value="Section {{ sec.index }} is full; please check back later" id="submitbutton{{ sec.id }}" disabled />
+                      {% endif %}
                       </div>
                       </form>
                   {% endif %}
