@@ -124,7 +124,7 @@
     </div>
     
 {% if collapse_full %}
-{% if class.isFull or class.isRegClosed %}
+{% if isFullOrClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script type="text/javascript">
 swap_visible('class_{{ class.id }}_content');

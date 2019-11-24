@@ -90,7 +90,7 @@
   }
   </script>
   {% if collapse_full %}
-  {% if class.isFull or class.isRegClosed %}
+  {% if class.isFullOrClosed %}
   <!-- This class is already full; hide any buttons -->
   <script type="text/javascript">
   swap_visible('class_{{ class.id }}_regbuttons');
