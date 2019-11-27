@@ -728,7 +728,7 @@ def emails(request):
     else:
         start_date = datetime.date.today() - datetime.timedelta(30)
     requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
-    
+
     requests_list = []
     for req in requests:
         toes = TextOfEmail.objects.filter(created_at=req.created_at,
@@ -744,7 +744,7 @@ def emails(request):
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
-    
+
     context['requests'] = requests_list
 
     return render_to_response('admin/emails.html', request, context)
