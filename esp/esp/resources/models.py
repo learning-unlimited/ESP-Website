@@ -207,9 +207,15 @@ class Resource(models.Model):
     __sub__ = distance
 
 
-    def identical_resources(self):
+    def identical_resources(self, prog = None):
         res_list = Resource.objects.filter(name=self.name)
+        if prog:
+            res_list = res_list.filter(event__program=prog)
         return res_list
+
+    def identical_id(self, prog=None):
+        res_list = self.identical_resources(prog=prog)
+        return min(res_list.values_list("id", flat = True))
 
     def duplicates(self):
         res_list = Resource.objects.filter(name=self.name, event = self.event)
