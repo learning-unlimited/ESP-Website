@@ -152,31 +152,21 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
 </tr>
 </table>
 
-<div class="module_group_header">Complete Module List</div>
-<div id="complete_list">
+<div class="module_group_header">Additional Modules</div>
+<div id="additional_modules">
 <table border="0" width="100%">
 <tr>
  <td width="40%">
 <ul>
-<li><a href="/onsite/{{program.getUrlBase}}/main">
-     Go To On-Site Page
-    </a>
-</li>
-
 {% for module in modules %}
 {% if module.isStep %}
-  {% if not module.useTemplate %}
-    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
-  {% else %}
-    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
-  {% endif %}
+    {% if not module.isAdminPortalFeatured %}
+      {% if not module.useTemplate %}
+        <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+      {% endif %}
+    {% endif %}
 {% endif %}
 {% endfor %}
-<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
-<li><a href="/manage/{{ one }}/{{ two }}/lunch_constraints/" title="Setup Lunch Constraints" onmouseover="updateDocs('<p>Setup Lunch Constraints</p>');">Setup Lunch Constraints</a></li>
-<li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
-<li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
-<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
 </ul>
 </td>
 <td style="vertical-align: top;">
@@ -189,7 +179,7 @@ Please select an option to the left to continue, or look down below to select fu
 </td>
 </tr>
 </table>
-</div> <!-- div#complete_list -->
+</div> <!-- div#additional_modules -->
 
 <td colspan="2">
 {% render_inline_program_qsd program "manage:main_bottom" %}
