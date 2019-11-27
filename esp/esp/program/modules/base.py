@@ -291,6 +291,11 @@ class ProgramModuleObj(models.Model):
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
         return (not self.main_view)
+    
+    def isAdminPortalFeatured(self):
+        """Don't display in the long list of additional modules if it's already featured
+        in the main portion of the admin portal"""
+        return self.module.admin_title in ["Program Dashboard (AdminCore)", "Course Materials", "Program Vitals (part of Dashboard)", "Teacher Availability Checker", "Volunteer Management", "Manage Classes (part of Dashboard)", "AJAX Scheduling (AJAXSchedulingModule)", "Class Search", "Resource Management", "Communications Panel for Admin", "User Morphing Capability", "Nametag Generation", "User List Generator"]
 
     def isCompleted(self):
         return False
