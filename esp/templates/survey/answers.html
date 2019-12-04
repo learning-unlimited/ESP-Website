@@ -19,7 +19,7 @@ Expects:
         <td width = "50%">
             {% if not q.answers|length_is:0 %}
                 {% with q.question.get_params as params %}
-                    {% if q.question.question_type.is_numeric %}
+                    {% if q.question.question_type.is_numeric and params.number_of_ratings %}
                         {% with "format=html&max="|concat:params.number_of_ratings as args %}
                             {{ q.answers|unpack_answers|histogram:args|safe }}
                         {% endwith %}
