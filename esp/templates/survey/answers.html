@@ -8,61 +8,73 @@ Expects:
 {% endcomment %}
 
 {% load survey %}
+{% load main %}
 
-<table width="600">
+<table width="100%" style="margin-bottom: 10px;">
 <tr>
-    <td width="35%" valign="top"><b>{{ q.question.name }}</b></td>
+    <td width="100%" valign="top" colspan="2"><b>{{ q.question.name }}</b></td>
+</tr>
 {% if q.question.question_type.is_countable %}
-    <td>
-        {% if not q.answers|length_is:0 %}
-            {{ q.answers|unpack_answers|histogram:"html"|safe }}
-            {% with q.question.get_params as params %}
-                {% if params.lower_text %}
-                <div style="font-weight:bold; font-size:0.8em; width:216px;">
-                    {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
-                    <div style="float:left;">1 = {{ params.lower_text }}</div>
-                    <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
-                    <div style="text-align:center;">{{ params.middle_text }}</div>
-                </div>
-                {% endif %}
-            {% endwith %}
-        {% else %} 
-            There are no responses to this question.
-        {% endif %}
-    </td>
-    <td>
-        <b>Statistics:</b>
-        <ul>
-            <li>Number of responses: {{ q.answers|length }}/{{ num_participants }}</li>
-            {% if q.question.question_type.is_numeric %}
-                <li>Average: {{ q.answers|unpack_answers|average }}</li>
-                <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
-                {% if q.question.per_class %}
-                    <li>Average for all classes: {{ q.question.global_average }}</li>
-                {% endif %}
+    <tr>
+        <td width = "50%">
+            {% if not q.answers|length_is:0 %}
+                {% with q.question.get_params as params %}
+                    {% if q.question.question_type.is_numeric %}
+                        {% with "format=html&max="|concat:params.number_of_ratings as args %}
+                            {{ q.answers|unpack_answers|histogram:args|safe }}
+                        {% endwith %}
+                    {% else %}
+                        {{ q.answers|unpack_answers|histogram:"format=html"|safe }}
+                    {% endif %}
+                    {% if params.lower_text %}
+                    <div style="font-weight:bold; font-size:0.8em; width:216px;margin-bottom: 20px;">
+                        {# I have moral qualms about fixing this width in pixels; hopefully someone will find a better way. -ageng 2008-10-20 #}
+                        <div style="float:left;">1 = {{ params.lower_text }}</div>
+                        <div style="float:right;">{{ params.upper_text }} = {{ params.number_of_ratings }}</div>
+                        <div style="text-align:center;">{{ params.middle_text }}</div>
+                    </div>
+                    {% endif %}
+                {% endwith %}
+            {% else %} 
+                There are no responses to this question.
             {% endif %}
-        </ul>
-    </td>
+        </td>
+        <td width = "50%">
+            <b>Statistics:</b>
+            <ul>
+                <li>Number of responses: {{ q.answers|length }}/{{ num_participants }}</li>
+                {% if q.question.question_type.is_numeric %}
+                    <li>Average: {{ q.answers|unpack_answers|average }}</li>
+                    <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
+                    {% if q.question.per_class %}
+                        <li>Average for all classes: {{ q.question.global_average }}</li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </td>
+    </tr>
 {% else %}
-    <td>
-    {% ifequal q.question.question_type.name "Favorite Class" %}
-        <ol>
-        {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
-            <li>{{ fav.title }} ({{fav.votes}} votes)</li>
-        {% empty %}
-            <li>There are no responses to this question.</li>
-        {% endfor %}
-        </ol>
-    {% else %}
-        <ul>
-        {% for ans in q.answers|drop_empty_answers %}
-            <li><a href="/{{ tl }}/{{ program.getUrlBase }}/survey/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
-        {% empty %}
-            <li>There are no responses to this question.</li>
-        {% endfor %}
-        </ul>
-    {% endifequal %}
-    </td>
+    <tr>
+        <td width="100%" colspan="2">
+        {% ifequal q.question.question_type.name "Favorite Class" %}
+            <ol>
+            {% for fav in q.answers|unpack_answers|favorite_classes:20 %}
+                <li>{{ fav.title }} ({{fav.votes}} votes)</li>
+            {% empty %}
+                <li>There are no responses to this question.</li>
+            {% endfor %}
+            </ol>
+        {% else %}
+            <ul>
+            {% for ans in q.answers|drop_empty_answers %}
+                <li><a href="/{{ tl }}/{{ program.getUrlBase }}/survey/review_single?{{ ans.survey_response.id }}" title="View this person&quot;s other responses">{{ ans.answer }}</a></li>
+            {% empty %}
+                <li>There are no responses to this question.</li>
+            {% endfor %}
+            </ul>
+        {% endifequal %}
+        </td>
+    </tr>
 {% endif %}
 </tr>
 </table>
