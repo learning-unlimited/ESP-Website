@@ -43,7 +43,7 @@ Minor new features
 - The teacher major and affiliation fields are now included as options in the arbitrary user list module.
 - Phase zero is no longer included in the student registration checkboxes interface. More details are now included on the lottery confirmation page.
 - Histograms for numerical questions in the built-in surveys now show the entire possible range of answers
-- The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in student search bar now only searches students (for the autocomplete).
+- The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
