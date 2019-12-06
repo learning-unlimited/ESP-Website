@@ -1,5 +1,4 @@
 from django import forms
-from esp.program.models import RegistrationProfile
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import K12School, ESPUser
@@ -22,9 +21,6 @@ class OnSiteRegForm(forms.Form):
         super(OnSiteRegForm, self).__init__(*args, **kwargs)
         self.fields['grade'].choices = (
             [('', '')] + [(x, x) for x in ESPUser.grade_options()])
-
-class OnSiteRapidCheckinForm(forms.Form):
-    user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Student')
 
 class OnsiteBarcodeCheckinForm(forms.Form):
     uids = forms.CharField(label='',widget=forms.Textarea(attrs={'rows': 10}))
