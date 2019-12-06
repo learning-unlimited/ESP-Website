@@ -724,6 +724,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
                 result[c.name].prog_available_times = c.available_times_html(self)
+                result[c.name].num_items = c.number_duplicates()
             else:
                 result[c.name].timeslots.append(c.event)
 
