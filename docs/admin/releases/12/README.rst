@@ -16,6 +16,11 @@ Onsite changes
 - You can now customize the teacher check-in text message in a template override (``program/modules/teachercheckinmodule/teachertext.txt``)
 - When texting all unchecked-in teachers through the teacher check-in page, you can now opt to skip teachers of classes with at least one checked-in teacher.
 
+Floating Resources changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Admins can now specify how many of a particular floating resource are available (e.g. 5 VGA adapters or 10 expo markers)
+- When assigning a floating resource on the /manageclass page, a user-friendly error is now displayed if the selected floating resource is not available for the specified timeslots
+
 Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Links to class and teacher email addresses are now included for each class on a teacher's main registration page.
@@ -32,11 +37,13 @@ Flag and classsearch changes
 - Clickable items (such as flags and class titles) are now more obvious and neater on the classsearch page and other places flags are shown.
 
 Minor new features
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 - You can now include unreviewed classes in the scheduling diagnostics.
 - You can now sort the results of a user search. The results also now include the last program for which a user has a profile (has registered).
 - The teacher major and affiliation fields are now included as options in the arbitrary user list module.
 - Phase zero is no longer included in the student registration checkboxes interface. More details are now included on the lottery confirmation page.
+- Histograms for numerical questions in the built-in surveys now show the entire possible range of answers
+- The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in student search bar now only searches students (for the autocomplete).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
