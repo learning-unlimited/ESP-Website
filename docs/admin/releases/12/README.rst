@@ -44,6 +44,7 @@ Minor new features
 - Phase zero is no longer included in the student registration checkboxes interface. More details are now included on the lottery confirmation page.
 - Histograms for numerical questions in the built-in surveys now show the entire possible range of answers
 - The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
+- Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
