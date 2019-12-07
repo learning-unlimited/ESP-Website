@@ -53,8 +53,8 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
         <div class="fqr-class" id="fqr-class-{{class.id}}">
-            <div class="fqr-class-header {% if class.isReviewed %}{% if class.isAccepted %}accepted{% else %}rejected{% endif %}{% else %}unreviewed{% endif %}" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');">
-                {{class.emailcode}}: {{class.title}} <br/>
+            <div class="fqr-class-header {% if class.isReviewed %}{% if class.isAccepted %}accepted{% else %}rejected{% endif %}{% else %}unreviewed{% endif %}" title="Click to toggle class details" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');$j(this).toggleClass('active');">
+                {{class.emailcode}}: {{class.title}}
             </div>
             <div class="fqr-class-flags">
                 Flags: 

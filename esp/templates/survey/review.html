@@ -21,7 +21,7 @@
 {% for s in surveys %}
     <table class="fullwidth">
     <tr>
-        <th>Responses for: {{ s.name }}</th>
+        <th><h2>Responses for: {{ s.name }}</h2></th>
     </tr>
     </table>
     {% for q in s.display_data.questions %}
