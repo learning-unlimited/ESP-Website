@@ -2,6 +2,7 @@
 from django import forms
 
 from esp.cal.models import Event
+from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
@@ -146,9 +147,19 @@ class SectionManageForm(ManagementForm):
             sec.classroomassignments().delete()
             for r in rooms:
                 sec.assign_room(r)
+        sec.resourceassignments().delete()
         for r in self.cleaned_data['resources']:
+            res_list = []
+            #check if there's an available floating resource for each time slot
             for ts in sec.meeting_times.all():
-                sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
+                avails = [res for res in sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r) if res.is_available()]
+                if len(avails)== 0:
+                    raise ESPError('No floating resource "%s" available for timeslot %s.' % (r, ts), log=True)
+                else:
+                    res_list.append(avails[0])
+            #if we made it this far, the resources are available, so we can assign them
+            for res in res_list:
+                res.assign_to_section(sec)
         sec.max_class_capacity = self.cleaned_data['class_size']
         sec.save()
 

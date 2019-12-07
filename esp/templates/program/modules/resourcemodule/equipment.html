@@ -1,4 +1,4 @@
-{% ifequal open_section "restype" %}
+{% ifequal open_section "equipment" %}
 <button class="dsphead active">
    <b>Step 4: Floating Resources</b> (click to expand/contract)
 </button>
@@ -32,10 +32,11 @@
 </form>
 
 <table align="center" cellpadding="0" cellspacing="0" width="100%">
-    <tr><th colspan="2">Floating Resources for {{ prog.niceName }}</th></tr>
-    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="5">Floating Resources for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="5"><table cellpadding="0" cellspacing="0" width="100%">
     <tr>
         <td class="underline"><b>Name</b></td>
+        <td class="underline"><b>Number</b></td>
         <td class="underline"><b>Type</b></td>
         <td class="underline"><b>Choice</b></td>
         <td class="underline"><b>Available Times</b></td>
@@ -47,6 +48,7 @@
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=edit&id={{ r.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/equipment?op=delete&id={{ r.id }}">[Delete]</a>
             </td>
+            <td class="underline">{{ r.num_items }}</td>
             <td class="underline">{{ r.res_type.name }}{% if r.res_type.hidden %} (Hidden){% endif %}</td>
             <td class="underline">{{ r.attribute_value }}</td>
             <td class="underline">{% for t in r.timegroup %}{{ t }}<br />{% endfor %}</td>
