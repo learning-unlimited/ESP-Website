@@ -139,7 +139,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         s1, s2 = t.getTaughtSections(self.program)[:2]
         timeslots = self.program.getTimeSlots().order_by('start')
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
-        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1, 'override': 'false'})
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Failed to assign meeting times.")
         # Try to schedule the other class.
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s2.id})
