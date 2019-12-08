@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^manage/unenroll_student/?$', views.unenroll_student),
     url(r'^manage/usersearch/?$', views.usersearch),
     url(r'^manage/flushcache/?$', views.flushcache),
+    url(r'^manage/emails/?$', views.emails),
     url(r'^manage/statistics/?$', views.statistics),
     url(r'^manage/preview/?$', views.template_preview),
     url(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts),
