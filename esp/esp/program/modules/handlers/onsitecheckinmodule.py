@@ -33,12 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarcodeCheckinForm
+from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
+from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.users.models    import ESPUser, User, Record
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
@@ -154,9 +155,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context = {}
         if request.method == 'POST':
             #   Handle submission of student
-            form = OnSiteRapidCheckinForm(request.POST)
+            form = StudentSearchForm(request.POST)
             if form.is_valid():
-                student = form.cleaned_data['user']
+                student = form.cleaned_data['target_user']
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     recs = Record.objects.filter(user=student, event="attended", program=prog)
@@ -169,8 +170,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
+                form = StudentSearchForm(initial={'target_user': student.id})
         else:
-            form = OnSiteRapidCheckinForm()
+            form = StudentSearchForm()
 
         context['module'] = self
         context['form'] = form

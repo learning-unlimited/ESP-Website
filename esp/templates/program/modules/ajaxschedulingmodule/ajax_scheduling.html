@@ -17,7 +17,6 @@
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
-<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css" />
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
@@ -70,7 +69,8 @@
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
-            <li><a href="#filters">Filters</a></li>
+            <li><a href="#filters">Class Filters</a></li>
+            <li><a href="#filters2">Room Filters</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -126,6 +126,28 @@
                     <div id="section-filter-unapproved">
                         <input id="section-filter-unapproved" type="checkbox"></input>
                         <label for="section-filter-unapproved">Hide unapproved classes</label>
+                    </div>
+                  </form>
+                </div>
+                <div id="filters2">
+                  <form>
+                    <label for="room-filter-capacity"><b>Room Capacity</b></label><br />
+                    <div id="room-filter-capacity">
+                        <label for="room-filter-capacity-min">Min:</label>
+                        <input id="room-filter-capacity-min" class="numeric"></input> Students
+                        <br />
+                        <label for="room-filter-capacity-max">Max:</label>
+                        <input id="room-filter-capacity-max" class="numeric"></input> Students
+                    </div>
+                    <br />
+                    <div id="room-filter-resource">
+                        <label for="room-filter-resource-text"><b>Resource</b></label><br />
+                        <input id="room-filter-resource-text"></input>
+                    </div>
+                    <br />
+                    <div id="room-filter-name">
+                        <label for="room-filter-name-text"><b>Name</b></label><br />
+                        <input id="room-filter-name-text"></input>
                     </div>
                   </form>
                 </div>
