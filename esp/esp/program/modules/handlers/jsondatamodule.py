@@ -177,6 +177,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
         return {'timeslots': lunch_timeslots}
+    lunch_timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @aux_call
     @json_response()
