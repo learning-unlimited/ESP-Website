@@ -1096,7 +1096,9 @@ class ClassSection(models.Model):
             return eventList[0]
 
     def isFull(self, ignore_changes=False):
-        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
+        if len(self.get_meeting_times()) == 0:
+            return True
+        elif (self.num_students() == self._get_capacity(ignore_changes) == 0):
             return False
         else:
             return (self.num_students() >= self._get_capacity(ignore_changes))
@@ -1574,7 +1576,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
-            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
+            if not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
 
