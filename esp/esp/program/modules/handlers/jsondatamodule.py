@@ -237,12 +237,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 teacher_dict[t.id] = teacher
 
         # Build up teacher availability
-        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
-        avail_for_user = defaultdict(list)
-        for user_id, event_id in availabilities:
-            avail_for_user[user_id].append(event_id)
         for teacher in teachers:
-            teacher['availability'] = avail_for_user[teacher['id']]
+            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
 
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -314,12 +310,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 teacher_dict[t.id] = teacher
 
         # Build up teacher availability
-        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
-        avail_for_user = defaultdict(list)
-        for user_id, event_id in availabilities:
-            avail_for_user[user_id].append(event_id)
         for teacher in teachers:
-            teacher['availability'] = avail_for_user[teacher['id']]
+            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
 
         return {'sections': sections, 'teachers': teachers}
     sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
@@ -417,12 +409,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 teacher_dict[t.id] = teacher
 
         # Build up teacher availability
-        availabilities = UserAvailability.objects.filter(user__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
-        avail_for_user = defaultdict(list)
-        for user_id, event_id in availabilities:
-            avail_for_user[user_id].append(event_id)
         for teacher in teachers:
-            teacher['availability'] = avail_for_user[teacher['id']]
+            teacher['availability'] = [event.id for event in ESPUser.objects.get(id=teacher['id']).getAvailableTimes(prog, ignore_classes=True)]
 
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
@@ -939,16 +927,11 @@ teachers[key].filter(is_active = True).distinct().count()))
         """
 
         teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
-        resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
-        resources_for_user = defaultdict(list)
-
-        for resource in resources:
-            resources_for_user[resource['user_id']].append(resource['event_id'])
 
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
-                'availability': resources_for_user[t.id]
+                'availability': [event.id for event in t.getAvailableTimes(prog, ignore_classes=True)]
             } for t in teachers ]
 
         return {'teachers': teacher_dicts}
