@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser, User, Record
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
@@ -1345,7 +1345,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         studentList = []
         for student in students:
-            paid_symbol = ''
             finaid_status = 'None'
             if student.appliedFinancialAid(prog):
                 if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
@@ -1354,12 +1353,16 @@ class ProgramPrintables(ProgramModuleObj):
                     finaid_status = 'Req. (No RL)'
 
             iac = IndividualAccountingController(self.program, student)
-            if iac.amount_due() <= 0:
-                paid_symbol = 'X'
             if student.hasFinancialAid(self.program):
                 finaid_status = 'Approved'
 
-            studentList.append({'user': student, 'paid': paid_symbol, 'amount_due': iac.amount_due(), 'finaid': finaid_status})
+            studentList.append({'user': student,
+                                'paid': Record.user_completed(student, "paid", self.program) or iac.has_paid(in_full=True),
+                                'amount_due': iac.amount_due(),
+                                'finaid': finaid_status,
+                                'checked_in': Record.user_completed(student, "attended",self.program),
+                                'med': Record.user_completed(student, "med", self.program),
+                                'liab': Record.user_completed(student, "liab", self.program)})
 
         context['students'] = students
         context['studentList'] = studentList
