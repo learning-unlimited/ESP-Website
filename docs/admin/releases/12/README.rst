@@ -25,6 +25,11 @@ Teacher registration changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 - Links to class and teacher email addresses are now included for each class on a teacher's main registration page.
 
+Printables changes
+~~~~~~~~~~~~~~~~~~
+- Revamped student schedules. They are now in a portrait layout and include amount due, names of teachers for classes, and barcodes for check-in.
+- The ``studentchecklist`` printable now updates the statuses in the checklist based on the records through the website of whether students have been checked-in, have paid, or have turned in forms.
+
 Scheduler changes
 ~~~~~~~~~~~~~~~~~
 - Room requests are now included in the scheduler.
@@ -35,6 +40,7 @@ Flag and classsearch changes
 - Flags are now in a separate category on the dashboard (and are prettier).
 - Newly created flags no longer disappear when you click on their header.
 - Clickable items (such as flags and class titles) are now more obvious and neater on the classsearch page and other places flags are shown.
+- Flag names are now shown on the teacher checkin page without having to expand the class. Clicking on the flag names reveals the flag details.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -55,6 +61,8 @@ Minor bug fixes
 - The background for the userview page will always be at least as long as the content on the page.
 - Fixed survey dumps in cases where survey names had certain forbidden characters.
 - You can now actually sort the classes on the dashboard by many fields.
+- Fixed a bug that allowed teachers to see the rosters for any sections/classes, even if they weren't teachers for them.
+- Fixed some bugs in the class catalog related to hiding classes and registration buttons. Unscheduled sections are now considered "Full".
 
 Known issues of new features
 ============================
