@@ -1,5 +1,6 @@
 {% extends "main.html" %}
 {% load render_qsd %}
+{% load users %}
 
 {% block title %} Manage Phase Zero for {{program.niceName}} {% endblock %}
 
@@ -74,7 +75,7 @@ Number of students that have entered the student lottery:
 </br>
 <ul id="applicants">
 {% for entrant in entrants %}
-<li>{{entrant}} - {{entrant.getGrade}}</li>
+<li>{{entrant}} - {{entrant|getGradeForProg:program.id}}</li>
 {% endfor %}
 </ul>
 </div>

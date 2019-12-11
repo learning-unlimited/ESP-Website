@@ -668,7 +668,7 @@ class ProgramPrintables(ProgramModuleObj):
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
         for s in students:
             extra_dict = extra_func(s)
@@ -1301,7 +1301,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
@@ -1374,7 +1374,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ Gives you a checklist for each classroom with the students that are supposed to be in that
             classroom.  The form has boxes for payment and forms.  This is useful for the first day
             of a program. """
-        context = {'module': self}
+        context = {'module': self, 'program': prog}
 
         students= [ user for user in self.program.students()['confirmed']]
         students.sort()
