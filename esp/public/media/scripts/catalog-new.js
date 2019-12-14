@@ -290,10 +290,38 @@ var CatalogViewModel = function () {
         json_views.push('lottery_preferences');
     }
     json_fetch(json_views, function (data) {
+        // update sections
+        for (var key in data.sections) {
+            var sec = data.sections[key];
+            if (sec.status <= 0 || sec.times.length == 0) {
+                // remove un-approved or unscheduled sections
+                delete data.sections[key];
+            }
+            else if (catalog_type == 'phase2' &&
+                     !(key in data.timeslot_sections)) {
+                // remove sections out of this timeslot
+                delete data.sections[key];
+            }
+            else {
+                data.sections[key] = new ClassSection(sec, self);
+            }
+        }
+        self.sections(data.sections);
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.status <= 5) {
+            var shown_secs = 0;
+            for (var sec of cls.sections) {
+                // count how many of the sections are still shown
+                if (sec in data.sections) {
+                    shown_secs++;
+                }
+            }
+            if (shown_secs == 0) {
+                // remove classes with no sections to show
+                delete data.classes[key];
+            }
+            else if (cls.status <= 5) {
                 // remove unapproved or hidden classes
                 delete data.classes[key];
             }
@@ -325,23 +353,6 @@ var CatalogViewModel = function () {
             }
         }
         self.classes(data.classes);
-        // update sections
-        for (var key in data.sections) {
-            var sec = data.sections[key];
-            if (sec.status <= 0) {
-                // remove un-approved sections
-                delete data.sections[key];
-            }
-            else if (catalog_type == 'phase2' &&
-                     !(key in data.timeslot_sections)) {
-                // remove sections out of this timeslot
-                delete data.sections[key];
-            }
-            else {
-                data.sections[key] = new ClassSection(sec, self);
-            }
-        }
-        self.sections(data.sections);
         // update teachers
         for (var key in data.teachers) {
             data.teachers[key] = new Teacher(data.teachers[key], self);
