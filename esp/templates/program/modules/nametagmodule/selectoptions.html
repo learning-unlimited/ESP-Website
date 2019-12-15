@@ -120,7 +120,7 @@ To have good quality IDs:<br />
 <script type="text/javascript">
 var $old_this = $j('#students');
 $j('input:radio[name="type"]').change( function(e){
-    option = $j(this).val();
+    var option = $j(this).val();
     if (option == "misc_info") {
         $j('#misc_wrapper').toggle();
     } else if (option == "other") {
