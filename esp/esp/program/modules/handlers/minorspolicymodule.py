@@ -6,6 +6,8 @@ from esp.users.models   import ESPUser, Record
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.tagdict.models import Tag
+import ast
 
 def minorspolicyacknowledgementform_factory(prog):
     name = "MinorsPolicyAcknowledgementForm"
@@ -13,19 +15,25 @@ def minorspolicyacknowledgementform_factory(prog):
     date_range = prog.date_range()
     label = u"I have read the above, and I commit to satisfying the MIT Minors Policy."
 
+    backgroundcheck_choices = Tag.getProgramTag('minors_backgroundcheck_choices', prog, default=str([
+        ('affiliated', 'I am a current MIT student, faculty, or staff.'),
+        ('recent_check', 'I am not currently MIT-affiliated, but I have received an MIT background check in the past year.'),
+        ('commit_check', 'I am not currently MIT-affiliated, and I will initiate a background check by the registration deadline.'),
+    ]))
+    backgroundcheck_label = Tag.getProgramTag('minors_backgroundcheck_label', prog, default='The MIT Minors Policy requires that all non-MIT-affiliated teachers be background checked, and all teachers be background checked for programs longer than 3 days.')
+
+    observing_choices = Tag.getProgramTag('minors_observing_choices', prog, default=str([
+        ('no', 'I have coteachers or commit to finding coteachers for all of my classes by the registration deadline.'),
+        ('yes', "I agree to sit in on an hour of someone else's class for each hour of my classes without a coteacher."),
+        ('other', 'Other: I will explain in an email to the directors at esp@mit.edu.'),
+    ]))
+    observing_label = Tag.getProgramTag('minors_observing_label', prog, default='The MIT Minors Policy requires that all classes have at least 2 adults present at all times.')
+
     d = dict(
-        backgroundcheck_choice = forms.ChoiceField(label='Background Checks', choices=[
-            ('affiliated', 'I am a current MIT student, faculty, or staff.'),
-            ('recent_check', 'I am not currently MIT-affiliated, but I have received an MIT background check in the past year.'),
-            ('commit_check', 'I am not currently MIT-affiliated, and I will initiate a background check by Thursday, October 17.'),
-        ], widget=BlankSelectWidget(),
-                                        help_text='\n(The MIT Minors Policy requires that all non-MIT-affiliated teachers be background checked.)' , required=True),
-        observing_choice = forms.ChoiceField(label='Coteaching or Observing', choices=[
-            ('no', 'I have coteachers or commit to finding coteachers for all of my classes by the registration deadline.'),
-            ('yes', "I agree to sit in on an hour of someone else's class for each hour of my classes without a coteacher."),
-            ('other', 'Other: I will explain in an email to the directors at splash@mit.edu.'),
-        ], widget=BlankSelectWidget(),
-                                        help_text='\n(The MIT Minors Policy requires that all classes have at least 2 adults present at all times.)' , required=True),
+        backgroundcheck_choice = forms.ChoiceField(label='Background Checks', choices=ast.literal_eval(backgroundcheck_choices), widget=BlankSelectWidget(),
+                                        help_text="\n({})".format(backgroundcheck_label), required=True),
+        observing_choice = forms.ChoiceField(label='Coteaching or Observing', choices=ast.literal_eval(observing_choices), widget=BlankSelectWidget(),
+                                        help_text="\n({})".format(observing_label), required=True),
     )
     return type(name, bases, d)
 
