@@ -86,9 +86,15 @@
         <th colspan="2">Submit</th>
     </tr>
     <tr>
-        <td colspan="2" class="smaller"><p>
-        Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
-        </p></td>
+        <td colspan="2" class="smaller">
+
+
+    {% inline_program_qsd_block program "classreg_submit_advisories" %}
+        <p>Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."</p>
+    {% end_inline_program_qsd_block %}
+
+
+        </td>
     </tr>
     <tr>
         <td align="center" colspan="2">
