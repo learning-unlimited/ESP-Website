@@ -45,8 +45,11 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.tagdict.models import Tag
 from datetime import datetime, timedelta
+from decimal import Decimal
 import json
+import ast
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
@@ -193,7 +196,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields['allow_lateness'].widget = forms.HiddenInput()
             self.fields['allow_lateness'].initial = 'False'
 
-        self.fields['duration'].choices = sorted(crmi.getDurations())
+        class_durations_tag = Tag.getProgramTag('class_durations', prog)
+        if class_durations_tag is not None:
+            minutes_list = ast.literal_eval(class_durations_tag)
+            class_durations = [
+                (Decimal(minutes) / 60, str(int(minutes / 60)) + ':' + str(minutes % 60).rjust(2,'0'))
+                for minutes in minutes_list
+            ]
+        else:
+            class_durations = sorted(crmi.getDurations())
+        self.fields['duration'].choices = class_durations
         hide_choice_if_useless( self.fields['duration'] )
 
         # session_count
