@@ -155,7 +155,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
             sections = user.getTaughtSections(program = prog)
-        
+
         for section in sections:
             section.student_list = []
             for student in section.students():
