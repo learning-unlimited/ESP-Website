@@ -1,0 +1,73 @@
+{% extends "program/modules/teacheronsite/webapp.html" %}
+
+{% block head %}
+<script>
+function toggleCheck(element) {
+    var checkbox = element.nextElementSibling;
+    if (checkbox.checked) {
+        element.innerHTML = "check_box_outline_blank";
+    } else {
+        element.innerHTML = "check_box";
+    }
+    checkbox.checked = !checkbox.checked;
+}
+</script>
+{% endblock %}
+
+{% block body %}
+<center>
+  <div class="main">
+    {% for section in sections %}
+        <table class="sectionroster">
+            <thead>
+                <th colspan="4" class="sectiontitle">
+                    <i>Roster for {{ section }}</i>
+                </th>
+                <tr class="rosterheader">
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        Grade
+                    </th>
+                    <th>
+                        Checked In
+                    </th>
+                    <th>
+                        Attending Class?
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for student in section.student_list %}
+                <tr>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.getGrade }}</td>
+                    <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
+                    <td>
+                        <i class="material-icons-outlined md-5 pointer" onclick="toggleCheck(this);">{% if student.attending %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                        <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attending %} checked{% endif %}>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% if not forloop.last %}
+            <hr size="5" noshade="" style="margin: 0px;">
+        {% endif %}
+    {% endfor %}
+    <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>
+  </div>
+</center>
+<div class="navbar bottom">
+  <table>
+    <tr>
+      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">event_note</i>
+        <br>Section Info</td>
+      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
+        <br>Section Roster</td>
+    </tr>
+  </table>
+</div>
+
+{% endblock %}
