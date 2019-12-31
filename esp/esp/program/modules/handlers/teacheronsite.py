@@ -170,7 +170,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     @meets_deadline('/Webapp')
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = {}
-        context['user'] = request.user
+        user = request.user
+        context['user'] = user
         context['program'] = prog
         context['one'] = one
         context['two'] = two
@@ -180,7 +181,14 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             return survey_review(request, tl, one, two, self.baseDir()+'survey.html', context)
         else:
             context['survey_page'] = 'survey'
-            return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
+            if 'done' in request.GET:
+                context['survey_status'] = "submitted"
+                return render_to_response(self.baseDir()+'survey.html', request, context)
+            elif Record.user_completed(user, "teacher_survey", prog):
+                context['survey_status'] = "completed"
+                return render_to_response(self.baseDir()+'survey.html', request, context)
+            else:
+                return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
 
     def isStep(self):
         return Tag.getBooleanTag('webapp_isstep', default=False)
