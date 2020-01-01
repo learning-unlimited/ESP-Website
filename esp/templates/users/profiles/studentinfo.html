@@ -42,6 +42,9 @@ detailed explanation of our age and grade level policy, please click
     {% endif %}
     </div>
 </div>
+{% if user.getGrade and allow_grade_change != "True" %}
+    {% include "users/profiles/gradechangerequestinfo.html" %}
+{% endif %}
 
 {% if form.gender %}
 <div class="control-group">
