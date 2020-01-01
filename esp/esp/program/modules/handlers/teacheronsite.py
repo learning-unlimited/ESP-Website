@@ -35,7 +35,6 @@ from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
 from datetime import datetime
-from django.template.loader import render_to_string
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     @classmethod
