@@ -44,7 +44,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser, TeacherInfo
+from esp.users.models            import User, ESPUser, Record, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -214,6 +214,49 @@ class TeacherClassRegModule(ProgramModuleObj):
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
                 if cls.parent_program_id == self.program.id ]
+
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/View")
+    def section_attendance(self, request, tl, one, two, module, extra, prog):
+        context = {'program': prog, 'one': one, 'two': two}
+        attending_students = [int(student) for student in request.POST.getlist('attending')]
+
+        user = request.user
+        user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
+        context['user'] = user
+        
+        secid = 0
+        if 'secid' in request.POST:
+            secid = request.POST['secid']
+        else:
+            secid = extra
+        sections = ClassSection.objects.filter(id = secid)
+        if len(sections) == 1:
+            if not request.user.canEdit(sections[0].parent_class):
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            else:
+                section = sections[0]
+                reg_type = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+                if request.POST and 'submitted' in request.POST:
+                    for student in section.students():
+                        if student.id in attending_students:
+                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = reg_type)[0].unexpire()
+                        else:
+                            srs = StudentRegistration.objects.filter(user = student, section = section, relationship = reg_type)
+                            for sr in srs:
+                                sr.expire()
+
+                section.student_list = []
+                for student in section.students():
+                    student.checked_in = Record.user_completed(student, "attended", prog)
+                    student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = reg_type).exists()
+                    section.student_list.append(student)
+                context['section'] = section
+        elif len(sections) > 1:
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+
+        return render_to_response(self.baseDir()+'section_attendance.html', request, context)
 
     @aux_call
     @needs_teacher
