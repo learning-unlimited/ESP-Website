@@ -225,7 +225,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         user = request.user
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
         context['user'] = user
-        
+
         secid = 0
         if 'secid' in request.POST:
             secid = request.POST['secid']
