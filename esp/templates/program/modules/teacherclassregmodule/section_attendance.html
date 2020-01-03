@@ -23,7 +23,7 @@ Please select a section from the dropdown below.
 
 <center>
     <select name="secid" onchange="location.href='/teach/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 400px;">
-        {% if not section %}
+        {% if sec != section %}
             <option disabled selected="selected">
                 (Select a section)
             </option>
@@ -40,25 +40,28 @@ Please select a section from the dropdown below.
 <div id="program_form">
 <form action="/teach/{{ one }}/{{ two }}/section_attendance/{{ section.id }}" method="post">
 <input type="hidden" name="submitted">
-<table align="center" width="400px">
+<table align="center" width="100%">
 <thead>
 <tr>
- <th>
+ <th width="5%">
    #
  </th>
- <th>
+ <th width="30%">
   Student Name
  </th>
- <th>
+ <th width="12.5%">
+  Student ID #
+ </th>
+ <th width="12.5%">
   Student Grade
  </th>
- <th>
+ <th width="20%">
   School
  </th>
- <th>
+ <th width="10%">
   Checked In?
  </th>
- <th>
+ <th width="10%">
   Attending Section?
  </th>
 </tr>
@@ -68,14 +71,36 @@ Please select a section from the dropdown below.
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
+        <td>{{ student.id }}</td>
         <td>{{ student|getGradeForProg:program.id }}</td>
         <td>{{ student.getLastProfile.student_info.getSchool }}</td>
         <td align="center"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
         <td align="center"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
     </tr>
+{% empty %}
+<tr>
+    <td colspan="7" align="center">
+        No students enrolled in this section
+    </td>
+</tr>
 {% endfor %}
 <tr>
-    <td colspan = "6" align="center">
+    <th colspan="7" align="center">
+        Enter any other (unenrolled) students here:
+        <br />(as whitespace-separated usernames/user IDs)
+    </th>
+</tr>
+<tr>
+    <td colspan = "7" align="center">
+        <textarea name="misc_students" rows="10" style="width:75%"></textarea>
+        {% if not_found %}
+        <br /><span style="color:red">{{ not_found|join:", " }} not found</span>
+        {% endif %}
+        <br /><input type="checkbox" name="enroll" checked>Enroll these students in this section
+        <br /><input type="checkbox" name="unenroll" checked>Unenroll these students from conflicting sections
+    </td>
+<tr>
+    <td colspan = "7" align="center">
         <input type="Submit" class="fancybutton" value="Submit Attendance" /><br />
     </td>
 </tr>

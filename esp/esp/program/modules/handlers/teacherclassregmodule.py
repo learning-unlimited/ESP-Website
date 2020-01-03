@@ -36,7 +36,7 @@ from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile, ScheduleMap
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
@@ -225,6 +225,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         user = request.user
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
         context['user'] = user
+        context['not_found'] = []
 
         secid = 0
         if 'secid' in request.POST:
@@ -237,20 +238,46 @@ class TeacherClassRegModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
             else:
                 section = sections[0]
-                reg_type = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+                attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
+                enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
                 if request.POST and 'submitted' in request.POST:
                     for student in section.students():
                         if student.id in attending_students:
-                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = reg_type)[0].unexpire()
+                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
                         else:
-                            srs = StudentRegistration.objects.filter(user = student, section = section, relationship = reg_type)
+                            srs = StudentRegistration.objects.filter(user = student, section = section, relationship = attended)
                             for sr in srs:
                                 sr.expire()
+                    misc_students = request.POST.get('misc_students').split()
+                    for code in misc_students:
+                        try:
+                            student = ESPUser.objects.get(id=code)
+                        except (ValueError, ESPUser.DoesNotExist):
+                            try:
+                                student = ESPUser.objects.get(username=code)
+                            except (ValueError, ESPUser.DoesNotExist):
+                                context['not_found'].append(code)
+                                continue
+                        if student.isStudent():
+                            Record.objects.get_or_create(user=student, program=prog, event='attended')
+                            StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
+                            if 'unenroll' in request.POST:
+                                sm = ScheduleMap(student, prog)
+                                for ts in [ts.id for ts in section.get_meeting_times()]:
+                                    if ts in sm.map and len(sm.map[ts]) > 0:
+                                        for sm_sec in sm.map[ts]:
+                                            sm_sec.unpreregister_student(student)
+                            if 'enroll' in request.POST:
+                                srs = StudentRegistration.objects.filter(user = student, section = section, relationship = enrolled)
+                                if srs.count() > 0:
+                                    srs[0].unexpire()
+                                else:
+                                    StudentRegistration.objects.create(user = student, section = section, relationship = enrolled)
 
                 section.student_list = []
                 for student in section.students():
                     student.checked_in = Record.user_completed(student, "attended", prog)
-                    student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = reg_type).exists()
+                    student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
                     section.student_list.append(student)
                 context['section'] = section
         elif len(sections) > 1:
