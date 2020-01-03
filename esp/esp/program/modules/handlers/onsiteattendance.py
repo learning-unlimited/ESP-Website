@@ -35,10 +35,10 @@ Learning Unlimited, Inc.
 
 from django.db.models.query      import Q
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import StudentRegistration
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, User, Record
+from esp.users.models import ESPUser
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
 
