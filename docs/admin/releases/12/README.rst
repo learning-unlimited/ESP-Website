@@ -41,6 +41,7 @@ Flag and classsearch changes
 - Newly created flags no longer disappear when you click on their header.
 - Clickable items (such as flags and class titles) are now more obvious and neater on the classsearch page and other places flags are shown.
 - Flag names are now shown on the teacher checkin page without having to expand the class. Clicking on the flag names reveals the flag details.
+- Added a class flag printable.
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
