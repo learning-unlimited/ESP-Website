@@ -219,10 +219,15 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            section = ClassSection.objects.get(id=extra)
-        except (ValueError, ClassSection.DoesNotExist):
-            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
+        secid = 0
+        if 'secid' in request.POST:
+            secid = request.POST['secid']
+        else:
+            secid = extra
+        sections = ClassSection.objects.filter(id = secid)
+        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        section = sections[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section, 'cls': section})
 
@@ -230,10 +235,15 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            cls = ClassSubject.objects.get(id=extra)
-        except (ValueError, ClassSubject.DoesNotExist):
-            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
+        clsid = 0
+        if 'clsid' in request.POST:
+            clsid = request.POST['clsid']
+        else:
+            clsid = extra
+        classes = ClassSubject.objects.filter(id = clsid)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        cls = classes[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls})
 

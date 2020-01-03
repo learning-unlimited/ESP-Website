@@ -129,10 +129,10 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Fetch two consecutive vacancies in two different rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
         rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a2 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        a2 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
 
         # Schedule one class.
         ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()

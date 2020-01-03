@@ -3,14 +3,14 @@
  *
  * @param el: The jquery element that this cell should be rendered on.
  * @param section: The section that should be rendered on this cell (may be null).
- * @param room_name: The name (ID) of the room that corresponds to this cell.
+ * @param room_id: The ID of the room that corresponds to this cell.
  * @param timeslot_id: The ID of the timeslot that corresponds to this cell.
  * @param matrix: The matrix that created the cell.
  *
  * Public properties and methods:
  * @prop el:
  * @prop cellColors
- * @prop room_name
+ * @prop room_id
  * @prop timeslot_id
  * @prop matrix
  * @prop disabled
@@ -22,11 +22,11 @@
  * @method addSection(section)
  * @method removeSection()
  */
-function Cell(el, section, room_name, timeslot_id, matrix) {
+function Cell(el, section, room_id, timeslot_id, matrix) {
     this.el = el;
 
     this.cellColors = new CellColors();
-    this.room_name = room_name;
+    this.room_id = room_id;
     this.timeslot_id = timeslot_id;
     this.matrix = matrix;
     this.disabled = false;
@@ -196,8 +196,8 @@ function Cell(el, section, room_name, timeslot_id, matrix) {
 /**
  * This is a cell where a room is not available in that time block.
  */
-function DisabledCell(el, room_name, timeslot_id) {
-    this.room_name = room_name;
+function DisabledCell(el, room_id, timeslot_id) {
+    this.room_id = room_id;
     this.timeslot_id = timeslot_id;
     this.el = el;
     this.disabled = true;
