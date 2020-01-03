@@ -49,6 +49,11 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     <a class="btn btn-reject" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">spreadsheet (by time)</a>
 </div>
 </br>
+<div class="btn-group">
+    <a class="btn btn-approve" href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">class flags</a>
+    <a class="btn btn-unreview" href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">class flags (with comments)</a>
+</div>
+</br>
 
 <div class="flag-query-results" id="program_form">
     {% for class in queryset %}
