@@ -240,6 +240,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 section = sections[0]
                 attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
                 enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
+                onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
                 if request.POST and 'submitted' in request.POST:
                     for student in section.students():
                         if student.id in attending_students:
@@ -268,11 +269,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                                         for sm_sec in sm.map[ts]:
                                             sm_sec.unpreregister_student(student)
                             if 'enroll' in request.POST:
-                                srs = StudentRegistration.objects.filter(user = student, section = section, relationship = enrolled)
-                                if srs.count() > 0:
-                                    srs[0].unexpire()
-                                else:
-                                    StudentRegistration.objects.create(user = student, section = section, relationship = enrolled)
+                                for rt in [enrolled, onsite]:
+                                    srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                    if srs.count() > 0:
+                                        srs[0].unexpire()
+                                    else:
+                                        StudentRegistration.objects.create(user = student, section = section, relationship = rt)
 
                 section.student_list = []
                 for student in section.students():
