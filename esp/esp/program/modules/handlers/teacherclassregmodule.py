@@ -220,7 +220,6 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline("/Classes/View")
     def section_attendance(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog, 'one': one, 'two': two}
-        attending_students = [int(student) for student in request.POST.getlist('attending')]
 
         user = request.user
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
@@ -242,8 +241,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                 enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
                 onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
                 if request.POST and 'submitted' in request.POST:
+                    attending_students = [int(student) for student in request.POST.getlist('attending')]
                     for student in section.students():
                         if student.id in attending_students:
+                            Record.objects.get_or_create(user=student, program=prog, event='attended')
                             StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
                         else:
                             srs = StudentRegistration.objects.filter(user = student, section = section, relationship = attended)
@@ -262,19 +263,20 @@ class TeacherClassRegModule(ProgramModuleObj):
                         if student.isStudent():
                             Record.objects.get_or_create(user=student, program=prog, event='attended')
                             StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
-                            if 'unenroll' in request.POST:
-                                sm = ScheduleMap(student, prog)
-                                for ts in [ts.id for ts in section.get_meeting_times()]:
-                                    if ts in sm.map and len(sm.map[ts]) > 0:
-                                        for sm_sec in sm.map[ts]:
-                                            sm_sec.unpreregister_student(student)
-                            if 'enroll' in request.POST:
-                                for rt in [enrolled, onsite]:
-                                    srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
-                                    if srs.count() > 0:
-                                        srs[0].unexpire()
-                                    else:
-                                        StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                            if student not in section.students():
+                                if 'unenroll' in request.POST:
+                                    sm = ScheduleMap(student, prog)
+                                    for ts in [ts.id for ts in section.get_meeting_times()]:
+                                        if ts in sm.map and len(sm.map[ts]) > 0:
+                                            for sm_sec in sm.map[ts]:
+                                                sm_sec.unpreregister_student(student)
+                                if 'enroll' in request.POST:
+                                    for rt in [enrolled, onsite]:
+                                        srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                        if srs.count() > 0:
+                                            srs[0].unexpire()
+                                        else:
+                                            StudentRegistration.objects.create(user = student, section = section, relationship = rt)
 
                 section.student_list = []
                 for student in section.students():
