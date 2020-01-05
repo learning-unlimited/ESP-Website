@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Management{% endblock %}
+{% block title %}{{ program.niceName }} Management{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -9,6 +9,7 @@
 
 {% block content %}
 {% load users %}
+{% load modules %}
 <h1>Student Attendance for {{ program.niceName }}</h1>
 
 <div id="program_form">
@@ -76,6 +77,29 @@ Please select a timeslot from the dropdown below.
 </tr>
 {% endfor %}
 </table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in checked_in_ts %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
 <br />
 <table>
 <tr>
@@ -104,6 +128,29 @@ Please select a timeslot from the dropdown below.
 </tr>
 {% endfor %}
 </table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in not_attending %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
 <br />
 <table>
 <tr>
@@ -131,6 +178,29 @@ Please select a timeslot from the dropdown below.
     <td colspan="6" align="center">No students attending students in which they weren't enrolled</td>
 </tr>
 {% endfor %}
+</table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Student Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Students
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Students
+            </a>
+        </td>
+    {% endif %}
 </table>
 </center>
 
