@@ -77,27 +77,18 @@ Please select a section from the dropdown below.
 <table align="center" width="100%">
 <thead>
 <tr>
- <th width="5%">
-   #
- </th>
- <th width="30%">
-  Student Name
- </th>
- <th width="12.5%">
-  Student ID #
- </th>
- <th width="12.5%">
-  Student Grade
- </th>
- <th width="20%">
-  School
- </th>
- <th width="10%">
-  Checked In?
- </th>
- <th width="10%">
-  Attending Section?
- </th>
+    <th colspan="7" align="center">
+        Mark attendance for students enrolled in this section:
+    </th>
+</tr>
+<tr>
+    <th width="5%">#</th>
+    <th width="30%">Student Name</th>
+    <th width="12.5%">Student ID #</th>
+    <th width="12.5%">Student Grade</th>
+    <th width="20%">School</th>
+    <th width="10%">Checked In?</th>
+    <th width="10%">Attending Section?</th>
 </tr>
 </thead>
 <tbody>
@@ -118,14 +109,21 @@ Please select a section from the dropdown below.
     </td>
 </tr>
 {% endfor %}
+</table>
+
+<br />
+<table align="center" width="100%">
+<thead>
 <tr>
-    <th colspan="7" align="center">
-        Enter any other (unenrolled) students here:
+    <th align="center">
+        And/or enter any attending students (including unenrolled ones) here:
         <br />(as whitespace-separated usernames/user IDs)
     </th>
 </tr>
+</thead>
+<tbody>
 <tr>
-    <td colspan = "7" align="center">
+    <td align="center">
         <div class="controls">
             <button type="button" class="scan"><i class="fas fa-barcode"></i>&ensp;Scan barcodes with your device</button>
             <select style="display:none">
@@ -145,16 +143,16 @@ Please select a section from the dropdown below.
         {% if not_found %}
         <br /><span style="color:red">{{ not_found|join:", " }} not found</span>
         {% endif %}
-        <br /><input type="checkbox" name="enroll" checked>Enroll these students in this section
-        <br /><input type="checkbox" name="unenroll" checked>Unenroll these students from conflicting sections
-    </td>
-<tr>
-    <td colspan = "7" align="center">
-        <input type="Submit" class="fancybutton" value="Submit Attendance" /><br />
+        <br /><h3>For any attending students not enrolled in this section:</h3>
+        <input type="checkbox" name="enroll" checked>Enroll them in this section
+        <br /><input type="checkbox" name="unenroll" checked>Unenroll them from their conflicting sections
     </td>
 </tr>
 </tbody>
 </table>
+<center>
+<br /><input type="Submit" class="fancybutton" value="Submit Attendance" />
+</center>
 </form>
 </div>
 {% endif %}
