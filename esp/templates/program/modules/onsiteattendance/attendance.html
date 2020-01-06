@@ -103,15 +103,16 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="6">Students Checked In But Not Attending Class</th>
+    <th colspan="7">Students Checked In But Not Attending Class</th>
 </tr>
 <tr>
     <th width="5%">#</th>
-    <th width="30%">Student Name</th>
+    <th width="20%">Student Name</th>
     <th width="15%">Student Username</th>
     <th width="10%">Student ID #</th>
     <th width="10%">Student Grade</th>
     <th width="20%">School</th>
+    <th width="20%">Enrolled Class</th>
 </tr>
 {% for student in not_attending %}
 <tr>
@@ -121,10 +122,11 @@ Please select a timeslot from the dropdown below.
     <td>{{ student.id }}</td>
     <td>{{ student|getGradeForProg:program.id }}</td>
     <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+    <td>{{ student.missed_class }}</td>
 </tr>
 {% empty %}
 <tr>
-    <td colspan="6" align="center">No students checked in but not attending class</td>
+    <td colspan="7" align="center">No students checked in but not attending class</td>
 </tr>
 {% endfor %}
 </table>
@@ -154,15 +156,17 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="6">Students Attending Classes In Which They Weren't Enrolled</th>
+    <th colspan="8">Students Attending Classes In Which They Weren't Originally Enrolled</th>
 </tr>
 <tr>
     <th width="5%">#</th>
-    <th width="30%">Student Name</th>
+    <th width="15%">Student Name</th>
     <th width="15%">Student Username</th>
     <th width="10%">Student ID #</th>
     <th width="10%">Student Grade</th>
-    <th width="20%">School</th>
+    <th width="15%">School</th>
+    <th width="15%">Attended Class</th>
+    <th width="15%">Enrolled Class</th>
 </tr>
 {% for student in onsite %}
 <tr>
@@ -172,10 +176,12 @@ Please select a timeslot from the dropdown below.
     <td>{{ student.id }}</td>
     <td>{{ student|getGradeForProg:program.id }}</td>
     <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+    <td>{{ student.attended_class }}</td>
+    <td>{{ student.enrolled_class }}</td>
 </tr>
 {% empty %}
 <tr>
-    <td colspan="6" align="center">No students attending students in which they weren't enrolled</td>
+    <td colspan="8" align="center">No students attending students in which they weren't enrolled</td>
 </tr>
 {% endfor %}
 </table>
@@ -198,6 +204,57 @@ Please select a timeslot from the dropdown below.
         <td width="33%" align="center">
             <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for student in onsite %}{{ student.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 Text Students
+            </a>
+        </td>
+    {% endif %}
+</table>
+<br />
+<table>
+<tr>
+    <th colspan="6">Sections with No Attendance Recorded</th>
+</tr>
+<tr>
+    <th width="5%">#</th>
+    <th width="10%">Email Code</th>
+    <th width="30%">Class Title</th>
+    <th width="20%">Teachers</th>
+    <th width="20%">Times</th>
+    <th width="15%"># Students Enrolled</th>
+</tr>
+{% for section in no_attendance %}
+<tr>
+    <th class="small">{{ forloop.counter }}</th>
+    <td>{{ section.emailcode }}</td>
+    <td>{{ section.title }}</td>
+    <td>{{ section.parent_class.pretty_teachers }}</td>
+    <td>{{ section.friendly_times_with_date|join:", " }}</td>
+    <td>{{ section.num_students }}</td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="6" align="center">No sections without attendance recorded</td>
+</tr>
+{% endfor %}
+</table>
+<table width="100%" style="border: none;">
+    {% if program|hasModule:"ListGenModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/selectList?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Get Teacher Information
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"CommModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/commpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Email Teachers
+            </a>
+        </td>
+    {% endif %}
+    {% if program|hasModule:"GroupTextModule" %}
+        <td width="33%" align="center">
+            <a href="/manage/{{ one }}/{{ two }}/grouptextpanel?userid={% for section in no_attendance %}{% for teacher in section.teachers %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if not forloop.last %},{% endif %}{% endfor %}">
+                Text Teachers
             </a>
         </td>
     {% endif %}
