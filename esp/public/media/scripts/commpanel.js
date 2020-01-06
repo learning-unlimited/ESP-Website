@@ -312,7 +312,7 @@ function initialize()
     //  Populate fields with GET parameters
     var items = location.search.substr(1).split("&");
     for (var index = 0; index < items.length; index++) {
-          tmp = items[index].split("=");
+          var tmp = items[index].split("=");
           $j("[name="+tmp[0]+"]").val(tmp[1]);
     }
 }
