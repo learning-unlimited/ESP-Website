@@ -85,13 +85,12 @@ class OnSiteAttendance(ProgramModuleObj):
                     student.attended_class = onsite_srs.get(student, None)
                     student.enrolled_class = student.attended_class
                 #Add students attending classes they aren't enrolled in
-                onsite_ids = [student.id for student in onsite]
                 attended_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Attended").select_related('user')}
                 for student in attended:
                     attended_section = attended_srs.get(student, None)
                     enrolled_section = enrolled_srs.get(student, None)
                     #If they aren't enrolled in a class or the enrolled class is not the attended class
-                    if enrolled_section == None or attended_section != enrolled_section:
+                    if enrolled_section is None or attended_section != enrolled_section:
                         #If they aren't already in the list of onsite students
                         if student not in onsite:
                             student.enrolled = False
