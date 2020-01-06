@@ -242,7 +242,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
                 if request.POST and 'submitted' in request.POST:
                     attending_students = [int(student) for student in request.POST.getlist('attending')]
-                    for student in section.students():
+                    for student in section.students(verbs=["Enrolled","Attended"]):
                         if student.id in attending_students:
                             Record.objects.get_or_create(user=student, program=prog, event='attended')
                             StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended)[0].unexpire()
@@ -278,11 +278,17 @@ class TeacherClassRegModule(ProgramModuleObj):
                                         else:
                                             StudentRegistration.objects.create(user = student, section = section, relationship = rt)
 
-                section.student_list = []
+                section.enrolled_list = []
+                section.attended_list = []
                 for student in section.students():
                     student.checked_in = Record.user_completed(student, "attended", prog)
                     student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
-                    section.student_list.append(student)
+                    section.enrolled_list.append(student)
+                for student in section.students(["Attended"]):
+                    if student not in section.students():
+                        student.checked_in = Record.user_completed(student, "attended", prog)
+                        student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
+                        section.attended_list.append(student)
                 context['section'] = section
         elif len(sections) > 1:
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})

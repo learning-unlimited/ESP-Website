@@ -92,7 +92,7 @@ Please select a section from the dropdown below.
 </tr>
 </thead>
 <tbody>
-{% for student in section.student_list %}
+{% for student in section.enrolled_list %}
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
@@ -110,6 +110,40 @@ Please select a section from the dropdown below.
 </tr>
 {% endfor %}
 </table>
+
+{% if section.attended_list %}
+<br />
+<table align="center" width="100%">
+<thead>
+<tr>
+    <th colspan="7" align="center">
+        Mark attendance for students attending (but not enrolled in) this section:
+    </th>
+</tr>
+<tr>
+    <th width="5%">#</th>
+    <th width="30%">Student Name</th>
+    <th width="12.5%">Student ID #</th>
+    <th width="12.5%">Student Grade</th>
+    <th width="20%">School</th>
+    <th width="10%">Checked In?</th>
+    <th width="10%">Attending Section?</th>
+</tr>
+</thead>
+<tbody>
+{% for student in section.attended_list %}
+    <tr>
+        <th class="small">{{ forloop.counter }}</th>
+        <td>{{ student.name }}</td>
+        <td>{{ student.id }}</td>
+        <td>{{ student|getGradeForProg:program.id }}</td>
+        <td>{{ student.getLastProfile.student_info.getSchool }}</td>
+        <td align="center"><input type="checkbox"{% if student.checked_in %} checked{% endif %} disabled></td>
+        <td align="center"><input name="attending" value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}></td>
+    </tr>
+{% endfor %}
+</table>
+{% endif %}
 
 <br />
 <table align="center" width="100%">
