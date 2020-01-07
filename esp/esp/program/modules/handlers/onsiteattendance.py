@@ -70,7 +70,7 @@ class OnSiteAttendance(ProgramModuleObj):
                 #Students that have been checked in for the program
                 checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog))
                 #Students that have been checked in for the program during this timeslot
-                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__gt=timeslot.start, record__time__lt=timeslot.end))
+                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__gt=timeslot.start_w_buffer(), record__time__lt=timeslot.end))
                 #Students that have been checked in for the program but are not attending a class during this timeslot
                 not_attending = checked_in.exclude(id__in=[user.id for user in attended])
                 #Get the classes that they aren't attending (if any)

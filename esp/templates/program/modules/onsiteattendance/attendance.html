@@ -36,7 +36,10 @@ Please select a timeslot from the dropdown below.
             </option>
         {% endfor %}
     </select>
+</center>
 
+{% if timeslot %}
+<center>
 <table>
 <tr>
     <th width="33%"># Students<br />Checked In<br />To the Program</th>
@@ -52,7 +55,7 @@ Please select a timeslot from the dropdown below.
 <br />
 <table>
 <tr>
-    <th colspan="6">Students Checked In During This Timeslot</th>
+    <th colspan="6">Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }} </th>
 </tr>
 <tr>
     <th width="5%">#</th>
@@ -260,6 +263,7 @@ Please select a timeslot from the dropdown below.
     {% endif %}
 </table>
 </center>
+{% endif %}
 
 </div>
 
