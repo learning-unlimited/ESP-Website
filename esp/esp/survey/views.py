@@ -48,6 +48,7 @@ from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
@@ -64,8 +65,21 @@ def survey_view(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
-        raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+    if tl == 'teach':
+        filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog, default = "class_submitted").split(",") if x.strip()]
+        if len(filters) > 0:
+            teachers = prog.teachers()
+            if not user.isAdmin() and user not in {item for sublist in [teachers[filter] for filter in filters] for item in sublist}:
+                descs = prog.getListDescriptions()
+                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+        
+    if tl == 'learn':
+        filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog, default = "classreg").split(",") if x.strip()]
+        if len(filters) > 0:
+            students = prog.students()
+            if not user.isAdmin() and user not in {item for sublist in [students[filter] for filter in filters] for item in sublist}:
+                descs = prog.getListDescriptions()
+                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if 'done' in request.GET:
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})
