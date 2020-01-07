@@ -72,7 +72,7 @@ def survey_view(request, tl, program, instance):
             if not user.isAdmin() and user not in {item for sublist in [teachers[filter] for filter in filters] for item in sublist}:
                 descs = prog.getListDescriptions()
                 raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
-        
+
     if tl == 'learn':
         filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog, default = "classreg").split(",") if x.strip()]
         if len(filters) > 0:
