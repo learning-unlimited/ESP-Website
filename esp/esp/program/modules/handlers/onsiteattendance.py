@@ -98,7 +98,7 @@ class OnSiteAttendance(ProgramModuleObj):
                             student.enrolled_class = enrolled_section
                             onsite.append(student)
                 #Sections with no attendance recorded
-                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Attended"))
+                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects().filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
                 context.update({
                                 'attended': attended,
                                 'checked_in': checked_in,
