@@ -51,7 +51,8 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
             "admin_title": "Credit Card View Module (Cybersource)",
             "link_title": "View Credit Card Transactions",
             "module_type": "manage",
-            "seq": 10000
+            "seq": 10000,
+            "choosable": 2,
             }
 
     @main_call

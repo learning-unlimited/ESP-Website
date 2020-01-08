@@ -57,7 +57,8 @@ class CommModule(ProgramModuleObj):
             "admin_title": "Communications Panel for Admin",
             "link_title": "Communications Panel",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     @aux_call

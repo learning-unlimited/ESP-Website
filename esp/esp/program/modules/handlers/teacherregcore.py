@@ -43,7 +43,8 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             "admin_title": "Core Teacher Registration",
             "link_title": "Teacher Registration",
             "module_type": "teach",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @main_call

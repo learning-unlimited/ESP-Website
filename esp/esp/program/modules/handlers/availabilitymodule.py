@@ -57,7 +57,8 @@ class AvailabilityModule(ProgramModuleObj):
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
             "required": True,
-            "seq": 0
+            "seq": 0,
+            "choosable": 1,
             } ]
 
     def event_type(self):

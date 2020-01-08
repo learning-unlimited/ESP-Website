@@ -50,7 +50,8 @@ class OnSiteRegister(ProgramModuleObj):
             "admin_title": "Onsite New Registration",
             "link_title": "New Student Registration",
             "module_type": "onsite",
-            "seq": 30
+            "seq": 30,
+            "choosable": 1,
             }
 
 

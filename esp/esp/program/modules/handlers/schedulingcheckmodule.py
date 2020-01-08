@@ -23,7 +23,8 @@ class SchedulingCheckModule(ProgramModuleObj):
             "admin_title": "Scheduling Diagnostics",
             "link_title": "Run Scheduling Diagnostics",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     @main_call

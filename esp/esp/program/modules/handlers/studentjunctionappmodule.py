@@ -52,7 +52,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
             "link_title": "Extra Application Info",
             "module_type": "learn",
             "seq": 10000,
-            "required": True
+            "required": True,
+            "choosable": 2,
             }
 
     def students(self, QObject = False):

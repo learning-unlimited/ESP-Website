@@ -100,6 +100,7 @@ class TeacherQuizModule(ProgramModuleObj):
             'admin_title': 'Teacher Logistics Quiz',
             'link_title': 'Take the Teacher Logistics Quiz',
             'seq': 5,
+            'choosable': 0,
         }, ]
 
     def teachers(self, QObject = False):

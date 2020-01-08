@@ -54,6 +54,7 @@ class ClassFlagModule(ProgramModuleObj):
             "link_title": "Manage Class Flags",
             "module_type": "manage",
             "seq": 100,
+            "choosable": 1,
         }
 
     class Meta:
