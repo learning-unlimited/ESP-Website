@@ -56,7 +56,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "admin_title": "On-Site User Check-In",
             "link_title": "Check-in (check students off for payments and forms)",
             "module_type": "onsite",
-            "seq": 1
+            "seq": 1,
+            "choosable": 1,
             }
 
     def updatePaid(self, paid=True):

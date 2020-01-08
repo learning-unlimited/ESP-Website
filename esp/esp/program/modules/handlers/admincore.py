@@ -64,7 +64,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",
-            "seq": -9999
+            "seq": -9999,
+            "choosable": 1,
             }
 
     @aux_call

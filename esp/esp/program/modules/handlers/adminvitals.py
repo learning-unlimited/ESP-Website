@@ -60,6 +60,7 @@ class AdminVitals(ProgramModuleObj):
             "module_type": "manage",
             "inline_template": "vitals.html",
             "seq": -2,
+            "choosable": 1,
             }
 
     def prepare(self, context=None):

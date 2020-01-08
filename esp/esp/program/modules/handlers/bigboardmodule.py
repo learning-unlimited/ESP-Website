@@ -21,7 +21,8 @@ class BigBoardModule(ProgramModuleObj):
             "admin_title": "Student Registration Big Board",
             "link_title": "Watch incoming student registrations",
             "module_type": "manage",
-            "seq": 10
+            "seq": 10,
+            "choosable": 1,
             }
 
     class Meta:
