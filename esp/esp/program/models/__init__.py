@@ -252,10 +252,11 @@ class Program(models.Model, CustomFormsLinkModel):
                          help_text='The set of enabled program functionalities. See ' +
                          '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
                          'the documentation</a> for details.')
-    class_categories = models.ManyToManyField('ClassCategories')
+    class_categories = models.ManyToManyField('ClassCategories',
+                                              blank=True,
+                                              help_text=format_lazy('You can add new categories or modify existing ones from <a href="%s">the admin panel</a>.',
+                                                                    urlresolvers.reverse_lazy('admin:program_classcategories_changelist')))
 
-    #so we don't have to delete old ones and don't end up with
-    # 3 seemingly-identical flags in the same program.
     flag_types = models.ManyToManyField('ClassFlagType',
                     blank=True,
                     help_text=format_lazy(
