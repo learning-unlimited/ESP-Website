@@ -124,7 +124,7 @@ class UserAvailability(models.Model):
         return super(UserAvailability, self).save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return self.event.program.get_manage_url+"availability/?user="+self.user.id
+        return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
 
 
 class ESPUserManager(UserManager):
