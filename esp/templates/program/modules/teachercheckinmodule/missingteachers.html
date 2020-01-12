@@ -203,12 +203,28 @@
                 {{section.title}}
                 (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
             </div>
+            {% if show_flags %}
+                <div class="flag-name-list fqr-class-flags">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_name.html" %}
+                    {% endfor %}
+                </div>
+                <button class="add-flag btn">add flag</button>
+            {% endif %}
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
                  data-show-flags="{% if show_flags %}1{% endif %}">
                 Loading...
             </div>
+            {% if show_flags %}
+                <div class="fqr-class-flags-detail">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_detail.html" %}
+                    {% endfor %}
+                    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                </div>
+            {% endif %}
         </div>
     </td>
 </tr>

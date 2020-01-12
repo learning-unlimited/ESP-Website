@@ -44,7 +44,7 @@ from django.db.models.query      import Q
 from esp.users.models            import ESPUser, UserAvailability
 from datetime                    import timedelta
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.users.forms.generic_search_form import GenericSearchForm
+from esp.users.forms.generic_search_form import TeacherSearchForm
 
 
 class AvailabilityModule(ProgramModuleObj):
@@ -222,7 +222,7 @@ class AvailabilityModule(ProgramModuleObj):
         context['isAdmin'] = isAdmin
 
         if isAdmin:
-            form = GenericSearchForm(initial={'target_user': teacher.id})
+            form = TeacherSearchForm(initial={'target_user': teacher.id})
             context['search_form'] = form
 
         return render_to_response(self.baseDir()+'availability_form.html', request, context)

@@ -1,4 +1,5 @@
 {% load survey %}
+{% load main %}
 {% load latex %}
 
 {% if q.question.question_type.is_countable %}
@@ -13,7 +14,13 @@
         {% endif %}
     \end{minipage} & 
     {% if not q.answers|length_is:0 %}
-    {{ q.answers|unpack_answers|histogram:"tex" }} 
+        {% if q.question.question_type.is_numeric and q.question.get_params.number_of_ratings %}
+            {% with "format=tex&max="|concat:q.question.get_params.number_of_ratings as args %}
+                {{ q.answers|unpack_answers|histogram:args|safe }}
+            {% endwith %}
+        {% else %}
+            {{ q.answers|unpack_answers|histogram:"format=tex"|safe }}
+        {% endif %}
     {% else %} There are no responses to this question.
     {% endif %} \\ \hline
 {% else %}

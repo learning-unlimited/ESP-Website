@@ -217,6 +217,13 @@ class Resource(models.Model):
         res_list = self.identical_resources(prog=prog)
         return min(res_list.values_list("id", flat = True))
 
+    def duplicates(self):
+        res_list = Resource.objects.filter(name=self.name, event = self.event)
+        return res_list
+
+    def number_duplicates(self):
+        return self.duplicates().count()
+
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
         #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.

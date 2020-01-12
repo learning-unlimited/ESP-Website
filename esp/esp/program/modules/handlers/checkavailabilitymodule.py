@@ -36,7 +36,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
 from esp.users.models            import ESPUser
-from esp.users.forms.generic_search_form import GenericSearchForm
+from esp.users.forms.generic_search_form import TeacherSearchForm
 from esp.program.modules.handlers.availabilitymodule import AvailabilityModule
 
 
@@ -68,7 +68,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
         elif 'target_user' in request.POST:
             target_id = request.POST['target_user']
         else:
-            form = GenericSearchForm()
+            form = TeacherSearchForm()
             context = {'search_form': form, 'isAdmin': True, 'prog': self.program}
             return render_to_response('program/modules/availabilitymodule/availability_form.html', request, context)
 

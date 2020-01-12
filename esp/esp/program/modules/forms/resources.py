@@ -1,6 +1,7 @@
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
+from django.core.validators import MinValueValidator
 
 from datetime import timedelta
 
@@ -108,6 +109,7 @@ class EquipmentForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     name = forms.CharField()
     times_available = forms.MultipleChoiceField()
+    num_items = forms.IntegerField(label = "Number of unique items", validators=[MinValueValidator(1)])
     resource_type = forms.ChoiceField()
     choice = forms.CharField(label = "Choice (optional)", required=False, max_length=50)
 
@@ -123,6 +125,7 @@ class EquipmentForm(forms.Form):
         self.fields['id'].initial = resource.id
         self.fields['name'].initial = resource.name
         self.fields['times_available'].initial = [mt.id for mt in resource.matching_times()]
+        self.fields['num_items'].initial = resource.number_duplicates()
         self.fields['resource_type'].initial = resource.res_type.id
         self.fields['choice'].initial = resource.attribute_value
 
@@ -130,14 +133,16 @@ class EquipmentForm(forms.Form):
         initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__program=program))
         new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
         new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type']))
+        num_items = self.cleaned_data['num_items']
 
-        for t in new_timeslots:
-            new_res = Resource()
-            new_res.res_type = new_restype
-            new_res.event = t
-            new_res.name = self.cleaned_data['name']
-            new_res.attribute_value = self.cleaned_data['choice']
-            new_res.save()
+        for i in range(0, num_items):
+            for t in new_timeslots:
+                new_res = Resource()
+                new_res.res_type = new_restype
+                new_res.event = t
+                new_res.name = self.cleaned_data['name']
+                new_res.attribute_value = self.cleaned_data['choice']
+                new_res.save()
 
         for r in initial_resources:
             r.delete()

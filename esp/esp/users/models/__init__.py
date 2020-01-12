@@ -180,7 +180,7 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, group = None):
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -202,11 +202,22 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
+        if group:
+            query_set = query_set.filter(groups=group)
+
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
+
+    @classmethod
+    def ajax_autocomplete_student(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Student"))
+
+    @classmethod
+    def ajax_autocomplete_teacher(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Teacher"))
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
