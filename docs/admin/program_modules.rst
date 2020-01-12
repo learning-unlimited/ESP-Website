@@ -38,6 +38,12 @@ Below we provide a more detailed explanation of what each program module is for 
 Student modules
 ===============
 
+Student Acknowledgement (StudentAcknowledgementModule)
+------------------------------------------------------
+
+Include this module if you would like students to submit a somewhat scary-looking form where they simply check a box to say that they will follow the code of conduct for the program.
+
+
 Extra Registration Info (CustomFormModule)
 ------------------------------------------
 

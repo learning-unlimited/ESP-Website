@@ -1,0 +1,15 @@
+{% extends "main.html" %}
+{% block title %}{{program.niceName}} Student Acknowledgement{% endblock %}
+{% block content %}
+<h2>Student Acknowledgement for {{program.niceName}} </h2>
+<br />
+{% load render_qsd %}
+{% inline_program_qsd_block program "learn:acknowledgement_instructions" %}
+Please acknowledge that you are aware of the student conduct policy. If you do not abide by this policy, you may be asked to leave the program and unable to attend future programs.
+{% end_inline_program_qsd_block %}
+<br />
+<form action="acknowledgement" method="post">
+{{ form.as_p }}
+<input type="submit" value="Submit" class="btn btn-primary" />
+</form>
+{% endblock %}
