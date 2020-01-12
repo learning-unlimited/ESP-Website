@@ -260,28 +260,35 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
      * @param section: The section to check availability.
      */
     this.getAvailableTimeslots = function(section) {
-        var availabilities = [];
+        var availableTimeslots = [];
         var already_teaching = [];
-        $j.each(section.teacher_data, function(index, teacher) {
-            var teacher_availabilities = teacher.availability.slice();
-            teacher_availabilities = teacher_availabilities.filter(function(val) {
-                return this.matrix.timeslots.get_by_id(val);
+        if($j("input#schedule-override").prop('checked')){
+            $j.each(this.matrix.timeslots.timeslots, function(index, timeslot) {
+                availableTimeslots.push(timeslot.id);
             }.bind(this));
-            $j.each(teacher.sections, function(index, section_id) {
-                var assignment = this.scheduleAssignments[section_id];
-                if(assignment && section_id != section.id) {
-                    $j.each(assignment.timeslots, function(index, timeslot_id) {
-                        var availability_index = teacher_availabilities.indexOf(timeslot_id);
-                        if(availability_index >= 0) {
-                            teacher_availabilities.splice(availability_index, 1);
-                            already_teaching.push(timeslot_id);
-                        }
-                    }.bind(this));
-                }
+        } else {
+            var availabilities = []
+            $j.each(section.teacher_data, function(index, teacher) {
+                var teacher_availabilities = teacher.availability.slice();
+                teacher_availabilities = teacher_availabilities.filter(function(val) {
+                    return this.matrix.timeslots.get_by_id(val);
+                }.bind(this));
+                $j.each(teacher.sections, function(index, section_id) {
+                    var assignment = this.scheduleAssignments[section_id];
+                    if(assignment && section_id != section.id) {
+                        $j.each(assignment.timeslots, function(index, timeslot_id) {
+                            var availability_index = teacher_availabilities.indexOf(timeslot_id);
+                            if(availability_index >= 0) {
+                                teacher_availabilities.splice(availability_index, 1);
+                                already_teaching.push(timeslot_id);
+                            }
+                        }.bind(this));
+                    }
+                }.bind(this));
+                availabilities.push(teacher_availabilities);
             }.bind(this));
-            availabilities.push(teacher_availabilities);
-        }.bind(this));
-        var availableTimeslots = helpersIntersection(availabilities, true);
+            availableTimeslots = helpersIntersection(availabilities, true);
+        }
         return [availableTimeslots, already_teaching];
     };
 
