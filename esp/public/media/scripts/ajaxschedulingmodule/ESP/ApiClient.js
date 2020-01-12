@@ -64,7 +64,8 @@ function ApiClient() {
             action: 'assignreg',
             csrfmiddlewaretoken: csrf_token(),
             cls: section_id,
-            block_room_assignments: assignments
+            block_room_assignments: assignments,
+            override: $j("input#schedule-override").prop('checked')
         };
         return this.send_request(req, callback, errorReporter);
     };
