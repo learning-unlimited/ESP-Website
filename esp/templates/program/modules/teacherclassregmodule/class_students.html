@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load users %}
 
 {% block title %}Class Status for {{cls.title }}{% endblock %}
 
@@ -52,7 +53,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
-        <td>{{ student.getGrade }}</td>
+        <td>{{ student|getGradeForProg:program.id }}</td>
         <td>{{ student.getLastProfile.student_info.getSchool }}</td>
     </tr>
     {% endfor %}

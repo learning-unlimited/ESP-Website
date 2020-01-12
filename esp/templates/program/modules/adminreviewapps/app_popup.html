@@ -1,3 +1,5 @@
+{% load users %}
+
 <html>
 
 <head>
@@ -14,7 +16,7 @@
 </tr>
 <tr>
     <td width="25%">Grade:</td>
-    <td>{{ student.getGrade }}</td>
+    <td>{{ student|getGradeForProg:program.id }}</td>
 </tr>
 <tr>
     <td>DOB:</td>
