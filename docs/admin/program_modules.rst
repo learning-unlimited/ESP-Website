@@ -41,7 +41,7 @@ Student modules
 Student Acknowledgement (StudentAcknowledgementModule)
 ------------------------------------------------------
 
-Include this module if you would like students to submit a somewhat scary-looking form where they simply check a box to say that they will follow the code of conduct for the program.
+Include this module if you would like students to submit a somewhat scary-looking form where they simply check a box to say that they agree to follow by the policies in the QSD box.
 
 
 Extra Registration Info (CustomFormModule)
