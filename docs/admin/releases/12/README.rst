@@ -41,6 +41,8 @@ Scheduler changes
 ~~~~~~~~~~~~~~~~~
 - Room requests are now included in the scheduler.
 - You can now filter classrooms (rows) in the scheduler by room capacity, resource, and name.
+- Added an option in the "Class Filters" tab to override teacher availability when scheduling classes. This will NOT override lunch constraints, already scheduled classes, or whether a class will actually fit time-wise where you are trying to schedule it.
+- The scheduler now works even if the Teacher Availability Module is not enabled (teachers will have full availability).
 
 Flag and classsearch changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,6 +61,7 @@ Minor new features
 - Histograms for numerical questions in the built-in surveys now show the entire possible range of answers
 - The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
 - Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
+- Moved the grade change request link in the profile form to just under the grade field.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -71,6 +74,10 @@ Minor bug fixes
 - You can now actually sort the classes on the dashboard by many fields.
 - Fixed a bug that allowed teachers to see the rosters for any sections/classes, even if they weren't teachers for them.
 - Fixed some bugs in the class catalog related to hiding classes and registration buttons. Unscheduled sections are now considered "Full".
+- Fixed a bug where sections weren't completely unscheduled when their classrooms were deleted.
+- Fixed a bug where admins would need to flush the cache after changing the lunch constraints to make them update in the scheduler.
+- Fixed many instances where a student's grade was listed as the current grade but should have been the grade at the time of the program.
+- The grade change request link is no longer displayed in the profile form for new users or users that can change their grade in the form.
 
 Known issues of new features
 ============================
