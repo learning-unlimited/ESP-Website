@@ -1,3 +1,5 @@
+{% load users %}
+
 <div class="studentreceipt">
   <div style="height: 1.5in;">&nbsp;<!-- White space --></div>
 
@@ -11,7 +13,7 @@
   Paid for: <br />
   <tt>
   Name: {{ receipt.user.name }} <br />
-  Grade: {{receipt.user.getGrade }}  <br />
+  Grade: {{receipt.user|getGradeForProg:program.id }}  <br />
   DOB:   {{receipt.user.getLastProfile.student_info.dob|date:"m/d/Y"}} <br />
   Address: <br />
 <blockquote> {{receipt.user.getLastProfile.contact_user.address_street }} <br />

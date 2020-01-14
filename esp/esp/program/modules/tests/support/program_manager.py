@@ -32,7 +32,7 @@ class TestProgramManager():
 
         #schedule the class
         blocks = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
-        response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks})
+        response = self.client.post(self.schedule_class_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': blocks, 'override': 'false'})
         assert response.status_code == 200
 
         #make sure the scheduling had the expected result
