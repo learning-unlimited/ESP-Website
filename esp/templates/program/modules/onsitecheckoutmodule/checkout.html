@@ -5,9 +5,7 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
-
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
+<style>
 table {
     table-layout: fixed;
     width: 100%;
@@ -19,28 +17,23 @@ table {
 {% endblock %}
 
 {% block content %}
-<br />
-<br />
-
 <br /><br />
-<h1>Rapid Checkin &mdash; For {{ program.niceName }}</h1>
+<h1>Student Checkout &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
 
 <p style="margin: 10px">
-Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
-
-{% if message %}
-<p align="center">{{ message }}</p>
-{% endif %}
-
+Welcome to student checkout for {{ program.niceName }}.
+{% if student %}
+<!--Put student form here-->
+{% else %}
 <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
 <table>
     <col width="85%">
     <col width="15%">
     <tr>
         <th colspan="2">
-            Choose Students to Check In
+            Choose Students to Checkout
         </th>
     </tr>
     <tr>
@@ -52,26 +45,15 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
             </table>
         </td>
         <td align="center">
-            <input class="button" type="submit" value="Check-In" />
+            <input class="button" type="submit" value="Checkout" />
         </td>
     </tr>
 </table>
 
 </form>
 
-<br />
-{% load render_qsd %}
-{% render_inline_program_qsd program "onsite:status" %}
-
-<h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
-<p style="margin: 10px;">
-  <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
-</p>
-
-<h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
-<p style="margin: 10px;">
-  <a href="/onsite/{{ program.url }}/barcodecheckin">Click here to check in many users at once by ID</a>
-</p>
+<!--Button to checkout everyone-->
+{% endif %}
 
 </div>
 
