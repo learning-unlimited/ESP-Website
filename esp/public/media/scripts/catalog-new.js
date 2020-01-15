@@ -310,14 +310,15 @@ var CatalogViewModel = function () {
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            var shown_secs = 0;
+            var class_has_sections_shown = false;
             for (var sec of cls.sections) {
-                // count how many of the sections are still shown
+                // see if any of the sections are still shown
                 if (sec in data.sections) {
-                    shown_secs++;
+                    class_has_sections_shown = true;
+                    break;
                 }
             }
-            if (shown_secs == 0) {
+            if (!class_has_sections_shown) {
                 // remove classes with no sections to show
                 delete data.classes[key];
             }
