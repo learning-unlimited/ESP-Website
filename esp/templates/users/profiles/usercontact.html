@@ -74,14 +74,14 @@
 
 {{ form.address_postal }}
 
-{% ifequal profiletype "student" %}
+<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype != "student" or require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
+
+{% if profiletype == "student" and not require_student_phonenum %}
 <div class="alert">
     <button type="button" class="close" data-dismiss="alert">x</button>
     <strong>Students:</strong> Please enter <b>your</b> phone numbers below. If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %} {% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank. You will enter your guardian and emergency contact phone numbers in the sections below.
 </div>
-{% endifequal %}
-
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% ifnotequal profiletype "student" %}<font color="red">*</font>{% endifnotequal %}</h4>
+{% endif %}
 
 {% if form.phone_day %}
 <div class="control-group">
