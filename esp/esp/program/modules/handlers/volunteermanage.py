@@ -53,6 +53,7 @@ class VolunteerManage(ProgramModuleObj):
             "link_title": "Manage Volunteers",
             "module_type": "manage",
             "seq": 0,
+            "choosable": 1,
             }
 
     """

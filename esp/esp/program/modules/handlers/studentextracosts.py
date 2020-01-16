@@ -74,7 +74,8 @@ class StudentExtraCosts(ProgramModuleObj):
             "admin_title": "Student Optional Fees",
             "link_title": "T-Shirts, Meals, and Photos",
             "module_type": "learn",
-            "seq": 30
+            "seq": 30,
+            "choosable": 0,
             }
 
     def __init__(self, *args, **kwargs):

@@ -60,7 +60,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                 {
                 "admin_title": "Formstack Med-liab Bypass Page",
                 "link_title": "Grant Medliab Bypass",
-                "module_type": "manage",,
+                "module_type": "manage",
                 "choosable": 2,
                 }]
 
