@@ -22,7 +22,7 @@ class StudentAcknowledgementModule(ProgramModuleObj):
             "admin_title": "Student Acknowledgement",
             "link_title": "Student Acknowledgement",
             "module_type": "learn",
-            "required": False,
+            "required": True,
         }
 
     def isCompleted(self):

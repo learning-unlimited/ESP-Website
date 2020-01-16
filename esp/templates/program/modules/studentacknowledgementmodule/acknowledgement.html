@@ -10,8 +10,12 @@
 {% end_inline_program_qsd_block %}
 <form action="acknowledgement" method="post">
 {{ form.acknowledgement.errors }}
-{{ form.acknowledgement }}
-{{ form.acknowledgement.label_tag }}
+<table>
+    <tr>
+        <td valign="top">{{ form.acknowledgement }}</td>
+        <td>{{ form.acknowledgement.label_tag }}</td>
+    </tr>
+</table>
 <br />
 <br />
 <input type="submit" value="Submit" class="btn btn-primary" />
