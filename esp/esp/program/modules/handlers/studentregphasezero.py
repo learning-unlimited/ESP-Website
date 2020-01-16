@@ -72,7 +72,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
             "link_title": "Student Registration Phase Zero",
             "module_type": "learn",
             "seq": 2,
-            "required": True
+            "required": True,
+            "choosable": 0,
         }
 
     @main_call

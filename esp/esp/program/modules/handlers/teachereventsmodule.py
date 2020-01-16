@@ -72,11 +72,13 @@ class TeacherEventsModule(ProgramModuleObj):
             'admin_title': 'Teacher Training and Interview Signups',
             'link_title': 'Sign up for Teacher Training and Interviews',
             'seq': 5,
+            'choosable': 0,
         }, {
             "module_type": "manage",
             'required': False,
             'admin_title': 'Manage Teacher Training and Interviews',
             'link_title': 'Teacher Training and Interviews',
+            'choosable': 0,
         } ]
 
     def teachers(self, QObject = False):

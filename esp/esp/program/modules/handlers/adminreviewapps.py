@@ -53,6 +53,7 @@ class AdminReviewApps(ProgramModuleObj):
             "link_title": "Application Review for Admin",
             "module_type": "manage",
             "seq": 1000,
+            "choosable": 0,
             }
 
     def students(self, QObject=False):

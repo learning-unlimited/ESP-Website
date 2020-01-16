@@ -64,6 +64,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             "link_title": "Credit Card Payment",
             "module_type": "learn",
             "seq": 10000,
+            "choosable": 0,
             }
 
     def apply_settings(self):
