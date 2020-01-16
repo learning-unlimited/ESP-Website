@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from localflavor.us.models import PhoneNumberField
-from django.core import urlresolvers
+from django.core import urlresolvers, validators
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -92,6 +92,10 @@ class ProgramModule(models.Model):
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField(default=False)
+    
+    # When creating a new program, should this module be available for admins to select (0), included by default (1)
+    # or excluded by default (2).
+    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
 
     class Meta:
         app_label = 'program'
@@ -108,7 +112,7 @@ class ProgramModule(models.Model):
         The file 'esp/program/module/handlers/[self.handler]' must contain
         a class named [self.handler]; we return that class.
 
-        Raises a PrograModule.CannotGetClassException() if the class can't be imported.
+        Raises a ProgramModule.CannotGetClassException() if the class can't be imported.
         """
         try:
             path = "esp.program.modules.handlers.%s" % (self.handler.lower())
@@ -1006,7 +1010,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 return 0
         if tl:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                 for module in self.program_modules.filter(module_type = tl) ]
+                 for module in self.program_modules.filter(module_type = tl)]
         else:
             modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, old_prog)
                  for module in self.program_modules.all()]

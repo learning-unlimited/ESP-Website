@@ -386,6 +386,7 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
+        - "choosable" (as 0, namely that it displays as an option for admins to choose upon creating a new program)
         """
 
         props = cls.module_properties()
@@ -397,6 +398,9 @@ class ProgramModuleObj(models.Model):
                 props["admin_title"] = "%(link_title)s (%(handler)s)" % props
             if not "seq" in props:
                 props["seq"] = 200
+            if not "choosable" in props:
+                props["choosable"] = 0
+                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
 
         if isinstance(props, dict):
             props = [ props ]
