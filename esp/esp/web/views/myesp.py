@@ -141,7 +141,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     FormClass = getattr(mod, target_type['profile_form'])
 
     context['profiletype'] = role
-    context['allow_grade_change'] = Tag.getTag('allow_change_grade_level')
 
     if request.method == 'POST' and 'profile_page' in request.POST:
         form = FormClass(curUser, request.POST)
@@ -204,7 +203,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getTag('allow_change_grade_level'):
+            if not Tag.getBooleanTag('allow_change_grade_level', default = False):
                 if prog_input is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 else:
@@ -212,11 +211,11 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
                 if regProf.id is None:
                     regProf = RegistrationProfile.getLastProfile(curUser)
                 if regProf.student_info:
-                    if regProf.student_info.dob:
+                    if regProf.student_info.dob and 'dob' in form.fields:
                         form.data['dob'] = regProf.student_info.dob
                         form.fields['dob'].widget.attrs['disabled'] = "true"
                         form.fields['dob'].required = False
-                    if regProf.student_info.graduation_year:
+                    if regProf.student_info.graduation_year and 'graduation_year' in form.fields:
                         form.data['graduation_year'] = regProf.student_info.graduation_year
                         form.fields['graduation_year'].widget.attrs['disabled'] = "true"
                         form.fields['graduation_year'].required = False

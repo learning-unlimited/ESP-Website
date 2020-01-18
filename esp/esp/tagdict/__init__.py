@@ -33,7 +33,7 @@ all_global_tags = {
     'theme_template_control': (False, ""),
     'current_theme_palette': (False, ""),
     'request_student_phonenum': (True, ""),
-    'allow_change_grade_level': (False, ""),
+    'allow_change_grade_level': (True, "Should students be allowed to change their grade level in the profile form? Default is False."),
     'show_studentrep_application': (False, ""),
     'show_student_tshirt_size_options': (False, ""),
     'show_student_vegetarianism_options': (False, ""),
