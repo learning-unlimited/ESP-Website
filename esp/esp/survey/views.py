@@ -65,19 +65,14 @@ def survey_view(request, tl, program, instance):
 
     user = request.user
 
-    if tl == 'teach':
-        filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog, default = "class_submitted").split(",") if x.strip()]
+    if tl in ['teach', 'learn']:
+        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
         if len(filters) > 0:
-            teachers = prog.teachers()
-            if not user.isAdmin() and user not in {item for sublist in [teachers[filter] for filter in filters] for item in sublist}:
-                descs = prog.getListDescriptions()
-                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
-
-    if tl == 'learn':
-        filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog, default = "classreg").split(",") if x.strip()]
-        if len(filters) > 0:
-            students = prog.students()
-            if not user.isAdmin() and user not in {item for sublist in [students[filter] for filter in filters] for item in sublist}:
+            if tl == 'learn':
+                users = prog.students()
+            else:
+                users = prog.teachers()
+            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters] for item in sublist}:
                 descs = prog.getListDescriptions()
                 raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 

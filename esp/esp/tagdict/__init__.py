@@ -108,4 +108,6 @@ all_program_tags = {
     'autoscheduler_resource_constraint_overrides': (False, ""),
     'autoscheduler_resource_scoring_overrides': (False, ""),
     'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
+    'survey_teacher_filter': (False, "Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers(). Default is 'class_submitted', or teachers that have registered a class."),
+    'survey_student_filter': (False, "Which sets of students are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.students(). Default is 'classreg', or students that have registered for a class."),
 }
