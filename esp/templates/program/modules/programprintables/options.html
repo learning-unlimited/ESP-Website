@@ -21,15 +21,14 @@
     $j(function () {
         $j("#class_list_options :input").change(function (){
             // Get user-selected options
-            var fields = $j("#class_list_options :input")
+            var fields = $j("#class_list_options :input");
             var get = "";
-            var length = fields.length
             // Create GET string
             fields.each(function (index, element) {
                 var val = $j(this).val();
-                if (val != '') {
+                if (val != "") {
                     if (get != "" & get.charAt(get.length - 1) != "&") {
-                        get += "&"
+                        get += "&";
                     }
                     get += val;
                 }
