@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models import ClassSection
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
@@ -45,6 +46,7 @@ from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from esp.users.views    import search_for_user
+from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 
 import json
 
@@ -58,32 +60,6 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 1
             }
-
-    def create_record(self, event):
-        if event=="paid":
-            self.updatePaid(True)
-
-        recs, created = Record.objects.get_or_create(user=self.student,
-                                                     event=event,
-                                                     program=self.program)
-        return created
-
-    def delete_record(self, event):
-        if event=="paid":
-            self.updatePaid(False)
-
-        recs, created = Record.objects.get_or_create(user=self.student,
-                                            event=event,
-                                            program=self.program)
-        recs.delete()
-        return True
-
-    def hasAttended(self):
-        return Record.user_completed(self.student, "attended",self.program)
-
-    def timeCheckedIn(self):
-        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("time")
-        return str(u[0].time.strftime("%H:%M %d/%m/%y"))
 
     @main_call
     @needs_onsite
@@ -106,11 +82,19 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                     student = ESPUser.objects.get(username=target_id)
                 except:
                     raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
-            form = StudentSearchForm(initial={'target_user': student.id})
             context['student'] = student
+            form = StudentSearchForm(initial={'target_user': student.id})
 
+            if 'checkout_student' in request.POST:
+                # Make checked_out record
+                Record.objects.create(user=student, event="checked_out", program=prog)
 
-        context['module'] = self
+                # Unenroll student from selected classes
+                for sec in ClassSection.objects.filter(id__in=request.POST.getlist('unenroll')).distinct():
+                    sec.unpreregister_student(student, prereg_verb = "Enrolled")
+
+            context.update(StudentClassRegModule.prepare_static(student, prog))
+
         context['form'] = form
         return render_to_response(self.baseDir()+'checkout.html', request, context)
 

@@ -13,7 +13,42 @@ table {
 #id_target_user {
     width: calc(100% - 10px);
 }
+.studentschedule input[type="checkbox"] {
+    float:none !important;
+    margin: 0px !important;
+}
+#returntime {
+    width: auto !important;
+}
 </style>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script>
+function updateCheckboxes(from, to) {
+    $j(".studentschedule input[type='checkbox']").each(function() {
+        if ($j(this).val()) {
+            var sec_time = new Date($j(this).data('start'));
+            $j(this).prop("checked", from < sec_time && sec_time < to);
+        }
+    });
+}
+
+$j(function() {
+    // When loaded, mark rest of classes today
+    var now = new Date();
+    var midnight = new Date();
+    midnight.setHours(23,59,59);
+    updateCheckboxes(from = now, to = midnight);
+    
+    // If a specific time is set, mark classes until then
+    $j("#returntime").change(function() {
+        var returntime = new Date($j(this).val());
+        updateCheckboxes(from = now, to = returntime);
+    });
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -22,8 +57,6 @@ table {
 
 <div id='program_form'>
 
-<p style="margin: 10px">
-Welcome to student checkout for {{ program.niceName }}.
 <form id="checkoutsearchform" name="checkoutsearchform" method="POST" action="{{ request.path }}">
 <table>
     <col width="85%">
@@ -47,10 +80,68 @@ Welcome to student checkout for {{ program.niceName }}.
     </tr>
 </table>
 </form>
+<br /><br />
 
 {% if student %}
-<!--Put student form here-->
-{{ student }}
+<center>
+<h3>When is the student returning? <input type="datetime-local" id="returntime" name="returntime" value="{% now 'Y-m-d' %}T{% now 'H:i' %}" min="{% now 'Y-m-d' %}T{% now 'H:i' %}"></h3>
+</center>
+<br /><br />
+<form id="checkoutform" name="checkoutform" method="POST" action="{{ request.path }}">
+<input type="hidden" name="user" value="{{ student.id }}"/>
+<input type="hidden" name="checkout_student"/>
+<table class="studentschedule">
+  <col width="25%">
+  <col width="60%">
+  <col width="15%">
+  <tbody>
+    <tr>
+        <th colspan="3" class="user_info">
+            <i>Classes for {{ student.first_name }} {{ student.last_name }} - ID: {{ student.id }}</i>
+        </th>
+    </tr>
+    <tr>
+        <th>
+            Time
+        </th>
+        <th>
+            Class
+        </th>
+        <th>
+            Unenroll?
+        </th>
+    </tr>
+    {% for timeslot in timeslots %}
+        {% ifchanged timeslot.0.start.day %}
+            <tr>
+                <th colspan="3" class="day">{{ timeslot.0.pretty_date }}</th>
+            </tr>
+        {% endifchanged %}
+        <tr class="schedule_row">
+        {% with timeslot.1.0 as cls %}
+            <td class="time">{{ timeslot.0.short_time }}</td>
+            <td class="cls">
+            {% if cls %}
+                <!--link to course details?-->
+                <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% endif %}</b>
+            {% else %}
+                No class
+            {% endif %}
+            </td>
+            <td class="checkbox" align="center">
+                <input type="checkbox" value="{{ cls.section.id }}" data-start="{{ cls.section.start_time.start|date:'Y-m-d' }}T{{ cls.section.start_time.start|date:'H:i' }}" name="unenroll">
+            </td>
+        {% endwith %}
+    </tr>
+    {% endfor %}
+    <tr>
+        <td colspan="3" align="center">
+            <input class="button" type="submit" value="Submit" />
+        </td>
+    </tr>
+  </tbody>
+</table>
+</form>
 {% endif %}
 
 <!--Button to checkout everyone-->

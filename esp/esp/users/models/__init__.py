@@ -2167,6 +2167,7 @@ class Record(models.Model):
         ("teacher_survey", "Completed teacher survey"),
         ("reg_confirmed", "Confirmed registration"),
         ("attended", "Attended program"),
+        ("checked_out", "Checked out of program"),
         ("conf_email","Was sent confirmation email"),
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
