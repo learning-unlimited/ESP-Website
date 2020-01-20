@@ -21,6 +21,7 @@ $j(document).ready(function() {
 {% block content %}
 
 {% load render_qsd %}
+{% load modules %}
 
 <h1>{% if isAdmin %}Manage{% else %}Your{% endif %} Availability for {{ prog.niceName }}</h1>
 
@@ -101,7 +102,7 @@ You submitted a schedule with no available times.  You can't register a class wi
 </div>
 {% endif %}
 
-{% if search_form %}
+{% if search_form and program|hasModule:"CheckAvailabilityModule" %}
 <br><br>
 <form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
 {{ search_form.as_p }}

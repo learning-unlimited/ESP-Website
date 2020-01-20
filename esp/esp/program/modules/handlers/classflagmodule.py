@@ -32,17 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db.models.query import Q
-from django.http import HttpResponseBadRequest, HttpResponse
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseBadRequest, HttpResponse, HttpResponseRedirect
+from django.template.loader import render_to_string
 
-from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.base import main_call, aux_call, needs_admin
+from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
 from esp.utils.web import render_to_response
 
 from esp.program.models import ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
+import json
 
 class ClassFlagModule(ProgramModuleObj):
     doc = """Flag classes, such as for further review."""
@@ -110,7 +110,11 @@ class ClassFlagModule(ProgramModuleObj):
         if form.is_valid():
             flag = form.save()
             context = { 'flag' : flag }
-            return render_to_response(self.baseDir()+'flag_detail.html', request, context)
+            response = json.dumps({
+                'flag_name': render_to_string(self.baseDir()+'flag_name.html', context = context, request = request),
+                'flag_detail': render_to_string(self.baseDir()+'flag_detail.html', context = context, request = request),
+            })
+            return HttpResponse(response, content_type='application/json')
         else:
             # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
             return HttpResponseBadRequest('')

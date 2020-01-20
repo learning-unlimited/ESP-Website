@@ -8,7 +8,7 @@
 # or Tag.getBooleanTag() with no program argument
 all_global_tags = {
     'teacherreg_custom_forms': (False, ""),
-    'allow_global_restypes': (False, "Include global resource types in the options shown"),
+    'allow_global_restypes': (True, "Include global resource types in the manage resources and teacher registration options"),
     'splashinfo_choices': (False, ""),
     'full_group_name': (False, ""),
     'nearly_full_threshold': (False, ""),
@@ -32,7 +32,8 @@ all_global_tags = {
     'current_theme_params': (False, ""),
     'theme_template_control': (False, ""),
     'current_theme_palette': (False, ""),
-    'request_student_phonenum': (True, ""),
+    'request_student_phonenum': (True, "Whether to request a student home phone number (enabled by default, set to 'False' to disable)"),
+    'require_student_phonenum': (True, "Whether to require a student phone number (enabled by default, set to 'False' to disable). When 'False', students may leave the student phone number fields blank"),
     'allow_change_grade_level': (False, ""),
     'show_studentrep_application': (False, ""),
     'show_student_tshirt_size_options': (False, ""),
@@ -55,9 +56,9 @@ all_global_tags = {
     'text_messages_to_students': (True, ""),
     'local_state': (False, ""),
     'grade_ranges': (False, "Replaces min and max grade options in teacher class reg with grade ranges, as specified by tag"),
-    'teacher_address_required': (True, "Is an address required for a teacher profile? (enabled by default, set to 'False' to disable)"),
     'webapp_isstep': (True, "Should the student onsite webapp be shown as a step in student registration?"),
     'google_cloud_api_key': (False, "An API key for use with the Google Cloud Platform"),
+    'teacher_address_required': (True, "Is an address required for a teacher profile? (disabled by default, set to 'True' to enable)")
 }
 
 # Any tag used with Tag.getProgramTag(),

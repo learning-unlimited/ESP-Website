@@ -38,6 +38,9 @@ function fillStats(data)
     // Fill in the classes num data
     fillData("#stats_classes", vitals.classnum)
 
+    // Fill in the flags num data
+    fillData("#stats_flags", vitals.flagsnum)
+
     // Fill in the categories table
     $categories = $j("#stats_categories > .module_group_body");
     $categories.html("(Note: Totals include unreviewed classes)"+

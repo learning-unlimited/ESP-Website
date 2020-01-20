@@ -109,6 +109,7 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         content_parts['Class size max'] = section.class_size_max;
         content_parts['Length'] = Math.ceil(section.length);
         content_parts['Grades'] = section.grade_min + "-" + section.grade_max;
+        content_parts['Room Request'] = section.requested_room;
         content_parts['Resource Requests'] = resources;
         content_parts['Flags'] = section.flags;
 

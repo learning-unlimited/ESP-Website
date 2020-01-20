@@ -860,7 +860,10 @@ class ClassSection(models.Model):
                 timeslot_ids = sec.timeslot_ids()
             for tid in timeslot_ids:
                 if tid in my_timeslots:
-                    return u'This section conflicts with your schedule--check out the other sections!'
+                    if self.parent_class.sections.filter(resourceassignment__isnull=False, meeting_times__isnull=False, status=10).exclude(id=self.id):
+                        return u'This section conflicts with your schedule--check out the other sections!'
+                    else:
+                        return u'This class conflicts with your schedule!'
 
         # check to see if registration has been closed for this section
         if not self.isRegOpen():
@@ -901,7 +904,7 @@ class ClassSection(models.Model):
         # if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
         # This set of error messages deserves a better home
         for t in self.teachers:
-            available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
+            available = t.getAvailableTimes(self.parent_program, ignore_classes=ignore_classes)
             for e in meeting_times:
                 if e not in available:
                     return u"The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
@@ -1103,7 +1106,9 @@ class ClassSection(models.Model):
             return eventList[0]
 
     def isFull(self, ignore_changes=False, webapp=False):
-        if webapp and Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False):
+        if len(self.get_meeting_times()) == 0:
+            return True
+        elif webapp and Tag.getBooleanTag('count_checked_in_only', program = self.parent_program, default = False):
             num_students = self.num_students_checked_in()
         else:
             num_students = self.num_students()
@@ -1280,7 +1285,7 @@ class ClassSection(models.Model):
 
         return u'%s:%02d' % \
                (int(self.duration),
-            int((self.duration - int(self.duration)) * 60))
+            int(round((self.duration - int(self.duration)) * 60)))
 
     class Meta:
         db_table = 'program_classsection'
@@ -1588,7 +1593,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
+<<<<<<< HEAD
             if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
+=======
+            if not s.isFull(ignore_changes=ignore_changes):
+>>>>>>> main
                 return False
         return True
 

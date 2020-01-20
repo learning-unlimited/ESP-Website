@@ -58,7 +58,7 @@ from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured
 
 
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=(settings.DEFAULT_EMAIL_ADDRESSES['archive'],),
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
     from_email = from_email.strip()

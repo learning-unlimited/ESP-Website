@@ -28,6 +28,9 @@ won't work if you run them twice, so if a step fails partway through you may
 need to complete or undo it manually.  The script will remember your settings;
 you just need to tell it the same directory again.
 
+It can also be helpful to run ``python manage.py migrate`` if the setup fails
+during the database or settings phase.
+
 Finally, email the chapter to let them know that you've set up their site, and
 with instructions to set up their accounts, whatever parts of their theme you
 didn't set up.  You can also point them at the documentation in the repository

@@ -1,5 +1,5 @@
 <!-- Begin Student Info Portion -->
-<h3>Student Information</h3>
+<h3>Additional Student Information</h3>
 
 {{ form.errors }}
 
@@ -42,10 +42,13 @@ detailed explanation of our age and grade level policy, please click
     {% endif %}
     </div>
 </div>
+{% if user.getGrade and allow_grade_change != "True" %}
+    {% include "users/profiles/gradechangerequestinfo.html" %}
+{% endif %}
 
 {% if form.gender %}
 <div class="control-group">
-    <label for="id_dob">Gender:</label>
+    <label for="id_dob"  class="control-label">Gender:</label>
     <div class="controls">
     {{ form.gender }} {% if form.gender.errors %}
     <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
@@ -80,7 +83,7 @@ detailed explanation of our age and grade level policy, please click
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the right-hand box.)</span><br />
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.heard_about }} {% if form.heard_about.errors %}
     <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
     {% endif %}
@@ -162,7 +165,8 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 {% if form.transportation %}
 <div class="control-group">
     <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
-    <div class="controls">
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.transportation }} {% if form.transportation.errors %}
     <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
     {% endif %}

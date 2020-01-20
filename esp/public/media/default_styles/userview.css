@@ -26,6 +26,16 @@
   margin-top: 5px;
 }
 
+#user-sidebar a.stripes:not(:hover) {
+  background: repeating-linear-gradient(
+    45deg,
+    lightgrey,
+    lightgrey 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
 #user-sidebar a.sidelink:hover {
   color: #ffffff;
   background-color: #3366cc;

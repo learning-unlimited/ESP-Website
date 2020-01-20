@@ -10,6 +10,8 @@ from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 
+from esp.middleware.threadlocalrequest import get_current_request
+
 import json
 import re
 
@@ -32,7 +34,7 @@ class SchedulingCheckModule(ProgramModuleObj):
               results = s.run_diagnostics([extra])
               return HttpResponse(results)
          else:
-              context = {'check_list': s.all_diagnostics}
+              context = {'check_list': s.all_diagnostics, 'unreviewed': "unreviewed" in request.GET}
               return render_to_response(self.baseDir()+'output.html', request, context)
 
     class Meta:
@@ -105,6 +107,9 @@ class SchedulingCheckRunner:
           """
           self.p = program
           self.formatter = formatter
+
+          request = get_current_request()
+          self.incl_unreview = "unreviewed" in request.GET
 
           self.lunch_blocks = self._getLunchByDay()
 
@@ -188,8 +193,13 @@ class SchedulingCheckRunner:
                if include_walkins == False:
                     #filter out walkins
                     qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
-               #filter out non-approved classes
-               qs = qs.exclude(status__lte=0)
+               if self.incl_unreview:
+                   #filter out rejected/cancelled sections
+                   qs = qs.exclude(status__lt=0)
+               else:
+                   #filter out non-approved
+                   qs = qs.exclude(status__lte=0)
+               #filter out unscheduled classes
                qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
                qs = qs.exclude(parent_class__category__category=u'Lunch')
@@ -505,8 +515,12 @@ class SchedulingCheckRunner:
          l = []
          teachers = self.p.teachers()['class_approved'].distinct()
          for teacher in teachers:
-             sections = ClassSection.objects.filter(
-                 parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status=10).distinct(),status=10).distinct().order_by('meeting_times__start')
+             if self.incl_unreview:
+                 sections = ClassSection.objects.filter(
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gte=0).distinct(),status__gte=0).distinct().order_by('meeting_times__start')
+             else:
+                 sections = ClassSection.objects.filter(
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gt=0).distinct(),status__gt=0).distinct().order_by('meeting_times__start')
              for i in range(sections.count()-1):
                  try:
                      time1 = sections[i+1].meeting_times.all().order_by('start')[0]

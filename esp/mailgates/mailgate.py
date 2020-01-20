@@ -77,11 +77,8 @@ try:
         if hasattr(instance, "direct_send") and instance.direct_send:
             if message['Bcc']:
                 bcc_recipients = [x.strip() for x in message['Bcc'].split(',')]
-                bcc_recipients += [ARCHIVE]
                 del(message['Bcc'])
                 message['Bcc'] = ", ".join(bcc_recipients)
-            else:
-                message['Bcc'] = ARCHIVE
 
             send_mail(str(message))
             continue
@@ -89,7 +86,6 @@ try:
         del(message['to'])
         del(message['cc'])
         message['X-ESP-SENDER'] = 'version 2'
-        message['Bcc'] = ARCHIVE
 
         if handler.subject_prefix:
             subject = message['subject']

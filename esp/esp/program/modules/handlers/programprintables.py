@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser, User, Record
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.models  import ClassFlagType
 from esp.program.models.class_ import ACCEPTED
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -349,6 +350,50 @@ class ProgramPrintables(ProgramModuleObj):
         context = {'classes': classes, 'program': prog, 'priorities': [str(priority) for priority in priorities]}
 
         return render_to_response(self.baseDir()+'classes_popularity.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def classflagdetails(self, request, tl, one, two, module, extra, prog):
+        comments = 'comments' in request.GET
+        classes = ClassSubject.objects.filter(parent_program = prog)
+        if 'clsids' in request.GET:
+            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
+            classes = [cls for cls in classes if cls.id in clsids]
+        if 'accepted' in request.GET:
+            classes = [cls for cls in classes if cls.status > 0]
+        elif 'cancelled' in request.GET:
+            classes = [cls for cls in classes if cls.isCancelled()]
+        elif 'all' not in request.GET:
+            classes = [cls for cls in classes if cls.status >= 0]
+        if 'scheduled' in request.GET:
+            classes = [cls for cls in classes if cls.all_meeting_times.count() > 0]
+
+        cls_list = []
+        flag_types = ClassFlagType.get_flag_types(program=prog).order_by("seq")
+
+        for cls in classes:
+            flags = cls.flags.all()
+            type_dict = {}
+            for flag in flags:
+                if flag.flag_type in type_dict:
+                    type_dict[flag.flag_type].append(flag)
+                else:
+                    type_dict[flag.flag_type] = [flag]
+            cls.flag_list = []
+            for type in flag_types:
+                if type in type_dict.keys():
+                    comms = [flag.comment for flag in type_dict[type] if flag.comment]
+                    if len(comms) > 0 and comments:
+                        cls.flag_list.append(comms)
+                    else:
+                        cls.flag_list.append(True)
+                else:
+                    cls.flag_list.append(False)
+            cls_list.append(cls)
+
+        context = {'classes': cls_list, 'program': prog, 'flag_types': flag_types}
+
+        return render_to_response(self.baseDir()+'classes_flags.html', request, context)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, split_teachers = False, template_file='classes_list.html'):
@@ -668,7 +713,7 @@ class ProgramPrintables(ProgramModuleObj):
         if not found:
             return filterObj
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
         for s in students:
             extra_dict = extra_func(s)
@@ -849,7 +894,8 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [ cls for cls in teacher.getTaughtSections()]
         classes = [ cls for cls in classes
                     if cls.parent_program == program
-                    and cls.isAccepted()                       ]
+                    and cls.meeting_times.exists()
+                    and cls.status >= 0                       ]
         classes.sort()
         return classes
 
@@ -1302,7 +1348,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
 
-        context = {'module': self     }
+        context = {'module': self, 'program': prog}
         teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
@@ -1346,7 +1392,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         studentList = []
         for student in students:
-            paid_symbol = ''
             finaid_status = 'None'
             if student.appliedFinancialAid(prog):
                 if student.financialaidrequest_set.filter(program=prog).order_by('-id')[0].reduced_lunch:
@@ -1355,12 +1400,16 @@ class ProgramPrintables(ProgramModuleObj):
                     finaid_status = 'Req. (No RL)'
 
             iac = IndividualAccountingController(self.program, student)
-            if iac.amount_due() <= 0:
-                paid_symbol = 'X'
             if student.hasFinancialAid(self.program):
                 finaid_status = 'Approved'
 
-            studentList.append({'user': student, 'paid': paid_symbol, 'amount_due': iac.amount_due(), 'finaid': finaid_status})
+            studentList.append({'user': student,
+                                'paid': Record.user_completed(student, "paid", self.program) or iac.has_paid(in_full=True),
+                                'amount_due': iac.amount_due(),
+                                'finaid': finaid_status,
+                                'checked_in': Record.user_completed(student, "attended",self.program),
+                                'med': Record.user_completed(student, "med", self.program),
+                                'liab': Record.user_completed(student, "liab", self.program)})
 
         context['students'] = students
         context['studentList'] = studentList
@@ -1372,7 +1421,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ Gives you a checklist for each classroom with the students that are supposed to be in that
             classroom.  The form has boxes for payment and forms.  This is useful for the first day
             of a program. """
-        context = {'module': self}
+        context = {'module': self, 'program': prog}
 
         students= [ user for user in self.program.students()['confirmed']]
         students.sort()
