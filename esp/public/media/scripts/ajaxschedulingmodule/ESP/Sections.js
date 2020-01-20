@@ -28,6 +28,9 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         gradeMax: {active: false, el: $j("input#section-filter-grade-max"), type: "number"},
         classTeacher: {active: false, el: $j("input#section-filter-teacher-text"), type: "string"},
         classHideUnapproved: {active: false, el: $j("input#section-filter-unapproved"), type: "boolean"},
+        classHasAdmin: {active: false, el: $j("input#section-filter-admin"), type: "boolean"},
+        classFlags: {active: false, el: $j("input#section-filter-flags-text"), type: "string"},
+        classResources: {active: false, el: $j("input#section-filter-resources-text"), type: "string"},
     };
     this.filter.classLengthMin.valid = function(a) {
         return Math.ceil(a.length) >= this.filter.classLengthMin.val;
@@ -56,8 +59,23 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
         }.bind(this));
         return result;
     }.bind(this);
+    this.filter.classHasAdmin.valid = function(a) {
+        var result = false;
+        $j.each(a.teacher_data, function(index, teacher) {
+            if(teacher.is_admin) {
+                result = true;
+            }
+        }.bind(this));
+        return result;
+    }.bind(this);
     this.filter.classHideUnapproved.valid = function(a) {
         return a.status > 0;
+    }.bind(this);
+    this.filter.classFlags.valid = function(a) {
+        return a.flags.toLowerCase().search(this.filter.classFlags.val)>-1;
+    }.bind(this);
+    this.filter.classResources.valid = function(a) {
+        return this.getResourceString(a).toLowerCase().search(this.filter.classResources.val)>-1;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -66,7 +84,7 @@ function Sections(sections_data, section_details_data, teacher_data, scheduleAss
             if(filterObject.type==="number") {
                 filterObject.val = parseInt(filterObject.val);
             } else if(filterObject.type==="string") {
-                filterObject.val = filterObject.val.replace(" ", "").toLowerCase()
+                filterObject.val = filterObject.val.toLowerCase()
             } else if(filterObject.type==="boolean") {
                 filterObject.val = filterObject.el.prop('checked');
             }
