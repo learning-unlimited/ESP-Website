@@ -89,26 +89,26 @@ class OnSiteCheckoutModule(ProgramModuleObj):
     @needs_onsite
     def checkout(self, request, tl, one, two, module, extra, prog):
         context = {}
-        if request.method == 'POST':
-            #   Handle submission of student
-            form = StudentSearchForm(request.POST)
-            if form.is_valid():
-                student = form.cleaned_data['target_user']
-                #   Check that this is a student user who is not also teaching (e.g. an admin)
-                if student.isStudent() and student not in self.program.teachers()['class_approved']:
-                    recs = Record.objects.filter(user=student, event="attended", program=prog)
-                    if not recs.exists():
-                        rec, created = Record.objects.get_or_create(user=student, event="attended", program=prog)
-                    context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
-                    if request.is_ajax():
-                        return self.ajax_status(request, tl, one, two, module, extra, prog, context)
-                else:
-                    context['message'] = '%s %s is not a student and has not been checked in' % (student.first_name, student.last_name)
-                    if request.is_ajax():
-                        return self.ajax_status(request, tl, one, two, module, extra, prog, context)
-                form = StudentSearchForm(initial={'target_user': student.id})
+        target_id = None
+        if 'user' in request.GET:
+            target_id = request.GET['user']
+        elif 'user' in request.POST:
+            target_id = request.POST['user']
+        elif 'target_user' in request.POST:
+            target_id = request.POST['target_user']
         else:
             form = StudentSearchForm()
+        if target_id:
+            try:
+                student = ESPUser.objects.get(id=target_id)
+            except:
+                try:
+                    student = ESPUser.objects.get(username=target_id)
+                except:
+                    raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+            form = StudentSearchForm(initial={'target_user': student.id})
+            context['student'] = student
+
 
         context['module'] = self
         context['form'] = form

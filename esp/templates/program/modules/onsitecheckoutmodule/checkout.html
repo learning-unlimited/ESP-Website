@@ -24,16 +24,13 @@ table {
 
 <p style="margin: 10px">
 Welcome to student checkout for {{ program.niceName }}.
-{% if student %}
-<!--Put student form here-->
-{% else %}
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+<form id="checkoutsearchform" name="checkoutsearchform" method="POST" action="{{ request.path }}">
 <table>
     <col width="85%">
     <col width="15%">
     <tr>
         <th colspan="2">
-            Choose Students to Checkout
+            Choose Student to Checkout
         </th>
     </tr>
     <tr>
@@ -49,11 +46,14 @@ Welcome to student checkout for {{ program.niceName }}.
         </td>
     </tr>
 </table>
-
 </form>
 
-<!--Button to checkout everyone-->
+{% if student %}
+<!--Put student form here-->
+{{ student }}
 {% endif %}
+
+<!--Button to checkout everyone-->
 
 </div>
 
