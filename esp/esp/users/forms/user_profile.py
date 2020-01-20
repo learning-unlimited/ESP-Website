@@ -69,7 +69,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def clean(self):
         super(UserContactForm, self).clean()
-        if self.user.isTeacher() or Tag.getBooleanTag('require_student_phonenum', default=True):
+        if self.user.isTeacher() or (self.user.isStudent() and Tag.getBooleanTag('require_student_phonenum', default=True)):
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
