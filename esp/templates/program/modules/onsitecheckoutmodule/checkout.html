@@ -42,10 +42,37 @@ $j(function() {
     midnight.setHours(23,59,59);
     updateCheckboxes(from = now, to = midnight);
     
+    // If new option is chosen, change checkboxes accordingly
+    $j('input[type=radio][name=return_option]').change(function() {
+        if (this.value == 'checkout_all_day') {
+            // Unenroll from remaining classes today
+            updateCheckboxes(from = now, to = midnight);
+        }
+        else if (this.value == 'checkout_forever') {
+            // Unenroll from all remaining classes
+            updateCheckboxes(from = now, to = Infinity);
+        }
+        else if (this.value == 'returntime') {
+            // Unenroll from classes until specified time
+            var returntime = new Date($j("#returntime").val());
+            updateCheckboxes(from = now, to = returntime);
+        }
+    });
+    
     // If a specific time is set, mark classes until then
     $j("#returntime").change(function() {
+        $j("input[type=radio][name=return_option][value=returntime]").prop("checked", true).trigger("click");
         var returntime = new Date($j(this).val());
         updateCheckboxes(from = now, to = returntime);
+    });
+    
+    $j("#confirm").change(function() {
+        $j("#checkoutallsubmit").attr("disabled", !$j(this).prop( "checked" ));
+    });
+    
+    $j("#checkoutallform").submit(function(event) {
+        var c = confirm('Are you sure you want to checkout ALL checked-in students?');
+        return c;
     });
 });
 </script>
@@ -56,14 +83,14 @@ $j(function() {
 <h1>Student Checkout &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
-
+<center>
 <form id="checkoutsearchform" name="checkoutsearchform" method="POST" action="{{ request.path }}">
 <table>
     <col width="85%">
     <col width="15%">
     <tr>
         <th colspan="2">
-            Choose Student to Checkout
+            Choose Individual Student to Checkout
         </th>
     </tr>
     <tr>
@@ -80,24 +107,36 @@ $j(function() {
     </tr>
 </table>
 </form>
-<br /><br />
 
 {% if student %}
-<center>
-<h3>When is the student returning? <input type="datetime-local" id="returntime" name="returntime" value="{% now 'Y-m-d' %}T{% now 'H:i' %}" min="{% now 'Y-m-d' %}T{% now 'H:i' %}"></h3>
-</center>
-<br /><br />
+<br />
+<div id="return_options">
+    <h2>
+        Choose one of the following checkout options for {{ student.first_name }} {{ student.last_name }} ({{ student.username }}):<br />
+    </h2>
+    <h3>
+        <input type="radio" name="return_option" value="checkout_all_day" checked /> This student is not returning today<br />
+        <input type="radio" name="return_option" value="checkout_forever" /> This student is not returning for the entire program<br />
+        <input type="radio" name="return_option" value="returntime" /> This student is returning at: <input type="datetime-local" id="returntime" name="returntime" value="{% now 'Y-m-d' %}T{% now 'H:i' %}" min="{% now 'Y-m-d' %}T{% now 'H:i' %}">
+    </h3>
+</div>
+
+<br />
+{% if checkout_message %}
+<h3 style="color:red;">{{ checkout_message }}</h3>
+{% endif %}
 <form id="checkoutform" name="checkoutform" method="POST" action="{{ request.path }}">
 <input type="hidden" name="user" value="{{ student.id }}"/>
 <input type="hidden" name="checkout_student"/>
+
 <table class="studentschedule">
-  <col width="25%">
+  <col width="20%">
   <col width="60%">
-  <col width="15%">
-  <tbody>
+  <col width="20%">
+  <thead>
     <tr>
-        <th colspan="3" class="user_info">
-            <i>Classes for {{ student.first_name }} {{ student.last_name }} - ID: {{ student.id }}</i>
+        <th colspan="3" align="center">
+            {{ student.first_name }} {{ student.last_name }} ({{ student.username }}) will be unenrolled from the checked classes below:
         </th>
     </tr>
     <tr>
@@ -111,6 +150,8 @@ $j(function() {
             Unenroll?
         </th>
     </tr>
+  </thead>
+  <tbody>
     {% for timeslot in timeslots %}
         {% ifchanged timeslot.0.start.day %}
             <tr>
@@ -119,32 +160,40 @@ $j(function() {
         {% endifchanged %}
         <tr class="schedule_row">
         {% with timeslot.1.0 as cls %}
-            <td class="time">{{ timeslot.0.short_time }}</td>
-            <td class="cls">
+            <td class="time" align="center">{{ timeslot.0.short_time }}</td>
+            <td class="cls" align="center">
             {% if cls %}
-                <!--link to course details?-->
                 <b>{{ cls.section.title }}{% if not cls.first_meeting_time %} (continued){% endif %}</b>
             {% else %}
                 No class
             {% endif %}
             </td>
             <td class="checkbox" align="center">
-                <input type="checkbox" value="{{ cls.section.id }}" data-start="{{ cls.section.start_time.start|date:'Y-m-d' }}T{{ cls.section.start_time.start|date:'H:i' }}" name="unenroll">
+                <input type="checkbox" {% if cls %}value="{{ cls.section.id }}" data-start="{{ cls.section.start_time.start|date:'Y-m-d' }}T{{ cls.section.start_time.start|date:'H:i' }}"{% else %}disabled{% endif %} name="unenroll">
             </td>
         {% endwith %}
     </tr>
     {% endfor %}
-    <tr>
-        <td colspan="3" align="center">
-            <input class="button" type="submit" value="Submit" />
-        </td>
-    </tr>
   </tbody>
 </table>
+<br />
+<input class="button" type="submit" value="Checkout Student" />
 </form>
 {% endif %}
-
-<!--Button to checkout everyone-->
+<hr>
+<form id="checkoutallform" name="checkoutallform" method="POST" action="{{ request.path }}">
+{% csrf_token %}
+<input type="hidden" name="checkoutall" />
+{% if checkout_all_message %}
+<h3 style="color:red;">{{ checkout_all_message }}</h3>
+{% endif %}
+<table>
+<tr><th>Checkout ALL Checked-In Students</th></tr>
+<tr><td align="center"><input type="checkbox" name="confirm" id="confirm"> I would like to checkout all checked-in students</td></tr>
+<tr><td align="center"><input class="button" id="checkoutallsubmit" type="submit" value="Checkout ALL Checked-In Students" disabled /></td></tr>
+</table>
+</form>
+</center>
 
 </div>
 

@@ -66,6 +66,11 @@ class OnSiteCheckoutModule(ProgramModuleObj):
     def checkout(self, request, tl, one, two, module, extra, prog):
         context = {}
         target_id = None
+        if "checkoutall" in request.POST and "confirm" in request.POST:
+            for student in ESPUser.objects.filter(record__event="attended", record__program=prog).distinct():
+                Record.objects.create(user=student, event="checked_out", program=prog)
+            context['checkout_all_message'] = "Successfully checked out all students"
+
         if 'user' in request.GET:
             target_id = request.GET['user']
         elif 'user' in request.POST:
@@ -74,6 +79,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             target_id = request.POST['target_user']
         else:
             form = StudentSearchForm()
+
         if target_id:
             try:
                 student = ESPUser.objects.get(id=target_id)
@@ -90,8 +96,9 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 Record.objects.create(user=student, event="checked_out", program=prog)
 
                 # Unenroll student from selected classes
-                for sec in ClassSection.objects.filter(id__in=request.POST.getlist('unenroll')).distinct():
+                for sec in ClassSection.objects.filter(id__in=filter(None, request.POST.getlist('unenroll'))).distinct():
                     sec.unpreregister_student(student, prereg_verb = "Enrolled")
+                context['checkout_message'] = "Successfully checked out student"
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
 
