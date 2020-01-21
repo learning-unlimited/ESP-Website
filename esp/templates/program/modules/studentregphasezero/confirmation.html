@@ -1,5 +1,6 @@
 {% extends "main.html" %}
 {% load render_qsd %}
+{% load users %}
 
 {% block title %} Student Registration for {{program.niceName}} {% endblock %}
 
@@ -88,7 +89,7 @@ The following students are in your lottery group:
 <div id="lottery_group">
 <ul id="students">
 {% for student in lottery_group.user.all %}
-<li>{{student}} (grade {{student.getGrade}})</li>
+<li>{{student}} (grade {{student|getGradeForProg:program.id}})</li>
 {% endfor %}
 </ul>
 </div>

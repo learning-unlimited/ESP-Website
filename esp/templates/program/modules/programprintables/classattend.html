@@ -1,3 +1,5 @@
+{% load users %}
+
 {% for sec in item.cls.sections.all %} 
 <div style="page-break-after: always;">&nbsp;</div>
 <div class="classroster">
@@ -43,7 +45,7 @@ Students Email: &nbsp; &nbsp; <tt>{{ sec.emailcode }}-students@{{ EMAIL_HOST_SEN
       <td>{{ student.id }}</td>
       <td>{{ student.name }}</td>
       <td>
-          {{ student.getGrade }}</td>
+          {{ student|getGradeForProg:program.id }}</td>
     </tr>
     {% endfor %}
     <tr>
