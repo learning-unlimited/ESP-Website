@@ -14,6 +14,10 @@ We've implemented a set of tools for teachers and admins to manage student class
 1. We've added a new page ``/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page has a dropdown menu for the teacher to select one of their sections for attendance.
 2. We've also added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled).
 
+Student Acknowledgement
+~~~~~~~~~~~~~~~~~~~~~~~
+Similar to the teacher acknowledgement module, this module will force students to agree to some conditions (ie a code of conduct) during student registration.
+
 Generic program links
 ~~~~~~~~~~~~~~~~~~~~~
 We've added the ability to use generic links that redirect to the most recent/current program (the one that is latest in time). The links are of the form ``[site].learningu.org/[tl]/[one]/current/[view]``, where ``[site]`` is the specific chapter site; ``[tl]`` is "teach", "learn", "manage", "volunteer", or "onsite"; ``[one]`` is the program type (e.g. "Splash", "Sprout", "HSSP"); and ``[view]`` is the specific page/view (e.g. "teacherreg", "studentreg", "dashboard", etc). Further arguments can be included after the view if they are normally included for that view.
@@ -62,6 +66,7 @@ Minor new features
 - The teacher availability search bar now only searches teachers (for the autocomplete). The rapid check-in and formstack medical/liability student search bars now only search students (for the autocomplete).
 - Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
 - Moved the grade change request link in the profile form to just under the grade field.
+- Profile form now is more specific about whose contact info is being collected. Student phone numbers can be left blank if the tag "require_student_phonenum" is set to "False."
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
