@@ -52,7 +52,7 @@ class SplashInfoModule(ProgramModuleObj):
           "module_type": "learn",
           "seq": 20,
           "required": True,
-          "choosable": 1,
+          "choosable": 2,
           }
 
     def students(self, QObject=False):
