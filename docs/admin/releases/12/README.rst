@@ -11,7 +11,7 @@ Attendance
 ~~~~~~~~~~
 We've implemented a set of tools for teachers and admins to manage student class attendance:
 
-1. We've added a new page ``/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page has a dropdown menu for the teacher to select one of their sections for attendance.
+1. We've added a new page ``/manage/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page has a dropdown menu for the teacher to select one of their sections for attendance.
 2. We've also added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled).
 
 Student Acknowledgement
@@ -26,6 +26,7 @@ Onsite changes
 ~~~~~~~~~~~~~~
 - You can now customize the teacher check-in text message in a template override (``program/modules/teachercheckinmodule/teachertext.txt``)
 - When texting all unchecked-in teachers through the teacher check-in page, you can now opt to skip teachers of classes with at least one checked-in teacher.
+- The main onsite page will now only show links to modules that are enabled.
 
 Floating Resources changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,6 +46,8 @@ Scheduler changes
 ~~~~~~~~~~~~~~~~~
 - Room requests are now included in the scheduler.
 - You can now filter classrooms (rows) in the scheduler by room capacity, resource, and name.
+- You can now filter classes in the scheduler by resource requests and flags.
+- You can now filter classes in the scheduler to only those taught by admins.
 - Added an option in the "Class Filters" tab to override teacher availability when scheduling classes. This will NOT override lunch constraints, already scheduled classes, or whether a class will actually fit time-wise where you are trying to schedule it.
 - The scheduler now works even if the Teacher Availability Module is not enabled (teachers will have full availability).
 
@@ -55,6 +58,10 @@ Flag and classsearch changes
 - Clickable items (such as flags and class titles) are now more obvious and neater on the classsearch page and other places flags are shown.
 - Flag names are now shown on the teacher checkin page without having to expand the class. Clicking on the flag names reveals the flag details.
 - Added a class flag printable.
+
+Survey changes
+~~~~~~~~~~~~~~
+- Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter".
 
 Minor new features
 ~~~~~~~~~~~~~~~~~~
@@ -67,6 +74,7 @@ Minor new features
 - Added a new page where admins can check the status of comm panel emails (``/manage/emails/``).
 - Moved the grade change request link in the profile form to just under the grade field.
 - Profile form now is more specific about whose contact info is being collected. Student phone numbers can be left blank if the tag "require_student_phonenum" is set to "False."
+- Added "View on site" links to a number of user-related pages in the administration pages.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -83,6 +91,7 @@ Minor bug fixes
 - Fixed a bug where admins would need to flush the cache after changing the lunch constraints to make them update in the scheduler.
 - Fixed many instances where a student's grade was listed as the current grade but should have been the grade at the time of the program.
 - The grade change request link is no longer displayed in the profile form for new users or users that can change their grade in the form.
+- Unscheduled sections and classes with no sections are no longer shown in the two-phase student lottery registration.
 
 Known issues of new features
 ============================
