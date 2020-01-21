@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load users %}
 
 
 {% block title %}Student application review for {{ cls }}{% endblock %}
@@ -69,7 +70,7 @@ table.roster {
    {{ student.name }}
     </td>
     <td>
-   {{ student.getGrade }}
+   {{ student|getGradeForProg:program.id }}
     </td>
     <td>
     {{student.added_class|date:"M d, Y" }}

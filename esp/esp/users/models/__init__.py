@@ -2194,6 +2194,7 @@ class Record(models.Model):
         ("onsite","Registered for program onsite"),
         ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("studentacknowledgement", "Did student acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
@@ -2299,6 +2300,7 @@ class Permission(ExpirableModel):
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
+            ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
