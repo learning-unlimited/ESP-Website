@@ -84,7 +84,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
         if student:
             context['student'] = student
             form = StudentSearchForm(initial={'target_user': student.id})
-            
+
             # Get most recent check-in record
             recs = Record.objects.filter(user=student, event="attended", program=prog)
             if recs.count() == 0:
