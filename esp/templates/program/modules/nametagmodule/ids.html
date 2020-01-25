@@ -66,6 +66,25 @@ body { font-family: georgia;
   <td><div class="indicator">&nbsp;</div></td>
 </tr>
 </table>
+
+<table border="0" cellspacing="0" cellpadding="0" align="center">
+<tr>
+  <td><div class="numlabel">Back for #2</div></td>
+  <td><div class="numlabel">Back for #1</div></td>
+</tr>
+  <td><div class="numlabel">Back for #4</div></td>
+  <td><div class="numlabel">Back for #3</div></td>
+</tr>
+<tr>
+  <td><div class="numlabel">Back for #6</div></td>
+  <td><div class="numlabel">Back for #5</div></td>
+</tr>
+<tr>
+  <td><div class="indicator">&nbsp;</div></td>
+  <td><div class="indicator">&nbsp;</div></td>
+</tr>
+</table>
+
 <div style="page-break-after: always;">&nbsp; </div>
 {% for user in users %}
     {% if forloop.counter0|divisibleby:6 %}
@@ -94,6 +113,40 @@ body { font-family: georgia;
           <td>
            {% include "program/modules/nametagmodule/singleid.html" %}
           </td>
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+<div style="page-break-after: always;">&nbsp; </div>
+{% for user in user_backs %}
+    {% if user.id %}
+        {% if forloop.counter0|divisibleby:6 %}
+            {% if not forloop.first %}
+                <tr>
+                  <td><div class="indicator">&nbsp;</div></td>
+                  <td><div class="indicator">&nbsp;</div></td>
+                </tr>
+                </table>
+                <div style="page-break-after: always;">&nbsp;</div>
+            {% endif %}
+            <table border="0" cellspacing="0" cellpadding="0" align="center">
+            <tr>
+              <td>
+                {% include "program/modules/nametagmodule/singleidback.html" %}
+              </td>
+        {% else %}
+            {% if forloop.counter|divisibleby:2 %}
+              <td>
+               {% include "program/modules/nametagmodule/singleidback.html" %}
+              </td>
+            </tr>
+            {% else %}
+            </tr>
+            <tr>
+              <td>
+               {% include "program/modules/nametagmodule/singleidback.html" %}
+              </td>
+            {% endif %}
         {% endif %}
     {% endif %}
 {% endfor %}
