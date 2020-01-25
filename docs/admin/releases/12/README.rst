@@ -75,6 +75,7 @@ Minor new features
 - Moved the grade change request link in the profile form to just under the grade field.
 - Profile form now is more specific about whose contact info is being collected. Student phone numbers can be left blank if the tag "require_student_phonenum" is set to "False."
 - Added "View on site" links to a number of user-related pages in the administration pages.
+- Added duration-from-now labels next to deadline form fields.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
