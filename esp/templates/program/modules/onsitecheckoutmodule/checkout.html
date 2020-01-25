@@ -110,6 +110,9 @@ $j(function() {
 
 {% if student %}
 <br />
+{% if checkout_message %}
+<h3 style="color:red;">{{ checkout_message }}</h3>
+{% endif %}
 <div id="return_options">
     <h2>
         Choose one of the following checkout options for {{ student.first_name }} {{ student.last_name }} ({{ student.username }}):<br />
@@ -122,9 +125,6 @@ $j(function() {
 </div>
 
 <br />
-{% if checkout_message %}
-<h3 style="color:red;">{{ checkout_message }}</h3>
-{% endif %}
 <form id="checkoutform" name="checkoutform" method="POST" action="{{ request.path }}">
 <input type="hidden" name="user" value="{{ student.id }}"/>
 <input type="hidden" name="checkout_student"/>

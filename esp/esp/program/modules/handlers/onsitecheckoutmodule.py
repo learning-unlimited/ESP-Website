@@ -56,30 +56,39 @@ class OnSiteCheckoutModule(ProgramModuleObj):
     def checkout(self, request, tl, one, two, module, extra, prog):
         context = {}
         target_id = None
+        student = None
+        form = StudentSearchForm()
         if "checkoutall" in request.POST and "confirm" in request.POST:
             for student in ESPUser.objects.filter(record__event="attended", record__program=prog).distinct():
                 Record.objects.create(user=student, event="checked_out", program=prog)
             context['checkout_all_message'] = "Successfully checked out all students"
 
-        if 'user' in request.GET:
-            target_id = request.GET['user']
-        elif 'user' in request.POST:
-            target_id = request.POST['user']
-        elif 'target_user' in request.POST:
-            target_id = request.POST['target_user']
+        if 'target_user' in request.POST:
+            form = StudentSearchForm(request.POST)
+            if form.is_valid():
+                student = form.cleaned_data['target_user']
         else:
-            form = StudentSearchForm()
-
-        if target_id:
-            try:
-                student = ESPUser.objects.get(id=target_id)
-            except:
+            if 'user' in request.GET:
+                target_id = request.GET['user']
+            elif 'user' in request.POST:
+                target_id = request.POST['user']
+            if target_id:
                 try:
-                    student = ESPUser.objects.get(username=target_id)
+                    student = ESPUser.objects.get(id=target_id)
                 except:
-                    raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+                    try:
+                        student = ESPUser.objects.get(username=target_id)
+                    except:
+                        raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+
+        if student:
             context['student'] = student
             form = StudentSearchForm(initial={'target_user': student.id})
+            
+            # Get most recent check-in record
+            recs = Record.objects.filter(user=student, event="attended", program=prog)
+            if recs.count() == 0:
+                context['checkout_message'] = "%s (%s) is not checked in for this program" % (student.name(), student.username)
 
             if 'checkout_student' in request.POST:
                 # Make checked_out record
@@ -88,7 +97,7 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                 # Unenroll student from selected classes
                 for sec in ClassSection.objects.filter(id__in=filter(None, request.POST.getlist('unenroll'))).distinct():
                     sec.unpreregister_student(student, prereg_verb = "Enrolled")
-                context['checkout_message'] = "Successfully checked out student"
+                context['checkout_message'] = "Successfully checked out %s (%s)" % (student.name(), student.username)
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
 
