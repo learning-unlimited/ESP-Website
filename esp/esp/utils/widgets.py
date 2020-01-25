@@ -17,14 +17,9 @@ import time
 
 # DATETIMEWIDGET
 calEnable = u"""
+<span id="{id}-info"><span id="{id}-gi"></span> <span id="{id}-duration"></span></span>
 <script type="text/javascript">
-    $j("#%s").%s({
-        showOn: 'button',
-        buttonImage: '%simages/calbutton_tight.png',
-        buttonImageOnly: true,
-        dateFormat: '%s',
-        timeFormat: '%s'
-    });
+    setupDatepickerDurationLabel('{widget}', '{id}', '{media_url}', '{date_format}', '{time_format}');
 </script>"""
 
 class DateTimeWidget(forms.widgets.TextInput):
@@ -61,7 +56,12 @@ class DateTimeWidget(forms.widgets.TextInput):
     def render(self, name, value, attrs=None):
         final_attrs = self.prepare_render_attrs(name, value, attrs)
         id = final_attrs['id']
-        cal = calEnable % (id, 'datetimepicker', settings.MEDIA_URL, self.dformat, self.tformat)
+        cal = calEnable.format(
+                widget='datetimepicker',
+                id=id,
+                media_url=settings.MEDIA_URL,
+                date_format=self.dformat,
+                time_format=self.tformat)
         return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
 
     def value_from_datadict(self, data, files, name):
@@ -89,7 +89,12 @@ class DateWidget(DateTimeWidget):
     def render(self, name, value, attrs=None):
         final_attrs = self.prepare_render_attrs(name, value, attrs)
         id = final_attrs['id']
-        cal = calEnable % (id, 'datepicker', settings.MEDIA_URL, self.dformat, self.tformat)
+        cal = calEnable.format(
+                widget='datepicker',
+                id=id,
+                media_url=settings.MEDIA_URL,
+                date_format=self.dformat,
+                time_format=self.tformat)
         return u'<input%s />%s' % (forms.utils.flatatt(final_attrs), cal)
 
 class ClassAttrMergingSelect(forms.Select):
