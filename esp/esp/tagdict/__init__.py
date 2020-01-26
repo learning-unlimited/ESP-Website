@@ -34,7 +34,7 @@ all_global_tags = {
     'current_theme_palette': (False, ""),
     'request_student_phonenum': (True, "Whether to request a student home phone number (enabled by default, set to 'False' to disable)"),
     'require_student_phonenum': (True, "Whether to require a student phone number (enabled by default, set to 'False' to disable). When 'False', students may leave the student phone number fields blank"),
-    'allow_change_grade_level': (False, ""),
+    'allow_change_grade_level': (True, "Should students be allowed to change their grade level in the profile form? Default is False."),
     'show_studentrep_application': (False, ""),
     'show_student_tshirt_size_options': (False, ""),
     'show_student_vegetarianism_options': (False, ""),
