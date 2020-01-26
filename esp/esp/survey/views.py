@@ -48,6 +48,7 @@ from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
+from esp.tagdict.models import Tag
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
@@ -64,8 +65,16 @@ def survey_view(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and not user.isTeacher()) or (tl == 'learn' and not user.isStudent()):
-        raise ESPError('You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+    if tl in ['teach', 'learn']:
+        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog, default = {'learn': "classreg", 'teach': "class_submitted"}[tl]).split(",") if x.strip()]
+        if len(filters) > 0:
+            if tl == 'learn':
+                users = prog.students()
+            else:
+                users = prog.teachers()
+            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters] for item in sublist}:
+                descs = prog.getListDescriptions()
+                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
 
     if 'done' in request.GET:
         return render_to_response('survey/completed_survey.html', request, {'prog': prog})

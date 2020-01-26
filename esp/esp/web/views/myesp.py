@@ -250,6 +250,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
     return render_to_response('users/profile.html', request, context)
 
 @login_required
