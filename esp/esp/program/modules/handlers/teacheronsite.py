@@ -28,13 +28,14 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
-from esp.program.models  import ClassSection
+from esp.program.models  import ClassSection, StudentRegistration, RegistrationType
 from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
 from datetime import datetime
+from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     @classmethod
@@ -148,13 +149,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
             sections = user.getTaughtSections(program = prog)
-
+        section_list = []
         for section in sections:
-            section.student_list = []
-            for student in section.students():
-                student.checked_in = Record.user_completed(student, "attended", prog)
-                section.student_list.append(student)
-        context['sections'] = sections
+            section_list.append(TeacherClassRegModule.process_attendance(section, request, prog))
+        context['sections'] = section_list
 
         return render_to_response(self.baseDir()+'sectionroster.html', request, context)
 
