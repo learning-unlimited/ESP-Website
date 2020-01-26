@@ -81,41 +81,43 @@ function toggleCheck(element) {
                     <td>{{ student|getGradeForProg:program.id }}</td>
                     <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
                     <td>
-                        <i class="material-icons-outlined md-5 pointer" onclick="toggleCheck(this);">{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                        <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                         <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attended %} checked{% endif %}>
                     </td>
                 </tr>
             {% endfor %}
-            <tr>
-                <th colspan="4">
-                    Attending (but not enrolled) Students
-                </th>
-            </tr>
-            <tr class="rosterheader">
-                <th>
-                    Name
-                </th>
-                <th>
-                    Grade
-                </th>
-                <th>
-                    Checked In
-                </th>
-                <th>
-                    Attending Class?
-                </th>
-            </tr>
-            {% for student in section.attended_list %}
+            {% if section.attended_list %}
                 <tr>
-                    <td>{{ student.name }}</td>
-                    <td>{{ student|getGradeForProg:program.id }}</td>
-                    <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
-                    <td>
-                        <i class="material-icons-outlined md-5 pointer" onclick="toggleCheck(this);">{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
-                        <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attended %} checked{% endif %}>
-                    </td>
+                    <th colspan="4">
+                        Other Attending Students
+                    </th>
                 </tr>
-            {% endfor %}
+                <tr class="rosterheader">
+                    <th>
+                        Name
+                    </th>
+                    <th>
+                        Grade
+                    </th>
+                    <th>
+                        Checked In
+                    </th>
+                    <th>
+                        Attending Class?
+                    </th>
+                </tr>
+                {% for student in section.attended_list %}
+                    <tr>
+                        <td>{{ student.name }}</td>
+                        <td>{{ student|getGradeForProg:program.id }}</td>
+                        <td><i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i></td>
+                        <td>
+                            <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                            <input type="checkbox" name="attending" value="{{ student.id }}" hidden{% if student.attended %} checked{% endif %}>
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% endif %}
         </table>
         {% if sections|length_is:"1" %}
         
@@ -131,9 +133,9 @@ function toggleCheck(element) {
 <div class="navbar bottom">
   <table>
     <tr>
-      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">event_note</i>
+      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections|length_is:'1' %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
         <br>Section Info</td>
-      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
+      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections|length_is:'1' %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
         <br>Section Roster</td>
     </tr>
   </table>

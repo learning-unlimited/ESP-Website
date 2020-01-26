@@ -36,6 +36,7 @@ from esp.survey.views   import survey_view, survey_review
 from esp.tagdict.models  import Tag
 from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
+from django.db.models import Count
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     @classmethod
@@ -124,7 +125,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog)
+            sections = user.getTaughtSections(program = prog).annotate(
+                num_meeting_times=Count("meeting_times")).filter(
+                num_meeting_times__gt=0, status__gt=0)
         context['sections'] = sections
 
         return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
@@ -141,6 +144,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['two'] = two
         context['webapp_page'] = 'details'
         context['section_page'] = 'roster'
+        context['not_found'] = []
         secid = 0
         if extra:
             secid = extra
@@ -148,10 +152,14 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog)
+            sections = user.getTaughtSections(program = prog).annotate(
+                num_meeting_times=Count("meeting_times")).filter(
+                num_meeting_times__gt=0, status__gt=0)
         section_list = []
         for section in sections:
-            section_list.append(TeacherClassRegModule.process_attendance(section, request, prog))
+            sec, not_found = TeacherClassRegModule.process_attendance(section, request, prog)
+            section_list.append(sec)
+            context['not_found'].extend(not_found)
         context['sections'] = section_list
 
         return render_to_response(self.baseDir()+'sectionroster.html', request, context)

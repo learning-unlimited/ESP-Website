@@ -224,7 +224,6 @@ class TeacherClassRegModule(ProgramModuleObj):
         user = request.user
         user.taught_sections = [sec for sec in user.getTaughtSections(program = prog) if sec.meeting_times.count() > 0]
         context['user'] = user
-        context['not_found'] = []
 
         secid = 0
         if 'secid' in request.POST:
@@ -237,7 +236,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
             else:
                 section = sections[0]
-                context['section'] = self.process_attendance(section, request, prog)
+                context['section'], context['not_found'] = self.process_attendance(section, request, prog)
         elif len(sections) > 1:
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
@@ -248,6 +247,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         attended = RegistrationType.objects.get_or_create(name = 'Attended', category = "student")[0]
         enrolled = RegistrationType.objects.get_or_create(name='Enrolled', category = "student")[0]
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
+        not_found = []
         if request.POST and 'submitted' in request.POST:
             attending_students = [int(student) for student in request.POST.getlist('attending')]
             for student in section.students(verbs=["Enrolled","Attended"]):
@@ -266,7 +266,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     try:
                         student = ESPUser.objects.get(username=code)
                     except (ValueError, ESPUser.DoesNotExist):
-                        context['not_found'].append(code)
+                        not_found.append(code)
                         continue
                 if student.isStudent():
                     Record.objects.get_or_create(user=student, program=prog, event='attended')
@@ -297,7 +297,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 student.checked_in = Record.user_completed(student, "attended", prog)
                 student.attended = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended).exists()
                 section.attended_list.append(student)
-        return section
+        return (section, not_found)
 
     @aux_call
     @needs_teacher
