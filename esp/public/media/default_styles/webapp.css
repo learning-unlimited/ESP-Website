@@ -101,10 +101,16 @@
 .cls {
   font-size: 2vh !important;
   width: 60%;
+  padding-bottom: .25vh !important;
 }
 
 .location {
   font-size: 1.75vh !important;
+  padding-top: .25vh !important;
+}
+
+.location > * {
+  vertical-align: middle;
 }
 
 .edit, .list {
@@ -115,6 +121,16 @@
   background-color: #F7F7F7;
   border-bottom: none !important;
   border-top: none !important;
+}
+
+.md-2 {
+  font-size: 2vh;
+  width: 2vh;
+}
+
+.md-3 {
+  font-size: 3vh;
+  width: 3vh;
 }
 
 .md-4 {
