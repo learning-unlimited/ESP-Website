@@ -123,7 +123,8 @@ class CommModule(ProgramModuleObj):
                                                'body': body,
                                                'renderedtext': renderedtext})
 
-    def approx_num_of_recipients(self, filterObj, sendto_fn):
+    @staticmethod
+    def approx_num_of_recipients(filterObj, sendto_fn):
         """
         Approximates the number of recipients of a message, given the filter
         and the sendto function.

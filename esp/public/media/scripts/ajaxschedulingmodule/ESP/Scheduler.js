@@ -24,12 +24,18 @@ function Scheduler(
     // Populate data with resources
     $j.each(data.rooms, function(index, room) {
         room.resources = [];
+        room.resource_lines = [];
         $j.each(room.associated_resources, function(index, resource) {
             var resource_type = data.resource_types[resource.res_type_id];
             room.resources.push({
                 'resource_type': resource_type,
                 'value': resource.value,
             });
+            var desc = resource_type.name;
+            if(resource.value) {
+                desc += ': ' + resource.value;
+            }
+            room.resource_lines.push(desc);
         });
     });
 
@@ -125,7 +131,7 @@ function Scheduler(
         var cell = $j(evt.currentTarget).data("cell");
         if(this.sections.selectedSection) {
             this.sections.scheduleSection(this.sections.selectedSection,
-                                          cell.room_name, cell.timeslot_id);
+                                          cell.room_id, cell.timeslot_id);
         }
     }.bind(this));
 
@@ -135,7 +141,7 @@ function Scheduler(
 
    $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
         var cell = $j(evt.currentTarget).data("cell");
-        this.sections.scheduleAsGhost(cell.room_name, cell.timeslot_id);
+        this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
     }.bind(this));
 
     // Render all the objects on the page

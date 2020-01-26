@@ -9,8 +9,6 @@
 {% endblock %}
 
 {% block xtrajs %}
-    <!-- A couple of extra features here: rollouts and the calendar date/time selector. -->
-    <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
     <!--This branch has a fix for when formsets are originally hidden-->
     <script src="https://cdn.jsdelivr.net/gh/elo80ka/django-dynamic-formset@f5f68c818953ddf43ffa7cb2e9aa391c3d4dfb47/src/jquery.formset.js"></script>
     <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
@@ -48,5 +46,6 @@ Enjoy!
 {% include "program/modules/resourcemodule/equipment.html" %}
 
 <script id="resourcesscript" src="/media/scripts/program/modules/resources.js" data-prog_url="{{ prog.url }}"></script>
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% endblock %}

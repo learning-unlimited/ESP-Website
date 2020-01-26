@@ -123,6 +123,9 @@ class UserAvailability(models.Model):
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
+
 
 class ESPUserManager(UserManager):
     pass
@@ -180,7 +183,7 @@ class BaseESPUser(object):
 
 
     @classmethod
-    def ajax_autocomplete(cls, data):
+    def ajax_autocomplete(cls, data, group = None):
         #q_name assumes data is a comma separated list of names
         #lastname first
         #q_username is username
@@ -202,11 +205,22 @@ class BaseESPUser(object):
 
         query_set = cls.objects.filter(q_names | q_username | q_id)
 
+        if group:
+            query_set = query_set.filter(groups=group)
+
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
         for value in values:
             value['ajax_str'] = '%s, %s (%s)' % (value['last_name'], value['first_name'], value['username'])
         return values
+
+    @classmethod
+    def ajax_autocomplete_student(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Student"))
+
+    @classmethod
+    def ajax_autocomplete_teacher(cls, data):
+        return cls.ajax_autocomplete(data, group = Group.objects.get(name="Teacher"))
 
     def ajax_str(self):
         return "%s, %s (%s)" % (self.last_name, self.first_name, self.username)
@@ -1041,6 +1055,9 @@ class ESPUser(User, BaseESPUser):
         self.makeRole("Administrator")
         self.save()
 
+    def get_absolute_url(self):
+        return "/manage/userview?username="+self.username
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
@@ -1365,6 +1382,8 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 AFFILIATION_UNDERGRAD = 'Undergrad'
 AFFILIATION_GRAD = 'Grad'
@@ -1477,6 +1496,9 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             username = self.user.username
         return u'ESP Teacher Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
+
     class Meta:
         app_label = 'users'
 
@@ -1538,6 +1560,8 @@ class GuardianInfo(models.Model):
             username = self.user.username
         return u'ESP Guardian Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
@@ -1612,6 +1636,9 @@ class EducatorInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return u'ESP Educator Info (%s)' % username
+
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1843,6 +1870,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class K12SchoolManager(models.Manager):
     def other(self):
@@ -2165,6 +2194,7 @@ class Record(models.Model):
         ("onsite","Registered for program onsite"),
         ("schedule_printed","Printed student schedule onsite"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("studentacknowledgement", "Did student acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("extra_costs_done","Filled out Student Extra Costs Form"),
@@ -2270,6 +2300,7 @@ class Permission(ExpirableModel):
         ("Student Deadlines", (
             ("Student", "Basic student access"),
             ("Student/All", "All student deadlines"),
+            ("Student/Acknowledgement", "Student acknowledgement"),
             ("Student/Applications", "Apply for classes"),
             ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),

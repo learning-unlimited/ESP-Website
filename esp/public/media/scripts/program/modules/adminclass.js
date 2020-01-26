@@ -290,6 +290,7 @@ function createStatusButtonTd(clsObj) {
 function createClassRow(clsObj)
 {
     var tr = $j(document.createElement('tr'));
+    tr.attr("id", clsObj.id);
     tr.append(
         createClassTitleTd(clsObj),
         createTeacherListTd(clsObj),
@@ -311,9 +312,11 @@ function handle_sort_control()
     var method = $j("#dashboard_sort_control").prop("value");
     //  Update the sorttable_customkey of the first td in each row
     $j("#classes_anchor > tr").each(function (index) {
-        var clsid = parseInt($j(this).prop("id").split("-")[1])
-        if (!classes_global.hasOwnProperty(clsid))
+        var clsid = parseInt($j(this).attr("id"))
+        if (!classes_global.hasOwnProperty(clsid)) {
+            console.log("No class found with ID: " + clsid);
             return;
+        }
         var cls = classes_global[clsid];
         if (method == "id")
             $j(this).children("td").first().attr("sorttable_customkey", cls.id);

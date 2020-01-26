@@ -1,6 +1,6 @@
 <!-- User ContactInfo -->
 
-<h3>Contact Information</h3>
+<h3>{{ profiletype|capfirst }} Contact Information</h3>
 
  <div class="control-group">
  <label class="control-label" for="id_first_name">First Name:</label>
@@ -74,7 +74,14 @@
 
 {{ form.address_postal }}
 
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:<font color="red">*</font></h4>
+<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
+
+{% if profiletype == "student" %}
+<div class="alert">
+    <button type="button" class="close" data-dismiss="alert">x</button>
+    <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
+</div>
+{% endif %}
 
 {% if form.phone_day %}
 <div class="control-group">

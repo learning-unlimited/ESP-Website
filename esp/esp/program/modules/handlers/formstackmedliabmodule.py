@@ -41,7 +41,7 @@ from esp.tagdict.models import Tag
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.users.forms.generic_search_form import GenericSearchForm
+from esp.users.forms.generic_search_form import StudentSearchForm
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
@@ -128,7 +128,7 @@ class FormstackMedliabModule(ProgramModuleObj):
         status_type = None
 
         if request.method == 'POST':
-            form = GenericSearchForm(request.POST)
+            form = StudentSearchForm(request.POST)
             if form.is_valid():
                 user = form.cleaned_data['target_user']
                 bypass_records = Record.objects.filter(
@@ -183,7 +183,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                 status_type = 'error'
                 status = 'Invalid user.'
 
-        context = {'status': status, 'status_type': status_type, 'form': GenericSearchForm()}
+        context = {'status': status, 'status_type': status_type, 'form': StudentSearchForm()}
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, context)
