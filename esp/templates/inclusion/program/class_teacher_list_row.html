@@ -126,7 +126,8 @@ Popup div for class cancellation request
   </td>
   <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
   <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) 
+    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
+    {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}
   </td>
   <td class="clsright" valign="middle">
   {% block cls_row_5_buttons %}

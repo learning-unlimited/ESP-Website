@@ -141,6 +141,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     FormClass = getattr(mod, target_type['profile_form'])
 
     context['profiletype'] = role
+    context['allow_grade_change'] = Tag.getTag('allow_change_grade_level')
 
     if request.method == 'POST' and 'profile_page' in request.POST:
         form = FormClass(curUser, request.POST)
@@ -250,6 +251,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
     return render_to_response('users/profile.html', request, context)
 
 @login_required
