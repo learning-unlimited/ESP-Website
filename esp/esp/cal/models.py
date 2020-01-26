@@ -78,6 +78,14 @@ class Event(models.Model):
         hrs = round(dur.total_seconds() / 3600.0, 2)
         return timedelta(hours = hrs)
 
+    def start_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.start - buffer
+
+    def end_w_buffer(self, buffer = timedelta(minutes=15)):
+        #Adds a buffer to the start time
+        return self.end + buffer
+
     def duration_str(self):
         dur = self.end - self.start
         hours = int(dur.seconds / 3600)

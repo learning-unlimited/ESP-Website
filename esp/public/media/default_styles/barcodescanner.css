@@ -1,0 +1,79 @@
+/* Controls */
+
+.overlay__close {
+    position: absolute;
+    right: 0;
+    padding: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    line-height: 2rem;
+    text-align: center;
+    background-color: white;
+    cursor: pointer;
+    border: 3px solid black;
+    font-size: 1.5rem;
+    margin: -1rem;
+    border-radius: 2rem;
+    z-index: 100;
+    display: none;
+    box-sizing: content-box;
+    font-family: sans-serif !important;
+}
+
+.scan_popup {
+    font-size: xx-large;
+    line-height: 1.5;
+    position: absolute;
+    z-index: 100;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px 8px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    display: none;
+    font-family: sans-serif !important;
+}
+
+/* Scan Button */
+
+.scan {
+    font-size: large;
+    padding: 0.5rem;
+    text-align: center;
+    display: inline;
+}
+
+/* Reader Dropdown */
+
+.controls, .controls select {
+    font-size: large !important;
+    margin: auto;
+    height: auto !important;
+    font-family: sans-serif !important;
+}
+
+.controls.hide {
+    display: none;
+}
+
+.overlay--inline {
+    display: none;
+}
+
+.overlay__content {
+    position: relative;
+}
+
+.overlay--inline.show {
+    display: block;
+}
+
+.drawingBuffer {
+    position: absolute;
+}

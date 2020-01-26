@@ -308,6 +308,13 @@ function initialize()
 
     //  Handle submit button
     $j("#prev_select_done").click(submit_prev_selection);
+
+    //  Populate fields with GET parameters
+    var items = location.search.substr(1).split("&");
+    for (var index = 0; index < items.length; index++) {
+          var tmp = items[index].split("=");
+          $j("[name="+tmp[0]+"]").val(tmp[1]);
+    }
 }
 
 $j(document).ready(initialize);
