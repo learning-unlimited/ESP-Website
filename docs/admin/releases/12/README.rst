@@ -22,6 +22,10 @@ Generic program links
 ~~~~~~~~~~~~~~~~~~~~~
 We've added the ability to use generic links that redirect to the most recent/current program (the one that is latest in time). The links are of the form ``[site].learningu.org/[tl]/[one]/current/[view]``, where ``[site]`` is the specific chapter site; ``[tl]`` is "teach", "learn", "manage", "volunteer", or "onsite"; ``[one]`` is the program type (e.g. "Splash", "Sprout", "HSSP"); and ``[view]`` is the specific page/view (e.g. "teacherreg", "studentreg", "dashboard", etc). Further arguments can be included after the view if they are normally included for that view.
 
+Program Creation and Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+- Added a page where you can modify all of the settings for a program (``/manage/[one]/[two]/settings``), including settings associated with the program itself, teacher registration, and student registration.
+
 Onsite changes
 ~~~~~~~~~~~~~~
 - You can now customize the teacher check-in text message in a template override (``program/modules/teachercheckinmodule/teachertext.txt``)
@@ -41,6 +45,7 @@ Printables changes
 ~~~~~~~~~~~~~~~~~~
 - Revamped student schedules. They are now in a portrait layout and include amount due, names of teachers for classes, and barcodes for check-in.
 - The ``studentchecklist`` printable now updates the statuses in the checklist based on the records through the website of whether students have been checked-in, have paid, or have turned in forms.
+- Admins can now use an arbitrary list of users (like that used in the comm panel or schedule generator) to generate nametags.
 
 Scheduler changes
 ~~~~~~~~~~~~~~~~~
@@ -76,6 +81,7 @@ Minor new features
 - Profile form now is more specific about whose contact info is being collected. Student phone numbers can be left blank if the tag "require_student_phonenum" is set to "False."
 - Added "View on site" links to a number of user-related pages in the administration pages.
 - Added duration-from-now labels next to deadline form fields.
+- Made the text on the profile form clearer when users can not change their grade/dob.
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
@@ -93,6 +99,7 @@ Minor bug fixes
 - Fixed many instances where a student's grade was listed as the current grade but should have been the grade at the time of the program.
 - The grade change request link is no longer displayed in the profile form for new users or users that can change their grade in the form.
 - Unscheduled sections and classes with no sections are no longer shown in the two-phase student lottery registration.
+- The "allow_change_grade_level" tag is now treated as a boolean tag.
 
 Known issues of new features
 ============================
