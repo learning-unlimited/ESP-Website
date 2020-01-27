@@ -44,18 +44,20 @@ To have good quality IDs:<br />
 <br />
 <form action="./generatetags" method="post">
 <fieldset>
-<strong>ID Type</strong>
+<strong>ID Type:</strong>
+<br />
+<br />
 <ul>
   <li><input type="radio" name="type" value="students" id="students"
-       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" checked="checked" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true; document.getElementById('barcodes').disabled = false;" checked="checked" />
       <label for="students">Students</label>
   </li>
   <li><input type="radio" name="type" value="teacher" id="teachers"
-       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true; document.getElementById('barcodes').disabled = false;" />
       <label for="teachers">Teachers</label>
   </li>
   <li><input type="radio" name="type" value="other" id="other"
-       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = false;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = false; document.getElementById('barcodes').disabled = false;" />
       <label for="teachers">Other Group</label>&nbsp;&nbsp;&nbsp;
       <select name="group" id="group" disabled>
         {% for group in groups %}
@@ -66,20 +68,18 @@ To have good quality IDs:<br />
   </li>
 
   <li><input type="radio" name="type" value="volunteers" id="volunt"
-       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true; document.getElementById('barcodes').disabled = false;" />
       <label for="volunt">Volunteers</label>
   </li>
   <li><input type="radio" name="type" value="misc" id="misc"
-       onclick="document.getElementById('misc_info').disabled = false; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = false; document.getElementById('group').disabled = true; document.getElementById('barcodes').disabled = true;" />
       <label for="volunt">Miscellaneous (enter info below)</label>
   </li>
   <li><input type="radio" name="type" value="blank" id="blank"
-       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true;" />
+       onclick="document.getElementById('misc_info').disabled = true; document.getElementById('group').disabled = true; document.getElementById('barcodes').disabled = true;" />
       <label for="blank">Blank</label>
   </li>
 </ul>
-
-<br />
 <br />
 <label for="misc_info"><strong>Miscellaneous:</strong></label>
 <br />
@@ -91,6 +91,7 @@ To have good quality IDs:<br />
 <br />
 <input type="text" id="number" name="number" value="20" size="5" />
 <br />
+<br />
 <label for="blanktitle"><strong>Title (if "Blank" or "Other Group" chosen) of IDs:</strong></label>
 <br />
 <input type="text" id="blanktitle" name="blanktitle" value="Student" size="15" />
@@ -101,6 +102,14 @@ To have good quality IDs:<br />
 <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
 <br />
 <br />
+<strong>Barcodes:</strong>
+<br />
+<br />
+<input type="checkbox" name="barcodes" id="barcodes" />
+<label for="barcodes"> Display barcodes for user ID numbers on back of nametags</label>
+<br />
+<br />
+
 <input type="submit" value="Generate IDs!" />
 </fieldset>
 </form>

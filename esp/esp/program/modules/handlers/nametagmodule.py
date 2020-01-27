@@ -170,19 +170,19 @@ class NameTagModule(ProgramModuleObj):
                 else:
                     users.append(expanded[j][i])
 
-        if len(users) % 2 == 1:
-            user_backs = [None]*len(users+1)
-        else:
-            user_backs = [None]*len(users)
-
+        user_backs = [None]*len(users)
         for j in range(len(users)):
             if j % 2 == 0:
                 user_backs[j+1] = users[j]
             else:
                 user_backs[j-1] = users[j]
 
-        context['users'] = users
-        context['user_backs'] = user_backs
+        users_and_backs = []
+        for j in range(len(users)/6):
+            users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
+
+        context['barcodes'] = True if 'barcodes' in request.POST else False
+        context['users_and_backs'] = users_and_backs
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
 

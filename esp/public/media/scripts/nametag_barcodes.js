@@ -10,7 +10,7 @@
 		function DrawCode39Barcode(data,
 						   checkDigit)
 		{
-			return DrawHTMLBarcode_Code39(data,checkDigit,"yes","in", 0,3,1,3,"bottom","center", "","black","white");
+			return DrawHTMLBarcode_Code39(data,checkDigit,"yes","in", 0,2,1,2,"bottom","center", "","black","white");
 		}
 
 		function DrawHTMLBarcode_Code39(data,
@@ -388,7 +388,7 @@
 					filtereddata = filtereddata.substr(0,255);
 				}
 			}
-			Result = "*" + filtereddata+cd+"*";
+			Result = "(ID: " + filtereddata+cd+")";
   		      Result=html_decode(html_escape(Result));
 			return Result;
 		}
