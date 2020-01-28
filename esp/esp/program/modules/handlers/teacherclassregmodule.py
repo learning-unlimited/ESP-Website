@@ -55,6 +55,7 @@ from django.template.loader      import render_to_string
 from esp.middleware.threadlocalrequest import get_current_request
 
 import json
+import re
 from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj):
@@ -258,7 +259,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                     srs = StudentRegistration.objects.filter(user = student, section = section, relationship = attended)
                     for sr in srs:
                         sr.expire()
-            misc_students = request.POST.get('misc_students').split()
+            # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
+            misc_students = re.split(r'[;,\s]\s*', request.POST.get('misc_students'))
             for code in misc_students:
                 try:
                     student = ESPUser.objects.get(id=code)

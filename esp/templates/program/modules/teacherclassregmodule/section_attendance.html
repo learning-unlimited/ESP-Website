@@ -151,7 +151,6 @@ Please select a section from the dropdown below.
 <tr>
     <th align="center">
         And/or enter any attending students (including unenrolled ones) here:
-        <br />(as whitespace-separated usernames/user IDs)
     </th>
 </tr>
 </thead>
@@ -173,13 +172,13 @@ Please select a section from the dropdown below.
                 <div class="overlay__close">X</div>
             </div>
         </div>
-        <br /><textarea name="misc_students" rows="10" style="width:75%"></textarea>
+        <br /><textarea name="misc_students" rows="10" style="width:75%" placeholder="student usernames/IDs"></textarea>
         {% if not_found %}
         <br /><span style="color:red">{{ not_found|join:", " }} not found</span>
         {% endif %}
         <br /><h3>For any attending students not enrolled in this section:</h3>
-        <input type="checkbox" name="enroll" checked>Enroll them in this section
-        <br /><input type="checkbox" name="unenroll" checked>Unenroll them from their conflicting sections
+        <input type="checkbox" name="enroll" checked> Enroll them in this section
+        <br /><input type="checkbox" name="unenroll" checked> Unenroll them from their conflicting sections
     </td>
 </tr>
 </tbody>

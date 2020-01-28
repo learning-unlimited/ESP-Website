@@ -10,7 +10,7 @@
         <th colspan="3" class="user_info">
             <i>Classes for {{user.first_name}} {{user.last_name}} - ID: {{user.id}}</i>
             {% if not checked_in %}
-                <p class="checkinnote">Note: Please make sure to check in before your first class today.</p>
+                <p class="checkinnote">{{ checkin_note }}</p>
             {% endif %}
         </th>
       </thead>

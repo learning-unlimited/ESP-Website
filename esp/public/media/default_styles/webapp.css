@@ -50,7 +50,7 @@
   font-family: 'Josefin Sans', Helvetica, Arial, Verdana, sans-serif;
   margin-top: 8vh;
   width: calc(100vh * 9 / 16);
-  height: 92vh;
+  min-height: 92vh;
   background-color: #c8e6dc;
 }
 

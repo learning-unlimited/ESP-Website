@@ -65,6 +65,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         # now we sort them by time/title
         classes.sort()
 
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
+
         context['user'] = user
         context['program'] = prog
         context['one'] = one
