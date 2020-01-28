@@ -105,13 +105,12 @@
 			  var result="";
 			  var barWidth=0;
 			  var thickWidth=0.0;
-			  var svg;
                     if (barWidthRatio >= 2 && barWidthRatio <= 3)
                     {
                     }
                     else
                         barWidthRatio = 3;
-
+               var x;
                     for (x = 0; x < encodedData.length; x++)
                     {
                         if (encodedData.substr(x,1) == 't')
@@ -130,7 +129,6 @@
                     if (minBarWidth > 0)
                     {
                         barWidth = minBarWidth.toFixed(2);
-                        width=barWidth * totalLength;
                     }
                     else
                         barWidth = (width / totalLength).toFixed(2);
@@ -223,6 +221,7 @@
                 var fontOutput = ConnectCode_Encode_Code39(data,checkDigit);
                 var output = "";
                 var pattern = "";
+                var x;
                 for (x = 0; x < fontOutput.length; x++)
                 {
                     switch (fontOutput.substr(x,1))
@@ -409,6 +408,7 @@
 							"U","V","W","X","Y","Z","-","."," ","$",
 							"/","+","%");
 			var RVal=-1;
+			var i;
 			for (i=0;i<43;i++)
 			{
 				if (inputchar==CODE39MAP[i])
@@ -423,6 +423,7 @@
 		{
 			var Result="";
 			var datalength=data.length;
+			var x;
 			for (x=0;x<datalength;x++)
 			{
 				if (getCode39Value(data.substr(x,1)) != -1)
@@ -435,9 +436,9 @@
 
 		function generateCheckDigit(data)
 		{
-			var Result="";
 			var datalength=data.length;
 			var sumValue=0;
+			var x;
 			for (x=0;x<datalength;x++)
 			{
 				sumValue=sumValue+getCode39Value(data.substr(x,1));
@@ -449,6 +450,7 @@
 		function html_escape(data)
 		{
 			var Result="";
+			var x;
 			for (x=0;x<data.length;x++)
 			{
 				Result=Result+"&#"+data.charCodeAt(x).toString()+";";
