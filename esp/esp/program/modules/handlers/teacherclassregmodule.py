@@ -260,7 +260,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     for sr in srs:
                         sr.expire()
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
-            misc_students = re.split(r'[;,\s]\s*', request.POST.get('misc_students'))
+            misc_students = filter(None, re.split(r'[;,\s]\s*', request.POST.get('misc_students')))
             for code in misc_students:
                 try:
                     student = ESPUser.objects.get(id=code)

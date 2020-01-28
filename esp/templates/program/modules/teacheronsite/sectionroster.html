@@ -1,12 +1,12 @@
 {% extends "program/modules/teacheronsite/webapp.html" %}
 
 {% block head %}
+{% if sections|length_is:"1" %}
 <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
 <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 
 <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
-<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js" type="text/javascript"></script>
 <script src="https://cdn.jsdelivr.net/gh/serratus/quaggaJS@e96eb9f7888507689cf33f1e6ce325959dde314e/dist/quagga.min.js" type="text/javascript"></script>
 <script src="/media/scripts/barcodescanner.js" type="text/javascript"></script>
@@ -34,7 +34,9 @@ Quagga.onDetected(function(result) {
         setTimeout("$j('#scaninfo').fadeOut(); ", 4000);
     }
 });
-    
+</script>
+{% endif %}
+<script>
 function toggleCheck(element) {
     var checkbox = element.nextElementSibling;
     if (checkbox.checked) {
@@ -158,9 +160,9 @@ function toggleCheck(element) {
                     {% endif %}
                     <textarea name="misc_students" rows="10" style="width:100%;margin-top: 1vh; margin-bottom: 1vh;" placeholder="student usernames/IDs"></textarea>
                     <div>
-                        <br />For any attending students not enrolled in this section:
-                        <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="enroll" checked hidden>Enroll them in this section
-                        <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="unenroll" checked hidden>Unenroll them from their conflicting sections
+                        For any attending students not enrolled in this section:
+                        <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="enroll" checked hidden> Enroll them in this section
+                        <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="unenroll" checked hidden> Unenroll them from their conflicting sections
                         <br /><input style="font-size: 2vh !important;" type="Submit" class="btn" value="Submit Attendance" />
                     </div>
                 </td>
