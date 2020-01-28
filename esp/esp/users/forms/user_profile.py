@@ -181,7 +181,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         from esp.users.models import ESPUser
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
 
-        self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
+        self.allow_change_grade_level = Tag.getBooleanTag('allow_change_grade_level', default = False)
 
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
@@ -229,7 +229,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
 
-        if not Tag.getTag('allow_change_grade_level'):
+        if not Tag.getBooleanTag('allow_change_grade_level', default = False):
             if 'initial' in kwargs:
                 initial_data = kwargs['initial']
 
@@ -286,7 +286,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
                 raise forms.ValidationError("Please enter an explanation if you would like to become a student rep.")
 
-        if not Tag.getTag('allow_change_grade_level'):
+        if not Tag.getBooleanTag('allow_change_grade_level', default = False):
             user = self._user
 
             orig_prof = RegistrationProfile.getLastProfile(user)
