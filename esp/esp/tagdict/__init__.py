@@ -34,7 +34,7 @@ all_global_tags = {
     'current_theme_palette': (False, ""),
     'request_student_phonenum': (True, "Whether to request a student home phone number (enabled by default, set to 'False' to disable)"),
     'require_student_phonenum': (True, "Whether to require a student phone number (enabled by default, set to 'False' to disable). When 'False', students may leave the student phone number fields blank"),
-    'allow_change_grade_level': (False, ""),
+    'allow_change_grade_level': (True, "Should students be allowed to change their grade level in the profile form? Default is False."),
     'show_studentrep_application': (False, ""),
     'show_student_tshirt_size_options': (False, ""),
     'show_student_vegetarianism_options': (False, ""),
@@ -113,4 +113,6 @@ all_program_tags = {
     'num_stars': (False, "The preferred number of starred classes per timeslot for student two-phase registration"),
     'program_center': (False, "The geographic center for a program, following the form {lat: 37.427490, lng: -122.170267}"),
     'count_checked_in_only': (True, "Whether to use registered students or checked in students to determine if a class is full (for studentonsite)"),
+    'survey_teacher_filter': (False, "Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers(). Default is 'class_submitted', or teachers that have registered a class."),
+    'survey_student_filter': (False, "Which sets of students are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.students(). Default is 'classreg', or students that have registered for a class."),
 }

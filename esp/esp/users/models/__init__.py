@@ -123,6 +123,9 @@ class UserAvailability(models.Model):
             self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
+    def get_absolute_url(self):
+        return self.event.program.get_manage_url()+"edit_availability?user="+str(self.user.id)
+
 
 class ESPUserManager(UserManager):
     pass
@@ -1052,6 +1055,9 @@ class ESPUser(User, BaseESPUser):
         self.makeRole("Administrator")
         self.save()
 
+    def get_absolute_url(self):
+        return "/manage/userview?username="+self.username
+
 class AnonymousESPUser(BaseESPUser, AnonymousUser):
     pass
 
@@ -1376,6 +1382,8 @@ class StudentInfo(models.Model):
             username = self.user.username
         return u'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 AFFILIATION_UNDERGRAD = 'Undergrad'
 AFFILIATION_GRAD = 'Grad'
@@ -1488,6 +1496,9 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
             username = self.user.username
         return u'ESP Teacher Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
+
     class Meta:
         app_label = 'users'
 
@@ -1549,6 +1560,8 @@ class GuardianInfo(models.Model):
             username = self.user.username
         return u'ESP Guardian Info (%s)' % username
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
@@ -1623,6 +1636,9 @@ class EducatorInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return u'ESP Educator Info (%s)' % username
+
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1854,6 +1870,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
             last_name = self.last_name
         return first_name + ' ' + last_name + ' (' + username + ')'
 
+    def get_absolute_url(self):
+        return self.user.get_absolute_url()
 
 class K12SchoolManager(models.Manager):
     def other(self):
