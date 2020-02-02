@@ -15,12 +15,13 @@
 <br /><br />
 <h1>Generate Nametags for {{program.niceName}} </h1>
 
+{% load render_qsd %}
+{% inline_program_qsd_block program "manage:nametags" %}
 <p style="text-align: center">
 Using this tool you can generate nametags for your program.<br />
 Please select from options below.
 </p>
 
-<br />
 <br />
 <h2>Axiak's Guide to happy IDs</h2>
 
@@ -42,6 +43,8 @@ To have good quality IDs:<br />
    </li>
    <li>That's all!</li>
 </ol>
+{% end_inline_program_qsd_block %}
+
 <br />
 <form action="./generatetags" method="post">
 <fieldset>
@@ -70,10 +73,10 @@ To have good quality IDs:<br />
   <li><input type="radio" name="type" value="aul" id="aul" />
       <label for="aul">Arbitrary User List (select users below)</label>
   </li>
-  <li><input type="radio" name="type" value="misc" id="misc" />
+  <li><input type="radio" name="type" value="misc" id="misc" onclick="document.getElementById('barcodes').checked = false;" />
       <label for="misc">Miscellaneous (enter info below)</label>
   </li>
-  <li><input type="radio" name="type" value="blank" id="blank" />
+  <li><input type="radio" name="type" value="blank" id="blank" onclick="document.getElementById('barcodes').checked = false;" />
       <label for="blank">Blank (specify number below)</label>
   </li>
 </ul>
