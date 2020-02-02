@@ -73,10 +73,10 @@ To have good quality IDs:<br />
   <li><input type="radio" name="type" value="aul" id="aul" />
       <label for="aul">Arbitrary User List (select users below)</label>
   </li>
-  <li><input type="radio" name="type" value="misc" id="misc" onclick="document.getElementById('barcodes').checked = false;" />
+  <li><input type="radio" name="type" value="misc" id="misc" />
       <label for="misc">Miscellaneous (enter info below)</label>
   </li>
-  <li><input type="radio" name="type" value="blank" id="blank" onclick="document.getElementById('barcodes').checked = false;" />
+  <li><input type="radio" name="type" value="blank" id="blank" />
       <label for="blank">Blank (specify number below)</label>
   </li>
 </ul>
@@ -141,9 +141,11 @@ $j('input:radio[name="type"]').change( function(e){
     } else if (option == "blank") {
         $j('#num_wrapper').toggle();
         $j('#title_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
         $j('#barcode_wrapper').toggle();
     } else if (option == "misc") {
         $j('#misc_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
         $j('#barcode_wrapper').toggle();
     }
 
