@@ -93,7 +93,7 @@ class ProgramModuleObj(models.Model):
 
         #   Filter out attributes that we don't want to look at: attributes of
         #   ProgramModuleObj, including Django stuff
-        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_fields())
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
