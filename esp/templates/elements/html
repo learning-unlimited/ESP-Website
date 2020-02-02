@@ -39,6 +39,7 @@
     {% block jquery_ui_version %}
     <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
+    <script type="text/javascript" src="/media/scripts/datepicker-duration.js"></script>
     {% endblock %}
     <script type="text/javascript" src="/media/scripts/common.js"></script>
     {% endblock jquery %}

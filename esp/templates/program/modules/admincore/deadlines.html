@@ -77,6 +77,10 @@
         vertical-align: middle;
     }
 
+    #userbitforms table th.halfwidth
+    {
+        width: 50%;
+    }
     #userbitforms table th.small
     {
         font-size: 12px;
@@ -162,11 +166,15 @@
     {{ perm.form.id }}
     <table border="0" width="550px" cellspacing="0" cellpadding="3px">
     <tr>
-        <th width="400px"><p class="bitname"><span style="color: #000066">{% if perm.open_now %}Open:{% else %}Closed:{% endif %}</span> {{ perm.name }}</p>
+        <th class="halfwidth"><p class="bitname"><span style="color: #000066">{% if perm.open_now %}Open:{% else %}Closed:{% endif %}</span> {{ perm.name }}</p>
 <p class="bitname"><span style="color: #000066">To:</span> {{ perm.role }}s</p>
             <span class="bituri">{{ perm.permission_type }}</span>
         </th>
-        <th class="small" width="145px">Available from: <br />{{ perm.form.start_date }} to <br /> {{ perm.form.end_date }}</th>
+        <th class="halfwidth small">
+            Available from:<br />{{ perm.form.start_date }}
+            <br />
+            to<br />{{ perm.form.end_date }}
+        </th>
     </tr>
     <tr>
         <td valign="top">

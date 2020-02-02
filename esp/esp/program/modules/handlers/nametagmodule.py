@@ -36,6 +36,7 @@ from django.conf import settings
 
 from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -59,9 +60,11 @@ class NameTagModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher eg page """
+        """ Display a page for admins to pick users for nametags """
         context = {'module': self}
         context['groups'] = Group.objects.all()
+        usc = UserSearchController()
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
@@ -92,7 +95,16 @@ class NameTagModule(ProgramModuleObj):
 
         user_title = idtype
 
-        if idtype == 'students':
+        if idtype == 'aul':
+            user_title = request.POST['blanktitle']
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+            usc = UserSearchController()
+            filterObj = usc.filter_from_postdata(prog, data)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title)
+
+        elif idtype == 'students':
             user_title = "Student"
             student_dict = self.program.students(QObjects = True)
             if 'classreg' in student_dict:
