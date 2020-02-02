@@ -64,9 +64,8 @@ def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, check
 
     Calls render_class_core for non-user-specific parts.
     """
-    context = _render_class_helper(cls,  user, filter, timeslot, webapp = True)
+    context = _render_class_helper(cls,  user, filter, timeslot, webapp = True, prereg_suffix = 'onsiteaddclass')
     context['checked_in'] = checked_in
-    context['prereg_url'] = cls.parent_program.get_learn_url() + 'onsiteaddclass'
     return context
 render_class_webapp.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 render_class_webapp.cached_function.get_or_create_token(('cls',))
@@ -89,7 +88,7 @@ def render_class_direct(cls):
 render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 
-def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = False):
+def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = False, prereg_suffix = 'addclass'):
     """Computes the context for render_class and render_class_direct."""
     scrmi = cls.parent_program.studentclassregmoduleinfo
     crmi = cls.parent_program.classregmoduleinfo
@@ -103,7 +102,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
             cls.category == cls.parent_program.open_class_category):
         prereg_url = None
     else:
-        prereg_url = cls.parent_program.get_learn_url() + 'addclass'
+        prereg_url = cls.parent_program.get_learn_url() + prereg_suffix
 
     if user and prereg_url and timeslot:
         errormsg = cls.cannotAdd(user, which_section=section, webapp = webapp)

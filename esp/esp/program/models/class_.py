@@ -1593,11 +1593,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
-<<<<<<< HEAD
-            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
-=======
-            if not s.isFull(ignore_changes=ignore_changes):
->>>>>>> main
+            if not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
                 return False
         return True
 
