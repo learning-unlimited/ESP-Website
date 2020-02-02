@@ -1,7 +1,7 @@
 /*
  * ConnectCode
  *
- * Copyright (c) 2010-2011 barcoderesource.com (http://barcoderesouce.com/gpl-3.0.txt)
+ * Copyright (c) 2010-2011 barcoderesource.com (http://barcoderesource.com/gpl-3.0.txt)
  * Licensed under the GPL (gpl-3.0.txt) licenses.
  *
  * http://www.barcoderesource.com
