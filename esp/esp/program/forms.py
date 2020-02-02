@@ -71,7 +71,7 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
+        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.filter(choosable=0))
 
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
@@ -102,19 +102,15 @@ class ProgramCreationForm(BetterModelForm):
     def clean_program_modules(self):
         value = self.cleaned_data['program_modules']
         value = map(int, value)
-        json_module = ProgramModule.objects.get(handler=u'JSONDataModule')
-        # If the JSON Data Module isn't already in the list of selected
-        # program modules, add it. The JSON Data Module is a dependency for
-        # many commonly-used modules, so it is important that it be enbabled
-        # by default for all new programs.
-        if json_module.id not in value:
-            value.append(json_module.id)
+        default_modules = ProgramModule.objects.filter(choosable=1)
+        for m in default_modules:
+            value.append(m.id)
         return value
 
 
     class Meta:
         fieldsets = [
-('Program Title', {'fields': ['term', 'term_friendly'] }),
+                     ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
@@ -122,7 +118,7 @@ class ProgramCreationForm(BetterModelForm):
                      ('Registration Dates',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
-]                      # Here You can also add description for each fieldset.
+        ]                      # Here You can also add description for each fieldset.
 
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
