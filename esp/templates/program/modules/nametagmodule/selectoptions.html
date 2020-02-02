@@ -15,12 +15,13 @@
 <br /><br />
 <h1>Generate Nametags for {{program.niceName}} </h1>
 
+{% load render_qsd %}
+{% inline_program_qsd_block program "manage:nametags" %}
 <p style="text-align: center">
 Using this tool you can generate nametags for your program.<br />
 Please select from options below.
 </p>
 
-<br />
 <br />
 <h2>Axiak's Guide to happy IDs</h2>
 
@@ -42,10 +43,14 @@ To have good quality IDs:<br />
    </li>
    <li>That's all!</li>
 </ol>
+{% end_inline_program_qsd_block %}
+
 <br />
 <form action="./generatetags" method="post">
 <fieldset>
-<strong>ID Type</strong>
+<strong>ID Type:</strong>
+<br />
+<br />
 <ul>
   <li><input type="radio" name="type" value="students" id="students" checked="checked" />
       <label for="students">Students</label>
@@ -62,7 +67,6 @@ To have good quality IDs:<br />
         <option value="" selected hidden></option>
       </select>
   </li>
-
   <li><input type="radio" name="type" value="volunteers" id="volunt" />
       <label for="volunt">Volunteers</label>
   </li>
@@ -76,8 +80,6 @@ To have good quality IDs:<br />
       <label for="blank">Blank (specify number below)</label>
   </li>
 </ul>
-
-<br />
 <br />
 <div id="aul_wrapper" hidden>
 <label for="aul"><strong>Arbitrary User List:</strong></label>
@@ -90,7 +92,7 @@ To have good quality IDs:<br />
 <label for="misc_info"><strong>Miscellaneous:</strong></label>
 <br />
 (&quot;Name, Title&quot; on each line, without quotes.)<br />
-<textarea name="misc_info" id="misc_info" rows="25" cols="40" disabled></textarea>
+<textarea name="misc_info" id="misc_info" rows="25" cols="40"></textarea>
 <br />
 <br />
 </div>
@@ -112,6 +114,16 @@ To have good quality IDs:<br />
 <input type="text" id="programname" size="40" name="progname" value="{{ program.niceName }}" />
 <br />
 <br />
+<div id="barcode_wrapper">
+<strong>Barcodes:</strong>
+<br />
+<br />
+<input type="checkbox" name="barcodes" id="barcodes" />
+<label for="barcodes"> Display barcodes for user ID numbers on back of nametags</label>
+<br />
+<br />
+</div>
+
 <input type="submit" value="Generate IDs!" />
 </fieldset>
 </form>
@@ -120,9 +132,7 @@ To have good quality IDs:<br />
 var $old_this = $j('#students');
 $j('input:radio[name="type"]').change( function(e){
     var option = $j(this).val();
-    if (option == "misc_info") {
-        $j('#misc_wrapper').toggle();
-    } else if (option == "other") {
+    if (option == "other") {
         $j('#group').prop('disabled', function(i, v) { return !v; });
         $j('#title_wrapper').toggle();
     } else if (option == "aul") {
@@ -131,8 +141,12 @@ $j('input:radio[name="type"]').change( function(e){
     } else if (option == "blank") {
         $j('#num_wrapper').toggle();
         $j('#title_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
+        $j('#barcode_wrapper').toggle();
     } else if (option == "misc") {
         $j('#misc_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
+        $j('#barcode_wrapper').toggle();
     }
 
     // trigger "change" for the old radio button
