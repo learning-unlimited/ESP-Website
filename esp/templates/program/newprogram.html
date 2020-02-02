@@ -46,8 +46,10 @@ Use a past program as a template:
   <form action="{{ request.path }}" method="post">
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+
 {% for fieldset in form.fieldsets %}
 
+  <br /><br />
   <fieldset class="fieldset_{{ fieldset.name }}">
   {% if fieldset.legend %}
     <legend>{{ fieldset.legend }}</legend>
@@ -66,19 +68,19 @@ Use a past program as a template:
     <td style="vertical-align:text-top;">{{ field.label }} </td>
     {% endif %}
      {% if field %}
-      <td>  {{ field }} 
+      <td>  {{ field }}
     {% endif %}
     {% if field.help_text %}
-      <br/>
-      <span> {{ field.help_text }} </span>
+      <br />
+      <span>{{ field.help_text }}</span>
     {% endif %}
+    <br /><br />
     {% for error in  field.errors %}
     <br/>
      <span class='form_error'> {{ error }} </span>
     {% endfor %}
      </td>
      </tr>
-     <br /><br />
 
     {% endif %}
   {% endfor %}
