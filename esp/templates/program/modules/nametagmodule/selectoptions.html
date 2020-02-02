@@ -141,9 +141,11 @@ $j('input:radio[name="type"]').change( function(e){
     } else if (option == "blank") {
         $j('#num_wrapper').toggle();
         $j('#title_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
         $j('#barcode_wrapper').toggle();
     } else if (option == "misc") {
         $j('#misc_wrapper').toggle();
+        $j('#barcodes').prop("checked", false);
         $j('#barcode_wrapper').toggle();
     }
 
