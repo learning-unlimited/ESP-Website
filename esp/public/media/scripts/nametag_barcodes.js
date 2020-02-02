@@ -1,7 +1,7 @@
 /*
  * ConnectCode
  *
- * Copyright (c) 2010-2011 barcoderesource.com (http://barcoderesource.com/gpl-3.0.txt)
+ * Copyright (c) 2010-2011 barcoderesource.com (http://barcoderesouce.com/gpl-3.0.txt)
  * Licensed under the GPL (gpl-3.0.txt) licenses.
  *
  * http://www.barcoderesource.com
@@ -110,7 +110,7 @@
                     }
                     else
                         barWidthRatio = 3;
-               var x;
+                    var x;
                     for (x = 0; x < encodedData.length; x++)
                     {
                         if (encodedData.substr(x,1) == 't')
@@ -158,7 +158,7 @@
 				  }
 				  result=result+humanSpan;
 			  }
-
+			        var x;
                     for (x = 0; x < encodedData.length; x++)
                     {
                         var brush;
@@ -387,8 +387,8 @@
 					filtereddata = filtereddata.substr(0,255);
 				}
 			}
-			Result = "(ID: " + filtereddata+cd+")";
-  		      Result=html_decode(html_escape(Result));
+			Result = "*" + filtereddata+cd+"*";
+  		      Result=html_decode(html_escape(Result));	
 			return Result;
 		}
 
