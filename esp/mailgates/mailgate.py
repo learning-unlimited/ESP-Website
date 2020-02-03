@@ -90,9 +90,9 @@ try:
         subject = message['subject']
         del(message['subject'])
         if instance.emailcode:
-            subject = '[%s]%s' % (instance.emailcode, subject)
+            subject = '[%s] %s' % (instance.emailcode, subject)
         if handler.subject_prefix:
-            subject = '%s%s' % (handler.subject_prefix, subject)
+            subject = '[%s] %s' % (handler.subject_prefix, subject)
         message['Subject'] = subject
 
         if handler.from_email:
