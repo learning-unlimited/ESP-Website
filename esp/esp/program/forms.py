@@ -65,14 +65,33 @@ class ProgramCreationForm(BetterModelForm):
     program_modules   = forms.MultipleChoiceField(
                           choices=[],
                           label='Program Modules',
-                          widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}),
+                          widget=forms.CheckboxSelectMultiple(attrs={'class': 'input-xxlarge'}),
                           help_text=Program.program_modules.field.help_text)
+
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.filter(choosable=0))
-
+        program_modules_questions = ['Will you have extra costs (shirts or lunch)?', # Accounting, Student Optional Fees, Credit Card Payment Module (Stripe), Financial Aid Application, Easily Approve Financial Aid Requests
+                                     'Will you charge for the program?', # Accounting, Credit Card Payment Module (Stripe, Financial Aid Application, Easily Approve Financial Aid Requests
+                                     'Do you want a pre-program quiz for teachers?', # Teacher logistics quiz
+                                     'Will you send any surveys to teachers?', # Teacher Custom Form, Teacher Surveys, Survey Management
+                                     'Will you send any surveys to students?', # Student Custom Form, Student Surveys, Survey Management
+                                     'Will you have any additional forms that teachers should fill out?', # Teacher Custom Form
+                                     'Will you have any additional forms that teachers should fill out?', # Student Custom Form
+                                     'Will you have more than one lunch period (per day)?', # Student Lunch Period Selection
+                                     'Would you be willing to solicit donations for LU?',
+                                     'Do you plan to have teacher training or interviews?', # Teacher Training and Interview Signups, Manage Teacher Training and Interviews
+                                     'Will you use lottery registration (as opposed to first come, first served)?', # Two-Phase Student Registration, Lottery Frontend
+                                        'If yes, do you want to use the "phase zero" admission lottery before class lottery?', # Student Registration Phase Zero, Manage Student Registration Phase Zero
+                                     'Do students have to apply to individual classes?',
+                                        'If yes, can teachers admit them (as opposed to just admins)?' #Teacher Admissions Dashboard', Application Reviews for Teachers, Application Review for Admin,Admin Admissions Dashboard
+                                    ]
+        self.program_module_ids = [['72', '48', '10', '40', '62'], ['72', '10', '40', '62'], ['19'], ['3', '8', '28'], ['4', '7', '28'], ['3'], ['4'], ['44'], ['50'], ['63', '64'], ['41', '66'], ['49', '9'], ['17'], ['68', '70']]
+                                
+        self.fields['program_modules'].choices = enumerate(program_modules_questions)
+        
+        
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
@@ -101,11 +120,14 @@ class ProgramCreationForm(BetterModelForm):
 
     def clean_program_modules(self):
         value = self.cleaned_data['program_modules']
-        value = map(int, value)
+        final = []
+        for v in value:
+            final.extend(self.program_module_ids[int(v)])
+        final = map(int, final)
         default_modules = ProgramModule.objects.filter(choosable=1)
         for m in default_modules:
-            value.append(m.id)
-        return value
+            final.append(m.id)
+        return final
 
 
     class Meta:
