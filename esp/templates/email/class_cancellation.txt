@@ -1,3 +1,7 @@
-Dear {% templatetag openvariable %} user.first_name {% templatetag closevariable %},
+{% autoescape off %}
+
+Dear {{ user.first_name }},
 
 {% include "email/class_cancellation_body.txt" %}
+
+{% endautoescape %}

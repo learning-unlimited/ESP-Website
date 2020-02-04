@@ -52,7 +52,7 @@ class QSDMediaTest(TestCase):
         media = Media(friendly_name = 'Test QSD Media')
         media.handle_file(file, file.name)
         media.save()
-        
+
         #   Check that the file can be downloaded from the proper link
         url = '/download/%s' % media.hashed_name
         response = self.client.get(url)

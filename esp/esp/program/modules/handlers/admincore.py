@@ -32,19 +32,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, CoreModule, main_call, aux_call
-from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.datatree.models import *
-from esp.users.models import User, Permission
-from django import forms
 from django.forms.formsets import formset_factory
+from django.http import HttpResponseRedirect
 
-from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
+from esp.accounting.controllers import ProgramAccountingController
+from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.users.models import Permission
+from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
-from esp.middleware import ESPError
 
 from datetime import datetime
 
@@ -55,7 +54,7 @@ class EditPermissionForm(forms.Form):
 
 class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=filter(lambda x: isinstance(x[1], tuple) and "Deadline" in x[0], Permission.PERMISSION_CHOICES))
-    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers")])
+    role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers"),("Volunteer","Volunteers")])
     start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
     end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
@@ -74,7 +73,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
         modules = self.program.getModules(request.user, 'manage')
-                    
+
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
@@ -84,6 +83,69 @@ class AdminCore(ProgramModuleObj, CoreModule):
             context['%s_%s' % (tl, view_name)] = True
 
         return render_to_response(self.baseDir()+'directory.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def settings(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
+        context = {}
+        submitted_form = ""
+        crmi = ClassRegModuleInfo.objects.get(program=prog)
+        scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
+        old_url = prog.url
+
+        #If one of the forms was submitted, process it and save if valid
+        if request.method == 'POST':
+            if 'form_name' in request.POST:
+                submitted_form = request.POST['form_name']
+                if submitted_form == "Program Settings":
+                    form = ProgramSettingsForm(request.POST, instance = prog)
+                    prog_form = form
+                elif submitted_form == "Teacher Registration Settings":
+                    form = TeacherRegSettingsForm(request.POST, instance = crmi)
+                    crmi_form = form
+                elif submitted_form == "Student Registration Settings":
+                    form = StudentRegSettingsForm(request.POST, instance = scrmi)
+                    scrmi_form = form
+                if form.is_valid():
+                    form.save()
+                    #If the url for the program is now different, redirect to the new settings page
+                    if prog.url is not old_url:
+                        return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
+
+        #Set up any other forms on the page
+        if submitted_form != "Program Settings":
+            prog_dict = {}
+            prog_dict.update(prog.__dict__)
+            #We need to populate all of these manually
+            prog_dict['term'] = prog.program_instance
+            prog_dict['term_friendly'] = prog.name.replace(prog.program_type, "", 1).strip()
+            prog_dict["program_type"] = prog.program_type
+            pac = ProgramAccountingController(prog)
+            line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
+            prog_dict['base_cost'] = int(sum(x["amount_dec"] for x in line_items))
+            prog_dict["sibling_discount"] = prog.sibling_discount
+            prog_dict['program_modules'] = prog.program_modules.all().values_list("id", flat=True)
+            prog_dict['class_categories'] = prog.class_categories.all().values_list("id", flat=True)
+            prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
+            prog_form = ProgramSettingsForm(prog_dict, instance = prog)
+
+        if submitted_form != "Teacher Registration Settings":
+            crmi_form = TeacherRegSettingsForm(instance = crmi)
+
+        if submitted_form != "Student Registration Settings":
+            scrmi_form = StudentRegSettingsForm(instance = scrmi)
+
+        context['one'] = one
+        context['two'] = two
+        context['program'] = prog
+        context['forms'] = [
+                            ("Program Settings", prog_form),
+                            ("Teacher Registration Settings", crmi_form),
+                            ("Student Registration Settings", scrmi_form),
+                           ]
+
+        return render_to_response(self.baseDir()+'settings.html', request, context)
 
     @main_call
     @needs_admin
@@ -95,21 +157,21 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         for module in modules:
             context = module.prepare(context)
- 
+
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
 
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def registrationtype_management(self, request, tl, one, two, module, extra, prog):
-        
+
         from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
         from django.conf import settings
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-        
+
         context = {}
         context['one'] = one
         context['two'] = two
@@ -117,17 +179,17 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['POST'] = False
         context['saved'] = False
         context['support'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
-        
+
         if request.method == 'POST':
             context['POST'] = True
             form = VRTF(request.POST)
             if form.is_valid():
                 context['saved'] = RTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
-        
+
         display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
         return render_to_response(self.baseDir()+'registrationtype_management.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def lunch_constraints(self, request, tl, one, two, module, extra, prog):
@@ -145,7 +207,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             form = LunchConstraintsForm(prog)
         context['form'] = form
         return render_to_response(self.baseDir()+'lunch_constraints.html', request, context)
-    
+
     @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
@@ -154,7 +216,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         #   Define a status message
         message = ''
-    
+
         #   Handle 'open' / 'close' actions
         if extra == 'open' and 'id' in request.GET:
             perm = Permission.objects.get(id=request.GET['id'])
@@ -176,7 +238,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if request.method == 'POST':
             edit_formset = EditPermissionFormset(request.POST.copy(), prefix='edit')
             create_form = NewPermissionForm(request.POST.copy())
-            if edit_formset.is_valid(): 
+            if edit_formset.is_valid():
                 num_forms = 0
                 for form in edit_formset.forms:
                     #   Check if the permission with the specified ID exists.
@@ -203,7 +265,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     message = 'Deadline created: %s.' % perm.nice_name()
             else:
                 message = 'No activities selected.  Please select a deadline type from the list before creating a deadline.'
-    
+
         #   find all the existing permissions with this program
         #   Only consider global permissions -- those that apply to all users
         #   of a particular role.  Permissions added for individual users
@@ -215,12 +277,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context = {}
 
         #   Set a flag on each perm for whether it has ended
+        #   TODO(benkraft): refactor users to just call is_valid themselves.
         for perm in perms:
-            if perm.end_date is None or  perm.end_date > datetime.now():
-                perm.open_now = True
-            else:
-                perm.open_now = False
-            
+            perm.open_now = perm.is_valid()
 
         #   For each permission, determine which other ones it implies
         for perm in perms:
@@ -245,15 +304,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['manage_form'] = formset.management_form
         context['perms'] = perms
         context['create_form'] = NewPermissionForm()
-        
-        return render_to_response(self.baseDir()+'deadlines.html', request, context) 
-        
+
+        return render_to_response(self.baseDir()+'deadlines.html', request, context)
+
     #   Alias for deadline management
     deadlines = deadline_management
-        
+
     def isStep(self):
         return True
-    
+
     class Meta:
         proxy = True
-
+        app_label = 'modules'

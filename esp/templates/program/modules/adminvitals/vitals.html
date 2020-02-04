@@ -10,13 +10,16 @@ json_data = {};
     $j(document).ready(function() {
       $module_groups = $j("#stats_students")
         .add("#stats_teachers")
+        .add("#stats_volunteers")
         .add("#stats_classes")
+        .add("#stats_flags")
         .add("#stats_categories")
         .add("#stats_grades")
         .add("#stats_hours")
         .add("#stats_timeslots")
         .add("#stats_tshirts")
-        .add("#stats_splashinfo");
+        .add("#stats_splashinfo")
+        .add("#stats_accounting");
       $module_group_headers = $module_groups.children(".module_group_header");
       $module_group_headers.click(getStats);
     });
@@ -44,8 +47,20 @@ json_data = {};
 	  Loading data...
 	</div>
       </div>
+      <div class="module_group" id="stats_volunteers">
+	<div class="module_group_header module_group_expandable">Volunteers <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
       <div class="module_group" id="stats_classes">
 	<div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_flags">
+	<div class="module_group_header module_group_expandable">Flags <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body" style="display:none">
 	  Loading data...
 	</div>
@@ -82,6 +97,12 @@ json_data = {};
       </div>
       <div class="module_group" id="stats_splashinfo">
         <div class="module_group_header module_group_expandable">Lunch and Sibling Discounts <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_accounting">
+        <div class="module_group_header module_group_expandable">Accounting <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body" style="display:none">
 	  Loading data...
 	</div>

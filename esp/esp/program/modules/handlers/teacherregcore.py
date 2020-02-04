@@ -33,9 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.miniblog.models import Entry
-from esp.datatree.models import *
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     @classmethod
@@ -59,11 +58,11 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             if not module.isCompleted() and module.required:
                 context['completedAll'] = False
-                
+
             context = module.prepare(context)
 
         context['modules'] = modules
-        context['options'] = prog.getModuleExtension('ClassRegModuleInfo')
+        context['options'] = prog.classregmoduleinfo
         context['one'] = one
         context['two'] = two
         context['extra_steps'] = "teach:extra_steps"
@@ -71,16 +70,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
 
     def isStep(self):
         return False
-    
-    def getNavBars(self):
-        if super(TeacherRegCore, self).deadline_met("/MainPage"):
-            return [{ 'link': '/teach/%s/teacherreg' % ( self.program.getUrlBase() ),
-                      'text': '%s Teacher Registration' % ( self.program.niceSubName() ),
-                      'section': 'teach'}]
-        else:
-            return []
-
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

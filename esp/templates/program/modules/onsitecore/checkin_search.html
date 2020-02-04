@@ -2,16 +2,12 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
 <br />
-
-{{ program.mainteacherreg }}
 
 <br /><br />
 <h1>Checkin &mdash; Search For User</h1>
@@ -38,6 +34,6 @@ Please use this to search for a user to "check in".
 <input type="submit" name="submitid" value="Search by Last Name" />
 <br />
 
-
+{% include "program/modules/onsitecore/returnlink.html" %}
 
 {% endblock %}

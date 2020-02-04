@@ -63,7 +63,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         super(TeacherCheckinModuleTest, self).tearDown()
 
     def addCoteacher(self, cls, coteacher):
-        ccc.associate_teacher_with_class(cls, coteacher)
+        self.ccc.associate_teacher_with_class(cls, coteacher)
 
     # Aliases so full set of args don't need to be typed each time.
     # 'when' defaults to self.now (the datetime of the program), and
@@ -137,7 +137,7 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
                       self.undoCheckIn(teacher=self.teacher2))
 
     def test_phone_numbers_on_checkin_page(self):
-        self.failUnless(self.client.login(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'), "Couldn't log in as admin %s" % self.admin.username)
         response = self.client.get(u'%smissingteachers' % self.program.get_onsite_url())
         phone = self.teacher.getLastProfile().contact_user.phone_cell
         self.assertIn(phone, response.content.decode('utf-8'))

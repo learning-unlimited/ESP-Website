@@ -1,0 +1,66 @@
+{% extends "main.html" %}
+
+{% block title %}Bulk Account Creation{% endblock %}
+
+{% block content %}
+
+    <h1>Bulk Account Creation Form</h1>
+
+    <p>This form lets you bulk-create sets of (usually student) accounts with a common prefix in the username and common password.
+    A typical use case is when admins visit a school onsite to help a large number of students register for a program at the same time.  It saves
+    a lot of time if accounts have already been created for students.  Each prefix corresponds to a school.
+    </p>
+    <p>
+    It is recommended that you choose prefixes with the school name and the program date.  For example, for school XYZ for Fall 2017,
+    the prefix could be "xyzfa17".  This is to avoid conflicts in usernames from one program to the next.
+    </p>
+    <p>Example: a prefix of "xyzfa17" with 5 accounts would create usernames xyzfa171, xyzfa172, xyzfa173, xyzfa174, xyzfa175.</p>
+
+    <form id="bulkAccountForm" action="/manage/{{ program.getUrlBase }}/bulk_account_create" method="POST">
+    <table>
+        <tr>
+            <td>Prefix</td>
+            <td>Number of accounts</td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix1" /></td>
+            <td><input type="text" name="count1" maxlength="3" size="3" /></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix2" /></td>
+            <td><input type="text" name="count2" maxlength="3" size="3" /></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix3" /></td>
+            <td><input type="text" name="count3" maxlength="3" size="3" /></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix4" /></td>
+            <td><input type="text" name="count4" maxlength="3" size="3" /></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix5" /></td>
+            <td><input type="text" name="count5" maxlength="3" size="3" /></td>
+        </tr>
+        <tr>
+            <td><input type="text" name="prefix6" /></td>
+            <td><input type="text" name="count6" maxlength="3" size="3" /></td>
+        </tr>
+    </table>
+
+    <label for="groups">Which groups should these accounts be added to?</label>
+    <select multiple="multiple" name="groups">
+        {% for group in groups %}
+             <option value="{{ group }}">{{ group }}</option>
+        {% endfor %}
+    </select>
+    <p>You must select either "Student" or "Teacher", in addition to any other groups you want.</p>
+    <p>If the group you want doesn't exist, you should <a href="/admin/auth/group/add/" target="_blank">create</a> it first, then refresh this page.</p>
+
+    <br/>
+
+    <input type="submit" value="Create accounts" class="btn btn-primary btn-large">
+    </form>
+    {% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

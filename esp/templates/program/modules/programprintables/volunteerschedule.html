@@ -1,0 +1,71 @@
+<html>
+<head>
+<title>Volunteer Schedules</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; margin: 0; font-size: 12px;}
+.title { text-align: center; font-size: 12pt; font-family: georgia; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+.facts { text-align: center; border: 0; }
+.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
+.facts td { text-align: left; font-size: 12pt;}
+.facts td.paid { border: 1px solid black; text-align: center;
+                 }
+.title { padding: 1in 0 0 0; }
+.schedule {border: 1px solid black; }
+.schedule td { border: 1px solid black; }
+.schedule th { border: 1px solid black; vertical-align: top; }
+.schedule td { vertical-align: top; }
+.schedule th.day { border-bottom: 0; }
+.schedule td.oldday { border-bottom: 0;
+                      border-top: 0;}
+td.newday { border-width: 2px 1px 0 1px;}
+#pagebreak {page-break-after: always; }
+.description { text-align: center; padding: .2in 0 .2in 0; }
+</style>
+
+</head>
+<body>
+{% if scheditems|length_is:0 %}
+<div class="title">It looks like you don't have any volunteer shifts scheduled yet.</div>
+{% endif %} 
+
+{% for scheditem in scheditems %}
+
+{% ifchanged scheditem.volunteer.id %}
+{% if not forloop.first %}
+</table>
+<div id="pagebreak">&nbsp;</div>
+{% endif %}
+
+<div class="title">Volunteer Schedule for <br /><br />
+    <span>{{ scheditem.name }}</span>
+</div>
+<div class="description">Here is your schedule.
+  Please show up to your volunteer shifts on-time.<br />
+  If you have any questions, please visit the {{ settings.ORGANIZATION_SHORT_NAME }} help desk.
+</div>
+
+<div style="height: 2in;">&nbsp;</div>
+<br />
+<br />
+<table align="center" cellspacing="0" cellpadding="2px" class="schedule">
+<tr><th colspan="4">Schedule</th></tr>
+<tr>
+{% if scheditem.day %}
+    <th class="day">Day</th>
+{% endif %}
+    <th>Time</th>
+    <th>Description</th>
+</tr>
+{% endifchanged %}
+{% autoescape off %}
+<tr>
+  <td>{{ scheditem.offer.request.timeslot.pretty_time }}</td>
+  <td>{{ scheditem.offer.request.timeslot.description }}</td>
+</tr>
+{% endautoescape %}
+{% endfor %}
+
+</body>
+</html>

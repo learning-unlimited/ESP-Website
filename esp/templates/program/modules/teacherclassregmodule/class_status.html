@@ -2,8 +2,6 @@
 
 {% block title %}Class Status for {{cls.title }}{% endblock %}
 
-{% block subsection_name %}Class Status{% endblock %}
-
 {% block content %}
 <style type="text/css">
 #divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
@@ -56,9 +54,9 @@ Here is some important information regarding your class:<br />
 </tr>
 <tr>
   <th>Email Addresses: </th>
-  <td>Whole Class: {{cls.emailcode}}-class@{{ EMAIL_HOST }}<br />
-Teachers: {{cls.emailcode}}-teachers@{{ EMAIL_HOST }}<br />
-Students: {{cls.emailcode}}-students@{{ EMAIL_HOST }}
+  <td>Whole Class: {{cls.emailcode}}-class@{{ EMAIL_HOST_SENDER }}<br />
+Teachers: {{cls.emailcode}}-teachers@{{ EMAIL_HOST_SENDER }}<br />
+Students: {{cls.emailcode}}-students@{{ EMAIL_HOST_SENDER }}
   </td>
 </tr>
 <tr>

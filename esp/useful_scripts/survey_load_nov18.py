@@ -8,7 +8,7 @@ def load_survey(program, survey_name, category, input_file):
     survey, created = Survey.objects.get_or_create(name=survey_name, anchor=program.anchor, category=category)
     survey.save()
     print survey
-    
+
     auri = program.anchor.uri
 
     infile = open(input_file)

@@ -55,11 +55,11 @@ Learning Unlimited, Inc.
 """
 for fn in filenames:
     print 'Processing: %s' % fn
-    
+
     if direction == 'forward':
         curfile = open(fn, 'r')
         outfile = open(fn + '.new', 'w')
-        
+
         lines = [r.strip('\n') for r in curfile.readlines()]
         state = 1
         copyright_start_line = 0
@@ -116,17 +116,17 @@ for fn in filenames:
                     print '  Copyright end on line %d' % (i + 1)
                     print '  Copyright contents follow'
                     print copyright_text
-                    
+
                     result = re.search('Copyright \(c\) ([-0-9]+)', copyright_text)
                     if result:
                         print '  Copyright date search yielded %s' % result.groups()[0]
-                        
+
                         #   Write new copyright notice
                         outfile.write('__copyright__ = """%s"""\n' % (NEW_COPYRIGHT % result.groups()[0]))
                     else:
                         #   Write old copyright notice if it didn't match
                         outfile.write('__copyright__ = """%s"""\n' % copyright_text)
-                        
+
                     state = 7
                     continue
                 copyright_text += '\n' + line
@@ -138,7 +138,7 @@ for fn in filenames:
 
         os.rename(fn, fn + '.old')
         os.rename(fn + '.new', fn)
-    
+
     elif direction == 'backward':
         os.rename(fn, fn + '.new')
         os.rename(fn + '.old', fn)

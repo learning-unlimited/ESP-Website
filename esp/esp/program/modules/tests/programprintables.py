@@ -57,8 +57,8 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
     def get_response(self, view_name, user_type, list_name):
         #   Log in an administrator
-        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
-       
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
         #   Select users to fetch
         response = self.client.get('/manage/%s/%s' % (self.program.getUrlBase(), view_name))
         self.assertEquals(response.status_code, 200)
@@ -70,7 +70,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
         self.assertTrue(response.status_code, 200)
         return response
-        
+
     def get_userlist_views(self):
         #   Hard-code some views that can be tested using simple teacher/student lists.
         #   Exclude those tested by specialized functions below.
@@ -86,7 +86,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def testAllViewsWithUserList(self):
         #   Specify which basic list of users to use for each printables view.
         view_pairs = self.get_userlist_views()
-        
+
         #   Test each view in sequence with the appropriate list of users.
         #   Doesn't check correctness; please add separate test functions for that.
         for (view_name, user_type, list_name) in view_pairs:
@@ -100,8 +100,8 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def testSchedules(self):
         #   Check that our Latex->PDF schedule generation code runs without error
         response = self.get_response('studentschedules', 'students', 'enrolled')
-        
+
         #   Check that the output is an actual PDF file
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
-        
-        
+
+

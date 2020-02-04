@@ -72,7 +72,7 @@ for row in reader:
             # skip the classroom resource itself; we only want to copy projectors
             # and movable tables and stuff
             continue
-        
+
         search_term = f.res_type.name
         if 'sound system' in search_term.lower():
             search_term = 'Speakers'

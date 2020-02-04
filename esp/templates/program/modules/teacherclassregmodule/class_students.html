@@ -1,8 +1,7 @@
 {% extends "main.html" %}
+{% load users %}
 
 {% block title %}Class Status for {{cls.title }}{% endblock %}
-
-{% block subsection_name %}Class Status{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -23,7 +22,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
 {% end_inline_program_qsd_block %}
 
 <div class="info">
-  Note: You can email your students using <tt style="font-size: 130%;">{{ cls.emailcode }}-students@{{ EMAIL_HOST }}</tt>
+  Note: You can email your students using <tt style="font-size: 130%;">{{ cls.emailcode }}-students@{{ EMAIL_HOST_SENDER }}</tt>
 </div>
 
 <div id="program_form">
@@ -54,7 +53,7 @@ Here are your class' students.  Only those who have enrolled will show up on you
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>
-        <td>{{ student.getGrade }}</td>
+        <td>{{ student|getGradeForProg:program.id }}</td>
         <td>{{ student.getLastProfile.student_info.getSchool }}</td>
     </tr>
     {% endfor %}

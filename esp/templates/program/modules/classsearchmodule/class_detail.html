@@ -1,0 +1,33 @@
+<table>
+    <tbody>
+        <tr>
+            <th class="smaller">Sections:</th>
+            <td>
+                {{class.sections.count}}
+            </td>
+        </tr>
+        <tr>
+            <th class="smaller">Grades:</th>
+            <td>{{class.grade_min}}&ndash;{{class.grade_max}}</td>
+        </tr>
+        <tr>
+            <th class="smaller">Class capacity:</th>
+            <td>
+                {% if class.class_size_min %}
+                    {{class.class_size_min}} (minimum) <br/>
+                {% endif %}
+                {% if class.class_size_optimal %}
+                    {{class.class_size_optimal}} (optimal) <br/>
+                {% endif %}
+                {% if class.class_size_max %}
+                    {{class.class_size_max}} (maximum) <br/>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th class="smaller">Duration:</th>
+            <td>{{class.prettyDuration}}</td>
+        </tr>
+        {% include "program/modules/adminclass/manageclass_class_info.html" %}
+    </tbody>
+</table>

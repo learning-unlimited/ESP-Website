@@ -1,0 +1,36 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block content %}
+{% if success %}
+<p style='color:red; font-weight:bold; font-size:medium;'>Your class change requests have successfully been saved.</p>
+{% else %}
+<h3>Current Enrollments</h3>
+<ol>
+{% for timeslot, cls in enrollments.items %}
+<li>
+{{ timeslot.pretty_time }} - 
+{% if cls %}
+{{ cls.emailcode }}: {{ cls.title }}
+{% else %}
+None
+{% endif %}
+</li>
+{% endfor %}
+</ol>
+<h3>Class Change Request Form</h3>
+{% inline_program_qsd_block program "classchangerequest" %}
+<p>You can request a change into any class without application questions, or into any application question class that you originally applied for, and were accepted to.</p>
+{% end_inline_program_qsd_block %}
+<form action="classchangerequest" method="post">
+{{ form.as_p }}
+{% if user.isStudent %}
+<input type="submit" value="Submit" class="btn btn-primary" />
+{% else %}
+<input type="button" value="This would be a 'Submit' button, if you were a student" class="btn btn-primary" disabled="disabled" />
+{% endif %}
+</form>
+{% endif %}
+{% endblock %}

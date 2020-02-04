@@ -1,0 +1,31 @@
+<script type="text/javascript" src="/media/scripts/nametag_barcodes.js"></script>
+
+<div class="idback">
+<div class="marginator">
+    {% if user.id %}
+        <div class="barcode">
+        <div id="inputdata{{ user.id }}">{{ user.id }}</div>
+        </div>
+
+        <br />
+
+        <script type="text/javascript">
+        /* <![CDATA[ */
+          function get_object(id) {
+           var object = null;
+           if (document.layers) {
+            object = document.layers[id];
+           } else if (document.all) {
+            object = document.all[id];
+           } else if (document.getElementById) {
+            object = document.getElementById(id);
+           }
+           return object;
+          }
+        get_object("inputdata{{ user.id }}").innerHTML=DrawCode39Barcode(get_object("inputdata{{ user.id }}").innerHTML,0);
+        /* ]]> */
+        </script>
+    {% endif %}
+</div>
+</div>
+<!-- End ID //-->

@@ -36,7 +36,7 @@ from django.db import models
 
 from esp.db.fields import AjaxForeignKey
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.cache import cache_function
+from argcache import cache_function
 
 from esp.users.models import ESPUser
 from esp.program.models import Program
@@ -79,8 +79,8 @@ class ClassFlagType(models.Model):
         if dashboard:
             base = base.filter(show_in_dashboard=True)
         return base
-    get_flag_types.depend_on_model(lambda: ClassFlagType)
-    get_flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
+    get_flag_types.depend_on_model('program.ClassFlagType')
+    get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)
 
 class ClassFlag(models.Model):

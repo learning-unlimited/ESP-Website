@@ -49,7 +49,7 @@ class SchoolSelectForm(forms.Form):
                                label='Center of the circle to find schools.',
                                help_text = 'Standard 5-digit zip code. E.g. &quot;02139&quot;.')
 
-    
+
     grades = forms.CharField(max_length=100,
                              help_text = 'List of grades separated by commas. E.g. &quot;4,8,10&quot;',
                              label = "Grades")

@@ -1,0 +1,26 @@
+div.query-builder {
+  margin-bottom: 1em;
+}
+
+select.qb-input, input.qb-input, button.qb-input {
+  margin: 2.5px;
+  margin-right: 5px;
+  margin-left: 0px;
+}
+
+select.qb-negate {
+  max-width: 70px;
+}
+
+button.qb-optional-button {
+  margin-left: 40px;
+}
+
+select.qb-datetime-select {
+  max-width: 70px;
+  margin-left: 5px;
+}
+
+ul.qb-ul {
+  list-style-type: none;
+}

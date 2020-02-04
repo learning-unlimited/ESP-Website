@@ -46,6 +46,7 @@ Learning Unlimited, Inc.
 
 SITE_INFO = (1, 'testserver.learningu.org', 'ESP Test Server')
 CACHE_PREFIX = "Test"
+SECRET_KEY = 'b36cfdfb78aba27ddbde330b23352bc6d40973b4'
 
 ###################
 # Plugin settings #
@@ -58,11 +59,8 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 # Debug settings  #
 ###################
 DEBUG = True
-DISPLAYSQL = True
-TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = False
-USE_PROFILER = False
 
 ##############
 # Middleware #

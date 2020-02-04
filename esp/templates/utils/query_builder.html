@@ -1,0 +1,8 @@
+<div id="query-builder-{{uid}}"></div>
+<script type="text/jsx">
+  var spec = {{ json_spec|safe }};
+  var query = {{ json_query|safe }};
+  React.render(
+    <QueryBuilder spec={spec} query={query} />,
+    document.getElementById("query-builder-{{uid}}"));
+</script>

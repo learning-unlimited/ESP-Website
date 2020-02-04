@@ -34,11 +34,10 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
-from esp.users.models import ESPUser, shirt_sizes, shirt_types
-from django.contrib.auth.models import User
+from esp.users.models import shirt_sizes, shirt_types
 from django.core.cache import cache
 from django.db.models import Count, Sum
 from django.db.models.query      import Q
@@ -62,7 +61,7 @@ class AdminVitals(ProgramModuleObj):
             "inline_template": "vitals.html",
             "seq": -2,
             }
-    
+
     def prepare(self, context=None):
         return context
 
@@ -70,4 +69,4 @@ class AdminVitals(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

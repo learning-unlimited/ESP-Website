@@ -1,0 +1,19 @@
+{% extends "main.html" %}
+
+{% block title %}Automatic Scheduling Assistant Error{% endblock %}
+
+{% block content %}
+
+<h1>Whoops!</h1>
+
+<p>It looks like there was an error loading the Automatic Scheduling Assistant,
+most likely caused by a malformatted Tag. The error is:</p>
+
+<p>{{ err_msg }}</p>
+
+<h1>Configuration Help</h1>
+
+{% include "program/modules/autoschedulerfrontendmodule/config_help.html" %}
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

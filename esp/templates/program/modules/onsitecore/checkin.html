@@ -2,16 +2,12 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
-
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
 <br />
-
-{{ program.mainteacherreg }}
 
 <br /><br />
 <h1>Checkin &mdash; For &quot;{{module.student.name}}&quot;</h1>
@@ -38,6 +34,6 @@ Welcome to the student check-in for {{module.student.name}}. Please checkoff tha
 </form>
 <br />
 
-
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}

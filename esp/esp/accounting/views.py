@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.accounting.models import Account
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models import admin_required
 
 @admin_required

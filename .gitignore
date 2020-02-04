@@ -23,7 +23,11 @@ esp/esp/database_settings.py.mit
 env
 useful_logs
 theme_compiled.css
-vagrant/.vagrant/*
+/.vagrant/*
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg
 *_admin_thumbnail.png
+local_fabfile.py
+
+# Mac
+.DS_Store

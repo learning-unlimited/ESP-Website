@@ -1,27 +1,28 @@
-{# expects program, class, and crmi (ClassRegModuleInfo) #}
+{# expects program, class, can_req_cancel, and crmi (ClassRegModuleInfo) #}
+
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
     <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
-      <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+      <br><a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">(Catalog Preview)</a>
     </span>
   {% endblock %}
   </td>
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
-    <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
-      <input class="button" type="submit" value="Delete" {% if cls.num_students or not module.deadline_met %}disabled {% endif %} />
-    </form>
+    {% if can_req_cancel %}
+        <button class="button" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
+    {% endif %}
   </td>
   <td class="clsmiddle bordertop2">
-    <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
+    <form class="teachbutton" method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
       <input type="hidden" name="command" value="edit_class_{{cls.id}}">
       <input class="button" type="submit" value="View/Edit">
     </form>
   </td>
   <td class="clsmiddle bordertop2">
-    <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
+    <form class="teachbutton" method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
       <input class="button" type="submit" value="Detailed Status" />
     </form>
   </td>
@@ -40,8 +41,22 @@
   {% endblock %}
 </tr>
 
+<!--
+Popup div for class cancellation request
+-->
+<div hidden id="request_{{ cls.id }}">
+  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
+    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
+    <input type="hidden" name="cls" value="{{ cls.id }}">
+    <label for="reason" class="ui-hidden-accessible">Reason for Cancellation:</label>
+    <textarea rows="4" style="width: 450px;" name="reason" placeholder="Enter text here..." required></textarea><br>
+    <input type="checkbox" name="confirm" required> I confirm I would like this class to be cancelled.<br>
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
 <tr>
-  <td class="clsleft" colspan="6">
+  <td class="clsleft" colspan="5">
     <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
     <span style="font-weight: bold; color: #0C0;">Accepted</span>
     {% else %}
@@ -51,16 +66,22 @@
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsright" colspan="1">
+  <td class="clsright" colspan="2">
   {% block cls_row_2_buttons %}
     {% if cls.isAccepted %}
     <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
        title="View Class' Students" class="abutton">
       View Students
     </a>
+    &emsp;
+    <a href="mailto:{{ cls.emailcode }}-students@{{ email_host_sender }}"
+       title="Email Class' Students" class="abutton">
+      Email Students
+    </a>
     {% endif %}
   {% endblock %}
   </td>
+  
 </tr>
 
 <tr>
@@ -76,7 +97,7 @@
 
 {% if crmi.allow_coteach %}
 <tr>
-  <td class="clsleft"><b>(Co-)Teachers: </b></td>
+  <td class="clsleft"><b>Teachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
   <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
   <td class="clsright">
   {% block cls_row_4_buttons %}
@@ -105,11 +126,15 @@
   </td>
   <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
   <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) 
+    <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>)
+    {% if sec.meeting_times.count > 0 %}<br />(<a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}">attendance</a>){% endif %}
   </td>
-  <td class="clsright" valign="top">
+  <td class="clsright" valign="middle">
   {% block cls_row_5_buttons %}
-    <a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host }}">E-mail students</a>
+    <a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
+       title="Email Section's Students" class="abutton">
+      Email S{{ sec.index }} Students
+    </a>
   {% endblock %}
   </td>
 </tr>

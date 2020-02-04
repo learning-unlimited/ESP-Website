@@ -11,13 +11,25 @@ var ClassSubject = function (data) {
     self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
+    self.class_style = data.class_style;
     self.difficulty  = data.difficulty;
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
-    self.grade_range = data.grade_min + " - " + data.grade_max;
+    if (!increment_grade) {
+        self.grade_range = data.grade_min + " - " + data.grade_max;
+    }
+    else {
+        self.grade_range = "Rising " + data.grade_min + "th graders to ";
+        if (data.grade_max == 13) {
+            self.grade_range += "graduating 12th graders";
+        }
+        else {
+            self.grade_range += "rising " + data.grade_max + "th graders";
+        }
+    }
 
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
@@ -278,11 +290,40 @@ var CatalogViewModel = function () {
         json_views.push('lottery_preferences');
     }
     json_fetch(json_views, function (data) {
+        // update sections
+        for (var key in data.sections) {
+            var sec = data.sections[key];
+            if (sec.status <= 0 || sec.times.length == 0) {
+                // remove un-approved or unscheduled sections
+                delete data.sections[key];
+            }
+            else if (catalog_type == 'phase2' &&
+                     !(key in data.timeslot_sections)) {
+                // remove sections out of this timeslot
+                delete data.sections[key];
+            }
+            else {
+                data.sections[key] = new ClassSection(sec, self);
+            }
+        }
+        self.sections(data.sections);
         // update classes
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.status <= 0) {
-                // remove unapproved classes
+            var class_has_sections_shown = false;
+            for (var sec of cls.sections) {
+                // see if any of the sections are still shown
+                if (sec in data.sections) {
+                    class_has_sections_shown = true;
+                    break;
+                }
+            }
+            if (!class_has_sections_shown) {
+                // remove classes with no sections to show
+                delete data.classes[key];
+            }
+            else if (cls.status <= 5) {
+                // remove unapproved or hidden classes
                 delete data.classes[key];
             }
             else if (cls.category_id == open_class_category_id ||
@@ -313,23 +354,6 @@ var CatalogViewModel = function () {
             }
         }
         self.classes(data.classes);
-        // update sections
-        for (var key in data.sections) {
-            var sec = data.sections[key];
-            if (sec.status <= 0) {
-                // remove un-approved sections
-                delete data.sections[key];
-            }
-            else if (catalog_type == 'phase2' &&
-                     !(key in data.timeslot_sections)) {
-                // remove sections out of this timeslot
-                delete data.sections[key];
-            }
-            else {
-                data.sections[key] = new ClassSection(sec, self);
-            }
-        }
-        self.sections(data.sections);
         // update teachers
         for (var key in data.teachers) {
             data.teachers[key] = new Teacher(data.teachers[key], self);

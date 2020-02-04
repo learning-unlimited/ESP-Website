@@ -31,29 +31,24 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from collections import OrderedDict
-
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.datatree.models import *
-from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
-
-
-from esp.utils.widgets import ChoiceWithOtherField
-from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, Record
-from django.db.models.query import Q
-from django.utils.safestring import mark_safe
-from django.template.loader import get_template
-from esp.program.models  import StudentApplication
+from collections import OrderedDict, defaultdict
+from decimal import Decimal
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting.models import LineItemType, LineItemOptions
+from django.db.models.query import Q
+from django.template.loader import get_template
+from django.utils.safestring import mark_safe
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
+from esp.accounting.models import LineItemType, LineItemOptions
+from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-from collections import defaultdict
-
-from decimal import Decimal
+from esp.program.models  import StudentApplication
+from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.users.models    import Record
+from esp.utils.web import render_to_response
+from esp.utils.widgets import ChoiceWithOtherField
+from esp.web.util        import render_to_response
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -111,7 +106,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
-        
+
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
@@ -136,6 +131,7 @@ class StudentExtraCosts(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/ExtraCosts')
+    @meets_cap
     def extracosts(self,request, tl, one, two, module, extra, prog):
         """
         Query the user for any extra items they may wish to purchase for this program
@@ -144,7 +140,7 @@ class StudentExtraCosts(ProgramModuleObj):
         Right now it doesn't.
         """
         if self.have_paid():
-            raise ESPError("You've already paid for this program.  Please make any further changes on-site so that we can charge or refund you properly.", log=False)
+            raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         #   Determine which line item types we will be asking about
         iac = IndividualAccountingController(self.program, get_current_request().user)
@@ -161,7 +157,7 @@ class StudentExtraCosts(ProgramModuleObj):
         if request.method == 'POST':
 
             #   Initialize a list of forms using the POST data
-            costs_db = [ { 'LineItemType': x, 
+            costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
                            [ { 'LineItemType': x, 
@@ -282,8 +278,8 @@ class StudentExtraCosts(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
-                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': request.user.hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

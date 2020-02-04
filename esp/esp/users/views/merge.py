@@ -2,7 +2,7 @@
 from esp.users.models import admin_required
 from esp.users.controllers.merge import merge_users
 from esp.users.forms.merge import UserMergeForm
-from esp.web.util.main import render_to_response
+from esp.utils.web import render_to_response
 
 @admin_required
 def merge_accounts(request):

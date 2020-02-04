@@ -33,10 +33,19 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.core.management.base import NoArgsCommand
 
 class Command(NoArgsCommand):
     """Recompile the current theme."""
     def handle_noargs(self, **options):
         from esp.themes.controllers import ThemeController
-        ThemeController().recompile_theme()
+        try:
+            # If this changes, make sure it still respects settings.LOCAL_THEME
+            ThemeController().recompile_theme()
+        except Exception:
+            logger.warning("recompile_theme failed the first time. Trying "
+                           "again... (We should really fix that bug!)")
+            ThemeController().recompile_theme()

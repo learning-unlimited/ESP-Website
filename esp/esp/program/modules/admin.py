@@ -47,19 +47,15 @@ class Admin_DBReceipt(admin.ModelAdmin):
 admin_site.register(DBReceipt, Admin_DBReceipt)
 
 class SCRMIAdmin(admin.ModelAdmin):
-    def program(obj):
-        return obj.module.program
-    list_display = ('module', program)
-    list_filter = ('module__program',)
-    search_fields = ('module__program__name',)
+    list_display = ('program',)
+    list_filter = ('program',)
+    search_fields = ('program__name',)
 admin_site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class CRMIAdmin(admin.ModelAdmin):
-    def program(obj):
-        return obj.module.program
-    list_display = ('module', program)
-    list_filter = ('module__program',)
-    search_fields = ('module__program__name',)
+    list_display = ('program',)
+    list_filter = ('program',)
+    search_fields = ('program__name',)
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):

@@ -1,28 +1,31 @@
 <!-- Begin Student Info Portion -->
-<h3>Student Information</h3>
+<h3>Additional Student Information</h3>
 
 {{ form.errors }}
 
-{% if not form.allow_change_grade_level %}
+{% if not user.getGrade or form.allow_change_grade_level %}
 <div class="alert">
 <button type="button" class="close" data-dismiss="alert">x</button>
-You will only be able to set your age and grade level ONCE. 
-After you click "Update Your Information!" below, or if you've already
-done so in the past, you will not be able to change your age or grade level. 
-<br /> <br />
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade
-requirements for higher-level classes.  Lying about your age is fraud
+requirements for higher-level classes. Lying about your age is fraud
 and is extremely frustrating for our teachers, who set these grade
 requirements with full knowledge of the outstanding students in the
-program.  Please be honest and support the community. 
+program. Please be honest and support the community.
 <br /> <br />
-Your grade level updates automatically every August; if you skip a grade or 
-take a year off, please email us and we will fix your grade. For a more 
-detailed explanation of our age and grade level policy, please click 
-<a href="/learn/parents/agelimit.html">here</a>.
+{% if not user.getGrade and not form.allow_change_grade_level %}
+You will only be able to set your age and grade level ONCE. 
+After you click "Update Your Information!" below, you will not be
+able to change your age or grade level.
+<br /> <br />
+{% endif %}
+Your grade level will update automatically every August.
 </div>
+{% endif %}
+
+{% if user.getGrade and not form.allow_change_grade_level %}
+    {% include "users/profiles/gradechangerequestinfo.html" %}
 {% endif %}
 
 <div class="control-group">
@@ -45,7 +48,7 @@ detailed explanation of our age and grade level policy, please click
 
 {% if form.gender %}
 <div class="control-group">
-    <label for="id_dob">Gender:</label>
+    <label for="id_dob"  class="control-label">Gender:</label>
     <div class="controls">
     {{ form.gender }} {% if form.gender.errors %}
     <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
@@ -76,27 +79,11 @@ detailed explanation of our age and grade level policy, please click
 </div>
 {% endif %}
 
-{% if form.schoolsystem_id %}
-<div class="control-group">
-    <label for="id_schoolsystem_id" class="control-label">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label>
-    <div class="controls">
-    {{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
-    <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
-    {% endif %} 
-    {% if form.fields.schoolsystem_id.help_text %}
-    <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
-    <br />{{ form.schoolsystem_optout }}
-    <br />{% autoescape off %}{{ form.schoolsystem_optout.help_text }}{% endautoescape %}
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
 <div class="control-group">
     <label for="id_heardofesp" class="control-label">How did you hear of this program?
     </label>
     <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the right-hand box.)</span><br />
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.heard_about }} {% if form.heard_about.errors %}
     <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
     {% endif %}
@@ -175,21 +162,11 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
 </div>
 {% endif %}
 
-{% if form.post_hs %}
-<div class="control-group">
-    <label for="id_post_hs" class="control-label">What are your plans after you graduate from high school?</label>
-    <div class="controls">
-    {{ form.post_hs }} {% if form.post_hs.errors %}
-    <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
 {% if form.transportation %}
 <div class="control-group">
     <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
-    <div class="controls">
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
     {{ form.transportation }} {% if form.transportation.errors %}
     <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
     {% endif %}

@@ -1,0 +1,203 @@
+<p><em>This is intended to be read by program directors, webmins, or whoever else is
+setting up the scheduling assistant before scheduling.</em></p>
+
+<h2>Preliminaries</h2>
+<p>The Automatic Scheduling Assistant is configured with per-program
+<strong>Tags</strong>. A Tag is program-wide or site-wide setting (in this
+case, program-wide) for the ESP website, created on the admin panel. Existing
+tags for this program can be viewed <a href="/admin/tagdict/tag/?content_type__model=program&object_id={{ program.id }}">
+here</a>.</p>
+
+<h3>Creating a Tag</h3>
+<p>
+Different components of the Scheduling Assistant are configured by separate
+tags. To create a tag:</p>
+<ol>
+
+    <li>Check to make sure the Tag does not already exist for this program on
+        the <a href="/admin/tagdict/tag/?content_type__model=program&object_id={{ program.id }}">
+        admin panel</a>.</li>
+    <li>Click the <a href="/admin/tagdict/tag/add/">Add Tag</a> button.</li>
+
+    <li>The <em>Key</em> should be the name of the tag, such as 
+        <code>autoscheduler_constraint_overrides</code> for Constraints.
+        See the sections below for more details on what this should be.</li>
+    <li>The <em>Value</em> should be a JSON dict. See the next section for what that
+        means, and see the sections below for more concretely what to put in
+        the dict. Each section comes with an example you can copy-paste into
+        the admin panel and modify.</li>
+    <li>The <em>Content type</em> should be "program".</li>
+    <li>The <em>Object id</em> should be {{ program.id }}, the ID of this
+        program.</li>
+</ol>
+
+<h3>JSON</h3>
+
+<p>JSON stands for JavaScript Object Notation. If you're familiar with Python,
+the syntax is very similar to that of a <code>dict</code> literal. There's a <a href="https://en.wikipedia.org/wiki/JSON#Data_types.2C_syntax_and_example">
+Wikipedia page</a> describing the syntax.</p>
+
+<p>Note that what this page calls a "JSON dict" other pages call "JSON objects";
+the difference is because a JSON object translates to a Python dict. When I
+say "mapping from x to y", I mean x should come before the colon and y should
+come after.</p>
+
+<h2>Constraints</h2>
+<p>To change the defaults on whether non-required constraints are on or off, use
+the tag <code>autoscheduler_constraint_overrides</code>. The content of the
+tag should be a JSON dict mapping from the name of the constraint to a boolean
+(note that JSON booleans are "true" and "false", not "True" and "False"),
+like:</p>
+<pre><code>{
+    "LunchConstraint": false
+}
+</code></pre>
+<p>with different items separated by commas.</p>
+
+<h2>Scoring</h2>
+<p>To change the defaults on scorer weights, use the tag
+<code>autoscheduler_scorer_weight_overrides</code>. The content of the tag is
+once again a JSON dict, this time mapping from the name of the scorer to a
+floating point number. For example:</p>
+<pre><code>{
+    "NumSectionsScorer": 200.0,
+    "NumTeachersScorer": 80.0
+}
+</code></pre>
+
+<h2>Resource Criteria</h2>
+
+<h3>Specifications</h3>
+<p>Resource Criteria are essentially search terms on the resources a class
+requests, the resources a classroom has, or the name of a classroom, which the
+Automatic Scheduling Assistant is either required to or encouraged to satisfy
+when it is moving classes around. To add a Resource Criterion, you need to
+write a <strong>specification</strong>.</p>
+
+<p>The syntax is as follows, where <strong>all caps</strong> denotes a variable and
+<strong>brackets</strong> denote an optional argument:</p>
+<pre><code>if PREMISE then CONCLUSION</code></pre>
+
+where PREMISE and CONCLUSION can be of the form
+<pre><code>[not] section requests RESTYPE [with VALUE_REGEX]</code></pre>
+or
+<pre><code>[not] classroom has RESTYPE [with VALUE_REGEX]</code></pre>
+or
+<pre><code>[not] classroom matches NAME_REGEX</code></pre>
+or
+<pre><code>any section</code></pre>
+
+<p>and where PREMISE and CONCLUSION must not both be section criteria or both
+be classroom criteria. Regular expressions should follow Python's
+<code>re</code> package syntax. (If you're not familiar with regular
+expressions, find a friendly neighborhood CS major to help you.) See below for
+examples. Please note that <strong>specifications, including resource types,
+    are case sensitive and also don't tolerate extra whitespace</strong>.</p>
+
+<h3>Specification Examples</h3>
+
+<p>Suppose we think document cameras are really important, so any class which
+requested a document camera can get one. Then we could write the following
+specification:</p>
+<pre><code>if section requests Document Camera then classroom has Document
+    Camera</code></pre>
+
+<p>Conversely, suppose we don't have many LCD projectors, so any class which
+<em>doesn't</em> request a projector shouldn't get one. Then we could write
+the following specification:</p>
+<pre><code>if not section requests LCD Projector then not classroom has LCD
+Projector</code></pre>
+
+<p>Suppose you want classrooms which request Music Rooms to only be scheduled
+in Music Rooms (and suppose that this is represented on the website by the
+resource "Classroom space" with value "Music room with piano"). Then we could
+write:</p>
+<pre><code>if section requests Classroom space with .*Music room.* then
+classroom has Classroom space with .*Music room.*</code></pre>
+
+<p>Suppose you're like MIT and most of your regular classrooms
+are numbered rooms, like "26-100", and your weird rooms are not, like
+"McDermott Dot". Then we could write a specification which only allows classes
+to be scheduled in numbered rooms, like:</p>
+<pre><code>if any section then classroom matches ^\\d+-\\d+$</code></pre>
+<p>Note that this restriction automatically also excludes specially labelled
+rooms like "1-115 (computer cluster)", which may or may not be a good
+thing.</p>
+
+<h3>Tag Syntax</h3>
+<p>There are ResourceCriteria Constraints, and ResourceCriteria Scorers. The
+former imposes a hard restriction; the latter imposes a soft restriction.
+These are controlled by separate Tags.</p>
+
+<p>In general, the Resource Criteria tags map from the name of the Resource
+Criterion (which can be whatever you want it to be) to the specification. You
+can also turn off a Resource Criterion by setting the specification to "None"
+(including quotes). Since regular expressions are confusing, you can
+optionally include a comment in your tag. JSON doesn't support comments
+natively, so to include a comment, create an entry with "_comment" in the
+key, and set your comment as the value. If a Resource Criterion has a comment
+with a matching name, the comment is used for the help text on this page
+instead of the specification string.</p>
+
+<p>You should not have duplicate Resource Criterion names, not even between
+constraints and scorers. I'm not entirely sure what happens if you do.</p>
+
+<h3>Resource Criteria Constraints</h3>
+<p>A ResourceCriteria Constraint creates a condition that the automatic
+scheduling assistant will not violate, for example if you want to force it to
+only schedule classes in main-group classrooms, or if you don't want to
+schedule non-computer classes into computer clusters (or if you want to
+schedule computer classes only into computer clusters, but I recommend you do
+those by hand anyway because of OS and software considerations.)</p>
+
+<p>To add or remove ResourceCriteria constraints, use the tag
+<code>autoscheduler_resource_constraint_overrides</code>. The format should be
+a JSON dict mapping from the name of the criterion (which can be whatever you
+want) to the specification string, or to "None" if you need to disable a default
+constraint. Note that the scheduler will <em>not</em> break if you include a
+Constraint that is violated by existing classes; the scheduler will simply not
+introduce any new violations.</p>
+
+<p>By default, the website comes with the "restrict_star_classrooms"
+constraint, which means that no new classes will be scheduled in rooms marked
+with a star in the name, e.g. *16-628.</p>
+
+<p>Example:</p>
+<pre><code>{
+    "restrict_non_main":
+        "if any section then classroom matches ^\\d+-\\d+$",
+    "restrict_non_main_comment":
+         "Only schedule into rooms with simple numeric names like 26-100"
+}
+</code></pre>
+
+<h3>Resource Criteria Scorers</h3>
+
+<p>A ResourceCriteria Scorer creates a condition that the assistant is
+encouraged to satisfy. <strong>Note that the Automatic Scheduling Assistant
+automatically comes with the ResourceMatchingScorer and
+ResourceValueMatchingScorer</strong>, which are entirely separate, and
+generically encourage the assistant to schedule classes into rooms which have
+resources they want. You should use a ResourceCriteria Scorer if you
+<em>particularly</em> want to weight one resource over the others (in which case you
+can consider using a constraint instead) or there's a resource condition that
+is more complex that aforementioned scorers don't understand.</p>
+
+<p>To add or remove ResourceCriteria scorers, use the tag
+<code>autoscheduler_resource_scoring_overrides</code>. The website comes with
+no default ResourceCriteria Scorers. The format is a JSON dict mapping from
+the name of the criterion to a pair containing the specification and a weight.
+Note that Python's tuple syntax is <em>not</em> supported by JSON, so the pair
+should be bracket-delimited, not parenthesis-delimited. Scorers are
+re-weighted so that the highest-weight scorer has weight 1, which means that
+(roughly speaking) adding more criteria shouldn't weaken existing ones. To
+change the total weight of ResourceCriteria Scorers, modify the appropriate
+weight in the Scoring section above.</p>
+
+<p>Example:</p>
+<pre><code>{
+    "music_rooms":
+        ["if section requests Classroom space with Music Room then classroom
+matches .*(Music Room)", 1.0]
+}
+</code></pre>

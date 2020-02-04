@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_student, main_call
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo
@@ -98,20 +98,13 @@ class SplashInfoModule(ProgramModuleObj):
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(get_current_request().user, self.program)
 
-        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
+        if not Tag.getBooleanTag('splashinfo_siblingdiscount', default=True):
             context['splashinfo'].include_siblingdiscount = False
         else:
             context['splashinfo'].include_siblingdiscount = True
 
-        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
-            context['splashinfo'].include_lunchsat = False
-        else:
-            context['splashinfo'].include_lunchsat = True
-
-        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
-            context['splashinfo'].include_lunchsun = False
-        else:
-            context['splashinfo'].include_lunchsun = True
+        context['splashinfo'].include_lunchsat = Tag.getBooleanTag('splashinfo_lunchsat', default=True)
+        context['splashinfo'].include_lunchsun = Tag.getBooleanTag('splashinfo_lunchsun', default=True)
 
         return context
 
@@ -134,7 +127,7 @@ class SplashInfoModule(ProgramModuleObj):
         else:
             spi = SplashInfo.getForUser(request.user, self.program)
             form.load(spi)
-            
+
         context = {}
         context['form'] = form
         context['missing_siblingname'] = missing_siblingname
@@ -143,4 +136,4 @@ class SplashInfoModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

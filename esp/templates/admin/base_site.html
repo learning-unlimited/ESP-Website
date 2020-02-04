@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% comment "DO NOT DELETE THIS FILE; this customizes the admin panel." %}{% endcomment %}
+
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+<script type="text/javascript" src="/media/scripts/common.js"> </script>
+<script type="text/javascript">
+    $j(document).ready(function () {
+        $j("div.raw_id_admin").hide();
+    });
+</script>
+<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+<script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+<script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<style type="text/css">
+ul.ui-autocomplete li
+{
+    list-style-type: none;
+}
+</style>
+{% endblock %}
+
+{% block title %}{{ title|escape }} | {% trans 'ESP site admin' %}{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block userlinks %}
+{{ block.super }}
+<li><a href="{% url 'filebrowser:fb_browse' %}">{% trans 'FileBrowser' %}</a></li>
+<li><a href="{% url 'esp.themes.views.landing' %}">{% trans 'Theme settings' %}</a></li>
+{% endblock userlinks %}

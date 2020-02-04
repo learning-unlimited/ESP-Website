@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from esp.datatree.models import *
 from markdown import markdown
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
@@ -42,7 +41,7 @@ import datetime
 # Create your models here.
 
 class AnnouncementLink(models.Model):
-    title = models.CharField(max_length=256) 
+    title = models.CharField(max_length=256)
     category = models.CharField(max_length=32) # Plaintext
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
     highlight_begin = models.DateTimeField(blank=True,null=True, help_text="When this should start being showcased.")
@@ -56,7 +55,7 @@ class AnnouncementLink(models.Model):
     def get_absolute_url(self):
         return self.href
     makeUrl = get_absolute_url
-    
+
     def makeTitle(self):
         return self.title
 
@@ -105,7 +104,7 @@ class Comment(models.Model):
 
     author = AjaxForeignKey(ESPUser)
     entry  = models.ForeignKey(Entry)
-    
+
     post_ts = models.DateTimeField(default=datetime.datetime.now,
                                    editable=False)
 
@@ -116,6 +115,9 @@ class Comment(models.Model):
     def __unicode__(self):
         return 'Comment for %s by %s on %s' % (self.entry, self.author,
                                                self.post_ts.date())
-    
+
     class Meta:
         ordering = ['-post_ts']
+
+# This import is necessary to prevent argcache errors
+import esp.miniblog.views

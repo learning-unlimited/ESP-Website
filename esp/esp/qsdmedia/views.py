@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.qsdmedia.models import Media
 from django.http import HttpResponse, Http404
-from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 import fnmatch
@@ -69,7 +68,7 @@ def qsdmedia2(request, url, ignored_part=None):
     # all others are served with Content-Disposition: attachment (download)
     disposition = 'attachment'
     for disp in inline_dispositions:
-        if fnmatch.fnmatch(media_rec.mime_type, disp):
+        if media_rec.mime_type and fnmatch.fnmatch(media_rec.mime_type, disp):
             disposition = 'inline'
             break
     response['Content-Disposition'] = disposition + '; filename="' + media_rec.file_name + '"'

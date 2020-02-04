@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euf -o pipefail
+
+sudo apt-get update

@@ -57,40 +57,40 @@ class ResourceModuleTest(ProgramFrameworkTest):
             self.response = self.client.get('/manage/%s/dashboard' % self.program.getUrlBase())
 
             self.isSetUp = True  ## Save duplicate sets of queries on setUp
-    
+
     def getDisplayedList(self, regexp, index):
         #   Fetch the resource management page
         response = self.client.get('/manage/%s/resources' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        
+
         #   Search for matching items in the response and ensure they are consistent
         results = re.findall(regexp, response.content)
         displayed_names = set([x[index] for x in results])
-        
+
         return displayed_names
-    
+
     def checkDisplayedClassroomList(self):
         #   Compute the list of classroom names for the program
         program_classroom_names = set([str(x.name) for x in self.program.groupedClassrooms()])
-        
+
         #   Compare to those shown on the resources page
         self.assertEqual(program_classroom_names, self.getDisplayedList(r'<div id="classroom-([0-9]+)">(.*?)</div>', 1))
-        
+
         return program_classroom_names
-        
+
     def checkDisplayedResourceTypeList(self):
         #   Compute the list of resource type names for the program
         program_restype_names = set([str(x.name) for x in self.program.getResourceTypes()])
-        
+
         #   Compare to those shown on the resources page
         self.assertEqual(program_restype_names, self.getDisplayedList(r'<div id="restype-([0-9]+)">(.*?)</div>', 1))
-        
+
         return program_restype_names
-    
+
     def testClassrooms(self):
         #   Check that the list of classrooms on the resource management page matches those known for the program
         self.checkDisplayedClassroomList()
-        
+
         #   Check that we can add a classroom and have it show up
         add_classroom_data = {
             'command': 'addedit',
@@ -103,7 +103,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/classroom' % self.program.getUrlBase(), add_classroom_data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('New Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of new room
-        
+
         #   Check that we can edit a classroom and have it show up
         matching_rooms = filter(lambda x: x.name == 'New Room', self.program.groupedClassrooms())
         self.assertEqual(len(matching_rooms), 1)
@@ -119,7 +119,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/classroom' % self.program.getUrlBase(), edit_classroom_data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('Edited Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of edited room
-        
+
         #   Check that we can delete a classroom and have it disappear
         delete_classroom_data = {
             'command': 'reallyremove',
@@ -128,11 +128,11 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/classroom' % self.program.getUrlBase(), delete_classroom_data)
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Room', self.checkDisplayedClassroomList())   #   checks consistency and presence of room
-        
+
     def testResourceTypes(self):
         #   Check that resource types started out consistent
         self.checkDisplayedResourceTypeList()
-        
+
         #   Check that we can add a resource type and have it show up
         add_restype_data = {
             'command': 'addedit',
@@ -144,7 +144,7 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/restype' % self.program.getUrlBase(), add_restype_data)
         self.assertEqual(response.status_code, 200)
         self.assertIn('New Resource Type', self.checkDisplayedResourceTypeList())
-        
+
         #   ... even if the priority is not specified
         add_restype_data = {
             'command': 'addedit',
@@ -180,5 +180,5 @@ class ResourceModuleTest(ProgramFrameworkTest):
         response = self.client.post('/manage/%s/resources/restype' % self.program.getUrlBase(), delete_restype_data)
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Resource Type', self.checkDisplayedResourceTypeList())
-        
-        
+
+

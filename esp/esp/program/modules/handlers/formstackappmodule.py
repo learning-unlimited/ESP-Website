@@ -33,10 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
-from esp.program.modules import module_ext
-from esp.web.util        import render_to_response
+from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
@@ -58,10 +60,6 @@ class FormstackAppModule(ProgramModuleObj):
             "required": True,
             }]
 
-    @classmethod
-    def extensions(cls):
-        return {'fsas': module_ext.FormstackAppSettings}
-
     def students(self, QObject = False):
         result = {}
 
@@ -74,7 +72,7 @@ class FormstackAppModule(ProgramModuleObj):
         result = {}
         result['applied'] = """Students who submitted an application"""
         return result
-    
+
     def isCompleted(self):
         # TODO
         return False
@@ -82,7 +80,7 @@ class FormstackAppModule(ProgramModuleObj):
     @main_call
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
-        fsas = prog.getModuleExtension(module_ext.FormstackAppSettings)
+        fsas = prog.formstackappsettings
         context = {}
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
@@ -93,9 +91,8 @@ class FormstackAppModule(ProgramModuleObj):
             field, _, expr = line.partition(':')
             try:
                 value = eval(expr, {'user': request.user})
-            except:
-                import traceback
-                traceback.print_exc()
+            except Exception as e:
+                logger.exception("Error in FormstackAppSettings: %s", e)
                 continue
             autopopulated.append((field, value))
         return render_to_response(self.baseDir()+'studentapp.html',
@@ -104,7 +101,7 @@ class FormstackAppModule(ProgramModuleObj):
     @aux_call
     @needs_student
     def finaidapp(self, request, tl, one, two, module, extra, prog):
-        fsas = prog.getModuleExtension(module_ext.FormstackAppSettings)
+        fsas = prog.formstackappsettings
         if not fsas.finaid_form():
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
@@ -121,4 +118,4 @@ class FormstackAppModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-
+        app_label = 'modules'

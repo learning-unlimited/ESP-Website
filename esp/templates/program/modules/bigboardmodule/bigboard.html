@@ -1,5 +1,5 @@
 {% extends "elements/html" %}
-{% block fulltitle %}Student Registration Summary for {{program.niceName}}{% endblock %}
+{% block fulltitle %}{{type}} Registration Summary for {{program.niceName}}{% endblock %}
 
 {% block meta %}
   {{ block.super }}
@@ -14,64 +14,135 @@
 {% block xtrajs %}
   <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
   <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
+  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
   <script type="text/javascript" src="//code.highcharts.com/modules/solid-gauge.js"></script>
 {% endblock xtrajs %}
 
 
 {% block body %}
 
-<div class="bigboard-graph">
-  <div id="highcharts-placeholder"></div>
-  <script type="text/javascript">
-    $j(function () {
-      $j('#highcharts-placeholder').highcharts({
-        credits: {
-            enabled: false
+{% if left_axis_data or right_axis_data %}
+  <div class="bigboard-graph">
+    <div id="highcharts-placeholder"></div>
+    <script type="text/javascript">
+    var left_axes = 0;
+    {% if left_axis_data %}
+      left_axes = {{ left_axis_data|length }}
+    {% endif %}
+    var chart = Highcharts.chart('highcharts-placeholder', {
+      credits: {
+          enabled: false
+      },
+      legend: {
+        align: "left",
+        x: 40,
+        floating: true,
+        layout: "vertical",
+        verticalAlign: "top",
+        //backgroundColor: '#FFFFFF'
+      },
+      plotOptions: {
+        line: {
+          marker: {enabled: false},
         },
-        legend: {
-          align: "right",
-          floating: true,
-          layout: "vertical",
-          verticalAlign: "middle",
-        },
-        plotOptions: {
-          line: {
-            marker: {enabled: false},
-          },
-        },
-        title: {
-          text: null,
-        },
-        tooltip: {
-          shared: true,
-        },
-        xAxis: {
-          type: 'datetime',
-          minRange: 24 * 60 * 60 * 1000, // one day
-        },
-        yAxis: {
-          title: {text: null},
+      },
+      title: {
+        text: null,
+      },
+      tooltip: {
+        shared: true,
+      },
+      xAxis: {
+        type: 'datetime',
+        minRange: 24 * 60 * 60 * 1000, // one day
+      },
+      yAxis: [
+        {% for axis in left_axis_data %}
+        {
+          title: {text: '{{ axis.axis_name}}'},
           min: 0,
           maxPadding: 0.01,
           endOnTick: false,
         },
-        series: [
-          {% for series in graph_data %}
-            {
-              type: 'line',
-              name: '{{series.description}}',
-              pointInterval: 60 * 60 * 1000, // one hour
-              pointStart: Date.UTC(
-                  {{first_hour.year}}, {{first_hour.month}} - 1,
-                  {{first_hour.day}}, {{first_hour.hour}}),
-              data: {{series.data}},
-            },
+        {% endfor %}
+        {% for axis in right_axis_data %}
+        {
+          title: {text: '{{ axis.axis_name}}'},
+          min: 0,
+          maxPadding: 0.01,
+          endOnTick: false,
+          opposite: true,
+        },
+        {% endfor %}
+      ],
+      series: [
+        {% for axis in left_axis_data %}
+          {% for series in axis.series_data %}
+          {
+            type: 'line',
+            yAxis: {{ forloop.parentloop.counter0 }},
+            name: '{{series.description}}',
+            pointInterval: 60 * 60 * 1000, // one hour
+            pointStart: Date.UTC(
+                {{first_hour.year}}, {{first_hour.month}} - 1,
+                {{first_hour.day}}, {{first_hour.hour}}),
+            data: {{series.data}},
+          },
+          {% empty %}
+          {
+            type: 'line',
+            yAxis: {{ forloop.counter0 }},
+            name: 'No data',
+            data: []
+          },
           {% endfor %}
-        ],
-      });
+        {% endfor %}
+        {% for axis in right_axis_data %}
+          {% for series in axis.series_data %}
+          {
+            type: 'line',
+            yAxis: {{ forloop.parentloop.counter0 }} + left_axes,
+            name: '{{series.description}}',
+            pointInterval: 60 * 60 * 1000, // one hour
+            pointStart: Date.UTC(
+                {{first_hour.year}}, {{first_hour.month}} - 1,
+                {{first_hour.day}}, {{first_hour.hour}}),
+            data: {{series.data}},
+          },
+          {% empty %}
+          {
+            type: 'line',
+            yAxis: {{ forloop.counter0 }},
+            name: 'No data',
+            data: []
+          },
+          {% endfor %}
+        {% endfor %}
+      ],
     });
+    </script>
+  </div>
+  {% if type == "Teacher" %}
+  <script type="text/javascript">
+    function showSeries(btn, filter) {
+      $j("#series-filters .btn").removeClass('active');
+      chart.series.forEach(function(series){
+        if (filter && series.name.indexOf(filter) == -1) {
+          series.hide()
+        } else {
+          series.show()
+        }
+      })
+      $j(btn).addClass('active');
+    }
   </script>
-</div>
+    <div id="series-filters" style="text-align: center;">
+      <button class="btn active" onclick="showSeries(this);">All Series</button>
+      <button class="btn" onclick="showSeries(this, 'registered');">Registered Only</button>
+      <button class="btn" onclick="showSeries(this, 'approved');">Approved Only</button>
+    </div>
+  {% endif %}
+{% endif %}
 
 <div class="bigboard-numbers">
   {% for description, number in numbers %}
@@ -153,25 +224,26 @@
   {% endfor %}
 </div>
 
-
-<div class="popular-classeses">
-  {% for description, classes in popular_classes %}
-    <div class="popular-classes-block">
-      <div class="popular-classes-heading">
-        {{description}}
-      </div>
-      <table class="popular-classes bigboard-description">
-        {% for class in classes %}
-          <tr>
-            <td class="popular-class-num">{{class.points}}</td>
-            <td class="popular-class-title">
-              {{class.category__symbol}}{{class.id}}: {{class.title}}
-            </td>
-          </tr>
-        {% endfor %}
-      </table>
+{% if popular_classes %}
+    <div class="popular-classeses">
+      {% for description, classes in popular_classes %}
+        <div class="popular-classes-block">
+          <div class="popular-classes-heading">
+            {{description}}
+          </div>
+          <table class="popular-classes bigboard-description">
+            {% for class in classes %}
+              <tr>
+                <td class="popular-class-num">{{class.points}}</td>
+                <td class="popular-class-title">
+                  {{class.category__symbol}}{{class.id}}: {{class.title}}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      {% endfor %}
     </div>
-  {% endfor %}
-</div>
+{% endif %}
 
 {% endblock %}

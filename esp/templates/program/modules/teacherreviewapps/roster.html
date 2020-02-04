@@ -1,12 +1,8 @@
 {% extends "main.html" %}
+{% load users %}
 
 
 {% block title %}Student application review for {{ cls }}{% endblock %}
-
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Junction applications"|subsection }}{% endautoescape %}
-{% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -56,7 +52,7 @@ Back to teacher reg
    {{ student.name }}
     </td>
     <td>
-   {{ student.getGrade }}
+   {{ student|getGradeForProg:program.id }}
     </td>
     <td>
       <center>{% if student.app_completed %}<b>Yes</b>{% else %}<b>No</b>{% endif %}</center>

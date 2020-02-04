@@ -2,14 +2,11 @@
 
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
-from django.utils import simplejson as json
+import json
 
 class JSONField(models.TextField):
     """JSONField is a generic textfield that neatly serializes/unserializes
     JSON objects seamlessly"""
-
-    # Used so to_python() is called
-    __metaclass__ = models.SubfieldBase
 
     def to_python(self, value):
         """Convert our string value to JSON after we load it from the DB"""
@@ -36,6 +33,5 @@ class JSONField(models.TextField):
 
         return super(JSONField, self).get_db_prep_save(value, connection=connection)
 
-#   Added to support South migrations
-from south.modelsinspector import add_introspection_rules
-add_introspection_rules([], ["^esp\.utils\.fields\.JSONField"])
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)

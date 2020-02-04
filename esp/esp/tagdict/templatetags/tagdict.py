@@ -28,7 +28,7 @@ class GetProgramTagNode(Node):
             default = parser.compile_filter(tokens[3])
 
         return cls(key, program, default, boolean=boolean)
-      
+
 
     def render(self, context):
         key = self.key.resolve(context)

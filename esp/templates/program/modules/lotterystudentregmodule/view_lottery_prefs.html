@@ -8,10 +8,6 @@
 <link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
 {% endblock %}
 
-{% load subsection %}
-{% block subsection %}
-{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
-
 {% block content %}
 <br /><br />
 <h1>{{program.niceName}} Lottery Preferences for {{ student.first_name }} {{ student.last_name }}</h1>
