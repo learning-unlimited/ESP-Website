@@ -46,6 +46,7 @@ Printables changes
 - Revamped student schedules. They are now in a portrait layout and include amount due, names of teachers for classes, and barcodes for check-in.
 - The ``studentchecklist`` printable now updates the statuses in the checklist based on the records through the website of whether students have been checked-in, have paid, or have turned in forms.
 - Admins can now use an arbitrary list of users (like that used in the comm panel or schedule generator) to generate nametags.
+- Nametags now have the option to have barcodes on the backs (or really anything, with template overrides).
 
 Scheduler changes
 ~~~~~~~~~~~~~~~~~
