@@ -87,34 +87,42 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, TagSettingsForm
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
         scrmi = StudentClassRegModuleInfo.objects.get(program=prog)
         old_url = prog.url
+        context['open_section'] = extra
 
         #If one of the forms was submitted, process it and save if valid
         if request.method == 'POST':
             if 'form_name' in request.POST:
                 submitted_form = request.POST['form_name']
-                if submitted_form == "Program Settings":
+                if submitted_form == "program":
                     form = ProgramSettingsForm(request.POST, instance = prog)
                     prog_form = form
-                elif submitted_form == "Teacher Registration Settings":
+                    context['open_section'] = "program"
+                elif submitted_form == "crmi":
                     form = TeacherRegSettingsForm(request.POST, instance = crmi)
                     crmi_form = form
-                elif submitted_form == "Student Registration Settings":
+                    context['open_section'] = "crmi"
+                elif submitted_form == "scrmi":
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
                     scrmi_form = form
+                    context['open_section'] = "scrmi"
+                elif submitted_form == "tags":
+                    form = TagSettingsForm(request.POST)
+                    tag_form = form
+                    context['open_section'] = "tags"
                 if form.is_valid():
                     form.save()
                     #If the url for the program is now different, redirect to the new settings page
                     if prog.url is not old_url:
-                        return HttpResponseRedirect( '/manage/%s/settings' % (prog.url))
+                        return HttpResponseRedirect( '/manage/%s/settings/%s' % (prog.url, context['open_section']))
 
         #Set up any other forms on the page
-        if submitted_form != "Program Settings":
+        if submitted_form != "program":
             prog_dict = {}
             prog_dict.update(prog.__dict__)
             #We need to populate all of these manually
@@ -130,19 +138,23 @@ class AdminCore(ProgramModuleObj, CoreModule):
             prog_dict['flag_types'] = prog.flag_types.all().values_list("id", flat=True)
             prog_form = ProgramSettingsForm(prog_dict, instance = prog)
 
-        if submitted_form != "Teacher Registration Settings":
+        if submitted_form != "crmi":
             crmi_form = TeacherRegSettingsForm(instance = crmi)
 
-        if submitted_form != "Student Registration Settings":
+        if submitted_form != "scrmi":
             scrmi_form = StudentRegSettingsForm(instance = scrmi)
+
+        if submitted_form != "tags":
+            tag_form = TagSettingsForm(program = prog)
 
         context['one'] = one
         context['two'] = two
         context['program'] = prog
         context['forms'] = [
-                            ("Program Settings", prog_form),
-                            ("Teacher Registration Settings", crmi_form),
-                            ("Student Registration Settings", scrmi_form),
+                            ("Program Settings", "program", prog_form),
+                            ("Teacher Registration Settings", "crmi", crmi_form),
+                            ("Student Registration Settings", "scrmi", scrmi_form),
+                            ("Tag (Expert) Settings", "tags", tag_form),
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)

@@ -2,7 +2,8 @@
 # Populated by hand, so don't be too surprised if something
 # is missing
 
-# Format: 'key': (is tag used with getBooleanTag, "some help text for admins")
+# Format: 'key': (is tag used with getBooleanTag, "some help text for admins", default value, category)
+# Category Options: "Teach", "Learn", "Manage", "Onsite"
 
 # Any tag used with Tag.getTag(),
 # or Tag.getBooleanTag() with no program argument

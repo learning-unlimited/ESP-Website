@@ -2,7 +2,7 @@ from decimal import Decimal
 from django import forms
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from form_utils.forms import BetterModelForm
+from form_utils.forms import BetterForm, BetterModelForm
 
 from esp.accounting.models import LineItemType
 from esp.cal.models import Event
@@ -10,6 +10,8 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.tagdict import all_global_tags, all_program_tags
+from esp.tagdict.models import Tag
 
 def get_rt_choices():
     choices = [("All","All")]
@@ -105,3 +107,17 @@ class StudentRegSettingsForm(BetterModelForm):
                      ('Visual Options', {'fields': ['progress_mode','force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
+
+class TagSettingsForm(BetterForm):
+    """ Form for changing tags associated with a program. """
+    def __init__(self, *args, **kwargs):
+        self.program = kwargs.pop('program')
+        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_program_tags:
+            # generate field for each tag
+            tag_tuple = all_program_tags[key]            
+            self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = Tag.getProgramTag(key, program = self.program))
+    class Meta:
+        fieldsets = [
+                     ('Program-Specific Tags', {'fields': all_program_tags.keys()})
+                    ]
