@@ -87,7 +87,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def settings(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm, TagSettingsForm
+        from esp.program.modules.forms.admincore import ProgramSettingsForm, TeacherRegSettingsForm, StudentRegSettingsForm
         context = {}
         submitted_form = ""
         crmi = ClassRegModuleInfo.objects.get(program=prog)
