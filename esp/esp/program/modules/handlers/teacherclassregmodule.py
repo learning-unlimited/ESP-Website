@@ -505,9 +505,20 @@ class TeacherClassRegModule(ProgramModuleObj):
         # Select the correct action
         if cls.category == self.program.open_class_category:
             action = 'editopenclass'
+            # allows walkins to be copied without setting specific hidden fields
+            # set walkin hidden fields to defaults
+            cls_data = cls.__dict__
+            cls_data['grade_min'] = prog.grade_min
+            cls_data['grade_max'] = prog.grade_max
+            cls_data['class_size_max'] = 200            
         else:
             action = 'edit'
-
+        # This way to import classes seems better than the hidden fields
+        # method in makeaclass_logic? since that method requires hiding the fields from
+        # both walkins and regular classes, which seems less versitile than 
+        # just setting the walkins hidden field values separately
+        # Regardless the hide fields functionality is probably still useful
+ 
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action, populateonly = True)
 
     @aux_call
@@ -671,6 +682,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                         field.initial = initial_requests[field.label]
                         if form.resource_type.only_one and len(field.initial):
                             field.initial = field.initial[0]
+                    print field.label, field.initial
 
             else:
                 if action=='create':
