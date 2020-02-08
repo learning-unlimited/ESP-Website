@@ -10,7 +10,7 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.tagdict import all_global_tags, all_program_tags
+from esp.tagdict import all_global_tags, all_program_tags, tag_categories
 from esp.tagdict.models import Tag
 
 def get_rt_choices():
@@ -112,12 +112,29 @@ class TagSettingsForm(BetterForm):
     """ Form for changing tags associated with a program. """
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
+        self.categories = set()
         super(TagSettingsForm, self).__init__(*args, **kwargs)
         for key in all_program_tags:
             # generate field for each tag
-            tag_tuple = all_program_tags[key]            
-            self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = Tag.getProgramTag(key, program = self.program))
+            tag_tuple = all_program_tags[key]
+            self.categories.add(tag_tuple[3])
+            if tag_tuple[4]:
+                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = str(tag_tuple[2]), required = False)
+                set_val = Tag.getBooleanTag(key, program = self.program) if tag_tuple[0] else Tag.getProgramTag(key, program = self.program)
+                if set_val != None and str(set_val) != self.fields[key].initial:
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        prog = self.program
+        # Go through all tags and check if form value is different from default. If it is, get_or_create tag, then set to specified value
+        for key in all_program_tags:
+            # Update tags if necessary
+            tag_tuple = all_program_tags[key]
+            if tag_tuple[4]:
+                Tag.unSetTag(key, prog)
+                set_val = self.cleaned_data[key]
+                if set_val != None and str(set_val) != str(tag_tuple[2]):
+                    Tag.setTag(key, prog, set_val)
+
     class Meta:
-        fieldsets = [
-                     ('Program-Specific Tags', {'fields': all_program_tags.keys()})
-                    ]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]

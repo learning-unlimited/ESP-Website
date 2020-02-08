@@ -111,10 +111,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     form = StudentRegSettingsForm(request.POST, instance = scrmi)
                     scrmi_form = form
                     context['open_section'] = "scrmi"
-                elif submitted_form == "tags":
-                    form = TagSettingsForm(request.POST)
-                    tag_form = form
-                    context['open_section'] = "tags"
                 if form.is_valid():
                     form.save()
                     #If the url for the program is now different, redirect to the new settings page
@@ -144,9 +140,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
         if submitted_form != "scrmi":
             scrmi_form = StudentRegSettingsForm(instance = scrmi)
 
-        if submitted_form != "tags":
-            tag_form = TagSettingsForm(program = prog)
-
         context['one'] = one
         context['two'] = two
         context['program'] = prog
@@ -154,10 +147,32 @@ class AdminCore(ProgramModuleObj, CoreModule):
                             ("Program Settings", "program", prog_form),
                             ("Teacher Registration Settings", "crmi", crmi_form),
                             ("Student Registration Settings", "scrmi", scrmi_form),
-                            ("Tag (Expert) Settings", "tags", tag_form),
                            ]
 
         return render_to_response(self.baseDir()+'settings.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def tags(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.forms.admincore import TagSettingsForm
+        context = {}
+
+        #If one of the forms was submitted, process it and save if valid
+        if request.method == 'POST':
+            form = TagSettingsForm(request.POST, program = prog)
+            if form.is_valid():
+                form.save()
+
+        form = TagSettingsForm(program = prog)
+
+        context['one'] = one
+        context['two'] = two
+        context['program'] = prog
+        context['form'] = form
+        context['categories'] = form.categories
+        context['open_section'] = extra
+
+        return render_to_response(self.baseDir()+'tags.html', request, context)
 
     @main_call
     @needs_admin

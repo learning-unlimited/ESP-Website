@@ -15,7 +15,7 @@
 <h1>Program Settings for {{ program.niceName }} (ID: {{ program.id }})</h1>
 
 {% inline_program_qsd_block program "manage:main_top" %}
-Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like.
+Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like. If you can't find the setting here, try checking out the <a href="/manage/{{ program.getUrlBase }}/tags/">tag settings page</a> or reach out to <a href="mailto:websupport@learningu.org">websupport</a>.
 {% end_inline_program_qsd_block %}
 
 {% for title, section, form in forms %}
@@ -73,7 +73,7 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
     <table align="center">
       <tr> 
         <td colspan="2" class="submit">
-          <br /><br /><br />
+          <br />
           <center><input class="fancybutton" type="submit" value="Save {{ title }}" /></center>
         </td>
       </tr>
