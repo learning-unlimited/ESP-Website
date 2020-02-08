@@ -68,7 +68,7 @@ all_global_tags = {
 all_program_tags = {
     'increment_default_grade_levels': (True, "Consider all students to be one grade level higher (useful for summer programs)", False, "learn", True),
     'open_class_category': (False, "Class category (specified as the ID number) used for open classes (classes for which students don't register in advance)", None, "learn", True),
-    'sibling_discount': (False, "The monitary value of the siblind discount", '0.00', "learn", True),
+    'sibling_discount': (False, "The monitary value of the sibling discount", '0.00', "learn", True),
     'splashinfo_costs': (False, "A JSON structure of food costs for the 'lunchsat' and 'lunchsun' keys (must be consistent with all of the options specified in splashinfo_choices)", '{}', "learn", True),
     'splashinfo_choices': (False, "A JSON structure of food options for the 'lunchsat' and 'lunchsun' keys (for the SplashInfoModule)", None, "learn", True),
     'catalog_sort_fields': (False, "A comma-separated list of fields by which to sort the catalog", "varies by module", "manage", True),

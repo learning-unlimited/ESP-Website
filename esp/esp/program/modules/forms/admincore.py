@@ -131,10 +131,14 @@ class TagSettingsForm(BetterForm):
             # Update tags if necessary
             tag_tuple = all_program_tags[key]
             if tag_tuple[4]:
-                Tag.unSetTag(key, prog)
                 set_val = self.cleaned_data[key]
-                if set_val != None and str(set_val) != str(tag_tuple[2]):
+                global_val = Tag.getBooleanTag(key, default = tag_tuple[2]) if tag_tuple[0] else Tag.getProgramTag(key, default = tag_tuple[2])
+                if not set_val in ("None", None, global_val):
+                    # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
                     Tag.setTag(key, prog, set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key, prog)
 
     class Meta:
         fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
