@@ -682,7 +682,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                         field.initial = initial_requests[field.label]
                         if form.resource_type.only_one and len(field.initial):
                             field.initial = field.initial[0]
-                    print field.label, field.initial
 
             else:
                 if action=='create':
