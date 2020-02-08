@@ -69,6 +69,11 @@ Survey changes
 ~~~~~~~~~~~~~~
 - Admins can now specify which students and teachers have access to the built-in program surveys with the tags "survey_teacher_filter" and "survey_student_filter".
 
+Theme changes
+~~~~~~~~~~~~~
+- Links on the barebones and bigpictures themes that previously said "Admin Home", now correctly say "Administration Pages" like other themes
+- Fixed the fruit salad header for instances where the program name was very long and overlapped with the login information. Also changed styling associated with the login box to make things symmetrical (and removed the text "Hello,").
+
 Minor new features
 ~~~~~~~~~~~~~~~~~~
 - You can now include unreviewed classes in the scheduling diagnostics.
@@ -83,6 +88,7 @@ Minor new features
 - Added "View on site" links to a number of user-related pages in the administration pages.
 - Added duration-from-now labels next to deadline form fields.
 - Made the text on the profile form clearer when users can not change their grade/dob.
+- Added emailcodes to the subjects of all emails to class/section lists (i.e. "[prefix] [emailcode] Subject"). The prefix can be changed in the admin pages (and will be omited from the subject if not set).
 
 Minor bug fixes
 ~~~~~~~~~~~~~~~
