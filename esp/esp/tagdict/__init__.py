@@ -34,7 +34,7 @@ all_global_tags = {
     'require_student_phonenum': (True, "Whether to require a student phone (home or cell) number", True, "learn", True),
     'allow_change_grade_level': (True, "Should students be allowed to change their grade level in the profile form?", False, "learn", True),
     'show_studentrep_application': (False, "If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to 'no_expl', don't show the explanation textbox in the form.", None, "learn", True),
-    'show_student_tshirt_size_options': (True, "Ask students about their choice of T-shirt size as part of the student profile?", False, "learn", True),
+    'show_student_tshirt_size_options': (True, "Show shirt size field in the student profile?", False, "learn", True),
     'studentinfo_shirt_type_selection': (True, "Show shirt type field in the student profile?", False, "learn", True),
     'show_student_vegetarianism_options': (True, "Ask students about their dietary restrictions as part of the student profile?", False, "learn", True),
     'show_student_graduation_years_not_grades': (True, "List graduation years rather than grade numbers in the student profile?", False, "learn", True),
@@ -42,19 +42,17 @@ all_global_tags = {
     'ask_student_about_transportation_to_program': (True, "Ask in the student profile about how the student is going to get to the upcoming program?", False, "learn", True),
     'student_medical_needs': (True, "Show students a text box where they can enter 'special medical needs' in the student profile?", False, "learn", True),
     'require_school_field': (True, "Should the 'School' field be required in the student profile form?", False, "learn", True),
-    'teacherinfo_shirt_options': (False, "If set to 'False', the teacher form does not include any t-shirt fields (size and type)", None, "teach", True), #should probably be a boolean
-    'teacherinfo_shirt_type_selection': (False, "If set to 'False', the teacher form does not include the t-shirt type field", None, "teach", True), #default should probably be False
+    'teacherinfo_shirt_options': (True, "Include t-shirt fields (size and type) on the teacher profile form?", True, "teach", True),
+    'teacherinfo_shirt_type_selection': (True, "Include the t-shirt type field on the teacher profile form? (overrides 'teacherinfo_shirt_options')", True, "teach", True),
     'teacher_profile_hide_fields': (False, "Comma-separated list of fields to hide in the teacher profile form", "", "teach", True),
     'student_grade_options': (False, "A JSON list of grade choices that can be used to override the defaults", "[7,8,9,10,11,12]", "learn", True),
     'user_types': (False, "A JSON list of user types that can be used to override the defaults", "[['Student', {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'}],['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],['Volunteer', {'label': 'Onsite Volunteer', 'profile_form': 'VolunteerProfileForm'}]]", "manage", True),
-    'studentinfo_shirt_options': (False, "Should the tshirt info in student infos populate the student profile form? (use with 'show_student_tshirt_size_options')", None, "learn", True), #why is this a separate tag? should probably be boolean
-    'studentinfo_food_options': (False, "Should the food preference info in student infos populate the student profile form? (use with 'show_student_vegetarianism_options')", None, "learn", True), #why is this a separate tag? should probably be boolean),
-    'student_profile_gender_field': (True, "Ask about student gender in profile form?", None, "learn", True), #default should probably be False
+    'student_profile_gender_field': (True, "Ask about student gender in profile form?", False, "learn", True),
     'ask_about_duplicate_accounts': (True, "Before creating an account for an email address already in the database, ask if the user wants to log into an existing account instead", False, "manage", True),
     'require_email_validation': (True, "Require users to click on a link in an e-mail sent to their account, before they can use their account?", False, "manage", True),
     'automatic_registration_redirect': (True, "If student/teacher registration is open for exactly one program, redirect to registration after account creation", True, "manage", True),
-    'text_messages_to_students': (True, "Ask students if they want to receive text messages about the program, in the student profile", None, "learn", True), #default should probably be False
-    'local_state': (False, "The default value for state fields in the profile form (not implemented)", None, "manage", False), #pretty sure this is not actually implemented
+    'text_messages_to_students': (True, "Ask students if they want to receive text messages about the program, in the student profile", False, "learn", True),
+    'local_state': (False, "The default value for state fields in the profile form", None, "manage", True),
     'teacher_address_required': (True, "Is an address required for a teacher profile?", False, "teach", True),
     'random_constraints': (False, "Constraints for /random in a JSON dictionary (e.g. {'bad_program_names': ['Delve', 'SATPrep', '9001', 'Test'], 'bad_titles': ['Lunch Period']})", "{}", "manage", True),
     'admin_home_page': (False, "The page to which admins get redirected after logging in (can be a relative or absolute page)", None, "manage", True),

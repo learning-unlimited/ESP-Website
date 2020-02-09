@@ -59,7 +59,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         super(UserContactForm, self).__init__(*args, **kwargs)
         if not Tag.getBooleanTag('request_student_phonenum', default=True):
             del self.fields['phone_day']
-        if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
+        if not Tag.getBooleanTag('text_messages_to_students', default=False) or not self.user.isStudent():
             del self.fields['receive_txt_message']
         if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required', default = False):
             self.fields['address_street'].required = False
@@ -194,8 +194,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if not Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             del self.fields['shirt_size']
-            del self.fields['shirt_type']
-        elif not Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
+        if not Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             del self.fields['shirt_type']
 
         if not Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
@@ -223,7 +222,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     new_choices.append(x)
             self.fields['graduation_year'].choices = new_choices
 
-        if not Tag.getBooleanTag('student_profile_gender_field'):
+        if not Tag.getBooleanTag('student_profile_gender_field', default=False):
             del self.fields['gender']
 
         if not Tag.getBooleanTag('ask_student_about_transportation_to_program', default=False):
@@ -343,10 +342,10 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
-        if Tag.getTag('teacherinfo_shirt_options') == 'False':
+        if not Tag.getBooleanTag('teacherinfo_shirt_options', True):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
+        elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection', True):
             del self.fields['shirt_type']
 
     def clean(self):
