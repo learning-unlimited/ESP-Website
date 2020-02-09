@@ -342,10 +342,10 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     def __init__(self, *args, **kwargs):
         super(TeacherInfoForm, self).__init__(*args, **kwargs)
-        if not Tag.getBooleanTag('teacherinfo_shirt_options', True):
+        if not Tag.getBooleanTag('teacherinfo_shirt_options', default=True):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection', True):
+        elif not Tag.getBooleanTag('teacherinfo_shirt_type_selection', default=True):
             del self.fields['shirt_type']
 
     def clean(self):
