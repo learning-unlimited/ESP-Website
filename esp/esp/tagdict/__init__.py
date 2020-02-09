@@ -12,9 +12,6 @@ all_global_tags = {
     'allow_global_restypes': (True, "Include global resource types in the manage resources and teacher registration options", False, "teach", True),
     'full_group_name': (False, "For places that demand an official-sounding name for the group that goes beyond the INSTITUTION_NAME and ORGANIZATION_SHORT_NAME settings.", None, "manage", True),
     'nearly_full_threshold': (False, "Fraction (as a decimal) of section capacity that determines if a class is 'nearly full'", 0.75, "teach", True),
-    'splashinfo_siblingdiscount': (True, "Should the sibling discount and sibling name fields be shown in the SplashInfoModule?", True, "learn", True), #should this be a program tag?
-    'splashinfo_lunchsat': (True, "Should the Saturday lunch field be shown in the SplashInfoModule?", True, "learn", True), #should this be a program tag?
-    'splashinfo_lunchsun': (True, "Should the Sunday lunch field be shown in the SplashInfoModule?", True, "learn", True), #should this be a program tag?
     'use_class_size_optimal': (True, "Should teachers be asked for an optimal class size (instead of maximum size)? Must be set to True for optimal class size options in the class registration module info to have any effect.", False, "teach", True),
     'teacherreg_difficulty_choices': (False, "This controls the choices of the 'Difficulty' field on the class creation/editing form. This should be a JSON-formatted list of 2-element lists. Example: '[[1, 'Easy'], [2, 'Medium'], [3, 'Hard']]'", None, "teach", True),
     'class_style_choices': (False, "If set, adds a 'class style' field to the class creation form. Options are set with the tag, with the value in the JSON format, where the first element of each list is the value stored in the database, and the second value is the option shown on the form (e.g. [['Lecture', 'Lecture Style Class'], ['Seminar', 'Seminar Style Class']])", None, "teach", True),
@@ -71,6 +68,9 @@ all_program_tags = {
     'sibling_discount': (False, "The monitary value of the sibling discount", '0.00', "learn", True),
     'splashinfo_costs': (False, "A JSON structure of food costs for the 'lunchsat' and 'lunchsun' keys (must be consistent with all of the options specified in splashinfo_choices)", '{}', "learn", True),
     'splashinfo_choices': (False, "A JSON structure of food options for the 'lunchsat' and 'lunchsun' keys (for the SplashInfoModule)", None, "learn", True),
+    'splashinfo_siblingdiscount': (True, "Should the sibling discount and sibling name fields be shown in the SplashInfoModule?", True, "learn", True),
+    'splashinfo_lunchsat': (True, "Should the Saturday lunch field be shown in the SplashInfoModule?", True, "learn", True),
+    'splashinfo_lunchsun': (True, "Should the Sunday lunch field be shown in the SplashInfoModule?", True, "learn", True),
     'catalog_sort_fields': (False, "A comma-separated list of fields by which to sort the catalog", "varies by module", "manage", True),
     'teacherreg_help_text_duration': (False, "Help text for the class registration duration field", None, "teach", True),
     'teacherreg_help_text_num_sections': (False, "Help text for the class registration number of sections field", None, "teach", True),
