@@ -45,7 +45,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, meets_dead
 from esp.users.models    import Record
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField
-from esp.web.util        import render_to_response
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
