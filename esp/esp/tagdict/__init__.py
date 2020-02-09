@@ -34,14 +34,14 @@ all_global_tags = {
     'require_student_phonenum': (True, "Whether to require a student phone (home or cell) number", True, "learn", True),
     'allow_change_grade_level': (True, "Should students be allowed to change their grade level in the profile form?", False, "learn", True),
     'show_studentrep_application': (False, "If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to 'no_expl', don't show the explanation textbox in the form.", None, "learn", True),
-    'show_student_tshirt_size_options': (False, "If tag exists, ask students about their choice of T-shirt size as part of the student profile", None, "learn", True), #should probably be a boolean
-    'studentinfo_shirt_type_selection': (False, "If set to 'False', hides shirt type field in the student profile", None, "learn", True), #should probably be a boolean
-    'show_student_vegetarianism_options': (False, "If tag exists, ask students about their dietary restrictions as part of the student profile", None, "learn", True), #should probably be a boolean
-    'show_student_graduation_years_not_grades': (True, "If tag exists, list graduation years rather than grade numbers in the student profile", None, "learn", True), #default should probably be False
-    'ask_student_about_post_hs_plans':  (True, "If tag exists, ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc) (not implemented yet)", None, "learn", False),
-    'ask_student_about_transportation_to_program': (False, "If tag exists, ask in the student profile about how the student is going to get to the upcoming program", None, "learn", True), #should probably be a boolean
-    'student_medical_needs': (False, "If tag exists, students will see a text box where they can enter 'special medical needs'", None, "learn", True), #should probably be a boolean
-    'require_school_field': (True, "Should the 'School' field be required in the student profile form?", False, "learn", True), #default is None in one use in user_profile.py
+    'show_student_tshirt_size_options': (True, "Ask students about their choice of T-shirt size as part of the student profile?", False, "learn", True),
+    'studentinfo_shirt_type_selection': (True, "Show shirt type field in the student profile?", False, "learn", True),
+    'show_student_vegetarianism_options': (True, "Ask students about their dietary restrictions as part of the student profile?", False, "learn", True),
+    'show_student_graduation_years_not_grades': (True, "List graduation years rather than grade numbers in the student profile?", False, "learn", True),
+    'ask_student_about_post_hs_plans':  (True, "Ask in the student profile about a student's post-high-school plans (go to college, go to trade school, get a job, etc)? (deprecated)", False, "learn", False),
+    'ask_student_about_transportation_to_program': (True, "Ask in the student profile about how the student is going to get to the upcoming program?", False, "learn", True),
+    'student_medical_needs': (True, "Show students a text box where they can enter 'special medical needs' in the student profile?", False, "learn", True),
+    'require_school_field': (True, "Should the 'School' field be required in the student profile form?", False, "learn", True),
     'teacherinfo_shirt_options': (False, "If set to 'False', the teacher form does not include any t-shirt fields (size and type)", None, "teach", True), #should probably be a boolean
     'teacherinfo_shirt_type_selection': (False, "If set to 'False', the teacher form does not include the t-shirt type field", None, "teach", True), #default should probably be False
     'teacher_profile_hide_fields': (False, "Comma-separated list of fields to hide in the teacher profile form", "", "teach", True),

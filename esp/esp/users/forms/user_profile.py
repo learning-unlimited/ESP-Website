@@ -192,13 +192,13 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if (not show_studentrep_application) or show_studentrep_application == "no_expl":
             del self.fields['studentrep_expl']
 
-        if not Tag.getTag('show_student_tshirt_size_options'):
+        if not Tag.getBooleanTag('show_student_tshirt_size_options', default=False):
             del self.fields['shirt_size']
             del self.fields['shirt_type']
-        elif Tag.getTag('studentinfo_shirt_type_selection') == 'False':
+        elif not Tag.getBooleanTag('studentinfo_shirt_type_selection', default=False):
             del self.fields['shirt_type']
 
-        if not Tag.getTag('show_student_vegetarianism_options'):
+        if not Tag.getBooleanTag('show_student_vegetarianism_options', default=False):
             del self.fields['food_preference']
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
@@ -213,7 +213,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         #   Honor several possible Tags for customizing the fields that are displayed.
-        if Tag.getBooleanTag('show_student_graduation_years_not_grades'):
+        if Tag.getBooleanTag('show_student_graduation_years_not_grades', default=False):
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
             for x in self.fields['graduation_year'].choices:
@@ -226,7 +226,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getBooleanTag('student_profile_gender_field'):
             del self.fields['gender']
 
-        if not Tag.getTag('ask_student_about_transportation_to_program'):
+        if not Tag.getBooleanTag('ask_student_about_transportation_to_program', default=False):
             del self.fields['transportation']
 
         if not Tag.getBooleanTag('allow_change_grade_level', default = False):
@@ -241,7 +241,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     self.fields['dob'].required = False
 
         #   Add field asking about medical needs if directed by the Tag
-        if Tag.getTag('student_medical_needs'):
+        if Tag.getBooleanTag('student_medical_needs', default=False):
             self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
         else:
             del self.fields['medical_needs']
@@ -307,7 +307,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 cleaned_data['dob'] = orig_prof.student_info.dob
 
 
-        if Tag.getBooleanTag('require_school_field'):
+        if Tag.getBooleanTag('require_school_field', default=False):
             if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
                 raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
