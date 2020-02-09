@@ -63,14 +63,14 @@ import re
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
     custom_amount = forms.IntegerField(min_value=1, max_value=1000, required=False)
-    
+
     def __init__(self, *args, **kwargs):
         super(DonationForm, self).__init__(*args, **kwargs)
         self.amount = None
 
     def clean(self):
         super(DonationForm, self).clean()
-        amount_donation = self.cleaned_data.get('amount_donation','') 
+        amount_donation = self.cleaned_data.get('amount_donation','')
         custom_amount = self.cleaned_data.get('custom_amount','')
 
         if amount_donation == -1:
@@ -81,7 +81,7 @@ class DonationForm(forms.Form):
             self.amount = amount_donation
         return self.cleaned_data
 
-            
+
 class DonationModule(ProgramModuleObj):
 
     event = "donation_done"
@@ -139,7 +139,7 @@ class DonationModule(ProgramModuleObj):
                                   [(-1, "I would like to donate a different amount")]
         return form
 
-      
+
     @main_call
     @usercheck_usetl
     @meets_deadline('/ExtraCosts')
@@ -154,7 +154,7 @@ class DonationModule(ProgramModuleObj):
         context['module'] = self
         context['program'] = prog
         context['user'] = user
- 
+
         # It's unclear if we support changing line item preferences after
         # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment

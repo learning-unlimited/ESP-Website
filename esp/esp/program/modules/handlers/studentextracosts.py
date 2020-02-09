@@ -157,8 +157,8 @@ class StudentExtraCosts(ProgramModuleObj):
             costs_db = [ { 'LineItemType': x,
                            'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
-                           [ { 'LineItemType': x, 
-                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
+                           [ { 'LineItemType': x,
+                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id)}
                              for x in multicosts_list ] + \
                            [ { 'LineItemType': x,
                                'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
@@ -228,8 +228,8 @@ class StudentExtraCosts(ProgramModuleObj):
                 count_map[item[0]][i] = item[i]
 
         cost_items =  \
-        [ 
-            { 
+        [
+            {
                'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
                'type': 'single',
                'LineItem': x
@@ -239,16 +239,16 @@ class StudentExtraCosts(ProgramModuleObj):
         ]
 
         multi_cost_items = \
-        [ 
-            { 
-                'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 
+        [
+            {
+                'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0),
                 'count': count_map[x.text][1] } ),
                 'type': 'multiple',
                 'max': x.max_quantity,
-                'LineItem': x 
+                'LineItem': x
             }
 
-            for x in multicosts_list 
+            for x in multicosts_list
         ]
 
         multiselect_costitems = []
