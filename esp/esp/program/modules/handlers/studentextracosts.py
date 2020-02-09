@@ -34,17 +34,14 @@ Learning Unlimited, Inc.
 from collections import OrderedDict, defaultdict
 from decimal import Decimal
 from django              import forms
-from django.contrib.auth.models import User
 from django.db.models.query import Q
-from django.template.loader import get_template
 from django.utils.safestring import mark_safe
 from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
-from esp.accounting.models import LineItemType, LineItemOptions
+from esp.accounting.models import LineItemOptions
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models  import StudentApplication
-from esp.program.modules import module_ext
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, main_call, meets_cap
 from esp.users.models    import Record
 from esp.utils.web import render_to_response
 from esp.utils.widgets import ChoiceWithOtherField
