@@ -724,9 +724,10 @@ def emails(request):
     """
     context = {}
     if request.GET and "start_date" in request.GET:
-        start_date = datetime.datetime.strptime(request.GET["start_date"], "%m/%d/%Y")
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%Y-%m-%d")
     else:
         start_date = datetime.date.today() - datetime.timedelta(30)
+    context['start_date'] = start_date
     requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
 
     requests_list = []
