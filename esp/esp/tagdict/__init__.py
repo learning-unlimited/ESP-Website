@@ -23,7 +23,7 @@ all_global_tags = {
     'group_phone_number': (False, "Phone number that will be displayed on nametags and room rosters", None, "manage", True),
     'finaid_form_fields': (False, "A comma-separated list that specifies which of which Financial Aid Request fields to include in the form (all fields shown by default)", None, "learn", True),
     'onsite_classlist_min_refresh': (False, "Maximum refresh speed for the onsite classlist to avoid server overload.", '10', "onsite", True),
-    'oktimes_collapse': (False, "If set, collapses feasible start times into a single column in the Viable Times Spreadsheet", None, "manage", True), #should probably be a boolean
+    'oktimes_collapse': (True, "If set, collapses feasible start times into a single column in the Viable Times Spreadsheet", False, "manage", True),
     'qsd_display_date_author': (False, "Specifies whether to display 'Last modified by [author] on [date] at [time].' at the bottom of all website pages for non-admins. Set to 'Both' (without the single quotes) to display author and date; set to 'Date' to display the date and time but not the author; set to 'None' to display nothing.", "Both", "manage", True),
     'current_theme_name': (False, "The name of the current website theme (should only be modified via the theme settings page)", "default", "theme", False),
     'prev_theme_customization': (False, "The name of the previous website theme (should only be modified via the theme settings page)", "None", "theme", False),
