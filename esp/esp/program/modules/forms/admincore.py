@@ -10,7 +10,7 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.tagdict import all_global_tags, all_program_tags, tag_categories
+from esp.tagdict import all_program_tags, tag_categories
 from esp.tagdict.models import Tag
 
 def get_rt_choices():
