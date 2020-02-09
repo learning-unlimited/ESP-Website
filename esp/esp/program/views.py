@@ -508,7 +508,7 @@ def newprogram(request):
             commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
-            default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
+            default_restypes = Tag.getTag('default_restypes')
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]

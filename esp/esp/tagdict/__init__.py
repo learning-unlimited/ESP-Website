@@ -56,6 +56,7 @@ all_global_tags = {
     'teacher_address_required': (True, "Is an address required for a teacher profile?", False, "teach", True),
     'random_constraints': (False, "Constraints for /random in a JSON dictionary (e.g. {'bad_program_names': ['Delve', 'SATPrep', '9001', 'Test'], 'bad_titles': ['Lunch Period']})", "{}", "manage", True),
     'admin_home_page': (False, "The page to which admins get redirected after logging in (can be a relative or absolute page)", None, "manage", True),
+    'default_restypes': (False, "A JSON list of the resource types (by name) to create when making a new program", None, "manage", True),
 }
 
 # Any tag used with Tag.getProgramTag(),
@@ -104,7 +105,6 @@ all_program_tags = {
     'friendly_times_with_date': (True, "Should dates be included when displaying class details?", False, "learn", True),
     'grade_range_popup': (True, "If selected grade min and grade max are at least 4 grades apart, show a popup for teachers", True, "teach", True),
     'quiz_form_id': (False, "The ID of the customform to associate with the Teacher Quiz Module", None, "teach", True),
-    'default_restypes': (False, "A JSON list of the resource types (by name) to create when making a new program", None, "manage", True), #doesn't really make much sense to have this be a program tag, since you'd need to set it before creating the program?
     'display_registration_names': (False, "Which registration types should be displayed in addition to 'Enrolled'?", None, "learn", True),
     'program_size_by_grade': (False, "A JSON dictionary specifying the program capacities for grades or grade ranges (e.g. {'7-8': 1000, '9': 300, '10-12': 1500})", None, "learn", True),
     'grade_ranges': (False, "JSON list of grade ranges that replace min and max grade options in teacher class reg (e.g. '[[7,9],[9,10],[9,12],[10,12],[11,12]]')", None, "teach", True),
