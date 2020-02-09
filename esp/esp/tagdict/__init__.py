@@ -105,7 +105,6 @@ all_program_tags = {
     'grade_range_popup': (True, "If selected grade min and grade max are at least 4 grades apart, show a popup for teachers", True, "teach", True),
     'quiz_form_id': (False, "The ID of the customform to associate with the Teacher Quiz Module", None, "teach", True),
     'default_restypes': (False, "A JSON list of the resource types (by name) to create when making a new program", None, "manage", True), #doesn't really make much sense to have this be a program tag, since you'd need to set it before creating the program?
-    'cc_redirect': (False, "After credit card payment, to which page should we direct students? May be relative to the program URL (e.g. confirmreg, studentreg, etc.) or relative or full URLs may be used (e.g. https://www.google.com, /learn/thanks.html, etc.) (deprecated)", "confirmreg", "learn", False), #depricated??
     'display_registration_names': (False, "Which registration types should be displayed in addition to 'Enrolled'?", None, "learn", True),
     'program_size_by_grade': (False, "A JSON dictionary specifying the program capacities for grades or grade ranges (e.g. {'7-8': 1000, '9': 300, '10-12': 1500})", None, "learn", True),
     'grade_ranges': (False, "JSON list of grade ranges that replace min and max grade options in teacher class reg (e.g. '[[7,9],[9,10],[9,12],[10,12],[11,12]]')", None, "teach", True),
