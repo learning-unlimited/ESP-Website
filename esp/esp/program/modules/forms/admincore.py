@@ -141,4 +141,4 @@ class TagSettingsForm(BetterForm):
                     Tag.unSetTag(key, prog)
 
     class Meta:
-        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_program_tags.keys()) if all_program_tags.get(key, (False, "", False, "", False))[3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]
