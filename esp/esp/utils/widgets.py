@@ -4,7 +4,7 @@
 
 from django import forms
 from django.conf import settings
-from django.contrib.localflavor.us.forms import *
+from localflavor.us.forms import *
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.encoding import force_unicode
