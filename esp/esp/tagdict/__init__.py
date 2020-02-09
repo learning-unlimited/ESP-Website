@@ -15,9 +15,9 @@ all_global_tags = {
     'use_class_size_optimal': (True, "Should teachers be asked for an optimal class size (instead of maximum size)? Must be set to True for optimal class size options in the class registration module info to have any effect.", False, "teach", True),
     'teacherreg_difficulty_choices': (False, "This controls the choices of the 'Difficulty' field on the class creation/editing form. This should be a JSON-formatted list of 2-element lists. Example: '[[1, 'Easy'], [2, 'Medium'], [3, 'Hard']]'", None, "teach", True),
     'class_style_choices': (False, "If set, adds a 'class style' field to the class creation form. Options are set with the tag, with the value in the JSON format, where the first element of each list is the value stored in the database, and the second value is the option shown on the form (e.g. [['Lecture', 'Lecture Style Class'], ['Seminar', 'Seminar Style Class']])", None, "teach", True),
-    'volunteer_tshirt_options': (False, "Should the volunteer form include t-shirt fields (size and type)?", None, "volunteer", True), #should probably be a boolean
-    'volunteer_tshirt_type_selection': (False, "Should the volunteer form include the t-shirt type field?", None, "volunteer", True), #should probably be a boolean
-    'volunteer_allow_comments': (False, "Should the volunteer form include a comments field?", None, "volunteer", True), #should probably be a boolean
+    'volunteer_tshirt_options': (True, "Should the volunteer form include t-shirt fields (size and type)?", False, "volunteer", True),
+    'volunteer_tshirt_type_selection': (True, "Should the volunteer form include the t-shirt type field?", False, "volunteer", True),
+    'volunteer_allow_comments': (True, "Should the volunteer form include a comments field?", None, "volunteer", False),
     'min_available_timeslots': (False, "If set, requires teachers to offer availability for at least this many timeslots before allowing them to proceed to registering a class. (Needs to be a plain integer of 0 or higher.)", None, "teach", True),
     'availability_group_timeslots': (True, "Should timeslots be grouped into contiguous blocks in the availability interface?", True, "teach", True),
     'group_phone_number': (False, "Phone number that will be displayed on nametags and room rosters", None, "manage", True),
