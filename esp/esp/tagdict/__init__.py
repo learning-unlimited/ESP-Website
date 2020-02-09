@@ -108,7 +108,7 @@ all_program_tags = {
     'display_registration_names': (False, "Which registration types should be displayed in addition to 'Enrolled'?", None, "learn", True),
     'program_size_by_grade': (False, "A JSON dictionary specifying the program capacities for grades or grade ranges (e.g. {'7-8': 1000, '9': 300, '10-12': 1500})", None, "learn", True),
     'grade_ranges': (False, "JSON list of grade ranges that replace min and max grade options in teacher class reg (e.g. '[[7,9],[9,10],[9,12],[10,12],[11,12]]')", None, "teach", True),
-    'studentschedule_show_empty_blocks': (True, "Should student schedules include time slots for which students have no classes?", False, "learn", True), #default is None in programprintables.py
+    'studentschedule_show_empty_blocks': (True, "Should student schedules include time slots for which students have no classes?", False, "learn", True),
     'student_lottery_run': (True, "Has the Phase Zero Student Lottery been run?", False, "learn", False),
     'formstack_id': (False, "Formstack form ID for the Formstack MedLiab Module", None, "learn", True),
     'formstack_viewkey': (False, "Formstack form viewing key for the Formstack MedLiab Module", None, "learn", True),

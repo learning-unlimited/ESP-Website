@@ -1114,7 +1114,7 @@ class ProgramPrintables(ProgramModuleObj):
             t.friendly_times = [t.pretty_time()]
             t.initial_rooms = []
 
-        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog)
+        show_empty_blocks = Tag.getBooleanTag('studentschedule_show_empty_blocks', prog, default=False)
         timeslots = list(prog.getTimeSlots())
         for student in students:
             student.updateOnsite(request)
