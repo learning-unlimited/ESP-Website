@@ -13,7 +13,7 @@ We've implemented a set of tools for teachers and admins to manage student class
 
 1. We've added a new page ``/manage/[one]/[two]/section_attendance`` that allows teachers to take attendance for a particular section (including unenrolled students). Teachers can either use a checkbox interface or scan barcodes (with their phones) like at student check-in to mark students as attending the class. Options are provided to allow teachers to enroll students in their class if they were not previously enrolled. The page is linked to from the main teacher registration page (for sections that are approved and scheduled). The page has a dropdown menu for the teacher to select one of their sections for attendance.
 2. We've added an onsite module that summarizes attendance statistics/details. The page has a similar dropdown to select a particular timeslot for attendance. The page is linked to from the main onsite page (provided the module is enabled).
-3. We've added an onsite module that allows you to check**out** individual students (in the case where a student is leaving for lunch, etc.) or all students (in the case where the day has finished and you want to record checkin again for the next day).
+3. We've added an onsite module that allows you to check**out** individual students (in the case where a student is leaving for lunch, etc.) or all students (in the case where the day has finished and you want to record checkin again for the next day). The module also allows admins to unenroll students from the classes that will be missed when they are checked out from the program.
 
 Student Acknowledgement
 ~~~~~~~~~~~~~~~~~~~~~~~
