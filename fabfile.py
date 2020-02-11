@@ -296,7 +296,7 @@ def loaddb(filename=None):
 
         # Download database dump into VM
         escaped_url = pipes.quote(config["url"])
-        run("wget " + escaped_url + " -O " + env.encfab + "dbdump")
+        run("wget " + escaped_url + " -O " + env.encfab + "dbdump --no-check-certificate")
 
     # HACK: detect the Postgres user used in the dump. We run strings in case
     # the dump is in binary format, then we look for the grant for an arbitrary
@@ -306,7 +306,7 @@ def loaddb(filename=None):
     #   GRANT ALL ON TABLE program_class TO esp;
     #
     # ...which we can then parse to get the user. :D
-    query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE program_class TO"
+    query = "ALTER TABLE public.program_class OWNER TO|GRANT ALL ON TABLE public.program_class TO"
     contents = run("strings " + env.encfab + "dbdump | grep -E '" + query + "'")
     pg_owner = contents.split()[-1][:-1]
 
