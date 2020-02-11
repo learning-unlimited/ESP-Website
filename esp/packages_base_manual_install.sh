@@ -18,5 +18,5 @@ else
 fi
 
 # increase memcached limit
-(echo ''; echo '-I 3M') >> /etc/memcached.conf
+sudo su -c '(echo ''; echo '-I 3M') >> /etc/memcached.conf'
 
