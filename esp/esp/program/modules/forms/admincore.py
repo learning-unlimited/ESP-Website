@@ -108,17 +108,17 @@ class StudentRegSettingsForm(BetterModelForm):
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
 
-class TagSettingsForm(BetterForm):
+class ProgramTagSettingsForm(BetterForm):
     """ Form for changing tags associated with a program. """
     def __init__(self, *args, **kwargs):
         self.program = kwargs.pop('program')
         self.categories = set()
-        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        super(ProgramTagSettingsForm, self).__init__(*args, **kwargs)
         for key in all_program_tags:
             # generate field for each tag
             tag_tuple = all_program_tags[key]
-            self.categories.add(tag_tuple[3])
             if tag_tuple[4]:
+                self.categories.add(tag_tuple[3])
                 self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_tuple[0] else Tag.getProgramTag(key, program = self.program)
                 if set_val != None and set_val != self.fields[key].initial:
@@ -126,7 +126,6 @@ class TagSettingsForm(BetterForm):
 
     def save(self):
         prog = self.program
-        # Go through all tags and check if form value is different from default. If it is, get_or_create tag, then set to specified value
         for key in all_program_tags:
             # Update tags if necessary
             tag_tuple = all_program_tags[key]

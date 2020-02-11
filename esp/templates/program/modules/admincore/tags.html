@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Tag Settings{% endblock %}
+{% block title %}{% if program %}{{program.niceName}} {% endif %}Tag Settings{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -12,13 +12,19 @@
 
 {% load render_qsd %}
 
-<h1>Tag Settings for {{ program.niceName }} (ID: {{ program.id }})</h1>
+<h1>Tag Settings{% if program %} for {{ program.niceName }} (ID: {{ program.id }}){% endif %}</h1>
 
+{% if program %}
 {% inline_program_qsd_block program "manage:main_top" %}
 Welcome to the tag settings page for {{ program.niceName }}. This page lists other miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>.
 {% end_inline_program_qsd_block %}
+{% else %}
+{% inline_qsd_block "manage:main_top" %}
+Welcome to the tag settings page for your website. This page lists miscellaneous settings that you may want to change to make the website run how you would like.
+{% end_inline_qsd_block %}
+{% endif %}
 
-<form action="/manage/{{ program.getUrlBase }}/tags/" method="post">
+<form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
 {% autoescape off %}
 {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 {% endautoescape %}
@@ -65,7 +71,7 @@ Welcome to the tag settings page for {{ program.niceName }}. This page lists oth
       <tr> 
         <td colspan="2" class="submit">
           <br />
-          <center><input class="fancybutton" type="submit" value="Save Tag Settings" formaction="/manage/{{ program.getUrlBase }}/tags/{{ fieldset.name }}"/></center>
+          <center><input class="fancybutton" type="submit" value="Save Tag Settings" formaction="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/{{ fieldset.name }}"/></center>
         </td>
       </tr>
     </table>

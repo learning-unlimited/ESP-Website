@@ -60,7 +60,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
-from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
@@ -749,6 +749,24 @@ def emails(request):
     context['requests'] = requests_list
 
     return render_to_response('admin/emails.html', request, context)
+
+@admin_required
+def tags(request, section=""):
+    context = {}
+
+    #If one of the forms was submitted, process it and save if valid
+    if request.method == 'POST':
+        form = TagSettingsForm(request.POST)
+        if form.is_valid():
+            form.save()
+
+    form = TagSettingsForm()
+
+    context['form'] = form
+    context['categories'] = form.categories
+    context['open_section'] = section
+
+    return render_to_response('program/modules/admincore/tags.html', request, context)
 
 @admin_required
 def statistics(request, program=None):

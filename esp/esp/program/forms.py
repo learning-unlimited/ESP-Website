@@ -41,8 +41,10 @@ from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.widgets import DateTimeWidget
 from django import forms
 from django.core import validators
-from form_utils.forms import BetterModelForm
+from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
+from esp.tagdict import all_global_tags, tag_categories
+from esp.tagdict.models import Tag
 
 
 def make_id_tuple(object_list):
@@ -361,3 +363,34 @@ class ClassFlagForm(forms.ModelForm):
     class Meta:
         model = ClassFlag
         fields = ['subject','flag_type','comment']
+
+class TagSettingsForm(BetterForm):
+    """ Form for changing global tags. """
+    def __init__(self, *args, **kwargs):
+        self.categories = set()
+        super(TagSettingsForm, self).__init__(*args, **kwargs)
+        for key in all_global_tags:
+            # generate field for each tag
+            tag_tuple = all_global_tags[key]
+            if tag_tuple[4]:
+                self.categories.add(tag_tuple[3])
+                self.fields[key] = getattr(forms, "BooleanField" if tag_tuple[0] else "CharField")(help_text=tag_tuple[1], initial = tag_tuple[2], required = False)
+                set_val = Tag.getBooleanTag(key) if tag_tuple[0] else Tag.getTag(key)
+                if set_val != None and set_val != self.fields[key].initial:
+                    self.fields[key].initial = set_val
+
+    def save(self):
+        for key in all_global_tags:
+            # Update tags if necessary
+            tag_tuple = all_global_tags[key]
+            if tag_tuple[4]:
+                set_val = self.cleaned_data[key]
+                if not set_val in ("", "None", None, tag_tuple[2]):
+                    # Set a [new] tag if a value was provided and the value is not the default
+                    Tag.setTag(key, value=set_val)
+                else:
+                    # Otherwise, delete the old tag, if there is one
+                    Tag.unSetTag(key)
+
+    class Meta:
+        fieldsets = [(cat, {'fields': [key for key in sorted(all_global_tags.keys()) if all_global_tags[key][3] == cat], 'legend': tag_categories[cat]}) for cat in sorted(tag_categories.keys())]

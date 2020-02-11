@@ -154,16 +154,16 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def tags(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.forms.admincore import TagSettingsForm
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
         context = {}
 
         #If one of the forms was submitted, process it and save if valid
         if request.method == 'POST':
-            form = TagSettingsForm(request.POST, program = prog)
+            form = ProgramTagSettingsForm(request.POST, program = prog)
             if form.is_valid():
                 form.save()
 
-        form = TagSettingsForm(program = prog)
+        form = ProgramTagSettingsForm(program = prog)
 
         context['one'] = one
         context['two'] = two
