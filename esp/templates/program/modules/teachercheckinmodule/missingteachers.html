@@ -9,8 +9,8 @@
     <style type="text/css">
         #shortcuts-box {
             position: fixed;
-            left: 10px;
-            top: 150px;
+            right: 10px;
+            top: 10px;
             width: 200px;
             border: 1px solid gray;
             padding: 5px;
@@ -21,6 +21,9 @@
         }
         #shortcuts-box:hover {
             opacity: 1;
+        }
+        #shortcuts-box input{
+            width: 190px;
         }
 
         .section-first-row {
@@ -129,10 +132,12 @@
 <br>
 {% endif %}
 
-<p style="text-align:right">
+<div style="text-align:right; float: right; width: 225px; padding-bottom: 10px;">
 <input class="button text-all" type="button" value="Text All Unchecked-In Teachers"
     {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
-</p>
+</br>
+<input type="checkbox" id="skip-semi-checked-in" {% if not text_configured %} disabled{% endif %}/> Skip teachers of classes with at least one checked-in teacher
+</div>
 
 <p style="text-align: center">
 
@@ -158,7 +163,7 @@
 </tr>
 {% endif %}
 {% for section in sections %}
-<tr class="section-first-row">
+<tr class="section-first-row" data-sec-id="{{ section.emailcode }}">
     <td rowspan="{{ section.teachers_list|length }}" class="section-code">
         {{ section.parent_class.emailcode }}: {{ section.name }}
     </td>
@@ -190,9 +195,10 @@
             <span class="message"></span>
             <input data-username="{{ teacher.username }}" data-section="{{ section.id }}"
                    class="btn btn-default text" type="button" value="Text Teacher"
-                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"{% endif %}/>
+                   {% if not text_configured %} disabled title="Twilio texting settings are not configured"
+                   {% elif teacher.phone == default_phone %} disabled title="No contact info"{% endif %}/>
         </tr>
-        <tr>
+        <tr data-sec-id="{{ section.emailcode }}">
     {% endfor %}
     <td colspan="6" class="section-detail-td">
         <div class="section-detail fqr-class">
@@ -200,12 +206,28 @@
                 {{section.title}}
                 (<a href="{{section.get_absolute_url|urlencode}}">manage</a> | <a href="{{section.get_edit_absolute_url|urlencode}}">edit</a>)
             </div>
+            {% if show_flags %}
+                <div class="flag-name-list fqr-class-flags">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_name.html" %}
+                    {% endfor %}
+                </div>
+                <button class="add-flag btn">add flag</button>
+            {% endif %}
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
                  data-show-flags="{% if show_flags %}1{% endif %}">
                 Loading...
             </div>
+            {% if show_flags %}
+                <div class="fqr-class-flags-detail">
+                    {% for flag in section.parent_class.flags.all %}
+                        {% include "program/modules/classflagmodule/flag_detail.html" %}
+                    {% endfor %}
+                    {% include "program/modules/classflagmodule/new_flag_form.html" %}
+                </div>
+            {% endif %}
         </div>
     </td>
 </tr>

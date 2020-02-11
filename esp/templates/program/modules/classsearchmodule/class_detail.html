@@ -4,7 +4,6 @@
             <th class="smaller">Sections:</th>
             <td>
                 {{class.sections.count}}
-                ({% for section in class.get_sections %}{{section.duration}} hrs{% if not forloop.last %}, {% endif%}{% endfor %})
             </td>
         </tr>
         <tr>
@@ -25,14 +24,10 @@
                 {% endif %}
             </td>
         </tr>
+        <tr>
+            <th class="smaller">Duration:</th>
+            <td>{{class.prettyDuration}}</td>
+        </tr>
         {% include "program/modules/adminclass/manageclass_class_info.html" %}
-	<tr>
-	  <th class="smaller">Resource requests:</th>
-	  <td>
-	    {% for r in class.sections.all.0.resourcerequest_set.all %}
-	    {{ r }} <br/>
-	    {% endfor %}
-	  </td>
-	</tr>
     </tbody>
 </table>

@@ -1,73 +1,83 @@
-{% autoescape off %}
-{% load latex %}
-\documentclass[landscape,letterpaper,12pt]{article}
+{% autoescape off %} {% load latex %} {% load main %}
+\documentclass[letterpaper,12pt]{article}
+\usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
 \usepackage[utf8]{inputenc}
-\usepackage{fullpage}
-\usepackage{textpos}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage{pst-barcode}
 \usepackage{tabularx}
-\usepackage{graphicx}
-\usepackage{color}
-\usepackage{colortbl}
 \usepackage{array}
+\usepackage{setspace}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
-\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
-\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ PROJECT_ROOT }}templates/program/modules/programprintables/{% templatetag closebrace %}{% templatetag closebrace %}
-\graphicspath{% templatetag openbrace %}{% templatetag openbrace %}{{ MEDIA_ROOT }}uploaded/{% templatetag closebrace %}{% templatetag closebrace %}
+\usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
 
-\pagestyle{empty}
-\renewcommand*\arraystretch{1.5}
-\newcolumntype{+}{>{\global \let \currentrowstyle \relax }}
-\newcolumntype{^}{>{\currentrowstyle }}
-\newcommand{\rowstyle}[1]{\gdef \currentrowstyle{#1} #1\ignorespaces}
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{0pt}
+\pagestyle{fancy}
+\fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName }} } }}
+\setlength\headheight{16pt}
+\renewcommand{\headrulewidth}{3pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot{}
+
+\newcommand{\nameblock}{}
+\newcommand{\barcodeblock}{}
 
 \begin{document}
 {% for student in students %}
-~\\
-\vspace*{0.25in}
-\begin{center}
-\begin{tabularx}{17cm}{X r}
-\noindent
-{% spaceless %}
-\begin{minipage}[b]{6in}
-\Huge\textbf{% templatetag openbrace %}{{ student.first_name|texescape }} {{ student.last_name|texescape }} $\bullet$ Grade {{ student.getGrade|texescape }} } \\
- \Large \textbf{ User name: {{ student.username|texescape }} $\bullet$ ID: {{ student.id }} } \\
-\end{minipage}
-{% endspaceless %}
-&
-%\includegraphics[width=0.6in]{splogol}
-\vspace{0.25in}
+\renewcommand{\nameblock}{
+\textbf{Name: {{ student.name|texescape }} \\
+Username: {{ student.username|texescape }} \\
+User ID: {{ student.id }} \\
+}
+}
 
-\end{tabularx}
+\renewcommand{\barcodeblock}{
+\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}
+}
+
+\begin{multicols}{3}
+
+\begin{flushleft}
+\nameblock
+\vspace{1ex} \hrule \vspace{1ex}
+\textbf{Amount Owed: \fbox{\${{ student.itemizedcosttotal|floatformat:"-2" }} } }
+\end{flushleft}
+
+\columnbreak
+\begin{center}
+Student Schedule for \\
+
+\begin{spacing}{1}
+\LARGE \bfseries {{ student.name|texescape }}
+\end{spacing}
+
 \end{center}
 
+\columnbreak
 
+\begin{flushright}
+\barcodeblock
+\end{flushright}
 
-\normalsize
+\end{multicols}
+
+\renewcommand\tabularxcolumn[1]{m{#1}}
 
 \begin{center}
-\begin{tabularx}{17cm}{|X|p{1.5in}|m{3.63in}|}
+{\large \textbf{Class Schedule} \\}
+\vspace{0.25cm}
+\begin{tabularx}{\textwidth}{|m{1.7in}|X|m{0.55in}|}
 \hline
-\multicolumn{3}{c}{
-\rowstyle{\color{white}\cellcolor{black} } 
-\textbf{Class Schedule for {{ student.name|texescape }} } }  \\
-\multicolumn{1}{|c|}{\textbf{Class Time} } & \textbf{Room} & \multicolumn{1}{c|}{\textbf{Class} } \\
+\textbf{Time and Room} & \textbf{Class and Teacher} & \textbf{Code} \\
 {% for cls in student.classes %}\hline
-{% ifequal cls.event_type.description "Compulsory" %}
-  \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{|c|}{ \textbf{\textit{ {{ cls.description }} } } }
-{% else %}
-  {% ifequal cls.event_type.description "Class" %}
-  \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{c|}{[NO CLASS]}
-  {% else %}
-  \multicolumn{1}{|c|}{ {{ cls.time_blocks.0.start|date:"f" }} -- {{ cls.time_blocks.0.end|date:"f A" }} } & {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms|join:", "|texescape }}{% endif %} & {{ cls.emailcode }}: {{ cls.title|truncatewords:5|texescape }}
-  {% endifequal %}
-{% endifequal %}
-\\ 
+{% if cls.friendly_times|length_is:"0" %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
+\footnotesize{ {% if cls.initial_rooms|length_is:0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
+{% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length_is:"0" %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
+\footnotesize{ {{ cls.parent_class.getTeacherNames|join:", "|truncatewords_char:50|texescape }} }  &
+\texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %} \\
 {% endfor %}\hline
 \end{tabularx}
-\end{center}
 
+\end{center}
 
 \begin{center}
 \begin{tabularx}{17cm}{X c}
@@ -77,9 +87,10 @@
 \multicolumn{2}{c}{\small
 \textit{If you are not signed up for a full day of classes, we encourage you to add more!}
 \normalsize } \\
-~ & ~ 
+~ & ~
 \end{tabularx}
 \end{center}
+
 
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}

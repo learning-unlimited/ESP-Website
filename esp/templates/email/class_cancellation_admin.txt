@@ -1,3 +1,4 @@
+{% autoescape off %}
 -- Notice to directors --
 Class Section {{ sec.emailcode }} has been cancelled.  {% if email_students %}{{ num_students }} students have been sent the following email.{% else %}Students were not emailed.{% endif %} All students have been removed from the class.
 -------------------------
@@ -9,3 +10,4 @@ Additionally, all students with a StudentSubjectInterest were emailed the email 
 -------------------------
 
 {% endif %}
+{% endautoescape %}

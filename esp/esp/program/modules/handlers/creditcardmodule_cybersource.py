@@ -69,7 +69,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form."""}
+        return {'creditcard': """Students who have filled out the credit card form"""}
 
     @main_call
     @needs_student

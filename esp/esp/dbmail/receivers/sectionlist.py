@@ -56,7 +56,7 @@ class SectionList(BaseHandler):
             return
 
         # Create a section list in Mailman,
-        # then bounce this e-mail off to it
+        # then bounce this email off to it
 
         list_name = "%s-%s" % (section.emailcode(), user_type)
 

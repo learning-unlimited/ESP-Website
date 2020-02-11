@@ -64,7 +64,7 @@ class AdminReviewApps(ProgramModuleObj):
             return {'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
 
     def studentDesc(self):
-        return {'app_accepted_to_one_program': """Students who are accepted to at least one class."""}
+        return {'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
 
     @main_call
     @needs_admin

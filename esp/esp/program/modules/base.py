@@ -210,7 +210,7 @@ class ProgramModuleObj(models.Model):
         raise Http404
 
     @staticmethod
-    def getFromProgModule(prog, mod):
+    def getFromProgModule(prog, mod, old_prog = None):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
@@ -219,9 +219,16 @@ class ProgramModuleObj(models.Model):
         if len(BaseModuleList) < 1:
             BaseModule = ProgramModuleObj()
             BaseModule.program = prog
-            BaseModule.module  = mod
-            BaseModule.seq     = mod.seq
-            BaseModule.required = mod.required
+            BaseModule.module = mod
+            # If an old program is specified, use the seq and required values from that program
+            old_pmo = ProgramModuleObj.objects.filter(program = old_prog, module = mod)
+            if len(old_pmo) == 1:
+                BaseModule.seq = old_pmo[0].seq
+                BaseModule.required = old_pmo[0].required
+                BaseModule.required_label = old_pmo[0].required_label
+            else:
+                BaseModule.seq = mod.seq
+                BaseModule.required = mod.required
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:

@@ -1,0 +1,97 @@
+{% extends "main.html" %}
+
+{% block title %}Class Availability for {{ program.niceName }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+<link rel="stylesheet" href="/media/default_styles/availability.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/program/modules/availability.js"></script>
+
+<script>
+$j(document).ready(function() {
+  Availability.init("true", "This class is scheduled at this time");
+});
+</script>
+{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+{% load modules %}
+
+<h1>Availability for <u>{{ class|escape }}</u></h1>
+
+{% if is_overbooked %}
+<p style="color: red;">
+This class is registered for more hours than the number of hours for which the teachers are jointly availabile.
+</p>
+{% endif %}
+
+{% if conflict_found %}
+<p style="color: red;">
+This class is scheduled during at least one timeslot in which at least one teacher is not marked as available (indicated with a red border).
+</p>
+{% endif %}
+
+<h2>Length:</h2>
+{{ class.prettyDuration }}
+</br></br>
+
+<h2>Teachers:</h2>
+{% for teacher in class.get_teachers %}
+<a href="/manage/userview?username={{ teacher.username|urlencode }}" target="_blank">{{ teacher.nonblank_name }}</a>{% if program|hasModule:"CheckAvailabilityModule" %} (<a href="/manage/{{ program.getUrlBase }}/edit_availability?user={{ teacher.username|urlencode }}" target="_blank">edit availability</a>){% endif %}
+</br>
+{% endfor %}
+</br>
+{% if groups %}
+<div id="program_form">
+
+<h2>Availability:</h2>
+<center>
+  {% include "program/modules/availability.html" %}
+  <div hidden id="checkboxes">
+    {% for group in groups %}
+      {% for time in group %}
+        <input type="checkbox" name="timeslots" value="{{ time.slot.id }}" {% if time.available %}checked{% endif %} 
+        {% if time.section %}disabled {% endif %}
+        {% if time.unavail_teachers or time.teaching_teachers or time.section %}data-hover="
+        {% if time.section %}{{ time.section }}</br>{% endif %}
+        {% for teacher in time.unavail_teachers %}{% if forloop.first %}Unavailable:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
+        {% for teacher in time.teaching_teachers %}{% if forloop.first %}Teaching:</br>{% endif %}{{ teacher.nonblank_name }} ({{ teacher.username }})</br>{% endfor %}
+        {% endif %}">
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <br>
+</center>
+
+<h2>Unscheduled sections:</h2>
+{% for s in unscheduled %}
+{{ s }} ({{ s.prettyDuration }})<br>
+{% endfor %}
+
+</div>
+
+<div class="side right" hidden>
+  <span class="summary" style="background-color: #EFEFEF;">Teachers Not Available</span>
+  <span class="summary" style="background-color: #00FF00;">All Teachers Available</span>
+  <span class="summary" style="background-color: #42b3f4;">Scheduled Section</span>
+</div>
+{% endif %}
+
+{% if search_form %}
+<br><br>
+<form method="POST" action="/manage/{{ program.getUrlBase }}/edit_availability">
+{{ search_form.as_p }}
+<input type="hidden" name="search" hidden />
+<input type="submit" value="Search" />
+</form>
+{% endif %}
+
+{% include "program/modules/adminclass/returnlink.html" %}
+
+{% endblock %}

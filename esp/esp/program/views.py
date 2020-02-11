@@ -45,7 +45,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability
 
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
@@ -59,14 +59,16 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
+from esp.program.modules.handlers.commmodule import CommModule
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
+from esp.dbmail.models import MessageRequest, TextOfEmail
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -76,6 +78,7 @@ import re
 import pickle
 import operator
 import json
+import datetime
 from collections import defaultdict
 from decimal import Decimal
 from reversion import revisions as reversion
@@ -297,7 +300,7 @@ def find_user(userstr):
         #try pk
         if userstr.isnumeric():
             user_q = user_q | Q(id=userstr)
-        #try e-mail?
+        #try email?
         if '@' in userstr:  # but don't even bother hitting the DB if it doesn't even have an '@'
             user_q = user_q | Q(email__iexact=userstr)
             user_q = user_q | Q(contactinfo__e_mail__iexact=userstr)  # search parent contact info, too
@@ -345,7 +348,9 @@ def usersearch(request):
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
-        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
+        found_users = found_users.all()
+        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name!", log=False)
 
@@ -365,6 +370,11 @@ def userview(request):
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
         program = user.get_last_program_with_profile()
+
+    if program:
+        profile = RegistrationProfile.getLastForProgram(user, program)
+    else:
+        profile = user.getLastProfile()
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -392,7 +402,9 @@ def userview(request):
         'printers': StudentRegCore.printer_names(),
         'all_programs': Program.objects.all().order_by('-id'),
         'program': program,
+        'profile': profile,
         'volunteer': VolunteerOffer.objects.filter(request__program = program, user = user).exists(),
+        'avail_set': UserAvailability.objects.filter(event__program = program, user = user).exists(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -449,6 +461,7 @@ def newprogram(request):
        #try:
         template_prog_id = int(request.GET["template_prog"])
         tprogram = Program.objects.get(id=template_prog_id)
+        request.session['template_prog'] = template_prog_id
         template_prog = {}
         template_prog.update(tprogram.__dict__)
         del template_prog["id"]
@@ -492,7 +505,7 @@ def newprogram(request):
 
             new_prog = pcf.save(commit = True)
 
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
+            commit_program(new_prog, context['perms'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -500,8 +513,13 @@ def newprogram(request):
                 resource_type_labels = json.loads(default_restypes)
                 resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
 
-            #   Force all ProgramModuleObjs and their extensions to be created now
-            new_prog.getModules()
+            # Force all ProgramModuleObjs and their extensions to be created now
+            # If we are using another program as a template, let's copy the seq and required values from that program.
+            if 'template_prog' in request.session:
+                old_prog = Program.objects.get(id=request.session['template_prog'])
+                new_prog.getModules(old_prog=old_prog)
+            else:
+                new_prog.getModules()
 
             manage_url = '/manage/' + new_prog.url + '/resources'
 
@@ -696,6 +714,40 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, context)
 
+@admin_required
+def emails(request):
+    """
+    View that displays information for recent email requests.
+    GET data:
+      'start_date' (optional):  Starting date to filter email requests by.
+                                Should be given in the format "%m/%d/%Y".
+    """
+    context = {}
+    if request.GET and "start_date" in request.GET:
+        start_date = datetime.datetime.strptime(request.GET["start_date"], "%m/%d/%Y")
+    else:
+        start_date = datetime.date.today() - datetime.timedelta(30)
+    requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
+
+    requests_list = []
+    for req in requests:
+        toes = TextOfEmail.objects.filter(created_at=req.created_at,
+                                          subject = req.subject,
+                                          send_from = req.sender).order_by('sent')
+        if req.processed:
+            req.num_rec = toes.count()
+        else:
+            req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
+        req.num_sent = sum(toe.sent is not None for toe in toes)
+        if req.num_rec == req.num_sent:
+            req.finished_at = toes[0].sent
+        else:
+            req.finished_at = "(Not finished)"
+        requests_list.append(req)
+
+    context['requests'] = requests_list
+
+    return render_to_response('admin/emails.html', request, context)
 
 @admin_required
 def statistics(request, program=None):

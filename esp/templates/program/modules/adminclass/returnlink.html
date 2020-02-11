@@ -1,0 +1,11 @@
+<br />
+<br />
+<p>
+{% if prog %}
+<a class="btn" href="/manage/{{ prog.getUrlBase }}/manageclass/{{ class.id }}">Return to the class management page</a>
+{% else %}
+{% if program %}
+<a class="btn" href="/manage/{{ program.getUrlBase }}/manageclass/{{ class.id }}">Return to the class management page</a>
+{% endif %}
+{% endif %}
+</p>

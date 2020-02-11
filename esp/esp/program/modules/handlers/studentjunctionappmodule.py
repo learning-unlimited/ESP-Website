@@ -68,8 +68,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
                     'studentapps':          ESPUser.objects.filter(Q_students)}
 
     def studentDesc(self):
-        return {'studentapps_complete': """Students who have completed the student application.""",
-                'studentapps':          """Students who have started the student application."""}
+        return {'studentapps_complete': """Students who have completed the student application""",
+                'studentapps':          """Students who have started the student application"""}
 
     def isCompleted(self):
         """ This step is completed if the student has marked their application as complete or answered questions for

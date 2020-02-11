@@ -180,13 +180,13 @@
             {% for p in perm.includes %}
                 {% if perm.open_now or p.bit_open %}
                 <li>{% if p.overridden %}<span class="override">
-                    <a href="#perm_form_{{ p.overridden_by.id }}">
+                    
                         {% if perm.open_now %}
                             Overrides: 
                         {% else %}
-                            Overridden by:
+                            <a href="#perm_form_{{ p.overridden_by.id }}">Overridden by</a>:
                         {% endif %}
-                    </a>{% endif %}
+                    {% endif %}
 		    {{ p.nice_name }}
                     {% if p.overridden %}</span>{% endif %}
                 </li>

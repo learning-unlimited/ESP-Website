@@ -91,9 +91,15 @@ if (document.getElementById("student_schedule")) {
 function hideOtherGrades(grade){
     if(grade == "all"){
         $j('.show_class').show();
+        //Show all line breaks
+        $j('.show_class').next().next().show();
     }else{
     	$j('.show_class').hide();
+        //Hide all line breaks
+        $j('.show_class').next().next().hide();
         $j('.grade_' + grade).show();
+        //Show the line breaks associated with the classes we are showing
+        $j('.grade_' + grade).next().next().show();
     }
 }
 

@@ -10,14 +10,13 @@
 <!-- meta -->
 <meta http-equiv="Content-Script-Type" content="text/javascript" />
 
-<title>ESP Scheduling Application</title>
+<title>{{ settings.ORGANIZATION_SHORT_NAME }} Scheduling Application</title>
 
 <!-- LIBS -->
 <!-- STYLE -->
 <link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
-<link rel="stylesheet" type="text/css" href="/media/default_styles/scheduling.css" />
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
@@ -27,6 +26,7 @@
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/google/palette.js@8418158452401c15d276d9632b88933aa581718f/palette.js"></script>
 
 <!--Scheduler-->
 <script type="text/javascript">
@@ -61,13 +61,16 @@
     </td>
     <td class="no-border">
       <div id="side-panel-wrapper" class="ui-widget">
-        <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
-        <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
-
+        <div id="info-panel">
+          <div id="section-info-div" class="component-div ui-widget ui-corner-all ui-helper-hidden"></div>
+          <div id="message-div" class="component-div ui-widget-content ui-corner-all"></div>
+          <div id="separator" class="ui-resizable-handle ui-resizable-s"></div>
+        </div>
         <div id="side-panel" class="component-div ui-widget">
           <ul>
             <li><a href="#classes">Classes</a></li>
-            <li><a href="#filters">Filters</a></li>
+            <li><a href="#filters">Class Filters</a></li>
+            <li><a href="#filters2">Room Filters</a></li>
           </ul>
           <div id="side-panel-inner">
                 <div id="classes">
@@ -126,6 +129,28 @@
                     </div>
                   </form>
                 </div>
+                <div id="filters2">
+                  <form>
+                    <label for="room-filter-capacity"><b>Room Capacity</b></label><br />
+                    <div id="room-filter-capacity">
+                        <label for="room-filter-capacity-min">Min:</label>
+                        <input id="room-filter-capacity-min" class="numeric"></input> Students
+                        <br />
+                        <label for="room-filter-capacity-max">Max:</label>
+                        <input id="room-filter-capacity-max" class="numeric"></input> Students
+                    </div>
+                    <br />
+                    <div id="room-filter-resource">
+                        <label for="room-filter-resource-text"><b>Resource</b></label><br />
+                        <input id="room-filter-resource-text"></input>
+                    </div>
+                    <br />
+                    <div id="room-filter-name">
+                        <label for="room-filter-name-text"><b>Name</b></label><br />
+                        <input id="room-filter-name-text"></input>
+                    </div>
+                  </form>
+                </div>
           </div>
         </div>
       </div>
@@ -143,6 +168,16 @@
     </fieldset>
   </form>
 </div>
+
+<script>
+$j("#info-panel").resizable({
+  handles: {s: '#separator'},
+  containment: '#side-panel-wrapper',
+  resize: function() {
+    $j("#side-panel").outerHeight($j("#side-panel-wrapper").innerHeight() - $j("#info-panel").outerHeight());
+  }
+});
+</script>
 
 </body>
 </html>

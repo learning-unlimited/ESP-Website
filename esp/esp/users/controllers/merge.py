@@ -53,12 +53,19 @@ def merge(absorber, absorbee):
         # Then I wouldn't have to do any transaction stuff here.
         with transaction.atomic():
             if m2m:
-                getattr(obj, name).remove(absorbee)
-                getattr(obj, name).add(absorber)
-                # No need to save(); remove and add implicitly do it.
+                # TODO: handle symmetric relations.
+                rel = getattr(obj, name)
+                # If it's not auto_created then it's handled by a "through".
+                if rel.through._meta.auto_created:
+                    rel.remove(absorbee)
+                    rel.add(absorber)
+                    # No need to save(); remove and add implicitly do it.
             else:
                 setattr(obj, name, absorber)
                 obj.save()
+    # Also check local m2m fields.
+    for field in absorber._meta.local_many_to_many:
+        getattr(absorber, field.attname).add(getattr(absorbee, field.attname).all())
 
 
 #########################

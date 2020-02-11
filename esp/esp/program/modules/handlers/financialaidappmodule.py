@@ -104,7 +104,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 model = FinancialAidRequest
                 tag_data = Tag.getTag('finaid_form_fields')
                 if tag_data:
-                    fields = tuple(tag_data.split(','))
+                    fields = tuple(field.strip() for field in tag_data.split(',') if hasattr(FinancialAidRequest(), field.strip()))
                 else:
                     fields = '__all__'
 
@@ -123,7 +123,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 app.save()
 
                 # Automatically accept apps for people with subsidized lunches
-                # Send an e-mail announcing the application either way
+                # Send an email announcing the application either way
                 date_str = str(datetime.now())
                 iac = IndividualAccountingController(self.program, request.user)
                 if app.reduced_lunch:
