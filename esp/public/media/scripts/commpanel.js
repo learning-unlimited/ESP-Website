@@ -175,7 +175,7 @@ function initialize()
     });
     recipient_type_change();
 
-    //  Handle clicks on show/hide e-mail list links
+    //  Handle clicks on show/hide email list links
     $j("button.commpanel_show_all").click(function () {
         $j("li.commpanel_list_entry").removeClass("commpanel_hidden");
         $j("button.commpanel_show_all").addClass("commpanel_hidden");
@@ -285,7 +285,7 @@ function initialize()
     });
     $j("#combo_filter_done").click(submit_combo_selection);
 
-    /*  Previous e-mails tab    */
+    /*  Previous emails tab    */
 
     //  Set up message request autocomplete
     msgreq_data = json_fetch(["message_requests"], function (result_data) {

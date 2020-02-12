@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from django import forms
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
@@ -73,7 +74,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text='<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt> (e.g. use $$\pi$$ for &pi;).</span>' )
+                                        help_text=mark_safe('<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt> (e.g. use $$\pi$$ for &pi;).</span>' ))
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 
@@ -85,7 +86,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     # To enable grade ranges, admins should set the Tag grade_ranges.
     # e.g. [[7,9],[9,10],[9,12],[10,12],[11,12]] gives five grade ranges: 7-9, 9-10, 9-12, 10-12, and 11-12
-    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], required=False, widget=BlankSelectWidget() )
+    grade_range    = forms.ChoiceField( label='Grade Range', choices=[], widget=BlankSelectWidget() )
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students',
@@ -151,16 +152,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: crmi.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        if Tag.getTag('grade_ranges'):
-            grade_ranges = json.loads(Tag.getTag('grade_ranges'))
+        if Tag.getProgramTag('grade_ranges', prog):
+            grade_ranges = json.loads(Tag.getProgramTag('grade_ranges', prog))
             self.fields['grade_range'].choices = [(range,str(range[0]) + " - " + str(range[1])) for range in grade_ranges]
-            self.fields['grade_range'].required = True
-            hide_field( self.fields['grade_min'] )
-            self.fields['grade_min'].required = False
-            hide_field( self.fields['grade_max'] )
-            self.fields['grade_max'].required = False
+            del self.fields['grade_min']
+            del self.fields['grade_max']
         else:
-            hide_field( self.fields['grade_range'] )
+            del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
             self.fields['class_size_max'].choices = class_sizes
@@ -232,9 +230,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Modify help text on these fields if necessary.
         #   TODO(benkraft): Is there a reason not to allow this on all fields?
         custom_helptext_fields = [
-            'duration', 'class_size_max', 'num_sections', 'requested_room',
-            'message_for_directors', 'purchase_requests', 'class_info',
-            'grade_max', 'grade_min'] + custom_fields.keys()
+            'duration', 'class_size_max', 'class_size_optimal', 'num_sections',
+            'requested_room', 'message_for_directors', 'purchase_requests',
+            'class_info', 'grade_max', 'grade_min'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
@@ -336,10 +334,14 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         # Modify some help texts to be form-specific.
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
-        del self.fields['grade_range']
+        if self.fields.get('grade_min') and self.fields.get('grade_max'):
+            del self.fields['grade_min']
+            del self.fields['grade_max']
+        else:
+            del self.fields['grade_range']
 
         fields = [('category', open_class_category.id),
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', program.grade_min), ('grade_max', program.grade_max),
+                  ('prereqs', ''), ('session_count', 1),
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''),
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True),
                   ('requested_room', '')]

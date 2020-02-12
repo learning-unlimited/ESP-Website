@@ -11,7 +11,10 @@
 
 <h1>Static Page Management</h1>
 
-<p>Below is a list of all the static pages on the ESP site.  You can move a page to a new URL by clicking 'Modify' next to that page.  If a page is enabled, you may disable it by clicking 'Delete' and it will no longer be accessible.  But you can also undelete pages, if you'd like them to show up again.</p>
+<p>Below is a list of all the static pages on the {{ settings.ORGANIZATION_SHORT_NAME }} site.
+You can move a page to a new URL by clicking 'Modify' next to that page.
+If a page is enabled, you may disable it by clicking 'Delete' and it will no longer be accessible.
+That said, you can also undelete pages if you'd like them to show up again.</p>
 
 <div id="program_form">
 
@@ -37,7 +40,7 @@
 {% for qsd in qsd_list %}
 <tr>
     <td><input type="checkbox" name="check_{{ qsd.id }}" /></td>
-    <td><a href="/{{ qsd.url }}.html">/{{ qsd.url }}.html</a></td>
+    <td style="word-break:break-all;"><a href="/{{ qsd.url }}.html">/{{ qsd.url }}.html</a></td>
     <td>{{ qsd.nav_category.name }}</td>
     <td>{{ qsd.title }}</td>
     <td><a href="{{ request.path }}?cmd=move&id={{ qsd.id }}" class="abutton">Move</a></td>

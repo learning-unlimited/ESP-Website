@@ -118,7 +118,7 @@ class TeacherQuizModule(ProgramModuleObj):
 
     def teacherDesc(self):
         return {
-            'quiz_done': """Teachers who have completed the teacher logistics quiz.""",
+            'quiz_done': """Teachers who have completed the teacher logistics quiz""",
         }
 
     # Per-user info

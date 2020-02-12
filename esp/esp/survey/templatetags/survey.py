@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from django.http import QueryDict
 from django.template import loader
 from esp.program.models.class_ import ClassSubject
 
@@ -107,7 +108,7 @@ def stdev(lst):
         return 'N/A'
 
 @register.filter
-def histogram(answer_list, format='html'):
+def histogram(answer_list, args='format=html'):
     """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
     from django.conf import settings
     HISTOGRAM_PATH = 'images/histograms/'
@@ -115,6 +116,8 @@ def histogram(answer_list, format='html'):
     import tempfile
 
     image_width = 2.75
+
+    args_dict = QueryDict(args)
 
     processed_list = []
     for ans in answer_list:
@@ -129,7 +132,10 @@ def histogram(answer_list, format='html'):
     context['title'] = 'Results of survey'
     context['num_responses'] = len(answer_list)
 
-    context['results'] = []
+    if args_dict.get('max'):
+        context['results'] = [{'value': str(x), 'freq': 0} for x in range(1, int(args_dict.get('max')) + 1)]
+    else:
+        context['results'] = []
     max_answer_length = 0
     for ans in answer_list:
         try:
@@ -173,18 +179,18 @@ def histogram(answer_list, format='html'):
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     png_filename = "%s.png" % file_base
-    if format == 'tex':
+    if args_dict.get('format') == 'tex':
         image_path = os.path.join(tempfile.gettempdir(), png_filename)
-    elif format == 'html':
+    elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
         subprocess.call(['gs', '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
                          '-dDEVICEWIDTHPOINTS=216', '-dDEVICEHEIGHTPOINTS=162',
                          '-sDEVICE=png16m', '-R96',
                          '-sOutputFile=' + image_path, file_name])
-    if format == 'tex':
+    if args_dict.get('format') == 'tex':
         return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
-    if format == 'html':
+    if args_dict.get('format') == 'html':
         return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
 
 @register.filter

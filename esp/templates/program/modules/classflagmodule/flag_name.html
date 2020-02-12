@@ -1,6 +1,14 @@
-<span class="flag-name"
+<span class="flag-header"
       id="fqr-flag-header-{{flag.id}}"
-      style="background: {{flag.flag_type.getColor}};"
-      onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');">
-    {{flag.flag_type.name}}
+      style="background: {{flag.flag_type.getColor}};">
+    <span class="flag-name"
+          title="Click to toggle flag details"
+          onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');$j('#fqr-flag-header-{{flag.id}}').toggleClass('active');">
+        {{flag.flag_type.name}}
+    </span>
+    <span class="flag-remove"
+          title="Click to remove flag"
+          onclick="removeFlag('/manage/{{program.getUrlBase}}/deleteflag/',{{flag.id}});">
+    </span>
 </span>
+

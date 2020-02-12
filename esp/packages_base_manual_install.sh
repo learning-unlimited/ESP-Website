@@ -16,3 +16,7 @@ else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
     sudo -H npm install -g less@1.3.1
 fi
+
+# increase memcached limit
+sudo su -c '(echo ""; echo "-I 3M") >> /etc/memcached.conf'
+

@@ -37,6 +37,7 @@ from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
 
 from esp.utils.web import render_to_response
+from esp.utils.decorators import json_response
 
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
@@ -48,7 +49,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, ResourceChoiceForm, EquipmentForm, FurnishingFormForProgram, ClassroomImportForm, TimeslotImportForm, ResTypeImportForm, EquipmentImportForm
 
 from esp.program.controllers.resources import ResourceController
 
@@ -119,7 +120,7 @@ class ResourceModule(ProgramModuleObj):
             context['restype_form'].load_restype(current_slot)
             choices = [{'choice': choice} for choice in current_slot.choices]
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if len(choices) else 1)
-            context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
+            context['reschoice_formset'] = ResourceChoiceSet(initial=choices, prefix='resourcechoices')
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
@@ -136,14 +137,14 @@ class ResourceModule(ProgramModuleObj):
             elif data['command'] == 'addedit':
                 #   add/edit restype
                 form = ResourceTypeForm(data)
-                num_choices = int(data.get('form-TOTAL_FORMS', '0'))
+                num_choices = int(data.get('resourcechoices-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
                 choices, choices_list = [],[]
                 for i in range(0,num_choices):
-                    choice = data['form-'+str(i)+'-choice']
+                    choice = data['resourcechoices-'+str(i)+'-choice']
                     choices.append({'choice': choice})
                     choices_list.append(choice)
-                context['reschoice_formset'] = ResourceChoiceSet(initial=choices)
+                context['reschoice_formset'] = ResourceChoiceSet(initial=choices, prefix='resourcechoices')
                 if form.is_valid():
                     controller.add_or_edit_restype(form, choices_list)
                 else:
@@ -162,6 +163,9 @@ class ResourceModule(ProgramModuleObj):
             current_room = Resource.objects.get(id=request.GET['id'])
             context['classroom_form'] = ClassroomForm(self.program)
             context['classroom_form'].load_classroom(self.program, current_room)
+            furnishings = [{'furnishing': furnishing.res_type.id, 'choice': furnishing.attribute_value} for furnishing in current_room.associated_resources()]
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+            context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
@@ -182,10 +186,25 @@ class ResourceModule(ProgramModuleObj):
 
             elif data['command'] == 'addedit':
                 form = ClassroomForm(self.program, data)
+                num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
+                FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+                furnishings = []
+                for i in range(0,num_forms):
+                    #   Filter out blank furnishings or choices
+                    if 'furnishings-'+str(i)+'-furnishing' in data:
+                        furnishing = data['furnishings-'+str(i)+'-furnishing']
+                        if 'furnishings-'+str(i)+'-choice' in data:
+                            choice = data['furnishings-'+str(i)+'-choice']
+                        else:
+                            choice = ''
+                        furnishings.append({'furnishing': furnishing, 'choice': choice})
+                #   Filter out duplicates
+                furnishings = list(map(dict, frozenset(frozenset(i.items()) for i in furnishings)))
                 if form.is_valid():
-                    controller.add_or_edit_classroom(form)
+                    controller.add_or_edit_classroom(form, furnishings)
                 else:
                     context['classroom_form'] = form
+                    context['furnishing_formset'] = FurnishingFormSet(initial=furnishings, prefix='furnishings')
 
         return (response, context)
 
@@ -194,10 +213,12 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
-        import_form = TimeslotImportForm(request.POST)
+        import_form = TimeslotImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_timeslot_form'] = import_form
         else:
@@ -224,8 +245,10 @@ class ResourceModule(ProgramModuleObj):
                     end   = orig_timeslot.end + time_delta,
                 )
                 #   Save the new timeslot only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists():
+                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists() and str(orig_timeslot.id) in to_import:
                     new_timeslot.save()
+                else:
+                    new_timeslot.old_id = orig_timeslot.id
                 new_timeslots.append(new_timeslot)
 
             #   Render a preview page showing the resources for the previous program if desired
@@ -245,10 +268,12 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
-        import_form = ResTypeImportForm(request.POST)
+        import_form = ResTypeImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_restype_form'] = import_form
         else:
@@ -268,8 +293,10 @@ class ResourceModule(ProgramModuleObj):
                     autocreated = res_type.autocreated,
                     hidden = res_type.hidden
                 )
-                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists():
+                if import_mode == 'save' and not ResourceType.objects.filter(name=new_res_type.name, description = new_res_type.description, program = self.program).exists() and str(res_type.id) in to_import:
                     new_res_type.save()
+                else:
+                    new_res_type.old_id = res_type.id
                 res_type_list.append(new_res_type)
             context['past_program'] = past_program
             if import_mode == 'preview':
@@ -286,10 +313,12 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
-        import_form = ClassroomImportForm(request.POST)
+        import_form = ClassroomImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_classroom_form'] = import_form
         else:
@@ -312,10 +341,12 @@ class ResourceModule(ProgramModuleObj):
                             user = resource.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and str(resource.id) in to_import:
                             new_res.save()
+                        else:
+                            new_res.old_id = resource.id
                         if import_furnishings:
-                            new_furns = self.furnishings_import(resource, new_res, self.program, import_mode)
+                            new_furns = self.furnishings_import(resource, new_res, self.program, import_mode, to_import)
                             furnishing_dict[resource.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
                         resource_list.append(new_res)
             else:
@@ -326,26 +357,29 @@ class ResourceModule(ProgramModuleObj):
                 for i in range(min(len(ts_old), len(ts_new))):
                     ts_map[ts_old[i].id] = ts_new[i]
 
-                #   Iterate over the resources in the previous program
-                for res in past_program.getClassrooms():
-                    furnishing_dict[res.name] = set()
-                    #   If we know what timeslot to put it in, make a copy
-                    if res.event.id in ts_map:
-                        new_res = Resource(
-                            name = res.name,
-                            res_type = res.res_type,
-                            num_students = res.num_students,
-                            is_unique = res.is_unique,
-                            user = res.user,
-                            event = ts_map[res.event.id]
-                        )
-                        #   Check to avoid duplicating rooms (so the process is idempotent)
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
-                            new_res.save()
-                        if import_furnishings:
-                            new_furns = self.furnishings_import(res, new_res, self.program, import_mode)
-                            furnishing_dict[res.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
-                        resource_list.append(new_res)
+                #   Iterate over the classrooms in the previous program
+                for resource in past_program.groupedClassrooms():
+                    furnishing_dict[resource.name] = set()
+                    for event in resource.timegroup:
+                        #   If we know what timeslot to put it in, make a copy
+                        if event.id in ts_map:
+                            new_res = Resource(
+                                name = resource.name,
+                                res_type = resource.res_type,
+                                num_students = resource.num_students,
+                                is_unique = resource.is_unique,
+                                user = resource.user,
+                                event = ts_map[event.id]
+                            )
+                            #   Check to avoid duplicating rooms (so the process is idempotent)
+                            if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists() and str(resource.id) in to_import:
+                                new_res.save()
+                            else:
+                                new_res.old_id = resource.id
+                            if import_furnishings:
+                                new_furns = self.furnishings_import(resource, new_res, self.program, import_mode, to_import)
+                                furnishing_dict[resource.name].update(new_furn.res_type.name + (" (Hidden)" if new_furn.res_type.hidden else "") + ((": " + new_furn.attribute_value) if new_furn.attribute_value else "") for new_furn in new_furns)
+                            resource_list.append(new_res)
 
             #   Render a preview page showing the resources for the previous program if desired
             context['past_program'] = past_program
@@ -369,7 +403,7 @@ class ResourceModule(ProgramModuleObj):
         return (response, context)
 
     @staticmethod
-    def furnishings_import(old_res, new_res, prog, import_mode):
+    def furnishings_import(old_res, new_res, prog, import_mode, to_import):
         furnishings = old_res.associated_resources()
         new_furnishings = []
         for f in furnishings:
@@ -401,7 +435,7 @@ class ResourceModule(ProgramModuleObj):
                 res_group = new_res.res_group,
                 attribute_value = f.attribute_value
             )
-            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event).exists():
+            if import_mode == 'save' and not Resource.objects.filter(name=new_furnishing.name, event=new_res.event, attribute_value=new_furnishing.attribute_value).exists() and str(old_res.id) in to_import:
                 new_furnishing.save()
             new_furnishings.append(new_furnishing)
         return new_furnishings
@@ -446,10 +480,12 @@ class ResourceModule(ProgramModuleObj):
         response = None
 
         import_mode = 'preview'
+        to_import = []
         if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
             import_mode = 'save'
+            to_import = request.POST.getlist('to_import')
 
-        import_form = EquipmentImportForm(request.POST)
+        import_form = EquipmentImportForm(request.POST, cur_prog = prog)
         if not import_form.is_valid():
             context['import_equipment_form'] = import_form
         else:
@@ -485,8 +521,10 @@ class ResourceModule(ProgramModuleObj):
                             user = equipment.user,
                             event = timeslot
                         )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists():
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
                             new_equip.save()
+                        else:
+                            new_equip.old_id = equipment.id
                         new_equipment_list.append(new_equip)
             else:
                 #   Attempt to match timeslots for the programs
@@ -497,7 +535,7 @@ class ResourceModule(ProgramModuleObj):
                     ts_map[ts_old[i].id] = ts_new[i]
 
                 #   Iterate over the floating resources in the previous program
-                for equipment in past_program.getFloatingResources(queryset=True):
+                for equipment in past_program.getFloatingResources():
                     res_type = equipment.res_type
                     res_types = ResourceType.objects.filter(name=res_type.name, program = self.program)
                     if res_types.exists():
@@ -514,19 +552,23 @@ class ResourceModule(ProgramModuleObj):
                             autocreated = res_type.autocreated,
                             hidden = res_type.hidden
                         )
-                    if import_mode == 'save':
+                    if import_mode == 'save' and str(equipment.id) in to_import:
                         new_res_type.save()
-                    #   If we know what timeslot to put it in, make a copy
-                    if equipment.event.id in ts_map:
-                        new_equip = Resource(
-                            name = equipment.name,
-                            res_type = new_res_type,
-                            user = equipment.user,
-                            event = ts_map[equipment.event.id]
-                        )
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists():
-                            new_equip.save()
-                        new_equipment_list.append(new_equip)
+                    for event in equipment.timegroup:
+                        #   If we know what timeslot to put it in, make a copy
+                        if event.id in ts_map:
+                            new_equip = Resource(
+                                name = equipment.name,
+                                res_type = new_res_type,
+                                user = equipment.user,
+                                event = ts_map[event.id],
+                                attribute_value = equipment.attribute_value
+                            )
+                            if import_mode == 'save' and not Resource.objects.filter(name=new_equip.name, event=new_equip.event).exists() and str(equipment.id) in to_import:
+                                new_equip.save()
+                            else:
+                                new_equip.old_id = equipment.id
+                            new_equipment_list.append(new_equip)
 
             context['past_program'] = past_program
             context['complete_availability'] = complete_availability
@@ -539,6 +581,19 @@ class ResourceModule(ProgramModuleObj):
                 extra = 'equipment'
 
         return(response, context)
+
+    @aux_call
+    @json_response(None)
+    @needs_admin
+    def ajaxfurnishingchoices(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to get the choices for a particular furnishing.
+         POST data:
+          'furnishing':     The ID of the furnishing of interest.
+        """
+        if 'furnishing' in request.POST:
+            res_type = ResourceType.objects.get(id = int(request.POST['furnishing']))
+            return {'choices': res_type.choices}
 
     @main_call
     @needs_admin
@@ -572,7 +627,7 @@ class ResourceModule(ProgramModuleObj):
             return response
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots(exclude_types=[])
+        time_options = self.program.getTimeSlots(types=['Class Time Block','Open Class Time Block'])
         time_groups = Event.group_contiguous(list(time_options))
 
         #   Retrieve remaining context information
@@ -581,7 +636,7 @@ class ResourceModule(ProgramModuleObj):
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
 
-        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', program = prog, default = False))
+        res_types = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes', default = False))
         context['resource_types'] = sorted(res_types, key = lambda x: (not x.hidden, x.priority_default), reverse = True)
         for c in context['resource_types']:
             if c.program is None:
@@ -589,26 +644,28 @@ class ResourceModule(ProgramModuleObj):
 
         if 'restype_form' not in context:
             ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10)
-            context['reschoice_formset'] = ResourceChoiceSet
+            context['reschoice_formset'] = ResourceChoiceSet(prefix='resourcechoices')
             context['restype_form'] = ResourceTypeForm()
 
         if 'classroom_form' not in context:
+            FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
+            context['furnishing_formset'] = FurnishingFormSet(prefix='furnishings')
             context['classroom_form'] = ClassroomForm(self.program)
 
         if 'equipment_form' not in context:
             context['equipment_form'] = EquipmentForm(self.program)
 
         if 'import_classroom_form' not in context:
-            context['import_classroom_form'] = ClassroomImportForm()
+            context['import_classroom_form'] = ClassroomImportForm(cur_prog = prog)
 
         if 'import_timeslot_form' not in context:
-            context['import_timeslot_form'] = TimeslotImportForm()
+            context['import_timeslot_form'] = TimeslotImportForm(cur_prog = prog)
 
         if 'import_restype_form' not in context:
-            context['import_restype_form'] = ResTypeImportForm()
+            context['import_restype_form'] = ResTypeImportForm(cur_prog = prog)
 
         if 'import_equipment_form' not in context:
-            context['import_equipment_form'] = EquipmentImportForm()
+            context['import_equipment_form'] = EquipmentImportForm(cur_prog = prog)
 
         context['open_section'] = extra
         context['prog'] = self.program

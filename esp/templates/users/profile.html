@@ -19,9 +19,9 @@ div.required label:after {
     <div class="span12 offset1">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
-<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+<p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
-<p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+<p>Email addresses have a tendency to change regularly, so we are asking that you re-enter your email address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
       {% end_inline_qsd_block %}
     </div>
   </div>
@@ -41,44 +41,48 @@ div.required label:after {
       {% endif %}
 
     <form action="{{request.path}}" method="post" class="form-horizontal">
-	<fieldset>
-	<input type="hidden" name="profile_page" value="true" />
-	<input type="hidden" name="current_role" value="{{ profiletype }}" />
+        <fieldset>
+        <input type="hidden" name="profile_page" value="true" />
+        <input type="hidden" name="current_role" value="{{ profiletype }}" />
 
+        {% ifequal profiletype "teacher" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/teacherinfo.html" %}
+        {% else %}
+        
+        {% ifequal profiletype "student" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/studentinfo.html" %}
+            {% include "users/profiles/guardiancontact.html" %}
+            {% include "users/profiles/emergencycontact.html" %}
+            {% include "users/profiles/gradechangerequestinfo.html" %}
+        {% else %}
 
-	{% ifequal profiletype "student" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/studentinfo.html" %}
-	{% include "users/profiles/guardiancontact.html" %}
-	{% include "users/profiles/emergencycontact.html" %}
-	{% include "users/profiles/gradechangerequestinfo.html" %}
+        {% ifequal profiletype "educator" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/educatorinfo.html" %}
+        {% else %}
 
-	{% else %}
-	{% ifequal profiletype "teacher" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/teacherinfo.html" %}
-	{% else %}
+        {% ifequal profiletype "guardian" %}
+            {% include "users/profiles/usercontact.html" %}
+            {% include "users/profiles/guardianinfo.html" %}
+        {% else %}
+        
+        {% ifequal profiletype "volunteer" %}
+            {% include "users/profiles/usercontact.html" %}
+        {% else %}
 
-	{% ifequal profiletype "educator" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/educatorinfo.html" %}
-	{% else %}
+        {% include "../templates/themes/bs_form.html" %}
 
-	{% ifequal profiletype "guardian" %}
-	{% include "users/profiles/usercontact.html" %}
-	{% include "users/profiles/guardianinfo.html" %}
-	{% else %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
+        {% endifequal %}
 
-	{% include "../templates/themes/bs_form.html" %}
+        <div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
 
-	{% endifequal %}
-	{% endifequal %}
-	{% endifequal %}
-	{% endifequal %}
-
-	<div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
-
-	</fieldset>
+        </fieldset>
     </form>
   </div>
 </div>

@@ -7,7 +7,7 @@ sl = splash.students()['classreg']
 
 outfile = open('stanford_parents_sp10.csv', 'w')
 
-outfile.write('"ID","Last Name","First Name","Student e-mail","Parent e-mail"\n')
+outfile.write('"ID","Last Name","First Name","Student email","Parent email"\n')
 
 PlainRedirect.objects.filter(original=list_name).delete()
 

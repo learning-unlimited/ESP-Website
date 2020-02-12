@@ -43,34 +43,6 @@ Please enter the information for the new student:
  </td>
 </tr>
 
-
-<tr>
- <td><label for="id_old_math_score">Current SAT Math Score:<br />
-       <small>(if available)</small></label></td>
- <td>{{ form.old_math_score }} {% if form.old_math_score.errors %}
-   <br /><span class="form_error">{{ form.old_math_score.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td><label for="id_old_verb_score">Current SAT Verbal Score:<br />
-       <small>(if available)</small></label></td>
- <td>{{ form.old_verb_score }} {% if form.old_verb_score.errors %}
-   <br /><span class="form_error">{{ form.old_verb_score.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
-<tr>
- <td><label for="id_old_writ_score">Current SAT Writing Score:<br />
-       <small>(if available)</small></label></td>
- <td>{{ form.old_writ_score }} {% if form.old_writ_score.errors %}
-   <br /><span class="form_error">{{ form.old_writ_score.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
-
 <tr>
  <td><label for="id_medical">Handed Medical Form In?:</label></td>
  <td>{{ form.medical }} {% if form.medical.errors %}

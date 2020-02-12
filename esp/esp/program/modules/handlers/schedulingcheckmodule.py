@@ -3,12 +3,14 @@ from esp.program.models import Program, ClassSection, ClassSubject
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.resources.models import ResourceRequest
 from copy import deepcopy
-from math import ceil
 from esp.cal.models import *
 from datetime import date
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
+from esp.cal.models import Event
+
+from esp.middleware.threadlocalrequest import get_current_request
 
 import json
 import re
@@ -32,7 +34,7 @@ class SchedulingCheckModule(ProgramModuleObj):
               results = s.run_diagnostics([extra])
               return HttpResponse(results)
          else:
-              context = {'check_list': s.all_diagnostics}
+              context = {'check_list': s.all_diagnostics, 'unreviewed': "unreviewed" in request.GET}
               return render_to_response(self.baseDir()+'output.html', request, context)
 
     class Meta:
@@ -106,6 +108,9 @@ class SchedulingCheckRunner:
           self.p = program
           self.formatter = formatter
 
+          request = get_current_request()
+          self.incl_unreview = "unreviewed" in request.GET
+
           self.lunch_blocks = self._getLunchByDay()
 
           #things that we'll calculate lazilly
@@ -141,7 +146,7 @@ class SchedulingCheckRunner:
      # Update this to add a scheduling check.
      all_diagnostics = [
           ('lunch_blocks_setup', 'Lunch blocks'),
-          ('incompletely_scheduled_classes', 'Classes not completely scheduled'),
+          ('incompletely_scheduled_classes', 'Classes not completely scheduled or with gaps'),
           ('inconsistent_rooms_and_times', 'Mismatched rooms and meeting times'),
           ('wrong_classroom_type', 'Classes in wrong classroom type'),
           ('classes_missing_resources', 'Unfulfilled resource requests'),
@@ -150,7 +155,7 @@ class SchedulingCheckRunner:
           ('teachers_unavailable', "Teachers teaching when they aren't available"),
           ('teachers_teaching_two_classes_same_time', 'Teachers teaching two classes at once'),
           ('classes_which_cover_lunch', 'Classes which are scheduled over lunch'),
-          ('classes_wrong_length', 'Classes which are the wrong length or have gaps'),
+          ('classes_wrong_length', 'Classes which are the wrong length'),
           ('unapproved_scheduled_classes', 'Classes which are scheduled but aren\'t approved'),
           ('room_capacity_mismatch', 'Class max size/room max size mismatches'),
           ('classes_by_category', 'Number of classes in each block by category'),
@@ -188,8 +193,13 @@ class SchedulingCheckRunner:
                if include_walkins == False:
                     #filter out walkins
                     qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
-               #filter out non-approved classes
-               qs = qs.exclude(status__lte=0)
+               if self.incl_unreview:
+                   #filter out rejected/cancelled sections
+                   qs = qs.exclude(status__lt=0)
+               else:
+                   #filter out non-approved
+                   qs = qs.exclude(status__lte=0)
+               #filter out unscheduled classes
                qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
                qs = qs.exclude(parent_class__category__category=u'Lunch')
@@ -216,15 +226,17 @@ class SchedulingCheckRunner:
          return self.formatter.format_list(lunch_block_strings)
 
      def incompletely_scheduled_classes(self):
-          problem_classes = []
-          for s in self._all_class_sections():
-               mt =  s.get_meeting_times()
-               rooms = s.getResources()
-               if(len(rooms) != ceil(s.duration)):
-                    problem_classes.append(s)
-               elif(len(rooms) != len(mt)):
-                    problem_classes.append(s)
-          return self.formatter.format_list(problem_classes)
+        problem_classes = []
+        for s in self._all_class_sections():
+            mt =  sorted(s.get_meeting_times())
+            rooms = s.getResources()
+            if(len(rooms) != len(mt)):
+                problem_classes.append(s)
+            else:
+                for i in range(0, len(mt) - 1):
+                    if not Event.contiguous(mt[i], mt[i+1]):
+                        problem_classes.append(s)
+        return self.formatter.format_list(problem_classes)
 
      def inconsistent_rooms_and_times(self):
         output = []
@@ -521,8 +533,12 @@ class SchedulingCheckRunner:
          l = []
          teachers = self.p.teachers()['class_approved'].distinct()
          for teacher in teachers:
-             sections = ClassSection.objects.filter(
-                 parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status=10).distinct(),status=10).distinct().order_by('meeting_times__start')
+             if self.incl_unreview:
+                 sections = ClassSection.objects.filter(
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gte=0).distinct(),status__gte=0).distinct().order_by('meeting_times__start')
+             else:
+                 sections = ClassSection.objects.filter(
+                     parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status__gt=0).distinct(),status__gt=0).distinct().order_by('meeting_times__start')
              for i in range(sections.count()-1):
                  try:
                      time1 = sections[i+1].meeting_times.all().order_by('start')[0]

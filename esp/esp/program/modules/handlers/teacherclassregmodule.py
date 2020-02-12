@@ -36,7 +36,7 @@ from collections import defaultdict
 
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
+from esp.program.models          import ClassSubject, ClassSection, Program, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType, RegistrationProfile
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.resources.models        import ResourceRequest
 from esp.tagdict.models          import Tag
@@ -44,7 +44,7 @@ from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
 from esp.middleware              import ESPError
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser
+from esp.users.models            import User, ESPUser, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
@@ -220,10 +220,15 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            section = ClassSection.objects.get(id=extra)
-        except (ValueError, ClassSection.DoesNotExist):
-            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
+        secid = 0
+        if 'secid' in request.POST:
+            secid = request.POST['secid']
+        else:
+            secid = extra
+        sections = ClassSection.objects.filter(id = secid)
+        if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        section = sections[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section, 'cls': section})
 
@@ -231,10 +236,15 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def class_students(self, request, tl, one, two, module, extra, prog):
-        try:
-            cls = ClassSubject.objects.get(id=extra)
-        except (ValueError, ClassSubject.DoesNotExist):
-            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
+        clsid = 0
+        if 'clsid' in request.POST:
+            clsid = request.POST['clsid']
+        else:
+            clsid = extra
+        classes = ClassSubject.objects.filter(id = clsid)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        cls = classes[0]
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls})
 
@@ -417,6 +427,19 @@ class TeacherClassRegModule(ProgramModuleObj):
             if cls.conflicts(teacher):
                 conflictinguser = (teacher.first_name+' '+teacher.last_name)
             else:
+                lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
+                if not lastProf.teacher_info:
+                    anyInfo = teacher.getLastProfile().teacher_info
+                    if anyInfo:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
+                                                                        {'graduation_year': anyInfo.graduation_year,
+                                                                         'affiliation': anyInfo.affiliation,
+                                                                         'major': anyInfo.major,
+                                                                         'shirt_size': anyInfo.shirt_size,
+                                                                         'shirt_type': anyInfo.shirt_type})
+                    else:
+                        lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
+                lastProf.save()
                 coteachers.append(teacher)
                 txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
                 ccc.associate_teacher_with_class(cls, teacher)
@@ -600,13 +623,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             # that we didn't start out with
             # Thus, if default_restype isn't set, we display everything
             # potentially relevant
-            if Tag.getTag('allow_global_restypes'):
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_global=True,
-                                                       include_hidden=False)
-            else:
-                resource_types = prog.getResourceTypes(include_classroom=True,
-                                                       include_hidden=False)
+            resource_types = prog.getResourceTypes(include_classroom=True,
+                                                   include_global=Tag.getBooleanTag('allow_global_restypes', default = False),
+                                                   include_hidden=False)
             resource_types = list(resource_types)
             resource_types.reverse()
 
@@ -632,7 +651,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['url']   = newclass.emailcode()
                 min_grade = newclass.grade_min
                 max_grade = newclass.grade_max
-                if Tag.getTag('grade_ranges'):
+                if Tag.getProgramTag('grade_ranges', prog):
                     current_data['grade_range'] = [min_grade,max_grade]
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:

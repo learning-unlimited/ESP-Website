@@ -46,6 +46,7 @@ input.addbutton {
 {% endif %}
 {% endif %}
 
+{% if categories %}
 <div class="row-fluid">
 <table class="table table-bordered table-condensed span6">
 <tbody>
@@ -73,6 +74,7 @@ input.addbutton {
 </tbody>
 </table>
 </div>
+{% endif %}
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:fillslot" %}
@@ -90,6 +92,7 @@ There are no available classes during this time block for students of your grade
 {# If the line below gives you a TemplateSyntaxError, try replacing it with a 'with' tag. #}
 {% for class in classes %}
 
+{% if categories %}
 {% ifchanged class.category_id %}<hr size="1"/>
 
     <a name="cat{{class.category_id}}"></a>
@@ -110,6 +113,7 @@ There are no available classes during this time block for students of your grade
       <p class="linktop">
          <a href="#top">[ Return to Category List ]</a>
       </p> {% endifchanged %}
+{% endif %}
 
 {% render_class class request.user request.GET.filter timeslot %}
 

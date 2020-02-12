@@ -92,7 +92,12 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None):
 
     show_class = (not filter) or (not errormsg)
 
+    # Allow tag configuration of whether class descriptions get collapsed
+    # when the class is full (default: yes)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program, True)
+
     return {'class':      cls,
+            'collapse_full': collapse_full,
             'section':    section,
             'user':       user,
             'prereg_url': prereg_url,

@@ -47,7 +47,7 @@ function ChangelogFetcher(matrix, api_client, start_index){
                 if (change.timeslots.length == 0){
                     this.matrix.sections.unscheduleSectionLocal(section);
                 } else {
-                    this.matrix.sections.scheduleSectionLocal(section, change.room_name, change.timeslots);
+                    this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
                 }
             } else {
                 this.matrix.sections.setComment(section, change.comment, change.locked, true);

@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 
 import datetime
 import xlwt
+import re
 from cStringIO import StringIO
 from django.db import models
 from django.db.models import Q
@@ -227,15 +228,34 @@ def delist(x):
     else:
         return x
 
+def _encode_ascii(cell_label):
+    if isinstance(cell_label, basestring):
+        return str(cell_label.encode('ascii', 'xmlcharrefreplace'))
+    else:
+        return cell_label
+
+def _worksheet_write(worksheet, r, c, label="", style=None):
+    if style is None:
+        worksheet.write(r, c, _encode_ascii(label))
+    else:
+        worksheet.write(r, c, _encode_ascii(label), style)
+
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
     if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
         # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
         datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
         wb=xlwt.Workbook()
+        survey_index = 0
         for s in surveys:
+            # Certain characters are forbidden in sheet names
+            # See <https://github.com/python-excel/xlwt/blob/8f0afdc9b322129600d81e754cabd2944e7064f2/xlwt/Utils.py#L154>
+            s.name = re.sub(r"['\[\]:\\?/*\x00]", "", s.name.encode('ascii', 'ignore'))
+            s.category = re.sub(r"['\[\]:\\?/*\x00]", "", s.category.encode('ascii', 'ignore'))
+            # The length of sheet names is limited to 31 characters
+            survey_index += 1
             if len(s.name)>31:
-                ws=wb.add_sheet(s.name[:28] + "...")
+                ws=wb.add_sheet("%d %s... (%s)" % (survey_index, s.name[:17], s.category[:5]))
             else:
                 ws=wb.add_sheet(s.name)
             ws.write(0,0,'Response ID')
@@ -246,20 +266,21 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict={}
             for q in qs:
                 q_dict[q.id]=i
-                ws.write(0,i,q.name)
+                _worksheet_write(ws,0,i,q.name)
                 i+=1
             i=1
             sr_dict={}
             for sr in srs:
                 sr_dict[sr.id]=i
-                ws.write(i,0,sr.id)
-                ws.write(i,1,sr.time_filled,datetime_style)
+                _worksheet_write(ws,i,0,sr.id)
+                _worksheet_write(ws,i,1,sr.time_filled,datetime_style)
                 i+=1
             for a in Answer.objects.filter(question__in=qs).order_by('id'):
-                ws.write(sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
+                _worksheet_write(ws,sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
             #PER-CLASS QUESTIONS
+            # The length of sheet names is limited to 31 characters
             if len(s.name)>19:
-                ws_perclass=wb.add_sheet(s.name[:16] + "... (per-class)")
+                ws_perclass=wb.add_sheet("%d %s... (%s, per-class)" % (survey_index, s.name[:5], s.category[:5]))
             else:
                 ws_perclass=wb.add_sheet(s.name + " (per-class)")
             ws_perclass.write(0,0,"Response ID")
@@ -271,7 +292,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             q_dict_perclass={}
             for q in qs_perclass:
                 q_dict_perclass[q.id]=i
-                ws_perclass.write(0,i,q.name)
+                _worksheet_write(ws_perclass,0,i,q.name)
                 i+=1
             i=1
             src_dict_perclass={}
@@ -287,17 +308,17 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 else:
                     row=i
                     src_dict_perclass[key]=i
-                    ws_perclass.write(i,0,sr.id)
-                    ws_perclass.write(i,1,sr.time_filled,datetime_style)
+                    _worksheet_write(ws_perclass,i,0,sr.id)
+                    _worksheet_write(ws_perclass,i,1,sr.time_filled,datetime_style)
                     if cs:
-                        ws_perclass.write(i,2,cs.emailcode())
-                        ws_perclass.write(i,3,cs.title())
+                        _worksheet_write(ws_perclass,i,2,cs.emailcode())
+                        _worksheet_write(ws_perclass,i,3,cs.title())
                     i+=1
-                ws_perclass.write(row,q_dict_perclass[a.question_id],delist(a.answer))
+                _worksheet_write(ws_perclass,row,q_dict_perclass[a.question_id],delist(a.answer))
         out=StringIO()
         wb.save(out)
         response=HttpResponse(out.getvalue(),content_type='application/vnd.ms-excel')
-        response['Content-Disposition']='attachment; filename=dump.xls'
+        response['Content-Disposition']='attachment; filename=dump-%s.xls' % (prog.name)
         return response
     else:
         raise ESPError("You need to be an administrator to dump survey results.", log=False)
@@ -420,10 +441,10 @@ def top_classes(request, tl, program, instance):
 
         categories = prog.class_categories.all().order_by('category')
 
-        subject_ct=ContentType.objects.get(app_label="program",model="classsubject")
+        section_ct=ContentType.objects.get(app_label="program",model="classsection")
 
         perclass_data = []
-        initclass_data = [ { 'class': x, 'ratings': [ x.answer for x in Answer.objects.filter(object_id=x.id, content_type=subject_ct, question=rating_question) ] } for x in classes ]
+        initclass_data = [ { 'class': cls, 'ratings': [ float(x.answer) for sec in cls.get_sections() for x in Answer.objects.filter(object_id=sec.id, content_type=section_ct, question=rating_question)] } for cls in classes ]
         for c in initclass_data:
             c['numratings'] = len(c['ratings'])
             if c['numratings'] < num_cut:
@@ -432,8 +453,8 @@ def top_classes(request, tl, program, instance):
             if c['avg'] < rating_cut:
                 continue
             teachers = list(c['class'].get_teachers())
-            c['teacher'] = teachers[0]
-            c['numteachers'] = len(teachers)
+            c['teacher'] = teachers[0] if len(teachers) > 0 else None
+            c['numteachers'] = max(len(teachers), 1) #in case there are no teachers
             if c['numteachers'] > 1:
                 c['coteachers'] = teachers[1:]
             del c['ratings']
