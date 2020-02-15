@@ -1736,11 +1736,13 @@ class AllClassesFieldConverter(object):
     TEACHERS = 'teachers'
     TIMES = 'times'
     ROOMS = 'rooms'
+    NUM_SECTIONS = "number of sections"
+    exclude_fields = ['session_count']
 
     def __init__(self):
-        field_list = [field for field in ClassSubject._meta.fields]
+        field_list = [field for field in ClassSubject._meta.fields if field.name not in self.exclude_fields]
         #field_list.sort(key=lambda x: x.name)
-        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS)]
+        self.field_choices = [(f, f.title()) for f in (self.TEACHERS, self.TIMES, self.ROOMS, self.NUM_SECTIONS)]
         self.field_choices += [(field.name, field.verbose_name.title()) for field in field_list]
 
         #sort tuple list by field name
@@ -1752,7 +1754,8 @@ class AllClassesFieldConverter(object):
         self.field_converters = {
             self.TEACHERS: lambda x: ", ".join([smart_str(t.name()) for t in x.get_teachers()]),
             self.TIMES: lambda x: ", ".join(x.friendly_times()),
-            self.ROOMS: lambda x: ", ".join(x.prettyrooms())
+            self.ROOMS: lambda x: ", ".join(x.prettyrooms()),
+            self.NUM_SECTIONS: lambda x: x.sections.count()
         }
 
     def fieldvalue(self, class_subject, fieldname):
