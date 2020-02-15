@@ -49,10 +49,8 @@ from esp.utils.query_utils import nest_Q
 from esp.program.models import VolunteerOffer
 
 from django import forms
-from django.shortcuts import redirect
-from django.contrib import messages
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
 from django.template import Context, loader
 from django.template.loader import render_to_string
@@ -1036,7 +1034,6 @@ class ProgramPrintables(ProgramModuleObj):
 
             students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
-        import csv
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv')
         writer = csv.writer(response)
@@ -1536,7 +1533,7 @@ class ProgramPrintables(ProgramModuleObj):
         if request.method == 'POST':
             form = AllClassesSelectionForm(request.POST)
             if form.is_valid():
-                response = HttpResponse(mimetype="text/csv")
+                response = HttpResponse(content_type="text/csv")
                 write_cvs = csv.writer(response)
                 selected_fields = form.cleaned_data['subject_fields']
                 csv_headings = [converter.field_dict[fieldname] for fieldname in selected_fields]
@@ -1563,8 +1560,6 @@ class ProgramPrintables(ProgramModuleObj):
         unscheduled classes, taking into account the classes the teacher
         is already teaching and have been scheduled.
         """
-        import csv
-        from django.http import HttpResponse
 
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1645,8 +1640,6 @@ class ProgramPrintables(ProgramModuleObj):
         conflicts (other classes taught by same teacher)
         room requests and comments
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceType
 
         response = HttpResponse(content_type="text/csv")
@@ -1718,8 +1711,6 @@ class ProgramPrintables(ProgramModuleObj):
                 -   ID of the timeslot
                 -   Lock level (usually 0 for unlocked, 1 or higher for locked)
         """
-        import csv
-        from django.http import HttpResponse
         from esp.resources.models import ResourceAssignment
         response = HttpResponse(content_type="text/csv")
         write_csv = csv.writer(response)
@@ -1739,7 +1730,7 @@ class ProgramPrintables(ProgramModuleObj):
 class AllClassesFieldConverter(object):
     """
     Handles value extraction and formatting of CLassSubject instances. This is
-    used as 'pre-processing' step when generating the records for the All Classes 
+    used as 'pre-processing' step when generating the records for the All Classes
     CSV spreadsheet.
     """
     TEACHERS = 'teachers'
@@ -1767,7 +1758,7 @@ class AllClassesFieldConverter(object):
     def fieldvalue(self, class_subject, fieldname):
         """
         Returns the value of the specified field for the supplied class_subject instance.
-        Fields that are defined in the field_converters dict will have an associated 
+        Fields that are defined in the field_converters dict will have an associated
         formatting function which will be executed to return the appropriate format.
         """
         fieldvalue = ''
@@ -1787,4 +1778,4 @@ class AllClassesSelectionForm(forms.Form):
         super(AllClassesSelectionForm, self).__init__(*args, **kwargs)
 
         self.converter = AllClassesFieldConverter()
-        self.fields['subject_fields'].choices = self.converter.field_choices 
+        self.fields['subject_fields'].choices = self.converter.field_choices
