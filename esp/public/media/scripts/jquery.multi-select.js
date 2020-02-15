@@ -241,7 +241,7 @@
           $currElem = $elems.filter('.ms-hover'),
           $nextElem = null,
           elemHeight = $elems.first().outerHeight(),
-          containerHeight = $list.height(),
+          containerHeight = $list.height()
 
       $elems.removeClass('ms-hover');
       if (direction === 1){ // DOWN
